@@ -2,6 +2,8 @@
 
 A user-friendly desktop application that makes the [Handy voice assistant](https://github.com/cjpais/handy) more accessible and easier to distribute. This app provides a native interface for voice-controlled AI interactions, making it simple for users to get started without dealing with Python setup.
 
+Everything is currently a work in progress. A lot of stuff probably does not work.
+
 ## Core Purpose
 
 - 📦 Make Handy easily distributable and installable for everyone
