@@ -43,7 +43,10 @@ impl ShortcutAction for TranscribeAction {
                     Ok(transcription) => {
                         println!("Transcription Result: {}", transcription);
                         if !transcription.is_empty() {
-                            utils::paste(transcription, ah);
+                            match utils::paste(transcription, ah) {
+                                Ok(()) => println!("Text pasted successfully"),
+                                Err(e) => eprintln!("Failed to paste transcription: {}", e),
+                            }
                         }
                     }
                     Err(err) => println!("Global Shortcut Transcription error: {}", err),

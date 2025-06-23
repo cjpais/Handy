@@ -1,51 +1,20 @@
-use rdev::{simulate, EventType, Key, SimulateError};
-use std::thread;
-use std::time;
+use enigo::Enigo;
+use enigo::Keyboard;
+use enigo::Settings;
 use tauri::image::Image;
 use tauri::tray::TrayIcon;
 use tauri::AppHandle;
 use tauri::Manager;
-use tauri_plugin_clipboard_manager::ClipboardExt;
 
-fn try_send_event(event: &EventType) {
-    if let Err(SimulateError) = simulate(event) {
-        println!("We could not send {:?}", event);
-    }
-}
+pub fn paste(text: String, _: AppHandle) -> Result<(), String> {
+    let mut enigo = Enigo::new(&Settings::default())
+        .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
 
-fn send_with_delay(event: EventType, delay_ms: u64) {
-    try_send_event(&event);
-    thread::sleep(time::Duration::from_millis(delay_ms));
-}
+    enigo
+        .text(&text)
+        .map_err(|e| format!("Failed to paste text: {}", e))?;
 
-// TODO: use enigo for paste not on macos?
-fn send_paste() {
-    // Determine the modifier key based on the OS
-    #[cfg(target_os = "macos")]
-    let modifier_key = Key::MetaLeft; // Command key on macOS
-    #[cfg(not(target_os = "macos"))]
-    let modifier_key = Key::ControlLeft; // Control key on other systems
-
-    // Press both keys
-    send_with_delay(EventType::KeyPress(modifier_key), 100);
-    send_with_delay(EventType::KeyPress(Key::KeyV), 100);
-
-    // Release both keys
-    send_with_delay(EventType::KeyRelease(Key::KeyV), 100);
-    send_with_delay(EventType::KeyRelease(modifier_key), 0);
-}
-
-pub fn paste(text: String, app_handle: AppHandle) {
-    let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
-
-    clipboard.write_text(&text).unwrap();
-    send_paste();
-
-    // restore the clipboard
-    clipboard.write_text(&clipboard_content).unwrap();
+    Ok(())
 }
 
 pub enum TrayIconState {
