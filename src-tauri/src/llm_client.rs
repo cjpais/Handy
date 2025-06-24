@@ -245,3 +245,122 @@ pub async fn fetch_models(
 
     Ok(models)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::settings::PostProcessProvider;
+
+    fn minimax_provider() -> PostProcessProvider {
+        PostProcessProvider {
+            id: "minimax".to_string(),
+            label: "MiniMax".to_string(),
+            base_url: "https://api.minimax.io/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+            supports_structured_output: false,
+        }
+    }
+
+    #[test]
+    fn minimax_uses_bearer_auth() {
+        let provider = minimax_provider();
+        let headers = build_headers(&provider, "test-key-123").unwrap();
+        let auth = headers
+            .get(AUTHORIZATION)
+            .expect("MiniMax should use Authorization header");
+        assert_eq!(auth.to_str().unwrap(), "Bearer test-key-123");
+        // Should NOT have anthropic-style headers
+        assert!(
+            headers.get("x-api-key").is_none(),
+            "MiniMax should not use x-api-key header"
+        );
+        assert!(
+            headers.get("anthropic-version").is_none(),
+            "MiniMax should not use anthropic-version header"
+        );
+    }
+
+    #[test]
+    fn minimax_empty_api_key_omits_auth() {
+        let provider = minimax_provider();
+        let headers = build_headers(&provider, "").unwrap();
+        assert!(
+            headers.get(AUTHORIZATION).is_none(),
+            "Empty API key should not produce Authorization header"
+        );
+    }
+
+    #[test]
+    fn minimax_chat_completion_url() {
+        let provider = minimax_provider();
+        let base_url = provider.base_url.trim_end_matches('/');
+        let url = format!("{}/chat/completions", base_url);
+        assert_eq!(url, "https://api.minimax.io/v1/chat/completions");
+    }
+
+    #[test]
+    fn minimax_models_url() {
+        let provider = minimax_provider();
+        let base_url = provider.base_url.trim_end_matches('/');
+        let url = format!("{}/models", base_url);
+        assert_eq!(url, "https://api.minimax.io/v1/models");
+    }
+
+    #[test]
+    fn minimax_no_structured_output() {
+        let provider = minimax_provider();
+        assert!(
+            !provider.supports_structured_output,
+            "MiniMax should not enable structured output (json_schema with strict mode)"
+        );
+    }
+
+    #[test]
+    fn chat_completion_request_without_schema_serializes_correctly() {
+        let request = ChatCompletionRequest {
+            model: "MiniMax-M2.7".to_string(),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "Hello".to_string(),
+            }],
+            response_format: None,
+        };
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["model"], "MiniMax-M2.7");
+        assert!(json.get("response_format").is_none());
+        assert_eq!(json["messages"][0]["role"], "user");
+        assert_eq!(json["messages"][0]["content"], "Hello");
+    }
+
+    #[test]
+    fn chat_completion_response_deserializes_content() {
+        let json = r#"{"choices":[{"message":{"content":"Fixed transcript."}}]}"#;
+        let response: ChatCompletionResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(response.choices.len(), 1);
+        assert_eq!(
+            response.choices[0].message.content.as_deref(),
+            Some("Fixed transcript.")
+        );
+    }
+
+    #[test]
+    fn chat_completion_response_handles_null_content() {
+        let json = r#"{"choices":[{"message":{"content":null}}]}"#;
+        let response: ChatCompletionResponse = serde_json::from_str(json).unwrap();
+        assert!(response.choices[0].message.content.is_none());
+    }
+
+    #[test]
+    fn minimax_common_headers_present() {
+        let provider = minimax_provider();
+        let headers = build_headers(&provider, "key").unwrap();
+        assert_eq!(
+            headers.get(CONTENT_TYPE).unwrap().to_str().unwrap(),
+            "application/json"
+        );
+        assert!(headers.get(USER_AGENT).is_some());
+        assert!(headers.get(REFERER).is_some());
+        assert!(headers.get("X-Title").is_some());
+    }
+}

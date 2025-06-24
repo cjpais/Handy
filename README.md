@@ -71,6 +71,20 @@ Handy is built as a Tauri application combining:
   - `rdev`: Global keyboard shortcuts and system events
   - `rubato`: Audio resampling
 
+### Post-Processing Providers
+
+Handy supports optional cloud-based post-processing to clean up transcriptions (fix spelling, punctuation, number formatting, etc.) using LLM providers. Select a provider in Settings and configure your API key:
+
+- **OpenAI** - `https://api.openai.com/v1`
+- **Z.AI** - `https://api.z.ai/api/paas/v4`
+- **OpenRouter** - `https://openrouter.ai/api/v1`
+- **Anthropic** - `https://api.anthropic.com/v1`
+- **Groq** - `https://api.groq.com/openai/v1`
+- **Cerebras** - `https://api.cerebras.ai/v1`
+- **MiniMax** - `https://api.minimax.io/v1`
+- **Apple Intelligence** (macOS Apple Silicon only)
+- **Custom** - Any OpenAI-compatible endpoint
+
 ### Debug Mode
 
 Handy includes an advanced debug mode for development and troubleshooting. Access it by pressing:
@@ -418,4 +432,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **whisper.cpp and ggml** for amazing cross-platform whisper inference/acceleration
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
+- **MiniMax** for [OpenAI-compatible LLM API](https://www.minimaxi.com) powering cloud post-processing
 - **Community contributors** helping make Handy better

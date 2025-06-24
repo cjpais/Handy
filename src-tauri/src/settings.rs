@@ -542,6 +542,14 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
         },
+        PostProcessProvider {
+            id: "minimax".to_string(),
+            label: "MiniMax".to_string(),
+            base_url: "https://api.minimax.io/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+            supports_structured_output: false,
+        },
     ];
 
     // Note: We always include Apple Intelligence on macOS ARM64 without checking availability
@@ -917,5 +925,86 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_providers_include_minimax() {
+        let providers = default_post_process_providers();
+        let minimax = providers.iter().find(|p| p.id == "minimax");
+        assert!(minimax.is_some(), "MiniMax provider should be in defaults");
+        let minimax = minimax.unwrap();
+        assert_eq!(minimax.label, "MiniMax");
+        assert_eq!(minimax.base_url, "https://api.minimax.io/v1");
+        assert!(!minimax.allow_base_url_edit);
+        assert_eq!(minimax.models_endpoint, Some("/models".to_string()));
+        assert!(
+            !minimax.supports_structured_output,
+            "MiniMax should not claim structured output support"
+        );
+    }
+
+    #[test]
+    fn minimax_appears_before_custom_provider() {
+        let providers = default_post_process_providers();
+        let minimax_idx = providers.iter().position(|p| p.id == "minimax");
+        let custom_idx = providers.iter().position(|p| p.id == "custom");
+        assert!(
+            minimax_idx.is_some() && custom_idx.is_some(),
+            "Both minimax and custom providers must exist"
+        );
+        assert!(
+            minimax_idx.unwrap() < custom_idx.unwrap(),
+            "MiniMax should appear before the Custom provider"
+        );
+    }
+
+    #[test]
+    fn default_api_keys_include_minimax() {
+        let keys = default_post_process_api_keys();
+        assert!(
+            keys.contains_key("minimax"),
+            "API key slot for minimax must be pre-created"
+        );
+        assert_eq!(keys["minimax"], "", "Default API key should be empty");
+    }
+
+    #[test]
+    fn default_models_include_minimax() {
+        let models = default_post_process_models();
+        assert!(
+            models.contains_key("minimax"),
+            "Model slot for minimax must be pre-created"
+        );
+    }
+
+    #[test]
+    fn ensure_defaults_adds_minimax_to_empty_settings() {
+        let mut settings = get_default_settings();
+        // Remove minimax to simulate an older settings state
+        settings.post_process_providers.retain(|p| p.id != "minimax");
+        settings.post_process_api_keys.remove("minimax");
+        settings.post_process_models.remove("minimax");
+
+        let changed = ensure_post_process_defaults(&mut settings);
+        assert!(changed, "ensure_post_process_defaults should detect missing minimax");
+
+        let minimax = settings
+            .post_process_providers
+            .iter()
+            .find(|p| p.id == "minimax");
+        assert!(minimax.is_some(), "MiniMax should be added by migration");
+        assert!(settings.post_process_api_keys.contains_key("minimax"));
+        assert!(settings.post_process_models.contains_key("minimax"));
+    }
+
+    #[test]
+    fn provider_count_includes_minimax() {
+        let providers = default_post_process_providers();
+        // At minimum: openai, zai, openrouter, anthropic, groq, cerebras, minimax, custom
+        assert!(
+            providers.len() >= 8,
+            "Should have at least 8 providers (got {})",
+            providers.len()
+        );
     }
 }
