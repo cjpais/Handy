@@ -40,6 +40,7 @@ tokio = "1.43.0"
 vad-rs = "0.1.5"
 tauri-plugin-store = "2"
 tauri-plugin-os = "2"
+enigo = "0.5.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 whisper-rs = { version = "0.13.2", features = ["metal"] }
