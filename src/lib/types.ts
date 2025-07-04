@@ -17,6 +17,7 @@ export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
   audio_feedback: z.boolean(),
+  translate_to_english: z.boolean(),
 });
 
 export const BindingResponseSchema = z.object({

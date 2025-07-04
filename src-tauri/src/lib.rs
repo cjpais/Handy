@@ -174,6 +174,7 @@ pub fn run() {
             shortcut::reset_binding,
             shortcut::change_ptt_setting,
             shortcut::change_audio_feedback_setting,
+            shortcut::change_translate_to_english_setting,
             trigger_update_check,
             commands::models::get_available_models,
             commands::models::get_model_info,

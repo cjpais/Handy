@@ -22,6 +22,8 @@ pub struct AppSettings {
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
+    #[serde(default = "default_translate_to_english")]
+    pub translate_to_english: bool,
 }
 
 fn default_model() -> String {
@@ -33,6 +35,11 @@ fn default_model() -> String {
 fn default_always_on_microphone() -> bool {
     // Default to false for better user experience
     // True would be the old behavior (always-on for low latency)
+    false
+}
+
+fn default_translate_to_english() -> bool {
+    // Default to false - users need to opt-in to translation
     false
 }
 
@@ -77,6 +84,7 @@ pub fn get_default_settings() -> AppSettings {
         audio_feedback: false,
         selected_model: "".to_string(),
         always_on_microphone: false,
+        translate_to_english: false,
     }
 }
 

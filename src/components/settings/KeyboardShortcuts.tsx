@@ -16,6 +16,8 @@ export const KeyboardShortcuts: React.FC = () => {
   const [pttEnabled, setPttEnabled] = React.useState<boolean>(false);
   const [audioFeedbackEnabled, setAudioFeedbackEnabled] =
     React.useState<boolean>(false);
+  const [translateToEnglishEnabled, setTranslateToEnglishEnabled] =
+    React.useState<boolean>(false);
   const [keyPressed, setKeyPressed] = useState<string[]>([]);
   const [recordedKeys, setRecordedKeys] = useState<string[]>([]);
   const [editingShortcutId, setEditingShortcutId] = useState<string | null>(
@@ -80,6 +82,7 @@ export const KeyboardShortcuts: React.FC = () => {
         setBindings(settings.bindings);
         setPttEnabled(settings.push_to_talk);
         setAudioFeedbackEnabled(settings.audio_feedback);
+        setTranslateToEnglishEnabled(settings.translate_to_english);
       });
     });
   }, []);
@@ -252,6 +255,30 @@ export const KeyboardShortcuts: React.FC = () => {
               setAudioFeedbackEnabled(newValue);
 
               invoke("change_audio_feedback_setting", {
+                enabled: newValue,
+              });
+            }}
+          />
+          <div className="relative w-11 h-6 bg-mid-gray/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-logo-primary"></div>
+        </label>
+      </div>
+      <div className="flex items-center justify-between p-4 rounded-lg border border-mid-gray/20 ">
+        <div className="max-w-2/3">
+          <h3 className="text-sm font-medium ">Translate to English</h3>
+          <p className="text-sm">Automatically translate speech from any language to English</p>
+        </div>
+        <label className="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            value=""
+            className="sr-only peer"
+            checked={translateToEnglishEnabled}
+            onChange={(e) => {
+              console.log("change translate to english setting", e.target.checked);
+              const newValue = e.target.checked;
+              setTranslateToEnglishEnabled(newValue);
+
+              invoke("change_translate_to_english_setting", {
                 enabled: newValue,
               });
             }}

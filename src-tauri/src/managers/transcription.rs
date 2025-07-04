@@ -173,6 +173,9 @@ impl TranscriptionManager {
             )
         })?;
 
+        // Get current settings to check translation preference
+        let settings = get_settings(&self.app_handle);
+
         // Initialize parameters
         let mut params = FullParams::new(SamplingStrategy::default());
         params.set_language(Some("auto"));
@@ -182,6 +185,11 @@ impl TranscriptionManager {
         params.set_print_timestamps(false);
         params.set_suppress_blank(true);
         params.set_suppress_non_speech_tokens(true);
+        
+        // Enable translation to English if requested
+        if settings.translate_to_english {
+            params.set_translate(true);
+        }
 
         state
             .full(params, &audio)
@@ -199,7 +207,8 @@ impl TranscriptionManager {
         }
 
         let et = std::time::Instant::now();
-        println!("\ntook {}ms", (et - st).as_millis());
+        let translation_note = if settings.translate_to_english { " (translated)" } else { "" };
+        println!("\ntook {}ms{}", (et - st).as_millis(), translation_note);
 
         Ok(result.trim().to_string())
     }
