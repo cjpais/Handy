@@ -4,6 +4,7 @@ import HandyTextLogo from "./components/icons/HandyTextLogo";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
 import Onboarding from "./components/onboarding";
+
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 

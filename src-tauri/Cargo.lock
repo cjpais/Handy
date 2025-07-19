@@ -2014,6 +2014,7 @@ dependencies = [
  "log",
  "once_cell",
  "ort-sys",
+ "rand 0.8.5",
  "rdev",
  "reqwest 0.11.27",
  "rodio",

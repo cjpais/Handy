@@ -122,3 +122,16 @@ pub fn get_selected_output_device(app: AppHandle) -> Result<String, String> {
         .selected_output_device
         .unwrap_or_else(|| "default".to_string()))
 }
+
+#[tauri::command]
+pub fn test_start_recording(app: AppHandle) -> Result<bool, String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    Ok(rm.try_start_recording("test_recording"))
+}
+
+#[tauri::command]
+pub fn test_stop_recording(app: AppHandle) -> Result<(), String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.stop_recording("test_recording");
+    Ok(())
+}

@@ -5,6 +5,7 @@ mod managers;
 mod settings;
 mod shortcut;
 mod utils;
+mod voice_activity_window;
 
 use managers::audio::AudioRecordingManager;
 use managers::model::ModelManager;
@@ -195,7 +196,9 @@ pub fn run() {
             commands::audio::get_selected_microphone,
             commands::audio::get_available_output_devices,
             commands::audio::set_selected_output_device,
-            commands::audio::get_selected_output_device
+            commands::audio::get_selected_output_device,
+            commands::audio::test_start_recording,
+            commands::audio::test_stop_recording
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

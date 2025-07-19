@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Voice Activity</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+                    sans-serif;
+                overflow: hidden;
+                width: 100vw;
+                height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .voice-indicator {
+                background: rgba(251, 251, 251, 0.8);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(250, 162, 202, 0.4);
+                border-radius: 24px;
+                padding: 8px 16px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transition: transform 0.1s ease-out;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                .voice-indicator {
+                    background: rgba(44, 43, 41, 0.8);
+                    border-color: rgba(242, 140, 187, 0.4);
+                }
+            }
+
+            .mic-container {
+                position: relative;
+                width: 20px;
+                height: 20px;
+            }
+
+            .mic-pulse {
+                position: absolute;
+                inset: 0;
+                background: #faa2ca;
+                border-radius: 50%;
+                animation: pulse 1.5s infinite;
+                opacity: 0.4;
+            }
+
+            .mic-icon {
+                position: relative;
+                width: 20px;
+                height: 20px;
+                background: #faa2ca;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1;
+            }
+
+            .mic-svg {
+                width: 10px;
+                height: 10px;
+                fill: white;
+            }
+
+            .voice-bars {
+                display: flex;
+                align-items: end;
+                gap: 2px;
+            }
+
+            .voice-bar {
+                width: 3px;
+                background: #faa2ca;
+                border-radius: 2px;
+                transition:
+                    height 0.075s ease-out,
+                    opacity 0.075s ease-out;
+                min-height: 4px;
+            }
+
+            .status-text {
+                font-size: 12px;
+                font-weight: 500;
+                color: #808080;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                .status-text {
+                    color: #fbfbfb;
+                }
+                .mic-icon {
+                    background: #f28cbb;
+                }
+                .voice-bar {
+                    background: #f28cbb;
+                }
+                .mic-pulse {
+                    background: #f28cbb;
+                }
+            }
+
+            @keyframes pulse {
+                0% {
+                    transform: scale(1);
+                    opacity: 0.4;
+                }
+                50% {
+                    transform: scale(1.2);
+                    opacity: 0.2;
+                }
+                100% {
+                    transform: scale(1.4);
+                    opacity: 0;
+                }
+            }
+
+            .hidden {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="voice-indicator" id="voiceIndicator">
+            <div class="mic-container">
+                <div class="mic-pulse" id="micPulse"></div>
+                <div class="mic-icon">
+                    <svg class="mic-svg" viewBox="0 0 24 24">
+                        <path
+                            d="M12 2c1.1 0 2 .9 2 2v6c0 1.1-.9 2-2 2s-2-.9-2-2V4c0-1.1.9-2 2-2zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H6c0 3.53 2.61 6.43 6 6.92V21h4v-2.08c3.39-.49 6-3.39 6-6.92h-2z"
+                        />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="voice-bars" id="voiceBars">
+                <div class="voice-bar"></div>
+                <div class="voice-bar"></div>
+                <div class="voice-bar"></div>
+                <div class="voice-bar"></div>
+            </div>
+        </div>
+
+        <script>
+            const { listen } = window.__TAURI__.event;
+
+            let voiceLevel = 0;
+            let isRecording = false;
+            const voiceHistory = [];
+
+            // DOM elements
+            const indicator = document.getElementById("voiceIndicator");
+            const micPulse = document.getElementById("micPulse");
+            const voiceBars = document.getElementById("voiceBars").children;
+
+            // Listen for recording state changes
+            listen("recording-state-changed", (event) => {
+                isRecording = event.payload.is_recording;
+
+                if (!isRecording) {
+                    voiceLevel = 0;
+                    voiceHistory.length = 0;
+                    updateVoiceBars();
+                }
+            });
+
+            // Listen for voice activity levels
+            listen("voice-activity-level", (event) => {
+                if (!isRecording) return;
+
+                const level = event.payload.level;
+
+                // Smooth the voice level using a moving average
+                voiceHistory.push(level);
+                if (voiceHistory.length > 3) {
+                    voiceHistory.shift();
+                }
+
+                voiceLevel =
+                    voiceHistory.reduce((a, b) => a + b, 0) /
+                    voiceHistory.length;
+                updateVoiceBars();
+                updatePulse();
+            });
+
+            function updateVoiceBars() {
+                Array.from(voiceBars).forEach((bar, i) => {
+                    const threshold = i * 0.15;
+                    const barIntensity = Math.max(
+                        0,
+                        Math.min(1, (voiceLevel - threshold) * 3),
+                    );
+                    const height = 6 + barIntensity * 16;
+                    const opacity =
+                        voiceLevel > threshold ? 0.7 + barIntensity * 0.3 : 0.2;
+
+                    bar.style.height = `${height}px`;
+                    bar.style.opacity = opacity;
+                });
+            }
+
+            function updatePulse() {
+                const intensity = 0.95 + voiceLevel * 0.05;
+                const duration = 1.5 - voiceLevel * 0.5;
+
+                indicator.style.transform = `scale(${intensity})`;
+                micPulse.style.animationDuration = `${duration}s`;
+            }
+
+            // Initialize
+            updateVoiceBars();
+        </script>
+    </body>
+</html>

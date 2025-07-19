@@ -1,11 +1,26 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
 use crate::settings::get_settings;
+use crate::voice_activity_window::VoiceActivityWindowManager;
 use log::{debug, info};
+use serde::Serialize;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::{App, Manager};
+use tauri::{App, Emitter, Manager};
 
 const WHISPER_SAMPLE_RATE: usize = 16000;
+
+/* ──────────────────────────────────────────────────────────────── */
+
+#[derive(Serialize, Clone)]
+struct RecordingStateEvent {
+    is_recording: bool,
+    binding_id: String,
+}
+
+#[derive(Serialize, Clone)]
+struct VoiceActivityEvent {
+    level: f32, // 0.0 to 1.0
+}
 
 /* ──────────────────────────────────────────────────────────────── */
 
@@ -44,6 +59,7 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
+    voice_window_manager: VoiceActivityWindowManager,
 }
 
 impl AudioRecordingManager {
@@ -65,6 +81,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
+            voice_window_manager: VoiceActivityWindowManager::new(app.handle().clone()),
         };
 
         // Always-on?  Open immediately.
@@ -194,6 +211,24 @@ impl AudioRecordingManager {
                     *state = RecordingState::Recording {
                         binding_id: binding_id.to_string(),
                     };
+
+                    // Show voice activity window
+                    if let Err(e) = self.voice_window_manager.show_window() {
+                        eprintln!("Failed to show voice activity window: {}", e);
+                    }
+
+                    // Emit recording state change
+                    let _ = self.app_handle.emit(
+                        "recording-state-changed",
+                        RecordingStateEvent {
+                            is_recording: true,
+                            binding_id: binding_id.to_string(),
+                        },
+                    );
+
+                    // Start voice activity monitoring
+                    self.start_voice_activity_monitoring();
+
                     debug!("Recording started for binding {binding_id}");
                     return true;
                 }
@@ -239,6 +274,20 @@ impl AudioRecordingManager {
 
                 *self.is_recording.lock().unwrap() = false;
 
+                // Hide voice activity window
+                if let Err(e) = self.voice_window_manager.hide_window() {
+                    eprintln!("Failed to hide voice activity window: {}", e);
+                }
+
+                // Emit recording state change
+                let _ = self.app_handle.emit(
+                    "recording-state-changed",
+                    RecordingStateEvent {
+                        is_recording: false,
+                        binding_id: binding_id.to_string(),
+                    },
+                );
+
                 // In on-demand mode turn the mic off again
                 if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
                     self.stop_microphone_stream();
@@ -257,5 +306,38 @@ impl AudioRecordingManager {
             }
             _ => None,
         }
+    }
+
+    /* ---------- voice activity monitoring ---------------------------------- */
+
+    fn start_voice_activity_monitoring(&self) {
+        let app_handle = self.app_handle.clone();
+        let is_recording = self.is_recording.clone();
+
+        std::thread::spawn(move || {
+            let mut time = 0.0f32;
+            while *is_recording.lock().unwrap() {
+                // Create a more realistic voice activity pattern
+                let base_level = (time * 2.0).sin().abs() * 0.4; // Sine wave base
+                let noise = rand::random::<f32>() * 0.3; // Random noise
+                let spikes = if rand::random::<f32>() > 0.85 {
+                    0.4
+                } else {
+                    0.0
+                }; // Occasional spikes
+
+                let activity_level = (base_level + noise + spikes).min(1.0);
+
+                let _ = app_handle.emit(
+                    "voice-activity-level",
+                    VoiceActivityEvent {
+                        level: activity_level,
+                    },
+                );
+
+                time += 0.05; // Increment time for wave pattern
+                std::thread::sleep(std::time::Duration::from_millis(50)); // 20 FPS
+            }
+        });
     }
 }
