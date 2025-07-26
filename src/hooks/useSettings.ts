@@ -45,6 +45,19 @@ export const useSettings = (): UseSettingsReturn => {
     outputDevices: [],
   });
 
+  // Save settings to the store
+  const saveSettings = useCallback(async (settingsToSave: Settings) => {
+    try {
+      const { load } = await import("@tauri-apps/plugin-store");
+      const store = await load("settings_store.json", { autoSave: false });
+      await store.set("settings", settingsToSave);
+      await store.save();
+      console.log("Settings saved successfully.");
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+    }
+  }, []);
+
   // Load settings from store
   const loadSettings = useCallback(async () => {
     try {
@@ -52,34 +65,9 @@ export const useSettings = (): UseSettingsReturn => {
       const store = await load("settings_store.json", { autoSave: false });
       const settings = (await store.get("settings")) as Settings;
 
-      // Load additional settings that come from invoke calls
-      const [microphoneMode, selectedMicrophone, selectedOutputDevice] =
-        await Promise.allSettled([
-          invoke("get_microphone_mode"),
-          invoke("get_selected_microphone"),
-          invoke("get_selected_output_device"),
-        ]);
-
-      // Merge all settings
-      const mergedSettings: Settings = {
-        ...settings,
-        always_on_microphone:
-          microphoneMode.status === "fulfilled"
-            ? (microphoneMode.value as boolean)
-            : false,
-        selected_microphone:
-          selectedMicrophone.status === "fulfilled"
-            ? (selectedMicrophone.value as string)
-            : "Default",
-        selected_output_device:
-          selectedOutputDevice.status === "fulfilled"
-            ? (selectedOutputDevice.value as string)
-            : "Default",
-      };
-
       setState((prev) => ({
         ...prev,
-        settings: mergedSettings,
+        settings,
         isLoading: false,
       }));
     } catch (error) {
@@ -156,13 +144,20 @@ export const useSettings = (): UseSettingsReturn => {
 
       // Store original value for rollback
       const originalValue = state.settings?.[key];
+      const originalSettings = state.settings;
 
       try {
         // Optimistic update
-        setState((prev) => ({
-          ...prev,
-          settings: prev.settings ? { ...prev.settings, [key]: value } : null,
-        }));
+        const updatedSettings = state.settings
+          ? { ...state.settings, [key]: value }
+          : null;
+
+        if (updatedSettings) {
+          setState((prev) => ({
+            ...prev,
+            settings: updatedSettings,
+          }));
+        }
 
         // Invoke the appropriate backend method based on the setting
         switch (key) {
@@ -205,16 +200,22 @@ export const useSettings = (): UseSettingsReturn => {
         }
 
         console.log(`Setting ${String(key)} updated to:`, value);
+
+        // Save the updated settings to the store
+        if (state.settings) {
+          const newSettings = { ...state.settings, [key]: value };
+          await saveSettings(newSettings);
+        }
       } catch (error) {
         console.error(`Failed to update setting ${String(key)}:`, error);
 
         // Rollback on error
-        setState((prev) => ({
-          ...prev,
-          settings: prev.settings
-            ? { ...prev.settings, [key]: originalValue }
-            : null,
-        }));
+        if (originalSettings) {
+          setState((prev) => ({
+            ...prev,
+            settings: originalSettings,
+          }));
+        }
       } finally {
         // Clear updating state
         setState((prev) => ({
@@ -223,7 +224,7 @@ export const useSettings = (): UseSettingsReturn => {
         }));
       }
     },
-    [state.settings],
+    [state.settings, saveSettings],
   );
 
   // Reset a setting to its default value
@@ -268,46 +269,45 @@ export const useSettings = (): UseSettingsReturn => {
 
       // Store original binding for rollback
       const originalBinding = state.settings?.bindings?.[id]?.current_binding;
+      const originalSettings = state.settings;
 
       try {
         // Optimistic update
-        setState((prev) => ({
-          ...prev,
-          settings: prev.settings
-            ? {
-                ...prev.settings,
-                bindings: {
-                  ...prev.settings.bindings,
-                  [id]: {
-                    ...prev.settings.bindings[id],
-                    current_binding: binding,
-                  },
+        const updatedSettings = state.settings
+          ? {
+              ...state.settings,
+              bindings: {
+                ...state.settings.bindings,
+                [id]: {
+                  ...state.settings.bindings[id],
+                  current_binding: binding,
                 },
-              }
-            : null,
-        }));
+              },
+            }
+          : null;
+
+        if (updatedSettings) {
+          setState((prev) => ({
+            ...prev,
+            settings: updatedSettings,
+          }));
+        }
 
         await invoke("change_binding", { id, binding });
         console.log(`Binding ${id} updated to: ${binding}`);
+
+        // Save the updated settings to the store
+        if (updatedSettings) {
+          await saveSettings(updatedSettings);
+        }
       } catch (error) {
         console.error(`Failed to update binding ${id}:`, error);
 
         // Rollback on error
-        if (originalBinding) {
+        if (originalSettings) {
           setState((prev) => ({
             ...prev,
-            settings: prev.settings
-              ? {
-                  ...prev.settings,
-                  bindings: {
-                    ...prev.settings.bindings,
-                    [id]: {
-                      ...prev.settings.bindings[id],
-                      current_binding: originalBinding,
-                    },
-                  },
-                }
-              : null,
+            settings: originalSettings,
           }));
         }
       } finally {
@@ -318,7 +318,7 @@ export const useSettings = (): UseSettingsReturn => {
         }));
       }
     },
-    [state.settings],
+    [state.settings, saveSettings],
   );
 
   // Reset a specific binding
