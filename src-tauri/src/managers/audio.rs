@@ -258,4 +258,25 @@ impl AudioRecordingManager {
             _ => None,
         }
     }
+
+    /// Cancel any ongoing recording without returning audio samples
+    pub fn cancel_recording(&self) {
+        let mut state = self.state.lock().unwrap();
+
+        if let RecordingState::Recording { .. } = *state {
+            *state = RecordingState::Idle;
+            drop(state);
+
+            if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                let _ = rec.stop(); // Discard the result
+            }
+
+            *self.is_recording.lock().unwrap() = false;
+
+            // In on-demand mode turn the mic off again
+            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
+                self.stop_microphone_stream();
+            }
+        }
+    }
 }

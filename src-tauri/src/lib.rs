@@ -126,6 +126,25 @@ pub fn run() {
                         show_main_window(app);
                         let _ = app.emit("check-for-updates", ());
                     }
+                    "cancel_listening" => {
+                        use crate::utils::{change_tray_icon, TrayIconState};
+                        use crate::managers::audio::AudioRecordingManager;
+                        use std::sync::Arc;
+                        
+                        // Cancel the recording without transcribing
+                        let rm = app.state::<Arc<AudioRecordingManager>>();
+                        rm.cancel_recording();
+                        
+                        // Return to idle state
+                        change_tray_icon(app, TrayIconState::Idle);
+                    }
+                    "cancel_transcribing" => {
+                        use crate::utils::{change_tray_icon, TrayIconState};
+                        
+                        // For now, just return to idle state
+                        // TODO: In a future version, we could add actual request cancellation
+                        change_tray_icon(app, TrayIconState::Idle);
+                    }
                     "quit" => {
                         app.exit(0);
                     }

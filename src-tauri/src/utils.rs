@@ -14,6 +14,7 @@ use tauri::image::Image;
 use tauri::tray::TrayIcon;
 use tauri::AppHandle;
 use tauri::Manager;
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 fn send_paste() -> Result<(), String> {
@@ -70,6 +71,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum TrayIconState {
     Idle,
     Recording,
@@ -94,6 +96,72 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
         .expect("failed to set icon"),
     ));
     let _ = tray.set_icon_as_template(true);
+
+    // Update menu based on state
+    update_tray_menu(app, &icon);
+}
+
+pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState) {
+    let version = env!("CARGO_PKG_VERSION");
+    let version_label = format!("Handy v{}", version);
+
+    // Platform-specific accelerators
+    #[cfg(target_os = "macos")]
+    let settings_accelerator = Some("Cmd+,");
+    #[cfg(not(target_os = "macos"))]
+    let settings_accelerator = Some("Ctrl+,");
+
+    #[cfg(target_os = "macos")]
+    let quit_accelerator = Some("Cmd+Q");
+    #[cfg(not(target_os = "macos"))]
+    let quit_accelerator = Some("Ctrl+Q");
+
+    let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>).expect("failed to create version item");
+    let settings_i = MenuItem::with_id(app, "settings", "Settings...", true, settings_accelerator).expect("failed to create settings item");
+    let check_updates_i = MenuItem::with_id(app, "check_updates", "Check for Updates...", true, None::<&str>).expect("failed to create check updates item");
+    let quit_i = MenuItem::with_id(app, "quit", "Quit", true, quit_accelerator).expect("failed to create quit item");
+
+    let menu = match state {
+        TrayIconState::Recording => {
+            let cancel_i = MenuItem::with_id(app, "cancel_listening", "Cancel Listening", true, None::<&str>).expect("failed to create cancel listening item");
+            Menu::with_items(app, &[
+                &version_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &cancel_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &settings_i,
+                &check_updates_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &quit_i,
+            ]).expect("failed to create menu")
+        }
+        TrayIconState::Transcribing => {
+            let cancel_i = MenuItem::with_id(app, "cancel_transcribing", "Cancel Transcribing", true, None::<&str>).expect("failed to create cancel transcribing item");
+            Menu::with_items(app, &[
+                &version_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &cancel_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &settings_i,
+                &check_updates_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &quit_i,
+            ]).expect("failed to create menu")
+        }
+        TrayIconState::Idle => {
+            Menu::with_items(app, &[
+                &version_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &settings_i,
+                &check_updates_i,
+                &PredefinedMenuItem::separator(app).expect("failed to create separator"),
+                &quit_i,
+            ]).expect("failed to create menu")
+        }
+    };
+
+    let tray = app.state::<TrayIcon>();
+    let _ = tray.set_menu(Some(menu));
 }
 
 /// Plays an audio resource from the resources directory.
