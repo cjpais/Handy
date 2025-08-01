@@ -12,7 +12,7 @@ use managers::transcription::TranscriptionManager;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tauri::image::Image;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+
 use tauri::tray::TrayIconBuilder;
 use tauri::Emitter;
 use tauri::{AppHandle, Manager};
@@ -74,48 +74,11 @@ pub fn run() {
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
-            let version = env!("CARGO_PKG_VERSION");
-            let version_label = format!("Handy v{}", version);
-            let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)?;
-
-            // Platform-specific accelerators
-            #[cfg(target_os = "macos")]
-            let settings_accelerator = Some("Cmd+,");
-            #[cfg(not(target_os = "macos"))]
-            let settings_accelerator = Some("Ctrl+,");
-
-            #[cfg(target_os = "macos")]
-            let quit_accelerator = Some("Cmd+Q");
-            #[cfg(not(target_os = "macos"))]
-            let quit_accelerator = Some("Ctrl+Q");
-
-            let settings_i =
-                MenuItem::with_id(app, "settings", "Settings...", true, settings_accelerator)?;
-            let check_updates_i = MenuItem::with_id(
-                app,
-                "check_updates",
-                "Check for Updates...",
-                true,
-                None::<&str>,
-            )?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, quit_accelerator)?;
-            let menu = Menu::with_items(
-                app,
-                &[
-                    &version_i,
-                    &PredefinedMenuItem::separator(app)?,
-                    &settings_i,
-                    &check_updates_i,
-                    &PredefinedMenuItem::separator(app)?,
-                    &quit_i,
-                ],
-            )?;
             let tray = TrayIconBuilder::new()
                 .icon(Image::from_path(app.path().resolve(
                     "resources/tray_idle.png",
                     tauri::path::BaseDirectory::Resource,
                 )?)?)
-                .menu(&menu)
                 .show_menu_on_left_click(true)
                 .icon_as_template(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -126,24 +89,11 @@ pub fn run() {
                         show_main_window(app);
                         let _ = app.emit("check-for-updates", ());
                     }
-                    "cancel_listening" => {
-                        use crate::utils::{change_tray_icon, TrayIconState};
-                        use crate::managers::audio::AudioRecordingManager;
-                        use std::sync::Arc;
-                        
-                        // Cancel the recording without transcribing
-                        let rm = app.state::<Arc<AudioRecordingManager>>();
-                        rm.cancel_recording();
-                        
-                        // Return to idle state
-                        change_tray_icon(app, TrayIconState::Idle);
-                    }
-                    "cancel_transcribing" => {
-                        use crate::utils::{change_tray_icon, TrayIconState};
-                        
-                        // For now, just return to idle state
-                        // TODO: In a future version, we could add actual request cancellation
-                        change_tray_icon(app, TrayIconState::Idle);
+                    "cancel" => {
+                        use crate::utils::cancel_current_operation;
+
+                        // Use centralized cancellation that handles all operations
+                        cancel_current_operation(app);
                     }
                     "quit" => {
                         app.exit(0);
@@ -152,6 +102,9 @@ pub fn run() {
                 })
                 .build(app)?;
             app.manage(tray);
+
+            // Initialize tray menu with idle state
+            utils::update_tray_menu(&app.handle(), &utils::TrayIconState::Idle);
 
             // Get the autostart manager
             let autostart_manager = app.autolaunch();
@@ -201,6 +154,7 @@ pub fn run() {
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
             trigger_update_check,
+            commands::cancel_operation,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
