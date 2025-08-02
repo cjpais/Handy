@@ -6,7 +6,7 @@
     align-items: center;
     padding-left: 6px;
     padding-right: 6px;
-    background: rgba(0, 0, 0, 0.6);
+    background: #DA5893DD;
     border-radius: 24px;
     opacity: 0;
     transition: opacity 300ms ease-out;
@@ -40,9 +40,9 @@
 
 .bar {
     width: 6px;
-    background: linear-gradient(to top, #faa2ca, #f28cbb);
+    background: #FFE5EE;
     max-height: 28px;
-    border-radius: 4px;
+    border-radius: 2px;
     transition: height 80ms linear;
     min-height: 4px;
 }
@@ -52,9 +52,8 @@
 }
 
 .transcribing-text {
-    color: #faa2ca;
+    color: white;
     font-size: 14px;
-    font-weight: 600;
     font-family:
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     animation: transcribing-pulse 1.5s infinite ease-in-out;
@@ -74,7 +73,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #e53e3e;
+    background: white;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -86,7 +85,7 @@
 }
 
 .cancel-button:hover {
-    background: #c53030;
+    background: #FFDCEC;
     transform: scale(1.05);
 }
 

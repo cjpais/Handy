@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
-import "./RecordingOverlay.css";
-import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import React, { useEffect, useRef, useState } from "react";
+import "./RecordingOverlay.css";
 
 type OverlayState = "recording" | "transcribing";
 
@@ -105,7 +105,7 @@ const RecordingOverlay: React.FC = () => {
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M9 3L3 9M3 3L9 9"
-                stroke="white"
+                stroke="#843358"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"

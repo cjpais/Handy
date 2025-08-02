@@ -325,7 +325,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     if let Ok(monitors) = app_handle.primary_monitor() {
         if let Some(monitor) = monitors {
             const OVERLAY_WIDTH: f64 = 172.0;
-            const OVERLAY_HEIGHT: f64 = 00.0;
+            const OVERLAY_HEIGHT: f64 = 40.0;
 
             // Platform-specific bottom offset
             #[cfg(target_os = "windows")]
@@ -342,7 +342,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 
             // Position at bottom center of work area
             let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
-            let y = work_area_y + work_area_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET;
+            let y = work_area_y + work_area_height - OVERLAY_BOTTOM_OFFSET;
 
             match WebviewWindowBuilder::new(
                 app_handle,
@@ -352,7 +352,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
             .title("Recording")
             .position(x, y)
             .resizable(false)
-            .inner_size(172.0, 40.0)
+            .inner_size(OVERLAY_WIDTH, OVERLAY_HEIGHT)
             .shadow(false)
             .maximizable(false)
             .minimizable(false)
