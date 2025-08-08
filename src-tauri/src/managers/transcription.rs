@@ -178,8 +178,32 @@ impl TranscriptionManager {
 
         // Initialize parameters
         let mut params = FullParams::new(SamplingStrategy::default());
-        let language = Some(settings.selected_language.as_str());
+        
+        // Handle Chinese language variants
+        let (language, initial_prompt) = match settings.selected_language.as_str() {
+            "auto-zh-TW" => {
+                // Auto-detect but with Traditional Chinese preference
+                // This helps ensure Chinese is output as Traditional, not Simplified
+                (None, Some("English. 繁體中文。"))
+            },
+            "zh-TW" => {
+                // Use zh as language code but with Traditional Chinese prompt
+                (Some("zh"), Some("繁體中文。"))
+            },
+            "zh-CN" => {
+                // Use zh as language code but with Simplified Chinese prompt
+                (Some("zh"), Some("简体中文。"))
+            },
+            lang => (Some(lang), None)
+        };
+        
         params.set_language(language);
+        
+        // Set initial prompt if specified (influences Chinese variant output)
+        if let Some(prompt) = initial_prompt {
+            params.set_initial_prompt(prompt);
+        }
+        
         params.set_print_special(false);
         params.set_print_progress(false);
         params.set_print_realtime(false);

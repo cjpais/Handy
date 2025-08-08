@@ -95,6 +95,17 @@ The app now supports dynamic model downloading and switching:
 
 Users can download and switch between models directly from the app's settings interface. No models are bundled with the app, reducing the initial download size.
 
+**Language Support:**
+
+Handy supports multilingual transcription with special handling for Chinese users:
+- **Auto**: Automatically detects the spoken language
+- **Auto (Prefer Trad. Chinese)**: Auto-detects English/Chinese, outputs Chinese as Traditional characters
+- **Chinese Traditional**: Forces Traditional Chinese output (繁體中文)
+- **Chinese Simplified**: Forces Simplified Chinese output (简体中文)
+- **50+ other languages**: Including Spanish, French, Japanese, Korean, and more
+
+The "Auto (Prefer Trad. Chinese)" option is ideal for bilingual English/Chinese speakers who want automatic language detection while ensuring Chinese text always appears in Traditional characters.
+
 ## Architecture
 
 Handy is built as a Tauri application combining:
