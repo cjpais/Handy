@@ -8,6 +8,7 @@ import { ShowOverlay } from "./ShowOverlay";
 import { HandyShortcut } from "./HandyShortcut";
 import { TranslateToEnglish } from "./TranslateToEnglish";
 import { LanguageSelector } from "./LanguageSelector";
+import { CorrectWords } from "./CorrectWords";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { DebugSettings } from "./debug";
 import { useSettings } from "../../hooks/useSettings";
@@ -54,6 +55,7 @@ export const Settings: React.FC = () => {
         <OutputDeviceSelector descriptionMode="tooltip" grouped={true} />
         <ShowOverlay descriptionMode="tooltip" grouped={true} />
         <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
+        <CorrectWords descriptionMode="tooltip" grouped={true} />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 

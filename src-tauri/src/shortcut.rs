@@ -163,6 +163,14 @@ pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), St
     Ok(())
 }
 
+#[tauri::command]
+pub fn update_correct_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.correct_words = words;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").

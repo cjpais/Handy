@@ -6,7 +6,7 @@ import {
   normalizeKey,
   type OSType,
 } from "../../lib/utils/keyboard";
-import ResetIcon from "../icons/ResetIcon";
+import { ResetButton } from "../ui/ResetButton";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { invoke } from "@tauri-apps/api/core";
@@ -69,10 +69,11 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     // Only add event listeners when we're in editing mode
     if (editingShortcutId === null) return;
 
-    console.log("keyPressed", keyPressed);
+    let cleanup = false;
 
     // Keyboard event listeners
     const handleKeyDown = async (e: KeyboardEvent) => {
+      if (cleanup) return;
       if (e.repeat) return; // ignore auto-repeat
       if (e.key === "Escape") {
         // Cancel recording and restore original binding
@@ -103,8 +104,6 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
       const rawKey = getKeyName(e, osType);
       const key = normalizeKey(rawKey);
 
-      console.log("You pressed", rawKey, "normalized to", key);
-
       if (!keyPressed.includes(key)) {
         setKeyPressed((prev) => [...prev, key]);
         // Also add to recorded keys if not already there
@@ -115,6 +114,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     };
 
     const handleKeyUp = async (e: KeyboardEvent) => {
+      if (cleanup) return;
       e.preventDefault();
 
       // Get the key with OS-specific naming and normalize it
@@ -166,6 +166,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
     // Add click outside handler
     const handleClickOutside = async (e: MouseEvent) => {
+      if (cleanup) return;
       const activeElement = shortcutRefs.current.get(editingShortcutId);
       if (activeElement && !activeElement.contains(e.target as Node)) {
         // Cancel shortcut recording and restore original binding
@@ -196,6 +197,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     window.addEventListener("click", handleClickOutside);
 
     return () => {
+      cleanup = true;
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("click", handleClickOutside);
@@ -299,13 +301,10 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
                 {formatKeyCombination(primaryBinding.current_binding, osType)}
               </div>
             )}
-            <button
-              className="px-2 py-1 hover:bg-logo-primary/30 active:bg-logo-primary/50 active:scale-95 rounded fill-text hover:cursor-pointer hover:border-logo-primary border border-transparent transition-all duration-150"
+            <ResetButton
               onClick={() => resetBinding(primaryId)}
               disabled={isUpdating(`binding_${primaryId}`)}
-            >
-              <ResetIcon className="" />
-            </button>
+            />
           </div>
         );
       })()}

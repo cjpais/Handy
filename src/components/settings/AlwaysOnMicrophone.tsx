@@ -7,7 +7,7 @@ interface AlwaysOnMicrophoneProps {
   grouped?: boolean;
 }
 
-export const AlwaysOnMicrophone: React.FC<AlwaysOnMicrophoneProps> = ({
+export const AlwaysOnMicrophone: React.FC<AlwaysOnMicrophoneProps> = React.memo(({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
@@ -26,4 +26,4 @@ export const AlwaysOnMicrophone: React.FC<AlwaysOnMicrophoneProps> = ({
       grouped={grouped}
     />
   );
-};
+});

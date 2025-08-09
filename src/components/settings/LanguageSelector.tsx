@@ -1,54 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { SettingContainer } from "../ui/SettingContainer";
-import ResetIcon from "../icons/ResetIcon";
+import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
+import { LANGUAGES } from "../../lib/constants/languages";
 
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
-
-const LANGUAGES = [
-  { code: "auto", name: "Auto" },
-  { code: "en", name: "English" },
-  { code: "zh", name: "Chinese" },
-  { code: "hi", name: "Hindi" },
-  { code: "es", name: "Spanish" },
-  { code: "fr", name: "French" },
-  { code: "ar", name: "Arabic" },
-  { code: "pt", name: "Portuguese" },
-  { code: "ru", name: "Russian" },
-  { code: "ja", name: "Japanese" },
-  { code: "de", name: "German" },
-  { code: "ko", name: "Korean" },
-  { code: "it", name: "Italian" },
-  { code: "tr", name: "Turkish" },
-  { code: "vi", name: "Vietnamese" },
-  { code: "pl", name: "Polish" },
-  { code: "nl", name: "Dutch" },
-  { code: "uk", name: "Ukrainian" },
-  { code: "fa", name: "Persian" },
-  { code: "th", name: "Thai" },
-  { code: "ro", name: "Romanian" },
-  { code: "el", name: "Greek" },
-  { code: "cs", name: "Czech" },
-  { code: "sv", name: "Swedish" },
-  { code: "hu", name: "Hungarian" },
-  { code: "he", name: "Hebrew" },
-  { code: "da", name: "Danish" },
-  { code: "fi", name: "Finnish" },
-  { code: "no", name: "Norwegian" },
-  { code: "sk", name: "Slovak" },
-  { code: "bg", name: "Bulgarian" },
-  { code: "hr", name: "Croatian" },
-  { code: "lt", name: "Lithuanian" },
-  { code: "sl", name: "Slovenian" },
-  { code: "lv", name: "Latvian" },
-  { code: "et", name: "Estonian" },
-  { code: "sr", name: "Serbian" },
-  { code: "is", name: "Icelandic" },
-  { code: "id", name: "Indonesian" },
-];
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
@@ -85,12 +44,15 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   }, [isOpen]);
 
-  const filteredLanguages = LANGUAGES.filter((language) =>
-    language.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredLanguages = useMemo(
+    () => LANGUAGES.filter((language) =>
+      language.label.toLowerCase().includes(searchQuery.toLowerCase()),
+    ),
+    [searchQuery]
   );
 
   const selectedLanguageName =
-    LANGUAGES.find((lang) => lang.code === selectedLanguage)?.name || "Auto";
+    LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label || "Auto";
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);
@@ -114,7 +76,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && filteredLanguages.length > 0) {
       // Select first filtered language on Enter
-      handleLanguageSelect(filteredLanguages[0].code);
+      handleLanguageSelect(filteredLanguages[0].value);
     } else if (event.key === "Escape") {
       setIsOpen(false);
       setSearchQuery("");
@@ -181,17 +143,17 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 ) : (
                   filteredLanguages.map((language) => (
                     <button
-                      key={language.code}
+                      key={language.value}
                       type="button"
                       className={`w-full px-2 py-1 text-sm text-left hover:bg-logo-primary/10 transition-colors duration-150 ${
-                        selectedLanguage === language.code
+                        selectedLanguage === language.value
                           ? "bg-logo-primary/20 text-logo-primary font-semibold"
                           : ""
                       }`}
-                      onClick={() => handleLanguageSelect(language.code)}
+                      onClick={() => handleLanguageSelect(language.value)}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="truncate">{language.name}</span>
+                        <span className="truncate">{language.label}</span>
                       </div>
                     </button>
                   ))
@@ -200,13 +162,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             </div>
           )}
         </div>
-        <button
-          className="px-2 py-1 hover:bg-logo-primary/30 active:bg-logo-primary/50 active:scale-95 rounded fill-text hover:cursor-pointer hover:border-logo-primary border border-transparent transition-all duration-150"
+        <ResetButton
           onClick={handleReset}
           disabled={isUpdating("selected_language")}
-        >
-          <ResetIcon className="" />
-        </button>
+        />
       </div>
       {isUpdating("selected_language") && (
         <div className="absolute inset-0 bg-mid-gray/10 rounded flex items-center justify-center">

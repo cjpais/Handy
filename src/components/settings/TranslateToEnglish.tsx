@@ -7,7 +7,7 @@ interface TranslateToEnglishProps {
   grouped?: boolean;
 }
 
-export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = ({
+export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
@@ -26,4 +26,4 @@ export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = ({
       grouped={grouped}
     />
   );
-};
+});

@@ -7,7 +7,7 @@ interface AudioFeedbackProps {
   grouped?: boolean;
 }
 
-export const AudioFeedback: React.FC<AudioFeedbackProps> = ({
+export const AudioFeedback: React.FC<AudioFeedbackProps> = React.memo(({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
@@ -26,4 +26,4 @@ export const AudioFeedback: React.FC<AudioFeedbackProps> = ({
       grouped={grouped}
     />
   );
-};
+});

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export interface DropdownOption {
   value: string;
@@ -95,7 +95,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 type="button"
                 className={`w-full px-2 py-1 text-sm text-left hover:bg-logo-primary/10 transition-colors duration-150 ${
                   selectedValue === option.value
-                    ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                    ? "bg-logo-primary/20 font-semibold"
                     : ""
                 }`}
                 onClick={() => handleSelect(option.value)}

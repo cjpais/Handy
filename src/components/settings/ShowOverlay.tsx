@@ -15,7 +15,7 @@ const overlayOptions = [
   { value: "top", label: "Top" },
 ];
 
-export const ShowOverlay: React.FC<ShowOverlayProps> = ({
+export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
@@ -41,4 +41,4 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = ({
       />
     </SettingContainer>
   );
-};
+});

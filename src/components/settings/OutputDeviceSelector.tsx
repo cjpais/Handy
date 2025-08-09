@@ -1,7 +1,7 @@
 import React from "react";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
-import ResetIcon from "../icons/ResetIcon";
+import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
 
 interface OutputDeviceSelectorProps {
@@ -9,7 +9,7 @@ interface OutputDeviceSelectorProps {
   grouped?: boolean;
 }
 
-export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> = ({
+export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> = React.memo(({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
@@ -23,19 +23,14 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> = ({
     refreshOutputDevices,
   } = useSettings();
 
-  const selectedOutputDevice =
-    getSetting("selected_output_device") || "Default";
+  const selectedOutputDevice = getSetting("selected_output_device") === "default" ? "Default" : getSetting("selected_output_device") || "Default";
 
   const handleOutputDeviceSelect = async (deviceName: string) => {
     await updateSetting("selected_output_device", deviceName);
-    console.log(
-      `Output device changed to: ${outputDevices.find((d) => d.name === deviceName)?.name}`,
-    );
   };
 
   const handleReset = async () => {
     await resetSetting("selected_output_device");
-    console.log("Output device reset to default");
   };
 
   const outputDeviceOptions = outputDevices.map(device => ({
@@ -55,23 +50,15 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> = ({
           options={outputDeviceOptions}
           selectedValue={selectedOutputDevice}
           onSelect={handleOutputDeviceSelect}
-          placeholder={isLoading ? "Loading..." : "Select output device..."}
-          disabled={isUpdating("selected_output_device") || isLoading}
+          placeholder={isLoading || outputDevices.length === 0 ? "Loading..." : "Select output device..."}
+          disabled={isUpdating("selected_output_device") || isLoading || outputDevices.length === 0}
           onRefresh={refreshOutputDevices}
         />
-        <button
-          className="px-2 py-1 hover:bg-logo-primary/30 active:bg-logo-primary/50 active:scale-95 rounded fill-text hover:cursor-pointer hover:border-logo-primary border border-transparent transition-all duration-150"
+        <ResetButton
           onClick={handleReset}
           disabled={isUpdating("selected_output_device") || isLoading}
-        >
-          <ResetIcon className="" />
-        </button>
+        />
       </div>
-      {isUpdating("selected_output_device") && (
-        <div className="absolute inset-0 bg-mid-gray/10 rounded flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-logo-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      )}
     </SettingContainer>
   );
-};
+});

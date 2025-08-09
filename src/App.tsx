@@ -1,12 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
+import { Toaster } from "sonner";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
 import HandyTextLogo from "./components/icons/HandyTextLogo";
 import Onboarding from "./components/onboarding";
 import { Settings } from "./components/settings/Settings";
-import { Toaster } from "sonner";
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
@@ -34,8 +34,8 @@ function App() {
   if (showOnboarding) {
     return (
       <div className="min-h-screen flex flex-col w-full">
-        <div className="flex flex-col items-center pt-6 gap-8 px-4 flex-1">
-          <HandyTextLogo width={240} />
+        <div className="flex flex-col items-center p-4 gap-4 flex-1">
+          <HandyTextLogo width={200} />
           <Onboarding onModelSelected={handleModelSelected} />
         </div>
       </div>
@@ -45,8 +45,8 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col w-full">
       <Toaster />
-      <div className="flex flex-col items-center pt-6 gap-8 px-4 flex-1">
-        <HandyTextLogo width={240} />
+      <div className="flex flex-col items-center p-4 gap-4 flex-1">
+        <HandyTextLogo width={200} />
         <AccessibilityPermissions />
         <Settings />
       </div>

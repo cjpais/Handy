@@ -7,7 +7,7 @@ interface PushToTalkProps {
   grouped?: boolean;
 }
 
-export const PushToTalk: React.FC<PushToTalkProps> = ({
+export const PushToTalk: React.FC<PushToTalkProps> = React.memo(({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
@@ -26,4 +26,4 @@ export const PushToTalk: React.FC<PushToTalkProps> = ({
       grouped={grouped}
     />
   );
-};
+});
