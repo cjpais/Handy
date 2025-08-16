@@ -22,6 +22,17 @@ export const AudioDeviceSchema = z.object({
 export const OverlayPositionSchema = z.enum(["none", "top", "bottom"]);
 export type OverlayPosition = z.infer<typeof OverlayPositionSchema>;
 
+export const ModelUnloadTimeoutSchema = z.enum([
+  "never",
+  "min2",
+  "min5",
+  "min10",
+  "min15",
+  "hour1",
+  "sec5",
+]);
+export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
@@ -35,6 +46,7 @@ export const SettingsSchema = z.object({
   overlay_position: OverlayPositionSchema,
   debug_mode: z.boolean(),
   custom_words: z.array(z.string()).optional().default([]),
+  model_unload_timeout: ModelUnloadTimeoutSchema.optional().default("never"),
   word_correction_threshold: z.number().optional().default(0.15),
 });
 

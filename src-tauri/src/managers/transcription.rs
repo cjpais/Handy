@@ -3,7 +3,10 @@ use crate::settings::get_settings;
 use anyhow::Result;
 use natural::phonetics::soundex;
 use serde::Serialize;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::{Duration, SystemTime};
 use strsim::levenshtein;
 use tauri::{App, AppHandle, Emitter, Manager};
 use whisper_rs::install_whisper_log_trampoline;
@@ -19,12 +22,15 @@ pub struct ModelStateEvent {
     pub error: Option<String>,
 }
 
+#[derive(Clone)]
 pub struct TranscriptionManager {
-    state: Mutex<Option<WhisperState>>,
-    context: Mutex<Option<WhisperContext>>,
+    state: Arc<Mutex<Option<WhisperState>>>,
+    context: Arc<Mutex<Option<WhisperContext>>>,
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
-    current_model_id: Mutex<Option<String>>,
+    current_model_id: Arc<Mutex<Option<String>>>,
+    last_activity: Arc<AtomicU64>,
+    _watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
 }
 
 fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> String {
@@ -140,18 +146,100 @@ impl TranscriptionManager {
         let app_handle = app.app_handle().clone();
 
         let manager = Self {
-            state: Mutex::new(None),
-            context: Mutex::new(None),
+            state: Arc::new(Mutex::new(None)),
+            context: Arc::new(Mutex::new(None)),
             model_manager,
             app_handle: app_handle.clone(),
-            current_model_id: Mutex::new(None),
+            current_model_id: Arc::new(Mutex::new(None)),
+            last_activity: Arc::new(AtomicU64::new(
+                SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+            )),
+            _watcher_handle: Arc::new(Mutex::new(None)),
         };
+
+        // Start the idle watcher
+        {
+            let app_handle_cloned = app_handle.clone();
+            let manager_cloned = manager.clone();
+            let handle = thread::spawn(move || {
+                loop {
+                    thread::sleep(Duration::from_secs(10)); // Check every 10 seconds
+
+                    let settings = get_settings(&app_handle_cloned);
+                    let timeout_seconds = settings.model_unload_timeout.to_seconds();
+
+                    if let Some(limit_seconds) = timeout_seconds {
+                        let last = manager_cloned.last_activity.load(Ordering::Relaxed);
+                        let now_ms = SystemTime::now()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis() as u64;
+
+                        if now_ms.saturating_sub(last) > limit_seconds * 1000 {
+                            // idle -> unload
+                            if manager_cloned.is_model_loaded() {
+                                if let Ok(()) = manager_cloned.unload_model() {
+                                    let _ = app_handle_cloned.emit(
+                                        "model-state-changed",
+                                        ModelStateEvent {
+                                            event_type: "unloaded_due_to_idle".to_string(),
+                                            model_id: None,
+                                            model_name: None,
+                                            error: None,
+                                        },
+                                    );
+                                    println!("Model unloaded due to inactivity");
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            *manager._watcher_handle.lock().unwrap() = Some(handle);
+        }
 
         // Try to load the default model from settings, but don't fail if no models are available
         let settings = get_settings(&app_handle);
         let _ = manager.load_model(&settings.selected_model);
 
         Ok(manager)
+    }
+
+    pub fn is_model_loaded(&self) -> bool {
+        let state = self.state.lock().unwrap();
+        state.is_some()
+    }
+
+    pub fn unload_model(&self) -> Result<()> {
+        {
+            let mut state = self.state.lock().unwrap();
+            *state = None; // Dropping state frees GPU/CPU memory
+        }
+        {
+            let mut context = self.context.lock().unwrap();
+            *context = None; // Dropping context frees additional memory
+        }
+        {
+            let mut current_model = self.current_model_id.lock().unwrap();
+            *current_model = None;
+        }
+
+        // Emit unloaded event
+        let _ = self.app_handle.emit(
+            "model-state-changed",
+            ModelStateEvent {
+                event_type: "unloaded_manually".to_string(),
+                model_id: None,
+                model_name: None,
+                error: None,
+            },
+        );
+
+        println!("Model unloaded manually");
+        Ok(())
     }
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
@@ -266,6 +354,15 @@ impl TranscriptionManager {
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        // Update last activity timestamp
+        self.last_activity.store(
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            Ordering::Relaxed,
+        );
+
         let st = std::time::Instant::now();
 
         let mut result = String::new();
@@ -276,10 +373,34 @@ impl TranscriptionManager {
             return Ok(result);
         }
 
+        // Check if model is loaded, if not try to load it
+        {
+            let state_guard = self.state.lock().unwrap();
+            if state_guard.is_none() {
+                // Model not loaded, try to load the selected model from settings
+                let settings = get_settings(&self.app_handle);
+                println!(
+                    "Model not loaded, attempting to load: {}",
+                    settings.selected_model
+                );
+
+                // Drop the guard before calling load_model to avoid deadlock
+                drop(state_guard);
+
+                // Try to load the model
+                if let Err(e) = self.load_model(&settings.selected_model) {
+                    return Err(anyhow::anyhow!(
+                        "Failed to auto-load model '{}': {}. Please check that the model is downloaded and try again.",
+                        settings.selected_model, e
+                    ));
+                }
+            }
+        }
+
         let mut state_guard = self.state.lock().unwrap();
         let state = state_guard.as_mut().ok_or_else(|| {
             anyhow::anyhow!(
-                "No model loaded. Please download and select a model from settings first."
+                "Model failed to load after auto-load attempt. Please check your model settings."
             )
         })?;
 

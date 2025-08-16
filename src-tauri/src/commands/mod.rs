@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod models;
+pub mod transcription;
 
 use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};

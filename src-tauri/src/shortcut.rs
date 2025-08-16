@@ -1,5 +1,5 @@
 use serde::Serialize;
-use tauri::{App, AppHandle, Manager};
+use tauri::{App, AppHandle, Emitter, Manager};
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 
@@ -160,6 +160,16 @@ pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), St
     let mut settings = settings::get_settings(&app);
     settings.debug_mode = enabled;
     settings::write_settings(&app, settings);
+
+    // Emit event to notify frontend of debug mode change
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "debug_mode",
+            "value": enabled
+        }),
+    );
+
     Ok(())
 }
 

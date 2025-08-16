@@ -213,7 +213,10 @@ pub fn run() {
             commands::audio::get_selected_microphone,
             commands::audio::get_available_output_devices,
             commands::audio::set_selected_output_device,
-            commands::audio::get_selected_output_device
+            commands::audio::get_selected_output_device,
+            commands::transcription::set_model_unload_timeout,
+            commands::transcription::get_model_load_status,
+            commands::transcription::unload_model_manually
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -9,6 +9,7 @@ import { HandyShortcut } from "./HandyShortcut";
 import { TranslateToEnglish } from "./TranslateToEnglish";
 import { LanguageSelector } from "./LanguageSelector";
 import { CustomWords } from "./CustomWords";
+import { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { WordCorrectionThreshold } from "./debug/WordCorrectionThreshold";
 import { AppDataDirectory } from "./AppDataDirectory";
@@ -56,6 +57,7 @@ export const Settings: React.FC = () => {
         <OutputDeviceSelector descriptionMode="tooltip" grouped={true} />
         <ShowOverlay descriptionMode="tooltip" grouped={true} />
         <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
+        <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
