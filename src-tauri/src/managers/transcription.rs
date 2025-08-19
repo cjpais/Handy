@@ -212,7 +212,7 @@ impl TranscriptionManager {
         // Create context parameters based on GPU availability
         let mut params = WhisperContextParameters::default();
         if !self.gpu_available {
-            params = params.use_gpu(false);
+            params.use_gpu(false);
         }
 
         // Create new context
