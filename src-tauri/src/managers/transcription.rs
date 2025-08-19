@@ -207,7 +207,7 @@ impl TranscriptionManager {
         );
 
         // Install log trampoline once per model load (safe to call multiple times)
-        install_logging_hooks();
+        // install_logging_hooks();
 
         // Create context parameters based on GPU availability
         let mut params = WhisperContextParameters::default();
