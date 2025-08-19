@@ -2,7 +2,7 @@ pub fn is_vulkan_available() -> bool {
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     {
         use ash::vk;
-        
+
         let result = unsafe {
             let entry = match ash::Entry::load() {
                 Ok(e) => e,
@@ -12,7 +12,8 @@ pub fn is_vulkan_available() -> bool {
                 }
             };
 
-            let app_desc = vk::ApplicationInfo::default().api_version(vk::make_api_version(0, 1, 0, 0));
+            let app_desc =
+                vk::ApplicationInfo::default().api_version(vk::make_api_version(0, 1, 0, 0));
             let instance_desc = vk::InstanceCreateInfo::default().application_info(&app_desc);
 
             let instance = match entry.create_instance(&instance_desc, None) {
@@ -27,12 +28,7 @@ pub fn is_vulkan_available() -> bool {
             println!("Vulkan support is successfully checked and working.");
             true
         };
-        
-        if !result {
-            eprintln!("ERROR: Vulkan is not available on this system. Handy requires Vulkan support on Linux/Windows.");
-            std::process::exit(1);
-        }
-        
+
         result
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows")))]

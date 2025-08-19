@@ -26,6 +26,7 @@ pub struct TranscriptionManager {
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
     current_model_id: Mutex<Option<String>>,
+    gpu_available: bool,
 }
 
 fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> String {
@@ -141,7 +142,11 @@ impl TranscriptionManager {
         let app_handle = app.app_handle().clone();
 
         // Check Vulkan availability before initializing transcription
-        vulkan_detection::is_vulkan_available();
+        let gpu_available = vulkan_detection::is_vulkan_available();
+
+        if !gpu_available {
+            println!("GPU acceleration not available, falling back to CPU mode");
+        }
 
         let manager = Self {
             state: Mutex::new(None),
@@ -149,6 +154,7 @@ impl TranscriptionManager {
             model_manager,
             app_handle: app_handle.clone(),
             current_model_id: Mutex::new(None),
+            gpu_available,
         };
 
         // Try to load the default model from settings, but don't fail if no models are available
@@ -203,22 +209,26 @@ impl TranscriptionManager {
         // Install log trampoline once per model load (safe to call multiple times)
         install_logging_hooks();
 
+        // Create context parameters based on GPU availability
+        let mut params = WhisperContextParameters::default();
+        if !self.gpu_available {
+            params = params.use_gpu(false);
+        }
+
         // Create new context
-        let context =
-            WhisperContext::new_with_params(path_str, WhisperContextParameters::default())
-                .map_err(|e| {
-                    let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.clone()),
-                        },
-                    );
-                    anyhow::anyhow!(error_msg)
-                })?;
+        let context = WhisperContext::new_with_params(path_str, params).map_err(|e| {
+            let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
+            let _ = self.app_handle.emit(
+                "model-state-changed",
+                ModelStateEvent {
+                    event_type: "loading_failed".to_string(),
+                    model_id: Some(model_id.to_string()),
+                    model_name: Some(model_info.name.clone()),
+                    error: Some(error_msg.clone()),
+                },
+            );
+            anyhow::anyhow!(error_msg)
+        })?;
 
         // Create new state
         let state = context.create_state().map_err(|e| {
@@ -267,6 +277,10 @@ impl TranscriptionManager {
     pub fn get_current_model(&self) -> Option<String> {
         let current_model = self.current_model_id.lock().unwrap();
         current_model.clone()
+    }
+
+    pub fn is_gpu_available(&self) -> bool {
+        self.gpu_available
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
