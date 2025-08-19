@@ -9,6 +9,7 @@ mod settings;
 mod shortcut;
 mod tray;
 mod utils;
+mod vulkan_detection;
 
 use managers::audio::AudioRecordingManager;
 use managers::model::ModelManager;

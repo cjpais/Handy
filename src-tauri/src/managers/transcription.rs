@@ -1,5 +1,6 @@
 use crate::managers::model::ModelManager;
 use crate::settings::get_settings;
+use crate::vulkan_detection;
 use anyhow::Result;
 use natural::phonetics::soundex;
 use serde::Serialize;
@@ -138,6 +139,9 @@ fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> St
 impl TranscriptionManager {
     pub fn new(app: &App, model_manager: Arc<ModelManager>) -> Result<Self> {
         let app_handle = app.app_handle().clone();
+
+        // Check Vulkan availability before initializing transcription
+        vulkan_detection::is_vulkan_available();
 
         let manager = Self {
             state: Mutex::new(None),
