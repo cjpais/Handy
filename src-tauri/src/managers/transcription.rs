@@ -287,7 +287,10 @@ impl TranscriptionManager {
         let settings = get_settings(&self.app_handle);
 
         // Initialize parameters
-        let mut params = FullParams::new(SamplingStrategy::default());
+        let mut params = FullParams::new(SamplingStrategy::BeamSearch {
+            beam_size: 5,
+            patience: -1.0,
+        });
         let language = Some(settings.selected_language.as_str());
         params.set_language(language);
         params.set_print_special(false);
@@ -303,19 +306,10 @@ impl TranscriptionManager {
             params.set_translate(true);
         }
 
-        state
-            .full(params, &audio)
-            .expect("failed to convert samples");
+        state.full(params, &audio).expect("failed to run model");
 
-        let num_segments = state
-            .full_n_segments()
-            .expect("failed to get number of segments");
-
-        for i in 0..num_segments {
-            let segment = state
-                .full_get_segment_text(i)
-                .expect("failed to get segment");
-            result.push_str(&segment);
+        for segment in state.as_iter() {
+            result.push_str(segment.to_str().expect("failed to get string from segment"));
         }
 
         // Apply word correction if custom words are configured
