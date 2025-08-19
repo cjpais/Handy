@@ -30,6 +30,15 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // Capture focused window ID BEFORE any UI changes
+        let focused_window_id = crate::utils::get_focused_window_id();
+
+        // Store it in managed state for later use during paste
+        let focused_window_state = app.state::<crate::ManagedFocusedWindow>();
+        if let Ok(mut state) = focused_window_state.try_lock() {
+            *state = focused_window_id;
+        }
+
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
         show_recording_overlay(app);

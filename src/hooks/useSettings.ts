@@ -205,6 +205,9 @@ export const useSettings = (): UseSettingsReturn => {
           case "debug_mode":
             await invoke("change_debug_mode_setting", { enabled: value });
             break;
+          case "input_method":
+            await invoke("change_input_method_setting", { method: value });
+            break;
           case "bindings":
             // Handle bindings separately - they use their own invoke methods
             break;
@@ -251,6 +254,7 @@ export const useSettings = (): UseSettingsReturn => {
         selected_language: "auto",
         show_overlay: true,
         debug_mode: false,
+        input_method: "type" as const,
       };
 
       const defaultValue = defaults[key];

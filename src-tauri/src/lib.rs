@@ -25,6 +25,7 @@ struct ShortcutToggleStates {
 }
 
 type ManagedToggleState = Mutex<ShortcutToggleStates>;
+type ManagedFocusedWindow = Mutex<Option<String>>;
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
@@ -77,6 +78,7 @@ pub fn run() {
             Some(vec![]),
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
+        .manage(Mutex::new(None::<String>))
         .setup(move |app| {
             // Get the current theme to set the appropriate initial icon
             let initial_theme = if let Some(main_window) = app.get_webview_window("main") {
@@ -183,6 +185,7 @@ pub fn run() {
             shortcut::change_selected_language_setting,
             shortcut::change_show_overlay_setting,
             shortcut::change_debug_mode_setting,
+            shortcut::change_input_method_setting,
             shortcut::suspend_binding,
             shortcut::resume_binding,
             trigger_update_check,

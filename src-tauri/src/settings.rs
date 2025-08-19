@@ -34,6 +34,8 @@ pub struct AppSettings {
     pub show_overlay: bool,
     #[serde(default = "default_debug_mode")]
     pub debug_mode: bool,
+    #[serde(default = "default_input_method")]
+    pub input_method: String,
 }
 
 fn default_model() -> String {
@@ -66,6 +68,11 @@ fn default_show_overlay() -> bool {
 fn default_debug_mode() -> bool {
     // Default to false - debug mode should be opt-in
     false
+}
+
+fn default_input_method() -> String {
+    // Default to "type" - based on the improvements made for Linux compatibility
+    "type".to_string()
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -116,6 +123,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_language: "auto".to_string(),
         show_overlay: true,
         debug_mode: false,
+        input_method: "type".to_string(),
     }
 }
 

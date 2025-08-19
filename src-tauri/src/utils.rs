@@ -4,6 +4,7 @@ use enigo::Enigo;
 use enigo::Key;
 use enigo::Keyboard;
 use enigo::Settings;
+use std::process::Command;
 
 use cpal::traits::{DeviceTrait, HostTrait};
 use log::debug;
@@ -26,7 +27,14 @@ fn send_paste() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let (modifier_key, v_key_code) = (Key::Control, Key::Other(0x56)); // VK_V
     #[cfg(target_os = "linux")]
-    let (modifier_key, v_key_code) = (Key::Control, Key::Unicode('v'));
+    let (modifier_key, v_key_code) = {
+        // Try different approaches for Linux depending on display server
+        if std::env::var("WAYLAND_DISPLAY").is_ok() {
+            (Key::Control, Key::Unicode('v'))
+        } else {
+            (Key::Control, Key::Unicode('v'))
+        }
+    };
 
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
@@ -39,6 +47,9 @@ fn send_paste() -> Result<(), String> {
         .key(v_key_code, enigo::Direction::Press)
         .map_err(|e| format!("Failed to press V key: {}", e))?;
 
+    // Small delay between press and release
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
     // Release V + modifier (reverse order)
     enigo
         .key(v_key_code, enigo::Direction::Release)
@@ -50,7 +61,68 @@ fn send_paste() -> Result<(), String> {
     Ok(())
 }
 
+/// Get the currently focused window ID using xdotool
+pub fn get_focused_window_id() -> Option<String> {
+    let output = Command::new("xdotool")
+        .args(["getwindowfocus"])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let window_id = String::from_utf8(output.stdout).ok()?;
+        let trimmed = window_id.trim();
+        Some(trimmed.to_string())
+    } else {
+        None
+    }
+}
+
+/// Focus a specific window by ID using xdotool
+fn focus_window_by_id(window_id: &str) -> Result<(), String> {
+    let output = Command::new("xdotool")
+        .args(["windowfocus", window_id])
+        .output()
+        .map_err(|e| format!("Failed to execute xdotool: {}", e))?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!("xdotool windowfocus failed: {}", stderr))
+    }
+}
+
+/// Fallback function to type text directly instead of using clipboard paste
+fn send_text_directly(text: &str) -> Result<(), String> {
+
+    let mut enigo = Enigo::new(&Settings::default())
+        .map_err(|e| format!("Failed to initialize Enigo for typing: {}", e))?;
+
+    // Add longer delay to allow window manager to settle after shortcut
+    std::thread::sleep(std::time::Duration::from_millis(200));
+
+    // Type the text character by character
+    for char in text.chars() {
+        enigo
+            .key(Key::Unicode(char), enigo::Direction::Click)
+            .map_err(|e| format!("Failed to type character '{}': {}", char, e))?;
+
+        // Small delay between characters to ensure they register
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+
+    Ok(())
+}
+
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
+    // Get the stored focused window ID that was captured before recording started
+    let focused_window_state = app_handle.state::<crate::ManagedFocusedWindow>();
+    let focused_window_id = if let Ok(state) = focused_window_state.try_lock() {
+        state.clone()
+    } else {
+        None
+    };
+
     let clipboard = app_handle.clipboard();
 
     // get the current clipboard content
@@ -60,17 +132,57 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         .write_text(&text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
 
+    // Verify clipboard write
+    let _written_content = clipboard.read_text().unwrap_or_default();
+
     // small delay to ensure the clipboard content has been written to
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    send_paste()?;
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    // Restore focus to the original window before typing
+    if let Some(ref window_id) = focused_window_id {
+        if focus_window_by_id(window_id).is_ok() {
+            // Give window manager time to process focus change
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+    }
+
+    // Check user's preferred input method setting
+    let settings = crate::settings::get_settings(&app_handle);
+    let prefer_type = settings.input_method == "type";
+
+    if prefer_type {
+        // Try direct typing first (user's preference)
+        match send_text_directly(&text) {
+            Ok(_) => {}
+            Err(_) => {
+                // Fall back to paste if typing fails
+                send_paste()?
+            }
+        }
+    } else {
+        // Try paste first (user's preference)
+        match send_paste() {
+            Ok(_) => {}
+            Err(_) => {
+                // Fall back to direct typing if paste fails
+                send_text_directly(&text)?
+            }
+        }
+    }
+
+    // Longer delay for i3wm focus issues
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    // Check clipboard before restore
+    let _before_restore = clipboard.read_text().unwrap_or_default();
 
     // restore the clipboard
     clipboard
         .write_text(&clipboard_content)
         .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
+
+    let _final_content = clipboard.read_text().unwrap_or_default();
 
     Ok(())
 }

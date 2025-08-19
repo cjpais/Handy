@@ -150,6 +150,20 @@ pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), St
     Ok(())
 }
 
+#[tauri::command]
+pub fn change_input_method_setting(app: AppHandle, method: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Validate the input method
+    if method != "paste" && method != "type" {
+        return Err("Invalid input method. Must be 'paste' or 'type'".to_string());
+    }
+
+    settings.input_method = method;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").

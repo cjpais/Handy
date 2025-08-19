@@ -31,6 +31,7 @@ export const SettingsSchema = z.object({
   selected_language: z.string(),
   show_overlay: z.boolean(),
   debug_mode: z.boolean(),
+  input_method: z.enum(["paste", "type"]),
 });
 
 export const BindingResponseSchema = z.object({
