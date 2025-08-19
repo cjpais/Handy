@@ -145,7 +145,9 @@ impl TranscriptionManager {
         let gpu_available = vulkan_detection::is_vulkan_available();
 
         if !gpu_available {
-            println!("GPU acceleration not available, falling back to CPU mode");
+            return Err(anyhow::anyhow!(
+                "GPU acceleration not available. Handy requires GPU support to run."
+            ));
         }
 
         let manager = Self {
@@ -207,13 +209,10 @@ impl TranscriptionManager {
         );
 
         // Install log trampoline once per model load (safe to call multiple times)
-        // install_logging_hooks();
+        install_logging_hooks();
 
-        // Create context parameters based on GPU availability
-        let mut params = WhisperContextParameters::default();
-        if !self.gpu_available {
-            params.use_gpu(false);
-        }
+        // Create context parameters (GPU is guaranteed to be available)
+        let params = WhisperContextParameters::default();
 
         // Create new context
         let context = WhisperContext::new_with_params(path_str, params).map_err(|e| {
@@ -277,10 +276,6 @@ impl TranscriptionManager {
     pub fn get_current_model(&self) -> Option<String> {
         let current_model = self.current_model_id.lock().unwrap();
         current_model.clone()
-    }
-
-    pub fn is_gpu_available(&self) -> bool {
-        self.gpu_available
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
