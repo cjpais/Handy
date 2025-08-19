@@ -26,7 +26,6 @@ pub struct TranscriptionManager {
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
     current_model_id: Mutex<Option<String>>,
-    gpu_available: bool,
 }
 
 fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> String {
@@ -142,13 +141,7 @@ impl TranscriptionManager {
         let app_handle = app.app_handle().clone();
 
         // Check Vulkan availability before initializing transcription
-        let gpu_available = vulkan_detection::is_vulkan_available();
-
-        if !gpu_available {
-            return Err(anyhow::anyhow!(
-                "GPU acceleration not available. Handy requires GPU support to run."
-            ));
-        }
+        let _gpu_available = vulkan_detection::is_vulkan_available();
 
         let manager = Self {
             state: Mutex::new(None),
@@ -156,7 +149,6 @@ impl TranscriptionManager {
             model_manager,
             app_handle: app_handle.clone(),
             current_model_id: Mutex::new(None),
-            gpu_available,
         };
 
         // Try to load the default model from settings, but don't fail if no models are available

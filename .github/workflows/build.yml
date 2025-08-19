@@ -188,6 +188,42 @@ jobs:
           releaseId: ${{ inputs.release-id }}
           args: ${{ inputs.build-args }}
 
+      - name: Remove libwayland from AppImage
+        if: contains(inputs.platform, 'ubuntu')
+        run: |
+          # Install appimagetool if not available
+          if ! command -v appimagetool &> /dev/null; then
+            wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+            chmod +x appimagetool-x86_64.AppImage
+            sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool
+          fi
+
+          # Find the AppImage file
+          APPIMAGE_PATH=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" -type f | head -1)
+
+          if [ -n "$APPIMAGE_PATH" ]; then
+            echo "Found AppImage: $APPIMAGE_PATH"
+
+            # Extract the AppImage
+            WORK_DIR=$(mktemp -d)
+            cd "$WORK_DIR"
+            "$APPIMAGE_PATH" --appimage-extract
+
+            # Remove libwayland libraries
+            find squashfs-root -name "*wayland*" -type f -delete
+            find squashfs-root -name "libwayland*" -type f -delete
+
+            # Rebuild the AppImage
+            appimagetool squashfs-root "$APPIMAGE_PATH"
+
+            # Clean up
+            rm -rf "$WORK_DIR"
+
+            echo "Successfully removed libwayland from AppImage"
+          else
+            echo "No AppImage found to process"
+          fi
+
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
         uses: actions/upload-artifact@v4
