@@ -199,7 +199,7 @@ jobs:
           fi
 
           # Find the AppImage file
-          APPIMAGE_PATH=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" -type f | head -1)
+          APPIMAGE_PATH=$(find $(pwd)/src-tauri/target/release/bundle/appimage -name "*.AppImage" -type f | head -1)
 
           if [ -n "$APPIMAGE_PATH" ]; then
             echo "Found AppImage: $APPIMAGE_PATH"
