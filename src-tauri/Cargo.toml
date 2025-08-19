@@ -10,6 +10,10 @@ default-run = "handy"
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
 
+[profile.release]
+strip = false
+debug = true
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
