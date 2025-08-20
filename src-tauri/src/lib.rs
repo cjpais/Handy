@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod cpu_check;
 mod managers;
 mod overlay;
 mod settings;
@@ -62,6 +63,14 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     env_logger::init();
+
+    // Check for AVX2 support before initializing anything else
+    if let Err(e) = cpu_check::check_avx2_support() {
+        eprintln!("Fatal Error: {}", e);
+        eprintln!("Handy requires a CPU with AVX2 instruction support to run properly.");
+        eprintln!("Please check your system specifications and ensure you're running on a compatible processor.");
+        std::process::exit(1);
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
