@@ -295,7 +295,7 @@ export const useSettings = (): UseSettingsReturn => {
       const originalBinding = state.settings?.bindings?.[id]?.current_binding;
 
       try {
-        // Optimistic update
+        // Optimistic update - handle case where binding doesn't exist yet
         setState((prev) => ({
           ...prev,
           settings: prev.settings
@@ -303,10 +303,18 @@ export const useSettings = (): UseSettingsReturn => {
                 ...prev.settings,
                 bindings: {
                   ...prev.settings.bindings,
-                  [id]: {
-                    ...prev.settings.bindings[id],
-                    current_binding: binding,
-                  },
+                  [id]: prev.settings.bindings[id]
+                    ? {
+                        ...prev.settings.bindings[id],
+                        current_binding: binding,
+                      }
+                    : {
+                        id,
+                        name: id === "transcribe_translate" ? "Transcribe & Translate" : "Unknown",
+                        description: id === "transcribe_translate" ? "Converts your speech into text and translates it to English." : "",
+                        default_binding: binding,
+                        current_binding: binding,
+                      },
                 },
               }
             : null,
@@ -318,23 +326,28 @@ export const useSettings = (): UseSettingsReturn => {
         console.error(`Failed to update binding ${id}:`, error);
 
         // Rollback on error
-        if (originalBinding) {
-          setState((prev) => ({
-            ...prev,
-            settings: prev.settings
-              ? {
-                  ...prev.settings,
-                  bindings: {
-                    ...prev.settings.bindings,
-                    [id]: {
-                      ...prev.settings.bindings[id],
-                      current_binding: originalBinding,
-                    },
-                  },
-                }
-              : null,
-          }));
-        }
+        setState((prev) => ({
+          ...prev,
+          settings: prev.settings
+            ? {
+                ...prev.settings,
+                bindings: originalBinding
+                  ? {
+                      ...prev.settings.bindings,
+                      [id]: {
+                        ...prev.settings.bindings[id],
+                        current_binding: originalBinding,
+                      },
+                    }
+                  : // If there was no original binding, remove the binding entirely
+                    Object.fromEntries(
+                      Object.entries(prev.settings.bindings).filter(
+                        ([key]) => key !== id,
+                      ),
+                    ),
+              }
+            : null,
+        }));
       } finally {
         // Clear updating state
         setState((prev) => ({

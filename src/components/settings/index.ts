@@ -6,6 +6,7 @@ export { PushToTalk } from "./PushToTalk";
 export { AudioFeedback } from "./AudioFeedback";
 export { ShowOverlay } from "./ShowOverlay";
 export { HandyShortcut } from "./HandyShortcut";
+export { HandyTranslateShortcut } from "./HandyTranslateShortcut";
 export { TranslateToEnglish } from "./TranslateToEnglish";
 export { CustomWords } from "./CustomWords";
 export { AppDataDirectory } from "./AppDataDirectory";

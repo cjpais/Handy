@@ -262,6 +262,14 @@ impl TranscriptionManager {
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        self.transcribe_with_options(audio, None)
+    }
+
+    pub fn transcribe_with_translation(&self, audio: Vec<f32>) -> Result<String> {
+        self.transcribe_with_options(audio, Some(true))
+    }
+
+    fn transcribe_with_options(&self, audio: Vec<f32>, force_translate: Option<bool>) -> Result<String> {
         let st = std::time::Instant::now();
 
         let mut result = String::new();
@@ -294,8 +302,9 @@ impl TranscriptionManager {
         params.set_suppress_non_speech_tokens(true);
         params.set_no_speech_thold(0.2);
 
-        // Enable translation to English if requested
-        if settings.translate_to_english {
+        // Enable translation to English if requested or forced
+        let should_translate = force_translate.unwrap_or(settings.translate_to_english);
+        if should_translate {
             params.set_translate(true);
         }
 
@@ -326,7 +335,7 @@ impl TranscriptionManager {
         };
 
         let et = std::time::Instant::now();
-        let translation_note = if settings.translate_to_english {
+        let translation_note = if should_translate {
             " (translated)"
         } else {
             ""

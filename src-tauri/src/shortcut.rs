@@ -35,24 +35,49 @@ pub fn change_binding(
 ) -> Result<BindingResponse, String> {
     let mut settings = settings::get_settings(&app);
 
-    // Get the binding to modify
+    // Get the binding to modify, or create a default one if it doesn't exist
     let binding_to_modify = match settings.bindings.get(&id) {
         Some(binding) => binding.clone(),
         None => {
-            let error_msg = format!("Binding with id '{}' not found", id);
-            eprintln!("change_binding error: {}", error_msg);
-            return Ok(BindingResponse {
-                success: false,
-                binding: None,
-                error: Some(error_msg),
-            });
+            // Create a default binding for known IDs
+            match id.as_str() {
+                "transcribe_translate" => {
+                    #[cfg(target_os = "windows")]
+                    let default_shortcut = "ctrl+shift+space";
+                    #[cfg(target_os = "macos")]
+                    let default_shortcut = "option+shift+space";
+                    #[cfg(target_os = "linux")]
+                    let default_shortcut = "ctrl+shift+space";
+                    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+                    let default_shortcut = "alt+shift+space";
+
+                    ShortcutBinding {
+                        id: "transcribe_translate".to_string(),
+                        name: "Transcribe & Translate".to_string(),
+                        description: "Converts your speech into text and translates it to English.".to_string(),
+                        default_binding: default_shortcut.to_string(),
+                        current_binding: default_shortcut.to_string(),
+                    }
+                }
+                _ => {
+                    let error_msg = format!("Binding with id '{}' not found", id);
+                    eprintln!("change_binding error: {}", error_msg);
+                    return Ok(BindingResponse {
+                        success: false,
+                        binding: None,
+                        error: Some(error_msg),
+                    });
+                }
+            }
         }
     };
 
-    // Unregister the existing binding
-    if let Err(e) = _unregister_shortcut(&app, binding_to_modify.clone()) {
-        let error_msg = format!("Failed to unregister shortcut: {}", e);
-        eprintln!("change_binding error: {}", error_msg);
+    // Unregister the existing binding (only if it was actually registered)
+    if settings.bindings.contains_key(&id) {
+        if let Err(e) = _unregister_shortcut(&app, binding_to_modify.clone()) {
+            let error_msg = format!("Failed to unregister shortcut: {}", e);
+            eprintln!("change_binding error: {}", error_msg);
+        }
     }
 
     // Validate the new shortcut before we touch the current registration
