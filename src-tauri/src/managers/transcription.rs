@@ -4,7 +4,7 @@ use anyhow::Result;
 use log::debug;
 use natural::phonetics::soundex;
 use serde::Serialize;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -31,7 +31,8 @@ pub struct TranscriptionManager {
     app_handle: AppHandle,
     current_model_id: Arc<Mutex<Option<String>>>,
     last_activity: Arc<AtomicU64>,
-    _watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
+    shutdown_signal: Arc<AtomicBool>,
+    watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
 }
 
 fn apply_custom_words(text: &str, custom_words: &[String], threshold: f64) -> String {
@@ -158,16 +159,23 @@ impl TranscriptionManager {
                     .unwrap()
                     .as_millis() as u64,
             )),
-            _watcher_handle: Arc::new(Mutex::new(None)),
+            shutdown_signal: Arc::new(AtomicBool::new(false)),
+            watcher_handle: Arc::new(Mutex::new(None)),
         };
 
         // Start the idle watcher
         {
             let app_handle_cloned = app_handle.clone();
             let manager_cloned = manager.clone();
+            let shutdown_signal = manager.shutdown_signal.clone();
             let handle = thread::spawn(move || {
-                loop {
+                while !shutdown_signal.load(Ordering::Relaxed) {
                     thread::sleep(Duration::from_secs(10)); // Check every 10 seconds
+
+                    // Check shutdown signal again after sleep
+                    if shutdown_signal.load(Ordering::Relaxed) {
+                        break;
+                    }
 
                     let settings = get_settings(&app_handle_cloned);
                     let timeout_seconds = settings.model_unload_timeout.to_seconds();
@@ -210,8 +218,9 @@ impl TranscriptionManager {
                         }
                     }
                 }
+                debug!("Idle watcher thread shutting down gracefully");
             });
-            *manager._watcher_handle.lock().unwrap() = Some(handle);
+            *manager.watcher_handle.lock().unwrap() = Some(handle);
         }
 
         // Try to load the default model from settings, but don't fail if no models are available
@@ -496,5 +505,23 @@ impl TranscriptionManager {
         }
 
         Ok(corrected_result.trim().to_string())
+    }
+}
+
+impl Drop for TranscriptionManager {
+    fn drop(&mut self) {
+        debug!("Shutting down TranscriptionManager");
+
+        // Signal the watcher thread to shutdown
+        self.shutdown_signal.store(true, Ordering::Relaxed);
+
+        // Wait for the thread to finish gracefully
+        if let Some(handle) = self.watcher_handle.lock().unwrap().take() {
+            if let Err(e) = handle.join() {
+                eprintln!("Failed to join idle watcher thread: {:?}", e);
+            } else {
+                debug!("Idle watcher thread joined successfully");
+            }
+        }
     }
 }
