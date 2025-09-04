@@ -118,7 +118,7 @@ fn default_debug_mode() -> bool {
 }
 
 fn default_word_correction_threshold() -> f64 {
-    0.15
+    0.18
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";

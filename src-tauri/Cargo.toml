@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.3.7"
+version = "0.3.8"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -40,7 +40,6 @@ tauri-plugin-clipboard-manager = "2"
 tauri-plugin-macos-permissions = "2.0.4"
 rdev = { git = "https://github.com/rustdesk-org/rdev" }
 cpal = "0.16.0"
-whisper-rs = { version = "0.13.2", features = ["whisper-cpp-log"] }
 anyhow = "1.0.95"
 rubato = "0.16.2"
 hound = "3.5.1"

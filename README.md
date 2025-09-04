@@ -41,42 +41,7 @@ The process is entirely local:
 
 ### Development Setup
 
-**Prerequisites:**
-- [Rust](https://rustup.rs/) (latest stable)
-- [Bun](https://bun.sh/) package manager
-- Platform-specific requirements:
-  - **macOS**: Xcode Command Line Tools
-  - **Windows**: Microsoft C++ Build Tools
-  - **Linux**: Build essentials, ALSA development libraries
-
-**Getting Started:**
-
-```bash
-# Clone the repository
-git clone git@github.com:cjpais/Handy.git
-cd Handy
-
-# Install dependencies
-bun install
-
-# Run in development mode
-bun run tauri dev
-# if it fails with cmake error on MacOS, try
-CMAKE_POLICY_VERSION_MINIMUM=3.5 bun run tauri dev
-
-# Build for production
-bun run tauri build
-```
-
-**Whisper Models:**
-
-The app now supports dynamic model downloading and switching:
-- **Small**: Fast, good for most use cases
-- **Medium**: Better accuracy, balanced performance
-- **Turbo**: Optimized large model with improved speed
-- **Large**: Highest accuracy, slower processing
-
-Users can download and switch between models directly from the app's settings interface. No models are bundled with the app, reducing the initial download size.
+For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
 ## Architecture
 
@@ -100,27 +65,14 @@ This project is actively being developed and has some [known issues](https://git
 - **x64 Windows**
 - **x64 Linux**
 
-### Active Issues
-- Paste functionality occasionally produces just 'v' instead of full text on macOS
-- VAD filter sometimes includes trailing "thank you" in transcriptions
-- Transcription end-cutting due to potential threading issues
-- Microphone remains active for optimal latency (design choice under discussion)
+### System Requirements/Recomendations
 
-## Contributing
+The following are recommendations for running Handy on your own machine. If you don't meet the system requirements, the performance of the application may be degraded. We are working on improving the performance across all kinds of computers and hardware.
 
-We're actively seeking contributors! Priority areas include:
-
-### High Priority
-1. **Cross-platform support** - Windows and Linux compatibility
-2. **Code quality improvements** - Better error handling, architecture refinements
-3. **Bug fixes** - Address the known issues listed above
-4. **Performance optimization** - Reduce latency, improve resource usage
-
-### Feature Requests
-- Configurable microphone selection
-- Multiple STT model options (beyond Whisper Small)
-- Modifier-only key bindings
-- Enhanced VAD configuration
+- **macOS**: M series Mac
+- **Windows**: Intel, AMD, or NVIDIA GPU
+- **Linux**: Intel, AMD, or NVIDIA GPU
+  * Ubuntu 22.04, 24.04
 
 ### How to Contribute
 
@@ -131,6 +83,20 @@ We're actively seeking contributors! Priority areas include:
 5. **Join the discussion** - reach out at [contact@handy.computer](mailto:contact@handy.computer)
 
 The goal is to create both a useful tool and a foundation for others to build upon—a well-patterned, simple codebase that serves the community.
+
+## Sponsors
+
+<div align="center">
+  We're grateful for the support of our sponsors who help make Handy possible:
+  <br><br>
+  <a href="https://wordcab.com">
+    <img src="sponsor-images/wordcab.png" alt="Wordcab" width="120" height="120">
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/epicenter-so/epicenter">
+    <img src="sponsor-images/epicenter.png" alt="Epicenter" width="120" height="120">
+  </a>
+</div>
 
 ## Related Projects
 

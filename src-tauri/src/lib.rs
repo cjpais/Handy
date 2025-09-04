@@ -83,20 +83,10 @@ pub fn run() {
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
             // Get the current theme to set the appropriate initial icon
-            let initial_theme = if let Some(main_window) = app.get_webview_window("main") {
-                main_window.theme().unwrap_or(tauri::Theme::Dark)
-            } else {
-                tauri::Theme::Dark
-            };
-
-            println!("Initial system theme: {:?}", initial_theme);
+            let initial_theme = tray::get_current_theme(&app.handle());
 
             // Choose the appropriate initial icon based on theme
-            let initial_icon_path = match initial_theme {
-                tauri::Theme::Dark => "resources/tray_idle.png",
-                tauri::Theme::Light => "resources/tray_idle_dark.png",
-                _ => "resources/tray_idle.png", // Default fallback
-            };
+            let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
 
             let tray = TrayIconBuilder::new()
                 .icon(Image::from_path(app.path().resolve(

@@ -1992,7 +1992,7 @@ dependencies = [
 
 [[package]]
 name = "handy"
-version = "0.3.7"
+version = "0.3.8"
 dependencies = [
  "anyhow",
  "cpal",
@@ -6531,7 +6531,6 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40b6fc553156b521663bfa8e713e7ad58c7ca262d46de9998cd7f2e4de5ba0d9"
 dependencies = [
- "log",
  "whisper-rs-sys",
 ]
 

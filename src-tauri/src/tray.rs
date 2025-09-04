@@ -10,12 +10,47 @@ pub enum TrayIconState {
     Transcribing,
 }
 
-/// Gets the current system theme, defaulting to Dark if unavailable
-fn get_current_theme(app: &AppHandle) -> Theme {
-    if let Some(main_window) = app.get_webview_window("main") {
-        main_window.theme().unwrap_or(Theme::Dark)
+#[derive(Clone, Debug, PartialEq)]
+pub enum AppTheme {
+    Dark,
+    Light,
+    Colored, // Pink/colored theme for Linux
+}
+
+/// Gets the current app theme, with Linux defaulting to Colored theme
+pub fn get_current_theme(app: &AppHandle) -> AppTheme {
+    if cfg!(target_os = "linux") {
+        // On Linux, always use the colored theme
+        AppTheme::Colored
     } else {
-        Theme::Dark
+        // On other platforms, map system theme to our app theme
+        if let Some(main_window) = app.get_webview_window("main") {
+            match main_window.theme().unwrap_or(Theme::Dark) {
+                Theme::Light => AppTheme::Light,
+                Theme::Dark => AppTheme::Dark,
+                _ => AppTheme::Dark, // Default fallback
+            }
+        } else {
+            AppTheme::Dark
+        }
+    }
+}
+
+/// Gets the appropriate icon path for the given theme and state
+pub fn get_icon_path(theme: AppTheme, state: TrayIconState) -> &'static str {
+    match (theme, state) {
+        // Dark theme uses light icons
+        (AppTheme::Dark, TrayIconState::Idle) => "resources/tray_idle.png",
+        (AppTheme::Dark, TrayIconState::Recording) => "resources/tray_recording.png",
+        (AppTheme::Dark, TrayIconState::Transcribing) => "resources/tray_transcribing.png",
+        // Light theme uses dark icons
+        (AppTheme::Light, TrayIconState::Idle) => "resources/tray_idle_dark.png",
+        (AppTheme::Light, TrayIconState::Recording) => "resources/tray_recording_dark.png",
+        (AppTheme::Light, TrayIconState::Transcribing) => "resources/tray_transcribing_dark.png",
+        // Colored theme uses pink icons (for Linux)
+        (AppTheme::Colored, TrayIconState::Idle) => "resources/handy.png",
+        (AppTheme::Colored, TrayIconState::Recording) => "resources/recording.png",
+        (AppTheme::Colored, TrayIconState::Transcribing) => "resources/transcribing.png",
     }
 }
 
@@ -23,20 +58,7 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
     let tray = app.state::<TrayIcon>();
     let theme = get_current_theme(app);
 
-    let icon_path = match (theme, &icon) {
-        // Dark theme uses regular icons (lighter colored for visibility)
-        (Theme::Dark, TrayIconState::Idle) => "resources/tray_idle.png",
-        (Theme::Dark, TrayIconState::Recording) => "resources/tray_recording.png",
-        (Theme::Dark, TrayIconState::Transcribing) => "resources/tray_transcribing.png",
-        // Light theme uses dark icons (darker colored for visibility)
-        (Theme::Light, TrayIconState::Idle) => "resources/tray_idle_dark.png",
-        (Theme::Light, TrayIconState::Recording) => "resources/tray_recording_dark.png",
-        (Theme::Light, TrayIconState::Transcribing) => "resources/tray_transcribing_dark.png",
-        // Fallback for any other theme variants
-        (_, TrayIconState::Idle) => "resources/tray_idle.png",
-        (_, TrayIconState::Recording) => "resources/tray_recording.png",
-        (_, TrayIconState::Transcribing) => "resources/tray_transcribing.png",
-    };
+    let icon_path = get_icon_path(theme, icon.clone());
 
     let _ = tray.set_icon(Some(
         Image::from_path(
