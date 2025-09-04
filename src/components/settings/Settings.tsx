@@ -6,6 +6,7 @@ import { AudioFeedback } from "./AudioFeedback";
 import { OutputDeviceSelector } from "./OutputDeviceSelector";
 import { ShowOverlay } from "./ShowOverlay";
 import { HandyShortcut } from "./HandyShortcut";
+import { HandyTranslateShortcut } from "./HandyTranslateShortcut";
 import { TranslateToEnglish } from "./TranslateToEnglish";
 import { LanguageSelector } from "./LanguageSelector";
 import { CustomWords } from "./CustomWords";
@@ -46,6 +47,7 @@ export const Settings: React.FC = () => {
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup>
         <HandyShortcut descriptionMode="tooltip" grouped={true} />
+        <HandyTranslateShortcut descriptionMode="tooltip" grouped={true} />
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <LanguageSelector descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>

@@ -12,12 +12,12 @@ import { useSettings } from "../../hooks/useSettings";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
 
-interface HandyShortcutProps {
+interface HandyTranslateShortcutProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
-export const HandyShortcut: React.FC<HandyShortcutProps> = ({
+export const HandyTranslateShortcut: React.FC<HandyTranslateShortcutProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
@@ -243,8 +243,8 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (isLoading) {
     return (
       <SettingContainer
-        title="Handy Shortcuts"
-        description="Configure keyboard shortcuts to trigger speech-to-text recording"
+        title="Handy Translate Shortcut"
+        description="Configure keyboard shortcut for speech-to-text recording with translation"
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
@@ -253,55 +253,58 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     );
   }
 
-  // If no bindings are loaded, show empty state
-  if (Object.keys(bindings).length === 0) {
-    return (
-      <SettingContainer
-        title="Handy Shortcuts"
-        description="Configure keyboard shortcuts to trigger speech-to-text recording"
-        descriptionMode={descriptionMode}
-        grouped={grouped}
-      >
-        <div className="text-sm text-mid-gray">No shortcuts configured</div>
-      </SettingContainer>
-    );
-  }
+  // Get the translate binding for this component, or create default if not present
+  const translateBinding = bindings["transcribe_translate"];
+  
+  // Create default binding if not present
+  const getDefaultTranslateShortcut = () => {
+    switch (osType) {
+      case "macos":
+        return "option+shift+space";
+      case "windows":
+      case "linux":
+        return "ctrl+shift+space";
+      default:
+        return "alt+shift+space";
+    }
+  };
 
-  // Get the transcribe binding for this component
-  const transcribeBinding = bindings["transcribe"];
+  const effectiveBinding = translateBinding || {
+    id: "transcribe_translate",
+    name: "Transcribe & Translate",
+    description: "Converts your speech into text and translates it to English.",
+    default_binding: getDefaultTranslateShortcut(),
+    current_binding: getDefaultTranslateShortcut(),
+  };
 
   return (
     <SettingContainer
-      title="Handy Shortcut"
-      description="Set the keyboard shortcut to start and stop speech-to-text recording"
+      title="Handy Translate Shortcut"
+      description="Set the keyboard shortcut to start speech-to-text recording with translation to English"
       descriptionMode={descriptionMode}
       grouped={grouped}
     >
-      {transcribeBinding ? (
-        <div className="flex items-center space-x-1">
-          {editingShortcutId === "transcribe" ? (
-            <div
-              ref={(ref) => setShortcutRef("transcribe", ref)}
-              className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
-            >
-              {formatCurrentKeys()}
-            </div>
-          ) : (
-            <div
-              className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
-              onClick={() => startRecording("transcribe")}
-            >
-              {formatKeyCombination(transcribeBinding.current_binding, osType)}
-            </div>
-          )}
-          <ResetButton
-            onClick={() => resetBinding("transcribe")}
-            disabled={isUpdating("binding_transcribe")}
-          />
-        </div>
-      ) : (
-        <div className="text-sm text-mid-gray">No shortcut configured</div>
-      )}
+      <div className="flex items-center space-x-1">
+        {editingShortcutId === "transcribe_translate" ? (
+          <div
+            ref={(ref) => setShortcutRef("transcribe_translate", ref)}
+            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
+          >
+            {formatCurrentKeys()}
+          </div>
+        ) : (
+          <div
+            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
+            onClick={() => startRecording("transcribe_translate")}
+          >
+            {formatKeyCombination(effectiveBinding.current_binding, osType)}
+          </div>
+        )}
+        <ResetButton
+          onClick={() => resetBinding("transcribe_translate")}
+          disabled={isUpdating("binding_transcribe_translate")}
+        />
+      </div>
     </SettingContainer>
   );
 };

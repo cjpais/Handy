@@ -100,6 +100,26 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
 
+    #[cfg(target_os = "windows")]
+    let translate_shortcut = "ctrl+shift+space";
+    #[cfg(target_os = "macos")]
+    let translate_shortcut = "option+shift+space";
+    #[cfg(target_os = "linux")]
+    let translate_shortcut = "ctrl+shift+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let translate_shortcut = "alt+shift+space";
+
+    bindings.insert(
+        "transcribe_translate".to_string(),
+        ShortcutBinding {
+            id: "transcribe_translate".to_string(),
+            name: "Transcribe & Translate".to_string(),
+            description: "Converts your speech into text and translates it to English.".to_string(),
+            default_binding: translate_shortcut.to_string(),
+            current_binding: translate_shortcut.to_string(),
+        },
+    );
+
     AppSettings {
         bindings,
         push_to_talk: true,
@@ -126,8 +146,20 @@ pub fn load_or_create_app_settings(app: &App) -> AppSettings {
     let settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
-            Ok(settings) => {
+            Ok(mut settings) => {
                 println!("Found existing settings: {:?}", settings);
+
+                // Ensure new bindings are added to existing settings
+                let default_settings = get_default_settings();
+                for (id, binding) in default_settings.bindings {
+                    if !settings.bindings.contains_key(&id) {
+                        println!("Adding missing binding: {}", id);
+                        settings.bindings.insert(id, binding);
+                    }
+                }
+
+                // Save the updated settings back to store
+                store.set("settings", serde_json::to_value(&settings).unwrap());
 
                 settings
             }
@@ -185,7 +217,31 @@ pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
 pub fn get_stored_binding(app: &AppHandle, id: &str) -> ShortcutBinding {
     let bindings = get_bindings(app);
 
-    let binding = bindings.get(id).unwrap().clone();
+    match bindings.get(id) {
+        Some(binding) => binding.clone(),
+        None => {
+            // Return default binding for known IDs
+            match id {
+                "transcribe_translate" => {
+                    #[cfg(target_os = "windows")]
+                    let default_shortcut = "ctrl+shift+space";
+                    #[cfg(target_os = "macos")]
+                    let default_shortcut = "option+shift+space";
+                    #[cfg(target_os = "linux")]
+                    let default_shortcut = "ctrl+shift+space";
+                    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+                    let default_shortcut = "alt+shift+space";
 
-    binding
+                    ShortcutBinding {
+                        id: "transcribe_translate".to_string(),
+                        name: "Transcribe & Translate".to_string(),
+                        description: "Converts your speech into text and translates it to English.".to_string(),
+                        default_binding: default_shortcut.to_string(),
+                        current_binding: default_shortcut.to_string(),
+                    }
+                }
+                _ => panic!("Binding with id '{}' not found and no default available", id),
+            }
+        }
+    }
 }
