@@ -24,6 +24,7 @@ pub enum OverlayPosition {
 #[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
+    Immediately,
     Min2,
     Min5,
     Min10,
@@ -42,6 +43,7 @@ impl ModelUnloadTimeout {
     pub fn to_minutes(self) -> Option<u64> {
         match self {
             ModelUnloadTimeout::Never => None,
+            ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
             ModelUnloadTimeout::Min2 => Some(2),
             ModelUnloadTimeout::Min5 => Some(5),
             ModelUnloadTimeout::Min10 => Some(10),
@@ -54,6 +56,7 @@ impl ModelUnloadTimeout {
     pub fn to_seconds(self) -> Option<u64> {
         match self {
             ModelUnloadTimeout::Never => None,
+            ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
             ModelUnloadTimeout::Sec5 => Some(5),
             _ => self.to_minutes().map(|m| m * 60),
         }

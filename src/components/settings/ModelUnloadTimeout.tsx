@@ -12,6 +12,7 @@ interface ModelUnloadTimeoutProps {
 
 const timeoutOptions = [
   { value: "never" as ModelUnloadTimeout, label: "Never" },
+  { value: "immediately" as ModelUnloadTimeout, label: "Immediately" },
   { value: "min2" as ModelUnloadTimeout, label: "After 2 minutes" },
   { value: "min5" as ModelUnloadTimeout, label: "After 5 minutes" },
   { value: "min10" as ModelUnloadTimeout, label: "After 10 minutes" },

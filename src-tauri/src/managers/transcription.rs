@@ -1,5 +1,5 @@
 use crate::managers::model::ModelManager;
-use crate::settings::get_settings;
+use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::debug;
 use natural::phonetics::soundex;
@@ -173,6 +173,11 @@ impl TranscriptionManager {
                     let timeout_seconds = settings.model_unload_timeout.to_seconds();
 
                     if let Some(limit_seconds) = timeout_seconds {
+                        // Skip polling-based unloading for immediate timeout since it's handled directly in transcribe()
+                        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
+                            continue;
+                        }
+
                         let last = manager_cloned.last_activity.load(Ordering::Relaxed);
                         let now_ms = SystemTime::now()
                             .duration_since(SystemTime::UNIX_EPOCH)
@@ -479,6 +484,16 @@ impl TranscriptionManager {
             ""
         };
         println!("\ntook {}ms{}", (et - st).as_millis(), translation_note);
+
+        // Check if we should immediately unload the model after transcription
+        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
+            println!("⚡ Immediately unloading model after transcription");
+            // Drop the state guard first to avoid deadlock
+            drop(state_guard);
+            if let Err(e) = self.unload_model() {
+                eprintln!("Failed to immediately unload model: {}", e);
+            }
+        }
 
         Ok(corrected_result.trim().to_string())
     }

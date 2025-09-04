@@ -24,6 +24,7 @@ export type OverlayPosition = z.infer<typeof OverlayPositionSchema>;
 
 export const ModelUnloadTimeoutSchema = z.enum([
   "never",
+  "immediately",
   "min2",
   "min5",
   "min10",
