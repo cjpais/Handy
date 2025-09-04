@@ -3,7 +3,6 @@ import { getVersion } from "@tauri-apps/api/app";
 
 import ModelSelector from "../model-selector";
 import UpdateChecker from "../update-checker";
-import ModelStatus from "./ModelStatus";
 
 const Footer: React.FC = () => {
   const [version, setVersion] = useState("");
@@ -27,7 +26,6 @@ const Footer: React.FC = () => {
       <div className="flex justify-between items-center text-xs px-4 pb-3 text-text/60">
         <div className="flex items-center gap-4">
           <ModelSelector />
-          <ModelStatus />
         </div>
 
         {/* Update Status */}

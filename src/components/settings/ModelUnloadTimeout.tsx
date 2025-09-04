@@ -49,7 +49,7 @@ export const ModelUnloadTimeoutSetting: React.FC<ModelUnloadTimeoutProps> = ({
 
   return (
     <SettingContainer
-      title="Auto-unload model when idle"
+      title="Unload Model"
       description="Automatically free GPU/CPU memory when the model hasn't been used for the specified time"
       descriptionMode={descriptionMode}
       grouped={grouped}

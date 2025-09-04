@@ -1,6 +1,7 @@
 use crate::managers::model::ModelManager;
 use crate::settings::get_settings;
 use anyhow::Result;
+use log::debug;
 use natural::phonetics::soundex;
 use serde::Serialize;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -181,6 +182,9 @@ impl TranscriptionManager {
                         if now_ms.saturating_sub(last) > limit_seconds * 1000 {
                             // idle -> unload
                             if manager_cloned.is_model_loaded() {
+                                let unload_start = std::time::Instant::now();
+                                debug!("Starting to unload model due to inactivity");
+
                                 if let Ok(()) = manager_cloned.unload_model() {
                                     let _ = app_handle_cloned.emit(
                                         "model-state-changed",
@@ -191,7 +195,11 @@ impl TranscriptionManager {
                                             error: None,
                                         },
                                     );
-                                    println!("Model unloaded due to inactivity");
+                                    let unload_duration = unload_start.elapsed();
+                                    debug!(
+                                        "Model unloaded due to inactivity (took {}ms)",
+                                        unload_duration.as_millis()
+                                    );
                                 }
                             }
                         }
@@ -214,6 +222,9 @@ impl TranscriptionManager {
     }
 
     pub fn unload_model(&self) -> Result<()> {
+        let unload_start = std::time::Instant::now();
+        debug!("Starting to unload model");
+
         {
             let mut state = self.state.lock().unwrap();
             *state = None; // Dropping state frees GPU/CPU memory
@@ -238,11 +249,18 @@ impl TranscriptionManager {
             },
         );
 
-        println!("Model unloaded manually");
+        let unload_duration = unload_start.elapsed();
+        debug!(
+            "Model unloaded manually (took {}ms)",
+            unload_duration.as_millis()
+        );
         Ok(())
     }
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
+        let load_start = std::time::Instant::now();
+        debug!("Starting to load model: {}", model_id);
+
         // Emit loading started event
         let _ = self.app_handle.emit(
             "model-state-changed",
@@ -344,7 +362,12 @@ impl TranscriptionManager {
             },
         );
 
-        println!("Successfully loaded transcription model: {}", model_id);
+        let load_duration = load_start.elapsed();
+        debug!(
+            "Successfully loaded transcription model: {} (took {}ms)",
+            model_id,
+            load_duration.as_millis()
+        );
         Ok(())
     }
 
