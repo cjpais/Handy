@@ -9,8 +9,7 @@ const HandyHand = ({
     width={width || 126}
     height={height || 135}
     viewBox="0 0 126 135"
-    fill="#f0f0f0"
-    stroke="#f0f0f0"
+    className="fill-text stroke-text"
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
