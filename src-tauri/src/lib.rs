@@ -11,6 +11,7 @@ mod tray;
 mod utils;
 
 use managers::audio::AudioRecordingManager;
+use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 use std::collections::HashMap;
@@ -75,6 +76,14 @@ pub fn run() {
         .plugin(tauri_plugin_macos_permissions::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations(
+                    "sqlite:history.db",
+                    managers::history::HistoryManager::get_migrations(),
+                )
+                .build(),
+        )
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -134,11 +143,14 @@ pub fn run() {
                 TranscriptionManager::new(&app, model_manager.clone())
                     .expect("Failed to initialize transcription manager"),
             );
+            let history_manager =
+                Arc::new(HistoryManager::new(&app).expect("Failed to initialize history manager"));
 
             // Add managers to Tauri's managed state
             app.manage(recording_manager.clone());
             app.manage(model_manager.clone());
             app.manage(transcription_manager.clone());
+            app.manage(history_manager.clone());
 
             // Create the recording overlay window (hidden by default)
             utils::create_recording_overlay(&app.handle());
@@ -206,7 +218,10 @@ pub fn run() {
             commands::audio::get_selected_output_device,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
-            commands::transcription::unload_model_manually
+            commands::transcription::unload_model_manually,
+            commands::history::get_history_entries,
+            commands::history::toggle_history_entry_saved,
+            commands::history::get_audio_file_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

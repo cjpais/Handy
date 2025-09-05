@@ -19,6 +19,7 @@
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-os": "~2",
     "@tauri-apps/plugin-process": "~2",
+    "@tauri-apps/plugin-sql": "~2",
     "@tauri-apps/plugin-store": "~2",
     "@tauri-apps/plugin-stronghold": "~2",
     "@tauri-apps/plugin-updater": "~2",

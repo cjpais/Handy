@@ -41,12 +41,12 @@ export const SECTIONS_CONFIG = {
     component: AdvancedSettings,
     enabled: () => true,
   },
-  // history: {
-  //   label: "History",
-  //   icon: History,
-  //   component: HistorySettings,
-  //   enabled: () => true,
-  // },
+  history: {
+    label: "History",
+    icon: History,
+    component: HistorySettings,
+    enabled: () => true,
+  },
   debug: {
     label: "Debug",
     icon: FlaskConical,

@@ -28,7 +28,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 once_cell = "1"
-tauri = { version = "2", features = [
+tauri = { version = "2", features = [ "protocol-asset",
     "macos-private-api",
     "tray-icon",
     'image-png',
@@ -58,6 +58,9 @@ tauri-plugin-fs = "2"
 rustfft = "6.4.0"
 strsim = "0.11.0"
 natural = "0.5.0"
+chrono = "0.4"
+rusqlite = { version = "0.32", features = ["bundled"] }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 
 [dependencies.ort-sys]
 version = "=2.0.0-rc.9"
