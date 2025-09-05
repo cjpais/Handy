@@ -23,6 +23,7 @@
     "@tauri-apps/plugin-stronghold": "~2",
     "@tauri-apps/plugin-updater": "~2",
     "@tauri-apps/plugin-upload": "~2",
+    "lucide-react": "^0.542.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sonner": "^2.0.7",
