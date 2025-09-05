@@ -47,17 +47,17 @@ export const SECTIONS_CONFIG = {
   //   component: HistorySettings,
   //   enabled: () => true,
   // },
-  // about: {
-  //   label: "About",
-  //   icon: Info,
-  //   component: AboutSettings,
-  //   enabled: () => true,
-  // },
   debug: {
     label: "Debug",
     icon: FlaskConical,
     component: DebugSettings,
     enabled: (settings) => settings?.debug_mode ?? false,
+  },
+  about: {
+    label: "About",
+    icon: Info,
+    component: AboutSettings,
+    enabled: () => true,
   },
 } as const satisfies Record<string, SectionConfig>;
 
@@ -88,7 +88,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               key={section.id}
               className={`flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer transition-colors ${
-                isActive ? "bg-logo-primary/80" : "hover:bg-logo-primary/50"
+                isActive
+                  ? "bg-logo-primary/80"
+                  : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
               }`}
               onClick={() => onSectionChange(section.id)}
             >
