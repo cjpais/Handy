@@ -14,10 +14,10 @@
     "windows": [
       {
         "title": "Handy",
-        "width": 640,
-        "height": 480,
-        "minWidth": 640,
-        "minHeight": 480,
+        "width": 680,
+        "height": 510,
+        "minWidth": 680,
+        "minHeight": 510,
         "resizable": true,
         "maximizable": false
       }

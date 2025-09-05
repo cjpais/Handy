@@ -1,4 +1,10 @@
-const HandyHand = ({ width, height }: { width?: number; height?: number }) => (
+const HandyHand = ({
+  width,
+  height,
+}: {
+  width?: number | string;
+  height?: number | string;
+}) => (
   <svg
     width={width || 126}
     height={height || 135}

@@ -29,7 +29,8 @@
     "sonner": "^2.0.7",
     "tailwindcss": "^4.0.2",
     "tauri-plugin-macos-permissions-api": "^2.0.4",
-    "zod": "^3.24.4"
+    "zod": "^3.24.4",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

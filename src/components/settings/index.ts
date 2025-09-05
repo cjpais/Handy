@@ -1,4 +1,11 @@
-export { Settings } from "./Settings";
+// Settings section components
+export { GeneralSettings } from "./GeneralSettings";
+export { AdvancedSettings } from "./AdvancedSettings";
+export { DebugSettings } from "./DebugSettings";
+export { HistorySettings } from "./HistorySettings";
+export { AboutSettings } from "./AboutSettings";
+
+// Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";
 export { OutputDeviceSelector } from "./OutputDeviceSelector";
 export { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
