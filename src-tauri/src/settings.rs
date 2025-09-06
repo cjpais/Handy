@@ -69,6 +69,8 @@ pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
     pub audio_feedback: bool,
+    #[serde(default = "default_start_hidden")]
+    pub start_hidden: bool,
     #[serde(default = "default_model")]
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
@@ -102,6 +104,10 @@ fn default_always_on_microphone() -> bool {
 }
 
 fn default_translate_to_english() -> bool {
+    false
+}
+
+fn default_start_hidden() -> bool {
     false
 }
 
@@ -149,6 +155,7 @@ pub fn get_default_settings() -> AppSettings {
         bindings,
         push_to_talk: true,
         audio_feedback: false,
+        start_hidden: default_start_hidden(),
         selected_model: "".to_string(),
         always_on_microphone: false,
         selected_microphone: None,

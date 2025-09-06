@@ -91,6 +91,14 @@ pub fn run() {
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
+            // Apply macOS Accessory policy early if starting hidden
+            #[cfg(target_os = "macos")]
+            {
+                let settings = settings::get_settings(&app.handle());
+                if settings.start_hidden {
+                    let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                }
+            }
             // Get the current theme to set the appropriate initial icon
             let initial_theme = tray::get_current_theme(&app.handle());
 
@@ -133,6 +141,17 @@ pub fn run() {
             let autostart_manager = app.autolaunch();
             // Enable autostart
             let _ = autostart_manager.enable();
+
+            // Window is configured to start hidden to avoid flicker.
+            // If user didn't choose Start Hidden, show it now.
+            let settings = settings::get_settings(&app.handle());
+            if settings.start_hidden {
+                if let Some(main_window) = app.get_webview_window("main") {
+                    let _ = main_window.hide();
+                }
+            } else {
+                show_main_window(&app.handle());
+            }
 
             let recording_manager = Arc::new(
                 AudioRecordingManager::new(app).expect("Failed to initialize recording manager"),
@@ -185,6 +204,7 @@ pub fn run() {
             shortcut::reset_binding,
             shortcut::change_ptt_setting,
             shortcut::change_audio_feedback_setting,
+            shortcut::change_start_hidden_setting,
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,
