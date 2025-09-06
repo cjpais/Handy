@@ -14,7 +14,6 @@
     "windows": [
       {
         "title": "Handy",
-        "visible": false,
         "width": 680,
         "height": 510,
         "minWidth": 680,
