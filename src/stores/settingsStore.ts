@@ -33,6 +33,7 @@ interface SettingsStore {
 const DEFAULT_SETTINGS: Partial<Settings> = {
   always_on_microphone: false,
   audio_feedback: true,
+  start_hidden: false,
   push_to_talk: false,
   selected_microphone: "Default",
   selected_output_device: "Default",
@@ -161,6 +162,9 @@ export const useSettingsStore = create<SettingsStore>()(
             break;
           case "audio_feedback":
             await invoke("change_audio_feedback_setting", { enabled: value });
+            break;
+          case "start_hidden":
+            await invoke("change_start_hidden_setting", { enabled: value });
             break;
           case "push_to_talk":
             await invoke("change_ptt_setting", { enabled: value });

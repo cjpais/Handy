@@ -174,6 +174,24 @@ pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), St
 }
 
 #[tauri::command]
+pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.start_hidden = enabled;
+    settings::write_settings(&app, settings);
+
+    // Notify frontend
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "start_hidden",
+            "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.custom_words = words;
