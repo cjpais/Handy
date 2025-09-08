@@ -441,7 +441,10 @@ impl TranscriptionManager {
         let settings = get_settings(&self.app_handle);
 
         // Initialize parameters
-        let mut params = FullParams::new(SamplingStrategy::default());
+        let mut params = FullParams::new(SamplingStrategy::BeamSearch {
+            beam_size: 3,
+            patience: -1.0,
+        });
         let language = Some(settings.selected_language.as_str());
         params.set_language(language);
         params.set_print_special(false);
