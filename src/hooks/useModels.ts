@@ -5,11 +5,14 @@ import { listen } from "@tauri-apps/api/event";
 interface ModelInfo {
   id: string;
   name: string;
+  description: string;
   filename: string;
   url?: string;
   size_mb: number;
   is_downloaded: boolean;
-  is_bundled: boolean;
+  is_downloading: boolean;
+  partial_size: number;
+  is_directory: boolean;
 }
 
 interface DownloadProgress {

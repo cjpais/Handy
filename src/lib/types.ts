@@ -68,10 +68,13 @@ export const ModelInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
+  filename: z.string(),
+  url: z.string().optional(),
   size_mb: z.number(),
   is_downloaded: z.boolean(),
   is_downloading: z.boolean(),
   partial_size: z.number(),
+  is_directory: z.boolean(),
 });
 
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;
