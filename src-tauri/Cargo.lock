@@ -2168,7 +2168,6 @@ dependencies = [
  "tokio",
  "transcribe-rs",
  "vad-rs",
- "whisper-rs",
 ]
 
 [[package]]
@@ -6654,6 +6653,8 @@ dependencies = [
 [[package]]
 name = "transcribe-rs"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eaeba5648789d05eedce5478069195639a0770dcc0338146037d4b85163df4bd"
 dependencies = [
  "env_logger 0.10.2",
  "hound",
