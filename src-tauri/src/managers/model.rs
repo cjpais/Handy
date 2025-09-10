@@ -13,6 +13,12 @@ use std::fs::File;
 use flate2::read::GzDecoder;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum EngineType {
+    Whisper,
+    Parakeet,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelInfo {
     pub id: String,
     pub name: String,
@@ -24,6 +30,7 @@ pub struct ModelInfo {
     pub is_downloading: bool,
     pub partial_size: u64,
     pub is_directory: bool,
+    pub engine_type: EngineType,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,6 +77,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
+                engine_type: EngineType::Whisper,
             },
         );
 
@@ -87,6 +95,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
+                engine_type: EngineType::Whisper,
             },
         );
 
@@ -103,6 +112,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
+                engine_type: EngineType::Whisper,
             },
         );
 
@@ -119,6 +129,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
+                engine_type: EngineType::Whisper,
             },
         );
 
@@ -136,6 +147,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: true,
+                engine_type: EngineType::Parakeet,
             },
         );
 
@@ -202,6 +214,13 @@ impl ModelManager {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);
                 let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                let extracting_path = self.models_dir.join(format!("{}.extracting", &model.filename));
+
+                // Clean up any leftover .extracting directories from interrupted extractions
+                if extracting_path.exists() {
+                    println!("Cleaning up interrupted extraction for model: {}", model.id);
+                    let _ = fs::remove_dir_all(&extracting_path);
+                }
 
                 model.is_downloaded = model_path.exists() && model_path.is_dir();
                 model.is_downloading = partial_path.exists();
@@ -403,20 +422,66 @@ impl ModelManager {
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
-            // For directory-based models, extract the tar.gz file
+            // Emit extraction started event
+            let _ = self.app_handle.emit("model-extraction-started", model_id);
             println!("Extracting archive for directory-based model: {}", model_id);
+
+            // Use a temporary extraction directory to ensure atomic operations
+            let temp_extract_dir = self.models_dir.join(format!("{}.extracting", &model_info.filename));
+            let final_model_dir = self.models_dir.join(&model_info.filename);
+            
+            // Clean up any previous incomplete extraction
+            if temp_extract_dir.exists() {
+                let _ = fs::remove_dir_all(&temp_extract_dir);
+            }
+            
+            // Create temporary extraction directory
+            fs::create_dir_all(&temp_extract_dir)?;
 
             // Open the downloaded tar.gz file
             let tar_gz = File::open(&partial_path)?;
             let tar = GzDecoder::new(tar_gz);
             let mut archive = Archive::new(tar);
 
-            // Extract to the models directory
-            archive.unpack(&self.models_dir).map_err(|e| {
-                anyhow::anyhow!("Failed to extract archive: {}", e)
+            // Extract to the temporary directory first
+            archive.unpack(&temp_extract_dir).map_err(|e| {
+                let error_msg = format!("Failed to extract archive: {}", e);
+                // Clean up failed extraction
+                let _ = fs::remove_dir_all(&temp_extract_dir);
+                let _ = self.app_handle.emit("model-extraction-failed", &serde_json::json!({
+                    "model_id": model_id,
+                    "error": error_msg
+                }));
+                anyhow::anyhow!(error_msg)
             })?;
+            
+            // Find the actual extracted directory (archive might have a nested structure)
+            let extracted_dirs: Vec<_> = fs::read_dir(&temp_extract_dir)?
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
+                .collect();
+                
+            if extracted_dirs.len() == 1 {
+                // Single directory extracted, move it to the final location
+                let source_dir = extracted_dirs[0].path();
+                if final_model_dir.exists() {
+                    fs::remove_dir_all(&final_model_dir)?;
+                }
+                fs::rename(&source_dir, &final_model_dir)?;
+                // Clean up temp directory
+                let _ = fs::remove_dir_all(&temp_extract_dir);
+            } else {
+                // Multiple items or no directories, rename the temp directory itself
+                if final_model_dir.exists() {
+                    fs::remove_dir_all(&final_model_dir)?;
+                }
+                fs::rename(&temp_extract_dir, &final_model_dir)?;
+            }
 
             println!("Successfully extracted archive for model: {}", model_id);
+            // Emit extraction completed event
+            let _ = self.app_handle.emit("model-extraction-completed", model_id);
+            
             // Remove the downloaded tar.gz file
             let _ = fs::remove_file(&partial_path);
         } else {

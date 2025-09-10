@@ -1,4 +1,4 @@
-use crate::managers::model::ModelManager;
+use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::debug;
@@ -10,8 +10,14 @@ use std::thread;
 use std::time::{Duration, SystemTime};
 use strsim::levenshtein;
 use tauri::{App, AppHandle, Emitter, Manager};
-use whisper_rs::{
-    FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperState,
+use transcribe_rs::{
+    engines::{
+        parakeet::{
+            ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
+        },
+        whisper::{WhisperEngine, WhisperInferenceParams},
+    },
+    TranscriptionEngine,
 };
 
 #[derive(Clone, Debug, Serialize)]
@@ -22,10 +28,14 @@ pub struct ModelStateEvent {
     pub error: Option<String>,
 }
 
+enum LoadedEngine {
+    Whisper(WhisperEngine),
+    Parakeet(ParakeetEngine),
+}
+
 #[derive(Clone)]
 pub struct TranscriptionManager {
-    state: Arc<Mutex<Option<WhisperState>>>,
-    context: Arc<Mutex<Option<WhisperContext>>>,
+    engine: Arc<Mutex<Option<LoadedEngine>>>,
     model_manager: Arc<ModelManager>,
     app_handle: AppHandle,
     current_model_id: Arc<Mutex<Option<String>>>,
@@ -147,8 +157,7 @@ impl TranscriptionManager {
         let app_handle = app.app_handle().clone();
 
         let manager = Self {
-            state: Arc::new(Mutex::new(None)),
-            context: Arc::new(Mutex::new(None)),
+            engine: Arc::new(Mutex::new(None)),
             model_manager,
             app_handle: app_handle.clone(),
             current_model_id: Arc::new(Mutex::new(None)),
@@ -230,8 +239,8 @@ impl TranscriptionManager {
     }
 
     pub fn is_model_loaded(&self) -> bool {
-        let state = self.state.lock().unwrap();
-        state.is_some()
+        let engine = self.engine.lock().unwrap();
+        engine.is_some()
     }
 
     pub fn unload_model(&self) -> Result<()> {
@@ -239,12 +248,14 @@ impl TranscriptionManager {
         debug!("Starting to unload model");
 
         {
-            let mut state = self.state.lock().unwrap();
-            *state = None; // Dropping state frees GPU/CPU memory
-        }
-        {
-            let mut context = self.context.lock().unwrap();
-            *context = None; // Dropping context frees additional memory
+            let mut engine = self.engine.lock().unwrap();
+            if let Some(ref mut loaded_engine) = *engine {
+                match loaded_engine {
+                    LoadedEngine::Whisper(ref mut whisper) => whisper.unload_model(),
+                    LoadedEngine::Parakeet(ref mut parakeet) => parakeet.unload_model(),
+                }
+            }
+            *engine = None; // Drop the engine to free memory
         }
         {
             let mut current_model = self.current_model_id.lock().unwrap();
@@ -306,19 +317,16 @@ impl TranscriptionManager {
 
         let model_path = self.model_manager.get_model_path(model_id)?;
 
-        let path_str = model_path
-            .to_str()
-            .ok_or_else(|| anyhow::anyhow!("Invalid path for model: {}", model_id))?;
-
         println!(
-            "Loading transcription model {} from: {}",
-            model_id, path_str
+            "Loading transcription model {} from: {:?}",
+            model_id, model_path
         );
 
-        // Create new context
-        let context =
-            WhisperContext::new_with_params(path_str, WhisperContextParameters::default())
-                .map_err(|e| {
+        // Create appropriate engine based on model type
+        let loaded_engine = match model_info.engine_type {
+            EngineType::Whisper => {
+                let mut engine = WhisperEngine::new();
+                engine.load_model(&model_path).map_err(|e| {
                     let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
                     let _ = self.app_handle.emit(
                         "model-state-changed",
@@ -331,30 +339,34 @@ impl TranscriptionManager {
                     );
                     anyhow::anyhow!(error_msg)
                 })?;
+                LoadedEngine::Whisper(engine)
+            }
+            EngineType::Parakeet => {
+                let mut engine = ParakeetEngine::new();
+                engine
+                    .load_model_with_params(&model_path, ParakeetModelParams::int8())
+                    .map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load parakeet model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::Parakeet(engine)
+            }
+        };
 
-        // Create new state
-        let state = context.create_state().map_err(|e| {
-            let error_msg = format!("Failed to create state for model {}: {}", model_id, e);
-            let _ = self.app_handle.emit(
-                "model-state-changed",
-                ModelStateEvent {
-                    event_type: "loading_failed".to_string(),
-                    model_id: Some(model_id.to_string()),
-                    model_name: Some(model_info.name.clone()),
-                    error: Some(error_msg.clone()),
-                },
-            );
-            anyhow::anyhow!(error_msg)
-        })?;
-
-        // Update the current context and state
+        // Update the current engine and model ID
         {
-            let mut current_context = self.context.lock().unwrap();
-            *current_context = Some(context);
-        }
-        {
-            let mut current_state = self.state.lock().unwrap();
-            *current_state = Some(state);
+            let mut engine = self.engine.lock().unwrap();
+            *engine = Some(loaded_engine);
         }
         {
             let mut current_model = self.current_model_id.lock().unwrap();
@@ -398,18 +410,17 @@ impl TranscriptionManager {
 
         let st = std::time::Instant::now();
 
-        let mut result = String::new();
         println!("Audio vector length: {}", audio.len());
 
         if audio.len() == 0 {
             println!("Empty audio vector");
-            return Ok(result);
+            return Ok(String::new());
         }
 
         // Check if model is loaded, if not try to load it
         {
-            let state_guard = self.state.lock().unwrap();
-            if state_guard.is_none() {
+            let engine_guard = self.engine.lock().unwrap();
+            if engine_guard.is_none() {
                 // Model not loaded, try to load the selected model from settings
                 let settings = get_settings(&self.app_handle);
                 println!(
@@ -418,7 +429,7 @@ impl TranscriptionManager {
                 );
 
                 // Drop the guard before calling load_model to avoid deadlock
-                drop(state_guard);
+                drop(engine_guard);
 
                 // Try to load the model
                 if let Err(e) = self.load_model(&settings.selected_model) {
@@ -430,60 +441,55 @@ impl TranscriptionManager {
             }
         }
 
-        let mut state_guard = self.state.lock().unwrap();
-        let state = state_guard.as_mut().ok_or_else(|| {
-            anyhow::anyhow!(
-                "Model failed to load after auto-load attempt. Please check your model settings."
-            )
-        })?;
-
-        // Get current settings to check translation preference
+        // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
-        // Initialize parameters
-        let mut params = FullParams::new(SamplingStrategy::BeamSearch {
-            beam_size: 3,
-            patience: -1.0,
-        });
-        let language = Some(settings.selected_language.as_str());
-        params.set_language(language);
-        params.set_print_special(false);
-        params.set_print_progress(false);
-        params.set_print_realtime(false);
-        params.set_print_timestamps(false);
-        params.set_suppress_blank(true);
-        params.set_suppress_non_speech_tokens(true);
-        params.set_no_speech_thold(0.2);
+        // Perform transcription with the appropriate engine
+        let result = {
+            let mut engine_guard = self.engine.lock().unwrap();
+            let engine = engine_guard.as_mut().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Model failed to load after auto-load attempt. Please check your model settings."
+                )
+            })?;
 
-        // Enable translation to English if requested
-        if settings.translate_to_english {
-            params.set_translate(true);
-        }
+            match engine {
+                LoadedEngine::Whisper(whisper_engine) => {
+                    let params = WhisperInferenceParams {
+                        language: if settings.selected_language == "auto" {
+                            None
+                        } else {
+                            Some(settings.selected_language.clone())
+                        },
+                        ..Default::default()
+                    };
 
-        state
-            .full(params, &audio)
-            .expect("failed to convert samples");
+                    whisper_engine
+                        .transcribe_samples(audio, Some(params))
+                        .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
+                }
+                LoadedEngine::Parakeet(parakeet_engine) => {
+                    let params = ParakeetInferenceParams {
+                        timestamp_granularity: TimestampGranularity::Segment,
+                        ..Default::default()
+                    };
 
-        let num_segments = state
-            .full_n_segments()
-            .expect("failed to get number of segments");
-
-        for i in 0..num_segments {
-            let segment = state
-                .full_get_segment_text(i)
-                .expect("failed to get segment");
-            result.push_str(&segment);
-        }
+                    parakeet_engine
+                        .transcribe_samples(audio, Some(params))
+                        .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
+                }
+            }
+        };
 
         // Apply word correction if custom words are configured
         let corrected_result = if !settings.custom_words.is_empty() {
             apply_custom_words(
-                &result,
+                &result.text,
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            result
+            result.text
         };
 
         let et = std::time::Instant::now();
@@ -497,8 +503,6 @@ impl TranscriptionManager {
         // Check if we should immediately unload the model after transcription
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
             println!("⚡ Immediately unloading model after transcription");
-            // Drop the state guard first to avoid deadlock
-            drop(state_guard);
             if let Err(e) = self.unload_model() {
                 eprintln!("Failed to immediately unload model: {}", e);
             }

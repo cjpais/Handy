@@ -1,0 +1,24 @@
+[package]
+name = "transcribe-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hound = "3.5.1"
+log = "0.4.28"
+ndarray = "0.16.1"
+ort = { version = "2.0.0-rc.10" }
+whisper-rs = "0.13.2"
+env_logger = "0.10.0"
+regex = "1.11.2"
+thiserror = "2.0.16"
+once_cell = "1.21.3"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+whisper-rs = { version = "0.13.2", features = ["metal"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+whisper-rs = { version = "0.13.2", features = ["vulkan"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+whisper-rs = { version = "0.13.2", features = ["vulkan"] }
