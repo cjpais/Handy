@@ -73,7 +73,6 @@ function App() {
           <HandyTextLogo width={200} />
           <Onboarding onModelSelected={handleModelSelected} />
         </div>
-        <Footer />
       </div>
     );
   }

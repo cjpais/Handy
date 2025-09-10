@@ -120,6 +120,6 @@ pub async fn cancel_download(
 
 #[tauri::command]
 pub async fn get_recommended_first_model() -> Result<String, String> {
-    // Recommend small model for first-time users
-    Ok("small".to_string())
+    // Recommend Parakeet V3 model for first-time users - fastest and most accurate
+    Ok("parakeet-tdt-0.6b-v3".to_string())
 }

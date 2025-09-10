@@ -1,16 +1,16 @@
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
+use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{App, AppHandle, Emitter, Manager};
 use tar::Archive;
-use std::fs::File;
-use flate2::read::GzDecoder;
+use tauri::{App, AppHandle, Emitter, Manager};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EngineType {
@@ -69,7 +69,7 @@ impl ModelManager {
             ModelInfo {
                 id: "small".to_string(),
                 name: "Whisper Small".to_string(),
-                description: "Fast and efficient, great for most use cases".to_string(),
+                description: "Fast and fairly accurate.".to_string(),
                 filename: "ggml-small.bin".to_string(),
                 url: Some("https://blob.handy.computer/ggml-small.bin".to_string()),
                 size_mb: 244,
@@ -121,7 +121,7 @@ impl ModelManager {
             ModelInfo {
                 id: "large".to_string(),
                 name: "Whisper Large".to_string(),
-                description: "Highest accuracy, but slow.".to_string(),
+                description: "Good accuracy, but slow.".to_string(),
                 filename: "ggml-large-v3-q5_0.bin".to_string(),
                 url: Some("https://blob.handy.computer/ggml-large-v3-q5_0.bin".to_string()),
                 size_mb: 1080, // Approximate size
@@ -139,7 +139,7 @@ impl ModelManager {
             ModelInfo {
                 id: "parakeet-tdt-0.6b-v3".to_string(),
                 name: "Parakeet V3".to_string(),
-                description: "The fastest and most accurate model".to_string(),
+                description: "Fast and accurate".to_string(),
                 filename: "parakeet-tdt-0.6b-v3-int8".to_string(), // Directory name
                 url: Some("https://blob.handy.computer/parakeet-v3-int8.tar.gz".to_string()),
                 size_mb: 850, // Approximate size for int8 quantized model
@@ -214,7 +214,9 @@ impl ModelManager {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);
                 let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
-                let extracting_path = self.models_dir.join(format!("{}.extracting", &model.filename));
+                let extracting_path = self
+                    .models_dir
+                    .join(format!("{}.extracting", &model.filename));
 
                 // Clean up any leftover .extracting directories from interrupted extractions
                 if extracting_path.exists() {
@@ -427,14 +429,16 @@ impl ModelManager {
             println!("Extracting archive for directory-based model: {}", model_id);
 
             // Use a temporary extraction directory to ensure atomic operations
-            let temp_extract_dir = self.models_dir.join(format!("{}.extracting", &model_info.filename));
+            let temp_extract_dir = self
+                .models_dir
+                .join(format!("{}.extracting", &model_info.filename));
             let final_model_dir = self.models_dir.join(&model_info.filename);
-            
+
             // Clean up any previous incomplete extraction
             if temp_extract_dir.exists() {
                 let _ = fs::remove_dir_all(&temp_extract_dir);
             }
-            
+
             // Create temporary extraction directory
             fs::create_dir_all(&temp_extract_dir)?;
 
@@ -448,19 +452,22 @@ impl ModelManager {
                 let error_msg = format!("Failed to extract archive: {}", e);
                 // Clean up failed extraction
                 let _ = fs::remove_dir_all(&temp_extract_dir);
-                let _ = self.app_handle.emit("model-extraction-failed", &serde_json::json!({
-                    "model_id": model_id,
-                    "error": error_msg
-                }));
+                let _ = self.app_handle.emit(
+                    "model-extraction-failed",
+                    &serde_json::json!({
+                        "model_id": model_id,
+                        "error": error_msg
+                    }),
+                );
                 anyhow::anyhow!(error_msg)
             })?;
-            
+
             // Find the actual extracted directory (archive might have a nested structure)
             let extracted_dirs: Vec<_> = fs::read_dir(&temp_extract_dir)?
                 .filter_map(|entry| entry.ok())
                 .filter(|entry| entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false))
                 .collect();
-                
+
             if extracted_dirs.len() == 1 {
                 // Single directory extracted, move it to the final location
                 let source_dir = extracted_dirs[0].path();
@@ -481,7 +488,7 @@ impl ModelManager {
             println!("Successfully extracted archive for model: {}", model_id);
             // Emit extraction completed event
             let _ = self.app_handle.emit("model-extraction-completed", model_id);
-            
+
             // Remove the downloaded tar.gz file
             let _ = fs::remove_file(&partial_path);
         } else {

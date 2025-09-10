@@ -208,11 +208,6 @@ impl TranscriptionManager {
 
         let model_path = self.model_manager.get_model_path(model_id)?;
 
-        println!(
-            "Loading transcription model {} from: {:?}",
-            model_id, model_path
-        );
-
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
             EngineType::Whisper => {
