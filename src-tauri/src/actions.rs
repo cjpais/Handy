@@ -112,17 +112,20 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            // Save to history
-                            let hm_clone = Arc::clone(&hm);
-                            let transcription_for_history = transcription.clone();
-                            tauri::async_runtime::spawn(async move {
-                                if let Err(e) = hm_clone
-                                    .save_transcription(samples_clone, transcription_for_history)
-                                    .await
-                                {
-                                    error!("Failed to save transcription to history: {}", e);
-                                }
-                            });
+                            // Save to history if enabled
+                            let settings = get_settings(&ah);
+                            if settings.history_enabled {
+                                let hm_clone = Arc::clone(&hm);
+                                let transcription_for_history = transcription.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    if let Err(e) = hm_clone
+                                        .save_transcription(samples_clone, transcription_for_history)
+                                        .await
+                                    {
+                                        error!("Failed to save transcription to history: {}", e);
+                                    }
+                                });
+                            }
                             let transcription_clone = transcription.clone();
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
