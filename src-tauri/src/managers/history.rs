@@ -238,6 +238,72 @@ impl HistoryManager {
         self.recordings_dir.join(file_name)
     }
 
+    pub async fn get_history_size(&self) -> Result<u64> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare("SELECT file_name FROM transcription_history")?;
+        let rows = stmt.query_map([], |row| {
+            Ok(row.get::<_, String>("file_name")?)
+        })?;
+
+        let mut total_size = 0u64;
+
+        for row in rows {
+            let file_name = row?;
+            let file_path = self.recordings_dir.join(&file_name);
+            if file_path.exists() {
+                if let Ok(metadata) = fs::metadata(&file_path) {
+                    total_size += metadata.len();
+                }
+            }
+        }
+
+        // Add database size
+        if let Ok(metadata) = fs::metadata(&self.db_path) {
+            total_size += metadata.len();
+        }
+
+        Ok(total_size)
+    }
+
+    pub async fn delete_all_history(&self) -> Result<()> {
+        let conn = self.get_connection()?;
+
+        // Get all file names before deleting
+        let mut stmt = conn.prepare("SELECT file_name FROM transcription_history")?;
+        let rows = stmt.query_map([], |row| {
+            Ok(row.get::<_, String>("file_name")?)
+        })?;
+
+        let mut file_names = Vec::new();
+        for row in rows {
+            file_names.push(row?);
+        }
+
+        // Delete all database entries
+        conn.execute("DELETE FROM transcription_history", [])?;
+
+        // Delete all WAV files
+        for file_name in file_names {
+            let file_path = self.recordings_dir.join(&file_name);
+            if file_path.exists() {
+                if let Err(e) = fs::remove_file(&file_path) {
+                    error!("Failed to delete WAV file {}: {}", file_name, e);
+                } else {
+                    debug!("Deleted WAV file: {}", file_name);
+                }
+            }
+        }
+
+        debug!("Deleted all history entries and files");
+
+        // Emit history updated event
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
+    }
+
     fn format_timestamp_title(&self, timestamp: i64) -> String {
         if let Some(utc_datetime) = DateTime::from_timestamp(timestamp, 0) {
             // Convert UTC to local timezone

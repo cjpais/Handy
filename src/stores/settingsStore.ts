@@ -42,6 +42,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   overlay_position: "bottom",
   debug_mode: false,
   custom_words: [],
+  history_enabled: true,
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -194,6 +195,9 @@ export const useSettingsStore = create<SettingsStore>()(
             break;
           case "word_correction_threshold":
             await invoke("change_word_correction_threshold_setting", { threshold: value });
+            break;
+          case "history_enabled":
+            await invoke("change_history_enabled_setting", { enabled: value });
             break;
           case "bindings":
           case "selected_model":

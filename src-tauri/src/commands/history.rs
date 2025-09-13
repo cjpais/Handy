@@ -36,3 +36,25 @@ pub async fn get_audio_file_path(
         .ok_or_else(|| "Invalid file path".to_string())
         .map(|s| s.to_string())
 }
+
+#[tauri::command]
+pub async fn delete_all_history(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+) -> Result<(), String> {
+    history_manager
+        .delete_all_history()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_history_size(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+) -> Result<u64, String> {
+    history_manager
+        .get_history_size()
+        .await
+        .map_err(|e| e.to_string())
+}

@@ -93,6 +93,8 @@ pub struct AppSettings {
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
+    #[serde(default = "default_history_enabled")]
+    pub history_enabled: bool,
 }
 
 fn default_model() -> String {
@@ -125,6 +127,10 @@ fn default_debug_mode() -> bool {
 
 fn default_word_correction_threshold() -> f64 {
     0.18
+}
+
+fn default_history_enabled() -> bool {
+    true
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -167,6 +173,7 @@ pub fn get_default_settings() -> AppSettings {
         custom_words: Vec::new(),
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
+        history_enabled: default_history_enabled(),
     }
 }
 

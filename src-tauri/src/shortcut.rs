@@ -210,6 +210,14 @@ pub fn change_word_correction_threshold_setting(
     Ok(())
 }
 
+#[tauri::command]
+pub fn change_history_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.history_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").
