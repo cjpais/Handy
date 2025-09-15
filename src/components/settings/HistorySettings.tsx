@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { AudioPlayer } from "../ui/AudioPlayer";
-import { ClipboardCopy, Star, Check } from "lucide-react";
+import { ClipboardCopy, Star, Check, Trash2, Loader2 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -84,6 +84,15 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const deleteAudioEntry = async (id: number) => {
+    try {
+      await invoke("delete_history_entry", {id});
+    } catch (error) {
+      console.error("Failed to delete audio entry:", error);
+      throw error;
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -118,6 +127,7 @@ export const HistorySettings: React.FC = () => {
             onToggleSaved={() => toggleSaved(entry.id)}
             onCopyText={() => copyToClipboard(entry.transcription_text)}
             getAudioUrl={getAudioUrl}
+            deleteAudio={deleteAudioEntry}
           />
         ))}
       </SettingsGroup>
@@ -130,6 +140,7 @@ interface HistoryEntryProps {
   onToggleSaved: () => void;
   onCopyText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
+  deleteAudio: (id: number) => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -137,9 +148,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onToggleSaved,
   onCopyText,
   getAudioUrl,
+  deleteAudio,
 }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const loadAudio = async () => {
@@ -153,6 +166,18 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     onCopyText();
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
+  };
+
+  const handleDeleteEntry = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteAudio(entry.id);
+    } catch (error) {
+      console.error("Failed to delete entry:", error);
+      alert("Failed to delete entry. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -185,6 +210,18 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               height={16}
               fill={entry.saved ? "currentColor" : "none"}
             />
+          </button>
+          <button
+            onClick={handleDeleteEntry}
+            disabled={isDeleting}
+            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Delete entry"
+          >
+            {isDeleting ? (
+              <Loader2 width={16} height={16} className="animate-spin" />
+            ) : (
+              <Trash2 width={16} height={16}/>
+            )}
           </button>
         </div>
       </div>

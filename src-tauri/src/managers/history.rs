@@ -1,7 +1,7 @@
 use anyhow::Result;
 use chrono::{DateTime, Local, Utc};
 use log::{debug, error};
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -236,6 +236,58 @@ impl HistoryManager {
 
     pub fn get_audio_file_path(&self, file_name: &str) -> PathBuf {
         self.recordings_dir.join(file_name)
+    }
+
+    pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, file_name, timestamp, saved, title, transcription_text 
+             FROM transcription_history WHERE id = ?1"
+        )?;
+        
+        let entry = stmt.query_row([id], |row| {
+            Ok(HistoryEntry {
+                id: row.get("id")?,
+                file_name: row.get("file_name")?,
+                timestamp: row.get("timestamp")?,
+                saved: row.get("saved")?,
+                title: row.get("title")?,
+                transcription_text: row.get("transcription_text")?,
+            })
+        }).optional()?;
+        
+        Ok(entry)
+    }
+
+    pub async fn delete_entry(&self, id: i64) -> Result<()> {
+        let conn = self.get_connection()?;
+        
+        // Get the entry to find the file name
+        if let Some(entry) = self.get_entry_by_id(id).await? {
+            // Delete the audio file first
+            let file_path = self.get_audio_file_path(&entry.file_name);
+            if file_path.exists() {
+                if let Err(e) = fs::remove_file(&file_path) {
+                    error!("Failed to delete audio file {}: {}", entry.file_name, e);
+                    // Continue with database deletion even if file deletion fails
+                }
+            }
+        }
+        
+        // Delete from database
+        conn.execute(
+            "DELETE FROM transcription_history WHERE id = ?1",
+            params![id],
+        )?;
+
+        debug!("Deleted history entry with id: {}", id);
+
+        // Emit history updated event
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
     }
 
     fn format_timestamp_title(&self, timestamp: i64) -> String {
