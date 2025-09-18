@@ -152,7 +152,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 }) => {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const loadAudio = async () => {
@@ -170,13 +169,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
   const handleDeleteEntry = async () => {
     try {
-      setIsDeleting(true);
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
       alert("Failed to delete entry. Please try again.");
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -213,15 +209,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
           <button
             onClick={handleDeleteEntry}
-            disabled={isDeleting}
-            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
             title="Delete entry"
           >
-            {isDeleting ? (
-              <Loader2 width={16} height={16} className="animate-spin" />
-            ) : (
-              <Trash2 width={16} height={16}/>
-            )}
+            <Trash2 width={16} height={16}/>
           </button>
         </div>
       </div>
