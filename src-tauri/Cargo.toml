@@ -47,7 +47,7 @@ hound = "3.5.1"
 env_logger = "0.11.6"
 log = "0.4.25"
 tokio = "1.43.0"
-vad-rs = { git = "https://github.com/cjpais/vad-rs" }
+vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 tauri-plugin-store = "2"
 tauri-plugin-os = "2"
 enigo = "0.5.0"
