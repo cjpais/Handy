@@ -39,7 +39,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-clipboard-manager = "2.3.0"
 tauri-plugin-macos-permissions = "2.0.4"
-rdev = { git = "https://github.com/rustdesk-org/rdev" }
 cpal = "0.16.0"
 anyhow = "1.0.95"
 rubato = "0.16.2"
@@ -65,6 +64,21 @@ tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = "0.1.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.2"
+objc2-foundation = { version = "0.3.1", features = [
+    "NSArray",
+    "NSDate",
+    "NSGeometry",
+    "NSObject",
+    "NSSet",
+    "NSString",
+    "objc2-core-foundation",
+] }
+objc2-app-kit = { version = "0.3.1", features = ["NSEvent"] }
+objc2-core-foundation = "0.3.1"
+block2 = { version = "0.6.1", features = ["alloc"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"

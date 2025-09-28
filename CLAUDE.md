@@ -76,7 +76,7 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri (R
 - `whisper-rs` - Local Whisper inference with GPU acceleration
 - `cpal` - Cross-platform audio I/O  
 - `vad-rs` - Voice Activity Detection
-- `rdev` - Global keyboard shortcuts
+- `objc2-app-kit`/`block2` - macOS Accessibility-based event monitoring
 - `rubato` - Audio resampling
 - `rodio` - Audio playback for feedback sounds
 
