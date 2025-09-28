@@ -1,6 +1,6 @@
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
-use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
-use crate::settings::{get_settings, write_settings};
+use crate::managers::audio::AudioRecordingManager;
+use crate::settings::{get_settings, write_settings, MicrophoneKeepAlive};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
@@ -13,28 +13,23 @@ pub struct AudioDevice {
 }
 
 #[tauri::command]
-pub fn update_microphone_mode(app: AppHandle, always_on: bool) -> Result<(), String> {
-    // Update settings
+pub fn set_microphone_keep_alive(
+    app: AppHandle,
+    keep_alive: MicrophoneKeepAlive,
+) -> Result<(), String> {
     let mut settings = get_settings(&app);
-    settings.always_on_microphone = always_on;
+    settings.set_microphone_keep_alive(keep_alive);
     write_settings(&app, settings);
 
-    // Update the audio manager mode
     let rm = app.state::<Arc<AudioRecordingManager>>();
-    let new_mode = if always_on {
-        MicrophoneMode::AlwaysOn
-    } else {
-        MicrophoneMode::OnDemand
-    };
-
-    rm.update_mode(new_mode)
-        .map_err(|e| format!("Failed to update microphone mode: {}", e))
+    rm.update_keep_alive(keep_alive)
+        .map_err(|e| format!("Failed to update microphone keep-alive: {}", e))
 }
 
 #[tauri::command]
-pub fn get_microphone_mode(app: AppHandle) -> Result<bool, String> {
+pub fn get_microphone_keep_alive(app: AppHandle) -> Result<MicrophoneKeepAlive, String> {
     let settings = get_settings(&app);
-    Ok(settings.always_on_microphone)
+    Ok(settings.microphone_keep_alive)
 }
 
 #[tauri::command]

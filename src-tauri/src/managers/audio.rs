@@ -1,9 +1,11 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
-use crate::settings::get_settings;
+use crate::settings::{get_settings, MicrophoneKeepAlive};
 use crate::utils;
 use log::{debug, info};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::thread;
+use std::time::{Duration, Instant};
 use tauri::{App, Manager};
 
 const WHISPER_SAMPLE_RATE: usize = 16000;
@@ -15,14 +17,6 @@ pub enum RecordingState {
     Idle,
     Recording { binding_id: String },
 }
-
-#[derive(Clone, Debug)]
-pub enum MicrophoneMode {
-    AlwaysOn,
-    OnDemand,
-}
-
-/* ──────────────────────────────────────────────────────────────── */
 
 fn create_audio_recorder(
     vad_path: &str,
@@ -52,7 +46,8 @@ fn create_audio_recorder(
 #[derive(Clone)]
 pub struct AudioRecordingManager {
     state: Arc<Mutex<RecordingState>>,
-    mode: Arc<Mutex<MicrophoneMode>>,
+    keep_alive: Arc<Mutex<MicrophoneKeepAlive>>,
+    close_timer_generation: Arc<AtomicU64>,
     app_handle: tauri::AppHandle,
 
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
@@ -65,15 +60,12 @@ impl AudioRecordingManager {
 
     pub fn new(app: &App) -> Result<Self, anyhow::Error> {
         let settings = get_settings(&app.handle());
-        let mode = if settings.always_on_microphone {
-            MicrophoneMode::AlwaysOn
-        } else {
-            MicrophoneMode::OnDemand
-        };
+        let keep_alive_setting = settings.microphone_keep_alive;
 
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),
-            mode: Arc::new(Mutex::new(mode.clone())),
+            keep_alive: Arc::new(Mutex::new(keep_alive_setting)),
+            close_timer_generation: Arc::new(AtomicU64::new(0)),
             app_handle: app.handle().clone(),
 
             recorder: Arc::new(Mutex::new(None)),
@@ -81,8 +73,7 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
         };
 
-        // Always-on?  Open immediately.
-        if matches!(mode, MicrophoneMode::AlwaysOn) {
+        if matches!(keep_alive_setting, MicrophoneKeepAlive::Forever) {
             manager.start_microphone_stream()?;
         }
 
@@ -92,6 +83,7 @@ impl AudioRecordingManager {
     /* ---------- microphone life-cycle -------------------------------------- */
 
     pub fn start_microphone_stream(&self) -> Result<(), anyhow::Error> {
+        self.cancel_close_timer();
         let mut open_flag = self.is_open.lock().unwrap();
         if *open_flag {
             debug!("Microphone stream already active");
@@ -149,6 +141,7 @@ impl AudioRecordingManager {
     }
 
     pub fn stop_microphone_stream(&self) {
+        self.cancel_close_timer();
         let mut open_flag = self.is_open.lock().unwrap();
         if !*open_flag {
             return;
@@ -169,25 +162,36 @@ impl AudioRecordingManager {
 
     /* ---------- mode switching --------------------------------------------- */
 
-    pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {
-        let mode_guard = self.mode.lock().unwrap();
-        let cur_mode = mode_guard.clone();
+    pub fn update_keep_alive(
+        &self,
+        new_keep_alive: MicrophoneKeepAlive,
+    ) -> Result<(), anyhow::Error> {
+        *self.keep_alive.lock().unwrap() = new_keep_alive;
+        self.cancel_close_timer();
 
-        match (cur_mode, &new_mode) {
-            (MicrophoneMode::AlwaysOn, MicrophoneMode::OnDemand) => {
-                if matches!(*self.state.lock().unwrap(), RecordingState::Idle) {
-                    drop(mode_guard);
-                    self.stop_microphone_stream();
-                }
-            }
-            (MicrophoneMode::OnDemand, MicrophoneMode::AlwaysOn) => {
-                drop(mode_guard);
-                self.start_microphone_stream()?;
-            }
-            _ => {}
+        let is_recording = *self.is_recording.lock().unwrap();
+        if is_recording {
+            return Ok(());
         }
 
-        *self.mode.lock().unwrap() = new_mode;
+        match new_keep_alive {
+            MicrophoneKeepAlive::Forever => {
+                self.start_microphone_stream()?;
+            }
+            MicrophoneKeepAlive::Off => {
+                self.stop_microphone_stream();
+            }
+            other => {
+                if let Some(duration) = other.duration() {
+                    if duration.is_zero() {
+                        self.stop_microphone_stream();
+                    } else if *self.is_open.lock().unwrap() {
+                        self.schedule_close_timer(duration);
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -197,12 +201,10 @@ impl AudioRecordingManager {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
-            // Ensure microphone is open in on-demand mode
-            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
-                if let Err(e) = self.start_microphone_stream() {
-                    eprintln!("Failed to open microphone stream: {e}");
-                    return false;
-                }
+            self.cancel_close_timer();
+            if let Err(e) = self.start_microphone_stream() {
+                eprintln!("Failed to open microphone stream: {e}");
+                return false;
             }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
@@ -255,11 +257,7 @@ impl AudioRecordingManager {
                 };
 
                 *self.is_recording.lock().unwrap() = false;
-
-                // In on-demand mode turn the mic off again
-                if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
-                    self.stop_microphone_stream();
-                }
+                self.handle_idle_transition();
 
                 // Pad if very short
                 let s_len = samples.len();
@@ -289,10 +287,69 @@ impl AudioRecordingManager {
             }
 
             *self.is_recording.lock().unwrap() = false;
+            self.handle_idle_transition();
+        }
+    }
 
-            // In on-demand mode turn the mic off again
-            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
+    pub fn is_stream_open(&self) -> bool {
+        *self.is_open.lock().unwrap()
+    }
+
+    fn current_keep_alive(&self) -> MicrophoneKeepAlive {
+        *self.keep_alive.lock().unwrap()
+    }
+
+    fn cancel_close_timer(&self) {
+        self.close_timer_generation.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn schedule_close_timer(&self, delay: Duration) {
+        if delay.is_zero() {
+            self.stop_microphone_stream();
+            return;
+        }
+
+        let generation = self.close_timer_generation.fetch_add(1, Ordering::SeqCst) + 1;
+        let manager = self.clone();
+        thread::spawn(move || {
+            thread::sleep(delay);
+            if manager
+                .close_timer_generation
+                .load(Ordering::SeqCst)
+                == generation
+            {
+                if !*manager.is_recording.lock().unwrap() {
+                    manager.stop_microphone_stream();
+                }
+            }
+        });
+    }
+
+    fn handle_idle_transition(&self) {
+        if *self.is_recording.lock().unwrap() {
+            return;
+        }
+
+        self.cancel_close_timer();
+
+        match self.current_keep_alive() {
+            MicrophoneKeepAlive::Forever => {
+                // Keep the stream open indefinitely.
+            }
+            MicrophoneKeepAlive::Off => {
                 self.stop_microphone_stream();
+            }
+            keep_alive => {
+                if let Some(duration) = keep_alive.duration() {
+                    if duration.is_zero() {
+                        self.stop_microphone_stream();
+                    } else {
+                        let is_open = *self.is_open.lock().unwrap();
+                        if is_open {
+                            self.schedule_close_timer(duration);
+                        }
+                    }
+                }
             }
         }
     }

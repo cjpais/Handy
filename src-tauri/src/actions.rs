@@ -36,10 +36,14 @@ impl ShortcutAction for TranscribeAction {
 
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
-        let is_always_on = settings.always_on_microphone;
-        debug!("Microphone mode - always_on: {}", is_always_on);
+        let keep_alive = settings.microphone_keep_alive;
+        let stream_hot = rm.is_stream_open();
+        debug!(
+            "Microphone keep-alive: {:?}, stream open: {}",
+            keep_alive, stream_hot
+        );
 
-        if is_always_on {
+        if stream_hot {
             // Always-on mode: Play audio feedback immediately
             debug!("Always-on mode: Playing audio feedback immediately");
             play_recording_start_sound(app);

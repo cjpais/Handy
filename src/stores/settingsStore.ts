@@ -31,7 +31,7 @@ interface SettingsStore {
 }
 
 const DEFAULT_SETTINGS: Partial<Settings> = {
-  always_on_microphone: false,
+  microphone_keep_alive: "off",
   audio_feedback: true,
   start_hidden: false,
   push_to_talk: false,
@@ -80,9 +80,9 @@ export const useSettingsStore = create<SettingsStore>()(
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls
-        const [microphoneMode, selectedMicrophone, selectedOutputDevice] =
+        const [microphoneKeepAlive, selectedMicrophone, selectedOutputDevice] =
           await Promise.allSettled([
-            invoke("get_microphone_mode"),
+            invoke("get_microphone_keep_alive"),
             invoke("get_selected_microphone"),
             invoke("get_selected_output_device"),
           ]);
@@ -90,10 +90,10 @@ export const useSettingsStore = create<SettingsStore>()(
         // Merge all settings
         const mergedSettings: Settings = {
           ...settings,
-          always_on_microphone:
-            microphoneMode.status === "fulfilled"
-              ? (microphoneMode.value as boolean)
-              : false,
+          microphone_keep_alive:
+            microphoneKeepAlive.status === "fulfilled"
+              ? (microphoneKeepAlive.value as Settings["microphone_keep_alive"])
+              : "off",
           selected_microphone:
             selectedMicrophone.status === "fulfilled"
               ? (selectedMicrophone.value as string)
@@ -157,8 +157,8 @@ export const useSettingsStore = create<SettingsStore>()(
 
         // Invoke the appropriate backend method
         switch (key) {
-          case "always_on_microphone":
-            await invoke("update_microphone_mode", { alwaysOn: value });
+          case "microphone_keep_alive":
+            await invoke("set_microphone_keep_alive", { keepAlive: value });
             break;
           case "audio_feedback":
             await invoke("change_audio_feedback_setting", { enabled: value });

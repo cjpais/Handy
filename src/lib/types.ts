@@ -34,13 +34,26 @@ export const ModelUnloadTimeoutSchema = z.enum([
 ]);
 export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
 
+export const MicrophoneKeepAliveSchema = z.enum([
+  "off",
+  "sec5",
+  "sec15",
+  "sec30",
+  "min1",
+  "min5",
+  "min15",
+  "hour1",
+  "forever",
+]);
+export type MicrophoneKeepAlive = z.infer<typeof MicrophoneKeepAliveSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
   audio_feedback: z.boolean(),
   start_hidden: z.boolean().optional().default(false),
   selected_model: z.string(),
-  always_on_microphone: z.boolean(),
+  microphone_keep_alive: MicrophoneKeepAliveSchema,
   selected_microphone: z.string().nullable().optional(),
   selected_output_device: z.string().nullable().optional(),
   translate_to_english: z.boolean(),

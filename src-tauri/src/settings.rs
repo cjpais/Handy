@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::time::Duration;
 use tauri::{App, AppHandle};
 use tauri_plugin_store::StoreExt;
 
@@ -33,6 +34,20 @@ pub enum ModelUnloadTimeout {
     Sec5, // Debug mode only
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MicrophoneKeepAlive {
+    Off,
+    Sec5,
+    Sec15,
+    Sec30,
+    Min1,
+    Min5,
+    Min15,
+    Hour1,
+    Forever,
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -63,6 +78,26 @@ impl ModelUnloadTimeout {
     }
 }
 
+impl MicrophoneKeepAlive {
+    pub fn duration(self) -> Option<Duration> {
+        match self {
+            MicrophoneKeepAlive::Off => Some(Duration::from_secs(0)),
+            MicrophoneKeepAlive::Sec5 => Some(Duration::from_secs(5)),
+            MicrophoneKeepAlive::Sec15 => Some(Duration::from_secs(15)),
+            MicrophoneKeepAlive::Sec30 => Some(Duration::from_secs(30)),
+            MicrophoneKeepAlive::Min1 => Some(Duration::from_secs(60)),
+            MicrophoneKeepAlive::Min5 => Some(Duration::from_secs(5 * 60)),
+            MicrophoneKeepAlive::Min15 => Some(Duration::from_secs(15 * 60)),
+            MicrophoneKeepAlive::Hour1 => Some(Duration::from_secs(60 * 60)),
+            MicrophoneKeepAlive::Forever => None,
+        }
+    }
+
+    pub fn is_forever(self) -> bool {
+        matches!(self, MicrophoneKeepAlive::Forever)
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppSettings {
@@ -75,6 +110,8 @@ pub struct AppSettings {
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
+    #[serde(default = "default_microphone_keep_alive")]
+    pub microphone_keep_alive: MicrophoneKeepAlive,
     #[serde(default)]
     pub selected_microphone: Option<String>,
     #[serde(default)]
@@ -95,12 +132,35 @@ pub struct AppSettings {
     pub word_correction_threshold: f64,
 }
 
+impl AppSettings {
+    pub fn set_microphone_keep_alive(&mut self, keep_alive: MicrophoneKeepAlive) {
+        self.microphone_keep_alive = keep_alive;
+        self.always_on_microphone = keep_alive.is_forever();
+    }
+
+    pub fn normalize_microphone_fields(&mut self) {
+        if self.always_on_microphone && !self.microphone_keep_alive.is_forever() {
+            self.microphone_keep_alive = MicrophoneKeepAlive::Forever;
+        }
+
+        if !self.always_on_microphone && self.microphone_keep_alive.is_forever() {
+            self.microphone_keep_alive = MicrophoneKeepAlive::Off;
+        }
+
+        self.always_on_microphone = self.microphone_keep_alive.is_forever();
+    }
+}
+
 fn default_model() -> String {
     "".to_string()
 }
 
 fn default_always_on_microphone() -> bool {
     false
+}
+
+fn default_microphone_keep_alive() -> MicrophoneKeepAlive {
+    MicrophoneKeepAlive::Off
 }
 
 fn default_translate_to_english() -> bool {
@@ -156,14 +216,15 @@ pub fn get_default_settings() -> AppSettings {
         push_to_talk: true,
         audio_feedback: false,
         start_hidden: default_start_hidden(),
-        selected_model: "".to_string(),
+        selected_model: default_model(),
         always_on_microphone: false,
+        microphone_keep_alive: default_microphone_keep_alive(),
         selected_microphone: None,
         selected_output_device: None,
-        translate_to_english: false,
-        selected_language: "auto".to_string(),
-        overlay_position: OverlayPosition::Bottom,
-        debug_mode: false,
+        translate_to_english: default_translate_to_english(),
+        selected_language: default_selected_language(),
+        overlay_position: default_overlay_position(),
+        debug_mode: default_debug_mode(),
         custom_words: Vec::new(),
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
@@ -176,7 +237,7 @@ pub fn load_or_create_app_settings(app: &App) -> AppSettings {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    let settings = if let Some(settings_value) = store.get("settings") {
+    let mut settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(settings) => {
@@ -205,6 +266,8 @@ pub fn load_or_create_app_settings(app: &App) -> AppSettings {
         default_settings
     };
 
+    let mut settings = settings;
+    settings.normalize_microphone_fields();
     settings
 }
 
@@ -213,12 +276,15 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    if let Some(settings_value) = store.get("settings") {
+    let mut settings = if let Some(settings_value) = store.get("settings") {
         serde_json::from_value::<AppSettings>(settings_value)
             .unwrap_or_else(|_| get_default_settings())
     } else {
         get_default_settings()
-    }
+    };
+
+    settings.normalize_microphone_fields();
+    settings
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
@@ -226,7 +292,10 @@ pub fn write_settings(app: &AppHandle, settings: AppSettings) {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    store.set("settings", serde_json::to_value(&settings).unwrap());
+    let mut normalized = settings;
+    normalized.normalize_microphone_fields();
+
+    store.set("settings", serde_json::to_value(&normalized).unwrap());
 }
 
 pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
