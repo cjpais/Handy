@@ -8,6 +8,9 @@ use crate::settings::ShortcutBinding;
 use crate::settings::{self, get_settings, OverlayPosition};
 use crate::ManagedToggleState;
 
+#[cfg(target_os = "macos")]
+use crate::fn_monitor;
+
 pub fn init_shortcuts(app: &App) {
     let settings = settings::load_or_create_app_settings(app);
 
@@ -214,6 +217,10 @@ pub fn change_word_correction_threshold_setting(
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").
 fn validate_shortcut_string(raw: &str) -> Result<(), String> {
+    if cfg!(target_os = "macos") && raw.trim().eq_ignore_ascii_case("fn") {
+        return Ok(());
+    }
+
     let modifiers = [
         "ctrl", "control", "shift", "alt", "option", "meta", "command", "cmd", "super", "win",
         "windows",
@@ -245,6 +252,30 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 #[tauri::command]
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
+        #[cfg(target_os = "macos")]
+        if b.current_binding.eq_ignore_ascii_case("fn") {
+            if let Err(e) = fn_monitor::register_fn_binding(&app, b) {
+                eprintln!("resume_binding error for id '{}': {}", id, e);
+                return Err(e);
+            }
+            return Ok(());
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        if b.current_binding.eq_ignore_ascii_case("fn") {
+            return Ok(());
+        }
+
+        let already_registered = b
+            .current_binding
+            .parse::<Shortcut>()
+            .map(|shortcut| app.global_shortcut().is_registered(shortcut))
+            .unwrap_or(false);
+
+        if already_registered {
+            return Ok(());
+        }
+
         if let Err(e) = _register_shortcut(&app, b) {
             eprintln!("resume_binding error for id '{}': {}", id, e);
             return Err(e);
@@ -261,6 +292,22 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
             binding.current_binding, e
         );
         return Err(e);
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        if binding.current_binding.eq_ignore_ascii_case("fn") {
+            return fn_monitor::register_fn_binding(app, binding);
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        if binding.current_binding.eq_ignore_ascii_case("fn") {
+            let error_msg = "Fn bindings are only supported on macOS".to_string();
+            eprintln!("_register_shortcut platform error: {}", error_msg);
+            return Err(error_msg);
+        }
     }
 
     // Parse shortcut and return error if it fails
@@ -290,44 +337,12 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
         .on_shortcut(shortcut, move |ah, scut, event| {
             if scut == &shortcut {
                 let shortcut_string = scut.into_string();
-                let settings = get_settings(ah);
-
-                if let Some(action) = ACTION_MAP.get(&binding_id_for_closure) {
-                    if settings.push_to_talk {
-                        if event.state == ShortcutState::Pressed {
-                            action.start(ah, &binding_id_for_closure, &shortcut_string);
-                        } else if event.state == ShortcutState::Released {
-                            action.stop(ah, &binding_id_for_closure, &shortcut_string);
-                        }
-                    } else {
-                        if event.state == ShortcutState::Pressed {
-                            let toggle_state_manager = ah.state::<ManagedToggleState>();
-
-                            let mut states = toggle_state_manager.lock().expect("Failed to lock toggle state manager");
-
-                            let is_currently_active = states.active_toggles
-                                .entry(binding_id_for_closure.clone())
-                                .or_insert(false);
-
-                            if *is_currently_active {
-                                action.stop(
-                                    ah,
-                                    &binding_id_for_closure,
-                                    &shortcut_string,
-                                );
-                                *is_currently_active = false; // Update state to inactive
-                            } else {
-                                action.start(ah, &binding_id_for_closure, &shortcut_string);
-                                *is_currently_active = true; // Update state to active
-                            }
-                        }
-                    }
-                } else {
-                    println!(
-                        "Warning: No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', State: {:?}",
-                        binding_id_for_closure, shortcut_string, event.state
-                    );
-                }
+                dispatch_binding_event(
+                    ah,
+                    &binding_id_for_closure,
+                    &shortcut_string,
+                    event.state,
+                );
             }
         })
         .map_err(|e| {
@@ -339,7 +354,67 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
     Ok(())
 }
 
+pub(crate) fn dispatch_binding_event(
+    app: &AppHandle,
+    binding_id: &str,
+    shortcut_string: &str,
+    state: ShortcutState,
+) {
+    let settings = get_settings(app);
+
+    if let Some(action) = ACTION_MAP.get(binding_id) {
+        if settings.push_to_talk {
+            match state {
+                ShortcutState::Pressed => {
+                    action.start(app, binding_id, shortcut_string);
+                }
+                ShortcutState::Released => {
+                    action.stop(app, binding_id, shortcut_string);
+                }
+            }
+        } else if state == ShortcutState::Pressed {
+            let toggle_state_manager = app.state::<ManagedToggleState>();
+            let mut states = toggle_state_manager
+                .lock()
+                .expect("Failed to lock toggle state manager");
+
+            let is_currently_active = states
+                .active_toggles
+                .entry(binding_id.to_string())
+                .or_insert(false);
+
+            if *is_currently_active {
+                action.stop(app, binding_id, shortcut_string);
+                *is_currently_active = false;
+            } else {
+                action.start(app, binding_id, shortcut_string);
+                *is_currently_active = true;
+            }
+        }
+    } else {
+        println!(
+            "Warning: No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', State: {:?}",
+            binding_id, shortcut_string, state
+        );
+    }
+}
+
 fn _unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        if binding.current_binding.eq_ignore_ascii_case("fn") {
+            return fn_monitor::unregister_fn_binding(app, &binding.id);
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        if binding.current_binding.eq_ignore_ascii_case("fn") {
+            // No-op on unsupported platforms; binding shouldn't exist but avoid crashing.
+            return Ok(());
+        }
+    }
+
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {

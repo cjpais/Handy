@@ -162,9 +162,46 @@ export const formatKeyCombination = (
   combination: string,
   osType: OSType,
 ): string => {
-  // Simply return the combination as-is since getKeyName already provides
-  // the correct platform-specific key names
-  return combination;
+  if (!combination) return "";
+
+  const formatSegment = (segment: string): string => {
+    const key = segment.trim().toLowerCase();
+
+    const atlas: Record<string, string> = {
+      fn: "Fn",
+      command: osType === "macos" ? "⌘" : osType === "windows" ? "Win" : "Super",
+      super: osType === "macos" ? "⌘" : "Super",
+      option: "Option",
+      alt: osType === "macos" ? "Option" : "Alt",
+      ctrl: "Ctrl",
+      control: "Ctrl",
+      shift: "Shift",
+      space: "Space",
+      enter: "Enter",
+      esc: "Esc",
+      escape: "Esc",
+      tab: "Tab",
+      "page up": "Page Up",
+      "page down": "Page Down",
+      "caps lock": "Caps Lock",
+      commandorcontrol: osType === "macos" ? "⌘" : "Ctrl",
+    };
+
+    if (atlas[key]) {
+      return atlas[key];
+    }
+
+    if (key.startsWith("f") && key.length > 1 && !Number.isNaN(Number(key.substring(1)))) {
+      return key.toUpperCase();
+    }
+
+    return key.length === 1 ? key.toUpperCase() : key.replace(/\b\w/g, (m) => m.toUpperCase());
+  };
+
+  return combination
+    .split("+")
+    .map((segment) => formatSegment(segment))
+    .join(" + ");
 };
 
 /**

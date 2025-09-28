@@ -10,6 +10,9 @@ mod shortcut;
 mod tray;
 mod utils;
 
+#[cfg(target_os = "macos")]
+mod fn_monitor;
+
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
