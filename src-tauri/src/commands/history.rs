@@ -44,8 +44,24 @@ pub async fn delete_history_entry(
     id: i64,
 ) -> Result<(), String> {
     history_manager
-        .as_ref()
         .delete_entry(id)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_history_limit(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    limit: usize,
+) -> Result<(), String> {
+    let mut settings = crate::settings::get_settings(&app);
+    settings.history_limit = limit;
+    crate::settings::write_settings(&app, settings);
+
+    history_manager
+        .update_history_limit(limit)
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

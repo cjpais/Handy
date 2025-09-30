@@ -93,6 +93,8 @@ pub struct AppSettings {
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
+    #[serde(default = "default_history_limit")]
+    pub history_limit: usize,
 }
 
 fn default_model() -> String {
@@ -125,6 +127,10 @@ fn default_debug_mode() -> bool {
 
 fn default_word_correction_threshold() -> f64 {
     0.18
+}
+
+fn default_history_limit() -> usize {
+    5
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -167,6 +173,7 @@ pub fn get_default_settings() -> AppSettings {
         custom_words: Vec::new(),
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
+        history_limit: default_history_limit(),
     }
 }
 
@@ -227,6 +234,7 @@ pub fn write_settings(app: &AppHandle, settings: AppSettings) {
         .expect("Failed to initialize store");
 
     store.set("settings", serde_json::to_value(&settings).unwrap());
+    store.save();
 }
 
 pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {

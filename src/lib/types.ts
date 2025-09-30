@@ -50,6 +50,7 @@ export const SettingsSchema = z.object({
   custom_words: z.array(z.string()).optional().default([]),
   model_unload_timeout: ModelUnloadTimeoutSchema.optional().default("never"),
   word_correction_threshold: z.number().optional().default(0.18),
+  history_limit: z.number().optional().default(5),
 });
 
 export const BindingResponseSchema = z.object({
