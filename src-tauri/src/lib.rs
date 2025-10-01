@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod fn_key_monitor;
 mod managers;
 mod overlay;
 mod settings;
@@ -175,6 +176,14 @@ pub fn run() {
             utils::create_recording_overlay(&app.handle());
 
             shortcut::init_shortcuts(app);
+
+            // Initialize Fn key monitor for macOS globe key support
+            #[cfg(target_os = "macos")]
+            {
+                let fn_monitor = fn_key_monitor::FnKeyMonitor::new();
+                let _ = fn_monitor.start_monitoring(app.handle().clone());
+                app.manage(fn_monitor);
+            }
 
             Ok(())
         })
