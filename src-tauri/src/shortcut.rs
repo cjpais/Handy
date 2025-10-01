@@ -263,6 +263,13 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
         return Err(e);
     }
 
+    // Special handling for Fn key shortcuts on macOS
+    #[cfg(target_os = "macos")]
+    if binding.current_binding.contains("fn") {
+        // Use rdev monitoring system; actual Fn key detection is handled by FnKeyMonitor
+        return Ok(());
+    }
+
     // Parse shortcut and return error if it fails
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
@@ -340,6 +347,15 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
 }
 
 fn _unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    // Special handling for Fn key shortcuts on macOS
+    #[cfg(target_os = "macos")]
+    if binding.current_binding.contains("fn") {
+        // For Fn key shortcuts, we don't need to unregister from global-shortcut
+        // since they weren't registered there in the first place
+        eprintln!("Unregistered Fn key shortcut: {}", binding.current_binding);
+        return Ok(());
+    }
+
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {

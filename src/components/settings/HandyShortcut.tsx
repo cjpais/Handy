@@ -10,6 +10,7 @@ import { ResetButton } from "../ui/ResetButton";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { toast } from "sonner";
 
 interface HandyShortcutProps {
@@ -64,6 +65,84 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
     detectOsType();
   }, []);
+
+  // Listen for Fn key events from backend (macOS only)
+  useEffect(() => {
+    if (editingShortcutId === null || osType !== "macos") return;
+
+    let fnPressUnlisten: (() => void) | null = null;
+    let fnReleaseUnlisten: (() => void) | null = null;
+
+    const setupFnListeners = async () => {
+      // Listen for Fn key press events
+      fnPressUnlisten = await listen("fn-key-pressed", () => {
+        const fnKey = "fn";
+
+        // Add fn to pressed keys if not already there
+        if (!keyPressed.includes(fnKey)) {
+          setKeyPressed((prev) => [...prev, fnKey]);
+          // Also add to recorded keys if not already there
+          if (!recordedKeys.includes(fnKey)) {
+            setRecordedKeys((prev) => [...prev, fnKey]);
+          }
+        }
+      });
+
+      // Listen for Fn key release events
+      fnReleaseUnlisten = await listen("fn-key-released", async () => {
+        const fnKey = "fn";
+
+        // Remove from currently pressed keys
+        setKeyPressed((prev) => prev.filter((k) => k !== fnKey));
+
+        // If no keys are pressed anymore and we have recorded keys, commit the shortcut
+        const updatedKeyPressed = keyPressed.filter((k) => k !== fnKey);
+        if (updatedKeyPressed.length === 0 && recordedKeys.length > 0) {
+          // Create the shortcut string from all recorded keys
+          const newShortcut = recordedKeys.join("+");
+
+          if (editingShortcutId && bindings[editingShortcutId]) {
+            try {
+              await updateBinding(editingShortcutId, newShortcut);
+              // Re-register the shortcut now that recording is finished
+              await invoke("resume_binding", { id: editingShortcutId }).catch(
+                console.error,
+              );
+            } catch (error) {
+              console.error("Failed to change binding:", error);
+              toast.error(`Failed to set shortcut: ${error}`);
+
+              // Reset to original binding on error
+              if (originalBinding) {
+                try {
+                  await updateBinding(editingShortcutId, originalBinding);
+                  await invoke("resume_binding", { id: editingShortcutId }).catch(
+                    console.error,
+                  );
+                } catch (resetError) {
+                  console.error("Failed to reset binding:", resetError);
+                  toast.error("Failed to reset shortcut to original value");
+                }
+              }
+            }
+
+            // Exit editing mode and reset states
+            setEditingShortcutId(null);
+            setKeyPressed([]);
+            setRecordedKeys([]);
+            setOriginalBinding("");
+          }
+        }
+      });
+    };
+
+    setupFnListeners().catch(console.error);
+
+    return () => {
+      if (fnPressUnlisten) fnPressUnlisten();
+      if (fnReleaseUnlisten) fnReleaseUnlisten();
+    };
+  }, [editingShortcutId, osType, keyPressed, recordedKeys, bindings, originalBinding, updateBinding]);
 
   useEffect(() => {
     // Only add event listeners when we're in editing mode

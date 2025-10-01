@@ -17,6 +17,11 @@ export const getKeyName = (
   if (e.code) {
     const code = e.code;
 
+    // Handle Globe/Function key for macos
+    if (code === "Fn" || code === "Globe" || code === "FnLock") {  
+      return "fn";  
+    }
+
     // Handle function keys (F1-F24)
     if (code.match(/^F\d+$/)) {
       return code.toLowerCase(); // F1, F2, ..., F14, F15, etc.
@@ -66,6 +71,9 @@ export const getKeyName = (
       MetaRight: getModifierName("meta"),
       OSLeft: getModifierName("meta"),
       OSRight: getModifierName("meta"),
+      Fn: "fn",
+      Globe: "fn",
+      FnLock: "fn",
       CapsLock: "caps lock",
       Tab: "tab",
       Enter: "enter",
@@ -154,17 +162,32 @@ export const getKeyName = (
   return `unknown-${e.keyCode || e.which || 0}`;
 };
 
-/**
- * Get display-friendly key combination string for the current OS
- * Returns basic plus-separated format with correct platform key names
- */
-export const formatKeyCombination = (
-  combination: string,
-  osType: OSType,
-): string => {
-  // Simply return the combination as-is since getKeyName already provides
-  // the correct platform-specific key names
-  return combination;
+/**  
+ * Get display-friendly key combination string for the current OS  
+ * Returns formatted combination with platform-specific key names and symbols  
+ */  
+export const formatKeyCombination = (  
+  combination: string,  
+  osType: OSType,  
+): string => {  
+  if (osType !== "macos") {  
+    return combination; // Only format for macOS  
+  }  
+  
+  // Format individual keys for macOS display  
+  const formatMacOSKey = (key: string): string => {  
+    const keyMap: Record<string, string> = {  
+      alt: "option",  
+      fn: "🌐",        // Globe symbol for Function key  
+      command: "⌘",  
+      shift: "⇧",  
+      ctrl: "⌃",  
+    };  
+  
+    return keyMap[key.toLowerCase()] || key;  
+  };  
+  
+  return combination.split("+").map(formatMacOSKey).join(" + ");  
 };
 
 /**
