@@ -71,6 +71,8 @@ pub struct AppSettings {
     pub audio_feedback: bool,
     #[serde(default = "default_start_hidden")]
     pub start_hidden: bool,
+    #[serde(default = "default_paste_binding")]
+    pub paste_binding: String,
     #[serde(default = "default_model")]
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
@@ -127,6 +129,19 @@ fn default_word_correction_threshold() -> f64 {
     0.18
 }
 
+fn default_paste_binding() -> String {
+    #[cfg(target_os = "macos")]
+    let value = "command+unicode:v";
+    #[cfg(target_os = "windows")]
+    let value = "ctrl+unicode:v";
+    #[cfg(target_os = "linux")]
+    let value = "ctrl+unicode:v";
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    let value = "ctrl+unicode:v";
+
+    value.to_string()
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -156,6 +171,7 @@ pub fn get_default_settings() -> AppSettings {
         push_to_talk: true,
         audio_feedback: false,
         start_hidden: default_start_hidden(),
+        paste_binding: default_paste_binding(),
         selected_model: "".to_string(),
         always_on_microphone: false,
         selected_microphone: None,

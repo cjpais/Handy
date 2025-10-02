@@ -19,6 +19,8 @@ interface SettingsStore {
   refreshOutputDevices: () => Promise<void>;
   updateBinding: (id: string, binding: string) => Promise<void>;
   resetBinding: (id: string) => Promise<void>;
+  updatePasteBinding: (binding: string) => Promise<void>;
+  resetPasteBinding: () => Promise<void>;
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
   isUpdatingKey: (key: string) => boolean;
 
@@ -34,6 +36,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   always_on_microphone: false,
   audio_feedback: true,
   start_hidden: false,
+  paste_binding: "",
   push_to_talk: false,
   selected_microphone: "Default",
   selected_output_device: "Default",
@@ -189,6 +192,9 @@ export const useSettingsStore = create<SettingsStore>()(
           case "debug_mode":
             await invoke("change_debug_mode_setting", { enabled: value });
             break;
+          case "paste_binding":
+            await invoke("change_paste_binding", { binding: value });
+            break;
           case "custom_words":
             await invoke("update_custom_words", { words: value });
             break;
@@ -220,6 +226,49 @@ export const useSettingsStore = create<SettingsStore>()(
       const defaultValue = DEFAULT_SETTINGS[key];
       if (defaultValue !== undefined) {
         await get().updateSetting(key, defaultValue as any);
+      }
+    },
+
+    updatePasteBinding: async (binding) => {
+      const updateKey = "paste_binding";
+      const { settings, setUpdating } = get();
+      const original = settings?.paste_binding;
+
+      setUpdating(updateKey, true);
+
+      try {
+        set((state) => ({
+          settings: state.settings
+            ? { ...state.settings, paste_binding: binding }
+            : null,
+        }));
+
+        await invoke("change_paste_binding", { binding });
+      } catch (error) {
+        console.error("Failed to update paste binding:", error);
+        set((state) => ({
+          settings: state.settings
+            ? { ...state.settings, paste_binding: original ?? state.settings.paste_binding }
+            : null,
+        }));
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    resetPasteBinding: async () => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = "paste_binding";
+
+      setUpdating(updateKey, true);
+
+      try {
+        await invoke("reset_paste_binding");
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to reset paste binding:", error);
+      } finally {
+        setUpdating(updateKey, false);
       }
     },
 

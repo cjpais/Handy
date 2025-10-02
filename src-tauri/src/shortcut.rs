@@ -4,6 +4,7 @@ use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
+use crate::clipboard;
 use crate::settings::ShortcutBinding;
 use crate::settings::{self, get_settings, OverlayPosition};
 use crate::ManagedToggleState;
@@ -196,6 +197,46 @@ pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), Str
     let mut settings = settings::get_settings(&app);
     settings.custom_words = words;
     settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_paste_binding(app: AppHandle, binding: String) -> Result<(), String> {
+    clipboard::validate_paste_binding(&binding)?;
+
+    let mut settings = settings::get_settings(&app);
+    settings.paste_binding = binding.clone();
+    settings::write_settings(&app, settings);
+
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "paste_binding",
+            "value": binding
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn reset_paste_binding(app: AppHandle) -> Result<(), String> {
+    let default_binding = settings::get_default_settings().paste_binding;
+
+    clipboard::validate_paste_binding(&default_binding)?;
+
+    let mut settings = settings::get_settings(&app);
+    settings.paste_binding = default_binding.clone();
+    settings::write_settings(&app, settings);
+
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "paste_binding",
+            "value": default_binding
+        }),
+    );
+
     Ok(())
 }
 
