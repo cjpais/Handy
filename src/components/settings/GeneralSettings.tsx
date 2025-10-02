@@ -2,6 +2,7 @@ import React from "react";
 import { MicrophoneSelector } from "./MicrophoneSelector";
 import { LanguageSelector } from "./LanguageSelector";
 import { HandyShortcut } from "./HandyShortcut";
+import { PasteShortcut } from "./PasteShortcut";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { OutputDeviceSelector } from "./OutputDeviceSelector";
 import { PushToTalk } from "./PushToTalk";
@@ -14,6 +15,7 @@ export const GeneralSettings: React.FC = () => {
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title="General">
         <HandyShortcut descriptionMode="tooltip" grouped={true} />
+        <PasteShortcut descriptionMode="tooltip" grouped={true} />
         <LanguageSelector descriptionMode="tooltip" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>

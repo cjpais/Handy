@@ -13,6 +13,7 @@ export { PushToTalk } from "./PushToTalk";
 export { AudioFeedback } from "./AudioFeedback";
 export { ShowOverlay } from "./ShowOverlay";
 export { HandyShortcut } from "./HandyShortcut";
+export { PasteShortcut } from "./PasteShortcut";
 export { TranslateToEnglish } from "./TranslateToEnglish";
 export { CustomWords } from "./CustomWords";
 export { AppDataDirectory } from "./AppDataDirectory";

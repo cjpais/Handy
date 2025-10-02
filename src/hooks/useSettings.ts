@@ -24,6 +24,8 @@ interface UseSettingsReturn {
   // Binding-specific actions
   updateBinding: (id: string, binding: string) => Promise<void>;
   resetBinding: (id: string) => Promise<void>;
+  updatePasteBinding: (binding: string) => Promise<void>;
+  resetPasteBinding: () => Promise<void>;
 
   // Convenience getters
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
@@ -53,6 +55,8 @@ export const useSettings = (): UseSettingsReturn => {
     refreshOutputDevices: store.refreshOutputDevices,
     updateBinding: store.updateBinding,
     resetBinding: store.resetBinding,
+    updatePasteBinding: store.updatePasteBinding,
+    resetPasteBinding: store.resetPasteBinding,
     getSetting: store.getSetting,
   };
 };

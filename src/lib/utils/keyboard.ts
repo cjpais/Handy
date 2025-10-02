@@ -13,92 +13,111 @@ export const getKeyName = (
   e: KeyboardEvent,
   osType: OSType = "unknown",
 ): string => {
-  // Handle special cases first
-  if (e.code) {
-    const code = e.code;
-
-    // Handle function keys (F1-F24)
-    if (code.match(/^F\d+$/)) {
-      return code.toLowerCase(); // F1, F2, ..., F14, F15, etc.
+  const normalizeModifier = (name: string): string => {
+    switch (name) {
+      case "Control":
+        return "ctrl";
+      case "Alt":
+        return osType === "macos" ? "option" : "alt";
+      case "Meta":
+      case "OS":
+        return osType === "macos" ? "command" : osType === "windows" ? "win" : "super";
+      case "Shift":
+        return "shift";
+      default:
+        return name.toLowerCase();
     }
+  };
 
-    // Handle regular letter keys (KeyA -> a)
-    if (code.match(/^Key[A-Z]$/)) {
-      return code.replace("Key", "").toLowerCase();
-    }
+  const key = e.key;
 
-    // Handle digit keys (Digit0 -> 0)
-    if (code.match(/^Digit\d$/)) {
-      return code.replace("Digit", "");
-    }
-
-    // Handle numpad digit keys (Numpad0 -> numpad 0)
-    if (code.match(/^Numpad\d$/)) {
-      return code.replace("Numpad", "numpad ").toLowerCase();
-    }
-
-    // Handle modifier keys - OS-specific naming
-    const getModifierName = (baseModifier: string): string => {
-      switch (baseModifier) {
-        case "shift":
-          return "shift";
-        case "ctrl":
-          return osType === "macos" ? "ctrl" : "ctrl";
-        case "alt":
-          return osType === "macos" ? "option" : "alt";
-        case "meta":
-          // Windows key on Windows/Linux, Command key on Mac
-          if (osType === "macos") return "command";
-          return "super";
-        default:
-          return baseModifier;
-      }
-    };
-
-    const modifierMap: Record<string, string> = {
-      ShiftLeft: getModifierName("shift"),
-      ShiftRight: getModifierName("shift"),
-      ControlLeft: getModifierName("ctrl"),
-      ControlRight: getModifierName("ctrl"),
-      AltLeft: getModifierName("alt"),
-      AltRight: getModifierName("alt"),
-      MetaLeft: getModifierName("meta"),
-      MetaRight: getModifierName("meta"),
-      OSLeft: getModifierName("meta"),
-      OSRight: getModifierName("meta"),
-      CapsLock: "caps lock",
+  if (key && key !== "Unidentified" && key !== "Dead") {
+    const specialMap: Record<string, string> = {
+      Backspace: "backspace",
       Tab: "tab",
       Enter: "enter",
-      Space: "space",
-      Backspace: "backspace",
-      Delete: "delete",
+      Return: "enter",
       Escape: "esc",
-      ArrowUp: "up",
-      ArrowDown: "down",
-      ArrowLeft: "left",
-      ArrowRight: "right",
-      Home: "home",
+      " ": "space",
+      Spacebar: "space",
+      CapsLock: "caps lock",
+      ContextMenu: "menu",
+      Delete: "delete",
       End: "end",
-      PageUp: "page up",
-      PageDown: "page down",
+      Home: "home",
       Insert: "insert",
+      PageDown: "page down",
+      PageUp: "page up",
       PrintScreen: "print screen",
       ScrollLock: "scroll lock",
       Pause: "pause",
-      ContextMenu: "menu",
-      NumpadMultiply: "numpad *",
-      NumpadAdd: "numpad +",
-      NumpadSubtract: "numpad -",
-      NumpadDecimal: "numpad .",
-      NumpadDivide: "numpad /",
       NumLock: "num lock",
+      ArrowDown: "down",
+      ArrowLeft: "left",
+      ArrowRight: "right",
+      ArrowUp: "up",
+    };
+
+    if (specialMap[key]) {
+      return specialMap[key];
+    }
+
+    if (/^F\d{1,2}$/i.test(key)) {
+      return key.toLowerCase();
+    }
+
+    if (key === key.toUpperCase() && key.length === 1 && key !== key.toLowerCase()) {
+      return key.toLowerCase();
+    }
+
+    if (key.length === 1) {
+      return key.toLowerCase();
+    }
+
+    return normalizeModifier(key);
+  }
+
+  if (e.code) {
+    const code = e.code;
+
+    if (/^F\d{1,2}$/i.test(code)) {
+      return code.toLowerCase();
+    }
+
+    if (code.startsWith("Numpad")) {
+      const suffix = code.slice("Numpad".length);
+      const map: Record<string, string> = {
+        Add: "numpad +",
+        Subtract: "numpad -",
+        Multiply: "numpad *",
+        Divide: "numpad /",
+        Decimal: "numpad .",
+      };
+      if (map[suffix]) {
+        return map[suffix];
+      }
+      if (/^\d$/.test(suffix)) {
+        return `numpad ${suffix}`;
+      }
+    }
+
+    const modifierMap: Record<string, string> = {
+      ShiftLeft: "shift",
+      ShiftRight: "shift",
+      ControlLeft: "ctrl",
+      ControlRight: "ctrl",
+      AltLeft: osType === "macos" ? "option" : "alt",
+      AltRight: osType === "macos" ? "option" : "alt",
+      MetaLeft: osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
+      MetaRight: osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
+      OSLeft: osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
+      OSRight: osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
     };
 
     if (modifierMap[code]) {
       return modifierMap[code];
     }
 
-    // Handle punctuation and special characters
     const punctuationMap: Record<string, string> = {
       Semicolon: ";",
       Equal: "=",
@@ -117,40 +136,13 @@ export const getKeyName = (
       return punctuationMap[code];
     }
 
-    // For any other codes, try to convert to a reasonable format
+    if (code.startsWith("Digit")) {
+      return code.replace("Digit", "");
+    }
+
     return code.toLowerCase().replace(/([a-z])([A-Z])/g, "$1 $2");
   }
 
-  // Fallback to e.key if e.code is not available
-  if (e.key) {
-    const key = e.key;
-
-    // Handle special key names with OS-specific formatting
-    const keyMap: Record<string, string> = {
-      Control: osType === "macos" ? "ctrl" : "ctrl",
-      Alt: osType === "macos" ? "option" : "alt",
-      Shift: "shift",
-      Meta:
-        osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
-      OS:
-        osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
-      CapsLock: "caps lock",
-      ArrowUp: "up",
-      ArrowDown: "down",
-      ArrowLeft: "left",
-      ArrowRight: "right",
-      Escape: "esc",
-      " ": "space",
-    };
-
-    if (keyMap[key]) {
-      return keyMap[key];
-    }
-
-    return key.toLowerCase();
-  }
-
-  // Last resort fallback
   return `unknown-${e.keyCode || e.which || 0}`;
 };
 
@@ -162,9 +154,50 @@ export const formatKeyCombination = (
   combination: string,
   osType: OSType,
 ): string => {
-  // Simply return the combination as-is since getKeyName already provides
-  // the correct platform-specific key names
-  return combination;
+  const formatToken = (token: string): string => {
+    const trimmed = token.trim();
+    const lower = trimmed.toLowerCase();
+    const modifierMap: Record<string, string> = {
+      ctrl: "Ctrl",
+      control: "Ctrl",
+      shift: "Shift",
+      alt: "Alt",
+      option: osType === "macos" ? "Option" : "Alt",
+      command: osType === "macos" ? "Command" : "Super",
+      meta: osType === "macos" ? "Command" : osType === "windows" ? "Win" : "Super",
+      super: "Super",
+      win: "Win",
+    };
+
+    if (modifierMap[lower]) {
+      return modifierMap[lower];
+    }
+
+    if (lower.startsWith("unicode:")) {
+      const value = trimmed.slice("unicode:".length).replace(/^'|'$/g, "");
+      return value.length === 1 ? value.toUpperCase() : value;
+    }
+
+    if (lower.startsWith("keycode:")) {
+      return `Keycode ${trimmed.slice("keycode:".length)}`;
+    }
+
+    if (lower.length === 1) {
+      return lower.toUpperCase();
+    }
+
+    return trimmed
+      .split(" ")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
+  return combination
+    .split("+")
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .map(formatToken)
+    .join("+");
 };
 
 /**

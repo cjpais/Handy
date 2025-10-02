@@ -39,6 +39,7 @@ export const SettingsSchema = z.object({
   push_to_talk: z.boolean(),
   audio_feedback: z.boolean(),
   start_hidden: z.boolean().optional().default(false),
+  paste_binding: z.string().optional().default(""),
   selected_model: z.string(),
   always_on_microphone: z.boolean(),
   selected_microphone: z.string().nullable().optional(),
