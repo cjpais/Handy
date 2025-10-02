@@ -24,13 +24,11 @@ fn send_paste() -> Result<(), String> {
         .key(modifier_key, enigo::Direction::Press)
         .map_err(|e| format!("Failed to press modifier key: {}", e))?;
     enigo
-        .key(v_key_code, enigo::Direction::Press)
+        .key(v_key_code, enigo::Direction::Click)
         .map_err(|e| format!("Failed to press V key: {}", e))?;
 
-    // Release V + modifier (reverse order)
-    enigo
-        .key(v_key_code, enigo::Direction::Release)
-        .map_err(|e| format!("Failed to release V key: {}", e))?;
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
     enigo
         .key(modifier_key, enigo::Direction::Release)
         .map_err(|e| format!("Failed to release modifier key: {}", e))?;
