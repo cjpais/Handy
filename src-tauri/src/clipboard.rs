@@ -25,7 +25,7 @@ fn send_paste() -> Result<(), String> {
         .map_err(|e| format!("Failed to press modifier key: {}", e))?;
     enigo
         .key(v_key_code, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to press V key: {}", e))?;
+        .map_err(|e| format!("Failed to click V key: {}", e))?;
 
     std::thread::sleep(std::time::Duration::from_millis(100));
 
