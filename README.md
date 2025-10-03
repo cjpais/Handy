@@ -56,7 +56,7 @@ Handy is built as a Tauri application combining:
   - `transcription-rs`: CPU-optimized speech recognition with Parakeet models
   - `cpal`: Cross-platform audio I/O
   - `vad-rs`: Voice Activity Detection
-  - `rdev`: Global keyboard shortcuts and system events
+  - `objc2-app-kit` + `block2`: macOS Accessibility-based event monitoring for Fn shortcuts
   - `rubato`: Audio resampling
 
 ## Known Issues & Current Limitations
