@@ -347,6 +347,7 @@ impl TranscriptionManager {
                         } else {
                             Some(settings.selected_language.clone())
                         },
+                        translate: settings.translate_to_english,
                         ..Default::default()
                     };
 
