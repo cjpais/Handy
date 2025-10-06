@@ -19,18 +19,32 @@ fn send_paste() -> Result<(), String> {
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
 
-    // Press modifier + V
+    // Press Ctrl (or Cmd on macOS)
     enigo
         .key(modifier_key, enigo::Direction::Press)
         .map_err(|e| format!("Failed to press modifier key: {}", e))?;
+
+    // Linux terminals need Ctrl+Shift+V (Ctrl+V is reserved for terminal control)
+    #[cfg(target_os = "linux")]
+    enigo
+        .key(Key::Shift, enigo::Direction::Press)
+        .map_err(|e| format!("Failed to press Shift: {}", e))?;
+
+    // Press V
     enigo
         .key(v_key_code, enigo::Direction::Press)
         .map_err(|e| format!("Failed to press V key: {}", e))?;
 
-    // Release V + modifier (reverse order)
+    // Release in reverse order
     enigo
         .key(v_key_code, enigo::Direction::Release)
         .map_err(|e| format!("Failed to release V key: {}", e))?;
+
+    #[cfg(target_os = "linux")]
+    enigo
+        .key(Key::Shift, enigo::Direction::Release)
+        .map_err(|e| format!("Failed to release Shift: {}", e))?;
+
     enigo
         .key(modifier_key, enigo::Direction::Release)
         .map_err(|e| format!("Failed to release modifier key: {}", e))?;
