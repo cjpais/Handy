@@ -192,6 +192,27 @@ pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), 
 }
 
 #[tauri::command]
+pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.autostart_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    // Note: Autostart is only managed during app initialization in lib.rs
+    // The setting change will take effect on the next app restart
+
+    // Notify frontend
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "autostart_enabled",
+            "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.custom_words = words;
