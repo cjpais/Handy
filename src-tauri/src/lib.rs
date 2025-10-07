@@ -49,8 +49,99 @@ fn show_main_window(app: &AppHandle) {
             }
         }
     } else {
-        eprintln!("Main window not found");
+        eprintln!("Main window not found. Please ensure it is defined in tauri.conf.json.");
     }
+}
+
+fn initialize_core_logic(app_handle: &AppHandle) {
+    // First, initialize the managers
+    let recording_manager = Arc::new(
+        AudioRecordingManager::new(app_handle).expect("Failed to initialize recording manager"),
+    );
+    let model_manager =
+        Arc::new(ModelManager::new(app_handle).expect("Failed to initialize model manager"));
+    let transcription_manager = Arc::new(
+        TranscriptionManager::new(app_handle, model_manager.clone())
+            .expect("Failed to initialize transcription manager"),
+    );
+    let history_manager =
+        Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+
+    // Add managers to Tauri's managed state
+    app_handle.manage(recording_manager.clone());
+    app_handle.manage(model_manager.clone());
+    app_handle.manage(transcription_manager.clone());
+    app_handle.manage(history_manager.clone());
+
+    // Initialize the shortcuts
+    shortcut::init_shortcuts(app_handle);
+
+    // Apply macOS Accessory policy early if starting hidden
+    #[cfg(target_os = "macos")]
+    {
+        let settings = settings::get_settings(app_handle);
+        if settings.start_hidden {
+            let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
+        }
+    }
+    // Get the current theme to set the appropriate initial icon
+    let initial_theme = tray::get_current_theme(app_handle);
+
+    // Choose the appropriate initial icon based on theme
+    let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
+
+    let tray = TrayIconBuilder::new()
+        .icon(
+            Image::from_path(
+                app_handle
+                    .path()
+                    .resolve(initial_icon_path, tauri::path::BaseDirectory::Resource)
+                    .unwrap(),
+            )
+            .unwrap(),
+        )
+        .show_menu_on_left_click(true)
+        .icon_as_template(true)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "settings" => {
+                show_main_window(app);
+            }
+            "check_updates" => {
+                show_main_window(app);
+                let _ = app.emit("check-for-updates", ());
+            }
+            "cancel" => {
+                use crate::utils::cancel_current_operation;
+
+                // Use centralized cancellation that handles all operations
+                cancel_current_operation(app);
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .build(app_handle)
+        .unwrap();
+    app_handle.manage(tray);
+
+    // Initialize tray menu with idle state
+    utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle);
+
+    // Get the autostart manager and configure based on user setting
+    let autostart_manager = app_handle.autolaunch();
+    let settings = settings::get_settings(&app.handle());
+
+    if settings.autostart_enabled {
+        // Enable autostart if user has opted in
+        let _ = autostart_manager.enable();
+    } else {
+        // Disable autostart if user has opted out
+        let _ = autostart_manager.disable();
+    }
+
+    // Create the recording overlay window (hidden by default)
+    utils::create_recording_overlay(app_handle);
 }
 
 #[tauri::command]
@@ -91,97 +182,25 @@ pub fn run() {
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
-            // Apply macOS Accessory policy early if starting hidden
-            #[cfg(target_os = "macos")]
-            {
-                let settings = settings::get_settings(&app.handle());
-                if settings.start_hidden {
-                    let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-                }
-            }
-            // Get the current theme to set the appropriate initial icon
-            let initial_theme = tray::get_current_theme(&app.handle());
-
-            // Choose the appropriate initial icon based on theme
-            let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
-
-            let tray = TrayIconBuilder::new()
-                .icon(Image::from_path(app.path().resolve(
-                    initial_icon_path,
-                    tauri::path::BaseDirectory::Resource,
-                )?)?)
-                .show_menu_on_left_click(true)
-                .icon_as_template(true)
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "settings" => {
-                        show_main_window(app);
-                    }
-                    "check_updates" => {
-                        show_main_window(app);
-                        let _ = app.emit("check-for-updates", ());
-                    }
-                    "cancel" => {
-                        use crate::utils::cancel_current_operation;
-
-                        // Use centralized cancellation that handles all operations
-                        cancel_current_operation(app);
-                    }
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    _ => {}
-                })
-                .build(app)?;
-            app.manage(tray);
-
-            // Initialize tray menu with idle state
-            utils::update_tray_menu(&app.handle(), &utils::TrayIconState::Idle);
-
-            // Get the autostart manager and configure based on user setting
-            let autostart_manager = app.autolaunch();
             let settings = settings::get_settings(&app.handle());
+            let app_handle = app.handle().clone();
 
-            if settings.autostart_enabled {
-                // Enable autostart if user has opted in
-                let _ = autostart_manager.enable();
+            // Show the splashscreen and app only if not hidden
+            if !settings.start_hidden {
+                let splashscreen_window = app.get_webview_window("splashscreen").unwrap();
+                splashscreen_window.show().unwrap();
+
+                std::thread::spawn(move || {
+                    initialize_core_logic(&app_handle);
+                    if let Some(main_window) = app_handle.get_webview_window("main") {
+                        main_window.show().unwrap();
+                        main_window.set_focus().unwrap();
+                    }
+                    splashscreen_window.close().unwrap();
+                });
             } else {
-                // Disable autostart if user has opted out
-                let _ = autostart_manager.disable();
+                initialize_core_logic(&app_handle);
             }
-
-            // Window is configured to start hidden to avoid flicker.
-            // If user didn't choose Start Hidden, show it now.
-            let settings = settings::get_settings(&app.handle());
-            if settings.start_hidden {
-                if let Some(main_window) = app.get_webview_window("main") {
-                    let _ = main_window.hide();
-                }
-            } else {
-                show_main_window(&app.handle());
-            }
-
-            let recording_manager = Arc::new(
-                AudioRecordingManager::new(app).expect("Failed to initialize recording manager"),
-            );
-            let model_manager =
-                Arc::new(ModelManager::new(&app).expect("Failed to initialize model manager"));
-            let transcription_manager = Arc::new(
-                TranscriptionManager::new(&app, model_manager.clone())
-                    .expect("Failed to initialize transcription manager"),
-            );
-            let history_manager =
-                Arc::new(HistoryManager::new(&app).expect("Failed to initialize history manager"));
-
-            // Add managers to Tauri's managed state
-            app.manage(recording_manager.clone());
-            app.manage(model_manager.clone());
-            app.manage(transcription_manager.clone());
-            app.manage(history_manager.clone());
-
-            // Create the recording overlay window (hidden by default)
-            utils::create_recording_overlay(&app.handle());
-
-            shortcut::init_shortcuts(app);
 
             Ok(())
         })

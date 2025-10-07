@@ -13,13 +13,26 @@
     "macOSPrivateApi": true,
     "windows": [
       {
+        "label": "main",
         "title": "Handy",
         "width": 680,
         "height": 510,
         "minWidth": 680,
         "minHeight": 510,
         "resizable": true,
-        "maximizable": false
+        "maximizable": false,
+        "visible": false
+      },
+      {
+        "label": "splashscreen",
+        "url": "/splashscreen.html",
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "width": 128,
+        "height": 128,
+        "visible": false,
+        "center": true
       }
     ],
     "security": {

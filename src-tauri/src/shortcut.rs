@@ -1,21 +1,19 @@
 use serde::Serialize;
-use tauri::{App, AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
-use tauri_plugin_global_shortcut::GlobalShortcutExt;
-use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
 use crate::settings::{self, get_settings, OverlayPosition, PasteMethod};
 use crate::ManagedToggleState;
 
-pub fn init_shortcuts(app: &App) {
+pub fn init_shortcuts(app: &AppHandle) {
     let settings = settings::load_or_create_app_settings(app);
 
     // Register shortcuts with the bindings from settings
     for (_id, binding) in settings.bindings {
-        // Pass app.handle() which is &AppHandle
-        if let Err(e) = _register_shortcut(app.handle(), binding) {
+        if let Err(e) = _register_shortcut(app, binding) {
             eprintln!("Failed to register shortcut {} during init: {}", _id, e);
         }
     }

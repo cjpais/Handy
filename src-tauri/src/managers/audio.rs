@@ -4,7 +4,7 @@ use crate::utils;
 use log::{debug, info};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::{App, Manager};
+use tauri::Manager;
 
 const WHISPER_SAMPLE_RATE: usize = 16000;
 
@@ -63,8 +63,8 @@ pub struct AudioRecordingManager {
 impl AudioRecordingManager {
     /* ---------- construction ------------------------------------------------ */
 
-    pub fn new(app: &App) -> Result<Self, anyhow::Error> {
-        let settings = get_settings(&app.handle());
+    pub fn new(app: &tauri::AppHandle) -> Result<Self, anyhow::Error> {
+        let settings = get_settings(app);
         let mode = if settings.always_on_microphone {
             MicrophoneMode::AlwaysOn
         } else {
@@ -74,7 +74,7 @@ impl AudioRecordingManager {
         let manager = Self {
             state: Arc::new(Mutex::new(RecordingState::Idle)),
             mode: Arc::new(Mutex::new(mode.clone())),
-            app_handle: app.handle().clone(),
+            app_handle: app.clone(),
 
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),

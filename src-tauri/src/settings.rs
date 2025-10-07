@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tauri::{App, AppHandle};
+use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -204,7 +204,7 @@ pub fn get_default_settings() -> AppSettings {
     }
 }
 
-pub fn load_or_create_app_settings(app: &App) -> AppSettings {
+pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     // Initialize store
     let store = app
         .store(SETTINGS_STORE_PATH)

@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tauri::{App, AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 use transcribe_rs::{
     engines::{
         parakeet::{
@@ -46,9 +46,7 @@ pub struct TranscriptionManager {
 }
 
 impl TranscriptionManager {
-    pub fn new(app: &App, model_manager: Arc<ModelManager>) -> Result<Self> {
-        let app_handle = app.app_handle().clone();
-
+    pub fn new(app_handle: &AppHandle, model_manager: Arc<ModelManager>) -> Result<Self> {
         let manager = Self {
             engine: Arc::new(Mutex::new(None)),
             model_manager,
