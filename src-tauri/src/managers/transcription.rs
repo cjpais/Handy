@@ -5,7 +5,7 @@ use anyhow::Result;
 use log::debug;
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tauri::{App, AppHandle, Emitter, Manager};
@@ -41,6 +41,8 @@ pub struct TranscriptionManager {
     last_activity: Arc<AtomicU64>,
     shutdown_signal: Arc<AtomicBool>,
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
+    is_loading: Arc<Mutex<bool>>,
+    loading_condvar: Arc<Condvar>,
 }
 
 impl TranscriptionManager {
@@ -60,6 +62,8 @@ impl TranscriptionManager {
             )),
             shutdown_signal: Arc::new(AtomicBool::new(false)),
             watcher_handle: Arc::new(Mutex::new(None)),
+            is_loading: Arc::new(Mutex::new(false)),
+            loading_condvar: Arc::new(Condvar::new()),
         };
 
         // Start the idle watcher
@@ -279,6 +283,26 @@ impl TranscriptionManager {
         Ok(())
     }
 
+    /// Kicks off the model loading in a background thread if it's not already loaded
+    pub fn initiate_model_load(&self) {
+        let mut is_loading = self.is_loading.lock().unwrap();
+        if *is_loading || self.is_model_loaded() {
+            return;
+        }
+
+        *is_loading = true;
+        let self_clone = self.clone();
+        thread::spawn(move || {
+            let settings = get_settings(&self_clone.app_handle);
+            if let Err(e) = self_clone.load_model(&settings.selected_model) {
+                eprintln!("Failed to load model: {}", e);
+            }
+            let mut is_loading = self_clone.is_loading.lock().unwrap();
+            *is_loading = false;
+            self_clone.loading_condvar.notify_all();
+        });
+    }
+
     pub fn get_current_model(&self) -> Option<String> {
         let current_model = self.current_model_id.lock().unwrap();
         current_model.clone()
@@ -305,25 +329,15 @@ impl TranscriptionManager {
 
         // Check if model is loaded, if not try to load it
         {
+            // If the model is loading, wait for it to complete.
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+
             let engine_guard = self.engine.lock().unwrap();
             if engine_guard.is_none() {
-                // Model not loaded, try to load the selected model from settings
-                let settings = get_settings(&self.app_handle);
-                println!(
-                    "Model not loaded, attempting to load: {}",
-                    settings.selected_model
-                );
-
-                // Drop the guard before calling load_model to avoid deadlock
-                drop(engine_guard);
-
-                // Try to load the model
-                if let Err(e) = self.load_model(&settings.selected_model) {
-                    return Err(anyhow::anyhow!(
-                        "Failed to auto-load model '{}': {}. Please check that the model is downloaded and try again.",
-                        settings.selected_model, e
-                    ));
-                }
+                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
         }
 
