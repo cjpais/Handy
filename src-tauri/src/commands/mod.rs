@@ -2,6 +2,7 @@ pub mod audio;
 pub mod history;
 pub mod models;
 pub mod transcription;
+pub mod upload;
 
 use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};

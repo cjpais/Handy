@@ -52,7 +52,9 @@ tauri-plugin-store = "2"
 tauri-plugin-os = "2"
 enigo = "0.5.0"
 tauri-plugin-process = "2"
+base64 = "0.22.0"
 rodio = { git = "https://github.com/cjpais/rodio.git" }
+symphonia = { version = "0.5", features = ["aac", "mp3", "wav", "flac"] }
 reqwest = { version = "0.11", features = ["json", "stream"] }
 futures-util = "0.3"
 tauri-plugin-fs = "2"

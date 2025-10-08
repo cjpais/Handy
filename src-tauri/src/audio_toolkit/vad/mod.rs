@@ -26,7 +26,7 @@ pub trait VoiceActivityDetector: Send + Sync {
 }
 
 mod silero;
-mod smoothed;
+pub mod smoothed;
 
 pub use silero::SileroVad;
 pub use smoothed::SmoothedVad;

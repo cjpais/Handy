@@ -31,6 +31,18 @@ The process is entirely local:
   - **Parakeet V3** - CPU-optimized model with excellent performance and automatic language detection
 - Works on Windows, macOS, and Linux
 
+### Upload & Transcribe Feature
+
+Handy also supports uploading pre-recorded audio files for transcription:
+
+1. **Navigate** to the "Upload Audio" section in the settings
+2. **Drag & drop** or select audio files (WAV, MP3, M4A, FLAC supported)
+3. **Choose** your preferred transcription model and language
+4. **Click** "Transcribe" to process the audio
+5. **Optionally save** the transcription to history for later reference
+
+This feature uses the same local processing pipeline as real-time transcription.
+
 ## Quick Start
 
 ### Installation

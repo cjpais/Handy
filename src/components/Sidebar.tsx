@@ -1,5 +1,5 @@
 import React from "react";
-import { Cog, FlaskConical, History, Info } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Upload } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -10,6 +10,7 @@ import {
   DebugSettings,
   AboutSettings,
 } from "./settings";
+import { UploadAudio } from "./UploadAudio";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
 
@@ -33,6 +34,12 @@ export const SECTIONS_CONFIG = {
     label: "General",
     icon: HandyHand,
     component: GeneralSettings,
+    enabled: () => true,
+  },
+  upload: {
+    label: "Upload Audio",
+    icon: Upload,
+    component: UploadAudio,
     enabled: () => true,
   },
   advanced: {

@@ -41,11 +41,15 @@ export const useModels = () => {
 
   const loadModels = async () => {
     try {
+      console.log("Loading available models...");
       const modelList = await invoke<ModelInfo[]>("get_available_models");
+      console.log("Loaded models:", modelList);
       setModels(modelList);
       setError(null);
     } catch (err) {
-      setError(`Failed to load models: ${err}`);
+      console.error("Failed to load models:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Failed to load available models: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
