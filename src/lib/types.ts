@@ -34,6 +34,9 @@ export const ModelUnloadTimeoutSchema = z.enum([
 ]);
 export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
 
+export const PasteMethodSchema = z.enum(["ctrl_v", "direct"]);
+export type PasteMethod = z.infer<typeof PasteMethodSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
@@ -50,6 +53,7 @@ export const SettingsSchema = z.object({
   custom_words: z.array(z.string()).optional().default([]),
   model_unload_timeout: ModelUnloadTimeoutSchema.optional().default("never"),
   word_correction_threshold: z.number().optional().default(0.18),
+  paste_method: PasteMethodSchema.optional().default("ctrl_v"),
 });
 
 export const BindingResponseSchema = z.object({

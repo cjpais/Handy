@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
-import { invoke } from '@tauri-apps/api/core';
-import { Settings, AudioDevice } from '../lib/types';
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
+import { invoke } from "@tauri-apps/api/core";
+import { Settings, AudioDevice } from "../lib/types";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -12,7 +12,10 @@ interface SettingsStore {
 
   // Actions
   initialize: () => Promise<void>;
-  updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => Promise<void>;
+  updateSetting: <K extends keyof Settings>(
+    key: K,
+    value: Settings[K],
+  ) => Promise<void>;
   resetSetting: (key: keyof Settings) => Promise<void>;
   refreshSettings: () => Promise<void>;
   refreshAudioDevices: () => Promise<void>;
@@ -47,7 +50,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
   index: "default",
   name: "Default",
-  is_default: true
+  is_default: true,
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -63,7 +66,7 @@ export const useSettingsStore = create<SettingsStore>()(
     setLoading: (isLoading) => set({ isLoading }),
     setUpdating: (key, updating) =>
       set((state) => ({
-        isUpdating: { ...state.isUpdating, [key]: updating }
+        isUpdating: { ...state.isUpdating, [key]: updating },
       })),
     setAudioDevices: (audioDevices) => set({ audioDevices }),
     setOutputDevices: (outputDevices) => set({ outputDevices }),
@@ -114,10 +117,14 @@ export const useSettingsStore = create<SettingsStore>()(
     // Load audio devices
     refreshAudioDevices: async () => {
       try {
-        const devices: AudioDevice[] = await invoke("get_available_microphones");
+        const devices: AudioDevice[] = await invoke(
+          "get_available_microphones",
+        );
         const devicesWithDefault = [
           DEFAULT_AUDIO_DEVICE,
-          ...devices.filter((d) => d.name !== "Default" && d.name !== "default"),
+          ...devices.filter(
+            (d) => d.name !== "Default" && d.name !== "default",
+          ),
         ];
         set({ audioDevices: devicesWithDefault });
       } catch (error) {
@@ -129,10 +136,14 @@ export const useSettingsStore = create<SettingsStore>()(
     // Load output devices
     refreshOutputDevices: async () => {
       try {
-        const devices: AudioDevice[] = await invoke("get_available_output_devices");
+        const devices: AudioDevice[] = await invoke(
+          "get_available_output_devices",
+        );
         const devicesWithDefault = [
           DEFAULT_AUDIO_DEVICE,
-          ...devices.filter((d) => d.name !== "Default" && d.name !== "default"),
+          ...devices.filter(
+            (d) => d.name !== "Default" && d.name !== "default",
+          ),
         ];
         set({ outputDevices: devicesWithDefault });
       } catch (error) {
@@ -142,7 +153,10 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     // Update a specific setting
-    updateSetting: async <K extends keyof Settings>(key: K, value: Settings[K]) => {
+    updateSetting: async <K extends keyof Settings>(
+      key: K,
+      value: Settings[K],
+    ) => {
       const { settings, setUpdating, refreshSettings } = get();
       const updateKey = String(key);
       const originalValue = settings?.[key];
@@ -171,20 +185,30 @@ export const useSettingsStore = create<SettingsStore>()(
             break;
           case "selected_microphone":
             const micDeviceName = value === "Default" ? "default" : value;
-            await invoke("set_selected_microphone", { deviceName: micDeviceName });
+            await invoke("set_selected_microphone", {
+              deviceName: micDeviceName,
+            });
             break;
           case "selected_output_device":
             const outputDeviceName = value === "Default" ? "default" : value;
-            await invoke("set_selected_output_device", { deviceName: outputDeviceName });
+            await invoke("set_selected_output_device", {
+              deviceName: outputDeviceName,
+            });
             break;
           case "translate_to_english":
-            await invoke("change_translate_to_english_setting", { enabled: value });
+            await invoke("change_translate_to_english_setting", {
+              enabled: value,
+            });
             break;
           case "selected_language":
-            await invoke("change_selected_language_setting", { language: value });
+            await invoke("change_selected_language_setting", {
+              language: value,
+            });
             break;
           case "overlay_position":
-            await invoke("change_overlay_position_setting", { position: value });
+            await invoke("change_overlay_position_setting", {
+              position: value,
+            });
             break;
           case "debug_mode":
             await invoke("change_debug_mode_setting", { enabled: value });
@@ -193,7 +217,12 @@ export const useSettingsStore = create<SettingsStore>()(
             await invoke("update_custom_words", { words: value });
             break;
           case "word_correction_threshold":
-            await invoke("change_word_correction_threshold_setting", { threshold: value });
+            await invoke("change_word_correction_threshold_setting", {
+              threshold: value,
+            });
+            break;
+          case "paste_method":
+            await invoke("change_paste_method_setting", { method: value });
             break;
           case "bindings":
           case "selected_model":
@@ -293,12 +322,13 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
-      const { refreshSettings, refreshAudioDevices, refreshOutputDevices } = get();
+      const { refreshSettings, refreshAudioDevices, refreshOutputDevices } =
+        get();
       await Promise.all([
         refreshSettings(),
         refreshAudioDevices(),
         refreshOutputDevices(),
       ]);
     },
-  }))
+  })),
 );
