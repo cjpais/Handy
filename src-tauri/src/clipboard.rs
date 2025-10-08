@@ -39,15 +39,42 @@ fn send_paste() -> Result<(), String> {
     Ok(())
 }
 
-/// Sends text directly using the enigo text method.
+/// Pastes text directly using the enigo text method.
 /// This tries to use system input methods if possible, otherwise simulates keystrokes one by one.
-fn send_direct(text: &str) -> Result<(), String> {
+fn paste_via_direct_input(text: &str) -> Result<(), String> {
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
 
     enigo
         .text(text)
         .map_err(|e| format!("Failed to send text directly: {}", e))?;
+
+    Ok(())
+}
+
+/// Pastes text using the clipboard method (Ctrl+V/Cmd+V).
+/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
+fn paste_via_clipboard(text: &str, app_handle: &AppHandle) -> Result<(), String> {
+    let clipboard = app_handle.clipboard();
+
+    // get the current clipboard content
+    let clipboard_content = clipboard.read_text().unwrap_or_default();
+
+    clipboard
+        .write_text(text)
+        .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
+
+    // small delay to ensure the clipboard content has been written to
+    std::thread::sleep(std::time::Duration::from_millis(50));
+
+    send_paste()?;
+
+    std::thread::sleep(std::time::Duration::from_millis(50));
+
+    // restore the clipboard
+    clipboard
+        .write_text(&clipboard_content)
+        .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
 
     Ok(())
 }
@@ -59,30 +86,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     println!("Using paste method: {:?}", paste_method);
 
     match paste_method {
-        PasteMethod::CtrlV => {
-            let clipboard = app_handle.clipboard();
-
-            // get the current clipboard content
-            let clipboard_content = clipboard.read_text().unwrap_or_default();
-
-            clipboard
-                .write_text(&text)
-                .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
-
-            // small delay to ensure the clipboard content has been written to
-            std::thread::sleep(std::time::Duration::from_millis(50));
-
-            send_paste()?;
-
-            std::thread::sleep(std::time::Duration::from_millis(50));
-
-            // restore the clipboard
-            clipboard
-                .write_text(&clipboard_content)
-                .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
-
-            Ok(())
-        }
-        PasteMethod::Direct => send_direct(&text),
+        PasteMethod::CtrlV => paste_via_clipboard(&text, &app_handle),
+        PasteMethod::Direct => paste_via_direct_input(&text),
     }
 }
