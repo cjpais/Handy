@@ -64,7 +64,7 @@ Handy is built as a Tauri application combining:
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
 
 ### Platform Support
-- **Apple Silicon Macs**
+- **macOS (both Intel and Apple Silicon)**
 - **x64 Windows**
 - **x64 Linux**
 
@@ -73,7 +73,7 @@ This project is actively being developed and has some [known issues](https://git
 The following are recommendations for running Handy on your own machine. If you don't meet the system requirements, the performance of the application may be degraded. We are working on improving the performance across all kinds of computers and hardware.
 
 **For Whisper Models:**
-- **macOS**: M series Mac
+- **macOS**: M series Mac, Intel Mac
 - **Windows**: Intel, AMD, or NVIDIA GPU
 - **Linux**: Intel, AMD, or NVIDIA GPU
   * Ubuntu 22.04, 24.04

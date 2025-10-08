@@ -5,7 +5,7 @@ use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
-use crate::settings::{self, get_settings, OverlayPosition};
+use crate::settings::{self, get_settings, OverlayPosition, PasteMethod};
 use crate::ManagedToggleState;
 
 pub fn init_shortcuts(app: &App) {
@@ -206,6 +206,22 @@ pub fn change_word_correction_threshold_setting(
 ) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.word_correction_threshold = threshold;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match method.as_str() {
+        "ctrl_v" => PasteMethod::CtrlV,
+        "direct" => PasteMethod::Direct,
+        other => {
+            eprintln!("Invalid paste method '{}', defaulting to ctrl_v", other);
+            PasteMethod::CtrlV
+        }
+    };
+    settings.paste_method = parsed;
     settings::write_settings(&app, settings);
     Ok(())
 }

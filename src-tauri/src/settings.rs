@@ -33,9 +33,26 @@ pub enum ModelUnloadTimeout {
     Sec5, // Debug mode only
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PasteMethod {
+    CtrlV,
+    Direct,
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
+    }
+}
+
+impl Default for PasteMethod {
+    fn default() -> Self {
+        // Default to CtrlV for macOS and Windows, Direct for Linux
+        #[cfg(target_os = "linux")]
+        return PasteMethod::Direct;
+        #[cfg(not(target_os = "linux"))]
+        return PasteMethod::CtrlV;
     }
 }
 
@@ -95,6 +112,8 @@ pub struct AppSettings {
     pub word_correction_threshold: f64,
     #[serde(default = "default_history_limit")]
     pub history_limit: usize,
+    #[serde(default)]
+    pub paste_method: PasteMethod,
 }
 
 fn default_model() -> String {
@@ -174,6 +193,7 @@ pub fn get_default_settings() -> AppSettings {
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
+        paste_method: PasteMethod::default(),
     }
 }
 
