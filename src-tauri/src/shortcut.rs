@@ -1,5 +1,6 @@
 use serde::Serialize;
 use tauri::{App, AppHandle, Emitter, Manager};
+use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 
@@ -197,8 +198,13 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
     settings.autostart_enabled = enabled;
     settings::write_settings(&app, settings);
 
-    // Note: Autostart is only managed during app initialization in lib.rs
-    // The setting change will take effect on the next app restart
+    // Apply the autostart setting immediately
+    let autostart_manager = app.autolaunch();
+    if enabled {
+        let _ = autostart_manager.enable();
+    } else {
+        let _ = autostart_manager.disable();
+    }
 
     // Notify frontend
     let _ = app.emit(
