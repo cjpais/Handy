@@ -5,12 +5,11 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tauri::{App, AppHandle, Emitter, Manager};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 use crate::audio_toolkit::save_wav_file;
-
-const HISTORY_LIMIT: usize = 5;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HistoryEntry {
@@ -22,15 +21,15 @@ pub struct HistoryEntry {
     pub transcription_text: String,
 }
 
-#[derive(Clone)]
 pub struct HistoryManager {
     app_handle: AppHandle,
     recordings_dir: PathBuf,
     db_path: PathBuf,
+    history_limit: AtomicUsize,
 }
 
 impl HistoryManager {
-    pub fn new(app: &App) -> Result<Self> {
+    pub fn new(app: &App, history_limit: usize) -> Result<Self> {
         let app_handle = app.app_handle().clone();
 
         // Create recordings directory in app data dir
@@ -48,6 +47,7 @@ impl HistoryManager {
             app_handle,
             recordings_dir,
             db_path,
+            history_limit: AtomicUsize::new(history_limit),
         };
 
         // Initialize database
@@ -99,6 +99,11 @@ impl HistoryManager {
         audio_samples: Vec<f32>,
         transcription_text: String,
     ) -> Result<()> {
+        // If history limit is 0, do not save at all.
+        if self.history_limit.load(Ordering::Relaxed) == 0 {
+            return Ok(());
+        }
+
         let timestamp = Utc::now().timestamp();
         let file_name = format!("handy-{}.wav", timestamp);
         let title = self.format_timestamp_title(timestamp);
@@ -155,8 +160,9 @@ impl HistoryManager {
             entries.push(row?);
         }
 
-        if entries.len() > HISTORY_LIMIT {
-            let entries_to_delete = &entries[HISTORY_LIMIT..];
+        let limit = self.history_limit.load(Ordering::Relaxed);
+        if entries.len() > limit {
+            let entries_to_delete = &entries[limit..];
 
             for (id, file_name) in entries_to_delete {
                 // Delete database entry
@@ -242,26 +248,28 @@ impl HistoryManager {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
             "SELECT id, file_name, timestamp, saved, title, transcription_text 
-             FROM transcription_history WHERE id = ?1"
+             FROM transcription_history WHERE id = ?1",
         )?;
-        
-        let entry = stmt.query_row([id], |row| {
-            Ok(HistoryEntry {
-                id: row.get("id")?,
-                file_name: row.get("file_name")?,
-                timestamp: row.get("timestamp")?,
-                saved: row.get("saved")?,
-                title: row.get("title")?,
-                transcription_text: row.get("transcription_text")?,
+
+        let entry = stmt
+            .query_row([id], |row| {
+                Ok(HistoryEntry {
+                    id: row.get("id")?,
+                    file_name: row.get("file_name")?,
+                    timestamp: row.get("timestamp")?,
+                    saved: row.get("saved")?,
+                    title: row.get("title")?,
+                    transcription_text: row.get("transcription_text")?,
+                })
             })
-        }).optional()?;
-        
+            .optional()?;
+
         Ok(entry)
     }
 
     pub async fn delete_entry(&self, id: i64) -> Result<()> {
         let conn = self.get_connection()?;
-        
+
         // Get the entry to find the file name
         if let Some(entry) = self.get_entry_by_id(id).await? {
             // Delete the audio file first
@@ -273,7 +281,7 @@ impl HistoryManager {
                 }
             }
         }
-        
+
         // Delete from database
         conn.execute(
             "DELETE FROM transcription_history WHERE id = ?1",
@@ -298,5 +306,11 @@ impl HistoryManager {
         } else {
             format!("Recording {}", timestamp)
         }
+    }
+
+    pub fn update_history_limit(&self, new_limit: usize) -> Result<()> {
+        self.history_limit.swap(new_limit, Ordering::Relaxed);
+        self.cleanup_old_entries()?;
+        Ok(())
     }
 }

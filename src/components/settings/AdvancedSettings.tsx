@@ -4,6 +4,7 @@ import { TranslateToEnglish } from "./TranslateToEnglish";
 import { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";
 import { CustomWords } from "./CustomWords";
 import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
+import { PasteMethodSetting } from "./PasteMethod";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { StartHidden } from "./StartHidden";
 import { AutostartToggle } from "./AutostartToggle";
@@ -15,6 +16,7 @@ export const AdvancedSettings: React.FC = () => {
         <StartHidden descriptionMode="tooltip" grouped={true} />
         <AutostartToggle descriptionMode="tooltip" grouped={true} />
         <ShowOverlay descriptionMode="tooltip" grouped={true} />
+        <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
         <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />

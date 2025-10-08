@@ -169,8 +169,10 @@ pub fn run() {
                 TranscriptionManager::new(&app, model_manager.clone())
                     .expect("Failed to initialize transcription manager"),
             );
-            let history_manager =
-                Arc::new(HistoryManager::new(&app).expect("Failed to initialize history manager"));
+            let history_manager = Arc::new(
+                HistoryManager::new(&app, settings.history_limit)
+                    .expect("Failed to initialize history manager"),
+            );
 
             // Add managers to Tauri's managed state
             app.manage(recording_manager.clone());
@@ -218,6 +220,7 @@ pub fn run() {
             shortcut::change_overlay_position_setting,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
+            shortcut::change_paste_method_setting,
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,
@@ -250,7 +253,8 @@ pub fn run() {
             commands::history::get_history_entries,
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
-            commands::history::delete_history_entry
+            commands::history::delete_history_entry,
+            commands::history::update_history_limit
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
