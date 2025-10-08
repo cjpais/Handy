@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
 import { SettingsGroup } from "./ui/SettingsGroup";
 import { Button } from "./ui/Button";
 import { AudioPlayer } from "./ui/AudioPlayer";
@@ -22,9 +21,57 @@ export const UploadAudio: React.FC = () => {
   const { models, currentModel } = useModels();
   const { settings } = useSettings();
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    console.log('Files dropped via HTML5:', files);
+
+    if (files.length > 0) {
+      const file = files[0];
+      // Check if it's an audio file
+      if (file.type.startsWith('audio/') ||
+          file.name.toLowerCase().endsWith('.wav') ||
+          file.name.toLowerCase().endsWith('.mp3') ||
+          file.name.toLowerCase().endsWith('.m4a') ||
+          file.name.toLowerCase().endsWith('.mp4') ||
+          file.name.toLowerCase().endsWith('.flac')) {
+
+        console.log('Processing audio file:', file.name, file.type, file.size);
+        setUploadedFile({
+          file,
+          preview: URL.createObjectURL(file),
+        });
+        setTranscription("");
+        toast.success(`${file.name} yüklendi`);
+      } else {
+        console.log('Rejected file:', file.name, file.type);
+        toast.error("Sadece ses dosyaları kabul edilir");
+      }
+    }
+  }, []);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      console.log('File selected via input:', file.name, file.type, file.size);
       setUploadedFile({
         file,
         preview: URL.createObjectURL(file),
@@ -32,14 +79,6 @@ export const UploadAudio: React.FC = () => {
       setTranscription("");
     }
   }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'audio/*': ['.wav', '.mp3', '.m4a', '.mp4', '.flac'],
-    },
-    multiple: false,
-  });
 
     const handleTranscribe = async () => {
     if (!uploadedFile || !currentModel) return;
@@ -97,16 +136,25 @@ export const UploadAudio: React.FC = () => {
     <div className="space-y-6">
       <SettingsGroup title="Ses Dosyası Yükleme">
         <div
-          {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragActive
+            isDragOver
               ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
               : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
           }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => document.getElementById('audio-file-input')?.click()}
         >
-          <input {...getInputProps()} />
+          <input
+            id="audio-file-input"
+            type="file"
+            accept="audio/*,.wav,.mp3,.m4a,.mp4,.flac"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          {isDragActive ? (
+          {isDragOver ? (
             <p className="text-lg font-medium text-blue-600 dark:text-blue-400">
               Dosyayı buraya bırakın...
             </p>
@@ -116,7 +164,7 @@ export const UploadAudio: React.FC = () => {
                 Ses dosyasını sürükleyin veya tıklayın
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                WAV, MP3, M4A, FLAC formatları desteklenir
+                WAV, MP3, M4A, MP4, FLAC formatları desteklenir
               </p>
             </div>
           )}

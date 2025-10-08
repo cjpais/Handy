@@ -27,7 +27,6 @@
     "lucide-react": "^0.542.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-dropzone": "^14.3.8",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.0.2",
     "tauri-plugin-macos-permissions-api": "^2.0.4",
