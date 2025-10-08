@@ -1,5 +1,5 @@
-use crate::settings::{get_settings, PasteMethod};
-use enigo::Enigo;
+use crate::settings::{get_settings, AutoSubmitKey, PasteMethod};
+use enigo::{Direction, Enigo};
 use enigo::Key;
 use enigo::Keyboard;
 use enigo::Settings;
@@ -79,14 +79,69 @@ fn paste_via_clipboard(text: &str, app_handle: &AppHandle) -> Result<(), String>
     Ok(())
 }
 
+fn send_return_key(key_type: AutoSubmitKey) -> Result<(), String> {
+    let mut enigo = Enigo::new(&Settings::default())
+        .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
+
+    match key_type {
+        AutoSubmitKey::Enter => {
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+        }
+        AutoSubmitKey::CtrlEnter => {
+            enigo
+                .key(Key::Control, Direction::Press)
+                .map_err(|e| format!("Failed to press Control key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+            enigo
+                .key(Key::Control, Direction::Release)
+                .map_err(|e| format!("Failed to release Control key: {}", e))?;
+        }
+        AutoSubmitKey::CmdEnter => {
+            enigo
+                .key(Key::Meta, Direction::Press)
+                .map_err(|e| format!("Failed to press Meta/Cmd key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+            enigo
+                .key(Key::Meta, Direction::Release)
+                .map_err(|e| format!("Failed to release Meta/Cmd key: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
+    let auto_submit = settings.auto_submit;
+    let auto_submit_key = settings.auto_submit_key;
 
     println!("Using paste method: {:?}", paste_method);
 
-    match paste_method {
+    let result = match paste_method {
         PasteMethod::CtrlV => paste_via_clipboard(&text, &app_handle),
         PasteMethod::Direct => paste_via_direct_input(&text),
+    };
+
+    if result.is_ok() && auto_submit {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        send_return_key(auto_submit_key)?;
     }
+
+    result
 }

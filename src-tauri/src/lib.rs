@@ -213,6 +213,8 @@ pub fn run() {
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_paste_method_setting,
+            shortcut::change_auto_submit_setting,
+            shortcut::change_auto_submit_key_setting,
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,

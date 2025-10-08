@@ -37,6 +37,9 @@ export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
 export const PasteMethodSchema = z.enum(["ctrl_v", "direct"]);
 export type PasteMethod = z.infer<typeof PasteMethodSchema>;
 
+export const AutoSubmitKeySchema = z.enum(["enter", "ctrl_enter", "cmd_enter"]);
+export type AutoSubmitKey = z.infer<typeof AutoSubmitKeySchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
@@ -55,6 +58,8 @@ export const SettingsSchema = z.object({
   word_correction_threshold: z.number().optional().default(0.18),
   history_limit: z.number().optional().default(5),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
+  auto_submit: z.boolean().optional().default(false),
+  auto_submit_key: AutoSubmitKeySchema.optional().default("enter"),
 });
 
 export const BindingResponseSchema = z.object({

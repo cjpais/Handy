@@ -40,6 +40,14 @@ pub enum PasteMethod {
     Direct,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AutoSubmitKey {
+    Enter,
+    CtrlEnter,
+    CmdEnter,
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -53,6 +61,12 @@ impl Default for PasteMethod {
         return PasteMethod::Direct;
         #[cfg(not(target_os = "linux"))]
         return PasteMethod::CtrlV;
+    }
+}
+
+impl Default for AutoSubmitKey {
+    fn default() -> Self {
+        AutoSubmitKey::Enter
     }
 }
 
@@ -114,6 +128,10 @@ pub struct AppSettings {
     pub history_limit: usize,
     #[serde(default)]
     pub paste_method: PasteMethod,
+    #[serde(default = "default_auto_submit")]
+    pub auto_submit: bool,
+    #[serde(default)]
+    pub auto_submit_key: AutoSubmitKey,
 }
 
 fn default_model() -> String {
@@ -150,6 +168,10 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_history_limit() -> usize {
     5
+}
+
+fn default_auto_submit() -> bool {
+    false
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -194,6 +216,8 @@ pub fn get_default_settings() -> AppSettings {
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
+        auto_submit: default_auto_submit(),
+        auto_submit_key: AutoSubmitKey::default(),
     }
 }
 
