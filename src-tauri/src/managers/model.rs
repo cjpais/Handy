@@ -64,6 +64,7 @@ impl ModelManager {
 
         let mut available_models = HashMap::new();
 
+        // TODO this should be read from a JSON file or something..
         available_models.insert(
             "small".to_string(),
             ModelInfo {
@@ -139,7 +140,7 @@ impl ModelManager {
             ModelInfo {
                 id: "parakeet-tdt-0.6b-v2".to_string(),
                 name: "Parakeet V2".to_string(),
-                description: "Fast and accurate".to_string(),
+                description: "English only. The best model for English speakers.".to_string(),
                 filename: "parakeet-tdt-0.6b-v2-int8".to_string(), // Directory name
                 url: Some("https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string()),
                 size_mb: 850, // Approximate size for int8 quantized model
