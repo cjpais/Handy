@@ -185,21 +185,14 @@ pub fn run() {
             let settings = settings::get_settings(&app.handle());
             let app_handle = app.handle().clone();
 
-            // Show the splashscreen and app only if not hidden
-            if !settings.start_hidden {
-                let splashscreen_window = app.get_webview_window("splashscreen").unwrap();
-                splashscreen_window.show().unwrap();
+            initialize_core_logic(&app_handle);
 
-                std::thread::spawn(move || {
-                    initialize_core_logic(&app_handle);
-                    if let Some(main_window) = app_handle.get_webview_window("main") {
-                        main_window.show().unwrap();
-                        main_window.set_focus().unwrap();
-                    }
-                    splashscreen_window.close().unwrap();
-                });
-            } else {
-                initialize_core_logic(&app_handle);
+            // Show main window only if not starting hidden
+            if !settings.start_hidden {
+                if let Some(main_window) = app_handle.get_webview_window("main") {
+                    main_window.show().unwrap();
+                    main_window.set_focus().unwrap();
+                }
             }
 
             Ok(())
