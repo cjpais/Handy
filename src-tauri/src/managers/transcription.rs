@@ -124,10 +124,6 @@ impl TranscriptionManager {
             *manager.watcher_handle.lock().unwrap() = Some(handle);
         }
 
-        // Try to load the default model from settings, but don't fail if no models are available
-        let settings = get_settings(&app_handle);
-        let _ = manager.load_model(&settings.selected_model);
-
         Ok(manager)
     }
 

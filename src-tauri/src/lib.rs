@@ -49,7 +49,7 @@ fn show_main_window(app: &AppHandle) {
             }
         }
     } else {
-        eprintln!("Main window not found. Please ensure it is defined in tauri.conf.json.");
+        eprintln!("Main window not found.");
     }
 }
 
