@@ -46,6 +46,8 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   debug_mode: false,
   custom_words: [],
   history_limit: 5,
+  auto_submit: false,
+  auto_submit_key: "enter",
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -227,6 +229,12 @@ export const useSettingsStore = create<SettingsStore>()(
             break;
           case "history_limit":
             await invoke("update_history_limit", { limit: value });
+            break;
+          case "auto_submit":
+            await invoke("change_auto_submit_setting", { enabled: value });
+            break;
+          case "auto_submit_key":
+            await invoke("change_auto_submit_key_setting", { key: value });
             break;
           case "bindings":
           case "selected_model":

@@ -6,6 +6,7 @@ import { CustomWords } from "./CustomWords";
 import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { StartHidden } from "./StartHidden";
+import { AutoSubmit } from "./AutoSubmit";
 
 export const AdvancedSettings: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ export const AdvancedSettings: React.FC = () => {
         <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
+        <AutoSubmit descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>
   );
