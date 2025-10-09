@@ -61,15 +61,17 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }, [isOpen]);
 
   const filteredLanguages = useMemo(
-    () => LANGUAGES.filter((language) =>
-      language.label.toLowerCase().includes(searchQuery.toLowerCase()),
-    ),
-    [searchQuery]
+    () =>
+      LANGUAGES.filter((language) =>
+        language.label.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [searchQuery],
   );
 
-  const selectedLanguageName = isParakeetModel 
-    ? "Auto" 
-    : LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label || "Auto";
+  const selectedLanguageName = isParakeetModel
+    ? "Auto"
+    : LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
+      "Auto";
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);
@@ -103,12 +105,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <SettingContainer
       title="Language"
-      description={isParakeetModel 
-        ? "Parakeet model automatically detects the language. No manual selection is needed."
-        : "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language."
+      description={
+        isParakeetModel
+          ? "Parakeet model automatically detects the language. No manual selection is needed."
+          : "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language."
       }
       descriptionMode={descriptionMode}
       grouped={grouped}
+      disabled={isLanguageSelectionDisabled}
     >
       <div className="flex items-center space-x-1">
         <div className="relative" ref={dropdownRef}>
@@ -120,7 +124,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
             }`}
             onClick={handleToggle}
-            disabled={isUpdating("selected_language") || isLanguageSelectionDisabled}
+            disabled={
+              isUpdating("selected_language") || isLanguageSelectionDisabled
+            }
           >
             <span className="truncate">{selectedLanguageName}</span>
             <svg
@@ -140,51 +146,55 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             </svg>
           </button>
 
-          {isOpen && !isUpdating("selected_language") && !isLanguageSelectionDisabled && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-mid-gray/80 rounded shadow-lg z-50 max-h-60 overflow-hidden">
-              {/* Search input */}
-              <div className="p-2 border-b border-mid-gray/80">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Search languages..."
-                  className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary focus:border-logo-primary"
-                />
-              </div>
+          {isOpen &&
+            !isUpdating("selected_language") &&
+            !isLanguageSelectionDisabled && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-mid-gray/80 rounded shadow-lg z-50 max-h-60 overflow-hidden">
+                {/* Search input */}
+                <div className="p-2 border-b border-mid-gray/80">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Search languages..."
+                    className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary focus:border-logo-primary"
+                  />
+                </div>
 
-              <div className="max-h-48 overflow-y-auto">
-                {filteredLanguages.length === 0 ? (
-                  <div className="px-2 py-2 text-sm text-mid-gray text-center">
-                    No languages found
-                  </div>
-                ) : (
-                  filteredLanguages.map((language) => (
-                    <button
-                      key={language.value}
-                      type="button"
-                      className={`w-full px-2 py-1 text-sm text-left hover:bg-logo-primary/10 transition-colors duration-150 ${
-                        selectedLanguage === language.value
-                          ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                          : ""
-                      }`}
-                      onClick={() => handleLanguageSelect(language.value)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="truncate">{language.label}</span>
-                      </div>
-                    </button>
-                  ))
-                )}
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredLanguages.length === 0 ? (
+                    <div className="px-2 py-2 text-sm text-mid-gray text-center">
+                      No languages found
+                    </div>
+                  ) : (
+                    filteredLanguages.map((language) => (
+                      <button
+                        key={language.value}
+                        type="button"
+                        className={`w-full px-2 py-1 text-sm text-left hover:bg-logo-primary/10 transition-colors duration-150 ${
+                          selectedLanguage === language.value
+                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                            : ""
+                        }`}
+                        onClick={() => handleLanguageSelect(language.value)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">{language.label}</span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
         <ResetButton
           onClick={handleReset}
-          disabled={isUpdating("selected_language") || isLanguageSelectionDisabled}
+          disabled={
+            isUpdating("selected_language") || isLanguageSelectionDisabled
+          }
         />
       </div>
       {isUpdating("selected_language") && (

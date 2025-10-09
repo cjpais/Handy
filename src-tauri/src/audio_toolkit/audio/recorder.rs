@@ -62,7 +62,7 @@ impl AudioRecorder {
         let (sample_tx, sample_rx) = mpsc::channel::<Vec<f32>>();
         let (cmd_tx, cmd_rx) = mpsc::channel::<Cmd>();
 
-        let host = cpal::default_host();
+        let host = crate::audio_toolkit::get_cpal_host();
         let device = match device {
             Some(dev) => dev,
             None => host

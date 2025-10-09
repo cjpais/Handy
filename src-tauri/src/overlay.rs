@@ -1,7 +1,8 @@
 use crate::settings;
 use crate::settings::OverlayPosition;
 use log::debug;
-use tauri::{AppHandle, Emitter, Manager, WebviewWindowBuilder};
+use enigo::{Enigo, Mouse};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindowBuilder};
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
@@ -17,9 +18,41 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
 
+fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
+    let enigo = Enigo::new(&Default::default());
+    if let Ok(enigo) = enigo {
+        if let Ok(mouse_location) = enigo.location() {
+            if let Ok(monitors) = app_handle.available_monitors() {
+                for monitor in monitors {
+                    let is_within = is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
+                    if is_within {
+                        return Some(monitor);
+                    }
+                }
+            }
+        }
+    }
+
+    app_handle.primary_monitor().ok().flatten()
+}
+
+fn is_mouse_within_monitor(
+    mouse_pos: (i32, i32),
+    monitor_pos: &PhysicalPosition<i32>,
+    monitor_size: &PhysicalSize<u32>,
+) -> bool {
+    let (mouse_x, mouse_y) = mouse_pos;
+    let PhysicalPosition { x: monitor_x, y: monitor_y } = *monitor_pos;
+    let PhysicalSize { width: monitor_width, height: monitor_height } = *monitor_size;
+
+    mouse_x >= monitor_x
+        && mouse_x < (monitor_x + monitor_width as i32)
+        && mouse_y >= monitor_y
+        && mouse_y < (monitor_y + monitor_height as i32)
+}
+
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
-    if let Ok(monitors) = app_handle.primary_monitor() {
-        if let Some(monitor) = monitors {
+    if let Some(monitor) = get_monitor_with_cursor(app_handle) {
             let work_area = monitor.work_area();
             let scale = monitor.scale_factor();
             let work_area_width = work_area.size.width as f64 / scale;
@@ -40,7 +73,6 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 
             return Some((x, y));
         }
-    }
     None
 }
 
@@ -87,6 +119,8 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
         return;
     }
 
+    update_overlay_position(app_handle);
+
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
         // Emit event to trigger fade-in animation with recording state
@@ -101,6 +135,8 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
     if settings.overlay_position == OverlayPosition::None {
         return;
     }
+
+    update_overlay_position(app_handle);
 
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();

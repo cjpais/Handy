@@ -28,8 +28,11 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
       description={description}
       descriptionMode={descriptionMode}
       grouped={grouped}
+      disabled={disabled}
     >
-      <label className="inline-flex items-center cursor-pointer">
+      <label
+        className={`inline-flex items-center ${disabled || isUpdating ? "cursor-not-allowed" : "cursor-pointer"}`}
+      >
         <input
           type="checkbox"
           value=""

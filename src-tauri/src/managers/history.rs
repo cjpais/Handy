@@ -10,8 +10,6 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 use crate::audio_toolkit::save_wav_file;
 
-const HISTORY_LIMIT: usize = 5;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HistoryEntry {
     pub id: i64,
@@ -22,7 +20,6 @@ pub struct HistoryEntry {
     pub transcription_text: String,
 }
 
-#[derive(Clone)]
 pub struct HistoryManager {
     app_handle: AppHandle,
     recordings_dir: PathBuf,
@@ -99,6 +96,11 @@ impl HistoryManager {
         audio_samples: Vec<f32>,
         transcription_text: String,
     ) -> Result<()> {
+        // If history limit is 0, do not save at all.
+        if crate::settings::get_history_limit(&self.app_handle) == 0 {
+            return Ok(());
+        }
+
         let timestamp = Utc::now().timestamp();
         let file_name = format!("handy-{}.wav", timestamp);
         let title = self.format_timestamp_title(timestamp);
@@ -155,8 +157,9 @@ impl HistoryManager {
             entries.push(row?);
         }
 
-        if entries.len() > HISTORY_LIMIT {
-            let entries_to_delete = &entries[HISTORY_LIMIT..];
+        let limit = crate::settings::get_history_limit(&self.app_handle);
+        if entries.len() > limit {
+            let entries_to_delete = &entries[limit..];
 
             for (id, file_name) in entries_to_delete {
                 // Delete database entry
@@ -241,27 +244,29 @@ impl HistoryManager {
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text 
-             FROM transcription_history WHERE id = ?1"
+            "SELECT id, file_name, timestamp, saved, title, transcription_text
+             FROM transcription_history WHERE id = ?1",
         )?;
-        
-        let entry = stmt.query_row([id], |row| {
-            Ok(HistoryEntry {
-                id: row.get("id")?,
-                file_name: row.get("file_name")?,
-                timestamp: row.get("timestamp")?,
-                saved: row.get("saved")?,
-                title: row.get("title")?,
-                transcription_text: row.get("transcription_text")?,
+
+        let entry = stmt
+            .query_row([id], |row| {
+                Ok(HistoryEntry {
+                    id: row.get("id")?,
+                    file_name: row.get("file_name")?,
+                    timestamp: row.get("timestamp")?,
+                    saved: row.get("saved")?,
+                    title: row.get("title")?,
+                    transcription_text: row.get("transcription_text")?,
+                })
             })
-        }).optional()?;
-        
+            .optional()?;
+
         Ok(entry)
     }
 
     pub async fn delete_entry(&self, id: i64) -> Result<()> {
         let conn = self.get_connection()?;
-        
+
         // Get the entry to find the file name
         if let Some(entry) = self.get_entry_by_id(id).await? {
             // Delete the audio file first
@@ -273,7 +278,7 @@ impl HistoryManager {
                 }
             }
         }
-        
+
         // Delete from database
         conn.execute(
             "DELETE FROM transcription_history WHERE id = ?1",
@@ -298,5 +303,10 @@ impl HistoryManager {
         } else {
             format!("Recording {}", timestamp)
         }
+    }
+
+    pub fn update_history_limit(&self) -> Result<()> {
+        self.cleanup_old_entries()?;
+        Ok(())
     }
 }

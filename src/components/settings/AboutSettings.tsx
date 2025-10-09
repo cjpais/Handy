@@ -42,6 +42,20 @@ export const AboutSettings: React.FC = () => {
         </SettingContainer>
 
         <SettingContainer
+          title="Source Code"
+          description="View source code and contribute"
+          grouped={true}
+        >
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+          >
+            View on GitHub
+          </Button>
+        </SettingContainer>
+
+        <SettingContainer
           title="Support Development"
           description="Help us continue building Handy"
           grouped={true}
