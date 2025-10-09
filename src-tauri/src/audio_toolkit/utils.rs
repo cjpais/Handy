@@ -1,5 +1,3 @@
-use cpal::traits::HostTrait;
-
 /// Returns the appropriate CPAL host for the current platform.
 /// On Linux, uses ALSA host. On other platforms, uses the default host.
 pub fn get_cpal_host() -> cpal::Host {
@@ -9,6 +7,7 @@ pub fn get_cpal_host() -> cpal::Host {
     }
     #[cfg(not(target_os = "linux"))]
     {
+        use cpal::traits::HostTrait;
         cpal::default_host()
     }
 }
