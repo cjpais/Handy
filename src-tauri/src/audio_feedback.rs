@@ -67,7 +67,7 @@ fn play_audio_file(
             OutputStreamBuilder::from_default_device()?
         } else {
             // Try to find the device by name
-            let host = cpal::default_host();
+            let host = crate::audio_toolkit::get_cpal_host();
             let devices = host.output_devices()?;
 
             let mut found_device = None;
