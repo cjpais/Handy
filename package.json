@@ -34,6 +34,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@babel/helpers": "^7.26.10",
     "@tauri-apps/cli": "^2",
     "@types/node": "^24.0.6",
     "@types/react": "^18.3.1",
