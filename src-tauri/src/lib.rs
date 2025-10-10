@@ -130,7 +130,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Get the autostart manager and configure based on user setting
     let autostart_manager = app_handle.autolaunch();
-    let settings = settings::get_settings(&app.handle());
+    let settings = settings::get_settings(&app_handle);
 
     if settings.autostart_enabled {
         // Enable autostart if user has opted in
