@@ -64,6 +64,7 @@ impl ModelManager {
 
         let mut available_models = HashMap::new();
 
+        // TODO this should be read from a JSON file or something..
         available_models.insert(
             "small".to_string(),
             ModelInfo {
@@ -133,7 +134,24 @@ impl ModelManager {
             },
         );
 
-        // Add NVIDIA Parakeet model (directory-based)
+        // Add NVIDIA Parakeet models (directory-based)
+        available_models.insert(
+            "parakeet-tdt-0.6b-v2".to_string(),
+            ModelInfo {
+                id: "parakeet-tdt-0.6b-v2".to_string(),
+                name: "Parakeet V2".to_string(),
+                description: "English only. The best model for English speakers.".to_string(),
+                filename: "parakeet-tdt-0.6b-v2-int8".to_string(), // Directory name
+                url: Some("https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string()),
+                size_mb: 850, // Approximate size for int8 quantized model
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Parakeet,
+            },
+        );
+
         available_models.insert(
             "parakeet-tdt-0.6b-v3".to_string(),
             ModelInfo {
