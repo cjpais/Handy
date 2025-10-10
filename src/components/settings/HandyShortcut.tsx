@@ -33,6 +33,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   const shortcutRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const bindings = getSetting("bindings") || {};
+  const isMac = osType === "macos";
 
   // Detect and store OS type
   useEffect(() => {
@@ -239,6 +240,15 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     shortcutRefs.current.set(id, ref);
   };
 
+  const applyFnShortcut = async (id: string) => {
+    try {
+      await updateBinding(id, "fn");
+    } catch (error) {
+      console.error("Failed to set Fn shortcut:", error);
+      toast.error("Failed to set Fn shortcut");
+    }
+  };
+
   // If still loading, show loading state
   if (isLoading) {
     return (
@@ -284,6 +294,9 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
           );
         }
 
+        const isFnActive =
+          primaryBinding.current_binding.toLowerCase() === "fn";
+
         return (
           <div className="flex items-center space-x-1">
             {editingShortcutId === primaryId ? (
@@ -301,10 +314,22 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
                 {formatKeyCombination(primaryBinding.current_binding, osType)}
               </div>
             )}
+            {isMac && editingShortcutId !== primaryId && (
+              <button
+                className="px-2 py-1 text-xs font-semibold border border-mid-gray/80 rounded hover:border-logo-primary hover:text-logo-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => applyFnShortcut(primaryId)}
+                disabled={isUpdating(`binding_${primaryId}`) || isFnActive}
+              >
+                {isFnActive ? "Fn Active" : "Use Fn"}
+              </button>
+            )}
             <ResetButton
               onClick={() => resetBinding(primaryId)}
               disabled={isUpdating(`binding_${primaryId}`)}
             />
+            {isFnActive && isMac && (
+              <span className="text-xs text-mid-gray">macOS-only shortcut</span>
+            )}
           </div>
         );
       })()}
