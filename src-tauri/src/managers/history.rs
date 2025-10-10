@@ -5,7 +5,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use tauri::{App, AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 use crate::audio_toolkit::save_wav_file;
@@ -27,11 +27,9 @@ pub struct HistoryManager {
 }
 
 impl HistoryManager {
-    pub fn new(app: &App) -> Result<Self> {
-        let app_handle = app.app_handle().clone();
-
+    pub fn new(app_handle: &AppHandle) -> Result<Self> {
         // Create recordings directory in app data dir
-        let app_data_dir = app.path().app_data_dir()?;
+        let app_data_dir = app_handle.path().app_data_dir()?;
         let recordings_dir = app_data_dir.join("recordings");
         let db_path = app_data_dir.join("history.db");
 
@@ -42,7 +40,7 @@ impl HistoryManager {
         }
 
         let manager = Self {
-            app_handle,
+            app_handle: app_handle.clone(),
             recordings_dir,
             db_path,
         };

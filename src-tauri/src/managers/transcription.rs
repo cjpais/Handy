@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tauri::{App, AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 use transcribe_rs::{
     engines::{
         parakeet::{
@@ -46,9 +46,7 @@ pub struct TranscriptionManager {
 }
 
 impl TranscriptionManager {
-    pub fn new(app: &App, model_manager: Arc<ModelManager>) -> Result<Self> {
-        let app_handle = app.app_handle().clone();
-
+    pub fn new(app_handle: &AppHandle, model_manager: Arc<ModelManager>) -> Result<Self> {
         let manager = Self {
             engine: Arc::new(Mutex::new(None)),
             model_manager,
@@ -125,10 +123,6 @@ impl TranscriptionManager {
             });
             *manager.watcher_handle.lock().unwrap() = Some(handle);
         }
-
-        // Try to load the default model from settings, but don't fail if no models are available
-        let settings = get_settings(&app_handle);
-        let _ = manager.load_model(&settings.selected_model);
 
         Ok(manager)
     }

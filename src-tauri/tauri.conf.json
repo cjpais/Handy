@@ -13,13 +13,15 @@
     "macOSPrivateApi": true,
     "windows": [
       {
+        "label": "main",
         "title": "Handy",
         "width": 680,
         "height": 510,
         "minWidth": 680,
         "minHeight": 510,
         "resizable": true,
-        "maximizable": false
+        "maximizable": false,
+        "visible": false
       }
     ],
     "security": {

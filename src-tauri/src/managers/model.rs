@@ -10,7 +10,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tar::Archive;
-use tauri::{App, AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EngineType {
@@ -48,11 +48,9 @@ pub struct ModelManager {
 }
 
 impl ModelManager {
-    pub fn new(app: &App) -> Result<Self> {
-        let app_handle = app.app_handle().clone();
-
+    pub fn new(app_handle: &AppHandle) -> Result<Self> {
         // Create models directory in app data
-        let models_dir = app
+        let models_dir = app_handle
             .path()
             .app_data_dir()
             .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?
@@ -152,7 +150,7 @@ impl ModelManager {
         );
 
         let manager = Self {
-            app_handle,
+            app_handle: app_handle.clone(),
             models_dir,
             available_models: Mutex::new(available_models),
         };
