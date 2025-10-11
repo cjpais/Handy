@@ -362,6 +362,11 @@ impl TranscriptionManager {
                             Some(settings.selected_language.clone())
                         },
                         translate: settings.translate_to_english,
+                        initial_prompt: if !settings.initial_prompt.is_empty() {
+                            Some(settings.initial_prompt.clone())
+                        } else {
+                            None
+                        },
                         ..Default::default()
                     };
 
