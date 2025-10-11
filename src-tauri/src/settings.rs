@@ -116,6 +116,8 @@ pub struct AppSettings {
     pub history_limit: usize,
     #[serde(default)]
     pub paste_method: PasteMethod,
+    #[serde(default = "default_initial_prompt")]
+    pub initial_prompt: String,
 }
 
 fn default_model() -> String {
@@ -156,6 +158,10 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_history_limit() -> usize {
     5
+}
+
+fn default_initial_prompt() -> String {
+    "".to_string()
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -201,6 +207,7 @@ pub fn get_default_settings() -> AppSettings {
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
+        initial_prompt: default_initial_prompt(),
     }
 }
 

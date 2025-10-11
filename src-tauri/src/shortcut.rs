@@ -29,6 +29,14 @@ pub struct BindingResponse {
 }
 
 #[tauri::command]
+pub fn change_initial_prompt_setting(app: AppHandle, prompt: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.initial_prompt = prompt;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
 pub fn change_binding(
     app: AppHandle,
     id: String,

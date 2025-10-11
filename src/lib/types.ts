@@ -56,6 +56,7 @@ export const SettingsSchema = z.object({
   word_correction_threshold: z.number().optional().default(0.18),
   history_limit: z.number().optional().default(5),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
+  initial_prompt: z.string().optional().default(""),
 });
 
 export const BindingResponseSchema = z.object({
