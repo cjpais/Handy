@@ -1,4 +1,6 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::managers::audio_backup::AudioBackupManager;
+use crate::managers::transcription::TranscriptionManager;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -64,4 +66,50 @@ pub async fn update_history_limit(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_latest_backup_audio(
+    _app: AppHandle,
+    backup_manager: State<'_, Arc<AudioBackupManager>>,
+) -> Result<Option<String>, String> {
+    match backup_manager.get_latest_backup() {
+        Ok(Some(path)) => Ok(Some(path.to_string_lossy().to_string())),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub async fn retranscribe_backup_audio(
+    _app: AppHandle,
+    backup_manager: State<'_, Arc<AudioBackupManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    history_manager: State<'_, Arc<HistoryManager>>,
+) -> Result<String, String> {
+    // Get the latest backup audio file
+    let backup_path = match backup_manager.get_latest_backup() {
+        Ok(Some(path)) => path,
+        Ok(None) => return Err("No backup audio file found".to_string()),
+        Err(e) => return Err(format!("Failed to get backup audio: {}", e)),
+    };
+
+    // Load audio samples from the backup file
+    let audio_samples = match crate::audio_toolkit::load_wav_file(&backup_path) {
+        Ok(samples) => samples,
+        Err(e) => return Err(format!("Failed to load backup audio: {}", e)),
+    };
+
+    // Transcribe the audio
+    let transcription_result = transcription_manager
+        .transcribe(audio_samples.clone())
+        .map_err(|e| format!("Transcription failed: {}", e))?;
+
+    // Save to history
+    history_manager
+        .save_transcription(audio_samples, transcription_result.clone())
+        .await
+        .map_err(|e| format!("Failed to save to history: {}", e))?;
+
+    Ok(transcription_result)
 }

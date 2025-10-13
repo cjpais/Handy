@@ -1,5 +1,6 @@
 use crate::audio_feedback::{play_recording_start_sound, play_recording_stop_sound};
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::audio_backup::AudioBackupManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
@@ -27,6 +28,13 @@ impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
+
+        // Clean up old backup files when starting a new recording
+        if let Some(abm) = app.try_state::<Arc<AudioBackupManager>>() {
+            if let Err(e) = abm.cleanup_old_backups() {
+                error!("Failed to cleanup old backup files: {}", e);
+            }
+        }
 
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
@@ -82,6 +90,7 @@ impl ShortcutAction for TranscribeAction {
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        let abm = Arc::clone(&app.state::<Arc<AudioBackupManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
@@ -105,6 +114,11 @@ impl ShortcutAction for TranscribeAction {
                     stop_recording_time.elapsed(),
                     samples.len()
                 );
+
+                // Save backup audio before transcription
+                if let Err(e) = abm.save_backup_audio(&samples).await {
+                    error!("Failed to save backup audio: {}", e);
+                }
 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving

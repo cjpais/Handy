@@ -11,6 +11,7 @@ mod tray;
 mod utils;
 
 use managers::audio::AudioRecordingManager;
+use managers::audio_backup::AudioBackupManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
@@ -171,12 +172,16 @@ pub fn run() {
             );
             let history_manager =
                 Arc::new(HistoryManager::new(&app).expect("Failed to initialize history manager"));
+            let audio_backup_manager = Arc::new(
+                AudioBackupManager::new(&app).expect("Failed to initialize audio backup manager"),
+            );
 
             // Add managers to Tauri's managed state
             app.manage(recording_manager.clone());
             app.manage(model_manager.clone());
             app.manage(transcription_manager.clone());
             app.manage(history_manager.clone());
+            app.manage(audio_backup_manager.clone());
 
             // Create the recording overlay window (hidden by default)
             utils::create_recording_overlay(&app.handle());
@@ -254,7 +259,9 @@ pub fn run() {
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
-            commands::history::update_history_limit
+            commands::history::update_history_limit,
+            commands::history::get_latest_backup_audio,
+            commands::history::retranscribe_backup_audio
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
