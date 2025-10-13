@@ -17,7 +17,7 @@ jobs:
             args: "--target x86_64-apple-darwin"
             target: "x86_64-apple-darwin"
           - platform: "ubuntu-22.04"
-            args: ""
+            args: "--verbose"
             target: "x86_64-unknown-linux-gnu"
           - platform: "windows-latest"
             args: ""

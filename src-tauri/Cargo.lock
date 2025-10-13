@@ -2292,7 +2292,6 @@ dependencies = [
  "tokio",
  "transcribe-rs",
  "vad-rs",
- "whisper-rs",
 ]
 
 [[package]]
