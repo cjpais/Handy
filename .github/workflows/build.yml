@@ -35,6 +35,10 @@ on:
         required: false
         type: string
         default: ${{ github.ref }}
+      is-debug-build:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -56,6 +60,18 @@ jobs:
           VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
           echo "Application version from tauri.conf.json: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Determine build profile
+        id: build-profile
+        shell: bash
+        run: |
+          if [[ "${{ inputs.is-debug-build }}" == "true" ]]; then
+            echo "profile=debug" >> "$GITHUB_OUTPUT"
+            echo "Build profile: debug"
+          else
+            echo "profile=release" >> "$GITHUB_OUTPUT"
+            echo "Build profile: release"
+          fi
 
       - uses: oven-sh/setup-bun@v2
 
@@ -179,8 +195,8 @@ jobs:
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |
-            src-tauri/target/${{ inputs.target }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ inputs.target }}/release/bundle/macos/*.app
+            src-tauri/target/${{ inputs.target }}/${{ steps.build-profile.outputs.profile }}/bundle/dmg/*.dmg
+            src-tauri/target/${{ inputs.target }}/${{ steps.build-profile.outputs.profile }}/bundle/macos/*.app
           retention-days: 30
 
       - name: Install FUSE for AppImage processing
@@ -193,7 +209,7 @@ jobs:
         if: contains(inputs.platform, 'ubuntu')
         run: |
           # Find the AppImage file
-          APPIMAGE_PATH=$(find src-tauri/target/release/bundle/appimage -name "*.AppImage" | head -1)
+          APPIMAGE_PATH=$(find src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/appimage -name "*.AppImage" | head -1)
 
           if [ -n "$APPIMAGE_PATH" ]; then
             echo "Processing AppImage: $APPIMAGE_PATH"
@@ -240,8 +256,8 @@ jobs:
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/deb/*.deb
+            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/appimage/*.AppImage
           retention-days: 30
 
       - name: Upload artifacts (Windows)
@@ -250,6 +266,6 @@ jobs:
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30

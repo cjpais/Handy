@@ -31,4 +31,5 @@ jobs:
       sign-binaries: true
       asset-prefix: "handy-test"
       upload-artifacts: true
+      is-debug-build: ${{ contains(matrix.args, '--debug') }}
     secrets: inherit
