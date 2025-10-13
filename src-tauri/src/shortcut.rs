@@ -128,14 +128,6 @@ pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Res
 }
 
 #[tauri::command]
-pub fn change_selected_language_setting(app: AppHandle, language: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.selected_language = language;
-    settings::write_settings(&app, settings);
-    Ok(())
-}
-
-#[tauri::command]
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {
@@ -253,6 +245,117 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
     Ok(())
 }
 
+#[tauri::command]
+pub fn change_binding_language(
+    app: AppHandle,
+    id: String,
+    language: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Get the binding to modify
+    let binding_to_modify = match settings.bindings.get_mut(&id) {
+        Some(binding) => binding,
+        None => {
+            let error_msg = format!("Binding with id '{}' not found", id);
+            eprintln!("change_binding_language error: {}", error_msg);
+            return Err(error_msg);
+        }
+    };
+
+    // Update the language
+    binding_to_modify.language = language;
+
+    // Save the settings
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn add_shortcut_binding(app: AppHandle) -> Result<ShortcutBinding, String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Generate a unique name and ID
+    let mut counter = 2;
+    let mut name = format!("Transcribe {}", counter);
+
+    // Ensure the name is unique
+    while settings.bindings.values().any(|b| b.name == name) {
+        counter += 1;
+        name = format!("Transcribe {}", counter);
+    }
+
+    let base_id = name.to_lowercase().replace(" ", "_");
+    let mut id = base_id.clone();
+    let mut id_counter = 1;
+
+    // Ensure the ID is unique
+    while settings.bindings.contains_key(&id) {
+        id = format!("{}_{}", base_id, id_counter);
+        id_counter += 1;
+    }
+
+    // Get the default shortcut from the "transcribe" binding
+    let default_binding = settings
+        .bindings
+        .get("transcribe")
+        .map(|b| b.default_binding.clone())
+        .unwrap_or_else(|| "space".to_string());
+
+    // Create the new binding
+    let new_binding = ShortcutBinding {
+        id: id.clone(),
+        name: name.clone(),
+        action_name: "transcribe".to_string(), // All custom shortcuts use the transcribe action
+        description: format!("Custom shortcut: {}", name),
+        default_binding: default_binding.clone(),
+        current_binding: default_binding.clone(),
+        language: "auto".to_string(),
+    };
+
+    // Register the shortcut
+    if let Err(e) = _register_shortcut(&app, new_binding.clone()) {
+        return Err(format!("Failed to register shortcut: {}", e));
+    }
+
+    // Add to settings
+    settings.bindings.insert(id.clone(), new_binding.clone());
+    settings::write_settings(&app, settings);
+
+    Ok(new_binding)
+}
+
+#[tauri::command]
+pub fn remove_shortcut_binding(app: AppHandle, id: String) -> Result<(), String> {
+    // Prevent removal of the default "transcribe" shortcut
+    if id == "transcribe" {
+        return Err("Cannot remove the default transcribe shortcut".to_string());
+    }
+
+    let mut settings = settings::get_settings(&app);
+
+    // Get the binding to remove
+    let binding = match settings.bindings.get(&id) {
+        Some(b) => b.clone(),
+        None => {
+            return Err(format!("Binding with id '{}' not found", id));
+        }
+    };
+
+    // Unregister the shortcut
+    if let Err(e) = _unregister_shortcut(&app, binding) {
+        eprintln!("Warning: Failed to unregister shortcut '{}': {}", id, e);
+        // Continue anyway to remove from settings
+    }
+
+    // Remove from settings
+    settings.bindings.remove(&id);
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").
@@ -326,8 +429,10 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
         return Err(error_msg);
     }
 
-    // Clone binding.id for use in the closure
+    // Clone binding.id, action_name, and language for use in the closure
     let binding_id_for_closure = binding.id.clone();
+    let action_name_for_closure = binding.action_name.clone();
+    let language_for_closure = binding.language.clone();
 
     app.global_shortcut()
         .on_shortcut(shortcut, move |ah, scut, event| {
@@ -335,12 +440,20 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
                 let shortcut_string = scut.into_string();
                 let settings = get_settings(ah);
 
-                if let Some(action) = ACTION_MAP.get(&binding_id_for_closure) {
+                // Convert language string to Option: "auto" becomes None, others become Some(language)
+                let language_option = if language_for_closure == "auto" {
+                    None
+                } else {
+                    Some(language_for_closure.clone())
+                };
+
+                // Look up the action using action_name instead of binding_id
+                if let Some(action) = ACTION_MAP.get(&action_name_for_closure) {
                     if settings.push_to_talk {
                         if event.state == ShortcutState::Pressed {
-                            action.start(ah, &binding_id_for_closure, &shortcut_string);
+                            action.start(ah, &binding_id_for_closure, &shortcut_string, language_option.clone());
                         } else if event.state == ShortcutState::Released {
-                            action.stop(ah, &binding_id_for_closure, &shortcut_string);
+                            action.stop(ah, &binding_id_for_closure, &shortcut_string, language_option.clone());
                         }
                     } else {
                         if event.state == ShortcutState::Pressed {
@@ -357,18 +470,19 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
                                     ah,
                                     &binding_id_for_closure,
                                     &shortcut_string,
+                                    language_option.clone(),
                                 );
                                 *is_currently_active = false; // Update state to inactive
                             } else {
-                                action.start(ah, &binding_id_for_closure, &shortcut_string);
+                                action.start(ah, &binding_id_for_closure, &shortcut_string, language_option.clone());
                                 *is_currently_active = true; // Update state to active
                             }
                         }
                     }
                 } else {
                     println!(
-                        "Warning: No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', State: {:?}",
-                        binding_id_for_closure, shortcut_string, event.state
+                        "Warning: No action defined in ACTION_MAP for action '{}' (binding ID: '{}'). Shortcut: '{}', State: {:?}",
+                        action_name_for_closure, binding_id_for_closure, shortcut_string, event.state
                     );
                 }
             }

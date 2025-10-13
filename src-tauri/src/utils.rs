@@ -30,15 +30,20 @@ pub fn cancel_current_operation(app: &AppHandle) {
         for binding_id in active_bindings {
             println!("Stopping active action for binding: {}", binding_id);
 
+            // Retrieve the language for this binding
+            let language = states.active_languages.get(&binding_id).cloned();
+
             // Call the action's stop method to ensure proper cleanup
             if let Some(action) = ACTION_MAP.get(&binding_id) {
-                action.stop(app, &binding_id, "cancelled");
+                action.stop(app, &binding_id, "cancelled", language.flatten());
             }
 
             // Reset the toggle state
             if let Some(is_active) = states.active_toggles.get_mut(&binding_id) {
                 *is_active = false;
             }
+            // Clean up language state
+            states.active_languages.remove(&binding_id);
         }
     } else {
         eprintln!("Warning: Failed to lock toggle state manager during cancellation");

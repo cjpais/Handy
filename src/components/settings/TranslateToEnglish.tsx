@@ -1,5 +1,4 @@
-import React, { useEffect } from "react";
-import { listen } from "@tauri-apps/api/event";
+import React from "react";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 import { useModels } from "../../hooks/useModels";
@@ -12,21 +11,9 @@ interface TranslateToEnglishProps {
 export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { getSetting, updateSetting, isUpdating } = useSettings();
-    const { currentModel, loadCurrentModel } = useModels();
+    const { isParakeetModel } = useModels();
 
     const translateToEnglish = getSetting("translate_to_english") || false;
-    const isParakeetModel = currentModel === "parakeet-tdt-0.6b-v3";
-
-    // Listen for model state changes to update UI reactively
-    useEffect(() => {
-      const modelStateUnlisten = listen("model-state-changed", () => {
-        loadCurrentModel();
-      });
-
-      return () => {
-        modelStateUnlisten.then((fn) => fn());
-      };
-    }, [loadCurrentModel]);
 
     return (
       <ToggleSwitch

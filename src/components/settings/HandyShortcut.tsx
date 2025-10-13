@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { type } from "@tauri-apps/plugin-os";
 import {
   getKeyName,
@@ -8,6 +8,7 @@ import {
 } from "../../lib/utils/keyboard";
 import { ResetButton } from "../ui/ResetButton";
 import { SettingContainer } from "../ui/SettingContainer";
+import { LanguageDropdown } from "../ui/LanguageDropdown";
 import { useSettings } from "../../hooks/useSettings";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
@@ -15,13 +16,15 @@ import { toast } from "sonner";
 interface HandyShortcutProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  disableLanguageSelection?: boolean;
 }
 
 export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
+  disableLanguageSelection = false,
 }) => {
-  const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
+  const { getSetting, updateBinding, resetBinding, isUpdating, isLoading, refreshSettings } =
     useSettings();
   const [keyPressed, setKeyPressed] = useState<string[]>([]);
   const [recordedKeys, setRecordedKeys] = useState<string[]>([]);
@@ -33,6 +36,15 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   const shortcutRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const bindings = getSetting("bindings") || {};
+
+  const sortedBindings = useMemo(() => {
+    return Object.entries(bindings).sort(([idA], [idB]) => {
+      // Put "transcribe" first, then sort others alphabetically
+      if (idA === "transcribe") return -1;
+      if (idB === "transcribe") return 1;
+      return idA.localeCompare(idB);
+    });
+  }, [bindings]);
 
   // Detect and store OS type
   useEffect(() => {
@@ -239,6 +251,48 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     shortcutRefs.current.set(id, ref);
   };
 
+  // Update language for a binding
+  const updateBindingLanguage = async (id: string, language: string | null) => {
+    try {
+      // Convert null to "auto" for the backend
+      const languageValue = language || "auto";
+      await invoke("change_binding_language", { id, language: languageValue });
+      toast.success("Language updated successfully");
+      // Refresh settings to show the updated language
+      await refreshSettings();
+    } catch (error) {
+      console.error("Failed to update binding language:", error);
+      toast.error("Failed to update language");
+    }
+  };
+
+  // Add a new shortcut
+  const handleAddShortcut = async () => {
+    try {
+      await invoke("add_shortcut_binding");
+      toast.success("Shortcut added successfully");
+
+      // Refresh settings to show the new shortcut
+      await refreshSettings();
+    } catch (error) {
+      console.error("Failed to add shortcut:", error);
+      toast.error(`Failed to add shortcut: ${error}`);
+    }
+  };
+
+  // Remove a shortcut
+  const removeShortcut = async (id: string, name: string) => {
+    try {
+      await invoke("remove_shortcut_binding", { id });
+      toast.success(`"${name}" removed successfully`);
+      // Refresh settings to remove the shortcut from UI
+      await refreshSettings();
+    } catch (error) {
+      console.error("Failed to remove shortcut:", error);
+      toast.error(`Failed to remove shortcut: ${error}`);
+    }
+  };
+
   // If still loading, show loading state
   if (isLoading) {
     return (
@@ -269,45 +323,75 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
   return (
     <SettingContainer
-      title="Handy Shortcut"
-      description="Set the keyboard shortcut to start and stop speech-to-text recording"
+      title="Handy Shortcuts"
+      description="Configure keyboard shortcuts and languages for speech-to-text recording"
       descriptionMode={descriptionMode}
       grouped={grouped}
+      layout="stacked"
     >
-      {(() => {
-        const primaryBinding = Object.values(bindings)[0];
-        const primaryId = Object.keys(bindings)[0];
+      <div className="flex flex-col space-y-4">
+        {sortedBindings.map(([bindingId, binding]) => {
+          const selectedLanguage = binding.language || null;
 
-        if (!primaryBinding) {
           return (
-            <div className="text-sm text-mid-gray">No shortcuts configured</div>
+            <div key={bindingId} className="flex flex-col space-y-2 p-3 border border-mid-gray/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-foreground">
+                  {binding.name}
+                </div>
+                {bindingId !== "transcribe" && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeShortcut(bindingId, binding.name);
+                    }}
+                    className="px-2 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                    title="Remove shortcut"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center space-x-1">
+                {editingShortcutId === bindingId ? (
+                  <div
+                    ref={(ref) => setShortcutRef(bindingId, ref)}
+                    className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
+                  >
+                    {formatCurrentKeys()}
+                  </div>
+                ) : (
+                  <div
+                    className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
+                    onClick={() => startRecording(bindingId)}
+                  >
+                    {formatKeyCombination(binding.current_binding, osType)}
+                  </div>
+                )}
+                <ResetButton
+                  onClick={() => resetBinding(bindingId)}
+                  disabled={isUpdating(`binding_${bindingId}`)}
+                />
+              </div>
+              <div className="flex flex-col space-y-1">
+                <span className="text-sm font-medium text-foreground">Language</span>
+                <LanguageDropdown
+                  value={selectedLanguage}
+                  onChange={(language) => updateBindingLanguage(bindingId, language)}
+                  disabled={disableLanguageSelection}
+                />
+              </div>
+            </div>
           );
-        }
+        })}
 
-        return (
-          <div className="flex items-center space-x-1">
-            {editingShortcutId === primaryId ? (
-              <div
-                ref={(ref) => setShortcutRef(primaryId, ref)}
-                className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
-              >
-                {formatCurrentKeys()}
-              </div>
-            ) : (
-              <div
-                className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
-                onClick={() => startRecording(primaryId)}
-              >
-                {formatKeyCombination(primaryBinding.current_binding, osType)}
-              </div>
-            )}
-            <ResetButton
-              onClick={() => resetBinding(primaryId)}
-              disabled={isUpdating(`binding_${primaryId}`)}
-            />
-          </div>
-        );
-      })()}
+        <button
+          onClick={handleAddShortcut}
+          className="px-4 py-2 text-sm font-medium text-logo-primary border border-logo-primary hover:bg-logo-primary/10 rounded-lg transition-colors"
+        >
+          + Add Shortcut
+        </button>
+      </div>
     </SettingContainer>
   );
 };

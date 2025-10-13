@@ -308,7 +308,7 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+    pub fn transcribe(&self, audio: Vec<f32>, language_override: Option<String>) -> Result<String> {
         // Update last activity timestamp
         self.last_activity.store(
             SystemTime::now()
@@ -344,6 +344,12 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
+        // Determine which language to use: override takes precedence, then default to "auto"
+        let language_to_use = language_override.unwrap_or_else(|| "auto".to_string());
+
+        // Log which language is being used
+        println!("Transcribing with language: {}", language_to_use);
+
         // Perform transcription with the appropriate engine
         let result = {
             let mut engine_guard = self.engine.lock().unwrap();
@@ -356,10 +362,10 @@ impl TranscriptionManager {
             match engine {
                 LoadedEngine::Whisper(whisper_engine) => {
                     let params = WhisperInferenceParams {
-                        language: if settings.selected_language == "auto" {
+                        language: if language_to_use == "auto" {
                             None
                         } else {
-                            Some(settings.selected_language.clone())
+                            Some(language_to_use)
                         },
                         translate: settings.translate_to_english,
                         ..Default::default()

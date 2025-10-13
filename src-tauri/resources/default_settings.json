@@ -2,11 +2,11 @@
   "bindings": {
     "transcribe": {
       "id": "transcribe",
-      "name": "Transcribe Keyboard Shortcut",
+      "name": "Transcribe",
+      "action_name": "transcribe",
       "description": "Converts your speech into text.",
-      "default_binding": "Platform-specific: ctrl+space (Windows/Linux), alt+space (macOS)"
+      "language": "auto"
     }
   },
-  "push_to_talk": true,
-  "selected_language": "auto"
+  "push_to_talk": true
 }

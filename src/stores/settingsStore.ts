@@ -42,7 +42,6 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   selected_microphone: "Default",
   selected_output_device: "Default",
   translate_to_english: false,
-  selected_language: "auto",
   overlay_position: "bottom",
   debug_mode: false,
   custom_words: [],
@@ -203,11 +202,6 @@ export const useSettingsStore = create<SettingsStore>()(
           case "translate_to_english":
             await invoke("change_translate_to_english_setting", {
               enabled: value,
-            });
-            break;
-          case "selected_language":
-            await invoke("change_selected_language_setting", {
-              language: value,
             });
             break;
           case "overlay_position":

@@ -3,13 +3,20 @@ use std::collections::HashMap;
 use tauri::{App, AppHandle};
 use tauri_plugin_store::StoreExt;
 
+fn default_action_name() -> String {
+    "transcribe".to_string()
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ShortcutBinding {
     pub id: String,
     pub name: String,
+    #[serde(default = "default_action_name")]
+    pub action_name: String,
     pub description: String,
     pub default_binding: String,
     pub current_binding: String,
+    pub language: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -100,8 +107,6 @@ pub struct AppSettings {
     pub selected_output_device: Option<String>,
     #[serde(default = "default_translate_to_english")]
     pub translate_to_english: bool,
-    #[serde(default = "default_selected_language")]
-    pub selected_language: String,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -136,10 +141,6 @@ fn default_start_hidden() -> bool {
 
 fn default_autostart_enabled() -> bool {
     false
-}
-
-fn default_selected_language() -> String {
-    "auto".to_string()
 }
 
 fn default_overlay_position() -> OverlayPosition {
@@ -179,9 +180,11 @@ pub fn get_default_settings() -> AppSettings {
         ShortcutBinding {
             id: "transcribe".to_string(),
             name: "Transcribe".to_string(),
+            action_name: "transcribe".to_string(),
             description: "Converts your speech into text.".to_string(),
             default_binding: default_shortcut.to_string(),
             current_binding: default_shortcut.to_string(),
+            language: "auto".to_string(),
         },
     );
 
@@ -196,7 +199,6 @@ pub fn get_default_settings() -> AppSettings {
         selected_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
-        selected_language: "auto".to_string(),
         overlay_position: OverlayPosition::Bottom,
         debug_mode: false,
         custom_words: Vec::new(),

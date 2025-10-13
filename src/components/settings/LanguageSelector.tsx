@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
@@ -16,14 +15,13 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   grouped = false,
 }) => {
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
-  const { currentModel, loadCurrentModel } = useModels();
+  const { isParakeetModel } = useModels();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selectedLanguage = getSetting("selected_language") || "auto";
-  const isParakeetModel = currentModel === "parakeet-tdt-0.6b-v3";
   const isLanguageSelectionDisabled = isParakeetModel;
 
   useEffect(() => {
@@ -42,17 +40,6 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  // Listen for model state changes to update UI reactively
-  useEffect(() => {
-    const modelStateUnlisten = listen("model-state-changed", () => {
-      loadCurrentModel();
-    });
-
-    return () => {
-      modelStateUnlisten.then((fn) => fn());
-    };
-  }, [loadCurrentModel]);
 
   useEffect(() => {
     if (isOpen && searchInputRef.current) {

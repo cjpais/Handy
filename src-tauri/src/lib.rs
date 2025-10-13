@@ -27,6 +27,8 @@ use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 struct ShortcutToggleStates {
     // Map: shortcut_binding_id -> is_active
     active_toggles: HashMap<String, bool>,
+    // Map: shortcut_binding_id -> language
+    active_languages: HashMap<String, Option<String>>,
 }
 
 type ManagedToggleState = Mutex<ShortcutToggleStates>;
@@ -214,11 +216,13 @@ pub fn run() {
             shortcut::change_start_hidden_setting,
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
-            shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_paste_method_setting,
+            shortcut::change_binding_language,
+            shortcut::add_shortcut_binding,
+            shortcut::remove_shortcut_binding,
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,

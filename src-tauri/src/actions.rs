@@ -6,6 +6,7 @@ use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
 use crate::settings::get_settings;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils;
+use crate::ManagedToggleState;
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -16,17 +17,23 @@ use tauri::Manager;
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
-    fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
-    fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
+    fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str, language: Option<String>);
+    fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str, language: Option<String>);
 }
 
 // Transcribe Action
 struct TranscribeAction;
 
 impl ShortcutAction for TranscribeAction {
-    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str, language: Option<String>) {
         let start_time = Instant::now();
-        debug!("TranscribeAction::start called for binding: {}", binding_id);
+        debug!("TranscribeAction::start called for binding: {} with language: {:?}", binding_id, language);
+
+        // Store the language for this binding in toggle state
+        let toggle_state_manager = app.state::<ManagedToggleState>();
+        if let Ok(mut states) = toggle_state_manager.lock() {
+            states.active_languages.insert(binding_id.to_string(), language.clone());
+        }
 
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
@@ -74,9 +81,19 @@ impl ShortcutAction for TranscribeAction {
         );
     }
 
-    fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+    fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str, _language: Option<String>) {
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
+
+        // Retrieve the language from toggle state
+        let toggle_state_manager = app.state::<ManagedToggleState>();
+        let language_override = if let Ok(mut states) = toggle_state_manager.lock() {
+            states.active_languages.remove(binding_id)
+        } else {
+            None
+        };
+
+        debug!("Using language override: {:?}", language_override);
 
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
@@ -108,7 +125,7 @@ impl ShortcutAction for TranscribeAction {
 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
+                match tm.transcribe(samples, language_override.flatten()) {
                     Ok(transcription) => {
                         debug!(
                             "Transcription completed in {:?}: '{}'",
@@ -176,21 +193,23 @@ impl ShortcutAction for TranscribeAction {
 struct TestAction;
 
 impl ShortcutAction for TestAction {
-    fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
+    fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str, language: Option<String>) {
         println!(
-            "Shortcut ID '{}': Started - {} (App: {})", // Changed "Pressed" to "Started" for consistency
+            "Shortcut ID '{}': Started - {} (App: {}) with language: {:?}", // Changed "Pressed" to "Started" for consistency
             binding_id,
             shortcut_str,
-            app.package_info().name
+            app.package_info().name,
+            language
         );
     }
 
-    fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
+    fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str, language: Option<String>) {
         println!(
-            "Shortcut ID '{}': Stopped - {} (App: {})", // Changed "Released" to "Stopped" for consistency
+            "Shortcut ID '{}': Stopped - {} (App: {}) with language: {:?}", // Changed "Released" to "Stopped" for consistency
             binding_id,
             shortcut_str,
-            app.package_info().name
+            app.package_info().name,
+            language
         );
     }
 }

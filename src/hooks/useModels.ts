@@ -133,6 +133,8 @@ export const useModels = () => {
     return downloadProgress.get(modelId);
   };
 
+  const isParakeetModel = currentModel === "parakeet-tdt-0.6b-v3";
+
   useEffect(() => {
     loadModels();
     loadCurrentModel();
@@ -204,12 +206,18 @@ export const useModels = () => {
       },
     );
 
+    // Listen for model state changes to update current model
+    const modelStateUnlisten = listen("model-state-changed", () => {
+      loadCurrentModel();
+    });
+
     return () => {
       progressUnlisten.then((fn) => fn());
       completeUnlisten.then((fn) => fn());
       extractionStartedUnlisten.then((fn) => fn());
       extractionCompletedUnlisten.then((fn) => fn());
       extractionFailedUnlisten.then((fn) => fn());
+      modelStateUnlisten.then((fn) => fn());
     };
   }, []);
 
@@ -223,6 +231,7 @@ export const useModels = () => {
     downloadProgress,
     hasAnyModels,
     isFirstRun,
+    isParakeetModel,
     loadModels,
     loadCurrentModel,
     checkFirstRun,

@@ -3,9 +3,11 @@ import { z } from "zod";
 export const ShortcutBindingSchema = z.object({
   id: z.string(),
   name: z.string(),
+  action_name: z.string(),
   description: z.string(),
   default_binding: z.string(),
   current_binding: z.string(),
+  language: z.string(),
 });
 
 export const ShortcutBindingsMapSchema = z.record(
@@ -48,7 +50,6 @@ export const SettingsSchema = z.object({
   selected_microphone: z.string().nullable().optional(),
   selected_output_device: z.string().nullable().optional(),
   translate_to_english: z.boolean(),
-  selected_language: z.string(),
   overlay_position: OverlayPositionSchema,
   debug_mode: z.boolean(),
   custom_words: z.array(z.string()).optional().default([]),
