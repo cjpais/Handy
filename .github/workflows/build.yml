@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         default: "handy"
+      asset-name-pattern:
+        required: false
+        type: string
+        default: ""
       upload-artifacts:
         required: false
         type: boolean
@@ -165,6 +169,19 @@ jobs:
           echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
           echo "Certificate imported."
 
+      - name: Patch asset name pattern
+        id: patch-release-name
+        shell: bash
+        if: ${{ inputs.release-id != '' && inputs.asset-name-pattern != '' }}
+        run: |
+          platform="${{ inputs.platform }}"
+          replacement="$(echo ${platform} | sed -E 's/-latest//')"
+          patched_platform=$(echo '${{ inputs.asset-name-pattern }}' | sed -E "s/\[platform\]/${replacement}/")
+          if [[ -n "${{ inputs.asset-prefix }}" ]]; then
+            patched_platform="${{ inputs.asset-prefix }}_${patched_platform}"
+          fi
+          echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
@@ -187,6 +204,7 @@ jobs:
           tagName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseId: ${{ inputs.release-id }}
+          assetNamePattern: ${{ steps.patch-release-name.outputs.platform }}
           args: ${{ inputs.build-args }}
 
       - name: Upload artifacts (macOS)
