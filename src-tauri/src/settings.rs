@@ -88,12 +88,32 @@ pub enum StartSound {
     Custom,
 }
 
+impl StartSound {
+    pub fn to_path(&self) -> &'static str {
+        match self {
+            StartSound::Default => "resources/rec_start.wav",
+            StartSound::Pop => "resources/pop_start.wav",
+            StartSound::Custom => "resources/custom_start.wav",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum StopSound {
     Default,
     Pop,
     Custom,
+}
+
+impl StopSound {
+    pub fn to_path(&self) -> &'static str {
+        match self {
+            StopSound::Default => "resources/rec_stop.wav",
+            StopSound::Pop => "resources/pop_stop.wav",
+            StopSound::Custom => "resources/custom_stop.wav",
+        }
+    }
 }
 
 /* still handy for composing the initial JSON in the store ------------- */

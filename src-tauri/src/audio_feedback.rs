@@ -1,10 +1,15 @@
-use crate::settings::{self, StartSound, StopSound};
+use crate::settings;
 use cpal::traits::{DeviceTrait, HostTrait};
 use rodio::OutputStreamBuilder;
 use std::fs::File;
 use std::io::BufReader;
 use std::thread;
 use tauri::{AppHandle, Manager};
+
+pub enum SoundType {
+    Start,
+    Stop,
+}
 
 /// Plays an audio resource from the resources directory.
 /// Checks if audio feedback is enabled in settings before playing.
@@ -47,24 +52,11 @@ pub fn play_sound(app: &AppHandle, resource_path: &str) {
     });
 }
 
-/// Convenience function to play the recording start sound
-pub fn play_recording_start_sound(app: &AppHandle) {
+pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
     let settings = settings::get_settings(app);
-    let sound_file = match settings.start_sound {
-        StartSound::Default => "resources/rec_start.wav",
-        StartSound::Pop => "resources/pop_start.wav",
-        StartSound::Custom => "resources/custom_start.wav",
-    };
-    play_sound(app, sound_file);
-}
-
-/// Convenience function to play the recording stop sound
-pub fn play_recording_stop_sound(app: &AppHandle) {
-    let settings = settings::get_settings(app);
-    let sound_file = match settings.stop_sound {
-        StopSound::Default => "resources/rec_stop.wav",
-        StopSound::Pop => "resources/pop_stop.wav",
-        StopSound::Custom => "resources/custom_stop.wav",
+    let sound_file = match sound_type {
+        SoundType::Start => settings.start_sound.to_path(),
+        SoundType::Stop => settings.stop_sound.to_path(),
     };
     play_sound(app, sound_file);
 }

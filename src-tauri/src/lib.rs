@@ -250,7 +250,7 @@ pub fn run() {
             commands::audio::set_selected_output_device,
             commands::audio::get_selected_output_device,
             commands::audio::play_test_sound,
-            commands::audio::upload_custom_sound,
+            commands::audio::load_custom_sound,
             commands::audio::check_custom_sounds,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
