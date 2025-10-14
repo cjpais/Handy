@@ -4,6 +4,9 @@ export { AdvancedSettings } from "./AdvancedSettings";
 export { DebugSettings } from "./DebugSettings";
 export { HistorySettings } from "./HistorySettings";
 export { AboutSettings } from "./AboutSettings";
+export { PolishRulesPage } from "./PolishRulesPage";
+export { InitialPromptPage } from "./InitialPromptPage";
+export { RegexFiltersPage } from "./RegexFiltersPage";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";

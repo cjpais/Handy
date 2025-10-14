@@ -50,29 +50,29 @@ const PolishRules: React.FC = () => {
     const newErrors: Partial<PolishRuleFormData> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "规则名称不能为空";
+      newErrors.name = "Rule name cannot be empty";
     }
 
     if (!formData.api_url.trim()) {
-      newErrors.api_url = "API URL 不能为空";
+      newErrors.api_url = "API URL cannot be empty";
     } else {
       try {
         new URL(formData.api_url);
       } catch {
-        newErrors.api_url = "请输入有效的 URL";
+        newErrors.api_url = "Please enter a valid URL";
       }
     }
 
     if (!formData.api_key.trim()) {
-      newErrors.api_key = "API Key 不能为空";
+      newErrors.api_key = "API Key cannot be empty";
     }
 
     if (!formData.model.trim()) {
-      newErrors.model = "模型名称不能为空";
+      newErrors.model = "Model name cannot be empty";
     }
 
     if (!formData.prompt.trim()) {
-      newErrors.prompt = "提示词不能为空";
+      newErrors.prompt = "Prompt cannot be empty";
     }
 
     setErrors(newErrors);
@@ -127,7 +127,7 @@ const PolishRules: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("确定要删除这个润色规则吗？")) {
+    if (confirm("Are you sure you want to delete this polish rule?")) {
       try {
         await deletePolishRule(id);
         await loadRules();
@@ -174,7 +174,7 @@ const PolishRules: React.FC = () => {
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="flex justify-center p-4">加载中...</div>
+        <div className="flex justify-center p-4">Loading...</div>
       </div>
     );
   }
@@ -185,9 +185,9 @@ const PolishRules: React.FC = () => {
       <div className="border rounded-lg p-4 bg-gray-50">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-md font-medium">自动润色</h4>
+            <h4 className="text-md font-medium">Auto Polish</h4>
             <p className="text-sm text-gray-600 mt-1">
-              在语音输入完成后自动应用润色规则
+              Automatically apply polish rules after speech input is completed
             </p>
           </div>
           <label className="flex items-center cursor-pointer">
@@ -209,28 +209,27 @@ const PolishRules: React.FC = () => {
       </div>
 
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">润色规则</h3>
+        <h3 className="text-lg font-medium">Polish Rules</h3>
         <Button onClick={() => {
           setEditingRule(null);
           setIsFormVisible(true);
         }}>
-          <Plus className="w-4 h-4 mr-2" />
-          添加规则
+          Add Rule
         </Button>
       </div>
 
       {isFormVisible && (
         <div className="border rounded-lg p-4 bg-gray-50">
           <h4 className="text-md font-medium mb-4">
-            {editingRule ? "编辑润色规则" : "添加润色规则"}
+            {editingRule ? "Edit Polish Rule" : "Add Polish Rule"}
           </h4>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">规则名称</label>
+              <label className="block text-sm font-medium mb-1">Rule Name</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="输入规则名称"
+                placeholder="Enter rule name"
               />
               {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
             </div>
@@ -251,13 +250,13 @@ const PolishRules: React.FC = () => {
                 type="password"
                 value={formData.api_key}
                 onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-                placeholder="输入 API Key"
+                placeholder="Enter API Key"
               />
               {errors.api_key && <p className="text-sm text-red-500 mt-1">{errors.api_key}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">模型</label>
+              <label className="block text-sm font-medium mb-1">Model</label>
               <Input
                 value={formData.model}
                 onChange={(e) => setFormData({ ...formData, model: e.target.value })}
@@ -267,12 +266,12 @@ const PolishRules: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">提示词</label>
+              <label className="block text-sm font-medium mb-1">Prompt</label>
               <textarea
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={formData.prompt}
                 onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-                placeholder="请润色以下文本，使其更加流畅和专业..."
+                placeholder="Please polish the following text to make it more fluent and professional..."
                 rows={4}
               />
               {errors.prompt && <p className="text-sm text-red-500 mt-1">{errors.prompt}</p>}
@@ -280,10 +279,10 @@ const PolishRules: React.FC = () => {
 
             <div className="flex justify-end space-x-2">
               <Button type="button" onClick={handleCloseForm}>
-                取消
+                Cancel
               </Button>
               <Button type="submit">
-                {editingRule ? "更新" : "添加"}
+                {editingRule ? "Update" : "Add"}
               </Button>
             </div>
           </form>
@@ -292,7 +291,7 @@ const PolishRules: React.FC = () => {
 
       {rules.length === 0 ? (
         <div className="border rounded-lg p-6 text-center text-gray-500">
-          暂无润色规则，点击上方按钮添加第一个规则
+          No polish rules yet. Click the button above to add your first rule.
         </div>
       ) : (
         <div className="space-y-3">
@@ -336,7 +335,7 @@ const PolishRules: React.FC = () => {
                   <p className="text-gray-600 break-all">{rule.api_url}</p>
                 </div>
                 <div>
-                  <span className="font-medium">模型:</span>
+                  <span className="font-medium">Model:</span>
                   <p className="text-gray-600">{rule.model}</p>
                 </div>
                 <div className="col-span-2">
@@ -358,7 +357,7 @@ const PolishRules: React.FC = () => {
                   </p>
                 </div>
                 <div className="col-span-2">
-                  <span className="font-medium">提示词:</span>
+                  <span className="font-medium">Prompt:</span>
                   <p className="text-gray-600 mt-1 whitespace-pre-wrap">{rule.prompt}</p>
                 </div>
               </div>

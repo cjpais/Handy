@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
@@ -16,10 +16,22 @@ export const InitialPrompt: React.FC<InitialPromptProps> = React.memo(({
 }) => {
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
 
-  const initialPrompt = getSetting("initial_prompt") || "";
+  const settingValue = getSetting("initial_prompt") || "";
+  const [localValue, setLocalValue] = useState(settingValue);
+
+  // Sync local value with setting value when it changes externally
+  useEffect(() => {
+    setLocalValue(settingValue);
+  }, [settingValue]);
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateSetting("initial_prompt", event.target.value);
+    setLocalValue(event.target.value);
+  };
+
+  const handleBlur = () => {
+    if (localValue !== settingValue) {
+      updateSetting("initial_prompt", localValue);
+    }
   };
 
   const handleReset = () => {
@@ -36,8 +48,9 @@ export const InitialPrompt: React.FC<InitialPromptProps> = React.memo(({
     >
       <div className="flex items-start gap-2">
         <textarea
-          value={initialPrompt}
+          value={localValue}
           onChange={handleChange}
+          onBlur={handleBlur}
           disabled={disabled || isUpdating("initial_prompt")}
           placeholder="eg. The following is an audio clip about programming. Please prioritize using industry-specific terminology."
           className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md 

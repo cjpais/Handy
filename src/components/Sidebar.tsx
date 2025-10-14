@@ -1,5 +1,5 @@
 import React from "react";
-import { Cog, FlaskConical, History, Info } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Wand2, MessageSquare, Filter } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -9,6 +9,9 @@ import {
   HistorySettings,
   DebugSettings,
   AboutSettings,
+  PolishRulesPage,
+  InitialPromptPage,
+  RegexFiltersPage,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -39,6 +42,24 @@ export const SECTIONS_CONFIG = {
     label: "Advanced",
     icon: Cog,
     component: AdvancedSettings,
+    enabled: () => true,
+  },
+  polishRules: {
+    label: "Polish Rules",
+    icon: Wand2,
+    component: PolishRulesPage,
+    enabled: () => true,
+  },
+  initialPrompt: {
+    label: "Initial Prompt",
+    icon: MessageSquare,
+    component: InitialPromptPage,
+    enabled: () => true,
+  },
+  regexFilters: {
+    label: "Regex Filters",
+    icon: Filter,
+    component: RegexFiltersPage,
     enabled: () => true,
   },
   history: {
