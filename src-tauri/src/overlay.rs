@@ -145,6 +145,23 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
     }
 }
 
+/// Shows the polishing overlay window
+pub fn show_polishing_overlay(app_handle: &AppHandle) {
+    // Check if overlay should be shown based on position setting
+    let settings = settings::get_settings(app_handle);
+    if settings.overlay_position == OverlayPosition::None {
+        return;
+    }
+
+    update_overlay_position(app_handle);
+
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.show();
+        // Emit event to switch to polishing state
+        let _ = overlay_window.emit("show-overlay", "polishing");
+    }
+}
+
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {

@@ -5,10 +5,11 @@ import {
   MicrophoneIcon,
   TranscriptionIcon,
   CancelIcon,
+  PolishIcon,
 } from "../components/icons";
 import "./RecordingOverlay.css";
 
-type OverlayState = "recording" | "transcribing";
+type OverlayState = "recording" | "transcribing" | "polishing";
 
 const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -58,9 +59,12 @@ const RecordingOverlay: React.FC = () => {
   const getIcon = () => {
     if (state === "recording") {
       return <MicrophoneIcon />;
-    } else {
+    } else if (state === "transcribing") {
       return <TranscriptionIcon />;
+    } else if (state === "polishing") {
+      return <PolishIcon />;
     }
+    return <TranscriptionIcon />;
   };
 
   return (
@@ -85,6 +89,9 @@ const RecordingOverlay: React.FC = () => {
         )}
         {state === "transcribing" && (
           <div className="transcribing-text">Transcribing...</div>
+        )}
+        {state === "polishing" && (
+          <div className="transcribing-text">Polishing...</div>
         )}
       </div>
 

@@ -15,6 +15,7 @@ export { ShowOverlay } from "./ShowOverlay";
 export { HandyShortcut } from "./HandyShortcut";
 export { TranslateToEnglish } from "./TranslateToEnglish";
 export { RegexFilters } from "./RegexFilters";
+export { default as PolishRules } from "./PolishRules";
 export { CustomWords } from "./CustomWords";
 export { AppDataDirectory } from "./AppDataDirectory";
 export { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";

@@ -1,7 +1,9 @@
 use natural::phonetics::soundex;
 use strsim::levenshtein;
 use regex::Regex;
-use crate::settings::RegexFilter;
+use crate::settings::{RegexFilter, PolishRule};
+use reqwest;
+use serde_json::{json, Value};
 
 /// Applies custom word corrections to transcribed text using fuzzy matching
 ///
@@ -167,6 +169,134 @@ pub fn apply_regex_filters(text: &str, regex_filters: &[RegexFilter]) -> String 
     }
     
     result
+}
+
+/// Applies polish rules to text using OpenAI-compatible API
+///
+/// This function processes text through a series of polish rules,
+/// sending requests to configured LLM APIs for text enhancement.
+///
+/// # Arguments
+/// * `text` - The input text to polish
+/// * `polish_rules` - List of polish rules to apply
+///
+/// # Returns
+/// The polished text with all enabled rules applied
+pub async fn apply_polish_rules(text: &str, polish_rules: &[PolishRule]) -> String {
+    let mut result = text.to_string();
+    
+    for rule in polish_rules {
+        if !rule.enabled {
+            continue;
+        }
+        
+        match polish_text_with_rule(&result, rule).await {
+            Ok(polished_text) => {
+                result = polished_text;
+            }
+            Err(e) => {
+                // Log the error but continue processing other rules
+                log::warn!("Failed to apply polish rule '{}': {}", rule.name, e);
+            }
+        }
+    }
+    
+    result
+}
+
+/// Applies polish rules to text using OpenAI-compatible API with detailed error reporting
+///
+/// This function processes text through a series of polish rules,
+/// sending requests to configured LLM APIs for text enhancement.
+/// Unlike apply_polish_rules, this function returns detailed error information.
+///
+/// # Arguments
+/// * `text` - The input text to polish
+/// * `polish_rules` - List of polish rules to apply
+///
+/// # Returns
+/// Result containing the polished text or detailed error information
+pub async fn apply_polish_rules_with_error(text: &str, polish_rules: &[PolishRule]) -> Result<String, String> {
+    let mut result = text.to_string();
+    let mut errors = Vec::new();
+    
+    for rule in polish_rules {
+        if !rule.enabled {
+            continue;
+        }
+        
+        match polish_text_with_rule(&result, rule).await {
+            Ok(polished_text) => {
+                result = polished_text;
+            }
+            Err(e) => {
+                let error_msg = format!("Rule '{}': {}", rule.name, e);
+                log::warn!("Failed to apply polish rule: {}", error_msg);
+                errors.push(error_msg);
+            }
+        }
+    }
+    
+    if !errors.is_empty() && result == text {
+        // If no rules succeeded and we have errors, return the error
+        Err(errors.join("; "))
+    } else if !errors.is_empty() {
+        // Some rules failed but we have partial results
+        log::warn!("Some polish rules failed: {}", errors.join("; "));
+        Ok(result)
+    } else {
+        Ok(result)
+    }
+}
+
+/// Polishes text using a single polish rule via OpenAI-compatible API
+async fn polish_text_with_rule(text: &str, rule: &PolishRule) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let client = reqwest::Client::new();
+    
+    let request_body = json!({
+        "model": rule.model,
+        "messages": [
+            {
+                "role": "system",
+                "content": rule.prompt
+            },
+            {
+                "role": "user",
+                "content": text
+            }
+        ],
+        "temperature": 0.3,
+        "max_tokens": 2000
+    });
+    
+    let response = client
+        .post(&rule.api_url)
+        .header("Authorization", format!("Bearer {}", rule.api_key))
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await?;
+    
+    if !response.status().is_success() {
+        return Err(format!("API request failed with status: {}", response.status()).into());
+    }
+    
+    let response_json: Value = response.json().await?;
+    
+    // Extract the polished text from the response
+    if let Some(choices) = response_json.get("choices") {
+        if let Some(first_choice) = choices.get(0) {
+            if let Some(message) = first_choice.get("message") {
+                if let Some(content) = message.get("content") {
+                    if let Some(polished_text) = content.as_str() {
+                        return Ok(polished_text.trim().to_string());
+                    }
+                }
+            }
+        }
+    }
+    
+    Err("Invalid response format from API".into())
 }
 
 #[cfg(test)]

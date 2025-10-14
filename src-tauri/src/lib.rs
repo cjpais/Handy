@@ -226,11 +226,13 @@ pub fn run() {
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_paste_method_setting,
             shortcut::change_initial_prompt_setting,
+            shortcut::change_auto_polish_setting,
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,
             trigger_update_check,
             commands::cancel_operation,
+            commands::apply_polish_to_text,
             commands::get_app_dir_path,
             commands::models::get_available_models,
             commands::models::get_model_info,
@@ -266,7 +268,12 @@ pub fn run() {
             commands::regex_filters::add_regex_filter,
             commands::regex_filters::update_regex_filter,
             commands::regex_filters::delete_regex_filter,
-            commands::regex_filters::toggle_regex_filter
+            commands::regex_filters::toggle_regex_filter,
+            commands::polish_rules::get_polish_rules,
+            commands::polish_rules::add_polish_rule,
+            commands::polish_rules::update_polish_rule,
+            commands::polish_rules::delete_polish_rule,
+            commands::polish_rules::toggle_polish_rule
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

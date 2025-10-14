@@ -3,7 +3,7 @@ use crate::managers::audio::AudioRecordingManager;
 use crate::managers::audio_backup::AudioBackupManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
+use crate::overlay::{show_recording_overlay, show_transcribing_overlay, show_polishing_overlay};
 use crate::settings::get_settings;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils;
@@ -12,8 +12,9 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri::Manager;
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -145,12 +146,69 @@ impl ShortcutAction for TranscribeAction {
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
                             ah.run_on_main_thread(move || {
-                                match utils::paste(transcription_clone, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => eprintln!("Failed to paste transcription: {}", e),
+                                // Check if auto polish is enabled and there are active polish rules
+                                let settings = get_settings(&ah_clone);
+                                let should_auto_polish = settings.auto_polish && 
+                                    !settings.polish_rules.is_empty() && 
+                                    settings.polish_rules.iter().any(|rule| rule.enabled);
+                                
+                                if should_auto_polish {
+                                    // If auto polish is enabled, paste and select text for polishing
+                                    match utils::paste_and_select(transcription_clone.clone(), ah_clone.clone()) {
+                                        Ok(()) => {
+                                            debug!(
+                                                "Text pasted and selected successfully for polishing in {:?}",
+                                                paste_time.elapsed()
+                                            );
+                                            
+                                            // Show polishing overlay
+                                            show_polishing_overlay(&ah_clone);
+                                            
+                                            let ah_for_polish = ah_clone.clone();
+                                            let text_for_polish = transcription_clone.clone();
+                                            tauri::async_runtime::spawn(async move {
+                                                // Small delay to ensure text is selected
+                                                tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                                                
+                                                // Apply polish rules
+                                                let settings = get_settings(&ah_for_polish);
+                                                match crate::audio_toolkit::text::apply_polish_rules_with_error(&text_for_polish, &settings.polish_rules).await {
+                                                    Ok(polished_text) => {
+                                                        // Paste the polished text back
+                                                        if let Err(e) = utils::paste(polished_text, ah_for_polish.clone()) {
+                                                            error!("Failed to paste polished text: {}", e);
+                                                            // Show error notification
+                                                            let _ = ah_for_polish.emit("polish-error", format!("Failed to paste polished text: {}", e));
+                                                        }
+                                                    },
+                                                    Err(e) => {
+                                                        error!("Failed to apply polish rules: {}", e);
+                                                        // Show error notification
+                                                        let _ = ah_for_polish.emit("polish-error", format!("Polish failed: {}", e));
+                                                    }
+                                                }
+                                                
+                                                // Hide polishing overlay
+                                                utils::hide_recording_overlay(&ah_for_polish);
+                                            });
+                                        },
+                                        Err(e) => {
+                                            eprintln!("Failed to paste and select transcription for polishing: {}", e);
+                                            // Show error notification
+                                            let _ = ah_clone.emit("polish-error", format!("Failed to prepare text for polishing: {}", e));
+                                        }
+                                    }
+                                } else {
+                                    // If no auto polish, just paste without selecting
+                                    match utils::paste(transcription_clone.clone(), ah_clone.clone()) {
+                                        Ok(()) => {
+                                            debug!(
+                                                "Text pasted successfully (no selection) in {:?}",
+                                                paste_time.elapsed()
+                                            );
+                                        },
+                                        Err(e) => eprintln!("Failed to paste transcription: {}", e),
+                                    }
                                 }
                                 // Hide the overlay after transcription is complete
                                 utils::hide_recording_overlay(&ah_clone);
@@ -186,6 +244,71 @@ impl ShortcutAction for TranscribeAction {
     }
 }
 
+// Polish Action
+struct PolishAction;
+
+impl ShortcutAction for PolishAction {
+    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        debug!("PolishAction::start called for binding: {}", binding_id);
+        
+        // Show polishing overlay and change tray icon
+        change_tray_icon(app, TrayIconState::Transcribing);
+        show_polishing_overlay(app);
+        
+        // Get selected text from clipboard and apply polish
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            // Use Ctrl+C to copy selected text first
+            if let Err(e) = utils::copy_selected_text(&app_clone) {
+                error!("Failed to copy selected text: {}", e);
+                let _ = app_clone.emit("polish-error", format!("Failed to copy selected text: {}", e));
+                utils::hide_recording_overlay(&app_clone);
+                change_tray_icon(&app_clone, TrayIconState::Idle);
+                return;
+            }
+            
+            // Small delay to ensure clipboard is updated
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            
+            // Get clipboard content
+            let clipboard_content = app_clone.clipboard().read_text().unwrap_or_default();
+            
+            if clipboard_content.is_empty() {
+                error!("No text selected or clipboard is empty");
+                let _ = app_clone.emit("polish-error", "No text selected or clipboard is empty".to_string());
+                utils::hide_recording_overlay(&app_clone);
+                change_tray_icon(&app_clone, TrayIconState::Idle);
+                return;
+            }
+            
+            // Apply polish rules
+            let settings = get_settings(&app_clone);
+            match crate::audio_toolkit::text::apply_polish_rules_with_error(&clipboard_content, &settings.polish_rules).await {
+                Ok(polished_text) => {
+                    // Paste the polished text back
+                    if let Err(e) = utils::paste(polished_text, app_clone.clone()) {
+                        error!("Failed to paste polished text: {}", e);
+                        let _ = app_clone.emit("polish-error", format!("Failed to paste polished text: {}", e));
+                    }
+                },
+                Err(e) => {
+                    error!("Failed to apply polish rules: {}", e);
+                    let _ = app_clone.emit("polish-error", format!("Polish failed: {}", e));
+                }
+            }
+            
+            // Hide overlay and reset tray icon
+            utils::hide_recording_overlay(&app_clone);
+            change_tray_icon(&app_clone, TrayIconState::Idle);
+        });
+    }
+
+    fn stop(&self, _app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        debug!("PolishAction::stop called for binding: {}", binding_id);
+        // Polish action is instantaneous, no stop action needed
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -215,6 +338,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe".to_string(),
         Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "polish".to_string(),
+        Arc::new(PolishAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

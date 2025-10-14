@@ -4,6 +4,7 @@ import { TranslateToEnglish } from "./TranslateToEnglish";
 import { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";
 import { CustomWords } from "./CustomWords";
 import { RegexFilters } from "./RegexFilters";
+import PolishRules from "./PolishRules";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { StartHidden } from "./StartHidden";
 import { AutostartToggle } from "./AutostartToggle";
@@ -22,6 +23,8 @@ export const AdvancedSettings: React.FC = () => {
         <RegexFilters descriptionMode="tooltip" grouped />
         <InitialPrompt descriptionMode="tooltip" grouped />
       </SettingsGroup>
+      
+      <PolishRules />
     </div>
   );
 };
