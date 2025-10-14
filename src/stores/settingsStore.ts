@@ -9,6 +9,7 @@ interface SettingsStore {
   isUpdating: Record<string, boolean>;
   audioDevices: AudioDevice[];
   outputDevices: AudioDevice[];
+  customSounds: { start: boolean; stop: boolean };
 
   // Actions
   initialize: () => Promise<void>;
@@ -24,6 +25,9 @@ interface SettingsStore {
   resetBinding: (id: string) => Promise<void>;
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
   isUpdatingKey: (key: string) => boolean;
+  playTestSound: (soundType: "start" | "stop") => Promise<void>;
+  uploadCustomSound: (soundType: "start" | "stop") => Promise<void>;
+  checkCustomSounds: () => Promise<void>;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -31,11 +35,15 @@ interface SettingsStore {
   setUpdating: (key: string, updating: boolean) => void;
   setAudioDevices: (devices: AudioDevice[]) => void;
   setOutputDevices: (devices: AudioDevice[]) => void;
+  setCustomSounds: (sounds: { start: boolean; stop: boolean }) => void;
 }
 
 const DEFAULT_SETTINGS: Partial<Settings> = {
   always_on_microphone: false,
   audio_feedback: true,
+  audio_feedback_volume: 1.0,
+  start_sound: "default",
+  stop_sound: "default",
   start_hidden: false,
   autostart_enabled: false,
   push_to_talk: false,
@@ -62,6 +70,7 @@ export const useSettingsStore = create<SettingsStore>()(
     isUpdating: {},
     audioDevices: [],
     outputDevices: [],
+    customSounds: { start: false, stop: false },
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
@@ -72,6 +81,7 @@ export const useSettingsStore = create<SettingsStore>()(
       })),
     setAudioDevices: (audioDevices) => set({ audioDevices }),
     setOutputDevices: (outputDevices) => set({ outputDevices }),
+    setCustomSounds: (customSounds) => set({ customSounds }),
 
     // Getters
     getSetting: (key) => get().settings?.[key],
@@ -154,6 +164,33 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
+// Play a test sound
+    playTestSound: async (soundType: "start" | "stop") => {
+      try {
+        await invoke("play_test_sound", { soundType });
+      } catch (error) {
+        console.error(`Failed to play test sound (${soundType}):`, error);
+      }
+    },
+
+    uploadCustomSound: async (soundType: "start" | "stop") => {
+      try {
+        await invoke("upload_custom_sound", { soundType });
+        get().checkCustomSounds();
+      } catch (error) {
+        console.error("Failed to upload custom sound:", error);
+      }
+    },
+
+    checkCustomSounds: async () => {
+      try {
+        const sounds = await invoke("check_custom_sounds");
+        get().setCustomSounds(sounds as { start: boolean; stop: boolean });
+      } catch (error) {
+        console.error("Failed to check custom sounds:", error);
+      }
+    },
+
     // Update a specific setting
     updateSetting: async <K extends keyof Settings>(
       key: K,
@@ -178,6 +215,17 @@ export const useSettingsStore = create<SettingsStore>()(
             break;
           case "audio_feedback":
             await invoke("change_audio_feedback_setting", { enabled: value });
+            break;
+          case "audio_feedback_volume":
+            await invoke("change_audio_feedback_volume_setting", {
+              volume: value,
+            });
+            break;
+          case "start_sound":
+            await invoke("change_start_sound_setting", { sound: value });
+            break;
+          case "stop_sound":
+            await invoke("change_stop_sound_setting", { sound: value });
             break;
           case "start_hidden":
             await invoke("change_start_hidden_setting", { enabled: value });
@@ -330,12 +378,17 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
-      const { refreshSettings, refreshAudioDevices, refreshOutputDevices } =
-        get();
+      const {
+        refreshSettings,
+        refreshAudioDevices,
+        refreshOutputDevices,
+        checkCustomSounds,
+      } = get();
       await Promise.all([
         refreshSettings(),
         refreshAudioDevices(),
         refreshOutputDevices(),
+        checkCustomSounds(),
       ]);
     },
   })),

@@ -89,6 +89,7 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
+        .plugin(tauri_plugin_dialog::init())
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
             // Apply macOS Accessory policy early if starting hidden
@@ -211,6 +212,9 @@ pub fn run() {
             shortcut::reset_binding,
             shortcut::change_ptt_setting,
             shortcut::change_audio_feedback_setting,
+            shortcut::change_audio_feedback_volume_setting,
+            shortcut::change_start_sound_setting,
+            shortcut::change_stop_sound_setting,
             shortcut::change_start_hidden_setting,
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
@@ -245,6 +249,9 @@ pub fn run() {
             commands::audio::get_available_output_devices,
             commands::audio::set_selected_output_device,
             commands::audio::get_selected_output_device,
+            commands::audio::play_test_sound,
+            commands::audio::upload_custom_sound,
+            commands::audio::check_custom_sounds,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,

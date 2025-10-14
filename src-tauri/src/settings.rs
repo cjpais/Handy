@@ -80,12 +80,34 @@ impl ModelUnloadTimeout {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StartSound {
+    Default,
+    Pop,
+    Custom,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StopSound {
+    Default,
+    Pop,
+    Custom,
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
     pub audio_feedback: bool,
+    #[serde(default = "default_audio_feedback_volume")]
+    pub audio_feedback_volume: f32,
+    #[serde(default = "default_start_sound")]
+    pub start_sound: StartSound,
+    #[serde(default = "default_stop_sound")]
+    pub stop_sound: StopSound,
     #[serde(default = "default_start_hidden")]
     pub start_hidden: bool,
     #[serde(default = "default_autostart_enabled")]
@@ -161,6 +183,18 @@ fn default_history_limit() -> usize {
     5
 }
 
+fn default_audio_feedback_volume() -> f32 {
+    1.0
+}
+
+fn default_start_sound() -> StartSound {
+    StartSound::Default
+}
+
+fn default_stop_sound() -> StopSound {
+    StopSound::Default
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -189,6 +223,9 @@ pub fn get_default_settings() -> AppSettings {
         bindings,
         push_to_talk: true,
         audio_feedback: false,
+        audio_feedback_volume: default_audio_feedback_volume(),
+        start_sound: default_start_sound(),
+        stop_sound: default_stop_sound(),
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         selected_model: "".to_string(),

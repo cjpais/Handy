@@ -1,4 +1,4 @@
-use crate::settings;
+use crate::settings::{self, StartSound, StopSound};
 use cpal::traits::{DeviceTrait, HostTrait};
 use rodio::OutputStreamBuilder;
 use std::fs::File;
@@ -17,6 +17,7 @@ pub fn play_sound(app: &AppHandle, resource_path: &str) {
 
     let app_handle = app.clone();
     let resource_path = resource_path.to_string();
+    let volume = settings.audio_feedback_volume;
 
     // Spawn a new thread to play the audio without blocking the main thread
     thread::spawn(move || {
@@ -40,7 +41,7 @@ pub fn play_sound(app: &AppHandle, resource_path: &str) {
         let selected_device = settings.selected_output_device.clone();
 
         // Try to play the audio file
-        if let Err(e) = play_audio_file(&audio_path, selected_device) {
+        if let Err(e) = play_audio_file(&audio_path, selected_device, volume) {
             eprintln!("Failed to play sound '{}': {}", resource_path, e);
         }
     });
@@ -48,17 +49,30 @@ pub fn play_sound(app: &AppHandle, resource_path: &str) {
 
 /// Convenience function to play the recording start sound
 pub fn play_recording_start_sound(app: &AppHandle) {
-    play_sound(app, "resources/rec_start.wav");
+    let settings = settings::get_settings(app);
+    let sound_file = match settings.start_sound {
+        StartSound::Default => "resources/rec_start.wav",
+        StartSound::Pop => "resources/pop_start.wav",
+        StartSound::Custom => "resources/custom_start.wav",
+    };
+    play_sound(app, sound_file);
 }
 
 /// Convenience function to play the recording stop sound
 pub fn play_recording_stop_sound(app: &AppHandle) {
-    play_sound(app, "resources/rec_stop.wav");
+    let settings = settings::get_settings(app);
+    let sound_file = match settings.stop_sound {
+        StopSound::Default => "resources/rec_stop.wav",
+        StopSound::Pop => "resources/pop_stop.wav",
+        StopSound::Custom => "resources/custom_stop.wav",
+    };
+    play_sound(app, sound_file);
 }
 
 fn play_audio_file(
     path: &std::path::Path,
     selected_device: Option<String>,
+    volume: f32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let stream_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
@@ -100,6 +114,7 @@ fn play_audio_file(
     let buf_reader = BufReader::new(file);
 
     let sink = rodio::play(mixer, buf_reader)?;
+    sink.set_volume(volume);
     sink.sleep_until_end();
 
     Ok(())

@@ -1,9 +1,57 @@
+use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tauri_plugin_dialog::DialogExt;
 use tauri::{AppHandle, Manager};
+
+#[tauri::command]
+pub fn upload_custom_sound(app: AppHandle, sound_type: String) {
+    let app_handle = app.clone();
+    app.dialog()
+        .file()
+        .add_filter("Audio", &["wav"])
+        .pick_file(move |file_path| {
+            if let Some(source_path) = file_path {
+                let dest_path = app_handle
+                    .path()
+                    .resolve(
+                        format!("resources/custom_{}.wav", sound_type),
+                        tauri::path::BaseDirectory::Resource,
+                    )
+                    .unwrap();
+
+                if let Some(path) = source_path.as_path() {
+                    std::fs::copy(path, dest_path).unwrap();
+                }
+            }
+        });
+}
+
+#[derive(Serialize)]
+pub struct CustomSounds {
+    start: bool,
+    stop: bool,
+}
+
+#[tauri::command]
+pub fn check_custom_sounds(app: AppHandle) -> CustomSounds {
+    let start_path = app
+        .path()
+        .resolve("resources/custom_start.wav", tauri::path::BaseDirectory::Resource)
+        .unwrap();
+    let stop_path = app
+        .path()
+        .resolve("resources/custom_stop.wav", tauri::path::BaseDirectory::Resource)
+        .unwrap();
+
+    CustomSounds {
+        start: start_path.exists(),
+        stop: stop_path.exists(),
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AudioDevice {
@@ -121,4 +169,13 @@ pub fn get_selected_output_device(app: AppHandle) -> Result<String, String> {
     Ok(settings
         .selected_output_device
         .unwrap_or_else(|| "default".to_string()))
+}
+
+#[tauri::command]
+pub fn play_test_sound(app: AppHandle, sound_type: String) {
+    match sound_type.as_str() {
+        "start" => audio_feedback::play_recording_start_sound(&app),
+        "stop" => audio_feedback::play_recording_stop_sound(&app),
+        _ => eprintln!("Unknown sound type: {}", sound_type),
+    }
 }
