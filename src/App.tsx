@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -23,6 +24,20 @@ function App() {
 
   useEffect(() => {
     checkOnboardingStatus();
+  }, []);
+
+  // Listen for polish error events
+  useEffect(() => {
+    const unlisten = listen<string>("polish-error", (event) => {
+      toast.error(event.payload, {
+        duration: 5000,
+        position: "bottom-right",
+      });
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
   }, []);
 
   // Handle keyboard shortcuts for debug mode toggle

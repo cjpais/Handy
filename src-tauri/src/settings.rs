@@ -4,6 +4,52 @@ use tauri::{App, AppHandle};
 use tauri_plugin_store::StoreExt;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RegexFilter {
+    pub id: String,
+    pub name: String,
+    pub pattern: String,
+    pub replacement: String,
+    pub enabled: bool,
+}
+
+impl RegexFilter {
+    pub fn new(id: String, name: String, pattern: String, replacement: String) -> Self {
+        Self {
+            id,
+            name,
+            pattern,
+            replacement,
+            enabled: true,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PolishRule {
+    pub id: String,
+    pub name: String,
+    pub api_url: String,
+    pub api_key: String,
+    pub model: String,
+    pub prompt: String,
+    pub enabled: bool,
+}
+
+impl PolishRule {
+    pub fn new(id: String, name: String, api_url: String, api_key: String, model: String, prompt: String) -> Self {
+        Self {
+            id,
+            name,
+            api_url,
+            api_key,
+            model,
+            prompt,
+            enabled: true,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ShortcutBinding {
     pub id: String,
     pub name: String,
@@ -118,6 +164,12 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default = "default_initial_prompt")]
     pub initial_prompt: String,
+    #[serde(default)]
+    pub regex_filters: Vec<RegexFilter>,
+    #[serde(default)]
+    pub polish_rules: Vec<PolishRule>,
+    #[serde(default = "default_auto_polish")]
+    pub auto_polish: bool,
 }
 
 fn default_model() -> String {
@@ -164,17 +216,21 @@ fn default_initial_prompt() -> String {
     "".to_string()
 }
 
+fn default_auto_polish() -> bool {
+    false
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "windows")]
-    let default_shortcut = "ctrl+space";
+    let _default_shortcut = "ctrl+space";
     #[cfg(target_os = "macos")]
-    let default_shortcut = "option+space";
+    let _default_shortcut = "option+space";
     #[cfg(target_os = "linux")]
-    let default_shortcut = "ctrl+space";
+    let _default_shortcut = "ctrl+space";
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    let default_shortcut = "alt+space";
+    let _default_shortcut = "alt+space";
 
     let mut bindings = HashMap::new();
     bindings.insert(
@@ -182,9 +238,29 @@ pub fn get_default_settings() -> AppSettings {
         ShortcutBinding {
             id: "transcribe".to_string(),
             name: "Transcribe".to_string(),
-            description: "Converts your speech into text.".to_string(),
-            default_binding: default_shortcut.to_string(),
-            current_binding: default_shortcut.to_string(),
+            description: "Start/stop transcription".to_string(),
+            default_binding: "CommandOrControl+Shift+Space".to_string(),
+            current_binding: "CommandOrControl+Shift+Space".to_string(),
+        },
+    );
+    bindings.insert(
+        "polish".to_string(),
+        ShortcutBinding {
+            id: "polish".to_string(),
+            name: "Polish Text".to_string(),
+            description: "Apply polish rules to selected text".to_string(),
+            default_binding: "CommandOrControl+Shift+P".to_string(),
+            current_binding: "CommandOrControl+Shift+P".to_string(),
+        },
+    );
+    bindings.insert(
+        "test".to_string(),
+        ShortcutBinding {
+            id: "test".to_string(),
+            name: "Test".to_string(),
+            description: "Test action".to_string(),
+            default_binding: "CommandOrControl+Shift+T".to_string(),
+            current_binding: "CommandOrControl+Shift+T".to_string(),
         },
     );
 
@@ -208,6 +284,9 @@ pub fn get_default_settings() -> AppSettings {
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
         initial_prompt: default_initial_prompt(),
+        regex_filters: Vec::new(),
+        polish_rules: Vec::new(),
+        auto_polish: default_auto_polish(),
     }
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { AudioPlayer } from "../ui/AudioPlayer";
-import { ClipboardCopy, Star, Check, Trash2, Loader2 } from "lucide-react";
+import { ClipboardCopy, Star, Check, Trash2, Loader2, RotateCcw } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -17,6 +17,8 @@ interface HistoryEntry {
 export const HistorySettings: React.FC = () => {
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [latestBackupAudio, setLatestBackupAudio] = useState<string | null>(null);
+  const [isRetranscribing, setIsRetranscribing] = useState(false);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -29,14 +31,26 @@ export const HistorySettings: React.FC = () => {
     }
   }, []);
 
+  const loadLatestBackupAudio = useCallback(async () => {
+    try {
+      const backupPath = await invoke<string>("get_latest_backup_audio");
+      setLatestBackupAudio(backupPath);
+    } catch (error) {
+      console.error("Failed to load latest backup audio:", error);
+      setLatestBackupAudio(null);
+    }
+  }, []);
+
   useEffect(() => {
     loadHistoryEntries();
+    loadLatestBackupAudio();
 
     // Listen for history update events
     const setupListener = async () => {
       const unlisten = await listen("history-updated", () => {
         console.log("History updated, reloading entries...");
         loadHistoryEntries();
+        loadLatestBackupAudio();
       });
 
       // Return cleanup function
@@ -84,14 +98,30 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
-  const deleteAudioEntry = async (id: number) => {
+  const deleteAudioEntry = useCallback(async (id: number) => {
     try {
-      await invoke("delete_history_entry", {id});
+      await invoke("delete_history_entry", { id });
+      setHistoryEntries(prev => prev.filter(entry => entry.id !== id));
     } catch (error) {
       console.error("Failed to delete audio entry:", error);
-      throw error;
     }
-  }
+  }, []);
+
+  const retranscribeBackupAudio = useCallback(async () => {
+    if (!latestBackupAudio) return;
+    
+    setIsRetranscribing(true);
+    try {
+      const result = await invoke<string>("retranscribe_backup_audio");
+      console.log("Retranscription result:", result);
+      // Reload history entries to show the new transcription
+      await loadHistoryEntries();
+    } catch (error) {
+      console.error("Failed to retranscribe backup audio:", error);
+    } finally {
+      setIsRetranscribing(false);
+    }
+  }, [latestBackupAudio, loadHistoryEntries]);
 
   if (loading) {
     return (
@@ -119,6 +149,32 @@ export const HistorySettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      {/* Latest Recording Section */}
+      {latestBackupAudio && (
+        <SettingsGroup title="Latest Recording">
+          <div className="px-4 py-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-text/80">
+                Latest backup audio available for re-transcription
+              </div>
+              <button
+                onClick={retranscribeBackupAudio}
+                disabled={isRetranscribing}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isRetranscribing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+                {isRetranscribing ? "Re-transcribing..." : "Re-transcribe"}
+              </button>
+            </div>
+            <AudioPlayer src={convertFileSrc(latestBackupAudio)} />
+          </div>
+        </SettingsGroup>
+      )}
+      
       <SettingsGroup title="History">
         {historyEntries.map((entry) => (
           <HistoryEntryComponent

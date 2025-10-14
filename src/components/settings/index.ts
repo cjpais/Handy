@@ -4,6 +4,9 @@ export { AdvancedSettings } from "./AdvancedSettings";
 export { DebugSettings } from "./DebugSettings";
 export { HistorySettings } from "./HistorySettings";
 export { AboutSettings } from "./AboutSettings";
+export { PolishRulesPage } from "./PolishRulesPage";
+export { InitialPromptPage } from "./InitialPromptPage";
+export { RegexFiltersPage } from "./RegexFiltersPage";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";
@@ -14,6 +17,8 @@ export { AudioFeedback } from "./AudioFeedback";
 export { ShowOverlay } from "./ShowOverlay";
 export { HandyShortcut } from "./HandyShortcut";
 export { TranslateToEnglish } from "./TranslateToEnglish";
+export { RegexFilters } from "./RegexFilters";
+export { default as PolishRules } from "./PolishRules";
 export { CustomWords } from "./CustomWords";
 export { AppDataDirectory } from "./AppDataDirectory";
 export { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";

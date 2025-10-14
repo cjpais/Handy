@@ -30,9 +30,9 @@ const Footer: React.FC = () => {
 
         {/* Update Status */}
         <div className="flex items-center gap-1">
-          <UpdateChecker />
+          {/* <UpdateChecker /> */}
           <span>•</span>
-          <span>v{version}</span>
+          <span>Easy Fixed Version</span>
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ mod tray;
 mod utils;
 
 use managers::audio::AudioRecordingManager;
+use managers::audio_backup::AudioBackupManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
@@ -171,12 +172,16 @@ pub fn run() {
             );
             let history_manager =
                 Arc::new(HistoryManager::new(&app).expect("Failed to initialize history manager"));
+            let audio_backup_manager = Arc::new(
+                AudioBackupManager::new(&app).expect("Failed to initialize audio backup manager"),
+            );
 
             // Add managers to Tauri's managed state
             app.manage(recording_manager.clone());
             app.manage(model_manager.clone());
             app.manage(transcription_manager.clone());
             app.manage(history_manager.clone());
+            app.manage(audio_backup_manager.clone());
 
             // Create the recording overlay window (hidden by default)
             utils::create_recording_overlay(&app.handle());
@@ -221,11 +226,13 @@ pub fn run() {
             shortcut::change_word_correction_threshold_setting,
             shortcut::change_paste_method_setting,
             shortcut::change_initial_prompt_setting,
+            shortcut::change_auto_polish_setting,
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,
             trigger_update_check,
             commands::cancel_operation,
+            commands::apply_polish_to_text,
             commands::get_app_dir_path,
             commands::models::get_available_models,
             commands::models::get_model_info,
@@ -254,7 +261,19 @@ pub fn run() {
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
-            commands::history::update_history_limit
+            commands::history::update_history_limit,
+            commands::history::get_latest_backup_audio,
+            commands::history::retranscribe_backup_audio,
+            commands::regex_filters::get_regex_filters,
+            commands::regex_filters::add_regex_filter,
+            commands::regex_filters::update_regex_filter,
+            commands::regex_filters::delete_regex_filter,
+            commands::regex_filters::toggle_regex_filter,
+            commands::polish_rules::get_polish_rules,
+            commands::polish_rules::add_polish_rule,
+            commands::polish_rules::update_polish_rule,
+            commands::polish_rules::delete_polish_rule,
+            commands::polish_rules::toggle_polish_rule
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -37,6 +37,28 @@ export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
 export const PasteMethodSchema = z.enum(["ctrl_v", "direct"]);
 export type PasteMethod = z.infer<typeof PasteMethodSchema>;
 
+export const RegexFilterSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  pattern: z.string(),
+  replacement: z.string(),
+  enabled: z.boolean(),
+});
+
+export type RegexFilter = z.infer<typeof RegexFilterSchema>;
+
+export const PolishRuleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  api_url: z.string(),
+  api_key: z.string(),
+  model: z.string(),
+  prompt: z.string(),
+  enabled: z.boolean(),
+});
+
+export type PolishRule = z.infer<typeof PolishRuleSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
@@ -57,6 +79,9 @@ export const SettingsSchema = z.object({
   history_limit: z.number().optional().default(5),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   initial_prompt: z.string().optional().default(""),
+  regex_filters: z.array(RegexFilterSchema).optional().default([]),
+  polish_rules: z.array(PolishRuleSchema).optional().default([]),
+  auto_polish: z.boolean().optional().default(false),
 });
 
 export const BindingResponseSchema = z.object({

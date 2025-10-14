@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings, AudioDevice } from "../lib/types";
+import { Settings, AudioDevice, RegexFilter, PolishRule } from "../lib/types";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -24,6 +24,20 @@ interface SettingsStore {
   resetBinding: (id: string) => Promise<void>;
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
   isUpdatingKey: (key: string) => boolean;
+
+  // Regex filter actions
+  getRegexFilters: () => Promise<RegexFilter[]>;
+  addRegexFilter: (name: string, pattern: string, replacement: string) => Promise<RegexFilter>;
+  updateRegexFilter: (id: string, name: string, pattern: string, replacement: string, enabled: boolean) => Promise<void>;
+  deleteRegexFilter: (id: string) => Promise<void>;
+  toggleRegexFilter: (id: string, enabled: boolean) => Promise<void>;
+
+  // Polish rule actions
+  getPolishRules: () => Promise<PolishRule[]>;
+  addPolishRule: (name: string, api_url: string, api_key: string, model: string, prompt: string) => Promise<PolishRule>;
+  updatePolishRule: (id: string, name: string, api_url: string, api_key: string, model: string, prompt: string, enabled: boolean) => Promise<void>;
+  deletePolishRule: (id: string) => Promise<void>;
+  togglePolishRule: (id: string, enabled: boolean) => Promise<void>;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -48,6 +62,9 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   custom_words: [],
   history_limit: 5,
   initial_prompt: "",
+  regex_filters: [],
+  polish_rules: [],
+  auto_polish: false,
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -236,6 +253,9 @@ export const useSettingsStore = create<SettingsStore>()(
           case "initial_prompt":
             await invoke("change_initial_prompt_setting", { prompt: value });
             break;
+          case "auto_polish":
+            await invoke("change_auto_polish_setting", { enabled: value });
+            break;
           case "bindings":
           case "selected_model":
             break;
@@ -341,6 +361,159 @@ export const useSettingsStore = create<SettingsStore>()(
         refreshAudioDevices(),
         refreshOutputDevices(),
       ]);
+    },
+
+    // Regex filter methods
+    getRegexFilters: async () => {
+      try {
+        const filters: RegexFilter[] = await invoke("get_regex_filters");
+        return filters;
+      } catch (error) {
+        console.error("Failed to get regex filters:", error);
+        return [];
+      }
+    },
+
+    addRegexFilter: async (name, pattern, replacement) => {
+      try {
+        const filter: RegexFilter = await invoke("add_regex_filter", {
+          name,
+          pattern,
+          replacement,
+        });
+        
+        // Update settings to include the new filter
+        const { refreshSettings } = get();
+        await refreshSettings();
+        
+        return filter;
+      } catch (error) {
+        console.error("Failed to add regex filter:", error);
+        throw error;
+      }
+    },
+
+    updateRegexFilter: async (id, name, pattern, replacement, enabled) => {
+      try {
+        await invoke("update_regex_filter", {
+          id,
+          name,
+          pattern,
+          replacement,
+          enabled,
+        });
+        
+        // Update settings to reflect the changes
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update regex filter:", error);
+        throw error;
+      }
+    },
+
+    deleteRegexFilter: async (id) => {
+      try {
+        await invoke("delete_regex_filter", { id });
+        
+        // Update settings to remove the deleted filter
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to delete regex filter:", error);
+        throw error;
+      }
+    },
+
+    toggleRegexFilter: async (id, enabled) => {
+      try {
+        await invoke("toggle_regex_filter", { id, enabled });
+        
+        // Update settings to reflect the toggle
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to toggle regex filter:", error);
+        throw error;
+      }
+    },
+
+    getPolishRules: async () => {
+      try {
+        const rules = await invoke<PolishRule[]>("get_polish_rules");
+        return rules;
+      } catch (error) {
+        console.error("Failed to get polish rules:", error);
+        throw error;
+      }
+    },
+
+    addPolishRule: async (name, api_url, api_key, model, prompt) => {
+      try {
+        const rule = await invoke<PolishRule>("add_polish_rule", {
+          name,
+          apiUrl: api_url,
+          apiKey: api_key,
+          model,
+          prompt,
+        });
+        
+        // Update settings to reflect the new rule
+        const { refreshSettings } = get();
+        await refreshSettings();
+        
+        return rule;
+      } catch (error) {
+        console.error("Failed to add polish rule:", error);
+        throw error;
+      }
+    },
+
+    updatePolishRule: async (id, name, api_url, api_key, model, prompt, enabled) => {
+      try {
+        await invoke("update_polish_rule", {
+          id,
+          name,
+          apiUrl: api_url,
+          apiKey: api_key,
+          model,
+          prompt,
+          enabled,
+        });
+        
+        // Update settings to reflect the changes
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update polish rule:", error);
+        throw error;
+      }
+    },
+
+    deletePolishRule: async (id) => {
+      try {
+        await invoke("delete_polish_rule", { id });
+        
+        // Update settings to reflect the deletion
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to delete polish rule:", error);
+        throw error;
+      }
+    },
+
+    togglePolishRule: async (id, enabled) => {
+      try {
+        await invoke("toggle_polish_rule", { id, enabled });
+        
+        // Update settings to reflect the toggle
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to toggle polish rule:", error);
+        throw error;
+      }
     },
   })),
 );
