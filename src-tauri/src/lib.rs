@@ -261,7 +261,12 @@ pub fn run() {
             commands::history::delete_history_entry,
             commands::history::update_history_limit,
             commands::history::get_latest_backup_audio,
-            commands::history::retranscribe_backup_audio
+            commands::history::retranscribe_backup_audio,
+            commands::regex_filters::get_regex_filters,
+            commands::regex_filters::add_regex_filter,
+            commands::regex_filters::update_regex_filter,
+            commands::regex_filters::delete_regex_filter,
+            commands::regex_filters::toggle_regex_filter
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

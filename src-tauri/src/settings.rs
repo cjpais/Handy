@@ -4,6 +4,27 @@ use tauri::{App, AppHandle};
 use tauri_plugin_store::StoreExt;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RegexFilter {
+    pub id: String,
+    pub name: String,
+    pub pattern: String,
+    pub replacement: String,
+    pub enabled: bool,
+}
+
+impl RegexFilter {
+    pub fn new(id: String, name: String, pattern: String, replacement: String) -> Self {
+        Self {
+            id,
+            name,
+            pattern,
+            replacement,
+            enabled: true,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ShortcutBinding {
     pub id: String,
     pub name: String,
@@ -118,6 +139,8 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default = "default_initial_prompt")]
     pub initial_prompt: String,
+    #[serde(default)]
+    pub regex_filters: Vec<RegexFilter>,
 }
 
 fn default_model() -> String {
@@ -208,6 +231,7 @@ pub fn get_default_settings() -> AppSettings {
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
         initial_prompt: default_initial_prompt(),
+        regex_filters: Vec::new(),
     }
 }
 

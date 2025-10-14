@@ -1,4 +1,4 @@
-use crate::audio_toolkit::apply_custom_words;
+use crate::audio_toolkit::{apply_custom_words, apply_regex_filters};
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
@@ -398,6 +398,13 @@ impl TranscriptionManager {
             result.text
         };
 
+        // Apply regex filters if any are configured
+        let filtered_result = if !settings.regex_filters.is_empty() {
+            apply_regex_filters(&corrected_result, &settings.regex_filters)
+        } else {
+            corrected_result
+        };
+
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
             " (translated)"
@@ -414,7 +421,7 @@ impl TranscriptionManager {
             }
         }
 
-        Ok(corrected_result.trim().to_string())
+        Ok(filtered_result.trim().to_string())
     }
 }
 

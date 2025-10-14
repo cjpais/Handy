@@ -59,6 +59,8 @@ tauri-plugin-fs = "2"
 rustfft = "6.4.0"
 strsim = "0.11.0"
 natural = "0.5.0"
+regex = "1.0"
+uuid = { version = "1.0", features = ["v4"] }
 chrono = "0.4"
 rusqlite = { version = "0.32", features = ["bundled"] }
 tauri-plugin-sql = { version = "2", features = ["sqlite"] }

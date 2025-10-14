@@ -1,5 +1,7 @@
 use natural::phonetics::soundex;
 use strsim::levenshtein;
+use regex::Regex;
+use crate::settings::RegexFilter;
 
 /// Applies custom word corrections to transcribed text using fuzzy matching
 ///
@@ -130,6 +132,41 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
     };
 
     (prefix, suffix)
+}
+
+/// Applies regex filters to text based on enabled filters
+///
+/// This function processes text through a series of regex filters,
+/// applying replacements for each enabled filter in order.
+///
+/// # Arguments
+/// * `text` - The input text to filter
+/// * `regex_filters` - List of regex filters to apply
+///
+/// # Returns
+/// The filtered text with all enabled regex replacements applied
+pub fn apply_regex_filters(text: &str, regex_filters: &[RegexFilter]) -> String {
+    let mut result = text.to_string();
+    
+    for filter in regex_filters {
+        if !filter.enabled {
+            continue;
+        }
+        
+        // Try to compile the regex pattern
+        match Regex::new(&filter.pattern) {
+            Ok(regex) => {
+                result = regex.replace_all(&result, &filter.replacement).to_string();
+            }
+            Err(e) => {
+                // Log the error but continue processing other filters
+                log::warn!("Invalid regex pattern '{}' in filter '{}': {}", 
+                          filter.pattern, filter.name, e);
+            }
+        }
+    }
+    
+    result
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings, AudioDevice } from "../lib/types";
+import { Settings, AudioDevice, RegexFilter } from "../lib/types";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -24,6 +24,13 @@ interface SettingsStore {
   resetBinding: (id: string) => Promise<void>;
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
   isUpdatingKey: (key: string) => boolean;
+
+  // Regex filter actions
+  getRegexFilters: () => Promise<RegexFilter[]>;
+  addRegexFilter: (name: string, pattern: string, replacement: string) => Promise<RegexFilter>;
+  updateRegexFilter: (id: string, name: string, pattern: string, replacement: string, enabled: boolean) => Promise<void>;
+  deleteRegexFilter: (id: string) => Promise<void>;
+  toggleRegexFilter: (id: string, enabled: boolean) => Promise<void>;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -48,6 +55,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   custom_words: [],
   history_limit: 5,
   initial_prompt: "",
+  regex_filters: [],
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -341,6 +349,81 @@ export const useSettingsStore = create<SettingsStore>()(
         refreshAudioDevices(),
         refreshOutputDevices(),
       ]);
+    },
+
+    // Regex filter methods
+    getRegexFilters: async () => {
+      try {
+        const filters: RegexFilter[] = await invoke("get_regex_filters");
+        return filters;
+      } catch (error) {
+        console.error("Failed to get regex filters:", error);
+        return [];
+      }
+    },
+
+    addRegexFilter: async (name, pattern, replacement) => {
+      try {
+        const filter: RegexFilter = await invoke("add_regex_filter", {
+          name,
+          pattern,
+          replacement,
+        });
+        
+        // Update settings to include the new filter
+        const { refreshSettings } = get();
+        await refreshSettings();
+        
+        return filter;
+      } catch (error) {
+        console.error("Failed to add regex filter:", error);
+        throw error;
+      }
+    },
+
+    updateRegexFilter: async (id, name, pattern, replacement, enabled) => {
+      try {
+        await invoke("update_regex_filter", {
+          id,
+          name,
+          pattern,
+          replacement,
+          enabled,
+        });
+        
+        // Update settings to reflect the changes
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update regex filter:", error);
+        throw error;
+      }
+    },
+
+    deleteRegexFilter: async (id) => {
+      try {
+        await invoke("delete_regex_filter", { id });
+        
+        // Update settings to remove the deleted filter
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to delete regex filter:", error);
+        throw error;
+      }
+    },
+
+    toggleRegexFilter: async (id, enabled) => {
+      try {
+        await invoke("toggle_regex_filter", { id, enabled });
+        
+        // Update settings to reflect the toggle
+        const { refreshSettings } = get();
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to toggle regex filter:", error);
+        throw error;
+      }
     },
   })),
 );

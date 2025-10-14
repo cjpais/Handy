@@ -3,6 +3,7 @@ import { ShowOverlay } from "./ShowOverlay";
 import { TranslateToEnglish } from "./TranslateToEnglish";
 import { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";
 import { CustomWords } from "./CustomWords";
+import { RegexFilters } from "./RegexFilters";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { StartHidden } from "./StartHidden";
 import { AutostartToggle } from "./AutostartToggle";
@@ -18,6 +19,7 @@ export const AdvancedSettings: React.FC = () => {
         <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
         <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
+        <RegexFilters descriptionMode="tooltip" grouped />
         <InitialPrompt descriptionMode="tooltip" grouped />
       </SettingsGroup>
     </div>

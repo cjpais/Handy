@@ -2153,6 +2153,7 @@ dependencies = [
  "natural",
  "once_cell",
  "rdev",
+ "regex",
  "reqwest 0.11.27",
  "rodio",
  "rubato",
@@ -2178,6 +2179,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "transcribe-rs",
+ "uuid",
  "vad-rs",
 ]
 
