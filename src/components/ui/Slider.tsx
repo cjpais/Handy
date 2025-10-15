@@ -41,6 +41,7 @@ export const Slider: React.FC<SliderProps> = ({
       descriptionMode={descriptionMode}
       grouped={grouped}
       layout="horizontal"
+      disabled={disabled}
     >
       <div className="w-full">
         <div className="flex items-center space-x-1 h-6">

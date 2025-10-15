@@ -25,21 +25,6 @@ export const AudioFeedback: React.FC<AudioFeedbackProps> = React.memo(
           descriptionMode={descriptionMode}
           grouped={grouped}
         />
-        {audioFeedbackEnabled && (
-          <div className="pl-6 pt-1 flex flex-col space-y-1">
-            <SoundPicker
-              soundType="start"
-              label="Start Sound"
-              description="Sound played when the transcription starts"
-            />
-            <SoundPicker
-              soundType="stop"
-              label="Stop Sound"
-              description="Sound played when the transcription ends"
-            />
-            <VolumeSlider />
-          </div>
-        )}
       </div>
     );
   },
