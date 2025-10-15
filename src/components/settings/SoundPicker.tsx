@@ -7,13 +7,11 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { useSettings } from "../../hooks/useSettings";
 
 interface SoundPickerProps {
-  soundType: "start" | "stop";
   label: string;
   description: string;
 }
 
 export const SoundPicker: React.FC<SoundPickerProps> = ({
-  soundType,
   label,
   description,
 }) => {
@@ -24,16 +22,19 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
   );
   const customSounds = useSettingsStore((state) => state.customSounds);
 
-  const selectedSound = getSetting(`${soundType}_sound`) ?? "default";
+  const selectedTheme = getSetting("sound_theme") ?? "marimba";
+
   const options: DropdownOption[] = [
-    { value: "default", label: "Default" },
+    { value: "marimba", label: "Marimba" },
     { value: "pop", label: "Pop" },
-    {
-      value: "custom",
-      label: "Custom",
-      disabled: !customSounds[soundType],
-    },
   ];
+
+  const handlePlayBothSounds = async () => {
+    await playTestSound("start");
+    // Wait 1 second before playing stop sound
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    await playTestSound("stop");
+  };
 
   return (
     <SettingContainer
@@ -42,28 +43,19 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
       grouped
       layout="horizontal"
     >
-      <div className="flex items-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => uploadCustomSound(soundType)}
-        >
-          <UploadIcon className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center gap-2">
         <Dropdown
-          selectedValue={selectedSound}
+          selectedValue={selectedTheme}
           onSelect={(value) =>
-            updateSetting(
-              `${soundType}_sound`,
-              value as "default" | "pop" | "custom",
-            )
+            updateSetting("sound_theme", value as "marimba" | "pop" | "custom")
           }
           options={options}
         />
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => playTestSound(soundType)}
+          onClick={handlePlayBothSounds}
+          title="Preview sound theme (plays start then stop)"
         >
           <PlayIcon className="h-4 w-4" />
         </Button>

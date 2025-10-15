@@ -42,8 +42,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   always_on_microphone: false,
   audio_feedback: true,
   audio_feedback_volume: 1.0,
-  start_sound: "default",
-  stop_sound: "default",
+  sound_theme: "marimba",
   start_hidden: false,
   autostart_enabled: false,
   push_to_talk: false,
@@ -72,10 +71,8 @@ const settingUpdaters: {
     invoke("change_audio_feedback_setting", { enabled: value }),
   audio_feedback_volume: (value) =>
     invoke("change_audio_feedback_volume_setting", { volume: value }),
-  start_sound: (value) =>
-    invoke("change_start_sound_setting", { sound: value }),
-  stop_sound: (value) =>
-    invoke("change_stop_sound_setting", { sound: value }),
+  sound_theme: (value) =>
+    invoke("change_sound_theme_setting", { theme: value }),
   start_hidden: (value) =>
     invoke("change_start_hidden_setting", { enabled: value }),
   autostart_enabled: (value) =>
@@ -206,7 +203,7 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-// Play a test sound
+    // Play a test sound
     playTestSound: async (soundType: "start" | "stop") => {
       try {
         await invoke("play_test_sound", { soundType });
@@ -232,8 +229,6 @@ export const useSettingsStore = create<SettingsStore>()(
         console.error("Failed to check custom sounds:", error);
       }
     },
-
-
 
     // Update a specific setting
     updateSetting: async <K extends keyof Settings>(
@@ -288,15 +283,15 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({
           settings: state.settings
             ? {
-              ...state.settings,
-              bindings: {
-                ...state.settings.bindings,
-                [id]: {
-                  ...state.settings.bindings[id],
-                  current_binding: binding,
+                ...state.settings,
+                bindings: {
+                  ...state.settings.bindings,
+                  [id]: {
+                    ...state.settings.bindings[id],
+                    current_binding: binding,
+                  },
                 },
-              },
-            }
+              }
             : null,
         }));
 
@@ -309,15 +304,15 @@ export const useSettingsStore = create<SettingsStore>()(
           set((state) => ({
             settings: state.settings
               ? {
-                ...state.settings,
-                bindings: {
-                  ...state.settings.bindings,
-                  [id]: {
-                    ...state.settings.bindings[id],
-                    current_binding: originalBinding,
+                  ...state.settings,
+                  bindings: {
+                    ...state.settings.bindings,
+                    [id]: {
+                      ...state.settings.bindings[id],
+                      current_binding: originalBinding,
+                    },
                   },
-                },
-              }
+                }
               : null,
           }));
         }

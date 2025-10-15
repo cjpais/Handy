@@ -11,12 +11,15 @@ export const VolumeSlider: React.FC<{ disabled?: boolean }> = ({
   return (
     <Slider
       value={audioFeedbackVolume}
-      onChange={(value: number) => updateSetting("audio_feedback_volume", value)}
+      onChange={(value: number) =>
+        updateSetting("audio_feedback_volume", value)
+      }
       min={0}
       max={1}
       step={0.1}
       label="Volume"
-      descriptionMode="inline"
+      description="Adjust the volume of audio feedback sounds"
+      descriptionMode="tooltip"
       grouped
       formatValue={(value) => `${Math.round(value * 100)}%`}
       disabled={disabled}

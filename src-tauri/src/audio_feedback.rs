@@ -55,10 +55,10 @@ pub fn play_sound(app: &AppHandle, resource_path: &str) {
 pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
     let settings = settings::get_settings(app);
     let sound_file = match sound_type {
-        SoundType::Start => settings.start_sound.to_path(),
-        SoundType::Stop => settings.stop_sound.to_path(),
+        SoundType::Start => settings.sound_theme.to_start_path(),
+        SoundType::Stop => settings.sound_theme.to_stop_path(),
     };
-    play_sound(app, sound_file);
+    play_sound(app, &sound_file);
 }
 
 fn play_audio_file(

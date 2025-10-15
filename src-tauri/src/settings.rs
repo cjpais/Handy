@@ -82,37 +82,27 @@ impl ModelUnloadTimeout {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum StartSound {
-    Default,
+pub enum SoundTheme {
+    Marimba,
     Pop,
     Custom,
 }
 
-impl StartSound {
-    pub fn to_path(&self) -> &'static str {
+impl SoundTheme {
+    fn as_str(&self) -> &'static str {
         match self {
-            StartSound::Default => "resources/rec_start.wav",
-            StartSound::Pop => "resources/pop_start.wav",
-            StartSound::Custom => "resources/custom_start.wav",
+            SoundTheme::Marimba => "marimba",
+            SoundTheme::Pop => "pop",
+            SoundTheme::Custom => "custom",
         }
     }
-}
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum StopSound {
-    Default,
-    Pop,
-    Custom,
-}
+    pub fn to_start_path(&self) -> String {
+        format!("resources/{}_start.wav", self.as_str())
+    }
 
-impl StopSound {
-    pub fn to_path(&self) -> &'static str {
-        match self {
-            StopSound::Default => "resources/rec_stop.wav",
-            StopSound::Pop => "resources/pop_stop.wav",
-            StopSound::Custom => "resources/custom_stop.wav",
-        }
+    pub fn to_stop_path(&self) -> String {
+        format!("resources/{}_stop.wav", self.as_str())
     }
 }
 
@@ -124,10 +114,8 @@ pub struct AppSettings {
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
     pub audio_feedback_volume: f32,
-    #[serde(default = "default_start_sound")]
-    pub start_sound: StartSound,
-    #[serde(default = "default_stop_sound")]
-    pub stop_sound: StopSound,
+    #[serde(default = "default_sound_theme")]
+    pub sound_theme: SoundTheme,
     #[serde(default = "default_start_hidden")]
     pub start_hidden: bool,
     #[serde(default = "default_autostart_enabled")]
@@ -207,12 +195,8 @@ fn default_audio_feedback_volume() -> f32 {
     1.0
 }
 
-fn default_start_sound() -> StartSound {
-    StartSound::Default
-}
-
-fn default_stop_sound() -> StopSound {
-    StopSound::Default
+fn default_sound_theme() -> SoundTheme {
+    SoundTheme::Marimba
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -244,8 +228,7 @@ pub fn get_default_settings() -> AppSettings {
         push_to_talk: true,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
-        start_sound: default_start_sound(),
-        stop_sound: default_stop_sound(),
+        sound_theme: default_sound_theme(),
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         selected_model: "".to_string(),
