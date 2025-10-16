@@ -26,7 +26,6 @@ interface SettingsStore {
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
   isUpdatingKey: (key: string) => boolean;
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
-  uploadCustomSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
 
   // Internal state setters
@@ -212,14 +211,6 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-    uploadCustomSound: async (soundType: "start" | "stop") => {
-      try {
-        await invoke("upload_custom_sound", { soundType });
-        get().checkCustomSounds();
-      } catch (error) {
-        console.error("Failed to upload custom sound:", error);
-      }
-    },
 
     checkCustomSounds: async () => {
       try {

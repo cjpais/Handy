@@ -89,7 +89,6 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
-        .plugin(tauri_plugin_dialog::init())
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
             // Apply macOS Accessory policy early if starting hidden
@@ -249,7 +248,6 @@ pub fn run() {
             commands::audio::set_selected_output_device,
             commands::audio::get_selected_output_device,
             commands::audio::play_test_sound,
-            commands::audio::load_custom_sound,
             commands::audio::check_custom_sounds,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,

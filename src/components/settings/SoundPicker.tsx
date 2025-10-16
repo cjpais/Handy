@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "../ui/Button";
 import { Dropdown, DropdownOption } from "../ui/Dropdown";
-import { PlayIcon, UploadIcon } from "lucide-react";
+import { PlayIcon } from "lucide-react";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useSettings } from "../../hooks/useSettings";
@@ -17,9 +17,6 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
 }) => {
   const { getSetting, updateSetting } = useSettings();
   const playTestSound = useSettingsStore((state) => state.playTestSound);
-  const uploadCustomSound = useSettingsStore(
-    (state) => state.uploadCustomSound,
-  );
   const customSounds = useSettingsStore((state) => state.customSounds);
 
   const selectedTheme = getSetting("sound_theme") ?? "marimba";
@@ -29,9 +26,14 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
     { value: "pop", label: "Pop" },
   ];
 
+  // Only add Custom option if both custom sound files exist
+  if (customSounds.start && customSounds.stop) {
+    options.push({ value: "custom", label: "Custom" });
+  }
+
   const handlePlayBothSounds = async () => {
     await playTestSound("start");
-    // Wait 1 second before playing stop sound
+    // Wait before playing stop sound
     await new Promise((resolve) => setTimeout(resolve, 800));
     await playTestSound("stop");
   };

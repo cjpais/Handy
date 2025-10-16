@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { AudioPlayer } from "../ui/AudioPlayer";
-import { ClipboardCopy, Star, Check, Trash2, Loader2 } from "lucide-react";
+import { Copy, Star, Check, Trash2 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -86,12 +86,12 @@ export const HistorySettings: React.FC = () => {
 
   const deleteAudioEntry = async (id: number) => {
     try {
-      await invoke("delete_history_entry", {id});
+      await invoke("delete_history_entry", { id });
     } catch (error) {
       console.error("Failed to delete audio entry:", error);
       throw error;
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -189,7 +189,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             {showCopied ? (
               <Check width={16} height={16} />
             ) : (
-              <ClipboardCopy width={16} height={16} />
+              <Copy width={16} height={16} />
             )}
           </button>
           <button
@@ -212,7 +212,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
             title="Delete entry"
           >
-            <Trash2 width={16} height={16}/>
+            <Trash2 width={16} height={16} />
           </button>
         </div>
       </div>

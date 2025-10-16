@@ -4,39 +4,7 @@ use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tauri_plugin_dialog::DialogExt;
 use tauri::{AppHandle, Manager};
-
-#[tauri::command(async)]
-pub fn load_custom_sound(app: AppHandle, sound_type: String) {
-    let app_handle = app.clone();
-    app.dialog()
-        .file()
-        .add_filter("Audio", &["wav"])
-        .pick_file(move |file_path| {
-            if let Some(source_path) = file_path {
-                let dest_path = match app_handle.path().resolve(
-                    format!("resources/custom_{}.wav", sound_type),
-                    tauri::path::BaseDirectory::Resource,
-                ) {
-                    Ok(path) => path,
-                    Err(e) => {
-                        eprintln!("Failed to resolve destination path: {}", e);
-                        return;
-                    }
-                };
-
-                if let Some(path) = source_path.as_path() {
-                    if let Err(e) = std::fs::copy(path, &dest_path) {
-                        eprintln!(
-                            "Failed to copy file from {:?} to {:?}: {}",
-                            path, dest_path, e
-                        );
-                    }
-                }
-            }
-        });
-}
 
 #[derive(Serialize)]
 pub struct CustomSounds {
@@ -47,8 +15,8 @@ pub struct CustomSounds {
 fn custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
     app.path()
         .resolve(
-            format!("resources/custom_{}.wav", sound_type),
-            tauri::path::BaseDirectory::Resource,
+            format!("custom_{}.wav", sound_type),
+            tauri::path::BaseDirectory::AppData,
         )
         .map_or(false, |path| path.exists())
 }
@@ -189,5 +157,5 @@ pub fn play_test_sound(app: AppHandle, sound_type: String) {
             return;
         }
     };
-    audio_feedback::play_feedback_sound(&app, sound);
+    audio_feedback::play_test_sound(&app, sound);
 }
