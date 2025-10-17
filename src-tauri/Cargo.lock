@@ -6924,9 +6924,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-rs"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77dbb8e1048585b7f0bc216d87025953e2f7b04a3e4f4489948f18ab847486a9"
+checksum = "856646076d3d9739998ba693ebfff3afe95c0cdb71d4fead32e761b11496094f"
 dependencies = [
  "async-openai",
  "async-trait",
