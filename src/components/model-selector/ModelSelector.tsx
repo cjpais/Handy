@@ -82,6 +82,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
             setModelStatus("error");
             setModelError(error || "Failed to load model");
             break;
+          case "unloaded":
+            setModelStatus("unloaded");
+            setModelError(null);
+            break;
         }
       },
     );

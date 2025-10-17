@@ -103,7 +103,7 @@ impl TranscriptionManager {
                                     let _ = app_handle_cloned.emit(
                                         "model-state-changed",
                                         ModelStateEvent {
-                                            event_type: "unloaded_due_to_idle".to_string(),
+                                            event_type: "unloaded".to_string(),
                                             model_id: None,
                                             model_name: None,
                                             error: None,
@@ -155,7 +155,7 @@ impl TranscriptionManager {
         let _ = self.app_handle.emit(
             "model-state-changed",
             ModelStateEvent {
-                event_type: "unloaded_manually".to_string(),
+                event_type: "unloaded".to_string(),
                 model_id: None,
                 model_name: None,
                 error: None,
