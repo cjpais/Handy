@@ -69,7 +69,7 @@ function App() {
   if (showOnboarding) {
     return (
       <div className="h-screen flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 gap-2">
           <HandyTextLogo width={200} />
           <Onboarding onModelSelected={handleModelSelected} />
         </div>

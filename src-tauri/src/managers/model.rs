@@ -70,7 +70,7 @@ impl ModelManager {
                 description: "Fast and fairly accurate.".to_string(),
                 filename: "ggml-small.bin".to_string(),
                 url: Some("https://blob.handy.computer/ggml-small.bin".to_string()),
-                size_mb: 244,
+                size_mb: 487,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -88,7 +88,7 @@ impl ModelManager {
                 description: "Good accuracy, medium speed".to_string(),
                 filename: "whisper-medium-q4_1.bin".to_string(),
                 url: Some("https://blob.handy.computer/whisper-medium-q4_1.bin".to_string()),
-                size_mb: 491, // Approximate size
+                size_mb: 492, // Approximate size
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -122,7 +122,7 @@ impl ModelManager {
                 description: "Good accuracy, but slow.".to_string(),
                 filename: "ggml-large-v3-q5_0.bin".to_string(),
                 url: Some("https://blob.handy.computer/ggml-large-v3-q5_0.bin".to_string()),
-                size_mb: 1080, // Approximate size
+                size_mb: 1100, // Approximate size
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
