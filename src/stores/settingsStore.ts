@@ -98,6 +98,8 @@ const settingUpdaters: {
     invoke("change_word_correction_threshold_setting", { threshold: value }),
   paste_method: (value) =>
     invoke("change_paste_method_setting", { method: value }),
+  clipboard_handling: (value) =>
+    invoke("change_clipboard_handling_setting", { handling: value }),
   history_limit: (value) => invoke("update_history_limit", { limit: value }),
 };
 

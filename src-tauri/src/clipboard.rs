@@ -1,4 +1,4 @@
-use crate::settings::{get_settings, PasteMethod};
+use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
 use enigo::Enigo;
 use enigo::Key;
 use enigo::Keyboard;
@@ -83,8 +83,19 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     println!("Using paste method: {:?}", paste_method);
 
+    // Perform the paste operation
     match paste_method {
-        PasteMethod::CtrlV => paste_via_clipboard(&text, &app_handle),
-        PasteMethod::Direct => paste_via_direct_input(&text),
+        PasteMethod::CtrlV => paste_via_clipboard(&text, &app_handle)?,
+        PasteMethod::Direct => paste_via_direct_input(&text)?,
     }
+
+    // After pasting, optionally copy to clipboard based on settings
+    if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
+        let clipboard = app_handle.clipboard();
+        clipboard
+            .write_text(&text)
+            .map_err(|e| format!("Failed to copy to clipboard: {}", e))?;
+    }
+
+    Ok(())
 }

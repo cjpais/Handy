@@ -6,7 +6,7 @@ use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
-use crate::settings::{self, get_settings, OverlayPosition, PasteMethod, SoundTheme};
+use crate::settings::{self, get_settings, ClipboardHandling, OverlayPosition, PasteMethod, SoundTheme};
 use crate::ManagedToggleState;
 
 pub fn init_shortcuts(app: &App) {
@@ -274,6 +274,22 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
         }
     };
     settings.paste_method = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match handling.as_str() {
+        "dont_modify" => ClipboardHandling::DontModify,
+        "copy_to_clipboard" => ClipboardHandling::CopyToClipboard,
+        other => {
+            eprintln!("Invalid clipboard handling '{}', defaulting to dont_modify", other);
+            ClipboardHandling::DontModify
+        }
+    };
+    settings.clipboard_handling = parsed;
     settings::write_settings(&app, settings);
     Ok(())
 }

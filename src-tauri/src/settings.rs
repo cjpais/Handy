@@ -40,6 +40,13 @@ pub enum PasteMethod {
     Direct,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ClipboardHandling {
+    DontModify,
+    CopyToClipboard,
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -53,6 +60,12 @@ impl Default for PasteMethod {
         return PasteMethod::Direct;
         #[cfg(not(target_os = "linux"))]
         return PasteMethod::CtrlV;
+    }
+}
+
+impl Default for ClipboardHandling {
+    fn default() -> Self {
+        ClipboardHandling::DontModify
     }
 }
 
@@ -146,6 +159,8 @@ pub struct AppSettings {
     pub history_limit: usize,
     #[serde(default)]
     pub paste_method: PasteMethod,
+    #[serde(default)]
+    pub clipboard_handling: ClipboardHandling,
 }
 
 fn default_model() -> String {
@@ -244,6 +259,7 @@ pub fn get_default_settings() -> AppSettings {
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
+        clipboard_handling: ClipboardHandling::default(),
     }
 }
 
