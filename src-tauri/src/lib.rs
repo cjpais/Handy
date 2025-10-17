@@ -76,7 +76,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
 
-    // Apply macOS Accessory policy early if starting hidden
+    // Apply macOS Accessory policy if starting hidden
     #[cfg(target_os = "macos")]
     {
         let settings = settings::get_settings(app_handle);
