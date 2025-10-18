@@ -41,7 +41,7 @@ pub async fn post_process_with_llm(
     model: String,
 ) -> Result<String, String> {
     debug!("Starting LLM post-processing with model: {}", model);
-    
+
     // Replace ${output} variable in the prompt with the actual text
     let processed_prompt = prompt.replace("${output}", &text);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
@@ -63,6 +63,8 @@ pub async fn post_process_with_llm(
         .post("https://openrouter.ai/api/v1/chat/completions")
         .header("Authorization", format!("Bearer {}", api_key))
         .header("Content-Type", "application/json")
+        .header("HTTP-Referer", "https://github.com/cjpais/Handy")
+        .header("X-Title", "Handy")
         .json(&request_body)
         .send()
         .await

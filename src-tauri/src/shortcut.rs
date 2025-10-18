@@ -374,11 +374,11 @@ pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), Stri
         return Err(format!("Prompt with id '{}' not found", id));
     }
     
-    // If the deleted prompt was selected, select the first one
-    if settings.post_process_selected_prompt_id == id {
-        if let Some(first_prompt) = settings.post_process_prompts.first() {
-            settings.post_process_selected_prompt_id = first_prompt.id.clone();
-        }
+    // If the deleted prompt was selected, select the first one or None
+    if settings.post_process_selected_prompt_id.as_ref() == Some(&id) {
+        settings.post_process_selected_prompt_id = settings.post_process_prompts
+            .first()
+            .map(|p| p.id.clone());
     }
     
     settings::write_settings(&app, settings);
@@ -394,7 +394,7 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
         return Err(format!("Prompt with id '{}' not found", id));
     }
     
-    settings.post_process_selected_prompt_id = id;
+    settings.post_process_selected_prompt_id = Some(id);
     settings::write_settings(&app, settings);
     Ok(())
 }

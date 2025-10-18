@@ -176,8 +176,8 @@ pub struct AppSettings {
     pub post_process_model: String,
     #[serde(default = "default_post_process_prompts")]
     pub post_process_prompts: Vec<LLMPrompt>,
-    #[serde(default = "default_post_process_selected_prompt_id")]
-    pub post_process_selected_prompt_id: String,
+    #[serde(default)]
+    pub post_process_selected_prompt_id: Option<String>,
 }
 
 fn default_model() -> String {
@@ -244,15 +244,7 @@ fn default_post_process_model() -> String {
 }
 
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
-    vec![LLMPrompt {
-        id: "default".to_string(),
-        name: "Improve Text".to_string(),
-        prompt: "Improve the following text: ${output}".to_string(),
-    }]
-}
-
-fn default_post_process_selected_prompt_id() -> String {
-    "default".to_string()
+    Vec::new()
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -305,7 +297,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_api_key: default_post_process_api_key(),
         post_process_model: default_post_process_model(),
         post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: default_post_process_selected_prompt_id(),
+        post_process_selected_prompt_id: None,
     }
 }
 

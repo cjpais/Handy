@@ -77,7 +77,7 @@ export const SettingsSchema = z.object({
   post_process_api_key: z.string().optional().default(""),
   post_process_model: z.string().optional().default(""),
   post_process_prompts: z.array(LLMPromptSchema).optional().default([]),
-  post_process_selected_prompt_id: z.string().optional().default("default"),
+  post_process_selected_prompt_id: z.string().nullable().optional(),
 });
 
 export const BindingResponseSchema = z.object({

@@ -18,7 +18,7 @@ export const PromptsConfiguration: React.FC = React.memo(() => {
 
   const enabled = getSetting("post_process_enabled") || false;
   const prompts = getSetting("post_process_prompts") || [];
-  const selectedPromptId = getSetting("post_process_selected_prompt_id") || "default";
+  const selectedPromptId = getSetting("post_process_selected_prompt_id") || "";
 
   const handlePromptSelect = (promptId: string) => {
     updateSetting("post_process_selected_prompt_id", promptId);
@@ -28,11 +28,13 @@ export const PromptsConfiguration: React.FC = React.memo(() => {
     if (!promptName.trim() || !promptText.trim()) return;
 
     try {
-      await invoke<LLMPrompt>("add_post_process_prompt", {
+      const newPrompt = await invoke<LLMPrompt>("add_post_process_prompt", {
         name: promptName.trim(),
         prompt: promptText.trim(),
       });
       await refreshSettings();
+      // Automatically select the newly created prompt
+      updateSetting("post_process_selected_prompt_id", newPrompt.id);
       setPromptName("");
       setPromptText("");
       setIsCreating(false);
@@ -109,7 +111,8 @@ export const PromptsConfiguration: React.FC = React.memo(() => {
             options={prompts.map((p) => ({ value: p.id, label: p.name }))}
             selectedValue={selectedPromptId}
             onSelect={handlePromptSelect}
-            disabled={isUpdating("post_process_selected_prompt_id") || isCreating || isEditing}
+            disabled={isUpdating("post_process_selected_prompt_id") || isCreating || isEditing || prompts.length === 0}
+            placeholder={prompts.length === 0 ? "No prompts available" : "Select a prompt"}
             className="flex-grow"
           />
           <Button
@@ -127,7 +130,7 @@ export const PromptsConfiguration: React.FC = React.memo(() => {
             onClick={() => handleDeletePrompt(selectedPromptId)}
             variant="secondary"
             size="md"
-            disabled={!selectedPromptId || prompts.length <= 1 || isCreating || isEditing}
+            disabled={!selectedPromptId || isCreating || isEditing}
           >
             Delete
           </Button>

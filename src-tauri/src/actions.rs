@@ -124,32 +124,37 @@ impl ShortcutAction for TranscribeAction {
                             // Apply LLM post-processing if enabled and configured
                             if settings.post_process_enabled 
                                 && !settings.post_process_api_key.is_empty() 
-                                && !settings.post_process_model.is_empty() 
+                                && !settings.post_process_model.is_empty()
+                                && settings.post_process_selected_prompt_id.is_some()
                             {
                                 debug!("LLM post-processing is enabled, attempting to process text");
                                 
                                 // Find the selected prompt
-                                if let Some(selected_prompt) = settings.post_process_prompts
-                                    .iter()
-                                    .find(|p| p.id == settings.post_process_selected_prompt_id) 
-                                {
-                                    let api_key = settings.post_process_api_key.clone();
-                                    let model = settings.post_process_model.clone();
-                                    let prompt = selected_prompt.prompt.clone();
-                                    let text_to_process = transcription.clone();
+                                if let Some(selected_prompt_id) = &settings.post_process_selected_prompt_id {
+                                    if let Some(selected_prompt) = settings.post_process_prompts
+                                        .iter()
+                                        .find(|p| &p.id == selected_prompt_id) 
+                                    {
+                                        let api_key = settings.post_process_api_key.clone();
+                                        let model = settings.post_process_model.clone();
+                                        let prompt = selected_prompt.prompt.clone();
+                                        let text_to_process = transcription.clone();
 
-                                    match post_process_with_llm(text_to_process, prompt, api_key, model).await {
-                                        Ok(processed_text) => {
-                                            debug!("LLM post-processing successful");
-                                            final_text = processed_text;
+                                        match post_process_with_llm(text_to_process, prompt, api_key, model).await {
+                                            Ok(processed_text) => {
+                                                debug!("LLM post-processing successful");
+                                                final_text = processed_text;
+                                            }
+                                            Err(e) => {
+                                                error!("LLM post-processing failed: {}. Using original transcription.", e);
+                                                // final_text remains as transcription (fallback)
+                                            }
                                         }
-                                        Err(e) => {
-                                            error!("LLM post-processing failed: {}. Using original transcription.", e);
-                                            // final_text remains as transcription (fallback)
-                                        }
+                                    } else {
+                                        debug!("Selected prompt not found, using original transcription");
                                     }
                                 } else {
-                                    error!("Selected prompt not found, skipping LLM post-processing");
+                                    debug!("No prompt selected, using original transcription");
                                 }
                             }
 

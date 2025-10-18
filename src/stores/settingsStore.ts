@@ -57,7 +57,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   post_process_api_key: "",
   post_process_model: "",
   post_process_prompts: [],
-  post_process_selected_prompt_id: "default",
+  post_process_selected_prompt_id: null,
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
