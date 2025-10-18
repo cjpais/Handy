@@ -5,7 +5,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
-use crate::settings::{self, get_settings, ClipboardHandling, OverlayPosition, PasteMethod, SoundTheme};
+use crate::settings::{self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme};
 use crate::ManagedToggleState;
 
 pub fn init_shortcuts(app: &AppHandle) {
@@ -288,6 +288,113 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
         }
     };
     settings.clipboard_handling = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_post_process_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.post_process_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_post_process_api_key_setting(app: AppHandle, api_key: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.post_process_api_key = api_key;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_post_process_model_setting(app: AppHandle, model: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.post_process_model = model;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn add_post_process_prompt(app: AppHandle, name: String, prompt: String) -> Result<LLMPrompt, String> {
+    let mut settings = settings::get_settings(&app);
+    
+    // Generate unique ID using timestamp and random component
+    let id = format!("prompt_{}", chrono::Utc::now().timestamp_millis());
+    
+    let new_prompt = LLMPrompt {
+        id: id.clone(),
+        name,
+        prompt,
+    };
+    
+    settings.post_process_prompts.push(new_prompt.clone());
+    settings::write_settings(&app, settings);
+    
+    Ok(new_prompt)
+}
+
+#[tauri::command]
+pub fn update_post_process_prompt(
+    app: AppHandle,
+    id: String,
+    name: String,
+    prompt: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    
+    if let Some(existing_prompt) = settings.post_process_prompts.iter_mut().find(|p| p.id == id) {
+        existing_prompt.name = name;
+        existing_prompt.prompt = prompt;
+        settings::write_settings(&app, settings);
+        Ok(())
+    } else {
+        Err(format!("Prompt with id '{}' not found", id))
+    }
+}
+
+#[tauri::command]
+pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    
+    // Don't allow deleting the last prompt
+    if settings.post_process_prompts.len() <= 1 {
+        return Err("Cannot delete the last prompt".to_string());
+    }
+    
+    // Find and remove the prompt
+    let original_len = settings.post_process_prompts.len();
+    settings.post_process_prompts.retain(|p| p.id != id);
+    
+    if settings.post_process_prompts.len() == original_len {
+        return Err(format!("Prompt with id '{}' not found", id));
+    }
+    
+    // If the deleted prompt was selected, select the first one
+    if settings.post_process_selected_prompt_id == id {
+        if let Some(first_prompt) = settings.post_process_prompts.first() {
+            settings.post_process_selected_prompt_id = first_prompt.id.clone();
+        }
+    }
+    
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    
+    // Verify the prompt exists
+    if !settings.post_process_prompts.iter().any(|p| p.id == id) {
+        return Err(format!("Prompt with id '{}' not found", id));
+    }
+    
+    settings.post_process_selected_prompt_id = id;
     settings::write_settings(&app, settings);
     Ok(())
 }

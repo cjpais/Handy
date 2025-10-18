@@ -1,4 +1,5 @@
 use crate::audio_feedback::{SoundType, play_feedback_sound};
+use crate::llm_processor::post_process_with_llm;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -116,7 +117,43 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            // Save to history
+                            // Get settings to check if LLM post-processing is enabled
+                            let settings = get_settings(&ah);
+                            let mut final_text = transcription.clone();
+
+                            // Apply LLM post-processing if enabled and configured
+                            if settings.post_process_enabled 
+                                && !settings.post_process_api_key.is_empty() 
+                                && !settings.post_process_model.is_empty() 
+                            {
+                                debug!("LLM post-processing is enabled, attempting to process text");
+                                
+                                // Find the selected prompt
+                                if let Some(selected_prompt) = settings.post_process_prompts
+                                    .iter()
+                                    .find(|p| p.id == settings.post_process_selected_prompt_id) 
+                                {
+                                    let api_key = settings.post_process_api_key.clone();
+                                    let model = settings.post_process_model.clone();
+                                    let prompt = selected_prompt.prompt.clone();
+                                    let text_to_process = transcription.clone();
+
+                                    match post_process_with_llm(text_to_process, prompt, api_key, model).await {
+                                        Ok(processed_text) => {
+                                            debug!("LLM post-processing successful");
+                                            final_text = processed_text;
+                                        }
+                                        Err(e) => {
+                                            error!("LLM post-processing failed: {}. Using original transcription.", e);
+                                            // final_text remains as transcription (fallback)
+                                        }
+                                    }
+                                } else {
+                                    error!("Selected prompt not found, skipping LLM post-processing");
+                                }
+                            }
+
+                            // Save to history (save original transcription, not processed)
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
                             tauri::async_runtime::spawn(async move {
@@ -127,11 +164,12 @@ impl ShortcutAction for TranscribeAction {
                                     error!("Failed to save transcription to history: {}", e);
                                 }
                             });
-                            let transcription_clone = transcription.clone();
+                            
+                            // Paste the final text (either processed or original)
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
                             ah.run_on_main_thread(move || {
-                                match utils::paste(transcription_clone, ah_clone.clone()) {
+                                match utils::paste(final_text, ah_clone.clone()) {
                                     Ok(()) => debug!(
                                         "Text pasted successfully in {:?}",
                                         paste_time.elapsed()

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings, AudioDevice } from "../lib/types";
+import { Settings, AudioDevice, LLMPrompt } from "../lib/types";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -53,6 +53,11 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   debug_mode: false,
   custom_words: [],
   history_limit: 5,
+  post_process_enabled: false,
+  post_process_api_key: "",
+  post_process_model: "",
+  post_process_prompts: [],
+  post_process_selected_prompt_id: "default",
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -101,6 +106,14 @@ const settingUpdaters: {
   clipboard_handling: (value) =>
     invoke("change_clipboard_handling_setting", { handling: value }),
   history_limit: (value) => invoke("update_history_limit", { limit: value }),
+  post_process_enabled: (value) =>
+    invoke("change_post_process_enabled_setting", { enabled: value }),
+  post_process_api_key: (value) =>
+    invoke("change_post_process_api_key_setting", { apiKey: value }),
+  post_process_model: (value) =>
+    invoke("change_post_process_model_setting", { model: value }),
+  post_process_selected_prompt_id: (value) =>
+    invoke("set_post_process_selected_prompt", { id: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

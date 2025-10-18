@@ -12,6 +12,13 @@ pub struct ShortcutBinding {
     pub current_binding: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LLMPrompt {
+    pub id: String,
+    pub name: String,
+    pub prompt: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
@@ -161,6 +168,16 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
+    #[serde(default = "default_post_process_enabled")]
+    pub post_process_enabled: bool,
+    #[serde(default = "default_post_process_api_key")]
+    pub post_process_api_key: String,
+    #[serde(default = "default_post_process_model")]
+    pub post_process_model: String,
+    #[serde(default = "default_post_process_prompts")]
+    pub post_process_prompts: Vec<LLMPrompt>,
+    #[serde(default = "default_post_process_selected_prompt_id")]
+    pub post_process_selected_prompt_id: String,
 }
 
 fn default_model() -> String {
@@ -214,6 +231,30 @@ fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
 }
 
+fn default_post_process_enabled() -> bool {
+    false
+}
+
+fn default_post_process_api_key() -> String {
+    String::new()
+}
+
+fn default_post_process_model() -> String {
+    String::new()
+}
+
+fn default_post_process_prompts() -> Vec<LLMPrompt> {
+    vec![LLMPrompt {
+        id: "default".to_string(),
+        name: "Improve Text".to_string(),
+        prompt: "Improve the following text: ${output}".to_string(),
+    }]
+}
+
+fn default_post_process_selected_prompt_id() -> String {
+    "default".to_string()
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -260,6 +301,11 @@ pub fn get_default_settings() -> AppSettings {
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
+        post_process_enabled: default_post_process_enabled(),
+        post_process_api_key: default_post_process_api_key(),
+        post_process_model: default_post_process_model(),
+        post_process_prompts: default_post_process_prompts(),
+        post_process_selected_prompt_id: default_post_process_selected_prompt_id(),
     }
 }
 

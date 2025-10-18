@@ -40,6 +40,14 @@ export type PasteMethod = z.infer<typeof PasteMethodSchema>;
 export const ClipboardHandlingSchema = z.enum(["dont_modify", "copy_to_clipboard"]);
 export type ClipboardHandling = z.infer<typeof ClipboardHandlingSchema>;
 
+export const LLMPromptSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  prompt: z.string(),
+});
+
+export type LLMPrompt = z.infer<typeof LLMPromptSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
@@ -65,6 +73,11 @@ export const SettingsSchema = z.object({
   history_limit: z.number().optional().default(5),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
+  post_process_enabled: z.boolean().optional().default(false),
+  post_process_api_key: z.string().optional().default(""),
+  post_process_model: z.string().optional().default(""),
+  post_process_prompts: z.array(LLMPromptSchema).optional().default([]),
+  post_process_selected_prompt_id: z.string().optional().default("default"),
 });
 
 export const BindingResponseSchema = z.object({
