@@ -1,4 +1,4 @@
-use crate::audio_feedback::{SoundType, play_feedback_sound};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -172,6 +172,19 @@ impl ShortcutAction for TranscribeAction {
     }
 }
 
+// Cancel Action
+struct CancelAction;
+
+impl ShortcutAction for CancelAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        utils::cancel_current_operation(app);
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // Nothing to do on stop for cancel
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -201,6 +214,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe".to_string(),
         Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "cancel".to_string(),
+        Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

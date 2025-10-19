@@ -239,6 +239,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_shortcut.to_string(),
         },
     );
+    bindings.insert(
+        "cancel".to_string(),
+        ShortcutBinding {
+            id: "cancel".to_string(),
+            name: "Cancel".to_string(),
+            description: "Cancels the current recording.".to_string(),
+            default_binding: "escape".to_string(),
+            current_binding: "escape".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,

@@ -384,6 +384,14 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
                 let settings = get_settings(ah);
 
                 if let Some(action) = ACTION_MAP.get(&binding_id_for_closure) {
+                    // Handle 'cancel' as a special one-shot action
+                    if binding_id_for_closure == "cancel" {
+                        if event.state == ShortcutState::Pressed {
+                            action.start(ah, &binding_id_for_closure, &shortcut_string);
+                        }
+                        return; // Skip the toggle/ptt logic for cancel
+                    }
+
                     if settings.push_to_talk {
                         if event.state == ShortcutState::Pressed {
                             action.start(ah, &binding_id_for_closure, &shortcut_string);
