@@ -170,6 +170,8 @@ pub struct AppSettings {
     pub clipboard_handling: ClipboardHandling,
     #[serde(default = "default_post_process_enabled")]
     pub post_process_enabled: bool,
+    #[serde(default = "default_post_process_base_url")]
+    pub post_process_base_url: String,
     #[serde(default = "default_post_process_api_key")]
     pub post_process_api_key: String,
     #[serde(default = "default_post_process_model")]
@@ -235,6 +237,10 @@ fn default_post_process_enabled() -> bool {
     false
 }
 
+fn default_post_process_base_url() -> String {
+    "https://api.openai.com/v1".to_string()
+}
+
 fn default_post_process_api_key() -> String {
     String::new()
 }
@@ -294,6 +300,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
         post_process_enabled: default_post_process_enabled(),
+        post_process_base_url: default_post_process_base_url(),
         post_process_api_key: default_post_process_api_key(),
         post_process_model: default_post_process_model(),
         post_process_prompts: default_post_process_prompts(),

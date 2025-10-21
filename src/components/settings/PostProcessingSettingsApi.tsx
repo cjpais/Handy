@@ -4,18 +4,33 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingContainer } from "../ui/SettingContainer";
 
-export const OpenRouterConfiguration: React.FC = React.memo(() => {
+export const PostProcessingSettingsApi: React.FC = React.memo(() => {
   const { getSetting, updateSetting, isUpdating } = useSettings();
   
   // States for edit mode
+  const [isEditingBaseUrl, setIsEditingBaseUrl] = useState(false);
   const [isEditingApiKey, setIsEditingApiKey] = useState(false);
   const [isEditingModel, setIsEditingModel] = useState(false);
+  const [tempBaseUrl, setTempBaseUrl] = useState("");
   const [tempApiKey, setTempApiKey] = useState("");
   const [tempModel, setTempModel] = useState("");
 
   const enabled = getSetting("post_process_enabled") || false;
+  const baseUrl = getSetting("post_process_base_url") || "";
   const apiKey = getSetting("post_process_api_key") || "";
   const model = getSetting("post_process_model") || "";
+
+  const showWarning = enabled && (!baseUrl || !apiKey || !model);
+
+  const handleStartEditBaseUrl = () => {
+    setTempBaseUrl(baseUrl);
+    setIsEditingBaseUrl(true);
+  };
+
+  const handleSaveBaseUrl = () => {
+    updateSetting("post_process_base_url", tempBaseUrl);
+    setIsEditingBaseUrl(false);
+  };
 
   const handleStartEditApiKey = () => {
     setTempApiKey(apiKey);
@@ -48,10 +63,54 @@ export const OpenRouterConfiguration: React.FC = React.memo(() => {
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      {showWarning && (
+        <div className="p-3 m-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600 dark:text-yellow-400">
+          Please configure Base URL, API Key and Model below to enable post-processing.
+        </div>
+      )}
+
       <SettingContainer
-        title="OpenRouter API Key"
-        description="Your OpenRouter API key for accessing LLM models."
+        title="Base URL"
+        description="OpenAI-compatible API base URL (e.g., https://api.openai.com/v1 for OpenAI, https://openrouter.ai/api/v1 for OpenRouter, http://localhost/v1 for local LLM)."
+        descriptionMode="tooltip"
+        layout="stacked"
+        grouped={true}
+      >
+        <div className="flex items-center gap-2">
+          <Input
+            type="text"
+            value={isEditingBaseUrl ? tempBaseUrl : baseUrl}
+            onChange={(e) => setTempBaseUrl(e.target.value)}
+            placeholder="https://api.openai.com/v1"
+            variant="compact"
+            disabled={!isEditingBaseUrl || isUpdating("post_process_base_url")}
+            className="flex-1"
+          />
+          {!isEditingBaseUrl ? (
+            <Button
+              onClick={handleStartEditBaseUrl}
+              variant="secondary"
+              size="md"
+            >
+              Edit
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSaveBaseUrl}
+              variant="primary"
+              size="md"
+              disabled={!tempBaseUrl.trim()}
+            >
+              Save
+            </Button>
+          )}
+        </div>
+      </SettingContainer>
+
+      <SettingContainer
+        title="API Key"
+        description="Your API key for the OpenAI-compatible endpoint."
         descriptionMode="tooltip"
         layout="stacked"
         grouped={true}
@@ -62,7 +121,7 @@ export const OpenRouterConfiguration: React.FC = React.memo(() => {
               type={isEditingApiKey ? "text" : "password"}
               value={isEditingApiKey ? tempApiKey : apiKey}
               onChange={(e) => setTempApiKey(e.target.value)}
-              placeholder="sk-or-v1-..."
+              placeholder="sk-..."
               variant="compact"
               disabled={!isEditingApiKey || isUpdating("post_process_api_key")}
               className="flex-grow"
@@ -90,8 +149,8 @@ export const OpenRouterConfiguration: React.FC = React.memo(() => {
       </SettingContainer>
 
       <SettingContainer
-        title="OpenRouter Model"
-        description="The OpenRouter model to use (e.g., google/gemini-2.0-flash, openai/gpt-oss-20b, openai/gpt-5-mini)."
+        title="Model"
+        description="The model to use (e.g., gpt-4, gpt-5 for OpenAI, or provider/model for OpenRouter)."
         descriptionMode="tooltip"
         layout="stacked"
         grouped={true}
@@ -101,7 +160,7 @@ export const OpenRouterConfiguration: React.FC = React.memo(() => {
             type="text"
             value={isEditingModel ? tempModel : model}
             onChange={(e) => setTempModel(e.target.value)}
-            placeholder="openai/gpt-5-mini"
+            placeholder="gpt-3.5-turbo"
             variant="compact"
             disabled={!isEditingModel || isUpdating("post_process_model")}
             className="flex-1"
@@ -126,6 +185,6 @@ export const OpenRouterConfiguration: React.FC = React.memo(() => {
           )}
         </div>
       </SettingContainer>
-    </>
+    </div>
   );
 });

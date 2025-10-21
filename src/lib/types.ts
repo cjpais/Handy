@@ -74,6 +74,7 @@ export const SettingsSchema = z.object({
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
   post_process_enabled: z.boolean().optional().default(false),
+  post_process_base_url: z.string().optional().default("https://api.openai.com/v1"),
   post_process_api_key: z.string().optional().default(""),
   post_process_model: z.string().optional().default(""),
   post_process_prompts: z.array(LLMPromptSchema).optional().default([]),

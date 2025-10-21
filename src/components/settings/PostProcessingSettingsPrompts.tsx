@@ -8,7 +8,7 @@ import { Dropdown } from "../ui/Dropdown";
 import { Textarea } from "../ui/Textarea";
 import type { LLMPrompt } from "../../lib/types";
 
-export const PromptsConfiguration: React.FC = React.memo(() => {
+export const PostProcessingSettingsPrompts: React.FC = React.memo(() => {
   const { getSetting, updateSetting, isUpdating, refreshSettings } = useSettings();
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

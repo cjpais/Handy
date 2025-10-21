@@ -19,7 +19,7 @@ export const PostProcessingToggle: React.FC<PostProcessingToggleProps> = React.m
         onChange={(enabled) => updateSetting("post_process_enabled", enabled)}
         isUpdating={isUpdating("post_process_enabled")}
         label="Post Process"
-        description="Enable post-processing of transcribed text using language models via OpenRouter API."
+        description="Enable post-processing of transcribed text using language models via OpenAI Compatible API."
         descriptionMode={descriptionMode}
         grouped={grouped}
       />

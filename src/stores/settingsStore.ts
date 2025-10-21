@@ -54,6 +54,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   custom_words: [],
   history_limit: 5,
   post_process_enabled: false,
+  post_process_base_url: "https://api.openai.com/v1",
   post_process_api_key: "",
   post_process_model: "",
   post_process_prompts: [],
@@ -108,6 +109,8 @@ const settingUpdaters: {
   history_limit: (value) => invoke("update_history_limit", { limit: value }),
   post_process_enabled: (value) =>
     invoke("change_post_process_enabled_setting", { enabled: value }),
+  post_process_base_url: (value) =>
+    invoke("change_post_process_base_url_setting", { baseUrl: value }),
   post_process_api_key: (value) =>
     invoke("change_post_process_api_key_setting", { apiKey: value }),
   post_process_model: (value) =>

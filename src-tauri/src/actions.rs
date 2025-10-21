@@ -1,4 +1,4 @@
-use crate::audio_feedback::{SoundType, play_feedback_sound};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::llm_processor::post_process_with_llm;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
@@ -122,25 +122,40 @@ impl ShortcutAction for TranscribeAction {
                             let mut final_text = transcription.clone();
 
                             // Apply LLM post-processing if enabled and configured
-                            if settings.post_process_enabled 
-                                && !settings.post_process_api_key.is_empty() 
+                            if settings.post_process_enabled
+                                && !settings.post_process_base_url.is_empty()
+                                && !settings.post_process_api_key.is_empty()
                                 && !settings.post_process_model.is_empty()
                                 && settings.post_process_selected_prompt_id.is_some()
                             {
-                                debug!("LLM post-processing is enabled, attempting to process text");
-                                
+                                debug!(
+                                    "LLM post-processing is enabled, attempting to process text"
+                                );
+
                                 // Find the selected prompt
-                                if let Some(selected_prompt_id) = &settings.post_process_selected_prompt_id {
-                                    if let Some(selected_prompt) = settings.post_process_prompts
+                                if let Some(selected_prompt_id) =
+                                    &settings.post_process_selected_prompt_id
+                                {
+                                    if let Some(selected_prompt) = settings
+                                        .post_process_prompts
                                         .iter()
-                                        .find(|p| &p.id == selected_prompt_id) 
+                                        .find(|p| &p.id == selected_prompt_id)
                                     {
+                                        let base_url = settings.post_process_base_url.clone();
                                         let api_key = settings.post_process_api_key.clone();
                                         let model = settings.post_process_model.clone();
                                         let prompt = selected_prompt.prompt.clone();
                                         let text_to_process = transcription.clone();
 
-                                        match post_process_with_llm(text_to_process, prompt, api_key, model).await {
+                                        match post_process_with_llm(
+                                            text_to_process,
+                                            prompt,
+                                            base_url,
+                                            api_key,
+                                            model,
+                                        )
+                                        .await
+                                        {
                                             Ok(processed_text) => {
                                                 debug!("LLM post-processing successful");
                                                 final_text = processed_text;
@@ -169,7 +184,7 @@ impl ShortcutAction for TranscribeAction {
                                     error!("Failed to save transcription to history: {}", e);
                                 }
                             });
-                            
+
                             // Paste the final text (either processed or original)
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
