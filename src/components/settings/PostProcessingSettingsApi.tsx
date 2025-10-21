@@ -20,8 +20,6 @@ export const PostProcessingSettingsApi: React.FC = React.memo(() => {
   const apiKey = getSetting("post_process_api_key") || "";
   const model = getSetting("post_process_model") || "";
 
-  const showWarning = enabled && (!baseUrl || !apiKey || !model);
-
   const handleStartEditBaseUrl = () => {
     setTempBaseUrl(baseUrl);
     setIsEditingBaseUrl(true);
@@ -63,13 +61,7 @@ export const PostProcessingSettingsApi: React.FC = React.memo(() => {
   }
 
   return (
-    <div className="space-y-4">
-      {showWarning && (
-        <div className="p-3 m-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-sm text-yellow-600 dark:text-yellow-400">
-          Please configure Base URL, API Key and Model below to enable post-processing.
-        </div>
-      )}
-
+    <>
       <SettingContainer
         title="Base URL"
         description="OpenAI-compatible API base URL (e.g., https://api.openai.com/v1 for OpenAI, https://openrouter.ai/api/v1 for OpenRouter, http://localhost/v1 for local LLM)."
@@ -185,6 +177,6 @@ export const PostProcessingSettingsApi: React.FC = React.memo(() => {
           )}
         </div>
       </SettingContainer>
-    </div>
+    </>
   );
 });
