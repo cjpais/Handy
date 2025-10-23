@@ -245,7 +245,7 @@ fn run_consumer(
         in_sample_rate,
         WINDOW_SIZE,
         BUCKETS,
-        80.0,   // vocal_min_hz
+        400.0,  // vocal_min_hz
         4000.0, // vocal_max_hz
     );
 
