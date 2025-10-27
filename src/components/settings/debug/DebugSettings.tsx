@@ -1,13 +1,13 @@
 import React from "react";
-import { WordCorrectionThreshold } from "./debug/WordCorrectionThreshold";
-import { AppDataDirectory } from "./AppDataDirectory";
-import { SettingsGroup } from "../ui/SettingsGroup";
-import { HistoryLimit } from "./HistoryLimit";
-import { PasteMethodSetting } from "./PasteMethod";
-import { ClipboardHandlingSetting } from "./ClipboardHandling";
-import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
-import { SoundPicker } from "./SoundPicker";
-import { PostProcessingToggle } from "./PostProcessingToggle";
+import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
+import { AppDataDirectory } from "../AppDataDirectory";
+import { SettingsGroup } from "../../ui/SettingsGroup";
+import { HistoryLimit } from "../HistoryLimit";
+import { PasteMethodSetting } from "../PasteMethod";
+import { ClipboardHandlingSetting } from "../ClipboardHandling";
+import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
+import { SoundPicker } from "../SoundPicker";
+import { PostProcessingToggle } from "../PostProcessingToggle";
 
 export const DebugSettings: React.FC = () => {
   return (

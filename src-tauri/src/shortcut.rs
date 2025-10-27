@@ -308,26 +308,84 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
 #[tauri::command]
 pub fn change_post_process_base_url_setting(
     app: AppHandle,
+    provider_id: String,
     base_url: String,
 ) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.post_process_base_url = base_url;
+    let label = settings
+        .post_process_provider(&provider_id)
+        .map(|provider| provider.label.clone())
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    let provider = settings
+        .post_process_provider_mut(&provider_id)
+        .expect("Provider looked up above must exist");
+
+    if !provider.allow_base_url_edit {
+        return Err(format!(
+            "Provider '{}' does not allow editing the base URL",
+            label
+        ));
+    }
+
+    provider.base_url = base_url;
     settings::write_settings(&app, settings);
     Ok(())
 }
 
 #[tauri::command]
-pub fn change_post_process_api_key_setting(app: AppHandle, api_key: String) -> Result<(), String> {
+pub fn change_post_process_api_key_setting(
+    app: AppHandle,
+    provider_id: String,
+    api_key: String,
+) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.post_process_api_key = api_key;
+    if !settings
+        .post_process_providers
+        .iter()
+        .any(|provider| provider.id == provider_id)
+    {
+        return Err(format!("Provider '{}' not found", provider_id));
+    }
+
+    settings.post_process_api_keys.insert(provider_id, api_key);
     settings::write_settings(&app, settings);
     Ok(())
 }
 
 #[tauri::command]
-pub fn change_post_process_model_setting(app: AppHandle, model: String) -> Result<(), String> {
+pub fn change_post_process_model_setting(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.post_process_model = model;
+    if !settings
+        .post_process_providers
+        .iter()
+        .any(|provider| provider.id == provider_id)
+    {
+        return Err(format!("Provider '{}' not found", provider_id));
+    }
+
+    settings.post_process_models.insert(provider_id, model);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_post_process_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if !settings
+        .post_process_providers
+        .iter()
+        .any(|provider| provider.id == provider_id)
+    {
+        return Err(format!("Provider '{}' not found", provider_id));
+    }
+
+    settings.post_process_provider_id = provider_id;
     settings::write_settings(&app, settings);
     Ok(())
 }

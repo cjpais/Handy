@@ -1,7 +1,7 @@
 use crate::settings;
 use crate::settings::OverlayPosition;
-use log::debug;
 use enigo::{Enigo, Mouse};
+use log::debug;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindowBuilder};
 
 const OVERLAY_WIDTH: f64 = 172.0;
@@ -24,7 +24,8 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
         if let Ok(mouse_location) = enigo.location() {
             if let Ok(monitors) = app_handle.available_monitors() {
                 for monitor in monitors {
-                    let is_within = is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
+                    let is_within =
+                        is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
                     if is_within {
                         return Some(monitor);
                     }
@@ -42,8 +43,14 @@ fn is_mouse_within_monitor(
     monitor_size: &PhysicalSize<u32>,
 ) -> bool {
     let (mouse_x, mouse_y) = mouse_pos;
-    let PhysicalPosition { x: monitor_x, y: monitor_y } = *monitor_pos;
-    let PhysicalSize { width: monitor_width, height: monitor_height } = *monitor_size;
+    let PhysicalPosition {
+        x: monitor_x,
+        y: monitor_y,
+    } = *monitor_pos;
+    let PhysicalSize {
+        width: monitor_width,
+        height: monitor_height,
+    } = *monitor_size;
 
     mouse_x >= monitor_x
         && mouse_x < (monitor_x + monitor_width as i32)
@@ -53,26 +60,26 @@ fn is_mouse_within_monitor(
 
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
     if let Some(monitor) = get_monitor_with_cursor(app_handle) {
-            let work_area = monitor.work_area();
-            let scale = monitor.scale_factor();
-            let work_area_width = work_area.size.width as f64 / scale;
-            let work_area_height = work_area.size.height as f64 / scale;
-            let work_area_x = work_area.position.x as f64 / scale;
-            let work_area_y = work_area.position.y as f64 / scale;
+        let work_area = monitor.work_area();
+        let scale = monitor.scale_factor();
+        let work_area_width = work_area.size.width as f64 / scale;
+        let work_area_height = work_area.size.height as f64 / scale;
+        let work_area_x = work_area.position.x as f64 / scale;
+        let work_area_y = work_area.position.y as f64 / scale;
 
-            let settings = settings::get_settings(app_handle);
+        let settings = settings::get_settings(app_handle);
 
-            let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
-            let y = match settings.overlay_position {
-                OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
-                OverlayPosition::Bottom | OverlayPosition::None => {
-                    // don't subtract the overlay height it puts it too far up
-                    work_area_y + work_area_height - OVERLAY_BOTTOM_OFFSET
-                }
-            };
+        let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
+        let y = match settings.overlay_position {
+            OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
+            OverlayPosition::Bottom | OverlayPosition::None => {
+                // don't subtract the overlay height it puts it too far up
+                work_area_y + work_area_height - OVERLAY_BOTTOM_OFFSET
+            }
+        };
 
-            return Some((x, y));
-        }
+        return Some((x, y));
+    }
     None
 }
 

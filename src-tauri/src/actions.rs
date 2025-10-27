@@ -4,7 +4,7 @@ use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
-use crate::settings::get_settings;
+use crate::settings::{get_settings, AppSettings};
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils;
 use log::{debug, error};
@@ -23,6 +23,95 @@ pub trait ShortcutAction: Send + Sync {
 
 // Transcribe Action
 struct TranscribeAction;
+
+async fn maybe_post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
+    if !settings.post_process_enabled {
+        return None;
+    }
+
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("Post-processing enabled but no provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "Post-processing skipped because provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
+        Some(id) => id.clone(),
+        None => {
+            debug!("Post-processing skipped because no prompt is selected");
+            return None;
+        }
+    };
+
+    let prompt = match settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| prompt.id == selected_prompt_id)
+    {
+        Some(prompt) => prompt.prompt.clone(),
+        None => {
+            debug!(
+                "Post-processing skipped because prompt '{}' was not found",
+                selected_prompt_id
+            );
+            return None;
+        }
+    };
+
+    if prompt.trim().is_empty() {
+        debug!("Post-processing skipped because the selected prompt is empty");
+        return None;
+    }
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+    let api_key = if api_key.trim().is_empty() {
+        None
+    } else {
+        Some(api_key)
+    };
+
+    match post_process_with_llm(transcription.to_string(), prompt, &provider, api_key, model).await
+    {
+        Ok(processed_text) => {
+            debug!(
+                "LLM post-processing succeeded for provider '{}'",
+                provider.id
+            );
+            Some(processed_text)
+        }
+        Err(error_message) => {
+            error!(
+                "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
+                provider.id,
+                error_message
+            );
+            None
+        }
+    }
+}
 
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
@@ -117,60 +206,13 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            // Get settings to check if LLM post-processing is enabled
                             let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
 
-                            // Apply LLM post-processing if enabled and configured
-                            if settings.post_process_enabled
-                                && !settings.post_process_base_url.is_empty()
-                                && !settings.post_process_api_key.is_empty()
-                                && !settings.post_process_model.is_empty()
-                                && settings.post_process_selected_prompt_id.is_some()
+                            if let Some(processed_text) =
+                                maybe_post_process_transcription(&settings, &transcription).await
                             {
-                                debug!(
-                                    "LLM post-processing is enabled, attempting to process text"
-                                );
-
-                                // Find the selected prompt
-                                if let Some(selected_prompt_id) =
-                                    &settings.post_process_selected_prompt_id
-                                {
-                                    if let Some(selected_prompt) = settings
-                                        .post_process_prompts
-                                        .iter()
-                                        .find(|p| &p.id == selected_prompt_id)
-                                    {
-                                        let base_url = settings.post_process_base_url.clone();
-                                        let api_key = settings.post_process_api_key.clone();
-                                        let model = settings.post_process_model.clone();
-                                        let prompt = selected_prompt.prompt.clone();
-                                        let text_to_process = transcription.clone();
-
-                                        match post_process_with_llm(
-                                            text_to_process,
-                                            prompt,
-                                            base_url,
-                                            api_key,
-                                            model,
-                                        )
-                                        .await
-                                        {
-                                            Ok(processed_text) => {
-                                                debug!("LLM post-processing successful");
-                                                final_text = processed_text;
-                                            }
-                                            Err(e) => {
-                                                error!("LLM post-processing failed: {}. Using original transcription.", e);
-                                                // final_text remains as transcription (fallback)
-                                            }
-                                        }
-                                    } else {
-                                        debug!("Selected prompt not found, using original transcription");
-                                    }
-                                } else {
-                                    debug!("No prompt selected, using original transcription");
-                                }
+                                final_text = processed_text;
                             }
 
                             // Save to history (save original transcription, not processed)
