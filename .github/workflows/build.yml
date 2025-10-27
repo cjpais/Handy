@@ -288,3 +288,25 @@ jobs:
             src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/msi/*.msi
             src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30
+  lint-pr:
+    # This job is only relevant for pull requests, so we'll skip it on pushes.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+        PR_TITLE: ${{ github.event.pull_request.title }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        with:
+          title: ${{ env.PR_TITLE }}
+          # We are more strict than the default config, so we need to specify our own.
+          # See https://github.com/amannn/action-semantic-pull-request/blob/master/README.md#configuration
+          # for more details.
+          scopes: |
+            deps
+            deps-dev
+            github
+            npm
+            release
+            typescript
