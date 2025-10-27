@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings, AudioDevice, PostProcessProvider } from "../lib/types";
+import { Settings, AudioDevice } from "../lib/types";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -29,6 +29,7 @@ interface SettingsStore {
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
+  updatePostProcessSetting: (settingType: 'base_url' | 'api_key' | 'model', providerId: string, value: string) => Promise<void>;
   updatePostProcessBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
   updatePostProcessApiKey: (providerId: string, apiKey: string) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
@@ -44,41 +45,8 @@ interface SettingsStore {
   setCustomSounds: (sounds: { start: boolean; stop: boolean }) => void;
 }
 
-const DEFAULT_POST_PROCESS_PROVIDERS: PostProcessProvider[] = [
-  {
-    id: "openai",
-    label: "OpenAI",
-    base_url: "https://api.openai.com/v1",
-    allow_base_url_edit: false,
-    models_endpoint: "/models",
-    kind: "openai_compatible",
-  },
-  {
-    id: "openrouter",
-    label: "OpenRouter",
-    base_url: "https://openrouter.ai/api/v1",
-    allow_base_url_edit: false,
-    models_endpoint: "/models",
-    kind: "openai_compatible",
-  },
-  {
-    id: "anthropic",
-    label: "Anthropic",
-    base_url: "https://api.anthropic.com/v1",
-    allow_base_url_edit: false,
-    models_endpoint: "/models",
-    kind: "anthropic",
-  },
-  {
-    id: "custom",
-    label: "Custom",
-    base_url: "http://localhost:11434/v1",
-    allow_base_url_edit: true,
-    models_endpoint: "/models",
-    kind: "openai_compatible",
-  },
-];
-
+// Note: Default post-processing settings are now managed in Rust
+// Settings will always have providers after migration
 const DEFAULT_SETTINGS: Partial<Settings> = {
   always_on_microphone: false,
   audio_feedback: true,
@@ -95,23 +63,6 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   debug_mode: false,
   custom_words: [],
   history_limit: 5,
-  post_process_enabled: false,
-  post_process_provider_id: "openai",
-  post_process_providers: DEFAULT_POST_PROCESS_PROVIDERS,
-  post_process_api_keys: {
-    openai: "",
-    openrouter: "",
-    anthropic: "",
-    custom: "",
-  },
-  post_process_models: {
-    openai: "",
-    openrouter: "",
-    anthropic: "",
-    custom: "",
-  },
-  post_process_prompts: [],
-  post_process_selected_prompt_id: null,
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -430,61 +381,54 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-    updatePostProcessBaseUrl: async (providerId, baseUrl) => {
+    // Generic updater for post-processing provider settings
+    updatePostProcessSetting: async (
+      settingType: 'base_url' | 'api_key' | 'model',
+      providerId: string,
+      value: string
+    ) => {
       const { setUpdating, refreshSettings } = get();
-      const updateKey = `post_process_base_url:${providerId}`;
+      const updateKey = `post_process_${settingType}:${providerId}`;
+
+      // Map setting types to command names
+      const commandMap = {
+        base_url: 'change_post_process_base_url_setting',
+        api_key: 'change_post_process_api_key_setting',
+        model: 'change_post_process_model_setting',
+      };
+
+      // Map setting types to param names
+      const paramMap = {
+        base_url: 'baseUrl',
+        api_key: 'apiKey',
+        model: 'model',
+      };
 
       setUpdating(updateKey, true);
 
       try {
-        await invoke("change_post_process_base_url_setting", {
+        await invoke(commandMap[settingType], {
           providerId,
-          baseUrl,
+          [paramMap[settingType]]: value,
         });
         await refreshSettings();
       } catch (error) {
-        console.error("Failed to update post-process base URL:", error);
+        console.error(`Failed to update post-process ${settingType.replace('_', ' ')}:`, error);
       } finally {
         setUpdating(updateKey, false);
       }
+    },
+
+    updatePostProcessBaseUrl: async (providerId, baseUrl) => {
+      return get().updatePostProcessSetting('base_url', providerId, baseUrl);
     },
 
     updatePostProcessApiKey: async (providerId, apiKey) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = `post_process_api_key:${providerId}`;
-
-      setUpdating(updateKey, true);
-
-      try {
-        await invoke("change_post_process_api_key_setting", {
-          providerId,
-          apiKey,
-        });
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to update post-process API key:", error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
+      return get().updatePostProcessSetting('api_key', providerId, apiKey);
     },
 
     updatePostProcessModel: async (providerId, model) => {
-      const { setUpdating, refreshSettings } = get();
-      const updateKey = `post_process_model:${providerId}`;
-
-      setUpdating(updateKey, true);
-
-      try {
-        await invoke("change_post_process_model_setting", {
-          providerId,
-          model,
-        });
-        await refreshSettings();
-      } catch (error) {
-        console.error("Failed to update post-process model:", error);
-      } finally {
-        setUpdating(updateKey, false);
-      }
+      return get().updatePostProcessSetting('model', providerId, model);
     },
 
     fetchPostProcessModels: async (providerId) => {
@@ -504,10 +448,7 @@ export const useSettingsStore = create<SettingsStore>()(
         }
 
         const currentSettings = get().settings;
-        const providers =
-          currentSettings?.post_process_providers?.length
-            ? currentSettings.post_process_providers
-            : DEFAULT_POST_PROCESS_PROVIDERS;
+        const providers = currentSettings?.post_process_providers || [];
 
         const provider = providers.find((p) => p.id === providerId);
         if (!provider) {

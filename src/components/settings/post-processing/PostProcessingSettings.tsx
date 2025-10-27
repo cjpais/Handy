@@ -63,8 +63,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         <div className="flex items-center gap-2">
           <BaseUrlField
             value={state.baseUrl}
-            onChange={state.setBaseUrl}
-            onBlur={state.commitBaseUrl}
+            onBlur={state.handleBaseUrlChange}
             placeholder="https://api.openai.com/v1"
             disabled={
               !state.selectedProvider?.allow_base_url_edit ||
@@ -85,8 +84,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         <div className="flex items-center gap-2">
           <ApiKeyField
             value={state.apiKey}
-            onChange={state.setApiKey}
-            onBlur={state.commitApiKey}
+            onBlur={state.handleApiKeyChange}
             placeholder="sk-..."
             disabled={state.isApiKeyUpdating}
             className="min-w-[320px]"
@@ -118,7 +116,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             }
             onSelect={state.handleModelSelect}
             onCreate={state.handleModelCreate}
-            onBlur={state.commitModel}
+            onBlur={state.handleModelChange}
             className="flex-1 min-w-[380px]"
           />
           <ResetButton

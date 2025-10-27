@@ -1,43 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useSettings } from "../../../hooks/useSettings";
 import type { PostProcessProvider } from "../../../lib/types";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
-
-const FALLBACK_PROVIDERS: PostProcessProvider[] = [
-  {
-    id: "openai",
-    label: "OpenAI",
-    base_url: "https://api.openai.com/v1",
-    allow_base_url_edit: false,
-    models_endpoint: "/models",
-    kind: "openai_compatible",
-  },
-  {
-    id: "openrouter",
-    label: "OpenRouter",
-    base_url: "https://openrouter.ai/api/v1",
-    allow_base_url_edit: false,
-    models_endpoint: "/models",
-    kind: "openai_compatible",
-  },
-  {
-    id: "anthropic",
-    label: "Anthropic",
-    base_url: "https://api.anthropic.com/v1",
-    allow_base_url_edit: false,
-    models_endpoint: "/models",
-    kind: "anthropic",
-  },
-  {
-    id: "custom",
-    label: "Custom",
-    base_url: "http://localhost:11434/v1",
-    allow_base_url_edit: true,
-    models_endpoint: "/models",
-    kind: "openai_compatible",
-  },
-];
 
 type PostProcessProviderState = {
   enabled: boolean;
@@ -46,15 +11,13 @@ type PostProcessProviderState = {
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
   baseUrl: string;
-  setBaseUrl: (value: string) => void;
-  commitBaseUrl: () => void;
+  handleBaseUrlChange: (value: string) => void;
   isBaseUrlUpdating: boolean;
   apiKey: string;
-  setApiKey: (value: string) => void;
-  commitApiKey: () => void;
+  handleApiKeyChange: (value: string) => void;
   isApiKeyUpdating: boolean;
   model: string;
-  commitModel: () => void;
+  handleModelChange: (value: string) => void;
   modelOptions: ModelOption[];
   isModelUpdating: boolean;
   isFetchingModels: boolean;
@@ -78,16 +41,11 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   const enabled = settings?.post_process_enabled || false;
 
-  const providers = useMemo(() => {
-    const configured = settings?.post_process_providers || [];
-    return configured.length > 0 ? configured : FALLBACK_PROVIDERS;
-  }, [settings?.post_process_providers]);
+  // Settings are guaranteed to have providers after migration
+  const providers = settings?.post_process_providers || [];
 
   const selectedProviderId = useMemo(() => {
-    if (settings?.post_process_provider_id) {
-      return settings.post_process_provider_id;
-    }
-    return providers[0]?.id ?? "openai";
+    return settings?.post_process_provider_id || providers[0]?.id || "openai";
   }, [providers, settings?.post_process_provider_id]);
 
   const selectedProvider = useMemo(() => {
@@ -97,26 +55,10 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     );
   }, [providers, selectedProviderId]);
 
-  const storedBaseUrl = selectedProvider?.base_url ?? "";
-  const storedApiKey =
-    settings?.post_process_api_keys?.[selectedProviderId] ?? "";
-  const storedModel = settings?.post_process_models?.[selectedProviderId] ?? "";
-
-  const [baseUrl, setBaseUrl] = useState(storedBaseUrl);
-  const [apiKey, setApiKey] = useState(storedApiKey);
-  const [model, setModel] = useState(storedModel);
-
-  useEffect(() => {
-    setBaseUrl(storedBaseUrl);
-  }, [storedBaseUrl]);
-
-  useEffect(() => {
-    setApiKey(storedApiKey);
-  }, [storedApiKey]);
-
-  useEffect(() => {
-    setModel(storedModel);
-  }, [storedModel]);
+  // Use settings directly as single source of truth
+  const baseUrl = selectedProvider?.base_url ?? "";
+  const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
+  const model = settings?.post_process_models?.[selectedProviderId] ?? "";
 
   const providerOptions = useMemo<DropdownOption[]>(() => {
     return providers.map((provider) => ({
@@ -134,41 +76,41 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     [selectedProviderId, setPostProcessProvider],
   );
 
-  const commitBaseUrl = useCallback(() => {
-    if (!selectedProvider || !selectedProvider.allow_base_url_edit) {
-      return;
-    }
-    const trimmed = baseUrl.trim();
-    if (trimmed && trimmed !== storedBaseUrl) {
-      void updatePostProcessBaseUrl(selectedProvider.id, trimmed);
-    }
-  }, [
-    baseUrl,
-    selectedProvider,
-    storedBaseUrl,
-    updatePostProcessBaseUrl,
-  ]);
+  const handleBaseUrlChange = useCallback(
+    (value: string) => {
+      if (!selectedProvider || !selectedProvider.allow_base_url_edit) {
+        return;
+      }
+      const trimmed = value.trim();
+      if (trimmed && trimmed !== baseUrl) {
+        void updatePostProcessBaseUrl(selectedProvider.id, trimmed);
+      }
+    },
+    [selectedProvider, baseUrl, updatePostProcessBaseUrl],
+  );
 
-  const commitApiKey = useCallback(() => {
-    const trimmed = apiKey.trim();
-    if (trimmed !== storedApiKey) {
-      void updatePostProcessApiKey(selectedProviderId, trimmed);
-    }
-  }, [apiKey, storedApiKey, selectedProviderId, updatePostProcessApiKey]);
+  const handleApiKeyChange = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (trimmed !== apiKey) {
+        void updatePostProcessApiKey(selectedProviderId, trimmed);
+      }
+    },
+    [apiKey, selectedProviderId, updatePostProcessApiKey],
+  );
 
-  const commitModel = useCallback(() => {
-    const trimmed = model.trim();
-    if (trimmed !== model) {
-      setModel(trimmed);
-    }
-    if (trimmed !== storedModel) {
-      void updatePostProcessModel(selectedProviderId, trimmed);
-    }
-  }, [model, storedModel, selectedProviderId, updatePostProcessModel]);
+  const handleModelChange = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (trimmed !== model) {
+        void updatePostProcessModel(selectedProviderId, trimmed);
+      }
+    },
+    [model, selectedProviderId, updatePostProcessModel],
+  );
 
   const handleModelSelect = useCallback(
     (value: string) => {
-      setModel(value);
       void updatePostProcessModel(selectedProviderId, value.trim());
     },
     [selectedProviderId, updatePostProcessModel],
@@ -176,7 +118,6 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   const handleModelCreate = useCallback(
     (value: string) => {
-      setModel(value);
       void updatePostProcessModel(selectedProviderId, value);
     },
     [selectedProviderId, updatePostProcessModel],
@@ -199,15 +140,16 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       options.push({ value: trimmed, label: trimmed });
     };
 
+    // Add available models from API
     for (const candidate of availableModelsRaw) {
       upsert(candidate);
     }
 
-    upsert(storedModel);
+    // Ensure current model is in the list
     upsert(model);
 
     return options;
-  }, [availableModelsRaw, storedModel, model]);
+  }, [availableModelsRaw, model]);
 
   const isBaseUrlUpdating = isUpdating(
     `post_process_base_url:${selectedProviderId}`,
@@ -248,15 +190,13 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     selectedProvider,
     isCustomProvider,
     baseUrl,
-    setBaseUrl,
-    commitBaseUrl,
+    handleBaseUrlChange,
     isBaseUrlUpdating,
     apiKey,
-    setApiKey,
-    commitApiKey,
+    handleApiKeyChange,
     isApiKeyUpdating,
     model,
-    commitModel,
+    handleModelChange,
     modelOptions,
     isModelUpdating,
     isFetchingModels,

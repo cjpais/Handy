@@ -11,12 +11,6 @@ import type {
 export type SelectOption = {
   value: string;
   label: string;
-  disabled?: boolean;
-};
-
-type InternalOption = {
-  value: string;
-  label: string;
   isDisabled?: boolean;
 };
 
@@ -50,7 +44,7 @@ const hoverBackground = "color-mix(in srgb, var(--color-logo-primary) 12%, trans
 const focusBackground = "color-mix(in srgb, var(--color-logo-primary) 20%, transparent)";
 const neutralBorder = "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)";
 
-const selectStyles: StylesConfig<InternalOption, false> = {
+const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
     minHeight: 40,
@@ -135,36 +129,25 @@ export const Select: React.FC<SelectProps> = React.memo(
     formatCreateLabel,
     onCreateOption,
   }) => {
-    const mappedOptions = React.useMemo(
-      () =>
-        options.map((option) => ({
-          value: option.value,
-          label: option.label,
-          isDisabled: option.disabled,
-        })),
-      [options],
-    );
-
     const selectValue = React.useMemo(() => {
       if (!value) return null;
-      const existing = mappedOptions.find((option) => option.value === value);
+      const existing = options.find((option) => option.value === value);
       if (existing) return existing;
-      return { value, label: value };
-    }, [value, mappedOptions]);
+      return { value, label: value, isDisabled: false };
+    }, [value, options]);
 
     const handleChange = (
-      option: SingleValue<InternalOption>,
-      action: ActionMeta<InternalOption>,
+      option: SingleValue<SelectOption>,
+      action: ActionMeta<SelectOption>,
     ) => {
-      // Cast back to the consumer-facing action type
-      onChange(option?.value ?? null, action as ActionMeta<SelectOption>);
+      onChange(option?.value ?? null, action);
     };
 
-    const sharedProps: Partial<ReactSelectProps<InternalOption, false>> = {
+    const sharedProps: Partial<ReactSelectProps<SelectOption, false>> = {
       className,
       classNamePrefix: "app-select",
       value: selectValue,
-      options: mappedOptions,
+      options,
       onChange: handleChange,
       placeholder,
       isDisabled: disabled,
@@ -176,7 +159,7 @@ export const Select: React.FC<SelectProps> = React.memo(
 
     if (isCreatable) {
       return (
-        <CreatableSelect<InternalOption, false>
+        <CreatableSelect<SelectOption, false>
           {...sharedProps}
           onCreateOption={onCreateOption}
           formatCreateLabel={formatCreateLabel}
@@ -184,7 +167,7 @@ export const Select: React.FC<SelectProps> = React.memo(
       );
     }
 
-    return <SelectComponent<InternalOption, false> {...sharedProps} />;
+    return <SelectComponent<SelectOption, false> {...sharedProps} />;
   },
 );
 

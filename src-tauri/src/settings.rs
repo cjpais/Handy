@@ -152,9 +152,15 @@ impl SoundTheme {
     }
 }
 
+// Current version of the settings structure
+// Increment this when adding migrations
+const SETTINGS_VERSION: u32 = 1;
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppSettings {
+    #[serde(default)]
+    pub version: u32,
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
     pub audio_feedback: bool,
@@ -208,6 +214,7 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    // Legacy fields for migration from version 0 -> 1
     #[serde(default)]
     #[serde(rename = "post_process_base_url")]
     #[serde(skip_serializing)]
@@ -363,6 +370,7 @@ pub fn get_default_settings() -> AppSettings {
     );
 
     AppSettings {
+        version: SETTINGS_VERSION,
         bindings,
         push_to_talk: true,
         audio_feedback: false,
@@ -420,139 +428,101 @@ impl AppSettings {
     }
 }
 
-fn ensure_post_process_settings(settings: &mut AppSettings) -> bool {
-    let mut changed = false;
-
-    let mut required_providers = default_post_process_providers();
-
+/// Migrate settings from version 0 to version 1
+/// This adds multi-provider support and migrates legacy single-provider config
+fn migrate_v0_to_v1(settings: &mut AppSettings) {
+    // Initialize providers if empty
     if settings.post_process_providers.is_empty() {
-        settings.post_process_providers = required_providers.clone();
-        changed = true;
-    } else {
-        for default_provider in required_providers.drain(..) {
-            match settings
-                .post_process_providers
-                .iter_mut()
-                .find(|provider| provider.id == default_provider.id)
-            {
-                Some(existing) => {
-                    // Keep non-custom providers aligned with defaults so users can't accidentally edit protected fields
-                    if existing.id != "custom" {
-                        if existing.base_url != default_provider.base_url {
-                            existing.base_url = default_provider.base_url.clone();
-                            changed = true;
-                        }
-                        if existing.allow_base_url_edit != default_provider.allow_base_url_edit {
-                            existing.allow_base_url_edit = default_provider.allow_base_url_edit;
-                            changed = true;
-                        }
-                    }
-                    if existing.label != default_provider.label {
-                        existing.label = default_provider.label.clone();
-                        changed = true;
-                    }
-                    if existing.models_endpoint != default_provider.models_endpoint {
-                        existing.models_endpoint = default_provider.models_endpoint.clone();
-                        changed = true;
-                    }
-                    if existing.kind != default_provider.kind {
-                        existing.kind = default_provider.kind;
-                        changed = true;
-                    }
-                }
-                None => {
-                    settings.post_process_providers.push(default_provider);
-                    changed = true;
-                }
-            }
-        }
+        settings.post_process_providers = default_post_process_providers();
     }
 
-    if settings.post_process_provider_id.is_empty()
-        || !settings
+    // Ensure all default providers exist
+    let required_providers = default_post_process_providers();
+    for default_provider in required_providers {
+        if !settings
             .post_process_providers
             .iter()
-            .any(|provider| provider.id == settings.post_process_provider_id)
-    {
-        settings.post_process_provider_id = default_post_process_provider_id();
-        changed = true;
+            .any(|p| p.id == default_provider.id)
+        {
+            settings.post_process_providers.push(default_provider);
+        }
     }
 
+    // Initialize hashmaps for all providers
     for provider in &settings.post_process_providers {
-        if !settings.post_process_api_keys.contains_key(&provider.id) {
-            settings
-                .post_process_api_keys
-                .insert(provider.id.clone(), String::new());
-            changed = true;
-        }
-        if !settings.post_process_models.contains_key(&provider.id) {
-            settings
-                .post_process_models
-                .insert(provider.id.clone(), String::new());
-            changed = true;
-        }
+        settings
+            .post_process_api_keys
+            .entry(provider.id.clone())
+            .or_insert_with(String::new);
+        settings
+            .post_process_models
+            .entry(provider.id.clone())
+            .or_insert_with(String::new);
     }
 
-    // Legacy migration support for pre-provider configuration
+    // Migrate legacy settings
     if !settings.legacy_post_process_base_url.is_empty() {
         let legacy_url = settings.legacy_post_process_base_url.clone();
 
+        // Find matching provider or use custom
         if let Some(existing_provider) = settings
             .post_process_providers
             .iter()
             .find(|provider| provider.base_url == legacy_url)
         {
-            if settings.post_process_provider_id != existing_provider.id {
-                settings.post_process_provider_id = existing_provider.id.clone();
-            }
+            settings.post_process_provider_id = existing_provider.id.clone();
         } else if let Some(custom_provider) = settings.post_process_provider_mut("custom") {
-            if custom_provider.base_url != legacy_url {
-                custom_provider.base_url = legacy_url;
-            }
-            if settings.post_process_provider_id != "custom" {
-                settings.post_process_provider_id = "custom".to_string();
-            }
+            custom_provider.base_url = legacy_url;
+            settings.post_process_provider_id = "custom".to_string();
         }
-
-        settings.legacy_post_process_base_url = String::new();
-        changed = true;
     }
 
     if !settings.legacy_post_process_api_key.is_empty() {
         let provider_id = settings.post_process_provider_id.clone();
-        let legacy_key = settings.legacy_post_process_api_key.clone();
-        if settings
+        settings
             .post_process_api_keys
-            .get(&provider_id)
-            .map(|stored| stored != &legacy_key)
-            .unwrap_or(true)
-        {
-            settings
-                .post_process_api_keys
-                .insert(provider_id, legacy_key);
-        }
-        settings.legacy_post_process_api_key = String::new();
-        changed = true;
+            .insert(provider_id, settings.legacy_post_process_api_key.clone());
     }
 
     if !settings.legacy_post_process_model.is_empty() {
         let provider_id = settings.post_process_provider_id.clone();
-        let legacy_model = settings.legacy_post_process_model.clone();
-        if settings
+        settings
             .post_process_models
-            .get(&provider_id)
-            .map(|stored| stored != &legacy_model)
-            .unwrap_or(true)
-        {
-            settings
-                .post_process_models
-                .insert(provider_id, legacy_model);
-        }
-        settings.legacy_post_process_model = String::new();
-        changed = true;
+            .insert(provider_id, settings.legacy_post_process_model.clone());
     }
 
-    changed
+    // Validate provider_id exists
+    if settings.post_process_provider_id.is_empty()
+        || !settings
+            .post_process_providers
+            .iter()
+            .any(|p| p.id == settings.post_process_provider_id)
+    {
+        settings.post_process_provider_id = default_post_process_provider_id();
+    }
+}
+
+/// Run all necessary migrations based on the settings version
+fn migrate_settings(settings: &mut AppSettings) -> bool {
+    if settings.version >= SETTINGS_VERSION {
+        return false;
+    }
+
+    let original_version = settings.version;
+
+    // Run migrations sequentially
+    if settings.version < 1 {
+        migrate_v0_to_v1(settings);
+        settings.version = 1;
+    }
+
+    // Future migrations go here
+    // if settings.version < 2 {
+    //     migrate_v1_to_v2(settings);
+    //     settings.version = 2;
+    // }
+
+    original_version != settings.version
 }
 
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
@@ -582,7 +552,8 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         get_default_settings()
     };
 
-    if ensure_post_process_settings(&mut settings) {
+    // Run migrations if needed
+    if migrate_settings(&mut settings) {
         should_write = true;
     }
 
@@ -610,7 +581,8 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         get_default_settings()
     };
 
-    if ensure_post_process_settings(&mut settings) {
+    // Run migrations if needed
+    if migrate_settings(&mut settings) {
         should_write = true;
     }
 

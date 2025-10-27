@@ -1,17 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "../../ui/Input";
 
 interface BaseUrlFieldProps {
   value: string;
-  onChange: (value: string) => void;
-  onBlur: () => void;
+  onBlur: (value: string) => void;
   disabled: boolean;
   placeholder?: string;
   className?: string;
 }
 
 export const BaseUrlField: React.FC<BaseUrlFieldProps> = React.memo(
-  ({ value, onChange, onBlur, disabled, placeholder, className = "" }) => {
+  ({ value, onBlur, disabled, placeholder, className = "" }) => {
+    const [localValue, setLocalValue] = useState(value);
+
+    // Sync with prop changes
+    React.useEffect(() => {
+      setLocalValue(value);
+    }, [value]);
+
     const disabledMessage = disabled
       ? "Base URL is managed by the selected provider."
       : undefined;
@@ -19,9 +25,9 @@ export const BaseUrlField: React.FC<BaseUrlFieldProps> = React.memo(
     return (
       <Input
         type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
+        value={localValue}
+        onChange={(event) => setLocalValue(event.target.value)}
+        onBlur={() => onBlur(localValue)}
         placeholder={placeholder}
         variant="compact"
         disabled={disabled}
