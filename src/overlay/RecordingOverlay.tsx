@@ -76,8 +76,8 @@ const RecordingOverlay: React.FC = () => {
                 className="bar"
                 style={{
                   height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
-                  transition: "height 60ms ease-out",
-                  opacity: Math.max(0.4, v * 1.7), // Minimum opacity for visibility
+                  transition: "height 60ms ease-out, opacity 120ms ease-out",
+                  opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
                 }}
               />
             ))}
