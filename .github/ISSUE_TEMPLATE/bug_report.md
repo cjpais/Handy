@@ -6,6 +6,10 @@ labels: ['bug']
 assignees: ''
 ---
 
+## Before You Submit
+
+**Please search [existing issues](https://github.com/cjpais/Handy/issues) to avoid duplicates.** Your bug may already be reported! Right now it's just me maintaining this project so many issues can be overwhelming! Help me out by checking first.
+
 ## Bug Description
 A clear and concise description of what the bug is.
 

@@ -34,11 +34,23 @@ export const ModelUnloadTimeoutSchema = z.enum([
 ]);
 export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
 
+export const PasteMethodSchema = z.enum(["ctrl_v", "direct"]);
+export type PasteMethod = z.infer<typeof PasteMethodSchema>;
+
+export const ClipboardHandlingSchema = z.enum(["dont_modify", "copy_to_clipboard"]);
+export type ClipboardHandling = z.infer<typeof ClipboardHandlingSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
   audio_feedback: z.boolean(),
+  audio_feedback_volume: z.number().optional().default(1.0),
+  sound_theme: z
+    .enum(["marimba", "pop", "custom"])
+    .optional()
+    .default("marimba"),
   start_hidden: z.boolean().optional().default(false),
+  autostart_enabled: z.boolean().optional().default(false),
   selected_model: z.string(),
   always_on_microphone: z.boolean(),
   selected_microphone: z.string().nullable().optional(),
@@ -50,6 +62,9 @@ export const SettingsSchema = z.object({
   custom_words: z.array(z.string()).optional().default([]),
   model_unload_timeout: ModelUnloadTimeoutSchema.optional().default("never"),
   word_correction_threshold: z.number().optional().default(0.18),
+  history_limit: z.number().optional().default(5),
+  paste_method: PasteMethodSchema.optional().default("ctrl_v"),
+  clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
 });
 
 export const BindingResponseSchema = z.object({

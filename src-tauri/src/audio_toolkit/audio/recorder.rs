@@ -62,7 +62,7 @@ impl AudioRecorder {
         let (sample_tx, sample_rx) = mpsc::channel::<Vec<f32>>();
         let (cmd_tx, cmd_rx) = mpsc::channel::<Cmd>();
 
-        let host = cpal::default_host();
+        let host = crate::audio_toolkit::get_cpal_host();
         let device = match device {
             Some(dev) => dev,
             None => host
@@ -245,7 +245,7 @@ fn run_consumer(
         in_sample_rate,
         WINDOW_SIZE,
         BUCKETS,
-        80.0,   // vocal_min_hz
+        400.0,  // vocal_min_hz
         4000.0, // vocal_max_hz
     );
 

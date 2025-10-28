@@ -1,4 +1,4 @@
-use crate::audio_feedback::{play_recording_start_sound, play_recording_stop_sound};
+use crate::audio_feedback::{SoundType, play_feedback_sound};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -28,6 +28,10 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // Load model in the background
+        let tm = app.state::<Arc<TranscriptionManager>>();
+        tm.initiate_model_load();
+
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
         show_recording_overlay(app);
@@ -42,7 +46,7 @@ impl ShortcutAction for TranscribeAction {
         if is_always_on {
             // Always-on mode: Play audio feedback immediately
             debug!("Always-on mode: Playing audio feedback immediately");
-            play_recording_start_sound(app);
+            play_feedback_sound(app, SoundType::Start);
             let recording_started = rm.try_start_recording(&binding_id);
             debug!("Recording started: {}", recording_started);
         } else {
@@ -57,7 +61,7 @@ impl ShortcutAction for TranscribeAction {
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_millis(100));
                     debug!("Playing delayed audio feedback");
-                    play_recording_start_sound(&app_clone);
+                    play_feedback_sound(&app_clone, SoundType::Start);
                 });
             } else {
                 debug!("Failed to start recording");
@@ -83,7 +87,7 @@ impl ShortcutAction for TranscribeAction {
         show_transcribing_overlay(app);
 
         // Play audio feedback for recording stop
-        play_recording_stop_sound(app);
+        play_feedback_sound(app, SoundType::Stop);
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
 

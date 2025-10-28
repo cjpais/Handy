@@ -6,25 +6,19 @@ use std::io::BufReader;
 use std::thread;
 use tauri::{AppHandle, Manager};
 
-/// Plays an audio resource from the resources directory.
-/// Checks if audio feedback is enabled in settings before playing.
-pub fn play_sound(app: &AppHandle, resource_path: &str) {
-    // Check if audio feedback is enabled
-    let settings = settings::get_settings(app);
-    if !settings.audio_feedback {
-        return;
-    }
+pub enum SoundType {
+    Start,
+    Stop,
+}
 
+/// Plays an audio resource from the specified directory.
+fn play_sound(app: &AppHandle, resource_path: &str, base_dir: tauri::path::BaseDirectory) {
     let app_handle = app.clone();
     let resource_path = resource_path.to_string();
+    let volume = settings::get_settings(app).audio_feedback_volume;
 
-    // Spawn a new thread to play the audio without blocking the main thread
     thread::spawn(move || {
-        // Get the path to the audio file in resources
-        let audio_path = match app_handle
-            .path()
-            .resolve(&resource_path, tauri::path::BaseDirectory::Resource)
-        {
+        let audio_path = match app_handle.path().resolve(&resource_path, base_dir) {
             Ok(path) => path.to_path_buf(),
             Err(e) => {
                 eprintln!(
@@ -35,39 +29,68 @@ pub fn play_sound(app: &AppHandle, resource_path: &str) {
             }
         };
 
-        // Get the selected output device from settings
         let settings = settings::get_settings(&app_handle);
         let selected_device = settings.selected_output_device.clone();
 
-        // Try to play the audio file
-        if let Err(e) = play_audio_file(&audio_path, selected_device) {
+        if let Err(e) = play_audio_file(&audio_path, selected_device, volume) {
             eprintln!("Failed to play sound '{}': {}", resource_path, e);
         }
     });
 }
 
-/// Convenience function to play the recording start sound
-pub fn play_recording_start_sound(app: &AppHandle) {
-    play_sound(app, "resources/rec_start.wav");
+fn get_sound_path(app: &AppHandle, sound_type: SoundType) -> String {
+    let settings = settings::get_settings(app);
+    match sound_type {
+        SoundType::Start => match settings.sound_theme {
+            crate::settings::SoundTheme::Custom => "custom_start.wav".to_string(),
+            _ => settings.sound_theme.to_start_path(),
+        },
+        SoundType::Stop => match settings.sound_theme {
+            crate::settings::SoundTheme::Custom => "custom_stop.wav".to_string(),
+            _ => settings.sound_theme.to_stop_path(),
+        },
+    }
 }
 
-/// Convenience function to play the recording stop sound
-pub fn play_recording_stop_sound(app: &AppHandle) {
-    play_sound(app, "resources/rec_stop.wav");
+pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
+    // Only play if audio feedback is enabled
+    let settings = settings::get_settings(app);
+    if !settings.audio_feedback {
+        return;
+    }
+
+    let sound_file = get_sound_path(app, sound_type);
+    let base_dir = if settings.sound_theme == crate::settings::SoundTheme::Custom {
+        tauri::path::BaseDirectory::AppData
+    } else {
+        tauri::path::BaseDirectory::Resource
+    };
+    play_sound(app, &sound_file, base_dir);
+}
+
+pub fn play_test_sound(app: &AppHandle, sound_type: SoundType) {
+    // Always play test sound, regardless of audio_feedback setting
+    let settings = settings::get_settings(app);
+    let sound_file = get_sound_path(app, sound_type);
+    let base_dir = if settings.sound_theme == crate::settings::SoundTheme::Custom {
+        tauri::path::BaseDirectory::AppData
+    } else {
+        tauri::path::BaseDirectory::Resource
+    };
+    play_sound(app, &sound_file, base_dir);
 }
 
 fn play_audio_file(
     path: &std::path::Path,
     selected_device: Option<String>,
+    volume: f32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let stream_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
             println!("Using default device");
-            // Use default device
             OutputStreamBuilder::from_default_device()?
         } else {
-            // Try to find the device by name
-            let host = cpal::default_host();
+            let host = crate::audio_toolkit::get_cpal_host();
             let devices = host.output_devices()?;
 
             let mut found_device = None;
@@ -88,18 +111,17 @@ fn play_audio_file(
         }
     } else {
         println!("Using default device");
-        // Use default device
         OutputStreamBuilder::from_default_device()?
     };
 
     let stream_handle = stream_builder.open_stream()?;
     let mixer = stream_handle.mixer();
 
-    // Load the audio file
     let file = File::open(path)?;
     let buf_reader = BufReader::new(file);
 
     let sink = rodio::play(mixer, buf_reader)?;
+    sink.set_volume(volume);
     sink.sleep_until_end();
 
     Ok(())

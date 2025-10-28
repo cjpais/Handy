@@ -20,7 +20,14 @@ interface DownloadProgress {
   percentage: number;
 }
 
-type ModelStatus = "ready" | "loading" | "downloading" | "extracting" | "error" | "none";
+type ModelStatus =
+  | "ready"
+  | "loading"
+  | "downloading"
+  | "extracting"
+  | "error"
+  | "unloaded"
+  | "none";
 
 interface DownloadStats {
   startTime: number;
@@ -36,7 +43,7 @@ interface ModelSelectorProps {
 const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [currentModelId, setCurrentModelId] = useState<string>("");
-  const [modelStatus, setModelStatus] = useState<ModelStatus>("loading");
+  const [modelStatus, setModelStatus] = useState<ModelStatus>("unloaded");
   const [modelError, setModelError] = useState<string | null>(null);
   const [modelDownloadProgress, setModelDownloadProgress] = useState<
     Map<string, DownloadProgress>
@@ -74,6 +81,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           case "loading_failed":
             setModelStatus("error");
             setModelError(error || "Failed to load model");
+            break;
+          case "unloaded":
+            setModelStatus("unloaded");
+            setModelError(null);
             break;
         }
       },
@@ -247,7 +258,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         if (transcriptionStatus === current) {
           setModelStatus("ready");
         } else {
-          setModelStatus("loading");
+          setModelStatus("unloaded");
         }
       } else {
         setModelStatus("none");
@@ -324,10 +335,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         return currentModel ? `Extracting ${currentModel.name}...` : "Extracting...";
       case "error":
         return modelError || "Model Error";
+      case "unloaded":
+        return currentModel?.name || "Model Unloaded";
       case "none":
         return "No Model - Download Required";
       default:
-        return currentModel?.name || "Select Model";
+        return currentModel?.name || "Model Unloaded";
     }
   };
 

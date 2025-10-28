@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 export interface DropdownOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface DropdownProps {
@@ -97,8 +98,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
                   selectedValue === option.value
                     ? "bg-logo-primary/20 font-semibold"
                     : ""
-                }`}
+                } ${option.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={() => handleSelect(option.value)}
+                disabled={option.disabled}
               >
                 <span className="truncate">{option.label}</span>
               </button>

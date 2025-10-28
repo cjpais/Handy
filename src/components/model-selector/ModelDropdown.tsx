@@ -1,6 +1,7 @@
 import React from "react";
 import { ModelInfo } from "../../lib/types";
-import { ProgressBar, ProgressData } from "../shared";
+import { formatModelSize } from "../../lib/utils/format";
+import { ProgressBar } from "../shared";
 
 interface DownloadProgress {
   model_id: string;
@@ -177,6 +178,9 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                     </div>
                     <div className="text-xs text-text/40 italic pr-4">
                       {model.description}
+                    </div>
+                    <div className="mt-1 text-xs text-text/50 tabular-nums">
+                      Download size · {formatModelSize(model.size_mb)}
                     </div>
                   </div>
                   <div className="text-xs text-logo-primary tabular-nums">

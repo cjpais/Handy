@@ -1,9 +1,33 @@
+use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
+
+#[derive(Serialize)]
+pub struct CustomSounds {
+    start: bool,
+    stop: bool,
+}
+
+fn custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
+    app.path()
+        .resolve(
+            format!("custom_{}.wav", sound_type),
+            tauri::path::BaseDirectory::AppData,
+        )
+        .map_or(false, |path| path.exists())
+}
+
+#[tauri::command]
+pub fn check_custom_sounds(app: AppHandle) -> CustomSounds {
+    CustomSounds {
+        start: custom_sound_exists(&app, "start"),
+        stop: custom_sound_exists(&app, "stop"),
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AudioDevice {
@@ -121,4 +145,17 @@ pub fn get_selected_output_device(app: AppHandle) -> Result<String, String> {
     Ok(settings
         .selected_output_device
         .unwrap_or_else(|| "default".to_string()))
+}
+
+#[tauri::command]
+pub fn play_test_sound(app: AppHandle, sound_type: String) {
+    let sound = match sound_type.as_str() {
+        "start" => audio_feedback::SoundType::Start,
+        "stop" => audio_feedback::SoundType::Stop,
+        _ => {
+            eprintln!("Unknown sound type: {}", sound_type);
+            return;
+        }
+    };
+    audio_feedback::play_test_sound(&app, sound);
 }

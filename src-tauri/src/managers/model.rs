@@ -10,7 +10,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tar::Archive;
-use tauri::{App, AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EngineType {
@@ -48,11 +48,9 @@ pub struct ModelManager {
 }
 
 impl ModelManager {
-    pub fn new(app: &App) -> Result<Self> {
-        let app_handle = app.app_handle().clone();
-
+    pub fn new(app_handle: &AppHandle) -> Result<Self> {
         // Create models directory in app data
-        let models_dir = app
+        let models_dir = app_handle
             .path()
             .app_data_dir()
             .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?
@@ -73,7 +71,7 @@ impl ModelManager {
                 description: "Fast and fairly accurate.".to_string(),
                 filename: "ggml-small.bin".to_string(),
                 url: Some("https://blob.handy.computer/ggml-small.bin".to_string()),
-                size_mb: 244,
+                size_mb: 487,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -91,7 +89,7 @@ impl ModelManager {
                 description: "Good accuracy, medium speed".to_string(),
                 filename: "whisper-medium-q4_1.bin".to_string(),
                 url: Some("https://blob.handy.computer/whisper-medium-q4_1.bin".to_string()),
-                size_mb: 491, // Approximate size
+                size_mb: 492, // Approximate size
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -125,7 +123,7 @@ impl ModelManager {
                 description: "Good accuracy, but slow.".to_string(),
                 filename: "ggml-large-v3-q5_0.bin".to_string(),
                 url: Some("https://blob.handy.computer/ggml-large-v3-q5_0.bin".to_string()),
-                size_mb: 1080, // Approximate size
+                size_mb: 1100, // Approximate size
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -170,7 +168,7 @@ impl ModelManager {
         );
 
         let manager = Self {
-            app_handle,
+            app_handle: app_handle.clone(),
             models_dir,
             available_models: Mutex::new(available_models),
         };
