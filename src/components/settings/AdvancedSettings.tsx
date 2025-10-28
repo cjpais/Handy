@@ -6,6 +6,7 @@ import { CustomWords } from "./CustomWords";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { StartHidden } from "./StartHidden";
 import { AutostartToggle } from "./AutostartToggle";
+import { MuteWhileRecording } from "./MuteWhileRecording";
 
 export const AdvancedSettings: React.FC = () => {
   return (
@@ -13,6 +14,7 @@ export const AdvancedSettings: React.FC = () => {
       <SettingsGroup title="Advanced">
         <StartHidden descriptionMode="tooltip" grouped={true} />
         <AutostartToggle descriptionMode="tooltip" grouped={true} />
+        <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
         <ShowOverlay descriptionMode="tooltip" grouped={true} />
         <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
         <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />

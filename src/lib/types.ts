@@ -65,6 +65,7 @@ export const SettingsSchema = z.object({
   history_limit: z.number().optional().default(5),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
+  mute_while_recording: z.boolean().optional().default(false),
 });
 
 export const BindingResponseSchema = z.object({
