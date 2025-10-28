@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { SettingsGroup } from "../ui/SettingsGroup";
-import { AudioPlayer } from "../ui/AudioPlayer";
+import { SettingsGroup } from "../../ui/SettingsGroup";
+import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Copy, Star, Check, Trash2 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";

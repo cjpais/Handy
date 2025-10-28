@@ -1,13 +1,13 @@
 import React from "react";
-import { MicrophoneSelector } from "./MicrophoneSelector";
-import { LanguageSelector } from "./LanguageSelector";
-import { HandyShortcut } from "./HandyShortcut";
-import { SettingsGroup } from "../ui/SettingsGroup";
-import { OutputDeviceSelector } from "./OutputDeviceSelector";
-import { PushToTalk } from "./PushToTalk";
-import { AudioFeedback } from "./AudioFeedback";
-import { useSettings } from "../../hooks/useSettings";
-import { VolumeSlider } from "./VolumeSlider";
+import { MicrophoneSelector } from "../MicrophoneSelector";
+import { LanguageSelector } from "../LanguageSelector";
+import { HandyShortcut } from "../HandyShortcut";
+import { SettingsGroup } from "../../ui/SettingsGroup";
+import { OutputDeviceSelector } from "../OutputDeviceSelector";
+import { PushToTalk } from "../PushToTalk";
+import { AudioFeedback } from "../AudioFeedback";
+import { useSettings } from "../../../hooks/useSettings";
+import { VolumeSlider } from "../VolumeSlider";
 
 export const GeneralSettings: React.FC = () => {
   const { audioFeedbackEnabled } = useSettings();

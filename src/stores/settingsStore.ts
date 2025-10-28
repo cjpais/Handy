@@ -10,6 +10,7 @@ interface SettingsStore {
   audioDevices: AudioDevice[];
   outputDevices: AudioDevice[];
   customSounds: { start: boolean; stop: boolean };
+  postProcessModelOptions: Record<string, string[]>;
 
   // Actions
   initialize: () => Promise<void>;
@@ -27,6 +28,13 @@ interface SettingsStore {
   isUpdatingKey: (key: string) => boolean;
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
+  setPostProcessProvider: (providerId: string) => Promise<void>;
+  updatePostProcessSetting: (settingType: 'base_url' | 'api_key' | 'model', providerId: string, value: string) => Promise<void>;
+  updatePostProcessBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
+  updatePostProcessApiKey: (providerId: string, apiKey: string) => Promise<void>;
+  updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  setPostProcessModelOptions: (providerId: string, models: string[]) => void;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -37,6 +45,8 @@ interface SettingsStore {
   setCustomSounds: (sounds: { start: boolean; stop: boolean }) => void;
 }
 
+// Note: Default post-processing settings are now managed in Rust
+// Settings will always have providers after migration
 const DEFAULT_SETTINGS: Partial<Settings> = {
   always_on_microphone: false,
   audio_feedback: true,
@@ -101,6 +111,10 @@ const settingUpdaters: {
   clipboard_handling: (value) =>
     invoke("change_clipboard_handling_setting", { handling: value }),
   history_limit: (value) => invoke("update_history_limit", { limit: value }),
+  post_process_enabled: (value) =>
+    invoke("change_post_process_enabled_setting", { enabled: value }),
+  post_process_selected_prompt_id: (value) =>
+    invoke("set_post_process_selected_prompt", { id: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -111,6 +125,7 @@ export const useSettingsStore = create<SettingsStore>()(
     audioDevices: [],
     outputDevices: [],
     customSounds: { start: false, stop: false },
+    postProcessModelOptions: {},
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
@@ -131,7 +146,10 @@ export const useSettingsStore = create<SettingsStore>()(
     refreshSettings: async () => {
       try {
         const { load } = await import("@tauri-apps/plugin-store");
-        const store = await load("settings_store.json", { autoSave: false });
+        const store = await load("settings_store.json", {
+          autoSave: false,
+          defaults: {},
+        });
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls
@@ -330,6 +348,235 @@ export const useSettingsStore = create<SettingsStore>()(
         setUpdating(updateKey, false);
       }
     },
+
+    setPostProcessProvider: async (providerId) => {
+      const { settings, setUpdating, refreshSettings } = get();
+      const updateKey = "post_process_provider_id";
+      const previousId = settings?.post_process_provider_id ?? null;
+
+      setUpdating(updateKey, true);
+
+      if (settings) {
+        set((state) => ({
+          settings: state.settings
+            ? { ...state.settings, post_process_provider_id: providerId }
+            : null,
+        }));
+      }
+
+      try {
+        await invoke("set_post_process_provider", { providerId });
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to set post-process provider:", error);
+        if (previousId !== null) {
+          set((state) => ({
+            settings: state.settings
+              ? { ...state.settings, post_process_provider_id: previousId }
+              : null,
+          }));
+        }
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    // Generic updater for post-processing provider settings
+    updatePostProcessSetting: async (
+      settingType: 'base_url' | 'api_key' | 'model',
+      providerId: string,
+      value: string
+    ) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `post_process_${settingType}:${providerId}`;
+
+      // Map setting types to command names
+      const commandMap = {
+        base_url: 'change_post_process_base_url_setting',
+        api_key: 'change_post_process_api_key_setting',
+        model: 'change_post_process_model_setting',
+      };
+
+      // Map setting types to param names
+      const paramMap = {
+        base_url: 'baseUrl',
+        api_key: 'apiKey',
+        model: 'model',
+      };
+
+      setUpdating(updateKey, true);
+
+      try {
+        await invoke(commandMap[settingType], {
+          providerId,
+          [paramMap[settingType]]: value,
+        });
+        await refreshSettings();
+      } catch (error) {
+        console.error(`Failed to update post-process ${settingType.replace('_', ' ')}:`, error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updatePostProcessBaseUrl: async (providerId, baseUrl) => {
+      return get().updatePostProcessSetting('base_url', providerId, baseUrl);
+    },
+
+    updatePostProcessApiKey: async (providerId, apiKey) => {
+      return get().updatePostProcessSetting('api_key', providerId, apiKey);
+    },
+
+    updatePostProcessModel: async (providerId, model) => {
+      return get().updatePostProcessSetting('model', providerId, model);
+    },
+
+    fetchPostProcessModels: async (providerId) => {
+      const updateKey = `post_process_models_fetch:${providerId}`;
+      const {
+        setUpdating,
+        setPostProcessModelOptions,
+        refreshSettings,
+        settings,
+      } = get();
+
+      setUpdating(updateKey, true);
+
+      try {
+        if (!settings) {
+          await refreshSettings();
+        }
+
+        const currentSettings = get().settings;
+        const providers = currentSettings?.post_process_providers || [];
+
+        const provider = providers.find((p) => p.id === providerId);
+        if (!provider) {
+          throw new Error(`Provider '${providerId}' not found`);
+        }
+
+        const baseUrl = (provider.base_url || "").replace(/\/$/, "");
+        if (!baseUrl) {
+          throw new Error("Provider base URL is not configured.");
+        }
+        const endpointPath = (provider.models_endpoint || "/models").replace(
+          /^\//,
+          "",
+        );
+        const endpoint = `${baseUrl}/${endpointPath}`;
+
+        const headers: Record<string, string> = {
+          "HTTP-Referer": "https://github.com/cjpais/Handy",
+          "X-Title": "Handy",
+        };
+
+        const apiKey =
+          currentSettings?.post_process_api_keys?.[providerId]?.trim() || "";
+
+        if (provider.kind === "anthropic") {
+          if (!apiKey) {
+            throw new Error(
+              "An Anthropic API key is required to list available models.",
+            );
+          }
+          headers["x-api-key"] = apiKey;
+          headers["anthropic-version"] = "2023-06-01";
+        } else if (apiKey) {
+          headers.Authorization = `Bearer ${apiKey}`;
+        }
+
+        const response = await fetch(endpoint, {
+          method: "GET",
+          headers,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Model list request failed (${response.status}): ${errorText || "unknown error"}`,
+          );
+        }
+
+        let parsed: unknown;
+        try {
+          parsed = await response.json();
+        } catch (error) {
+          throw new Error(
+            `Failed to parse model list response: ${(error as Error).message}`,
+          );
+        }
+
+        const collected: Array<{ id: string; created?: number }> = [];
+
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          Array.isArray((parsed as { data?: unknown[] }).data)
+        ) {
+          for (const entry of (parsed as { data: any[] }).data) {
+            if (entry && typeof entry === "object") {
+              const id = typeof entry.id === "string" ? entry.id : undefined;
+              const name = typeof entry.name === "string" ? entry.name : undefined;
+              const created =
+                typeof entry.created === "number"
+                  ? entry.created
+                  : undefined;
+              const identifier = id || name;
+              if (identifier) {
+                collected.push({ id: identifier, created });
+              }
+            }
+          }
+        } else if (Array.isArray(parsed)) {
+          for (const entry of parsed) {
+            if (typeof entry === "string") {
+              collected.push({ id: entry });
+            }
+          }
+        }
+
+        const dedup = new Map<string, number | undefined>();
+        for (const { id, created } of collected) {
+          const existing = dedup.get(id);
+          if (existing === undefined) {
+            dedup.set(id, created);
+          } else if (
+            created !== undefined &&
+            (existing === undefined || created > existing)
+          ) {
+            dedup.set(id, created);
+          }
+        }
+
+        const models = Array.from(dedup.entries())
+          .sort(([idA, createdA], [idB, createdB]) => {
+            if (createdA !== undefined && createdB !== undefined) {
+              return createdB - createdA;
+            }
+            if (createdA !== undefined) return -1;
+            if (createdB !== undefined) return 1;
+            return idA.localeCompare(idB);
+          })
+          .map(([id]) => id);
+
+        setPostProcessModelOptions(providerId, models);
+        return models;
+      } catch (error) {
+        console.error("Failed to fetch models:", error);
+        setPostProcessModelOptions(providerId, []);
+        return [];
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    setPostProcessModelOptions: (providerId, models) =>
+      set((state) => ({
+        postProcessModelOptions: {
+          ...state.postProcessModelOptions,
+          [providerId]: models,
+        },
+      })),
 
     // Initialize everything
     initialize: async () => {

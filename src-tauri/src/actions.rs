@@ -1,9 +1,10 @@
-use crate::audio_feedback::{SoundType, play_feedback_sound};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
+use crate::llm_processor::post_process_with_llm;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
-use crate::settings::get_settings;
+use crate::settings::{get_settings, AppSettings};
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils;
 use log::{debug, error};
@@ -22,6 +23,95 @@ pub trait ShortcutAction: Send + Sync {
 
 // Transcribe Action
 struct TranscribeAction;
+
+async fn maybe_post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
+    if !settings.post_process_enabled {
+        return None;
+    }
+
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("Post-processing enabled but no provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "Post-processing skipped because provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
+        Some(id) => id.clone(),
+        None => {
+            debug!("Post-processing skipped because no prompt is selected");
+            return None;
+        }
+    };
+
+    let prompt = match settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| prompt.id == selected_prompt_id)
+    {
+        Some(prompt) => prompt.prompt.clone(),
+        None => {
+            debug!(
+                "Post-processing skipped because prompt '{}' was not found",
+                selected_prompt_id
+            );
+            return None;
+        }
+    };
+
+    if prompt.trim().is_empty() {
+        debug!("Post-processing skipped because the selected prompt is empty");
+        return None;
+    }
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+    let api_key = if api_key.trim().is_empty() {
+        None
+    } else {
+        Some(api_key)
+    };
+
+    match post_process_with_llm(transcription.to_string(), prompt, &provider, api_key, model).await
+    {
+        Ok(processed_text) => {
+            debug!(
+                "LLM post-processing succeeded for provider '{}'",
+                provider.id
+            );
+            Some(processed_text)
+        }
+        Err(error_message) => {
+            error!(
+                "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
+                provider.id,
+                error_message
+            );
+            None
+        }
+    }
+}
 
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
@@ -116,7 +206,16 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            // Save to history
+                            let settings = get_settings(&ah);
+                            let mut final_text = transcription.clone();
+
+                            if let Some(processed_text) =
+                                maybe_post_process_transcription(&settings, &transcription).await
+                            {
+                                final_text = processed_text;
+                            }
+
+                            // Save to history (save original transcription, not processed)
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
                             tauri::async_runtime::spawn(async move {
@@ -127,11 +226,12 @@ impl ShortcutAction for TranscribeAction {
                                     error!("Failed to save transcription to history: {}", e);
                                 }
                             });
-                            let transcription_clone = transcription.clone();
+
+                            // Paste the final text (either processed or original)
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
                             ah.run_on_main_thread(move || {
-                                match utils::paste(transcription_clone, ah_clone.clone()) {
+                                match utils::paste(final_text, ah_clone.clone()) {
                                     Ok(()) => debug!(
                                         "Text pasted successfully in {:?}",
                                         paste_time.elapsed()

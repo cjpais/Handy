@@ -22,6 +22,7 @@
     "@tauri-apps/plugin-sql": "~2.3.1",
     "@tauri-apps/plugin-store": "~2.4.1",
     "@tauri-apps/plugin-updater": "~2.9.0",
+    "react-select": "^5.8.0",
     "tauri-plugin-macos-permissions-api": "2.3.0",
     "lucide-react": "^0.542.0",
     "react": "^18.3.1",
@@ -36,6 +37,7 @@
     "@types/node": "^24.9.1",
     "@types/react": "^18.3.26",
     "@types/react-dom": "^18.3.7",
+    "@types/react-select": "^5.0.1",
     "@vitejs/plugin-react": "^4.7.0",
     "typescript": "~5.6.3",
     "vite": "^6.4.1"
