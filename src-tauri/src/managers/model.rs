@@ -141,7 +141,7 @@ impl ModelManager {
                 description: "English only. The best model for English speakers.".to_string(),
                 filename: "parakeet-tdt-0.6b-v2-int8".to_string(), // Directory name
                 url: Some("https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string()),
-                size_mb: 850, // Approximate size for int8 quantized model
+                size_mb: 473, // Approximate size for int8 quantized model
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -158,7 +158,7 @@ impl ModelManager {
                 description: "Fast and accurate".to_string(),
                 filename: "parakeet-tdt-0.6b-v3-int8".to_string(), // Directory name
                 url: Some("https://blob.handy.computer/parakeet-v3-int8.tar.gz".to_string()),
-                size_mb: 850, // Approximate size for int8 quantized model
+                size_mb: 478, // Approximate size for int8 quantized model
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
