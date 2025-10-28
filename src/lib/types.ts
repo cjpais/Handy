@@ -90,6 +90,8 @@ export const ModelInfoSchema = z.object({
   is_downloading: z.boolean(),
   partial_size: z.number(),
   is_directory: z.boolean(),
+  accuracy_score: z.number(),
+  speed_score: z.number(),
 });
 
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;

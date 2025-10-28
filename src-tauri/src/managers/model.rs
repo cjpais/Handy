@@ -31,6 +31,8 @@ pub struct ModelInfo {
     pub partial_size: u64,
     pub is_directory: bool,
     pub engine_type: EngineType,
+    pub accuracy_score: f32, // 0.0 to 1.0, higher is more accurate
+    pub speed_score: f32,    // 0.0 to 1.0, higher is faster
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,6 +79,8 @@ impl ModelManager {
                 partial_size: 0,
                 is_directory: false,
                 engine_type: EngineType::Whisper,
+                accuracy_score: 0.60,
+                speed_score: 0.85,
             },
         );
 
@@ -95,6 +99,8 @@ impl ModelManager {
                 partial_size: 0,
                 is_directory: false,
                 engine_type: EngineType::Whisper,
+                accuracy_score: 0.75,
+                speed_score: 0.60,
             },
         );
 
@@ -112,6 +118,8 @@ impl ModelManager {
                 partial_size: 0,
                 is_directory: false,
                 engine_type: EngineType::Whisper,
+                accuracy_score: 0.80,
+                speed_score: 0.40,
             },
         );
 
@@ -129,6 +137,8 @@ impl ModelManager {
                 partial_size: 0,
                 is_directory: false,
                 engine_type: EngineType::Whisper,
+                accuracy_score: 0.85,
+                speed_score: 0.30,
             },
         );
 
@@ -147,6 +157,8 @@ impl ModelManager {
                 partial_size: 0,
                 is_directory: true,
                 engine_type: EngineType::Parakeet,
+                accuracy_score: 0.85,
+                speed_score: 0.85,
             },
         );
 
@@ -164,6 +176,8 @@ impl ModelManager {
                 partial_size: 0,
                 is_directory: true,
                 engine_type: EngineType::Parakeet,
+                accuracy_score: 0.80,
+                speed_score: 0.85,
             },
         );
 
