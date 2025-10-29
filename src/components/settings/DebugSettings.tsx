@@ -7,6 +7,7 @@ import { PasteMethodSetting } from "./PasteMethod";
 import { ClipboardHandlingSetting } from "./ClipboardHandling";
 import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
 import { SoundPicker } from "./SoundPicker";
+import { MuteWhileRecording } from "./MuteWhileRecording";
 
 export const DebugSettings: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ export const DebugSettings: React.FC = () => {
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
         <HistoryLimit descriptionMode="tooltip" grouped={true} />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
+        <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>
   );
