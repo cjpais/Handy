@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
@@ -9,25 +9,31 @@ interface TranslateToEnglishProps {
   grouped?: boolean;
 }
 
-const unsupportedTranslationModels: Record<string, { description: string }> = {
-  "parakeet-tdt-0.6b-v3": {
-    description: "Translation is not supported by the Parakeet model.",
-  },
-  turbo: {
-    description: "Translation is not supported by the Whisper Turbo model.",
-  },
-};
+const unsupportedTranslationModels = [
+  "parakeet-tdt-0.6b-v2",
+  "parakeet-tdt-0.6b-v3",
+  "turbo",
+];
 
 export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { getSetting, updateSetting, isUpdating } = useSettings();
-    const { currentModel, loadCurrentModel } = useModels();
+    const { currentModel, loadCurrentModel, models } = useModels();
 
     const translateToEnglish = getSetting("translate_to_english") || false;
-    const isDisabledTranslation = currentModel in unsupportedTranslationModels;
-    const description = isDisabledTranslation
-      ? unsupportedTranslationModels[currentModel].description
-      : "Automatically translate speech from other languages to English during transcription.";
+    const isDisabledTranslation =
+      unsupportedTranslationModels.includes(currentModel);
+
+    const description = useMemo(() => {
+      if (isDisabledTranslation) {
+        const currentModelDisplayName = models.find(
+          (model) => model.id === currentModel,
+        )?.name;
+        return `Translation is not supported by the ${currentModelDisplayName} model.`;
+      }
+
+      return "Automatically translate speech from other languages to English during transcription.";
+    }, [models, currentModel, isDisabledTranslation]);
 
     // Listen for model state changes to update UI reactively
     useEffect(() => {
