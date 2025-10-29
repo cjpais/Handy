@@ -9,13 +9,25 @@ interface TranslateToEnglishProps {
   grouped?: boolean;
 }
 
+const unsupportedTranslationModels: Record<string, { description: string }> = {
+  "parakeet-tdt-0.6b-v3": {
+    description: "Translation is not supported by the Parakeet model.",
+  },
+  turbo: {
+    description: "Translation is not supported by the Whisper Turbo model.",
+  },
+};
+
 export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const { currentModel, loadCurrentModel } = useModels();
 
     const translateToEnglish = getSetting("translate_to_english") || false;
-    const isParakeetModel = currentModel === "parakeet-tdt-0.6b-v3";
+    const isDisabledTranslation = currentModel in unsupportedTranslationModels;
+    const description = isDisabledTranslation
+      ? unsupportedTranslationModels[currentModel].description
+      : "Automatically translate speech from other languages to English during transcription.";
 
     // Listen for model state changes to update UI reactively
     useEffect(() => {
@@ -33,13 +45,9 @@ export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
         checked={translateToEnglish}
         onChange={(enabled) => updateSetting("translate_to_english", enabled)}
         isUpdating={isUpdating("translate_to_english")}
-        disabled={isParakeetModel}
+        disabled={isDisabledTranslation}
         label="Translate to English"
-        description={
-          isParakeetModel
-            ? "Translation is not supported by the Parakeet model."
-            : "Automatically translate speech from other languages to English during transcription."
-        }
+        description={description}
         descriptionMode={descriptionMode}
         grouped={grouped}
       />
