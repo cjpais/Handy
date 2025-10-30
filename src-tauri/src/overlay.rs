@@ -1,11 +1,15 @@
 use crate::settings;
 use crate::settings::OverlayPosition;
-use log::debug;
 use enigo::{Enigo, Mouse};
+use log::debug;
+use std::process::Command;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindowBuilder};
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
+
+/// Stores the window address that had focus before showing the overlay
+static PREVIOUS_FOCUS_WINDOW: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -24,7 +28,8 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
         if let Ok(mouse_location) = enigo.location() {
             if let Ok(monitors) = app_handle.available_monitors() {
                 for monitor in monitors {
-                    let is_within = is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
+                    let is_within =
+                        is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
                     if is_within {
                         return Some(monitor);
                     }
@@ -42,8 +47,14 @@ fn is_mouse_within_monitor(
     monitor_size: &PhysicalSize<u32>,
 ) -> bool {
     let (mouse_x, mouse_y) = mouse_pos;
-    let PhysicalPosition { x: monitor_x, y: monitor_y } = *monitor_pos;
-    let PhysicalSize { width: monitor_width, height: monitor_height } = *monitor_size;
+    let PhysicalPosition {
+        x: monitor_x,
+        y: monitor_y,
+    } = *monitor_pos;
+    let PhysicalSize {
+        width: monitor_width,
+        height: monitor_height,
+    } = *monitor_size;
 
     mouse_x >= monitor_x
         && mouse_x < (monitor_x + monitor_width as i32)
@@ -51,28 +62,72 @@ fn is_mouse_within_monitor(
         && mouse_y < (monitor_y + monitor_height as i32)
 }
 
+/// Captures the currently focused window on Hyperland/Wayland
+#[cfg(target_os = "linux")]
+fn capture_focused_window() -> Option<String> {
+    let output = Command::new("hyprctl")
+        .arg("activewindow")
+        .arg("-j")
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let json_str = String::from_utf8(output.stdout).ok()?;
+
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&json_str) {
+        if let Some(address) = json.get("address").and_then(|v| v.as_str()) {
+            return Some(address.to_string());
+        }
+    }
+
+    None
+}
+
+/// Restores focus to the previously captured window on Hyperland/Wayland
+#[cfg(target_os = "linux")]
+fn restore_focused_window(window_address: &str) {
+    let _ = Command::new("hyprctl")
+        .arg("dispatch")
+        .arg("focuswindow")
+        .arg(format!("address:{}", window_address))
+        .output();
+}
+
+#[cfg(not(target_os = "linux"))]
+fn capture_focused_window() -> Option<String> {
+    None
+}
+
+#[cfg(not(target_os = "linux"))]
+fn restore_focused_window(_window_address: &str) {
+    // No-op on non-Linux platforms
+}
+
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
     if let Some(monitor) = get_monitor_with_cursor(app_handle) {
-            let work_area = monitor.work_area();
-            let scale = monitor.scale_factor();
-            let work_area_width = work_area.size.width as f64 / scale;
-            let work_area_height = work_area.size.height as f64 / scale;
-            let work_area_x = work_area.position.x as f64 / scale;
-            let work_area_y = work_area.position.y as f64 / scale;
+        let work_area = monitor.work_area();
+        let scale = monitor.scale_factor();
+        let work_area_width = work_area.size.width as f64 / scale;
+        let work_area_height = work_area.size.height as f64 / scale;
+        let work_area_x = work_area.position.x as f64 / scale;
+        let work_area_y = work_area.position.y as f64 / scale;
 
-            let settings = settings::get_settings(app_handle);
+        let settings = settings::get_settings(app_handle);
 
-            let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
-            let y = match settings.overlay_position {
-                OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
-                OverlayPosition::Bottom | OverlayPosition::None => {
-                    // don't subtract the overlay height it puts it too far up
-                    work_area_y + work_area_height - OVERLAY_BOTTOM_OFFSET
-                }
-            };
+        let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
+        let y = match settings.overlay_position {
+            OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
+            OverlayPosition::Bottom | OverlayPosition::None => {
+                // don't subtract the overlay height it puts it too far up
+                work_area_y + work_area_height - OVERLAY_BOTTOM_OFFSET
+            }
+        };
 
-            return Some((x, y));
-        }
+        return Some((x, y));
+    }
     None
 }
 
@@ -113,6 +168,13 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 
 /// Shows the recording overlay window with fade-in animation
 pub fn show_recording_overlay(app_handle: &AppHandle) {
+    // Capture the currently focused window before showing overlay
+    if let Some(window_addr) = capture_focused_window() {
+        if let Ok(mut prev_focus) = PREVIOUS_FOCUS_WINDOW.lock() {
+            *prev_focus = Some(window_addr);
+        }
+    }
+
     // Check if overlay should be shown based on position setting
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
@@ -124,7 +186,6 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
         // Emit event to trigger fade-in animation with recording state
-        // Note: Window is created with .focused(false) to prevent focus stealing
         let _ = overlay_window.emit("show-overlay", "recording");
     }
 }
@@ -180,5 +241,14 @@ pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
     // also emit to the recording overlay if it's open
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.emit("mic-level", levels);
+    }
+}
+
+/// Restores focus to the window that had focus before the overlay was shown
+pub fn restore_previous_focus() {
+    if let Ok(mut prev_focus) = PREVIOUS_FOCUS_WINDOW.lock() {
+        if let Some(window_addr) = prev_focus.take() {
+            restore_focused_window(&window_addr);
+        }
     }
 }

@@ -108,3 +108,32 @@ When running on Wayland, check the application logs for confirmation:
 ## GUI Settings
 
 The GUI settings window remains fully functional and can be accessed via the system tray icon, regardless of whether you're on Wayland or X11.
+
+## Focus Handling on Wayland/Hyperland
+
+Handy automatically handles window focus to ensure pasting works correctly:
+
+1. **Captures Focus**: When transcription starts, the app captures which window currently has focus using `hyprctl activewindow`
+2. **Non-Stealing Overlay**: The overlay window is created with `.focused(false)` to prevent stealing focus
+3. **Focus Restoration**: Before pasting, the app automatically restores focus to the original window using `hyprctl dispatch focuswindow`
+
+### Additional Hyperland Configuration (Optional)
+
+If you still experience focus issues, you can add this to your `~/.config/hypr/hyprland.conf`:
+
+```conf
+# Prevent Handy overlay from stealing focus (usually not needed)
+windowrulev2 = nofocus, title:^(Recording)$
+windowrulev2 = noinitialfocus, title:^(Recording)$
+```
+
+### Console Output
+
+When focus is captured and restored, you'll see:
+
+```
+Captured focused window: 0x12345678
+Restoring focus to previous window...
+Attempting to restore focus to window: 0x12345678
+Successfully restored focus to previous window
+```
