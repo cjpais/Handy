@@ -2315,6 +2315,8 @@ dependencies = [
  "tokio",
  "transcribe-rs",
  "vad-rs",
+ "zbus",
+ "zbus_macros",
 ]
 
 [[package]]

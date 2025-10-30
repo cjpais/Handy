@@ -1,4 +1,4 @@
-use crate::audio_feedback::{SoundType, play_feedback_sound};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -131,6 +131,15 @@ impl ShortcutAction for TranscribeAction {
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
                             ah.run_on_main_thread(move || {
+                                // Small delay before restoring focus
+                                std::thread::sleep(std::time::Duration::from_millis(100));
+
+                                // Restore focus to the window that was active before overlay
+                                utils::restore_previous_focus();
+
+                                // Small delay for focus to settle
+                                std::thread::sleep(std::time::Duration::from_millis(100));
+
                                 match utils::paste(transcription_clone, ah_clone.clone()) {
                                     Ok(()) => debug!(
                                         "Text pasted successfully in {:?}",
