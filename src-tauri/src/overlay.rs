@@ -203,7 +203,6 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
         // Emit event to switch to transcribing state
-        // Note: Window is created with .focused(false) to prevent focus stealing
         let _ = overlay_window.emit("show-overlay", "transcribing");
     }
 }
