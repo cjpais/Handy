@@ -273,6 +273,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
       description="Set the keyboard shortcut to start and stop speech-to-text recording"
       descriptionMode={descriptionMode}
       grouped={grouped}
+      tooltipPosition="bottom"
     >
       {(() => {
         const primaryBinding = Object.values(bindings)[0];
