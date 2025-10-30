@@ -5,10 +5,26 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
-use crate::settings::{self, get_settings, ClipboardHandling, OverlayPosition, PasteMethod, SoundTheme};
+use crate::settings::{
+    self, get_settings, ClipboardHandling, OverlayPosition, PasteMethod, SoundTheme,
+};
 use crate::ManagedToggleState;
 
+/// Check if running on Wayland
+fn is_wayland() -> bool {
+    std::env::var("WAYLAND_DISPLAY").is_ok()
+}
+
 pub fn init_shortcuts(app: &AppHandle) {
+    // Check if we're on Wayland
+    if is_wayland() {
+        log::info!("Wayland session detected - keyboard shortcuts are disabled.");
+        log::info!("Use D-Bus interface for transcription control:");
+        log::info!("  busctl --user call com.pais.Handy /com/pais/Handy com.pais.Handy.Transcription StartTranscription");
+        log::info!("  busctl --user call com.pais.Handy /com/pais/Handy com.pais.Handy.Transcription StopTranscription");
+        return;
+    }
+
     let settings = settings::load_or_create_app_settings(app);
 
     // Register shortcuts with the bindings from settings
@@ -283,7 +299,10 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
         "dont_modify" => ClipboardHandling::DontModify,
         "copy_to_clipboard" => ClipboardHandling::CopyToClipboard,
         other => {
-            eprintln!("Invalid clipboard handling '{}', defaulting to dont_modify", other);
+            eprintln!(
+                "Invalid clipboard handling '{}', defaulting to dont_modify",
+                other
+            );
             ClipboardHandling::DontModify
         }
     };
@@ -390,27 +409,25 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
                         } else if event.state == ShortcutState::Released {
                             action.stop(ah, &binding_id_for_closure, &shortcut_string);
                         }
-                    } else {
-                        if event.state == ShortcutState::Pressed {
-                            let toggle_state_manager = ah.state::<ManagedToggleState>();
+                    } else if event.state == ShortcutState::Pressed {
+                        let toggle_state_manager = ah.state::<ManagedToggleState>();
 
-                            let mut states = toggle_state_manager.lock().expect("Failed to lock toggle state manager");
+                        let mut states = toggle_state_manager.lock().expect("Failed to lock toggle state manager");
 
-                            let is_currently_active = states.active_toggles
-                                .entry(binding_id_for_closure.clone())
-                                .or_insert(false);
+                        let is_currently_active = states.active_toggles
+                            .entry(binding_id_for_closure.clone())
+                            .or_insert(false);
 
-                            if *is_currently_active {
-                                action.stop(
-                                    ah,
-                                    &binding_id_for_closure,
-                                    &shortcut_string,
-                                );
-                                *is_currently_active = false; // Update state to inactive
-                            } else {
-                                action.start(ah, &binding_id_for_closure, &shortcut_string);
-                                *is_currently_active = true; // Update state to active
-                            }
+                        if *is_currently_active {
+                            action.stop(
+                                ah,
+                                &binding_id_for_closure,
+                                &shortcut_string,
+                            );
+                            *is_currently_active = false; // Update state to inactive
+                        } else {
+                            action.start(ah, &binding_id_for_closure, &shortcut_string);
+                            *is_currently_active = true; // Update state to active
                         }
                     }
                 } else {

@@ -73,6 +73,10 @@ tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.9.0"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "5.0"
+zbus_macros = "5.0"
+
 [profile.release]
 lto = true
 codegen-units = 1

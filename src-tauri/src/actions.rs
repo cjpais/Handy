@@ -1,4 +1,4 @@
-use crate::audio_feedback::{SoundType, play_feedback_sound};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -115,7 +115,18 @@ impl ShortcutAction for TranscribeAction {
                             transcription_time.elapsed(),
                             transcription
                         );
+
+                        // Explicit logging for debugging
+                        println!("========================================");
+                        println!("TRANSCRIPTION RESULT:");
+                        println!("  Length: {} characters", transcription.len());
+                        println!("  Text: '{}'", transcription);
+                        println!("  Is Empty: {}", transcription.is_empty());
+                        println!("========================================");
+
                         if !transcription.is_empty() {
+                            println!("Transcription is NOT empty, proceeding to paste...");
+
                             // Save to history
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
@@ -130,13 +141,33 @@ impl ShortcutAction for TranscribeAction {
                             let transcription_clone = transcription.clone();
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
+
+                            println!("Attempting to paste: '{}'", transcription_clone);
+
                             ah.run_on_main_thread(move || {
-                                match utils::paste(transcription_clone, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => eprintln!("Failed to paste transcription: {}", e),
+                                // Small delay to ensure the overlay doesn't steal focus from the target window
+                                // This is especially important on Wayland/Hyperland
+                                println!(
+                                    "Waiting 200ms to ensure focus returns to original window..."
+                                );
+                                std::thread::sleep(std::time::Duration::from_millis(200));
+
+                                println!(
+                                    "Inside main thread, about to call paste with text: '{}'",
+                                    transcription_clone
+                                );
+                                match utils::paste(transcription_clone.clone(), ah_clone.clone()) {
+                                    Ok(()) => {
+                                        println!("Paste succeeded in {:?}", paste_time.elapsed());
+                                        debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        );
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Failed to paste transcription: {}", e);
+                                        println!("PASTE ERROR: {}", e);
+                                    }
                                 }
                                 // Hide the overlay after transcription is complete
                                 utils::hide_recording_overlay(&ah_clone);
@@ -144,21 +175,31 @@ impl ShortcutAction for TranscribeAction {
                             })
                             .unwrap_or_else(|e| {
                                 eprintln!("Failed to run paste on main thread: {:?}", e);
+                                println!("MAIN THREAD ERROR: {:?}", e);
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             });
                         } else {
+                            println!("Transcription is EMPTY - not attempting to paste");
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
                     Err(err) => {
+                        println!("========================================");
+                        println!("TRANSCRIPTION ERROR:");
+                        println!("  Error: {}", err);
+                        println!("========================================");
                         debug!("Global Shortcut Transcription error: {}", err);
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                     }
                 }
             } else {
+                println!("========================================");
+                println!("WARNING: No audio samples retrieved from recording!");
+                println!("This means the recording didn't capture any audio.");
+                println!("========================================");
                 debug!("No samples retrieved from recording stop");
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);

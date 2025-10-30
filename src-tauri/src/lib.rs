@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod dbus;
 mod managers;
 mod overlay;
 mod settings;
@@ -75,6 +76,17 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
+
+    // Initialize D-Bus service on Linux
+    #[cfg(target_os = "linux")]
+    {
+        let app_handle_clone = app_handle.clone();
+        tauri::async_runtime::spawn(async move {
+            if let Err(e) = dbus::init_dbus_service(app_handle_clone).await {
+                log::error!("Failed to initialize D-Bus service: {}", e);
+            }
+        });
+    }
 
     // Apply macOS Accessory policy if starting hidden
     #[cfg(target_os = "macos")]
