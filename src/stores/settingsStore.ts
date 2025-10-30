@@ -15,7 +15,7 @@ interface SettingsStore {
   initialize: () => Promise<void>;
   updateSetting: <K extends keyof Settings>(
     key: K,
-    value: Settings[K],
+    value: Settings[K]
   ) => Promise<void>;
   resetSetting: (key: keyof Settings) => Promise<void>;
   refreshSettings: () => Promise<void>;
@@ -134,7 +134,10 @@ export const useSettingsStore = create<SettingsStore>()(
     refreshSettings: async () => {
       try {
         const { load } = await import("@tauri-apps/plugin-store");
-        const store = await load("settings_store.json", { autoSave: false });
+        const store = await load("settings_store.json", {
+          autoSave: false,
+          defaults: {},
+        });
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls
@@ -173,12 +176,12 @@ export const useSettingsStore = create<SettingsStore>()(
     refreshAudioDevices: async () => {
       try {
         const devices: AudioDevice[] = await invoke(
-          "get_available_microphones",
+          "get_available_microphones"
         );
         const devicesWithDefault = [
           DEFAULT_AUDIO_DEVICE,
           ...devices.filter(
-            (d) => d.name !== "Default" && d.name !== "default",
+            (d) => d.name !== "Default" && d.name !== "default"
           ),
         ];
         set({ audioDevices: devicesWithDefault });
@@ -192,12 +195,12 @@ export const useSettingsStore = create<SettingsStore>()(
     refreshOutputDevices: async () => {
       try {
         const devices: AudioDevice[] = await invoke(
-          "get_available_output_devices",
+          "get_available_output_devices"
         );
         const devicesWithDefault = [
           DEFAULT_AUDIO_DEVICE,
           ...devices.filter(
-            (d) => d.name !== "Default" && d.name !== "default",
+            (d) => d.name !== "Default" && d.name !== "default"
           ),
         ];
         set({ outputDevices: devicesWithDefault });
@@ -216,7 +219,6 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
-
     checkCustomSounds: async () => {
       try {
         const sounds = await invoke("check_custom_sounds");
@@ -229,7 +231,7 @@ export const useSettingsStore = create<SettingsStore>()(
     // Update a specific setting
     updateSetting: async <K extends keyof Settings>(
       key: K,
-      value: Settings[K],
+      value: Settings[K]
     ) => {
       const { settings, setUpdating } = get();
       const updateKey = String(key);
@@ -349,5 +351,5 @@ export const useSettingsStore = create<SettingsStore>()(
         checkCustomSounds(),
       ]);
     },
-  })),
+  }))
 );
