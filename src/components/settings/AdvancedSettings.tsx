@@ -3,7 +3,6 @@ import { ShowOverlay } from "./ShowOverlay";
 import { TranslateToEnglish } from "./TranslateToEnglish";
 import { ModelUnloadTimeoutSetting } from "./ModelUnloadTimeout";
 import { CustomWords } from "./CustomWords";
-import { GeminiApiKey } from "./GeminiApiKey";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { StartHidden } from "./StartHidden";
 import { AutostartToggle } from "./AutostartToggle";
@@ -18,7 +17,6 @@ export const AdvancedSettings: React.FC = () => {
         <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
         <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
-        <GeminiApiKey descriptionMode="tooltip" grouped />
       </SettingsGroup>
     </div>
   );

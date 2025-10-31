@@ -7,11 +7,13 @@ import { ClipboardHandlingSetting } from "./ClipboardHandling";
 import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
 import { SoundPicker } from "./SoundPicker";
 import { MuteWhileRecording } from "./MuteWhileRecording";
+import { GeminiApiKey } from "./GeminiApiKey";
 
 export const DebugSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title="Debug">
+        <GeminiApiKey descriptionMode="tooltip" grouped />
         <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />
         <SoundPicker
