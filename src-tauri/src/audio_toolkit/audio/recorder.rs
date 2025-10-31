@@ -237,6 +237,8 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut speech_frames = 0usize;
+    let mut noise_frames = 0usize;
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -254,6 +256,8 @@ fn run_consumer(
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
+        speech_frames: &mut usize,
+        noise_frames: &mut usize,
     ) {
         if !recording {
             return;
@@ -262,8 +266,13 @@ fn run_consumer(
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    *speech_frames += 1;
+                    out_buf.extend_from_slice(buf);
+                },
+                VadFrame::Noise => {
+                    *noise_frames += 1;
+                }
             }
         } else {
             out_buf.extend_from_slice(samples);
@@ -285,7 +294,7 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            handle_frame(frame, recording, &vad, &mut processed_samples, &mut speech_frames, &mut noise_frames)
         });
 
         // non-blocking check for a command
@@ -294,6 +303,8 @@ fn run_consumer(
                 Cmd::Start => {
                     processed_samples.clear();
                     recording = true;
+                    speech_frames = 0;
+                    noise_frames = 0;
                     visualizer.reset(); // Reset visualization buffer
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
@@ -304,8 +315,16 @@ fn run_consumer(
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
                         // we still want to process the last few frames
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        handle_frame(frame, true, &vad, &mut processed_samples, &mut speech_frames, &mut noise_frames)
                     });
+
+                    println!("📊 VAD Stats - Speech frames: {}, Noise frames: {}, Total samples: {}",
+                        speech_frames, noise_frames, processed_samples.len());
+
+                    if processed_samples.is_empty() && (speech_frames > 0 || noise_frames > 0) {
+                        println!("⚠️  WARNING: No audio captured despite receiving {} frames! VAD may be too strict.",
+                            speech_frames + noise_frames);
+                    }
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
                 }
