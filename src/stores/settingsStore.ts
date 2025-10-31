@@ -104,6 +104,14 @@ const settingUpdaters: {
   history_limit: (value) => invoke("update_history_limit", { limit: value }),
   mute_while_recording: (value) =>
     invoke("change_mute_while_recording_setting", { enabled: value }),
+  transcription_source: (value) =>
+    invoke("change_transcription_source_setting", { source: value }),
+  api_key: (value) =>
+    invoke("change_api_key_setting", { apiKey: value }),
+  api_model: (value) =>
+    invoke("change_api_model_setting", { apiModel: value }),
+  api_endpoint: (value) =>
+    invoke("change_api_endpoint_setting", { apiEndpoint: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -134,7 +142,7 @@ export const useSettingsStore = create<SettingsStore>()(
     refreshSettings: async () => {
       try {
         const { load } = await import("@tauri-apps/plugin-store");
-        const store = await load("settings_store.json", { autoSave: false });
+        const store = await load("settings_store.json", { autoSave: false, defaults: {} });
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls

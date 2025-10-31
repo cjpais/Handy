@@ -1,6 +1,7 @@
+use crate::api_transcription::transcribe_with_api;
 use crate::audio_toolkit::apply_custom_words;
 use crate::managers::model::{EngineType, ModelManager};
-use crate::settings::{get_settings, ModelUnloadTimeout};
+use crate::settings::{get_settings, ModelUnloadTimeout, TranscriptionSource};
 use anyhow::Result;
 use log::debug;
 use serde::Serialize;
@@ -279,6 +280,13 @@ impl TranscriptionManager {
 
     /// Kicks off the model loading in a background thread if it's not already loaded
     pub fn initiate_model_load(&self) {
+        // Check if using API transcription - if so, skip model loading
+        let settings = get_settings(&self.app_handle);
+        if settings.transcription_source == crate::settings::TranscriptionSource::Api {
+            debug!("Skipping model load - using API transcription");
+            return;
+        }
+
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading || self.is_model_loaded() {
             return;
@@ -302,24 +310,13 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
-        // Update last activity timestamp
-        self.last_activity.store(
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            Ordering::Relaxed,
-        );
-
-        let st = std::time::Instant::now();
-
-        println!("Audio vector length: {}", audio.len());
-
-        if audio.len() == 0 {
-            println!("Empty audio vector");
-            return Ok(String::new());
-        }
+    /// Helper function to transcribe using local Whisper/Parakeet model
+    fn transcribe_with_local_model(
+        &self,
+        audio: Vec<f32>,
+        settings: &crate::settings::AppSettings,
+    ) -> Result<String> {
+        println!("Using local model transcription");
 
         // Check if model is loaded, if not try to load it
         {
@@ -331,12 +328,16 @@ impl TranscriptionManager {
 
             let engine_guard = self.engine.lock().unwrap();
             if engine_guard.is_none() {
-                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
+                // Try to initiate load for fallback scenario
+                drop(engine_guard);
+                drop(is_loading);
+
+                println!("Model not loaded, attempting to load for fallback...");
+                if let Err(e) = self.load_model(&settings.selected_model) {
+                    return Err(anyhow::anyhow!("Failed to load model for fallback: {}", e));
+                }
             }
         }
-
-        // Get current settings for configuration
-        let settings = get_settings(&self.app_handle);
 
         // Perform transcription with the appropriate engine
         let result = {
@@ -376,15 +377,88 @@ impl TranscriptionManager {
             }
         };
 
+        // Check if we should immediately unload the model after transcription
+        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
+            println!("⚡ Immediately unloading model after transcription");
+            if let Err(e) = self.unload_model() {
+                eprintln!("Failed to immediately unload model: {}", e);
+            }
+        }
+
+        Ok(result.text)
+    }
+
+    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        // Update last activity timestamp
+        self.last_activity.store(
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            Ordering::Relaxed,
+        );
+
+        let st = std::time::Instant::now();
+
+        println!("Audio vector length: {}", audio.len());
+
+        if audio.len() == 0 {
+            println!("Empty audio vector");
+            return Ok(String::new());
+        }
+
+        // Get current settings for configuration
+        let settings = get_settings(&self.app_handle);
+
+        // Check if we should use API transcription
+        let result_text = if settings.transcription_source == TranscriptionSource::Api {
+            println!("Using API transcription with model: {}", settings.api_model);
+
+            // Use API transcription with fallback to local model on failure
+            let audio_clone = audio.clone();
+            let api_key = settings.api_key.clone();
+            let api_endpoint = settings.api_endpoint.clone();
+            let api_model = settings.api_model.clone();
+
+            // Try API transcription first
+            let language = if settings.selected_language == "auto" {
+                None
+            } else {
+                Some(settings.selected_language.clone())
+            };
+
+            let api_result = tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(async {
+                    transcribe_with_api(audio_clone, &api_key, &api_endpoint, &api_model, language).await
+                })
+            });
+
+            match api_result {
+                Ok(text) => {
+                    println!("✓ API transcription successful");
+                    text
+                }
+                Err(e) => {
+                    eprintln!("⚠ API transcription failed: {}. Falling back to local model...", e);
+
+                    // Fall back to local model transcription
+                    self.transcribe_with_local_model(audio, &settings)?
+                }
+            }
+        } else {
+            // Use local model transcription
+            self.transcribe_with_local_model(audio, &settings)?
+        };
+
         // Apply word correction if custom words are configured
         let corrected_result = if !settings.custom_words.is_empty() {
             apply_custom_words(
-                &result.text,
+                &result_text,
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            result.text
+            result_text
         };
 
         let et = std::time::Instant::now();
@@ -394,14 +468,6 @@ impl TranscriptionManager {
             ""
         };
         println!("\ntook {}ms{}", (et - st).as_millis(), translation_note);
-
-        // Check if we should immediately unload the model after transcription
-        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
-            println!("⚡ Immediately unloading model after transcription");
-            if let Err(e) = self.unload_model() {
-                eprintln!("Failed to immediately unload model: {}", e);
-            }
-        }
 
         Ok(corrected_result.trim().to_string())
     }

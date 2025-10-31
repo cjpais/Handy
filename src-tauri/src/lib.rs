@@ -1,4 +1,5 @@
 mod actions;
+mod api_transcription;
 mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
@@ -238,6 +239,10 @@ pub fn run() {
             shortcut::suspend_binding,
             shortcut::resume_binding,
             shortcut::change_mute_while_recording_setting,
+            shortcut::change_transcription_source_setting,
+            shortcut::change_api_key_setting,
+            shortcut::change_api_model_setting,
+            shortcut::change_api_endpoint_setting,
             trigger_update_check,
             commands::cancel_operation,
             commands::get_app_dir_path,

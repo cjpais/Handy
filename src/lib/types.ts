@@ -40,6 +40,9 @@ export type PasteMethod = z.infer<typeof PasteMethodSchema>;
 export const ClipboardHandlingSchema = z.enum(["dont_modify", "copy_to_clipboard"]);
 export type ClipboardHandling = z.infer<typeof ClipboardHandlingSchema>;
 
+export const TranscriptionSourceSchema = z.enum(["local", "api"]);
+export type TranscriptionSource = z.infer<typeof TranscriptionSourceSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
@@ -66,6 +69,10 @@ export const SettingsSchema = z.object({
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
   mute_while_recording: z.boolean().optional().default(false),
+  transcription_source: TranscriptionSourceSchema.optional().default("local"),
+  api_key: z.string().optional().default(""),
+  api_endpoint: z.string().optional().default("https://generativelanguage.googleapis.com/v1beta/openai/"),
+  api_model: z.string().optional().default("gemini-2.0-flash"),
 });
 
 export const BindingResponseSchema = z.object({

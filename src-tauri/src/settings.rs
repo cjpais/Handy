@@ -47,6 +47,19 @@ pub enum ClipboardHandling {
     CopyToClipboard,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptionSource {
+    Local,
+    Api,
+}
+
+impl Default for TranscriptionSource {
+    fn default() -> Self {
+        TranscriptionSource::Local
+    }
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -163,6 +176,15 @@ pub struct AppSettings {
     pub clipboard_handling: ClipboardHandling,
     #[serde(default)]
     pub mute_while_recording: bool,
+    // API Configuration
+    #[serde(default)]
+    pub transcription_source: TranscriptionSource,
+    #[serde(default = "default_api_key")]
+    pub api_key: String,
+    #[serde(default = "default_api_endpoint")]
+    pub api_endpoint: String,
+    #[serde(default = "default_api_model")]
+    pub api_model: String,
 }
 
 fn default_model() -> String {
@@ -216,6 +238,18 @@ fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
 }
 
+fn default_api_key() -> String {
+    "".to_string()
+}
+
+fn default_api_endpoint() -> String {
+    "https://generativelanguage.googleapis.com/v1beta/openai/".to_string()
+}
+
+fn default_api_model() -> String {
+    "gemini-2.0-flash".to_string()
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -263,6 +297,10 @@ pub fn get_default_settings() -> AppSettings {
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
         mute_while_recording: false,
+        transcription_source: TranscriptionSource::default(),
+        api_key: default_api_key(),
+        api_endpoint: default_api_endpoint(),
+        api_model: default_api_model(),
     }
 }
 

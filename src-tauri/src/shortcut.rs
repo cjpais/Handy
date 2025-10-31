@@ -5,7 +5,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
 use crate::settings::ShortcutBinding;
-use crate::settings::{self, get_settings, ClipboardHandling, OverlayPosition, PasteMethod, SoundTheme};
+use crate::settings::{self, get_settings, ClipboardHandling, OverlayPosition, PasteMethod, SoundTheme, TranscriptionSource};
 use crate::ManagedToggleState;
 
 pub fn init_shortcuts(app: &AppHandle) {
@@ -298,6 +298,46 @@ pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Res
     settings.mute_while_recording = enabled;
     settings::write_settings(&app, settings);
 
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_transcription_source_setting(app: AppHandle, source: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match source.as_str() {
+        "local" => TranscriptionSource::Local,
+        "api" => TranscriptionSource::Api,
+        other => {
+            eprintln!("Invalid transcription source '{}', defaulting to local", other);
+            TranscriptionSource::Local
+        }
+    };
+    settings.transcription_source = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_api_key_setting(app: AppHandle, api_key: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.api_key = api_key;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_api_model_setting(app: AppHandle, api_model: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.api_model = api_model;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_api_endpoint_setting(app: AppHandle, api_endpoint: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.api_endpoint = api_endpoint;
+    settings::write_settings(&app, settings);
     Ok(())
 }
 

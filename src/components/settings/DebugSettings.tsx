@@ -7,10 +7,21 @@ import { ClipboardHandlingSetting } from "./ClipboardHandling";
 import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
 import { SoundPicker } from "./SoundPicker";
 import { MuteWhileRecording } from "./MuteWhileRecording";
+import { TranscriptionSourceSetting } from "./TranscriptionSource";
+import { ApiKeySetting } from "./ApiKey";
+import { ApiEndpointSetting } from "./ApiEndpoint";
+import { ApiModelSetting } from "./ApiModel";
 
 export const DebugSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <SettingsGroup title="API Configuration">
+        <TranscriptionSourceSetting descriptionMode="tooltip" grouped={true} />
+        <ApiKeySetting descriptionMode="tooltip" grouped={true} />
+        <ApiModelSetting descriptionMode="tooltip" grouped={true} />
+        <ApiEndpointSetting descriptionMode="tooltip" grouped={true} />
+      </SettingsGroup>
+
       <SettingsGroup title="Debug">
         <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />
