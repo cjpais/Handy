@@ -59,6 +59,8 @@ impl VoiceActivityDetector for SmoothedVad {
                     self.hangover_counter = self.hangover_frames;
                     self.onset_counter = 0; // Reset for next time
 
+                    println!("🎤 Speech started (onset: {} frame{})", self.onset_frames, if self.onset_frames == 1 { "" } else { "s" });
+
                     // Collect prefill + current frame
                     self.temp_out.clear();
                     for buf in &self.frame_buffer {
@@ -67,6 +69,7 @@ impl VoiceActivityDetector for SmoothedVad {
                     Ok(VadFrame::Speech(&self.temp_out))
                 } else {
                     // Not enough frames yet, still silence
+                    // println!("⏳ Onset counter: {}/{}", self.onset_counter, self.onset_frames);
                     Ok(VadFrame::Noise)
                 }
             }
@@ -84,6 +87,7 @@ impl VoiceActivityDetector for SmoothedVad {
                     Ok(VadFrame::Speech(frame))
                 } else {
                     self.in_speech = false;
+                    println!("🔇 Speech ended");
                     Ok(VadFrame::Noise)
                 }
             }
