@@ -1,4 +1,5 @@
 use crate::audio_toolkit::apply_custom_words;
+use crate::gemini::GeminiClient;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
@@ -30,6 +31,7 @@ pub struct ModelStateEvent {
 enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetEngine),
+    Gemini(GeminiClient),
 }
 
 #[derive(Clone)]
@@ -142,6 +144,9 @@ impl TranscriptionManager {
                 match loaded_engine {
                     LoadedEngine::Whisper(ref mut whisper) => whisper.unload_model(),
                     LoadedEngine::Parakeet(ref mut parakeet) => parakeet.unload_model(),
+                    LoadedEngine::Gemini(_) => {
+                        // No unloading needed for API-based models
+                    }
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -190,25 +195,58 @@ impl TranscriptionManager {
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        if !model_info.is_downloaded {
-            let error_msg = "Model not downloaded";
-            let _ = self.app_handle.emit(
-                "model-state-changed",
-                ModelStateEvent {
-                    event_type: "loading_failed".to_string(),
-                    model_id: Some(model_id.to_string()),
-                    model_name: Some(model_info.name.clone()),
-                    error: Some(error_msg.to_string()),
-                },
-            );
-            return Err(anyhow::anyhow!(error_msg));
-        }
-
-        let model_path = self.model_manager.get_model_path(model_id)?;
-
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
+            EngineType::Gemini => {
+                // For Gemini, validate API key is set
+                let settings = get_settings(&self.app_handle);
+                let api_key = settings.gemini_api_key.clone().ok_or_else(|| {
+                    let error_msg = "Gemini API key not configured. Please set it in settings.";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
+
+                if api_key.is_empty() {
+                    let error_msg = "Gemini API key is empty. Please set it in settings.";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+
+                let client = GeminiClient::new(api_key, model_id.to_string());
+                LoadedEngine::Gemini(client)
+            }
             EngineType::Whisper => {
+                if !model_info.is_downloaded {
+                    let error_msg = "Model not downloaded";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+
+                let model_path = self.model_manager.get_model_path(model_id)?;
                 let mut engine = WhisperEngine::new();
                 engine.load_model(&model_path).map_err(|e| {
                     let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
@@ -226,6 +264,21 @@ impl TranscriptionManager {
                 LoadedEngine::Whisper(engine)
             }
             EngineType::Parakeet => {
+                if !model_info.is_downloaded {
+                    let error_msg = "Model not downloaded";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+
+                let model_path = self.model_manager.get_model_path(model_id)?;
                 let mut engine = ParakeetEngine::new();
                 engine
                     .load_model_with_params(&model_path, ParakeetModelParams::int8())
@@ -372,6 +425,21 @@ impl TranscriptionManager {
                     parakeet_engine
                         .transcribe_samples(audio, Some(params))
                         .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
+                }
+                LoadedEngine::Gemini(gemini_client) => {
+                    // Use tokio runtime to run async Gemini API call
+                    let runtime = tokio::runtime::Runtime::new()
+                        .map_err(|e| anyhow::anyhow!("Failed to create tokio runtime: {}", e))?;
+
+                    let transcription = runtime
+                        .block_on(gemini_client.transcribe_audio(&audio))
+                        .map_err(|e| anyhow::anyhow!("Gemini transcription failed: {}", e))?;
+
+                    // Return in the same format as other engines
+                    transcribe_rs::TranscriptionResult {
+                        text: transcription,
+                        segments: Vec::new(),
+                    }
                 }
             }
         };

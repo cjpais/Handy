@@ -163,6 +163,10 @@ pub struct AppSettings {
     pub clipboard_handling: ClipboardHandling,
     #[serde(default)]
     pub mute_while_recording: bool,
+    #[serde(default)]
+    pub gemini_api_key: Option<String>,
+    #[serde(default = "default_gemini_model")]
+    pub gemini_model: String,
 }
 
 fn default_model() -> String {
@@ -216,6 +220,10 @@ fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
 }
 
+fn default_gemini_model() -> String {
+    "gemini-2.0-flash-exp".to_string()
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -263,6 +271,8 @@ pub fn get_default_settings() -> AppSettings {
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
         mute_while_recording: false,
+        gemini_api_key: None,
+        gemini_model: default_gemini_model(),
     }
 }
 

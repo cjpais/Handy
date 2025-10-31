@@ -16,6 +16,7 @@ use tauri::{AppHandle, Emitter, Manager};
 pub enum EngineType {
     Whisper,
     Parakeet,
+    Gemini,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -178,6 +179,64 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.80,
                 speed_score: 0.85,
+            },
+        );
+
+        // Add Google Gemini API models (cloud-based, no download needed)
+        available_models.insert(
+            "gemini-2.0-flash-exp".to_string(),
+            ModelInfo {
+                id: "gemini-2.0-flash-exp".to_string(),
+                name: "Gemini 2.0 Flash (Experimental)".to_string(),
+                description: "Cloud-based. Fast and accurate multimodal transcription via Google AI.".to_string(),
+                filename: "".to_string(), // No file needed for API
+                url: None, // No download URL for API models
+                size_mb: 0, // No local storage needed
+                is_downloaded: true, // Always "available" if API key is set
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Gemini,
+                accuracy_score: 0.90,
+                speed_score: 0.95,
+            },
+        );
+
+        available_models.insert(
+            "gemini-1.5-flash".to_string(),
+            ModelInfo {
+                id: "gemini-1.5-flash".to_string(),
+                name: "Gemini 1.5 Flash".to_string(),
+                description: "Cloud-based. Fast multimodal model optimized for speed.".to_string(),
+                filename: "".to_string(),
+                url: None,
+                size_mb: 0,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Gemini,
+                accuracy_score: 0.85,
+                speed_score: 0.90,
+            },
+        );
+
+        available_models.insert(
+            "gemini-1.5-pro".to_string(),
+            ModelInfo {
+                id: "gemini-1.5-pro".to_string(),
+                name: "Gemini 1.5 Pro".to_string(),
+                description: "Cloud-based. Most capable multimodal model for complex tasks.".to_string(),
+                filename: "".to_string(),
+                url: None,
+                size_mb: 0,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Gemini,
+                accuracy_score: 0.95,
+                speed_score: 0.70,
             },
         );
 

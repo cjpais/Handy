@@ -66,6 +66,8 @@ export const SettingsSchema = z.object({
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
   mute_while_recording: z.boolean().optional().default(false),
+  gemini_api_key: z.string().nullable().optional(),
+  gemini_model: z.string().optional().default("gemini-2.0-flash-exp"),
 });
 
 export const BindingResponseSchema = z.object({
