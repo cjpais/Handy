@@ -285,8 +285,26 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     let settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
-            Ok(settings) => {
+            Ok(mut settings) => {
                 println!("Found existing settings: {:?}", settings);
+
+                // In case of missing bindings, merge new default bindings
+                let default_settings = get_default_settings();
+                let mut needs_save = false;
+
+                for (key, default_binding) in default_settings.bindings {
+                    if !settings.bindings.contains_key(&key) {
+                        println!("Adding missing binding: {}", key);
+                        settings.bindings.insert(key, default_binding);
+                        needs_save = true;
+                    }
+                }
+
+                if needs_save {
+                    println!("Saving migrated settings");
+                    store.set("settings", serde_json::to_value(&settings).unwrap());
+                    let _ = store.save();
+                }
 
                 settings
             }
