@@ -341,6 +341,14 @@ pub fn change_api_endpoint_setting(app: AppHandle, api_endpoint: String) -> Resu
     Ok(())
 }
 
+#[tauri::command]
+pub fn change_api_prompt_setting(app: AppHandle, api_prompt: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.api_prompt = api_prompt;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").

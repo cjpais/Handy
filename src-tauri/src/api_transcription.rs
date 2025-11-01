@@ -79,6 +79,7 @@ pub async fn transcribe_with_api(
     api_key: &str,
     api_endpoint: &str,
     api_model: &str,
+    api_prompt: &str,
     language: Option<String>,
 ) -> Result<String> {
     if audio.is_empty() {
@@ -97,14 +98,21 @@ pub async fn transcribe_with_api(
     // Convert audio to base64 WAV
     let base64_audio = samples_to_base64_wav(audio)?;
 
-    // Build the transcription prompt based on language setting
-    let prompt = match language {
-        Some(lang) if lang != "auto" && !lang.is_empty() => {
-            format!("Transcribe this audio in {}. Return only the transcribed text without any additional commentary.", lang)
+    // Use custom prompt, or build language-specific prompt if using default and language is set
+    let default_prompt = "Transcribe this audio. Return only the transcribed text without any additional commentary.";
+    let prompt = if api_prompt.trim().is_empty() || api_prompt == default_prompt {
+        // User hasn't customized the prompt, use language-aware default
+        match language {
+            Some(lang) if lang != "auto" && !lang.is_empty() => {
+                format!("Transcribe this audio in {}. Return only the transcribed text without any additional commentary.", lang)
+            }
+            _ => {
+                default_prompt.to_string()
+            }
         }
-        _ => {
-            "Transcribe this audio. Return only the transcribed text without any additional commentary.".to_string()
-        }
+    } else {
+        // User has customized the prompt, use it as-is
+        api_prompt.to_string()
     };
 
     debug!("Using transcription prompt: {}", prompt);

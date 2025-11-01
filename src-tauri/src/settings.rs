@@ -185,6 +185,8 @@ pub struct AppSettings {
     pub api_endpoint: String,
     #[serde(default = "default_api_model")]
     pub api_model: String,
+    #[serde(default = "default_api_prompt")]
+    pub api_prompt: String,
 }
 
 fn default_model() -> String {
@@ -250,6 +252,10 @@ fn default_api_model() -> String {
     "gemini-2.0-flash".to_string()
 }
 
+fn default_api_prompt() -> String {
+    "Transcribe this audio. Return only the transcribed text without any additional commentary.".to_string()
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -301,6 +307,7 @@ pub fn get_default_settings() -> AppSettings {
         api_key: default_api_key(),
         api_endpoint: default_api_endpoint(),
         api_model: default_api_model(),
+        api_prompt: default_api_prompt(),
     }
 }
 

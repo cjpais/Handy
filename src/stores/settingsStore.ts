@@ -112,6 +112,8 @@ const settingUpdaters: {
     invoke("change_api_model_setting", { apiModel: value }),
   api_endpoint: (value) =>
     invoke("change_api_endpoint_setting", { apiEndpoint: value }),
+  api_prompt: (value) =>
+    invoke("change_api_prompt_setting", { apiPrompt: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

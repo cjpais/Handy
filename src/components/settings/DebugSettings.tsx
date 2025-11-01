@@ -11,6 +11,7 @@ import { TranscriptionSourceSetting } from "./TranscriptionSource";
 import { ApiKeySetting } from "./ApiKey";
 import { ApiEndpointSetting } from "./ApiEndpoint";
 import { ApiModelSetting } from "./ApiModel";
+import { ApiPromptSetting } from "./ApiPrompt";
 
 export const DebugSettings: React.FC = () => {
   return (
@@ -20,6 +21,7 @@ export const DebugSettings: React.FC = () => {
         <ApiKeySetting descriptionMode="tooltip" grouped={true} />
         <ApiModelSetting descriptionMode="tooltip" grouped={true} />
         <ApiEndpointSetting descriptionMode="tooltip" grouped={true} />
+        <ApiPromptSetting descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title="Debug">

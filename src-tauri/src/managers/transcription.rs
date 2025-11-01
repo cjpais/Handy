@@ -419,6 +419,7 @@ impl TranscriptionManager {
             let api_key = settings.api_key.clone();
             let api_endpoint = settings.api_endpoint.clone();
             let api_model = settings.api_model.clone();
+            let api_prompt = settings.api_prompt.clone();
 
             // Try API transcription first
             let language = if settings.selected_language == "auto" {
@@ -429,7 +430,7 @@ impl TranscriptionManager {
 
             let api_result = tokio::task::block_in_place(|| {
                 tokio::runtime::Handle::current().block_on(async {
-                    transcribe_with_api(audio_clone, &api_key, &api_endpoint, &api_model, language).await
+                    transcribe_with_api(audio_clone, &api_key, &api_endpoint, &api_model, &api_prompt, language).await
                 })
             });
 

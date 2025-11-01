@@ -243,6 +243,7 @@ pub fn run() {
             shortcut::change_api_key_setting,
             shortcut::change_api_model_setting,
             shortcut::change_api_endpoint_setting,
+            shortcut::change_api_prompt_setting,
             trigger_update_check,
             commands::cancel_operation,
             commands::get_app_dir_path,

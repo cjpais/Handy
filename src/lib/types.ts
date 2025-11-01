@@ -73,6 +73,7 @@ export const SettingsSchema = z.object({
   api_key: z.string().optional().default(""),
   api_endpoint: z.string().optional().default("https://generativelanguage.googleapis.com/v1beta/openai/"),
   api_model: z.string().optional().default("gemini-2.0-flash"),
+  api_prompt: z.string().optional().default("Transcribe this audio. Return only the transcribed text without any additional commentary."),
 });
 
 export const BindingResponseSchema = z.object({
