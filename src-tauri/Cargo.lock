@@ -2277,6 +2277,7 @@ name = "handy"
 version = "0.5.4"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "chrono",
  "cpal",
  "cpvc",

@@ -66,6 +66,7 @@ tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = "0.1.4"
 cpvc = "0.4.1"
+base64 = "0.22"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.1"
