@@ -237,6 +237,7 @@ pub fn run() {
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,
+            shortcut::change_mute_while_recording_setting,
             trigger_update_check,
             commands::cancel_operation,
             commands::get_app_dir_path,

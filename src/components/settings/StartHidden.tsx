@@ -24,6 +24,7 @@ export const StartHidden: React.FC<StartHiddenProps> = React.memo(({
       description="Launch to system tray without opening the window."
       descriptionMode={descriptionMode}
       grouped={grouped}
+      tooltipPosition="bottom"
     />
   );
 });

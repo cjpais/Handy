@@ -161,6 +161,8 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
+    #[serde(default)]
+    pub mute_while_recording: bool,
 }
 
 fn default_model() -> String {
@@ -260,6 +262,7 @@ pub fn get_default_settings() -> AppSettings {
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
+        mute_while_recording: false,
     }
 }
 

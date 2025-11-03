@@ -4,6 +4,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Button } from "../ui/Button";
+import { AppDataDirectory } from "./AppDataDirectory";
 
 export const AboutSettings: React.FC = () => {
   const [version, setVersion] = useState("");
@@ -40,6 +41,8 @@ export const AboutSettings: React.FC = () => {
         >
           <span className="text-sm font-mono">v{version}</span>
         </SettingContainer>
+
+        <AppDataDirectory descriptionMode="tooltip" grouped={true} />
 
         <SettingContainer
           title="Source Code"

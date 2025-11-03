@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
-  checkAccessibilityPermissions,
-  requestAccessibilityPermissions,
+  checkAccessibilityPermission,
+  requestAccessibilityPermission,
 } from "tauri-plugin-macos-permissions-api";
 
 // Define permission state type
@@ -20,7 +20,7 @@ const AccessibilityPermissions: React.FC = () => {
 
   // Check permissions without requesting
   const checkPermissions = async (): Promise<boolean> => {
-    const hasPermissions: boolean = await checkAccessibilityPermissions();
+    const hasPermissions: boolean = await checkAccessibilityPermission();
     setHasAccessibility(hasPermissions);
     setPermissionState(hasPermissions ? "granted" : "verify");
     return hasPermissions;
@@ -30,7 +30,7 @@ const AccessibilityPermissions: React.FC = () => {
   const handleButtonClick = async (): Promise<void> => {
     if (permissionState === "request") {
       try {
-        await requestAccessibilityPermissions();
+        await requestAccessibilityPermission();
         // After system prompt, transition to verification state
         setPermissionState("verify");
       } catch (error) {
@@ -46,7 +46,7 @@ const AccessibilityPermissions: React.FC = () => {
   // On app boot - check permissions
   useEffect(() => {
     const initialSetup = async (): Promise<void> => {
-      const hasPermissions: boolean = await checkAccessibilityPermissions();
+      const hasPermissions: boolean = await checkAccessibilityPermission();
       setHasAccessibility(hasPermissions);
       setPermissionState(hasPermissions ? "granted" : "request");
     };

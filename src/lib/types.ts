@@ -65,6 +65,7 @@ export const SettingsSchema = z.object({
   history_limit: z.number().optional().default(5),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
+  mute_while_recording: z.boolean().optional().default(false),
 });
 
 export const BindingResponseSchema = z.object({
@@ -90,6 +91,8 @@ export const ModelInfoSchema = z.object({
   is_downloading: z.boolean(),
   partial_size: z.number(),
   is_directory: z.boolean(),
+  accuracy_score: z.number(),
+  speed_score: z.number(),
 });
 
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;

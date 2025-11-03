@@ -53,6 +53,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   debug_mode: false,
   custom_words: [],
   history_limit: 5,
+  mute_while_recording: false,
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -101,6 +102,8 @@ const settingUpdaters: {
   clipboard_handling: (value) =>
     invoke("change_clipboard_handling_setting", { handling: value }),
   history_limit: (value) => invoke("update_history_limit", { limit: value }),
+  mute_while_recording: (value) =>
+    invoke("change_mute_while_recording_setting", { enabled: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -131,7 +134,10 @@ export const useSettingsStore = create<SettingsStore>()(
     refreshSettings: async () => {
       try {
         const { load } = await import("@tauri-apps/plugin-store");
-        const store = await load("settings_store.json", { autoSave: false });
+        const store = await load("settings_store.json", { 
+          defaults: DEFAULT_SETTINGS,
+          autoSave: false 
+        });
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls
