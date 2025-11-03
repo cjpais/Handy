@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Installation de Handy pour macOS..."
+echo "🚀 Installation et lancement de Handy pour macOS..."
 echo "---------------------------------------"
 
 # --- Vérification de Homebrew ---
@@ -13,38 +13,22 @@ else
 fi
 
 # --- Vérification de Rust ---
-
 echo "🦀 Vérification de Rust..."
-
 if ! command -v rustc &>/dev/null; then
   echo "⚠️  Rust n'est pas installé."
-
-  # Mode silencieux (sans prompt utilisateur)
-  if [[ "$1" == "--silent" ]]; then
-    echo "🤫 Installation silencieuse de Rust..."
-    export RUSTUP_INIT_SKIP_PATH_CHECK=yes
-    curl -sSf https://sh.rustup.rs | sh -s -- -y --quiet
-  else
-    echo "📦 Installation de Rust via rustup..."
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  fi
-
-  # Charger les variables d'environnement Cargo
-  if [ -f "$HOME/.cargo/env" ]; then
-    source "$HOME/.cargo/env"
-  fi
-
+  echo "📦 Installation de Rust via rustup..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  source "$HOME/.cargo/env"
   echo "✅ Rust installé avec succès ($(rustc --version))"
 else
   echo "✅ Rust est déjà installé ($(rustc --version))"
-fin
+fi
 
 # --- Vérification de Node.js ---
 echo "🧰 Vérification de Node.js..."
 if ! command -v node &>/dev/null; then
   echo "⚠️  Node.js n'est pas installé. Installation via Homebrew..."
   brew install node
-  echo "✅ Node.js installé ($(node -v))"
 else
   echo "✅ Node.js est déjà installé ($(node -v))"
 fi
@@ -68,7 +52,18 @@ bun install
 echo "🏗️ Compilation de l'application Handy..."
 bun run tauri build
 
-# --- Fin de l'installation ---
-echo "🎉 Installation terminée avec succès !"
-echo "👉 Pour lancer Handy en mode développement :"
-echo "   bun run tauri dev"
+# --- Lancement automatique de Handy.app ---
+APP_PATH="src-tauri/target/release/bundle/macos/Handy.app"
+
+if [ -d "$APP_PATH" ]; then
+  echo "🎯 Lancement de Handy.app..."
+  open "$APP_PATH"
+  echo "✅ Handy est en cours d’exécution !"
+else
+  echo "❌ Erreur : l’application Handy.app n’a pas été trouvée à l’emplacement attendu."
+  echo "Vérifiez le chemin de sortie ou le type de build (dev/release)."
+fi
+
+echo "🎉 Installation et lancement terminés avec succès !"
+echo "👉 Pour relancer Handy plus tard :"
+echo "   open \"$APP_PATH\""
