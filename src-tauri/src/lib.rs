@@ -7,7 +7,6 @@ mod managers;
 mod overlay;
 mod settings;
 mod shortcut;
-mod signal_handler;
 mod tray;
 mod utils;
 
@@ -23,13 +22,6 @@ use tauri::tray::TrayIconBuilder;
 use tauri::Emitter;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
-
-#[cfg(unix)]
-use signal_hook::consts::SIGUSR2;
-#[cfg(unix)]
-use signal_hook::iterator::Signals;
-
-use log::info;
 
 #[derive(Default)]
 struct ShortcutToggleStates {
@@ -163,10 +155,6 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 pub fn run() {
     env_logger::init();
 
-    info!("Initializing!");
-    #[cfg(unix)]
-    let signals = Signals::new(&[SIGUSR2]).unwrap();
-
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
@@ -196,13 +184,6 @@ pub fn run() {
         .setup(move |app| {
             let settings = settings::get_settings(&app.handle());
             let app_handle = app.handle().clone();
-
-            // Set up SIGUSR2 signal handler for toggling transcription
-            //
-            // Note: We register SIGUSR2 here so as to not conflict with
-            // WebKit's default handling of SIGUSR1 for triggering GC cleanup.
-            #[cfg(unix)]
-            signal_handler::setup_signal_handler(app_handle.clone(), signals);
 
             initialize_core_logic(&app_handle);
 
