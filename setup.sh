@@ -1,13 +1,13 @@
 #!/bin/bash
 
-echo "🚀 Installation et lancement de Handy pour macOS..."
-echo "---------------------------------------"
+echo "🚀 Installation et lancement automatique de Handy pour macOS"
+echo "-----------------------------------------------------------"
 
 # --- Vérification de Homebrew ---
 if ! command -v brew &>/dev/null; then
-  echo "⚠️  Homebrew n'est pas installé. Installation en cours..."
+  echo "⚠️  Homebrew n'est pas installé. Installation..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  echo "✅ Homebrew installé avec succès."
+  echo "✅ Homebrew installé."
 else
   echo "✅ Homebrew est déjà installé ($(brew -v | head -n 1))"
 fi
@@ -16,10 +16,14 @@ fi
 echo "🦀 Vérification de Rust..."
 if ! command -v rustc &>/dev/null; then
   echo "⚠️  Rust n'est pas installé."
-  echo "📦 Installation de Rust via rustup..."
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  if [[ "$1" == "--silent" ]]; then
+    export RUSTUP_INIT_SKIP_PATH_CHECK=yes
+    curl -sSf https://sh.rustup.rs | sh -s -- -y --quiet
+  else
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  fi
   source "$HOME/.cargo/env"
-  echo "✅ Rust installé avec succès ($(rustc --version))"
+  echo "✅ Rust installé ($(rustc --version))"
 else
   echo "✅ Rust est déjà installé ($(rustc --version))"
 fi
@@ -27,7 +31,7 @@ fi
 # --- Vérification de Node.js ---
 echo "🧰 Vérification de Node.js..."
 if ! command -v node &>/dev/null; then
-  echo "⚠️  Node.js n'est pas installé. Installation via Homebrew..."
+  echo "⚠️  Node.js n'est pas installé. Installation..."
   brew install node
 else
   echo "✅ Node.js est déjà installé ($(node -v))"
@@ -47,23 +51,20 @@ fi
 # --- Installation des dépendances ---
 echo "📦 Installation des dépendances frontend et backend..."
 bun install
+bun add i18next react-i18next --silent
 
-# --- Compilation du projet Tauri ---
-echo "🏗️ Compilation de l'application Handy..."
-bun run tauri build
+# --- Compilation du projet ---
+echo "🏗️ Compilation de Handy..."
+bun run tauri build || { echo "❌ Échec du build Tauri"; exit 1; }
 
-# --- Lancement automatique de Handy.app ---
+# --- Lancement automatique ---
 APP_PATH="src-tauri/target/release/bundle/macos/Handy.app"
-
 if [ -d "$APP_PATH" ]; then
   echo "🎯 Lancement de Handy.app..."
   open "$APP_PATH"
   echo "✅ Handy est en cours d’exécution !"
 else
-  echo "❌ Erreur : l’application Handy.app n’a pas été trouvée à l’emplacement attendu."
-  echo "Vérifiez le chemin de sortie ou le type de build (dev/release)."
+  echo "❌ Handy.app introuvable. Vérifie le build ou exécute : bun run tauri dev"
 fi
 
 echo "🎉 Installation et lancement terminés avec succès !"
-echo "👉 Pour relancer Handy plus tard :"
-echo "   open \"$APP_PATH\""
