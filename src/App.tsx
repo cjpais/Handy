@@ -7,6 +7,13 @@ import Footer from "./components/footer";
 import Onboarding from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
+import i18n from "./i18n";
+
+useEffect(() => {
+  const lang = localStorage.getItem("lang") || navigator.language.slice(0, 2);
+  i18n.changeLanguage(lang);
+}, []);
+
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =

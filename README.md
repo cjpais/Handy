@@ -94,6 +94,7 @@ Depuis la version **1.3.0**, Handy est disponible en plusieurs langues :
 
 * 🇬🇧 **Anglais (par défaut)**
 * 🇫🇷 **Français**
+* 📘 **Documentation** : [English](BUILD.md) | [Français](BUILD.fr.md)
 
 La langue peut être sélectionnée depuis le menu **Paramètres → Langue**.
 Le choix est automatiquement enregistré et appliqué à chaque redémarrage.
@@ -127,6 +128,15 @@ Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 * Site officiel : [handy.computer](https://handy.computer)
 * Discord communautaire : [Rejoindre](https://discord.com/invite/WVBeWsNXK4)
 * Documentation technique : [Wiki du projet](https://github.com/cjpais/Handy/wiki)
+
+
+### 🧩 Nouveautés de la version 1.4.0
+
+- **Détection automatique de la langue du système** : Handy sélectionne automatiquement la langue de ton système via `navigator.language` lors du premier lancement.  
+- **Sélecteur de langue initial** : un menu de sélection apparaît dès le premier démarrage pour choisir la langue de l’interface.  
+- **Traduction étendue** : toutes les pages et labels de l’interface ont été traduits.  
+- **Documentation multilingue** : un fichier [`BUILD.fr.md`](BUILD.fr.md) a été ajouté pour les instructions de compilation en français.  
+
 
 ---
 
