@@ -1,0 +1,11 @@
+{
+  "app": {
+    "title": "Handy",
+    "subtitle": "Free, offline, open source speech-to-text tool",
+    "start": "Start recording",
+    "stop": "Stop recording",
+    "settings": "Settings",
+    "language": "Language",
+    "select_language": "Select your preferred language"
+  }
+}

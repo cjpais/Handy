@@ -137,12 +137,11 @@ Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 - **Traduction étendue** : toutes les pages et labels de l’interface ont été traduits.  
 - **Documentation multilingue** : un fichier [`BUILD.fr.md`](BUILD.fr.md) a été ajouté pour les instructions de compilation en français.  
 
-Ces améliorations facilitent la configuration initiale et l’accessibilité de Handy à un plus grand nombre d’utilisateurs.  
-
 
 ---
 
-# Handy
+
+# Handy 🇬🇧
 
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
 

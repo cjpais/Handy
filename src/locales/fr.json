@@ -1,0 +1,13 @@
+{
+  "settings": "Paramètres",
+  "start_recording": "Démarrer l'enregistrement",
+  "stop_recording": "Arrêter l'enregistrement",
+  "mute_while_recording": "Couper le son pendant l'enregistrement",
+  "language": "Langue",
+  "select_language": "Choisissez votre langue",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "theme": "Thème",
+  "about": "À propos de Handy",
+  "debug_mode": "Mode Débogage"
+}
