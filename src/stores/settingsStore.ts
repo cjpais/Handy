@@ -134,10 +134,11 @@ export const useSettingsStore = create<SettingsStore>()(
     refreshSettings: async () => {
       try {
         const { load } = await import("@tauri-apps/plugin-store");
-        const store = await load("settings_store.json", { 
-          autoSave: false, 
-          defaults: {} 
+        const store = await load("settings_store.json", {
+          autoSave: false,
+          defaults: {}, // Ajout obligatoire pour correspondre au type StoreOptions
         });
+
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls
