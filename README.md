@@ -52,6 +52,16 @@ Compatible avec **Windows**, **macOS** et **Linux**.
 4. Configurez vos raccourcis clavier préférés dans les **Paramètres**.
 5. Commencez à transcrire !
 
+### 🧰 Installation automatique sur macOS
+
+Clonez le dépôt et exécutez le script d’installation :
+
+```bash
+git clone https://github.com/aurlro/Handy.git
+cd Handy
+./setup.sh
+
+
 ---
 
 ## 🧩 Environnement de développement
