@@ -1,3 +1,147 @@
+# Handy 🇫🇷
+
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge\&logo=discord\&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
+
+**Une application de reconnaissance vocale gratuite, open source et extensible, fonctionnant entièrement hors ligne.**
+
+Handy est une application de bureau multiplateforme construite avec **Tauri (Rust + React/TypeScript)**.
+Elle fournit une transcription vocale simple, respectueuse de la vie privée. Appuyez sur un raccourci clavier, parlez, et vos mots apparaissent dans n’importe quel champ de texte — sans jamais envoyer votre voix sur le cloud.
+
+---
+
+## 🎯 Pourquoi Handy ?
+
+Handy a été créé pour combler le manque d’un véritable outil open source et extensible de reconnaissance vocale.
+Comme indiqué sur [handy.computer](https://handy.computer) :
+
+* **Gratuit** : Les outils d’accessibilité doivent être à la portée de tous, pas derrière un paywall.
+* **Open Source** : Ensemble, nous pouvons aller plus loin. Étendez Handy selon vos besoins et contribuez à quelque chose de plus grand.
+* **Privé** : Votre voix reste sur votre ordinateur. Obtenez des transcriptions sans envoyer d’audio dans le cloud.
+* **Simple** : Un outil, une mission. Transcrivez ce que vous dites et insérez-le directement dans un champ de texte.
+
+Handy ne cherche pas à être la meilleure application de reconnaissance vocale — mais la plus **modifiable** et **forkable**.
+
+---
+
+## ⚙️ Comment ça fonctionne
+
+1. **Appuyez** sur un raccourci clavier configurable pour démarrer/arrêter l’enregistrement (ou utilisez le mode push-to-talk).
+2. **Parlez** tant que le raccourci est maintenu.
+3. **Relâchez** et Handy traite votre voix grâce à Whisper.
+4. **Recevez** le texte transcrit automatiquement dans l’application active.
+
+Tout le processus est **entièrement local** :
+
+* Les silences sont filtrés grâce à **VAD (Voice Activity Detection)** avec **Silero**.
+* La transcription utilise le modèle de votre choix :
+
+  * **Whisper** (Small / Medium / Turbo / Large) avec accélération GPU quand disponible.
+  * **Parakeet V3**, un modèle optimisé CPU avec d’excellentes performances et détection automatique de la langue.
+
+Compatible avec **Windows**, **macOS** et **Linux**.
+
+---
+
+## 🚀 Démarrage rapide
+
+### Installation
+
+1. Téléchargez la dernière version depuis la [page des releases](https://github.com/cjpais/Handy/releases) ou le [site officiel](https://handy.computer).
+2. Installez l’application en suivant les instructions spécifiques à votre système d’exploitation.
+3. Lancez Handy et accordez les autorisations nécessaires (microphone, accessibilité).
+4. Configurez vos raccourcis clavier préférés dans les **Paramètres**.
+5. Commencez à transcrire !
+
+---
+
+## 🧩 Environnement de développement
+
+Pour les instructions de compilation détaillées, y compris les dépendances spécifiques à chaque système, consultez le fichier [BUILD.md](BUILD.md).
+
+---
+
+## 🏗️ Architecture
+
+Handy est conçu comme une application **Tauri** combinant :
+
+* **Frontend** : React + TypeScript avec Tailwind CSS pour l’interface de configuration.
+* **Backend** : Rust pour l’intégration système, le traitement audio et l’inférence des modèles ML.
+
+### Bibliothèques principales
+
+* `whisper-rs` — Reconnaissance vocale locale avec les modèles Whisper.
+* `transcription-rs` — Reconnaissance vocale optimisée CPU avec les modèles Parakeet.
+* `cpal` — Entrée/sortie audio multiplateforme.
+* `vad-rs` — Détection d’activité vocale.
+* `rdev` — Gestion des raccourcis clavier globaux et des événements système.
+* `rubato` — Rééchantillonnage audio.
+
+---
+
+## 🧠 Mode développeur / Debug
+
+Handy inclut un **mode debug avancé** pour le développement et le diagnostic.
+Pour y accéder, utilisez le raccourci :
+
+* **macOS** : `Cmd + Maj + D`
+* **Windows / Linux** : `Ctrl + Maj + D`
+
+---
+
+## 🌍 Internationalisation
+
+Depuis la version **1.3.0**, Handy est disponible en plusieurs langues :
+
+* 🇬🇧 **Anglais (par défaut)**
+* 🇫🇷 **Français**
+* 📘 **Documentation** : [English](BUILD.md) | [Français](BUILD.fr.md)
+
+La langue peut être sélectionnée depuis le menu **Paramètres → Langue**.
+Le choix est automatiquement enregistré et appliqué à chaque redémarrage.
+
+---
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues !
+Vous pouvez proposer de nouvelles traductions, corriger des bugs ou ajouter des fonctionnalités :
+
+1. Forkez le projet
+2. Créez une branche :
+
+   ```bash
+   git checkout -b feature/traduction-fr
+   ```
+3. Soumettez une Pull Request.
+
+---
+
+## 🪪 Licence
+
+Projet sous licence **MIT**.
+Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+---
+
+## 📚 Ressources utiles
+
+* Site officiel : [handy.computer](https://handy.computer)
+* Discord communautaire : [Rejoindre](https://discord.com/invite/WVBeWsNXK4)
+* Documentation technique : [Wiki du projet](https://github.com/cjpais/Handy/wiki)
+
+
+### 🧩 Nouveautés de la version 1.4.0
+
+- **Détection automatique de la langue du système** : Handy sélectionne automatiquement la langue de ton système via `navigator.language` lors du premier lancement.  
+- **Sélecteur de langue initial** : un menu de sélection apparaît dès le premier démarrage pour choisir la langue de l’interface.  
+- **Traduction étendue** : toutes les pages et labels de l’interface ont été traduits.  
+- **Documentation multilingue** : un fichier [`BUILD.fr.md`](BUILD.fr.md) a été ajouté pour les instructions de compilation en français.  
+
+Ces améliorations facilitent la configuration initiale et l’accessibilité de Handy à un plus grand nombre d’utilisateurs.  
+
+
+---
+
 # Handy
 
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
