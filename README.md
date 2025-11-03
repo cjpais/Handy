@@ -65,6 +65,97 @@ Handy includes an advanced debug mode for development and troubleshooting. Acces
 - **macOS**: `Cmd+Shift+D`
 - **Windows/Linux**: `Ctrl+Shift+D`
 
+## Troubleshooting
+
+### Manual Model Installation (For Proxy Users or Network Restrictions)
+
+If you're behind a proxy, firewall, or in a restricted network environment where Handy cannot download models automatically, you can manually download and install them. The URLs are publicly accessible from any browser.
+
+#### Step 1: Find Your App Data Directory
+
+1. Open Handy settings
+2. Navigate to the **About** section
+3. Copy the "App Data Directory" path shown there, or use the shortcuts:
+   - **macOS**: `Cmd+Shift+D` to open debug menu
+   - **Windows/Linux**: `Ctrl+Shift+D` to open debug menu
+
+The typical paths are:
+- **macOS**: `~/Library/Application Support/com.pais.handy/`
+- **Windows**: `C:\Users\{username}\AppData\Roaming\com.pais.handy\`
+- **Linux**: `~/.config/com.pais.handy/`
+
+#### Step 2: Create Models Directory
+
+Inside your app data directory, create a `models` folder if it doesn't already exist:
+
+```bash
+# macOS/Linux
+mkdir -p ~/Library/Application\ Support/com.pais.handy/models
+
+# Windows (PowerShell)
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\com.pais.handy\models"
+```
+
+#### Step 3: Download Model Files
+
+Download the models you want from https://blob.handy.computer/ using your web browser or download tool. All files are publicly accessible.
+
+**Whisper Models (single .bin files):**
+- Small (487 MB): `https://blob.handy.computer/ggml-small.bin`
+- Medium (492 MB): `https://blob.handy.computer/whisper-medium-q4_1.bin`
+- Turbo (1600 MB): `https://blob.handy.computer/ggml-large-v3-turbo.bin`
+- Large (1100 MB): `https://blob.handy.computer/ggml-large-v3-q5_0.bin`
+
+**Parakeet Models (compressed archives):**
+- V2 (473 MB): `https://blob.handy.computer/parakeet-v2-int8.tar.gz`
+- V3 (478 MB): `https://blob.handy.computer/parakeet-v3-int8.tar.gz`
+
+#### Step 4: Install Models
+
+**For Whisper Models (.bin files):**
+
+Simply place the `.bin` file directly into the `models` directory:
+
+```
+{app_data_dir}/models/
+├── ggml-small.bin
+├── whisper-medium-q4_1.bin
+├── ggml-large-v3-turbo.bin
+└── ggml-large-v3-q5_0.bin
+```
+
+**For Parakeet Models (.tar.gz archives):**
+
+1. Extract the `.tar.gz` file
+2. Place the **extracted directory** into the `models` folder
+3. The directory must be named exactly as follows:
+   - **Parakeet V2**: `parakeet-tdt-0.6b-v2-int8`
+   - **Parakeet V3**: `parakeet-tdt-0.6b-v3-int8`
+
+Final structure should look like:
+
+```
+{app_data_dir}/models/
+├── parakeet-tdt-0.6b-v2-int8/     (directory with model files inside)
+│   ├── (model files)
+│   └── (config files)
+└── parakeet-tdt-0.6b-v3-int8/     (directory with model files inside)
+    ├── (model files)
+    └── (config files)
+```
+
+**Important Notes:**
+- For Parakeet models, the extracted directory name **must** match exactly as shown above
+- Do not rename the `.bin` files for Whisper models—use the exact filenames from the download URLs
+- After placing the files, restart Handy to detect the new models
+
+#### Step 5: Verify Installation
+
+1. Restart Handy
+2. Open Settings → Models
+3. Your manually installed models should now appear as "Downloaded"
+4. Select the model you want to use and test transcription
+
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
