@@ -2,18 +2,18 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import en from "./locales/en.json";
 import fr from "./locales/fr.json";
-import es from "./locales/es.json";
+import es from "./locales/es.json"; // Importer le nouveau fichier de langue
 
 i18n
   .use(initReactI18next)
   .init({
     fallbackLng: "en",
-    supportedLngs: ["en", "fr", "es"],
+    supportedLngs: ["en", "fr", "es"], // Ajouter le code de la nouvelle langue
     defaultNS: "translation",
     resources: {
       en: { translation: en },
       fr: { translation: fr },
-      es: { translation: es },
+      es: { translation: es }, // Ajouter la nouvelle ressource
     },
     interpolation: {
       escapeValue: false,

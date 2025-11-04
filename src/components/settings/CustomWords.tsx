@@ -53,35 +53,40 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
           descriptionMode={descriptionMode}
           grouped={grouped}
         >
-          <div className="flex items-center gap-2">
-            <Input
-              type="text"
-              className="max-w-40"
-              value={newWord}
-              onChange={(e) => setNewWord(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder={t("settings.advanced.custom_words.placeholder")}
-              variant="compact"
-              disabled={isUpdating("custom_words")}
-            />
-            <Button
-              onClick={handleAddWord}
-              disabled={
-                !newWord.trim() ||
-                newWord.includes(" ") ||
-                newWord.trim().length > 50 ||
-                isUpdating("custom_words")
-              }
-              variant="primary"
-              size="md"
-            >
-              {t("settings.advanced.custom_words.add_button")}
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
+            <div className="flex-1 min-w-0">
+              <Input
+                type="text"
+                className="w-full"
+                value={newWord}
+                onChange={(e) => setNewWord(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder={t("settings.advanced.custom_words.placeholder")}
+                variant="compact"
+                disabled={isUpdating("custom_words")}
+              />
+            </div>
+            <div className="shrink-0">
+              <Button
+                onClick={handleAddWord}
+                disabled={
+                  !newWord.trim() ||
+                  newWord.includes(" ") ||
+                  newWord.trim().length > 50 ||
+                  isUpdating("custom_words")
+                }
+                variant="primary"
+                size="md"
+                className="w-full sm:w-auto"
+              >
+                {t("settings.advanced.custom_words.add_button")}
+              </Button>
+            </div>
           </div>
         </SettingContainer>
         {customWords.length > 0 && (
           <div
-            className={`px-4 p-2 ${grouped ? "" : "rounded-lg border border-mid-gray/20"} flex flex-wrap gap-1`}
+            className={`px-4 p-2 ${grouped ? "" : "rounded-lg border border-mid-gray/20"} flex flex-wrap gap-2`}
           >
             {customWords.map((word) => (
               <Button
@@ -90,7 +95,7 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
                 disabled={isUpdating("custom_words")}
                 variant="secondary"
                 size="sm"
-                className="inline-flex items-center gap-1 cursor-pointer"
+                className="inline-flex items-center gap-1 cursor-pointer shrink-0"
                 aria-label={t("settings.advanced.custom_words.remove", {
                   word,
                 })}

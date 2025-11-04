@@ -4,6 +4,7 @@ export { AdvancedSettings } from "./AdvancedSettings";
 export { DebugSettings } from "./DebugSettings";
 export { HistorySettings } from "./HistorySettings";
 export { AboutSettings } from "./AboutSettings";
+export { default as LanguageSettings } from "./LanguageSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";

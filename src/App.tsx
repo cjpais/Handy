@@ -8,11 +8,13 @@ import Onboarding from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import i18n from "./i18n";
-
-useEffect(() => {
-  const lang = localStorage.getItem("lang") || navigator.language.slice(0, 2);
-  i18n.changeLanguage(lang);
-}, []);
+import LanguageSetup from "./components/onboarding/LanguageSetup";
+import {
+  UILanguage,
+  normalizeUiLanguage,
+  getStoredUiLanguage,
+  setStoredUiLanguage,
+} from "./lib/constants/uiLanguage";
 
 
 const renderSettingsContent = (section: SidebarSection) => {
@@ -22,14 +24,37 @@ const renderSettingsContent = (section: SidebarSection) => {
 };
 
 function App() {
+  const [languageReady, setLanguageReady] = useState(false);
+  const [shouldShowLanguageSetup, setShouldShowLanguageSetup] =
+    useState(false);
+  const [languageFallback, setLanguageFallback] = useState<UILanguage>("en");
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
 
   useEffect(() => {
-    checkOnboardingStatus();
+    const stored = getStoredUiLanguage();
+
+    if (stored) {
+      i18n.changeLanguage(stored);
+      setLanguageFallback(stored);
+      setLanguageReady(true);
+      setShouldShowLanguageSetup(false);
+    } else {
+      const fallback = normalizeUiLanguage(navigator.language);
+      setLanguageFallback(fallback);
+      setShouldShowLanguageSetup(true);
+      i18n.changeLanguage(fallback);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!languageReady) {
+      return;
+    }
+    checkOnboardingStatus();
+  }, [languageReady]);
 
   // Handle keyboard shortcuts for debug mode toggle
   useEffect(() => {
@@ -71,6 +96,26 @@ function App() {
     // Transition to main app - user has started a download
     setShowOnboarding(false);
   };
+
+  const handleLanguageSelected = async (language: UILanguage) => {
+    i18n.changeLanguage(language);
+    setStoredUiLanguage(language);
+    setLanguageReady(true);
+    setShouldShowLanguageSetup(false);
+  };
+
+  if (shouldShowLanguageSetup) {
+    return (
+      <LanguageSetup
+        defaultLanguage={languageFallback}
+        onSelect={handleLanguageSelected}
+      />
+    );
+  }
+
+  if (!languageReady) {
+    return null;
+  }
 
   if (showOnboarding) {
     return <Onboarding onModelSelected={handleModelSelected} />;

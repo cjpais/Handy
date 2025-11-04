@@ -3,6 +3,11 @@
     "title": "Handy",
     "subtitle": "Free, offline, open source speech-to-text tool"
   },
+  "accessibility": {
+    "message": "Please grant accessibility permissions for Handy",
+    "grant": "Grant",
+    "verify": "Verify"
+  },
   "actions": {
     "start_recording": "Start recording",
     "stop_recording": "Stop recording",
@@ -23,7 +28,27 @@
     "advanced": "Advanced",
     "history": "History",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "languages": "Languages"
+  },
+  "language_setup": {
+    "title": "Choose your language",
+    "description": "Select the language you prefer for Handy's interface.",
+    "confirm": "Continue",
+    "languages": {
+      "en": {
+        "label": "English",
+        "description": "Use Handy in English."
+      },
+      "fr": {
+        "label": "Français",
+        "description": "Utilisez Handy en français."
+      },
+      "es": {
+        "label": "Español",
+        "description": "Use Handy in Spanish."
+      }
+    }
   },
   "settings": {
     "groups": {
@@ -34,6 +59,51 @@
       "acknowledgments": "Acknowledgments",
       "history": "History",
       "debug": "Debug"
+    },
+    "languages": {
+      "title": "Interface language",
+      "description": "Choose which language Handy uses for its interface.",
+      "options": {
+        "en": {
+          "label": "English",
+          "description": "Display Handy in English."
+        },
+        "fr": {
+          "label": "Français",
+          "description": "Afficher Handy en français."
+        },
+        "es": {
+          "label": "Español",
+          "description": "Display Handy in Spanish."
+        }
+      }
+    },
+    "advanced": {
+      "title": "Advanced",
+      "start_hidden": {
+        "label": "Launch to menu bar",
+        "description": "Start Handy in the menu bar without opening the main window."
+      },
+      "autostart": {
+        "label": "Start at login",
+        "description": "Launch Handy automatically when you log into your computer."
+      },
+      "overlay_position": {
+        "label": "Overlay position",
+        "description": "Choose where the recording overlay appears on your screen."
+      },
+      "translate_to_english": {
+        "label": "Translate transcriptions to English",
+        "description": "Automatically translate recognized speech into English when available."
+      },
+      "model_unload": {
+        "title": "Unload model",
+        "description": "Free memory after Handy has been idle for the selected duration."
+      },
+      "custom_words": {
+        "title": "Custom words",
+        "description": "Add or edit words that Handy should always recognize and correct automatically."
+      }
     },
     "language": {
       "title": "Language",

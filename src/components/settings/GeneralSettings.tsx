@@ -1,7 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { MicrophoneSelector } from "./MicrophoneSelector";
-import { LanguageSelector } from "./LanguageSelector";
 import { HandyShortcut } from "./HandyShortcut";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { OutputDeviceSelector } from "./OutputDeviceSelector";
@@ -18,7 +17,6 @@ export const GeneralSettings: React.FC = () => {
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.groups.general")}>
         <HandyShortcut descriptionMode="tooltip" grouped={true} />
-        <LanguageSelector descriptionMode="tooltip" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
       <SettingsGroup title={t("settings.groups.sound")}>

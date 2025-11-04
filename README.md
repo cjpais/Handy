@@ -119,10 +119,16 @@ Depuis la version **1.3.0**, Handy est disponible en plusieurs langues :
 
 * 🇬🇧 **Anglais (par défaut)**
 * 🇫🇷 **Français**
+* 🇪🇸 **Espagnol**
 * 📘 **Documentation** : [English](BUILD.md) | [Français](BUILD.fr.md)
+* 🔤 **Guide d'internationalisation** : [LOCALIZATION.md](LOCALIZATION.md)
 
 La langue peut être sélectionnée depuis le menu **Paramètres → Langue**.
-Toutes les sections de paramètres (Général, Avancé, Historique, Debug) sont synchronisées dans les deux langues et le choix reste enregistré pour les prochaines sessions.
+Toutes les sections de paramètres (Général, Avancé, Historique, Debug) sont synchronisées dans les trois langues et le choix reste enregistré pour les prochaines sessions.
+
+### Ajouter une nouvelle langue
+
+Si vous souhaitez contribuer en ajoutant une nouvelle langue à Handy, consultez notre [Guide d'internationalisation](LOCALIZATION.md) qui explique en détail le processus d'ajout d'une nouvelle langue, les bonnes pratiques et les ressources utiles.
 
 ---
 
@@ -160,11 +166,39 @@ Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 - **Détection automatique de la langue du système** : Handy sélectionne automatiquement la langue de ton système via `navigator.language` lors du premier lancement.  
 - **Sélecteur de langue initial** : un menu de sélection apparaît dès le premier démarrage pour choisir la langue de l’interface.  
 - **Traduction étendue** : toutes les pages et labels de l’interface ont été traduits.  
+- **Support de l'espagnol** : l'application est désormais disponible en espagnol, en plus du français et de l'anglais.
 - **Documentation multilingue** : un fichier [`BUILD.fr.md`](BUILD.fr.md) a été ajouté pour les instructions de compilation en français.  
+- **Guide d'internationalisation** : un guide complet pour ajouter de nouvelles langues a été créé.
 
 
 ---
 
+## Internationalization
+
+Since version **1.3.0**, Handy is available in multiple languages:
+
+- 🇬🇧 **English (default)**
+- 🇫🇷 **French**
+- 🇪🇸 **Spanish**
+- 📘 **Documentation**: [English](BUILD.md) | [French](BUILD.fr.md)
+- 🔤 **Localization Guide**: [LOCALIZATION.md](LOCALIZATION.md)
+
+Language can be selected from the **Settings → Language** menu.
+
+### Adding a New Language
+
+If you'd like to contribute by adding a new language to Handy, check our [Localization Guide](LOCALIZATION.md) which explains in detail the process of adding a new language, best practices, and useful resources.
+
+### What's New in Version 1.4.0
+
+- **Automatic System Language Detection**: Handy automatically selects your system language via `navigator.language` on first launch.  
+- **Initial Language Selector**: A selection menu appears on first startup to choose the interface language.  
+- **Extended Translation**: All pages and interface labels have been translated.  
+- **Spanish Language Support**: The application is now available in Spanish, in addition to French and English.
+- **Multilingual Documentation**: A [`BUILD.fr.md`](BUILD.fr.md) file has been added for compilation instructions in French.
+- **Localization Guide**: A comprehensive guide for adding new languages has been added.
+
+---
 
 # Handy 🇬🇧
 

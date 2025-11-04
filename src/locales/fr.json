@@ -3,6 +3,11 @@
     "title": "Handy",
     "subtitle": "Outil de dictée gratuit, hors ligne et open source"
   },
+  "accessibility": {
+    "message": "Veuillez accorder les autorisations d'accessibilité pour Handy",
+    "grant": "Autorisations",
+    "verify": "Vérifier"
+  },
   "actions": {
     "start_recording": "Démarrer l'enregistrement",
     "stop_recording": "Arrêter l'enregistrement",
@@ -23,7 +28,27 @@
     "advanced": "Avancé",
     "history": "Historique",
     "debug": "Debug",
-    "about": "À propos"
+    "about": "À propos",
+    "languages": "Langues"
+  },
+  "language_setup": {
+    "title": "Choisissez votre langue",
+    "description": "Sélectionnez la langue d'affichage de Handy.",
+    "confirm": "Continuer",
+    "languages": {
+      "en": {
+        "label": "English",
+        "description": "Utiliser Handy en anglais."
+      },
+      "fr": {
+        "label": "Français",
+        "description": "Utiliser Handy en français."
+      },
+      "es": {
+        "label": "Español",
+        "description": "Utiliser Handy en espagnol."
+      }
+    }
   },
   "settings": {
     "groups": {
@@ -34,6 +59,24 @@
       "acknowledgments": "Remerciements",
       "history": "Historique",
       "debug": "Debug"
+    },
+    "languages": {
+      "title": "Langue de l’interface",
+      "description": "Choisissez la langue utilisée par Handy pour l’interface.",
+      "options": {
+        "en": {
+          "label": "English",
+          "description": "Afficher Handy en anglais."
+        },
+        "fr": {
+          "label": "Français",
+          "description": "Afficher Handy en français."
+        },
+        "es": {
+          "label": "Español",
+          "description": "Afficher Handy en espagnol."
+        }
+      }
     },
     "language": {
       "title": "Langue",
@@ -154,28 +197,32 @@
         "unit": "entrées"
       },
       "autostart": {
-        "label": "Lancer au démarrage",
-        "description": "Démarre automatiquement Handy lorsque tu ouvres ta session."
+        "label": "Lancement au démarrage",
+        "description": "Démarre automatiquement Handy lorsque vous vous connectez à votre ordinateur."
       },
       "start_hidden": {
-        "label": "Démarrer en arrière-plan",
-        "description": "Lance Handy dans la zone de notification sans ouvrir la fenêtre."
+        "label": "Lancer vers la barre de menu",
+        "description": "Démarre Handy dans la barre de menu sans ouvrir la fenêtre principale."
       },
       "custom_words": {
         "title": "Mots personnalisés",
-        "description": "Ajoute des mots que Handy doit reconnaître et corriger automatiquement pendant la transcription.",
-        "placeholder": "Ajouter un mot",
-        "add_button": "Ajouter",
+        "description": "Ajoutez des mots ou expressions que Handy doit reconnaître et corriger automatiquement pendant la transcription. Parfait pour les termes techniques, les noms propres ou les abréviations spécifiques.",
+        "placeholder": "Saisissez un mot ou une expression",
+        "add_button": "Ajouter le mot",
         "remove": "Supprimer {{word}}"
       },
       "translate_to_english": {
         "label": "Traduire en anglais",
-        "description": "Traduire automatiquement la parole d’autres langues vers l’anglais lors de la transcription.",
-        "unsupported": "La traduction n’est pas prise en charge par le modèle {{model}}."
+        "description": "Traduire automatiquement la parole d'autres langues vers l'anglais lors de la transcription.",
+        "unsupported": "La traduction n'est pas prise en charge par le modèle {{model}}."
+      },
+      "model_unload": {
+        "title": "Décharger le modèle",
+        "description": "Libère automatiquement la mémoire GPU/CPU lorsque le modèle n'a pas été utilisé pendant le délai choisi."
       },
       "model_unload_timeout": {
         "title": "Décharger le modèle",
-        "description": "Libère automatiquement la mémoire GPU/CPU lorsque le modèle n’a pas été utilisé pendant le délai choisi.",
+        "description": "Libère automatiquement la mémoire GPU/CPU lorsque le modèle n'a pas été utilisé pendant le délai choisi.",
         "options": {
           "never": "Jamais",
           "immediately": "Immédiatement",
