@@ -44,6 +44,32 @@
       "auto": "Auto",
       "reset": "Reset language"
     },
+    "general": {
+      "microphone": {
+        "title": "Microphone",
+        "description": "Select the input device Handy should use for recording.",
+        "loading": "Loading…",
+        "placeholder": "Select microphone…"
+      },
+      "output_device": {
+        "title": "Output device",
+        "description": "Select the audio output device used for Handy's feedback sounds.",
+        "loading": "Loading…",
+        "placeholder": "Select output device…"
+      },
+      "push_to_talk": {
+        "label": "Push to talk",
+        "description": "Hold the shortcut to record, release to stop."
+      },
+      "audio_feedback": {
+        "label": "Audio feedback",
+        "description": "Play a sound when recording starts and stops."
+      },
+      "volume": {
+        "label": "Volume",
+        "description": "Adjust the volume of Handy's audio feedback."
+      }
+    },
     "about": {
       "version": {
         "title": "Version",
@@ -117,6 +143,14 @@
         "title": "History limit",
         "description": "Maximum number of transcription entries to keep in history.",
         "unit": "entries"
+      },
+      "autostart": {
+        "label": "Launch on startup",
+        "description": "Automatically start Handy when you log into your computer."
+      },
+      "start_hidden": {
+        "label": "Start hidden",
+        "description": "Launch Handy to the system tray without opening the window."
       },
       "model_unload_timeout": {
         "title": "Unload model",

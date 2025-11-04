@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -14,6 +15,7 @@ interface OutputDeviceSelectorProps {
 export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
   React.memo(
     ({ descriptionMode = "tooltip", grouped = false, disabled = false }) => {
+      const { t } = useTranslation();
       const {
         getSetting,
         updateSetting,
@@ -44,8 +46,8 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
 
       return (
         <SettingContainer
-          title="Output Device"
-          description="Select your preferred audio output device for feedback sounds"
+          title={t("settings.general.output_device.title")}
+          description={t("settings.general.output_device.description")}
           descriptionMode={descriptionMode}
           grouped={grouped}
           disabled={disabled}
@@ -57,8 +59,8 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
               onSelect={handleOutputDeviceSelect}
               placeholder={
                 isLoading || outputDevices.length === 0
-                  ? "Loading..."
-                  : "Select output device..."
+                  ? t("settings.general.output_device.loading")
+                  : t("settings.general.output_device.placeholder")
               }
               disabled={
                 disabled ||

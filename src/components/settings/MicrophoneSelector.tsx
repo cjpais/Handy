@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -13,6 +14,7 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
+  const { t } = useTranslation();
   const {
     getSetting,
     updateSetting,
@@ -41,8 +43,8 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
 
   return (
     <SettingContainer
-      title="Microphone"
-      description="Select your preferred microphone device"
+      title={t("settings.general.microphone.title")}
+      description={t("settings.general.microphone.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
     >
@@ -51,7 +53,11 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
           options={microphoneOptions}
           selectedValue={selectedMicrophone}
           onSelect={handleMicrophoneSelect}
-          placeholder={isLoading || audioDevices.length === 0 ? "Loading..." : "Select microphone..."}
+          placeholder={
+            isLoading || audioDevices.length === 0
+              ? t("settings.general.microphone.loading")
+              : t("settings.general.microphone.placeholder")
+          }
           disabled={isUpdating("selected_microphone") || isLoading || audioDevices.length === 0}
           onRefresh={refreshAudioDevices}
         />

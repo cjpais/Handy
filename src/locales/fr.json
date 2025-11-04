@@ -44,6 +44,32 @@
       "auto": "Auto",
       "reset": "Réinitialiser la langue"
     },
+    "general": {
+      "microphone": {
+        "title": "Microphone",
+        "description": "Sélectionne le périphérique d’entrée utilisé pour l’enregistrement.",
+        "loading": "Chargement…",
+        "placeholder": "Choisir un microphone…"
+      },
+      "output_device": {
+        "title": "Sortie audio",
+        "description": "Choisissez le périphérique de sortie utilisé pour les sons de feedback de Handy.",
+        "loading": "Chargement…",
+        "placeholder": "Choisir une sortie audio…"
+      },
+      "push_to_talk": {
+        "label": "Push-to-talk",
+        "description": "Maintiens le raccourci pour enregistrer, relâche pour arrêter."
+      },
+      "audio_feedback": {
+        "label": "Retour audio",
+        "description": "Joue un son au démarrage et à l’arrêt de l’enregistrement."
+      },
+      "volume": {
+        "label": "Volume",
+        "description": "Ajuste le volume des sons de feedback audio."
+      }
+    },
     "about": {
       "version": {
         "title": "Version",
@@ -117,6 +143,14 @@
         "title": "Limite d’historique",
         "description": "Nombre maximal de transcriptions conservées dans l’historique.",
         "unit": "entrées"
+      },
+      "autostart": {
+        "label": "Lancer au démarrage",
+        "description": "Démarre automatiquement Handy lorsque tu ouvres ta session."
+      },
+      "start_hidden": {
+        "label": "Démarrer en arrière-plan",
+        "description": "Lance Handy dans la zone de notification sans ouvrir la fenêtre."
       },
       "model_unload_timeout": {
         "title": "Décharger le modèle",
