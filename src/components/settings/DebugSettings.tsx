@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next";
 import { WordCorrectionThreshold } from "./debug/WordCorrectionThreshold";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { HistoryLimit } from "./HistoryLimit";
-import { PasteMethodSetting } from "./PasteMethod";
-import { ClipboardHandlingSetting } from "./ClipboardHandling";
 import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
 import { SoundPicker } from "./SoundPicker";
 import { MuteWhileRecording } from "./MuteWhileRecording";

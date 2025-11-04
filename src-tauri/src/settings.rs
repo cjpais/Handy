@@ -38,6 +38,8 @@ pub enum ModelUnloadTimeout {
 pub enum PasteMethod {
     CtrlV,
     Direct,
+    #[cfg(not(target_os = "macos"))]
+    ShiftInsert,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]

@@ -14,6 +14,11 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
+    const [osType, setOsType] = useState<string>("unknown");
+
+    useEffect(() => {
+      setOsType(getOsType());
+    }, []);
 
     const selectedMethod = (getSetting("paste_method") ||
       "ctrl_v") as PasteMethod;
