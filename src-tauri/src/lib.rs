@@ -33,19 +33,42 @@ type ManagedToggleState = Mutex<ShortcutToggleStates>;
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
-        // First, ensure the window is visible
+        // On macOS, ensure the app becomes active and in the foreground
+        #[cfg(target_os = "macos")]
+        {
+            // First set the activation policy to Regular to ensure the app appears in the dock
+            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
+                eprintln!("Failed to set activation policy to Regular: {}", e);
+            }
+            
+            // Activate the app (bring to foreground)
+            if let Err(e) = app.show() {
+                eprintln!("Failed to show app: {}", e);
+            }
+        }
+        
+        // Ensure the window is visible and focused
+        if let Err(e) = main_window.unminimize() {
+            eprintln!("Failed to unminimize window: {}", e);
+        }
+        
         if let Err(e) = main_window.show() {
             eprintln!("Failed to show window: {}", e);
         }
-        // Then, bring it to the front and give it focus
+        
         if let Err(e) = main_window.set_focus() {
             eprintln!("Failed to focus window: {}", e);
         }
-        // Optional: On macOS, ensure the app becomes active if it was an accessory
+        
+        // On macOS, ensure the app is the active application
         #[cfg(target_os = "macos")]
         {
-            if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
-                eprintln!("Failed to set activation policy to Regular: {}", e);
+            use cocoa::appkit::NSApplication;
+            use objc::runtime::YES;
+            
+            unsafe {
+                let app = cocoa::appkit::NSApp();
+                app.activateIgnoringOtherApps_(YES);
             }
         }
     } else {
@@ -76,12 +99,20 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
 
-    // Apply macOS Accessory policy if starting hidden
+    // Check if it's the first launch
+    let first_launch = std::env::args().nth(1) != Some("--hidden".to_string());
+
+    // Apply macOS Accessory policy if starting hidden and not first launch
     #[cfg(target_os = "macos")]
     {
         let settings = settings::get_settings(app_handle);
-        if settings.start_hidden {
+        if settings.start_hidden && !first_launch {
             let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
+        } else {
+            // Force Regular activation policy on first launch
+            let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Regular);
+            // Show the main window
+            show_main_window(app_handle);
         }
     }
     // Get the current theme to set the appropriate initial icon

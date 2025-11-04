@@ -1,99 +1,146 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "./ui/Button";
 import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
 } from "tauri-plugin-macos-permissions-api";
 
-// Define permission state type
-type PermissionState = "request" | "verify" | "granted";
-
-// Define button configuration type
-interface ButtonConfig {
-  text: string;
-  className: string;
+interface AccessibilityPermissionsProps {
+  // Callback appelé lorsque les permissions sont accordées
+  onGranted?: () => void;
+  // Pour forcer l'affichage du prompt
+  forceShow?: boolean;
 }
 
-const AccessibilityPermissions: React.FC = () => {
+const AccessibilityPermissions: React.FC<AccessibilityPermissionsProps> = ({
+  onGranted,
+  forceShow = false,
+}) => {
   const { t } = useTranslation();
+  const [isChecking, setIsChecking] = useState<boolean>(false);
+  const [showPrompt, setShowPrompt] = useState<boolean>(forceShow);
   const [hasAccessibility, setHasAccessibility] = useState<boolean>(false);
-  const [permissionState, setPermissionState] =
-    useState<PermissionState>("request");
 
-  // Check permissions without requesting
+  // Vérifier les permissions sans demander
   const checkPermissions = async (): Promise<boolean> => {
-    const hasPermissions: boolean = await checkAccessibilityPermission();
-    setHasAccessibility(hasPermissions);
-    setPermissionState(hasPermissions ? "granted" : "verify");
-    return hasPermissions;
-  };
-
-  // Handle the unified button action based on current state
-  const handleButtonClick = async (): Promise<void> => {
-    if (permissionState === "request") {
-      try {
-        await requestAccessibilityPermission();
-        // After system prompt, transition to verification state
-        setPermissionState("verify");
-      } catch (error) {
-        console.error("Error requesting permissions:", error);
-        setPermissionState("verify");
+    try {
+      const hasPermissions = await checkAccessibilityPermission();
+      setHasAccessibility(hasPermissions);
+      if (hasPermissions && onGranted) {
+        onGranted();
       }
-    } else if (permissionState === "verify") {
-      // State is "verify" - check if permission was granted
-      await checkPermissions();
+      return hasPermissions;
+    } catch (error) {
+      console.error("Error checking accessibility permissions:", error);
+      return false;
     }
   };
 
-  // On app boot - check permissions
-  useEffect(() => {
-    const initialSetup = async (): Promise<void> => {
-      const hasPermissions: boolean = await checkAccessibilityPermission();
-      setHasAccessibility(hasPermissions);
-      setPermissionState(hasPermissions ? "granted" : "request");
-    };
+  // Gérer la demande de permission
+  const handleRequestPermission = async (): Promise<void> => {
+    if (isChecking) return;
+    
+    setIsChecking(true);
+    try {
+      // D'abord vérifier si on a déjà la permission
+      const hasPermission = await checkPermissions();
+      
+      if (!hasPermission) {
+        // Si on n'a pas la permission, on la demande
+        const granted = await requestAccessibilityPermission();
+        if (granted) {
+          await checkPermissions();
+        }
+      }
+    } catch (error) {
+      console.error("Error requesting accessibility permissions:", error);
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
-    initialSetup();
-  }, []);
-
-  if (hasAccessibility) {
+  // Si on a déjà les permissions, on n'affiche rien
+  if (hasAccessibility && !forceShow) {
     return null;
   }
 
-  // Configure button text and style based on state
-  const buttonConfig: Record<PermissionState, ButtonConfig | null> = {
-    request: {
-      text: t("accessibility.grant", "Autorisations"),
-      className:
-        "px-2 py-1 text-sm font-semibold bg-mid-gray/10 border  border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary",
-    },
-    verify: {
-      text: t("accessibility.verify", "Vérifier"),
-      className:
-        "bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1 px-3 rounded text-sm flex items-center justify-center cursor-pointer",
-    },
-    granted: null,
-  };
-
-  const config = buttonConfig[permissionState] as ButtonConfig;
+  // Si on ne doit pas afficher le prompt, on n'affiche rien
+  if (!showPrompt && !forceShow) {
+    return null;
+  }
 
   return (
-    <div className="p-4 w-full rounded-lg border border-mid-gray">
-      <div className="flex justify-between items-center gap-2">
-        <div className="">
-          <p className="text-sm font-medium">
-            {t("accessibility.message", "Veuillez accorder les autorisations d'accessibilité pour Handy")}
+    <div className="p-4 w-full rounded-lg border border-mid-gray bg-white dark:bg-gray-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex-1">
+          <h3 className="font-medium text-gray-900 dark:text-white">
+            {t("accessibility.title", "Autorisations requises")}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            {t(
+              "accessibility.message",
+              "Certaines fonctionnalités de Handy nécessitent des autorisations d'accessibilité pour fonctionner correctement."
+            )}
           </p>
+          <details className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <summary className="cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+              {t("accessibility.why_needed", "Pourquoi ces autorisations sont-elles nécessaires ?")}
+            </summary>
+            <p className="mt-1">
+              {t(
+                "accessibility.explanation",
+                "Ces autorisations sont nécessaires pour permettre à Handy d'interagir avec d'autres applications et de fournir des fonctionnalités avancées comme la lecture et la saisie de texte dans d'autres applications."
+              )}
+            </p>
+          </details>
         </div>
-        <button
-          onClick={handleButtonClick}
-          className={`min-h-10 ${config.className}`}
-        >
-          {config.text}
-        </button>
+        <div className="shrink-0">
+          <Button
+            onClick={handleRequestPermission}
+            disabled={isChecking}
+            className="whitespace-nowrap"
+          >
+            {isChecking
+              ? t("accessibility.checking", "Vérification...")
+              : t("accessibility.grant", "Autoriser l'accès")}
+          </Button>
+        </div>
       </div>
+      
+      {!forceShow && (
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+          <button
+            onClick={() => setShowPrompt(false)}
+            className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            {t("common.later", "Plus tard")}
+          </button>
+        </div>
+      )}
     </div>
   );
+};
+
+// Fonction utilitaire pour vérifier les permissions depuis n'importe où
+export const checkAccessibility = async (): Promise<boolean> => {
+  try {
+    return await checkAccessibilityPermission();
+  } catch (error) {
+    console.error("Error checking accessibility:", error);
+    return false;
+  }
+};
+
+// Fonction utilitaire pour demander les permissions
+export const requestAccessibility = async (): Promise<boolean> => {
+  try {
+    const result = await requestAccessibilityPermission();
+    return result === true;
+  } catch (error) {
+    console.error("Error requesting accessibility:", error);
+    return false;
+  }
 };
 
 export default AccessibilityPermissions;

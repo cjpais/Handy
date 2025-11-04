@@ -34,14 +34,18 @@ function App() {
   const { settings, updateSetting } = useSettings();
 
   useEffect(() => {
+    // Vérifier si c'est le premier démarrage
+    const isFirstLaunch = localStorage.getItem('handy_first_launch') !== 'false';
     const stored = getStoredUiLanguage();
 
-    if (stored) {
+    if (stored && !isFirstLaunch) {
+      // Si la langue est déjà stockée et ce n'est pas le premier démarrage
       i18n.changeLanguage(stored);
       setLanguageFallback(stored);
       setLanguageReady(true);
       setShouldShowLanguageSetup(false);
     } else {
+      // Premier démarrage ou langue non définie
       const fallback = normalizeUiLanguage(navigator.language);
       setLanguageFallback(fallback);
       setShouldShowLanguageSetup(true);
@@ -98,9 +102,15 @@ function App() {
   };
 
   const handleLanguageSelected = async (language: UILanguage) => {
+    // Changer la langue dans i18n
     i18n.changeLanguage(language);
+    // Stocker la langue sélectionnée
     setStoredUiLanguage(language);
+    // Marquer que la langue est prête
     setLanguageReady(true);
+    // Marquer que ce n'est plus le premier démarrage
+    localStorage.setItem('handy_first_launch', 'false');
+    // Masquer l'écran de sélection de langue
     setShouldShowLanguageSetup(false);
   };
 

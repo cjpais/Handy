@@ -4,9 +4,13 @@
     "subtitle": "Outil de dictée gratuit, hors ligne et open source"
   },
   "accessibility": {
-    "message": "Veuillez accorder les autorisations d'accessibilité pour Handy",
-    "grant": "Autorisations",
-    "verify": "Vérifier"
+    "message": "Certaines fonctionnalités de Handy nécessitent des autorisations d'accessibilité pour fonctionner correctement.",
+    "grant": "Autoriser l'accès",
+    "verify": "Vérifier",
+    "title": "Autorisations requises",
+    "checking": "Vérification...",
+    "why_needed": "Pourquoi ces autorisations sont-elles nécessaires ?",
+    "explanation": "Ces autorisations sont nécessaires pour permettre à Handy d'interagir avec d'autres applications et de fournir des fonctionnalités avancées comme la lecture et la saisie de texte dans d'autres applications."
   },
   "actions": {
     "start_recording": "Démarrer l'enregistrement",
@@ -21,20 +25,23 @@
     "cancel": "Annuler",
     "theme": "Thème",
     "about": "À propos de Handy",
-    "debug_mode": "Mode Débogage"
+    "debug_mode": "Mode Débogage",
+    "later": "Plus tard"
   },
   "sidebar": {
     "general": "Général",
     "advanced": "Avancé",
     "history": "Historique",
-    "debug": "Debug",
+    "debug": "Débogage",
     "about": "À propos",
     "languages": "Langues"
   },
   "language_setup": {
-    "title": "Choisissez votre langue",
-    "description": "Sélectionnez la langue d'affichage de Handy.",
+    "title": "Bienvenue dans Handy",
+    "description": "Choisissez votre langue préférée pour continuer",
     "confirm": "Continuer",
+    "continue": "Continuer",
+    "can_change_later": "Vous pourrez modifier ce choix ultérieurement dans les paramètres",
     "languages": {
       "en": {
         "label": "English",
@@ -58,7 +65,7 @@
       "about": "À propos",
       "acknowledgments": "Remerciements",
       "history": "Historique",
-      "debug": "Debug"
+      "debug": "Débogage"
     },
     "languages": {
       "title": "Langue de l’interface",
@@ -76,6 +83,33 @@
           "label": "Español",
           "description": "Afficher Handy en espagnol."
         }
+      }
+    },
+    "advanced": {
+      "title": "Avancé",
+      "start_hidden": {
+        "label": "Lancer dans la barre de menu",
+        "description": "Démarre Handy dans la barre de menu sans ouvrir la fenêtre principale."
+      },
+      "autostart": {
+        "label": "Démarrer à la connexion",
+        "description": "Lance Handy automatiquement lorsque vous vous connectez à votre ordinateur."
+      },
+      "overlay_position": {
+        "label": "Position de la superposition",
+        "description": "Choisissez où la superposition d'enregistrement apparaît sur votre écran."
+      },
+      "translate_to_english": {
+        "label": "Traduire les transcriptions en anglais",
+        "description": "Traduit automatiquement la parole reconnue en anglais lorsque disponible."
+      },
+      "model_unload": {
+        "title": "Décharger le modèle",
+        "description": "Libérer la mémoire après que Handy a été inactif pendant la durée sélectionnée."
+      },
+      "custom_words": {
+        "title": "Mots personnalisés",
+        "description": "Ajoutez ou modifiez des mots que Handy doit toujours reconnaître et corriger automatiquement."
       }
     },
     "language": {
@@ -110,7 +144,8 @@
       },
       "volume": {
         "label": "Volume",
-        "description": "Ajuste le volume des sons de feedback audio."
+        "description": "Ajuste le volume des sons de feedback audio.",
+        "format": "{{value}}%"
       }
     },
     "about": {
@@ -201,7 +236,7 @@
         "description": "Démarre automatiquement Handy lorsque vous vous connectez à votre ordinateur."
       },
       "start_hidden": {
-        "label": "Lancer vers la barre de menu",
+        "label": "Lancer dans la barre de menu",
         "description": "Démarre Handy dans la barre de menu sans ouvrir la fenêtre principale."
       },
       "custom_words": {
@@ -231,7 +266,7 @@
           "min10": "Après 10 minutes",
           "min15": "Après 15 minutes",
           "hour1": "Après 1 heure",
-          "sec5": "Après 5 secondes (Debug)"
+          "sec5": "Après 5 secondes (Débogage)"
         }
       },
       "always_on_microphone": {
@@ -243,7 +278,7 @@
         "description": "Coupe automatiquement le son du système pendant l’enregistrement, puis le restaure ensuite."
       },
       "paths": {
-        "title": "Chemins de debug",
+        "title": "Chemins de débogage",
         "description": "Affiche les principaux dossiers utilisés par Handy pour le diagnostic.",
         "labels": {
           "app_data": "Données",

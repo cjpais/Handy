@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Handy",
-    "subtitle": "Herramienta de reconocimiento de voz gratuita, sin conexiu00f3n y de cu00f3digo abierto"
+    "subtitle": "Herramienta de reconocimiento de voz gratuita, sin conexión y de código abierto"
   },
   "accessibility": {
     "message": "Por favor, concede permisos de accesibilidad para Handy",
@@ -9,9 +9,9 @@
     "verify": "Verificar"
   },
   "actions": {
-    "start_recording": "Iniciar grabaciu00f3n",
-    "stop_recording": "Detener grabaciu00f3n",
-    "mute_while_recording": "Silenciar durante la grabaciu00f3n"
+    "start_recording": "Iniciar grabación",
+    "stop_recording": "Detener grabación",
+    "mute_while_recording": "Silenciar durante la grabación"
   },
   "common": {
     "settings": "Ajustes",
@@ -21,13 +21,13 @@
     "cancel": "Cancelar",
     "theme": "Tema",
     "about": "Acerca de Handy",
-    "debug_mode": "Modo de depuraciu00f3n"
+    "debug_mode": "Modo de depuración"
   },
   "sidebar": {
     "general": "General",
     "advanced": "Avanzado",
     "history": "Historial",
-    "debug": "Depuraciu00f3n",
+    "debug": "Depuración",
     "about": "Acerca de",
     "languages": "Idiomas"
   },
@@ -38,15 +38,15 @@
     "languages": {
       "en": {
         "label": "English",
-        "description": "Usar Handy en inglu00e9s."
+        "description": "Usar Handy en inglés."
       },
       "fr": {
-        "label": "Franu00e7ais",
-        "description": "Usar Handy en francu00e9s."
+        "label": "Français",
+        "description": "Usar Handy en francés."
       },
       "es": {
-        "label": "Espau00f1ol",
-        "description": "Usar Handy en espau00f1ol."
+        "label": "Español",
+        "description": "Usar Handy en español."
       }
     }
   },
@@ -81,38 +81,38 @@
     "advanced": {
       "title": "Avanzado",
       "start_hidden": {
-        "label": "Iniciar en la barra de menu00fa",
-        "description": "Iniciar Handy en la barra de menu00fa sin abrir la ventana principal."
+        "label": "Iniciar en la barra de menú",
+        "description": "Iniciar Handy en la barra de menú sin abrir la ventana principal."
       },
       "autostart": {
         "label": "Iniciar al arrancar",
-        "description": "Iniciar Handy automu00e1ticamente cuando inicias sesiu00f3n en tu ordenador."
+        "description": "Iniciar Handy automáticamente cuando inicias sesión en tu ordenador."
       },
       "overlay_position": {
-        "label": "Posiciu00f3n de superposiciu00f3n",
-        "description": "Elige du00f3nde aparece la superposiciu00f3n de grabaciu00f3n en tu pantalla."
+        "label": "Posición de superposición",
+        "description": "Elige dónde aparece la superposición de grabación en tu pantalla."
       },
       "translate_to_english": {
-        "label": "Traducir al inglu00e9s",
-        "description": "Traducir automu00e1ticamente el habla reconocida al inglu00e9s cuando estu00e9 disponible.",
-        "unsupported": "La traducciu00f3n no es compatible con el modelo {{model}}."
+        "label": "Traducir al inglés",
+        "description": "Traducir automáticamente el habla reconocida al inglés cuando esté disponible.",
+        "unsupported": "La traducción no es compatible con el modelo {{model}}."
       },
       "model_unload": {
         "title": "Descargar modelo",
-        "description": "Liberar memoria despuu00e9s de que Handy haya estado inactivo durante el tiempo seleccionado."
+        "description": "Liberar memoria después de que Handy haya estado inactivo durante el tiempo seleccionado."
       },
       "custom_words": {
         "title": "Palabras personalizadas",
-        "description": "Au00f1ade palabras que Handy debe reconocer y corregir automu00e1ticamente durante la transcripciu00f3n.",
-        "placeholder": "Au00f1adir una palabra",
-        "add_button": "Au00f1adir",
+        "description": "Añade palabras que Handy debe reconocer y corregir automáticamente durante la transcripción.",
+        "placeholder": "Añadir una palabra",
+        "add_button": "Añadir",
         "remove": "Eliminar {{word}}"
       }
     },
     "language": {
       "title": "Idioma",
-      "description": "Selecciona el idioma para el reconocimiento de voz. Auto detectaru00e1 automu00e1ticamente el idioma, mientras que seleccionar un idioma especu00edfico puede mejorar la precisiu00f3n para ese idioma.",
-      "unsupported_description": "El modelo Parakeet detecta automu00e1ticamente el idioma. No se necesita selecciu00f3n manual.",
+      "description": "Selecciona el idioma para el reconocimiento de voz. Auto detectará automáticamente el idioma, mientras que seleccionar un idioma específico puede mejorar la precisión para ese idioma.",
+      "unsupported_description": "El modelo Parakeet detecta automáticamente el idioma. No se necesita selección manual.",
       "search_placeholder": "Buscar idiomas...",
       "empty_search": "No se encontraron idiomas",
       "auto": "Auto",
@@ -120,14 +120,14 @@
     },
     "general": {
       "microphone": {
-        "title": "Micru00f3fono",
+        "title": "Micrófono",
         "description": "Selecciona el dispositivo de entrada que Handy debe usar para grabar.",
         "loading": "Cargando...",
-        "placeholder": "Seleccionar micru00f3fono..."
+        "placeholder": "Seleccionar micrófono..."
       },
       "output_device": {
         "title": "Dispositivo de salida",
-        "description": "Selecciona el dispositivo de salida de audio utilizado para los sonidos de retroalimentaciu00f3n de Handy.",
+        "description": "Selecciona el dispositivo de salida de audio utilizado para los sonidos de retroalimentación de Handy.",
         "loading": "Cargando...",
         "placeholder": "Seleccionar dispositivo de salida..."
       },
@@ -136,37 +136,37 @@
         "description": "Manten pulsado el atajo para grabar, suelta para detener."
       },
       "audio_feedback": {
-        "label": "Retroalimentaciu00f3n de audio",
-        "description": "Reproducir un sonido cuando la grabaciu00f3n comienza y termina."
+        "label": "Retroalimentación de audio",
+        "description": "Reproducir un sonido cuando la grabación comienza y termina."
       },
       "volume": {
         "label": "Volumen",
-        "description": "Ajusta el volumen de la retroalimentaciu00f3n de audio de Handy.",
+        "description": "Ajusta el volumen de la retroalimentación de audio de Handy.",
         "format": "{{value}}%"
       }
     },
     "about": {
       "version": {
-        "title": "Versiu00f3n",
-        "description": "Versiu00f3n actual de Handy",
+        "title": "Versión",
+        "description": "Versión actual de Handy",
         "value": "v{{version}}",
-        "loading": "Cargando versiu00f3n..."
+        "loading": "Cargando versión..."
       },
       "source": {
-        "title": "Cu00f3digo fuente",
-        "description": "Ver cu00f3digo fuente y contribuir",
+        "title": "Código fuente",
+        "description": "Ver código fuente y contribuir",
         "button": "Ver en GitHub"
       },
       "support": {
         "title": "Apoyar el desarrollo",
-        "description": "Ayu00fadanos a seguir desarrollando Handy",
+        "description": "Ayúdanos a seguir desarrollando Handy",
         "button": "Donar"
       },
       "acknowledgments": {
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "Inferencia de alto rendimiento del modelo de reconocimiento de voz automu00e1tico Whisper de OpenAI",
-          "body": "Handy utiliza Whisper.cpp para un procesamiento ru00e1pido y local de voz a texto. Gracias al increible trabajo de Georgi Gerganov y colaboradores."
+          "description": "Inferencia de alto rendimiento del modelo de reconocimiento de voz automático Whisper de OpenAI",
+          "body": "Handy utiliza Whisper.cpp para un procesamiento rápido y local de voz a texto. Gracias al increíble trabajo de Georgi Gerganov y colaboradores."
         }
       },
       "groups": {
@@ -174,63 +174,75 @@
         "acknowledgments": "Agradecimientos"
       },
       "app_data_directory": {
-        "label": "Directorio de datos de la aplicaciu00f3n",
+        "label": "Directorio de datos de la aplicación",
         "description": "Carpeta principal donde Handy almacena datos, configuraciones y modelos descargados.",
-        "error": "Error al cargar el directorio de la aplicaciu00f3n: {{error}}"
+        "error": "Error al cargar el directorio de la aplicación: {{error}}"
       }
     },
     "history": {
       "loading": "Cargando historial...",
-      "empty": "Au00fan no hay transcripciones. u00a1Comienza a grabar para construir tu historial!",
+      "empty": "Aún no hay transcripciones. ¡Comienza a grabar para construir tu historial!",
       "actions": {
-        "copy_title": "Copiar transcripciu00f3n al portapapeles",
-        "favorite_title": "Guardar transcripciu00f3n",
+        "copy_title": "Copiar transcripción al portapapeles",
+        "favorite_title": "Guardar transcripción",
         "unfavorite_title": "Eliminar de guardados",
         "delete_title": "Eliminar entrada"
       },
       "errors": {
-        "delete_failed": "Error al eliminar la entrada. Por favor, intu00e9ntalo de nuevo."
+        "delete_failed": "Error al eliminar la entrada. Por favor, inténtalo de nuevo."
       }
     },
     "debug": {
       "paste_method": {
-        "title": "Mu00e9todo de pegado",
-        "description": "Portapapeles (Ctrl/Cmd+V) pega simulando el atajo de teclado. Directo utiliza mu00e9todos de entrada del sistema cuando es posible, de lo contrario escribe caracteres uno por uno.",
+        "title": "Método de pegado",
+        "description": "Portapapeles (Ctrl/Cmd+V) pega simulando el atajo de teclado. Directo utiliza métodos de entrada del sistema cuando es posible, de lo contrario escribe caracteres uno por uno.",
         "options": {
           "ctrl_v": "Portapapeles (Ctrl/Cmd+V)",
-          "direct": "Directo"
+          "direct": "Directo (más rápido pero puede no funcionar en todas las aplicaciones)"
         }
       },
-      "clipboard_handling": {
-        "title": "Gestiun de portapapeles",
-        "description": "Elige cu00f3mo Handy gestiona tu portapapeles despuu00e9s de pegar una transcripciu00f3n.",
-        "options": {
-          "dont_modify": "No modificar el portapapeles",
-          "copy_to_clipboard": "Copiar transcripciu00f3n al portapapeles"
-        }
+      "show_devtools": "Mostrar herramientas de desarrollo",
+      "clear_cache": {
+        "button": "Borrar caché",
+        "success": "Caché borrado correctamente",
+        "error": "Error al borrar la caché: {{error}}"
       },
-      "sound_picker": {
-        "title": "Tema de sonido",
-        "description": "Selecciona los sonidos reproducidos cuando la grabaciu00f3n comienza y termina.",
-        "preview": "Vista previa del tema de sonido (reproduce inicio y luego parada)",
-        "options": {
-          "marimba": "Marimba",
-          "pop": "Pop",
-          "custom": "Personalizado"
-        }
+      "export_logs": {
+        "button": "Exportar registros",
+        "success": "Registros exportados correctamente a: {{path}}",
+        "error": "Error al exportar los registros: {{error}}"
+      },
+      "model_info": {
+        "title": "Información del modelo",
+        "loading": "Cargando información del modelo...",
+        "not_loaded": "Ningún modelo cargado actualmente"
+      },
+      "system_info": {
+        "title": "Información del sistema",
+        "os": "Sistema operativo",
+        "arch": "Arquitectura",
+        "version": "Versión",
+        "memory": "Memoria",
+        "cpu": "CPU",
+        "gpu": "GPU",
+        "storage": "Almacenamiento",
+        "total": "Total",
+        "used": "Usado",
+        "free": "Libre",
+        "available": "Disponible"
       },
       "word_correction_threshold": {
-        "label": "Umbral de correcciu00f3n de palabras",
-        "description": "Controla cuu00e1n agresivamente se aplican las palabras personalizadas. Valores mu00e1s bajos significan menos correcciones; valores mu00e1s altos significan mu00e1s correcciones. Rango: 0 (menos agresivo) a 1 (mu00e1s agresivo)."
+        "label": "Umbral de corrección de palabras",
+        "description": "Controla cuán agresivamente se aplican las palabras personalizadas. Valores más bajos significan menos correcciones; valores más altos significan más correcciones. Rango: 0 (menos agresivo) a 1 (más agresivo)."
       },
       "history_limit": {
-        "title": "Lu00edmite de historial",
-        "description": "Nu00famero mu00e1ximo de entradas de transcripciu00f3n para mantener en el historial.",
+        "title": "Límite de historial",
+        "description": "Número máximo de entradas de transcripción para mantener en el historial.",
         "unit": "entradas"
       },
       "autostart": {
         "label": "Iniciar al arrancar",
-        "description": "Iniciar Handy automu00e1ticamente cuando inicias sesiu00f3n en tu ordenador."
+        "description": "Iniciar Handy automáticamente cuando inicias sesión en tu ordenador."
       },
       "start_hidden": {
         "label": "Iniciar oculto",
@@ -238,43 +250,43 @@
       },
       "custom_words": {
         "title": "Palabras personalizadas",
-        "description": "Au00f1ade palabras que Handy debe reconocer y corregir automu00e1ticamente durante la transcripciu00f3n.",
-        "placeholder": "Au00f1adir una palabra",
-        "add_button": "Au00f1adir",
+        "description": "Añade palabras que Handy debe reconocer y corregir automáticamente durante la transcripción.",
+        "placeholder": "Añadir una palabra",
+        "add_button": "Añadir",
         "remove": "Eliminar {{word}}"
       },
       "translate_to_english": {
-        "label": "Traducir al inglu00e9s",
-        "description": "Traducir automu00e1ticamente el habla de otros idiomas al inglu00e9s durante la transcripciu00f3n.",
-        "unsupported": "La traducciu00f3n no es compatible con el modelo {{model}}."
+        "label": "Traducir al inglés",
+        "description": "Traducir automáticamente el habla de otros idiomas al inglés durante la transcripción.",
+        "unsupported": "La traducción no es compatible con el modelo {{model}}."
       },
       "model_unload_timeout": {
         "title": "Descargar modelo",
-        "description": "Liberar automu00e1ticamente la memoria GPU/CPU cuando el modelo no se ha utilizado durante el tiempo especificado.",
+        "description": "Liberar automáticamente la memoria GPU/CPU cuando el modelo no se ha utilizado durante el tiempo especificado.",
         "options": {
           "never": "Nunca",
           "immediately": "Inmediatamente",
-          "min2": "Despuu00e9s de 2 minutos",
-          "min5": "Despuu00e9s de 5 minutos",
-          "min10": "Despuu00e9s de 10 minutos",
-          "min15": "Despuu00e9s de 15 minutos",
-          "hour1": "Despuu00e9s de 1 hora",
-          "sec5": "Despuu00e9s de 5 segundos (Depuraciu00f3n)"
+          "min2": "Después de 2 minutos",
+          "min5": "Después de 5 minutos",
+          "min10": "Después de 10 minutos",
+          "min15": "Después de 15 minutos",
+          "hour1": "Después de 1 hora",
+          "sec5": "Después de 5 segundos (Depuración)"
         }
       },
       "always_on_microphone": {
-        "label": "Micru00f3fono siempre activo",
-        "description": "Mantener el micru00f3fono activo para una grabaciu00f3n de baja latencia. Esto puede evitar que tu ordenador entre en modo de suspensiun."
+        "label": "Micrófono siempre activo",
+        "description": "Mantener el micrófono activo para una grabación de baja latencia. Esto puede evitar que tu ordenador entre en modo de suspensión."
       },
       "mute_while_recording": {
-        "label": "Silenciar durante la grabaciu00f3n",
-        "description": "Silenciar automu00e1ticamente la salida de sonido del sistema durante la grabaciu00f3n y restaurarla despuu00e9s."
+        "label": "Silenciar durante la grabación",
+        "description": "Silenciar automáticamente la salida de sonido del sistema durante la grabación y restaurarla después."
       },
       "paths": {
         "title": "Rutas de depuraciu00f3n",
         "description": "Mostrar directorios clave que Handy utiliza para fines de depuraciu00f3n.",
         "labels": {
-          "app_data": "Datos de la aplicaciu00f3n",
+          "app_data": "Datos de la aplicacion",
           "models": "Modelos",
           "settings": "Ajustes"
         }
