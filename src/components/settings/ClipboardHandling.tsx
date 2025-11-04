@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
@@ -9,24 +10,34 @@ interface ClipboardHandlingProps {
   grouped?: boolean;
 }
 
-const clipboardHandlingOptions = [
-  { value: "dont_modify", label: "Don't Modify Clipboard" },
-  { value: "copy_to_clipboard", label: "Copy to Clipboard" },
-];
-
 export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> = React.memo(({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
+  const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
 
   const selectedHandling = (getSetting("clipboard_handling") ||
     "dont_modify") as ClipboardHandling;
 
+  const clipboardHandlingOptions = useMemo(
+    () => [
+      {
+        value: "dont_modify",
+        label: t("settings.debug.clipboard_handling.options.dont_modify"),
+      },
+      {
+        value: "copy_to_clipboard",
+        label: t("settings.debug.clipboard_handling.options.copy_to_clipboard"),
+      },
+    ],
+    [t],
+  );
+
   return (
     <SettingContainer
-      title="Clipboard Handling"
-      description="Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting."
+      title={t("settings.debug.clipboard_handling.title")}
+      description={t("settings.debug.clipboard_handling.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
     >

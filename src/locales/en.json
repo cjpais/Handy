@@ -28,7 +28,12 @@
   "settings": {
     "groups": {
       "general": "General",
-      "sound": "Sound"
+      "sound": "Sound",
+      "advanced": "Advanced",
+      "about": "About",
+      "acknowledgments": "Acknowledgments",
+      "history": "History",
+      "debug": "Debug"
     },
     "language": {
       "title": "Language",
@@ -38,6 +43,103 @@
       "empty_search": "No languages found",
       "auto": "Auto",
       "reset": "Reset language"
+    },
+    "about": {
+      "version": {
+        "title": "Version",
+        "description": "Current version of Handy",
+        "value": "v{{version}}",
+        "loading": "Loading version…"
+      },
+      "source": {
+        "title": "Source code",
+        "description": "View source code and contribute",
+        "button": "View on GitHub"
+      },
+      "support": {
+        "title": "Support development",
+        "description": "Help us continue building Handy",
+        "button": "Donate"
+      },
+      "acknowledgments": {
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
+          "body": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+        }
+      }
+    },
+    "history": {
+      "loading": "Loading history…",
+      "empty": "No transcriptions yet. Start recording to build your history!",
+      "actions": {
+        "copy_title": "Copy transcription to clipboard",
+        "favorite_title": "Save transcription",
+        "unfavorite_title": "Remove from saved",
+        "delete_title": "Delete entry"
+      },
+      "errors": {
+        "delete_failed": "Failed to delete entry. Please try again."
+      }
+    },
+    "debug": {
+      "paste_method": {
+        "title": "Paste method",
+        "description": "Clipboard (Ctrl/Cmd+V) pastes by simulating the keyboard shortcut. Direct uses system input methods when possible, otherwise it types characters one by one.",
+        "options": {
+          "ctrl_v": "Clipboard (Ctrl/Cmd+V)",
+          "direct": "Direct"
+        }
+      },
+      "clipboard_handling": {
+        "title": "Clipboard handling",
+        "description": "Choose how Handy manages your clipboard after a transcription is pasted.",
+        "options": {
+          "dont_modify": "Don't modify clipboard",
+          "copy_to_clipboard": "Copy transcription to clipboard"
+        }
+      },
+      "sound_picker": {
+        "title": "Sound theme",
+        "description": "Select the sounds played when recording starts and stops.",
+        "preview": "Preview sound theme (plays start then stop)",
+        "options": {
+          "marimba": "Marimba",
+          "pop": "Pop",
+          "custom": "Custom"
+        }
+      },
+      "word_correction_threshold": {
+        "label": "Word correction threshold",
+        "description": "Controls how aggressively custom words are applied. Lower values mean fewer corrections; higher values mean more corrections. Range: 0 (least aggressive) to 1 (most aggressive)."
+      },
+      "history_limit": {
+        "title": "History limit",
+        "description": "Maximum number of transcription entries to keep in history.",
+        "unit": "entries"
+      },
+      "model_unload_timeout": {
+        "title": "Unload model",
+        "description": "Automatically free GPU/CPU memory when the model hasn't been used for the specified time.",
+        "options": {
+          "never": "Never",
+          "immediately": "Immediately",
+          "min2": "After 2 minutes",
+          "min5": "After 5 minutes",
+          "min10": "After 10 minutes",
+          "min15": "After 15 minutes",
+          "hour1": "After 1 hour",
+          "sec5": "After 5 seconds (Debug)"
+        }
+      },
+      "always_on_microphone": {
+        "label": "Always-on microphone",
+        "description": "Keep the microphone active for low-latency recording. This may prevent your computer from sleeping."
+      },
+      "mute_while_recording": {
+        "label": "Mute while recording",
+        "description": "Automatically mute system sound output during recording and restore it afterwards."
+      }
     }
   }
 }

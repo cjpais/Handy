@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { AudioPlayer } from "../ui/AudioPlayer";
 import { Copy, Star, Check, Trash2 } from "lucide-react";
@@ -15,6 +16,7 @@ interface HistoryEntry {
 }
 
 export const HistorySettings: React.FC = () => {
+  const { t } = useTranslation();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,9 +98,9 @@ export const HistorySettings: React.FC = () => {
   if (loading) {
     return (
       <div className="max-w-3xl w-full mx-auto space-y-6">
-        <SettingsGroup title="History">
+        <SettingsGroup title={t("settings.groups.history")}>
           <div className="px-4 py-3 text-center text-text/60">
-            Loading history...
+            {t("settings.history.loading")}
           </div>
         </SettingsGroup>
       </div>
@@ -108,9 +110,9 @@ export const HistorySettings: React.FC = () => {
   if (historyEntries.length === 0) {
     return (
       <div className="max-w-3xl w-full mx-auto space-y-6">
-        <SettingsGroup title="History">
+        <SettingsGroup title={t("settings.groups.history")}>
           <div className="px-4 py-3 text-center text-text/60">
-            No transcriptions yet. Start recording to build your history!
+            {t("settings.history.empty")}
           </div>
         </SettingsGroup>
       </div>
@@ -119,7 +121,7 @@ export const HistorySettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title="History">
+      <SettingsGroup title={t("settings.groups.history")}>
         {historyEntries.map((entry) => (
           <HistoryEntryComponent
             key={entry.id}
@@ -150,6 +152,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   getAudioUrl,
   deleteAudio,
 }) => {
+  const { t } = useTranslation();
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
 
@@ -172,7 +175,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert("Failed to delete entry. Please try again.");
+      alert(t("settings.history.errors.delete_failed"));
     }
   };
 
@@ -184,7 +187,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           <button
             onClick={handleCopyText}
             className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
-            title="Copy transcription to clipboard"
+            title={t("settings.history.actions.copy_title")}
           >
             {showCopied ? (
               <Check width={16} height={16} />
@@ -199,7 +202,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 ? "text-logo-primary hover:text-logo-primary/80"
                 : "text-text/50 hover:text-logo-primary"
             }`}
-            title={entry.saved ? "Remove from saved" : "Save transcription"}
+            title={
+              entry.saved
+                ? t("settings.history.actions.unfavorite_title")
+                : t("settings.history.actions.favorite_title")
+            }
           >
             <Star
               width={16}
@@ -210,7 +217,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           <button
             onClick={handleDeleteEntry}
             className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
-            title="Delete entry"
+            title={t("settings.history.actions.delete_title")}
           >
             <Trash2 width={16} height={16} />
           </button>

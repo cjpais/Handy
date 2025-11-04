@@ -88,6 +88,21 @@ Handy est conçu comme une application **Tauri** combinant :
 
 ---
 
+## ⚙️ Paramètres principaux
+
+Les paramètres de Handy sont organisés en sections **Général**, **Avancé**, **Historique** et **Debug**. Toutes sont désormais entièrement localisées en anglais et en français :
+
+* **Historique** :
+  * consulter et réécouter chaque transcription,
+  * copier le texte en un clic,
+  * marquer des entrées comme favoris ou les supprimer.
+* **Debug** :
+  * choisir la méthode de collage (simulation du raccourci ou saisie directe),
+  * définir la gestion du presse-papiers après insertion,
+  * sélectionner un thème sonore et le pré-écouter,
+  * ajuster le seuil de correction des mots et la limite d’entrées stockées,
+  * activer le micro en permanence ou couper le son système pendant l’enregistrement.
+
 ## 🧠 Mode développeur / Debug
 
 Handy inclut un **mode debug avancé** pour le développement et le diagnostic.
@@ -107,7 +122,7 @@ Depuis la version **1.3.0**, Handy est disponible en plusieurs langues :
 * 📘 **Documentation** : [English](BUILD.md) | [Français](BUILD.fr.md)
 
 La langue peut être sélectionnée depuis le menu **Paramètres → Langue**.
-Le choix est automatiquement enregistré et appliqué à chaque redémarrage.
+Toutes les sections de paramètres (Général, Avancé, Historique, Debug) sont synchronisées dans les deux langues et le choix reste enregistré pour les prochaines sessions.
 
 ---
 
@@ -211,6 +226,21 @@ Handy is built as a Tauri application combining:
   - `vad-rs`: Voice Activity Detection
   - `rdev`: Global keyboard shortcuts and system events
   - `rubato`: Audio resampling
+
+## Key Settings
+
+Handy’s settings are split into fully localized **General**, **Advanced**, **History**, and **Debug** sections:
+
+- **History**:
+  - review and replay each transcription,
+  - copy the transcript instantly,
+  - favorite or delete entries as needed.
+- **Debug**:
+  - pick how Handy pastes text (simulated shortcut vs. direct typing),
+  - control clipboard handling after insertion,
+  - choose and preview sound themes for start/stop cues,
+  - tune the custom-word correction threshold and history retention,
+  - keep the microphone always on or mute system audio during recording.
 
 ### Debug Mode
 
