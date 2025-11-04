@@ -37,6 +37,11 @@
     "confirm": "Continuar",
     "continue": "Continuar",
     "can_change_later": "Puedes cambiar este ajuste más tarde en la configuración",
+    "language_descriptions": {
+      "en": "Usar Handy en inglés",
+      "fr": "Usar Handy en francés",
+      "es": "Usar Handy en español"
+    },
     "languages": {
       "en": {
         "label": "English",

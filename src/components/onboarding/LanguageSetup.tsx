@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/Button';
 import { useSettings } from '../../hooks/useSettings';
@@ -14,35 +14,21 @@ interface LanguageSetupProps {
 
 const AVAILABLE_LANGUAGES: SupportedLanguage[] = ["en", "fr", "es"];
 
-const languages = [
-  { 
-    code: "en", 
-    label: "English", 
-    description: "Select English as your preferred language",
-    nativeName: "English"
-  },
-  { 
-    code: "fr", 
-    label: "Français", 
-    description: "Sélectionnez le français comme langue préférée",
-    nativeName: "Français"
-  },
-  { 
-    code: "es", 
-    label: "Español", 
-    description: "Seleccione el español como idioma preferido",
-    nativeName: "Español"
-  },
-];
+const languages = ["en", "fr", "es"] as const;
 
 const LanguageSetup: React.FC<LanguageSetupProps> = ({
   defaultLanguage,
   onSelect,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>(
     defaultLanguage,
   );
+
+  // Mettre à jour la langue sélectionnée
+  useEffect(() => {
+    i18n.changeLanguage(selectedLanguage);
+  }, [selectedLanguage, i18n]);
 
   const handleConfirm = () => {
     onSelect(selectedLanguage);
@@ -50,6 +36,20 @@ const LanguageSetup: React.FC<LanguageSetupProps> = ({
 
   const handleLanguageSelect = (language: SupportedLanguage) => {
     setSelectedLanguage(language);
+  };
+
+  // Obtenir le nom natif de la langue
+  const getNativeName = (code: string) => {
+    try {
+      // Utiliser la locale 'fr' pour le français, 'es' pour l'espagnol, etc.
+      const displayLanguage = code === 'en' ? 'en' : code;
+      const names = new Intl.DisplayNames([displayLanguage], { type: 'language' });
+      const name = names.of(displayLanguage);
+      return name ? name.charAt(0).toUpperCase() + name.slice(1) : code.toUpperCase();
+    } catch (e) {
+      console.error('Error getting language name:', e);
+      return code.toUpperCase();
+    }
   };
 
   return (
@@ -62,47 +62,48 @@ const LanguageSetup: React.FC<LanguageSetupProps> = ({
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {t('language_setup.title', 'Bienvenue dans Handy')}
+            {t('language_setup.title')}
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {t('language_setup.description', 'Choisissez votre langue préférée pour continuer')}
+            {t('language_setup.description')}
           </p>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {t('language_setup.can_change_later', 'Vous pourrez modifier ce choix ultérieurement dans les paramètres')}
+            {t('language_setup.can_change_later')}
           </p>
         </div>
 
         <div className="space-y-3">
-          {languages.map((language) => (
-            <button
-              key={language.code}
-              type="button"
-              onClick={() => handleLanguageSelect(language.code as SupportedLanguage)}
-              className={`w-full text-left p-4 border rounded-lg transition-all duration-200 flex items-start ${
-                selectedLanguage === language.code
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/30'
-                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-              }`}
-            >
-              <div className={`flex items-center justify-center w-5 h-5 mt-0.5 mr-3 rounded-full border ${
-                selectedLanguage === language.code 
-                  ? 'bg-blue-500 border-blue-500 text-white' 
-                  : 'border-gray-300 dark:border-gray-600'
-              }`}>
-                {selectedLanguage === language.code && (
-                  <Check className="w-3 h-3" />
-                )}
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">
-                  {language.nativeName}
-                </h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {language.description}
-                </p>
-              </div>
-            </button>
-          ))}
+          {languages.map((code) => {
+            const isSelected = selectedLanguage === code;
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => handleLanguageSelect(code as SupportedLanguage)}
+                className={`w-full text-left p-4 border rounded-lg transition-all duration-200 flex items-start ${
+                  isSelected
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500/30'
+                    : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                }`}
+              >
+                <div className={`flex items-center justify-center w-5 h-5 mt-0.5 mr-3 rounded-full border ${
+                  isSelected
+                    ? 'bg-blue-500 border-blue-500 text-white'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}>
+                  {isSelected && <Check className="w-3 h-3" />}
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900 dark:text-white">
+                    {getNativeName(code)}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {t(`language_setup.language_descriptions.${code}`)}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <Button
@@ -110,9 +111,7 @@ const LanguageSetup: React.FC<LanguageSetupProps> = ({
           className="w-full py-2.5 text-base font-medium mt-4"
           size="lg"
         >
-          {selectedLanguage === 'en' && "Continue"}
-          {selectedLanguage === 'fr' && "Continuer"}
-          {selectedLanguage === 'es' && "Continuar"}
+          {t('language_setup.continue')}
         </Button>
       </div>
     </div>
