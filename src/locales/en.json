@@ -67,7 +67,8 @@
       },
       "volume": {
         "label": "Volume",
-        "description": "Adjust the volume of Handy's audio feedback."
+        "description": "Adjust the volume of Handy's audio feedback.",
+        "format": "{{value}}%"
       }
     },
     "about": {
@@ -93,6 +94,15 @@
           "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
           "body": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
+      },
+      "groups": {
+        "main": "About",
+        "acknowledgments": "Acknowledgments"
+      },
+      "app_data_directory": {
+        "label": "App data directory",
+        "description": "Primary folder where Handy stores data, settings, and downloaded models.",
+        "error": "Error loading app directory: {{error}}"
       }
     },
     "history": {
@@ -152,6 +162,18 @@
         "label": "Start hidden",
         "description": "Launch Handy to the system tray without opening the window."
       },
+      "custom_words": {
+        "title": "Custom words",
+        "description": "Add words that Handy should recognize and correct automatically during transcription.",
+        "placeholder": "Add a word",
+        "add_button": "Add",
+        "remove": "Remove {{word}}"
+      },
+      "translate_to_english": {
+        "label": "Translate to English",
+        "description": "Automatically translate speech from other languages to English during transcription.",
+        "unsupported": "Translation is not supported by the {{model}} model."
+      },
       "model_unload_timeout": {
         "title": "Unload model",
         "description": "Automatically free GPU/CPU memory when the model hasn't been used for the specified time.",
@@ -173,6 +195,15 @@
       "mute_while_recording": {
         "label": "Mute while recording",
         "description": "Automatically mute system sound output during recording and restore it afterwards."
+      },
+      "paths": {
+        "title": "Debug paths",
+        "description": "Display key directories Handy uses for debugging purposes.",
+        "labels": {
+          "app_data": "App data",
+          "models": "Models",
+          "settings": "Settings"
+        }
       }
     }
   }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import { TextDisplay } from "../ui";
 
 interface AppDataDirectoryProps {
@@ -11,6 +12,7 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
   descriptionMode = "inline",
   grouped = false,
 }) => {
+  const { t } = useTranslation();
   const [appDirPath, setAppDirPath] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
         <p className="text-red-600 text-sm">
-          Error loading app directory: {error}
+          {t("settings.about.app_data_directory.error", { error })}
         </p>
       </div>
     );
@@ -58,8 +60,8 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
 
   return (
     <TextDisplay
-      label="App Data Directory"
-      description="Main directory where application data, settings, and models are stored"
+      label={t("settings.about.app_data_directory.label")}
+      description={t("settings.about.app_data_directory.description")}
       value={appDirPath}
       descriptionMode={descriptionMode}
       grouped={grouped}
