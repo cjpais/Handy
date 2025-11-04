@@ -1,13 +1,42 @@
 {
-  "settings": "Paramètres",
-  "start_recording": "Démarrer l'enregistrement",
-  "stop_recording": "Arrêter l'enregistrement",
-  "mute_while_recording": "Couper le son pendant l'enregistrement",
-  "language": "Langue",
-  "select_language": "Choisissez votre langue",
-  "save": "Enregistrer",
-  "cancel": "Annuler",
-  "theme": "Thème",
-  "about": "À propos de Handy",
-  "debug_mode": "Mode Débogage"
+  "app": {
+    "title": "Handy",
+    "subtitle": "Outil de dictée libre, hors ligne et open source"
+  },
+  "actions": {
+    "start_recording": "Démarrer l'enregistrement",
+    "stop_recording": "Arrêter l'enregistrement",
+    "mute_while_recording": "Couper le son pendant l'enregistrement"
+  },
+  "common": {
+    "settings": "Paramètres",
+    "language": "Langue",
+    "select_language": "Choisissez votre langue",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "theme": "Thème",
+    "about": "À propos de Handy",
+    "debug_mode": "Mode débogage"
+  },
+  "sidebar": {
+    "general": "Général",
+    "advanced": "Avancé",
+    "history": "Historique",
+    "debug": "Débogage",
+    "about": "À propos"
+  },
+  "settings": {
+    "groups": {
+      "general": "Général",
+      "sound": "Son"
+    },
+    "language": {
+      "title": "Langue",
+      "description": "Choisissez la langue pour la reconnaissance vocale. Auto détecte automatiquement la langue, tandis que choisir une langue précise peut améliorer la précision.",
+      "unsupported_description": "Le modèle Parakeet détecte automatiquement la langue. Aucune sélection manuelle n'est nécessaire.",
+      "search_placeholder": "Rechercher une langue...",
+      "empty_search": "Aucune langue trouvée",
+      "auto": "Auto"
+    }
+  }
 }

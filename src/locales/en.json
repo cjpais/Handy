@@ -1,11 +1,42 @@
 {
   "app": {
     "title": "Handy",
-    "subtitle": "Free, offline, open source speech-to-text tool",
-    "start": "Start recording",
-    "stop": "Stop recording",
+    "subtitle": "Free, offline, open source speech-to-text tool"
+  },
+  "actions": {
+    "start_recording": "Start recording",
+    "stop_recording": "Stop recording",
+    "mute_while_recording": "Mute while recording"
+  },
+  "common": {
     "settings": "Settings",
     "language": "Language",
-    "select_language": "Select your preferred language"
+    "select_language": "Select your preferred language",
+    "save": "Save",
+    "cancel": "Cancel",
+    "theme": "Theme",
+    "about": "About Handy",
+    "debug_mode": "Debug mode"
+  },
+  "sidebar": {
+    "general": "General",
+    "advanced": "Advanced",
+    "history": "History",
+    "debug": "Debug",
+    "about": "About"
+  },
+  "settings": {
+    "groups": {
+      "general": "General",
+      "sound": "Sound"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language.",
+      "unsupported_description": "Parakeet model automatically detects the language. No manual selection is needed.",
+      "search_placeholder": "Search languages...",
+      "empty_search": "No languages found",
+      "auto": "Auto"
+    }
   }
 }
