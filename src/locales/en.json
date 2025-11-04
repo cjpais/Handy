@@ -32,9 +32,11 @@
     "languages": "Languages"
   },
   "language_setup": {
-    "title": "Choose your language",
-    "description": "Select the language you prefer for Handy's interface.",
+    "title": "Welcome to Handy",
+    "description": "Choose your preferred language to continue",
     "confirm": "Continue",
+    "continue": "Continue",
+    "can_change_later": "You can change this later in the settings",
     "languages": {
       "en": {
         "label": "English",

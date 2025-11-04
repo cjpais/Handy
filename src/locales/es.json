@@ -32,9 +32,11 @@
     "languages": "Idiomas"
   },
   "language_setup": {
-    "title": "Elige tu idioma",
-    "description": "Selecciona el idioma que prefieres para la interfaz de Handy.",
+    "title": "Bienvenido a Handy",
+    "description": "Elige tu idioma preferido para continuar",
     "confirm": "Continuar",
+    "continue": "Continuar",
+    "can_change_later": "Puedes cambiar este ajuste más tarde en la configuración",
     "languages": {
       "en": {
         "label": "English",
