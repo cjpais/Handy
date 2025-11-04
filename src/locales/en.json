@@ -57,6 +57,11 @@
       }
     }
   },
+  "shortcuts": {
+    "handy_shortcut": "Handy Shortcut",
+    "option_space": "option+space",
+    "push_to_talk": "Push-to-talk"
+  },
   "settings": {
     "groups": {
       "general": "General",

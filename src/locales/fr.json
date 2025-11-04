@@ -57,6 +57,11 @@
       }
     }
   },
+  "shortcuts": {
+    "handy_shortcut": "Raccourci Handy",
+    "option_space": "option+espace",
+    "push_to_talk": "Appuyer pour parler"
+  },
   "settings": {
     "groups": {
       "general": "Général",
@@ -135,7 +140,7 @@
         "placeholder": "Choisir une sortie audio…"
       },
       "push_to_talk": {
-        "label": "Push-to-talk",
+        "label": "Appuyer pour parler",
         "description": "Maintiens le raccourci pour enregistrer, relâche pour arrêter."
       },
       "audio_feedback": {

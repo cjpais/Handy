@@ -57,6 +57,11 @@
       }
     }
   },
+  "shortcuts": {
+    "handy_shortcut": "Acceso directo de Handy",
+    "option_space": "opción+espacio",
+    "push_to_talk": "Pulsar para hablar"
+  },
   "settings": {
     "groups": {
       "general": "General",
@@ -140,7 +145,7 @@
       },
       "push_to_talk": {
         "label": "Pulsar para hablar",
-        "description": "Manten pulsado el atajo para grabar, suelta para detener."
+        "description": "Mantén pulsado el atajo para grabar, suelta para detener."
       },
       "audio_feedback": {
         "label": "Retroalimentación de audio",
