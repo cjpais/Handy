@@ -36,7 +36,8 @@
       "unsupported_description": "Parakeet model automatically detects the language. No manual selection is needed.",
       "search_placeholder": "Search languages...",
       "empty_search": "No languages found",
-      "auto": "Auto"
+      "auto": "Auto",
+      "reset": "Reset language"
     }
   }
 }

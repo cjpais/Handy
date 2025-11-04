@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Cog, FlaskConical, History, Info } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
@@ -22,7 +23,7 @@ interface IconProps {
 }
 
 interface SectionConfig {
-  label: string;
+  translationKey: string;
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
   enabled: (settings: any) => boolean;
@@ -30,31 +31,31 @@ interface SectionConfig {
 
 export const SECTIONS_CONFIG = {
   general: {
-    label: "General",
+    translationKey: "sidebar.general",
     icon: HandyHand,
     component: GeneralSettings,
     enabled: () => true,
   },
   advanced: {
-    label: "Advanced",
+    translationKey: "sidebar.advanced",
     icon: Cog,
     component: AdvancedSettings,
     enabled: () => true,
   },
   history: {
-    label: "History",
+    translationKey: "sidebar.history",
     icon: History,
     component: HistorySettings,
     enabled: () => true,
   },
   debug: {
-    label: "Debug",
+    translationKey: "sidebar.debug",
     icon: FlaskConical,
     component: DebugSettings,
     enabled: (settings) => settings?.debug_mode ?? false,
   },
   about: {
-    label: "About",
+    translationKey: "sidebar.about",
     icon: Info,
     component: AboutSettings,
     enabled: () => true,
@@ -70,6 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
 }) => {
+  const { t } = useTranslation();
   const { settings } = useSettings();
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
@@ -95,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onSectionChange(section.id)}
             >
               <Icon width={24} height={24} />
-              <p className="text-sm font-medium">{section.label}</p>
+              <p className="text-sm font-medium">{t(section.translationKey)}</p>
             </div>
           );
         })}

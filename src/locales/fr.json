@@ -36,7 +36,8 @@
       "unsupported_description": "Le modèle Parakeet détecte automatiquement la langue. Aucune sélection manuelle n'est nécessaire.",
       "search_placeholder": "Rechercher une langue...",
       "empty_search": "Aucune langue trouvée",
-      "auto": "Auto"
+      "auto": "Auto",
+      "reset": "Réinitialiser la langue"
     }
   }
 }
