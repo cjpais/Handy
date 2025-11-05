@@ -4,8 +4,8 @@ use log::debug;
 use enigo::{Enigo, Mouse};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindowBuilder};
 
-const OVERLAY_WIDTH: f64 = 240.0;
-const OVERLAY_HEIGHT: f64 = 50.0;
+const OVERLAY_WIDTH: f64 = 220.0;
+const OVERLAY_HEIGHT: f64 = 46.0;
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;

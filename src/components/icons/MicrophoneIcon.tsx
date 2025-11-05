@@ -8,8 +8,8 @@ interface MicrophoneIconProps {
 }
 
 const MicrophoneIcon: React.FC<MicrophoneIconProps> = ({
-  width = 34,
-  height = 34,
+  width = 32,
+  height = 32,
   color = "#FAA2CA",
   className = "",
 }) => {

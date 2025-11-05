@@ -13,9 +13,9 @@ type OverlayState = "recording" | "transcribing";
 const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
-  const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
+  const [levels, setLevels] = useState<number[]>(Array(25).fill(0));
   const [transcriptionProgress, setTranscriptionProgress] = useState(0);
-  const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
+  const smoothedLevelsRef = useRef<number[]>(Array(25).fill(0));
 
   useEffect(() => {
     const setupEventListeners = async () => {
@@ -42,7 +42,7 @@ const RecordingOverlay: React.FC = () => {
         });
 
         smoothedLevelsRef.current = smoothed;
-        setLevels(smoothed.slice(0, 9));
+        setLevels(smoothed.slice(0, 25)); // Display all 25 bars directly
       });
 
       // Listen for transcription-progress updates
@@ -82,27 +82,35 @@ const RecordingOverlay: React.FC = () => {
 
   return (
     <div className={`recording-overlay ${isVisible ? "fade-in" : ""}`}>
-      <div className="overlay-left">{getIcon()}</div>
+      <div className={`overlay-left ${state === "transcribing" ? "icon-pulse-active" : ""}`}>{getIcon()}</div>
 
       <div className="overlay-middle">
         {state === "recording" && (
           <div className="bars-container">
-            {levels.map((v, i) => (
-              <div
-                key={i}
-                className="bar"
-                style={{
-                  height: `${Math.min(28, 6 + Math.pow(v, 0.7) * 22)}px`, // Cap at 28px max height
-                  transition: "height 60ms ease-out, opacity 120ms ease-out",
-                  opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
-                }}
-              />
-            ))}
+            {levels.map((v, i) => {
+              // Simplified formula optimized for 25 thin bars (2.5px wide)
+              const height = Math.min(26, 3 + Math.pow(v * 1.5, 0.65) * 20);
+              const opacity = Math.max(0.3, Math.min(1, v * 1.8));
+
+              return (
+                <div
+                  key={i}
+                  className="bar"
+                  style={{
+                    height: `${height}px`,
+                    transition: "height 60ms ease-out, opacity 120ms ease-out",
+                    opacity: opacity,
+                  }}
+                />
+              );
+            })}
           </div>
         )}
         {state === "transcribing" && (
           <div className="transcribing-container">
-            <div className="transcribing-text">Transcribing...</div>
+            <div className="transcribing-text">
+              Transcribing... {Math.round(transcriptionProgress * 100)}%
+            </div>
             <div className="progress-bar-track">
               <div
                 className="progress-bar-fill"

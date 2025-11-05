@@ -325,17 +325,17 @@ impl TranscriptionManager {
         let audio_duration_secs = (audio.len() as f64 / 16000.0).max(2.0); // Min 2 seconds
         let audio_duration_secs = audio_duration_secs.min(300.0); // Max 5 minutes
 
-        // Estimate transcription speed based on model (conservative estimates)
+        // Estimate transcription speed based on model (optimized for long audio, increased ~25%)
         let model_speed_factor = {
             let current_model = self.current_model_id.lock().unwrap();
             match current_model.as_deref() {
-                Some(model_id) if model_id.contains("tiny") => 0.3,
-                Some(model_id) if model_id.contains("base") => 0.5,
-                Some(model_id) if model_id.contains("small") => 0.8,
-                Some(model_id) if model_id.contains("medium") => 1.2,
-                Some(model_id) if model_id.contains("large") => 1.5,
-                Some(model_id) if model_id.contains("turbo") => 1.0,
-                _ => 1.0, // Default
+                Some(model_id) if model_id.contains("tiny") => 0.08,   // Ultra fast
+                Some(model_id) if model_id.contains("base") => 0.13,   // Very fast
+                Some(model_id) if model_id.contains("small") => 0.22,  // Fast
+                Some(model_id) if model_id.contains("medium") => 0.33, // Moderate
+                Some(model_id) if model_id.contains("large") => 0.45,  // Slower, optimized for long audio
+                Some(model_id) if model_id.contains("turbo") => 0.16,  // Turbo lives up to its name
+                _ => 0.27, // Default conservative
             }
         };
 
