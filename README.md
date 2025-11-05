@@ -65,6 +65,61 @@ Handy includes an advanced debug mode for development and troubleshooting. Acces
 - **macOS**: `Cmd+Shift+D`
 - **Windows/Linux**: `Ctrl+Shift+D`
 
+## Known Issues & Current Limitations
+
+This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
+
+### Major Issues (Help Wanted)
+
+**Whisper Model Crashes:**
+- Whisper models crash on certain system configurations (Windows and Linux)
+- Does not affect all systems - issue is configuration-dependent
+  - If you experience crashes and are a developer, please help to fix and provide debug logs!
+
+**Wayland Support (Linux):**
+- Limited or no support for Wayland display server
+
+### Platform Support
+- **macOS (both Intel and Apple Silicon)**
+- **x64 Windows**
+- **x64 Linux**
+
+### System Requirements/Recommendations
+
+The following are recommendations for running Handy on your own machine. If you don't meet the system requirements, the performance of the application may be degraded. We are working on improving the performance across all kinds of computers and hardware.
+
+**For Whisper Models:**
+- **macOS**: M series Mac, Intel Mac
+- **Windows**: Intel, AMD, or NVIDIA GPU
+- **Linux**: Intel, AMD, or NVIDIA GPU
+  * Ubuntu 22.04, 24.04
+
+**For Parakeet V3 Model:**
+- **CPU-only operation** - runs on a wide variety of hardware
+- **Minimum**: Intel Skylake (6th gen) or equivalent AMD processors
+- **Performance**: ~5x real-time speed on mid-range hardware (tested on i5)
+- **Automatic language detection** - no manual language selection required
+
+## Roadmap & Active Development
+
+We're actively working on several features and improvements. Contributions and feedback are welcome!
+
+### In Progress
+
+**Debug Logging:**
+- Adding debug logging to a file to help diagnose issues
+
+**LLM Post-Processing ([#222](https://github.com/cjpais/Handy/issues/222)):**
+- Optional LLM-based post-processing of transcriptions
+
+**macOS Keyboard Improvements:**
+- Support for Globe key as transcription trigger
+- A rewrite of global shortcut handling for MacOS, and potentially other OS's too.
+
+**Opt-in Analytics:**
+- Collect anonymous usage data to help improve Handy
+- Privacy-first approach with clear opt-in
+
 ## Troubleshooting
 
 ### Manual Model Installation (For Proxy Users or Network Restrictions)
@@ -155,31 +210,6 @@ Final structure should look like:
 2. Open Settings → Models
 3. Your manually installed models should now appear as "Downloaded"
 4. Select the model you want to use and test transcription
-
-## Known Issues & Current Limitations
-
-This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
-
-### Platform Support
-- **macOS (both Intel and Apple Silicon)**
-- **x64 Windows**
-- **x64 Linux**
-
-### System Requirements/Recommendations
-
-The following are recommendations for running Handy on your own machine. If you don't meet the system requirements, the performance of the application may be degraded. We are working on improving the performance across all kinds of computers and hardware.
-
-**For Whisper Models:**
-- **macOS**: M series Mac, Intel Mac
-- **Windows**: Intel, AMD, or NVIDIA GPU
-- **Linux**: Intel, AMD, or NVIDIA GPU
-  * Ubuntu 22.04, 24.04
-
-**For Parakeet V3 Model:**
-- **CPU-only operation** - runs on a wide variety of hardware
-- **Minimum**: Intel Skylake (6th gen) or equivalent AMD processors
-- **Performance**: ~5x real-time speed on mid-range hardware (tested on i5)
-- **Automatic language detection** - no manual language selection required
 
 ### How to Contribute
 
