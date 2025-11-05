@@ -14,6 +14,7 @@ const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
+  const [transcriptionProgress, setTranscriptionProgress] = useState(0);
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
 
   useEffect(() => {
@@ -44,16 +45,32 @@ const RecordingOverlay: React.FC = () => {
         setLevels(smoothed.slice(0, 9));
       });
 
+      // Listen for transcription-progress updates
+      const unlistenProgress = await listen<number>(
+        "transcription-progress",
+        (event) => {
+          setTranscriptionProgress(event.payload as number);
+        }
+      );
+
       // Cleanup function
       return () => {
         unlistenShow();
         unlistenHide();
         unlistenLevel();
+        unlistenProgress();
       };
     };
 
     setupEventListeners();
   }, []);
+
+  // Reset progress when switching to recording state
+  useEffect(() => {
+    if (state === "recording") {
+      setTranscriptionProgress(0);
+    }
+  }, [state]);
 
   const getIcon = () => {
     if (state === "recording") {
@@ -75,7 +92,7 @@ const RecordingOverlay: React.FC = () => {
                 key={i}
                 className="bar"
                 style={{
-                  height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
+                  height: `${Math.min(28, 6 + Math.pow(v, 0.7) * 22)}px`, // Cap at 28px max height
                   transition: "height 60ms ease-out, opacity 120ms ease-out",
                   opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
                 }}
@@ -84,7 +101,15 @@ const RecordingOverlay: React.FC = () => {
           </div>
         )}
         {state === "transcribing" && (
-          <div className="transcribing-text">Transcribing...</div>
+          <div className="transcribing-container">
+            <div className="transcribing-text">Transcribing...</div>
+            <div className="progress-bar-track">
+              <div
+                className="progress-bar-fill"
+                style={{ width: `${transcriptionProgress * 100}%` }}
+              />
+            </div>
+          </div>
         )}
       </div>
 

@@ -321,6 +321,83 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
+        // Calculate audio duration and estimate transcription time for progress bar
+        let audio_duration_secs = (audio.len() as f64 / 16000.0).max(2.0); // Min 2 seconds
+        let audio_duration_secs = audio_duration_secs.min(300.0); // Max 5 minutes
+
+        // Estimate transcription speed based on model (conservative estimates)
+        let model_speed_factor = {
+            let current_model = self.current_model_id.lock().unwrap();
+            match current_model.as_deref() {
+                Some(model_id) if model_id.contains("tiny") => 0.3,
+                Some(model_id) if model_id.contains("base") => 0.5,
+                Some(model_id) if model_id.contains("small") => 0.8,
+                Some(model_id) if model_id.contains("medium") => 1.2,
+                Some(model_id) if model_id.contains("large") => 1.5,
+                Some(model_id) if model_id.contains("turbo") => 1.0,
+                _ => 1.0, // Default
+            }
+        };
+
+        let estimated_duration_secs = audio_duration_secs * model_speed_factor;
+        let timeout_secs = estimated_duration_secs * 3.0; // Safety timeout
+
+        // Start progress emitter thread
+        let app_handle_clone = self.app_handle.clone();
+        let should_stop = Arc::new(AtomicBool::new(false));
+        let should_stop_clone = should_stop.clone();
+
+        let progress_handle = thread::spawn(move || {
+            use crate::overlay::emit_transcription_progress;
+
+            let start = std::time::Instant::now();
+            let emit_interval = Duration::from_millis(100); // Update every 100ms
+
+            while !should_stop_clone.load(Ordering::Relaxed) {
+                thread::sleep(emit_interval);
+
+                if should_stop_clone.load(Ordering::Relaxed) {
+                    break;
+                }
+
+                let elapsed = start.elapsed().as_secs_f64();
+
+                // Calculate progress: stop at 95% to avoid reaching 100% prematurely
+                let mut progress = (elapsed / estimated_duration_secs).min(0.95);
+
+                // Slow down progression after 80%
+                if progress > 0.8 {
+                    progress = 0.8 + (progress - 0.8) * 0.5;
+                }
+
+                // Check timeout
+                if elapsed > timeout_secs {
+                    progress = 0.95; // Cap at 95% even on timeout
+                    break;
+                }
+
+                emit_transcription_progress(&app_handle_clone, progress);
+            }
+        });
+
+        // Guard to ensure progress thread is always stopped, even on error
+        struct ProgressGuard {
+            should_stop: Arc<AtomicBool>,
+            handle: Option<thread::JoinHandle<()>>,
+        }
+        impl Drop for ProgressGuard {
+            fn drop(&mut self) {
+                self.should_stop.store(true, Ordering::Relaxed);
+                if let Some(handle) = self.handle.take() {
+                    let _ = handle.join();
+                }
+            }
+        }
+        let _progress_guard = ProgressGuard {
+            should_stop: should_stop.clone(),
+            handle: Some(progress_handle),
+        };
+
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
@@ -386,6 +463,9 @@ impl TranscriptionManager {
         } else {
             result.text
         };
+
+        // Emit final 100% progress (ProgressGuard will clean up the thread automatically)
+        crate::overlay::emit_transcription_progress(&self.app_handle, 1.0);
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
