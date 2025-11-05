@@ -372,7 +372,7 @@ impl TranscriptionManager {
 
                 // Check timeout
                 if elapsed > timeout_secs {
-                    progress = 0.95; // Cap at 95% even on timeout
+                    emit_transcription_progress(&app_handle_clone, 0.95);
                     break;
                 }
 
