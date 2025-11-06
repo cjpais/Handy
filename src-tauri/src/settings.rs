@@ -137,15 +137,9 @@ impl SoundTheme {
     }
 }
 
-// Current version of the settings structure
-// Increment this when adding migrations
-const SETTINGS_VERSION: u32 = 1;
-
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppSettings {
-    #[serde(default)]
-    pub version: u32,
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
     pub audio_feedback: bool,
@@ -199,19 +193,6 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
-    // Legacy fields for migration from version 0 -> 1
-    #[serde(default)]
-    #[serde(rename = "post_process_base_url")]
-    #[serde(skip_serializing)]
-    pub legacy_post_process_base_url: String,
-    #[serde(default)]
-    #[serde(rename = "post_process_api_key")]
-    #[serde(skip_serializing)]
-    pub legacy_post_process_api_key: String,
-    #[serde(default)]
-    #[serde(rename = "post_process_model")]
-    #[serde(skip_serializing)]
-    pub legacy_post_process_model: String,
 }
 
 fn default_model() -> String {
@@ -351,7 +332,6 @@ pub fn get_default_settings() -> AppSettings {
     );
 
     AppSettings {
-        version: SETTINGS_VERSION,
         bindings,
         push_to_talk: true,
         audio_feedback: false,
@@ -380,9 +360,6 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
-        legacy_post_process_base_url: String::new(),
-        legacy_post_process_api_key: String::new(),
-        legacy_post_process_model: String::new(),
     }
 }
 
@@ -409,112 +386,13 @@ impl AppSettings {
     }
 }
 
-/// Migrate settings from version 0 to version 1
-/// This adds multi-provider support and migrates legacy single-provider config
-fn migrate_v0_to_v1(settings: &mut AppSettings) {
-    // Initialize providers if empty
-    if settings.post_process_providers.is_empty() {
-        settings.post_process_providers = default_post_process_providers();
-    }
-
-    // Ensure all default providers exist
-    let required_providers = default_post_process_providers();
-    for default_provider in required_providers {
-        if !settings
-            .post_process_providers
-            .iter()
-            .any(|p| p.id == default_provider.id)
-        {
-            settings.post_process_providers.push(default_provider);
-        }
-    }
-
-    // Initialize hashmaps for all providers
-    for provider in &settings.post_process_providers {
-        settings
-            .post_process_api_keys
-            .entry(provider.id.clone())
-            .or_insert_with(String::new);
-        settings
-            .post_process_models
-            .entry(provider.id.clone())
-            .or_insert_with(String::new);
-    }
-
-    // Migrate legacy settings
-    if !settings.legacy_post_process_base_url.is_empty() {
-        let legacy_url = settings.legacy_post_process_base_url.clone();
-
-        // Find matching provider or use custom
-        if let Some(existing_provider) = settings
-            .post_process_providers
-            .iter()
-            .find(|provider| provider.base_url == legacy_url)
-        {
-            settings.post_process_provider_id = existing_provider.id.clone();
-        } else if let Some(custom_provider) = settings.post_process_provider_mut("custom") {
-            custom_provider.base_url = legacy_url;
-            settings.post_process_provider_id = "custom".to_string();
-        }
-    }
-
-    if !settings.legacy_post_process_api_key.is_empty() {
-        let provider_id = settings.post_process_provider_id.clone();
-        settings
-            .post_process_api_keys
-            .insert(provider_id, settings.legacy_post_process_api_key.clone());
-    }
-
-    if !settings.legacy_post_process_model.is_empty() {
-        let provider_id = settings.post_process_provider_id.clone();
-        settings
-            .post_process_models
-            .insert(provider_id, settings.legacy_post_process_model.clone());
-    }
-
-    // Validate provider_id exists
-    if settings.post_process_provider_id.is_empty()
-        || !settings
-            .post_process_providers
-            .iter()
-            .any(|p| p.id == settings.post_process_provider_id)
-    {
-        settings.post_process_provider_id = default_post_process_provider_id();
-    }
-}
-
-/// Run all necessary migrations based on the settings version
-fn migrate_settings(settings: &mut AppSettings) -> bool {
-    if settings.version >= SETTINGS_VERSION {
-        return false;
-    }
-
-    let original_version = settings.version;
-
-    // Run migrations sequentially
-    if settings.version < 1 {
-        migrate_v0_to_v1(settings);
-        settings.version = 1;
-    }
-
-    // Future migrations go here
-    // if settings.version < 2 {
-    //     migrate_v1_to_v2(settings);
-    //     settings.version = 2;
-    // }
-
-    original_version != settings.version
-}
-
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     // Initialize store
     let store = app
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    let mut should_write = false;
-
-    let mut settings = if let Some(settings_value) = store.get("settings") {
+    let settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(settings) => {
@@ -524,23 +402,16 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
             Err(e) => {
                 println!("Failed to parse settings: {}", e);
                 // Fall back to default settings if parsing fails
-                should_write = true;
-                get_default_settings()
+                let default_settings = get_default_settings();
+                store.set("settings", serde_json::to_value(&default_settings).unwrap());
+                default_settings
             }
         }
     } else {
-        should_write = true;
-        get_default_settings()
+        let default_settings = get_default_settings();
+        store.set("settings", serde_json::to_value(&default_settings).unwrap());
+        default_settings
     };
-
-    // Run migrations if needed
-    if migrate_settings(&mut settings) {
-        should_write = true;
-    }
-
-    if should_write {
-        store.set("settings", serde_json::to_value(&settings).unwrap());
-    }
 
     settings
 }
@@ -550,28 +421,17 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    let mut should_write = false;
-
-    let mut settings = if let Some(settings_value) = store.get("settings") {
+    if let Some(settings_value) = store.get("settings") {
         serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
-            should_write = true;
-            get_default_settings()
+            let default_settings = get_default_settings();
+            store.set("settings", serde_json::to_value(&default_settings).unwrap());
+            default_settings
         })
     } else {
-        should_write = true;
-        get_default_settings()
-    };
-
-    // Run migrations if needed
-    if migrate_settings(&mut settings) {
-        should_write = true;
+        let default_settings = get_default_settings();
+        store.set("settings", serde_json::to_value(&default_settings).unwrap());
+        default_settings
     }
-
-    if should_write {
-        store.set("settings", serde_json::to_value(&settings).unwrap());
-    }
-
-    settings
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
