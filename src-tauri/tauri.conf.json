@@ -76,6 +76,9 @@
       "endpoints": [
         "https://github.com/cjpais/Handy/releases/latest/download/latest.json"
       ]
+    },
+    "sql": {
+      "preload": ["sqlite:history.db"]
     }
   }
 }

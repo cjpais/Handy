@@ -255,19 +255,38 @@ impl ShortcutAction for TranscribeAction {
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
+                            let mut post_processed_text: Option<String> = None;
+                            let mut post_process_prompt: Option<String> = None;
 
                             if let Some(processed_text) =
                                 maybe_post_process_transcription(&settings, &transcription).await
                             {
-                                final_text = processed_text;
+                                final_text = processed_text.clone();
+                                post_processed_text = Some(processed_text);
+
+                                // Get the prompt that was used
+                                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                                    if let Some(prompt) = settings
+                                        .post_process_prompts
+                                        .iter()
+                                        .find(|p| &p.id == prompt_id)
+                                    {
+                                        post_process_prompt = Some(prompt.prompt.clone());
+                                    }
+                                }
                             }
 
-                            // Save to history (save original transcription, not processed)
+                            // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
                             tauri::async_runtime::spawn(async move {
                                 if let Err(e) = hm_clone
-                                    .save_transcription(samples_clone, transcription_for_history)
+                                    .save_transcription(
+                                        samples_clone,
+                                        transcription_for_history,
+                                        post_processed_text,
+                                        post_process_prompt,
+                                    )
                                     .await
                                 {
                                     error!("Failed to save transcription to history: {}", e);
