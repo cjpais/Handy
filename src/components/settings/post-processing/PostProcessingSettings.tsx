@@ -7,7 +7,7 @@ import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 import { ResetButton } from "../../ui/ResetButton";
 import { Input } from "../../ui/Input";
-import { Select } from "../../ui/Select";
+import { Dropdown } from "../../ui/Dropdown";
 import { Textarea } from "../../ui/Textarea";
 
 import { ProviderSelect } from "../PostProcessingSettingsApi/ProviderSelect";
@@ -18,7 +18,9 @@ import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePos
 import { useSettings } from "../../../hooks/useSettings";
 import type { LLMPrompt } from "../../../lib/types";
 
-const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
   <div className="p-4 bg-mid-gray/5 rounded-lg border border-mid-gray/20 text-center">
     <p className="text-sm text-mid-gray">{children}</p>
   </div>
@@ -30,7 +32,8 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
   if (!state.enabled) {
     return (
       <DisabledNotice>
-        Post processing is currently disabled. Enable it in Debug settings to configure.
+        Post processing is currently disabled. Enable it in Debug settings to
+        configure.
       </DisabledNotice>
     );
   }
@@ -136,7 +139,8 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
 };
 
 const PostProcessingSettingsPromptsComponent: React.FC = () => {
-  const { getSetting, updateSetting, isUpdating, refreshSettings } = useSettings();
+  const { getSetting, updateSetting, isUpdating, refreshSettings } =
+    useSettings();
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftText, setDraftText] = useState("");
@@ -144,7 +148,8 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   const enabled = getSetting("post_process_enabled") || false;
   const prompts = getSetting("post_process_prompts") || [];
   const selectedPromptId = getSetting("post_process_selected_prompt_id") || "";
-  const selectedPrompt = prompts.find((prompt) => prompt.id === selectedPromptId) || null;
+  const selectedPrompt =
+    prompts.find((prompt) => prompt.id === selectedPromptId) || null;
 
   useEffect(() => {
     if (isCreating) return;
@@ -156,7 +161,12 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
       setDraftName("");
       setDraftText("");
     }
-  }, [isCreating, selectedPromptId, selectedPrompt?.name, selectedPrompt?.prompt]);
+  }, [
+    isCreating,
+    selectedPromptId,
+    selectedPrompt?.name,
+    selectedPrompt?.prompt,
+  ]);
 
   const handlePromptSelect = (promptId: string | null) => {
     if (!promptId) return;
@@ -218,10 +228,17 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     }
   };
 
+  const handleStartCreate = () => {
+    setIsCreating(true);
+    setDraftName("");
+    setDraftText("");
+  };
+
   if (!enabled) {
     return (
       <DisabledNotice>
-        Post processing is currently disabled. Enable it in Debug settings to configure.
+        Post processing is currently disabled. Enable it in Debug settings to
+        configure.
       </DisabledNotice>
     );
   }
@@ -234,41 +251,42 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
 
   return (
     <SettingContainer
-      title="Post-processing Prompt"
+      title="Selected Prompt"
       description="Select a template for refining transcriptions or create a new one. Use ${output} inside the prompt text to reference the captured transcript."
       descriptionMode="tooltip"
       layout="stacked"
       grouped={true}
     >
       <div className="space-y-3">
-        <Select
-          value={selectedPromptId || null}
-          options={prompts.map((p) => ({
-            value: p.id,
-            label: p.name,
-          }))}
-          onChange={(value) => handlePromptSelect(value)}
-          onCreateOption={(label) => {
-            const trimmed = label.trim();
-            if (!trimmed) return;
-            setIsCreating(true);
-            setDraftName(trimmed);
-            setDraftText("");
-          }}
-          placeholder={
-            prompts.length === 0
-              ? "Type a name to create the first prompt"
-              : "Search or create a prompt"
-          }
-          disabled={isUpdating("post_process_selected_prompt_id")}
-          isLoading={isUpdating("post_process_selected_prompt_id")}
-          isCreatable
-          className="w-full"
-        />
+        <div className="flex gap-2">
+          <Dropdown
+            selectedValue={selectedPromptId || null}
+            options={prompts.map((p) => ({
+              value: p.id,
+              label: p.name,
+            }))}
+            onSelect={(value) => handlePromptSelect(value)}
+            placeholder={
+              prompts.length === 0 ? "No prompts available" : "Select a prompt"
+            }
+            disabled={
+              isUpdating("post_process_selected_prompt_id") || isCreating
+            }
+            className="flex-1"
+          />
+          <Button
+            onClick={handleStartCreate}
+            variant="primary"
+            size="md"
+            disabled={isCreating}
+          >
+            Create New Prompt
+          </Button>
+        </div>
 
         {!isCreating && hasPrompts && selectedPrompt && (
           <div className="space-y-3">
-            <div className="space-y-2 block flex flex-col">
+            <div className="space-y-2 flex flex-col">
               <label className="text-sm font-semibold text-mid-gray">
                 Prompt Label
               </label>
@@ -281,7 +299,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2 block flex flex-col">
+            <div className="space-y-2 flex flex-col">
               <label className="text-sm font-semibold text-mid-gray">
                 Prompt Instructions
               </label>
@@ -291,7 +309,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 placeholder="Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}"
               />
               <p className="text-xs text-mid-gray/70">
-                Tip: Use <code className="px-1 py-0.5 bg-mid-gray/20 rounded text-xs">$&#123;output&#125;</code> to insert the transcribed text in your prompt.
+                Tip: Use{" "}
+                <code className="px-1 py-0.5 bg-mid-gray/20 rounded text-xs">
+                  $&#123;output&#125;
+                </code>{" "}
+                to insert the transcribed text in your prompt.
               </p>
             </div>
 
@@ -321,7 +343,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
             <p className="text-sm text-mid-gray">
               {hasPrompts
                 ? "Select a prompt above to view and edit its details."
-                : "Type a name above to create your first post-processing prompt."}
+                : "Click 'Create New Prompt' above to create your first post-processing prompt."}
             </p>
           </div>
         )}
@@ -341,7 +363,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2 block flex flex-col">
+            <div className="space-y-2 flex flex-col">
               <label className="text-sm font-semibold text-mid-gray">
                 Prompt Instructions
               </label>
@@ -351,7 +373,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 placeholder="Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}"
               />
               <p className="text-xs text-mid-gray/70">
-                Tip: Use <code className="px-1 py-0.5 bg-mid-gray/20 rounded text-xs">$&#123;output&#125;</code> to insert the transcribed text in your prompt.
+                Tip: Use{" "}
+                <code className="px-1 py-0.5 bg-mid-gray/20 rounded text-xs">
+                  $&#123;output&#125;
+                </code>{" "}
+                to insert the transcribed text in your prompt.
               </p>
             </div>
 
@@ -379,10 +405,14 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   );
 };
 
-export const PostProcessingSettingsApi = React.memo(PostProcessingSettingsApiComponent);
+export const PostProcessingSettingsApi = React.memo(
+  PostProcessingSettingsApiComponent,
+);
 PostProcessingSettingsApi.displayName = "PostProcessingSettingsApi";
 
-export const PostProcessingSettingsPrompts = React.memo(PostProcessingSettingsPromptsComponent);
+export const PostProcessingSettingsPrompts = React.memo(
+  PostProcessingSettingsPromptsComponent,
+);
 PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
 
 export const PostProcessingSettings: React.FC = () => {

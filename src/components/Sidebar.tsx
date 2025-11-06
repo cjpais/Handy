@@ -43,7 +43,7 @@ export const SECTIONS_CONFIG = {
     enabled: () => true,
   },
   postprocessing: {
-    label: "Post process",
+    label: "Post Process",
     icon: Sparkles,
     component: PostProcessingSettings,
     enabled: (settings) => settings?.post_process_enabled ?? false,

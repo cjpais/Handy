@@ -304,7 +304,11 @@ fn default_post_process_models() -> HashMap<String, String> {
 }
 
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
-    Vec::new()
+    vec![LLMPrompt {
+        id: "default_improve_transcriptions".to_string(),
+        name: "Improve Transcriptions".to_string(),
+        prompt: "Minimally correct this transcript: fix obvious transcription/punctuation/capitalization errors; convert number words to digits. Do not add or remove content. Output only the corrected transcript, with no commentary.\n\n${output}".to_string(),
+    }]
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
