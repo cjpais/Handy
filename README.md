@@ -109,9 +109,6 @@ We're actively working on several features and improvements. Contributions and f
 **Debug Logging:**
 - Adding debug logging to a file to help diagnose issues
 
-**LLM Post-Processing ([#222](https://github.com/cjpais/Handy/issues/222)):**
-- Optional LLM-based post-processing of transcriptions
-
 **macOS Keyboard Improvements:**
 - Support for Globe key as transcription trigger
 - A rewrite of global shortcut handling for MacOS, and potentially other OS's too.
@@ -119,6 +116,15 @@ We're actively working on several features and improvements. Contributions and f
 **Opt-in Analytics:**
 - Collect anonymous usage data to help improve Handy
 - Privacy-first approach with clear opt-in
+
+**Settings Refactoring:**
+- Cleanup and refactor settings system which is becoming bloated and messy
+- Implement better abstractions for settings management
+
+**Tauri Commands Cleanup:**
+- Abstract and organize Tauri command patterns
+- Investigate tauri-specta for improved type safety and organization
+
 
 ## Troubleshooting
 
