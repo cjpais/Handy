@@ -40,6 +40,28 @@ export type PasteMethod = z.infer<typeof PasteMethodSchema>;
 export const ClipboardHandlingSchema = z.enum(["dont_modify", "copy_to_clipboard"]);
 export type ClipboardHandling = z.infer<typeof ClipboardHandlingSchema>;
 
+export const LLMPromptSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  prompt: z.string(),
+});
+
+export type LLMPrompt = z.infer<typeof LLMPromptSchema>;
+
+export const PostProcessProviderSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  base_url: z.string(),
+  allow_base_url_edit: z.boolean().optional().default(false),
+  models_endpoint: z.string().nullable().optional(),
+  kind: z
+    .enum(["openai_compatible", "anthropic"])
+    .optional()
+    .default("openai_compatible"),
+});
+
+export type PostProcessProvider = z.infer<typeof PostProcessProviderSchema>;
+
 export const SettingsSchema = z.object({
   bindings: ShortcutBindingsMapSchema,
   push_to_talk: z.boolean(),
@@ -65,6 +87,22 @@ export const SettingsSchema = z.object({
   history_limit: z.number().optional().default(5),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
+  post_process_enabled: z.boolean().optional().default(false),
+  post_process_provider_id: z.string().optional().default("openai"),
+  post_process_providers: z
+    .array(PostProcessProviderSchema)
+    .optional()
+    .default([]),
+  post_process_api_keys: z
+    .record(z.string())
+    .optional()
+    .default({}),
+  post_process_models: z
+    .record(z.string())
+    .optional()
+    .default({}),
+  post_process_prompts: z.array(LLMPromptSchema).optional().default([]),
+  post_process_selected_prompt_id: z.string().nullable().optional(),
   mute_while_recording: z.boolean().optional().default(false),
 });
 

@@ -1,10 +1,11 @@
 import React from "react";
-import { WordCorrectionThreshold } from "./debug/WordCorrectionThreshold";
-import { SettingsGroup } from "../ui/SettingsGroup";
-import { HistoryLimit } from "./HistoryLimit";
-import { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
-import { SoundPicker } from "./SoundPicker";
-import { MuteWhileRecording } from "./MuteWhileRecording";
+import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
+import { SettingsGroup } from "../../ui/SettingsGroup";
+import { HistoryLimit } from "../HistoryLimit";
+import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
+import { SoundPicker } from "../SoundPicker";
+import { PostProcessingToggle } from "../PostProcessingToggle";
+import { MuteWhileRecording } from "../MuteWhileRecording";
 
 export const DebugSettings: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ export const DebugSettings: React.FC = () => {
         <WordCorrectionThreshold descriptionMode="tooltip" grouped={true} />
         <HistoryLimit descriptionMode="tooltip" grouped={true} />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
+        <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>

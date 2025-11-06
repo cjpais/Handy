@@ -18,6 +18,8 @@ pub struct HistoryEntry {
     pub saved: bool,
     pub title: String,
     pub transcription_text: String,
+    pub post_processed_text: Option<String>,
+    pub post_process_prompt: Option<String>,
 }
 
 pub struct HistoryManager {
@@ -52,35 +54,39 @@ impl HistoryManager {
     }
 
     pub fn get_migrations() -> Vec<Migration> {
-        vec![Migration {
-            version: 1,
-            description: "create_transcription_history_table",
-            sql: "CREATE TABLE IF NOT EXISTS transcription_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                file_name TEXT NOT NULL,
-                timestamp INTEGER NOT NULL,
-                saved BOOLEAN NOT NULL DEFAULT 0,
-                title TEXT NOT NULL,
-                transcription_text TEXT NOT NULL
-            );",
-            kind: MigrationKind::Up,
-        }]
+        vec![
+            Migration {
+                version: 1,
+                description: "create_transcription_history_table",
+                sql: "CREATE TABLE IF NOT EXISTS transcription_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    file_name TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    saved BOOLEAN NOT NULL DEFAULT 0,
+                    title TEXT NOT NULL,
+                    transcription_text TEXT NOT NULL
+                );",
+                kind: MigrationKind::Up,
+            },
+            Migration {
+                version: 2,
+                description: "add_post_processed_text_column",
+                sql: "ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;",
+                kind: MigrationKind::Up,
+            },
+            Migration {
+                version: 3,
+                description: "add_post_process_prompt_column",
+                sql: "ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;",
+                kind: MigrationKind::Up,
+            },
+        ]
     }
 
     fn init_database(&self) -> Result<()> {
-        let conn = Connection::open(&self.db_path)?;
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS transcription_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                file_name TEXT NOT NULL,
-                timestamp INTEGER NOT NULL,
-                saved BOOLEAN NOT NULL DEFAULT 0,
-                title TEXT NOT NULL,
-                transcription_text TEXT NOT NULL
-            )",
-            [],
-        )?;
-        debug!("Database initialized at: {:?}", self.db_path);
+        // Database initialization and migrations are handled by tauri-plugin-sql
+        // via the preload configuration in tauri.conf.json
+        debug!("Database path: {:?}", self.db_path);
         Ok(())
     }
 
@@ -93,6 +99,8 @@ impl HistoryManager {
         &self,
         audio_samples: Vec<f32>,
         transcription_text: String,
+        post_processed_text: Option<String>,
+        post_process_prompt: Option<String>,
     ) -> Result<()> {
         // If history limit is 0, do not save at all.
         if crate::settings::get_history_limit(&self.app_handle) == 0 {
@@ -108,7 +116,14 @@ impl HistoryManager {
         save_wav_file(file_path, &audio_samples).await?;
 
         // Save to database
-        self.save_to_database(file_name, timestamp, title, transcription_text)?;
+        self.save_to_database(
+            file_name,
+            timestamp,
+            title,
+            transcription_text,
+            post_processed_text,
+            post_process_prompt,
+        )?;
 
         // Clean up old entries
         self.cleanup_old_entries()?;
@@ -127,11 +142,13 @@ impl HistoryManager {
         timestamp: i64,
         title: String,
         transcription_text: String,
+        post_processed_text: Option<String>,
+        post_process_prompt: Option<String>,
     ) -> Result<()> {
         let conn = self.get_connection()?;
         conn.execute(
-            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text) VALUES (?1, ?2, ?3, ?4, ?5)",
-            params![file_name, timestamp, false, title, transcription_text],
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt],
         )?;
 
         debug!("Saved transcription to database");
@@ -186,7 +203,7 @@ impl HistoryManager {
     pub async fn get_history_entries(&self) -> Result<Vec<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text FROM transcription_history ORDER BY timestamp DESC"
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt FROM transcription_history ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -197,6 +214,8 @@ impl HistoryManager {
                 saved: row.get("saved")?,
                 title: row.get("title")?,
                 transcription_text: row.get("transcription_text")?,
+                post_processed_text: row.get("post_processed_text")?,
+                post_process_prompt: row.get("post_process_prompt")?,
             })
         })?;
 
@@ -242,7 +261,7 @@ impl HistoryManager {
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
              FROM transcription_history WHERE id = ?1",
         )?;
 
@@ -255,6 +274,8 @@ impl HistoryManager {
                     saved: row.get("saved")?,
                     title: row.get("title")?,
                     transcription_text: row.get("transcription_text")?,
+                    post_processed_text: row.get("post_processed_text")?,
+                    post_process_prompt: row.get("post_process_prompt")?,
                 })
             })
             .optional()?;

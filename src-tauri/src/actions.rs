@@ -1,11 +1,15 @@
-use crate::audio_feedback::{SoundType, play_feedback_sound};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
-use crate::settings::get_settings;
+use crate::settings::{get_settings, AppSettings};
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils;
+use async_openai::types::{
+    ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
+    CreateChatCompletionRequestArgs,
+};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -22,6 +26,139 @@ pub trait ShortcutAction: Send + Sync {
 
 // Transcribe Action
 struct TranscribeAction;
+
+async fn maybe_post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
+    if !settings.post_process_enabled {
+        return None;
+    }
+
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("Post-processing enabled but no provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "Post-processing skipped because provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    let selected_prompt_id = match &settings.post_process_selected_prompt_id {
+        Some(id) => id.clone(),
+        None => {
+            debug!("Post-processing skipped because no prompt is selected");
+            return None;
+        }
+    };
+
+    let prompt = match settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| prompt.id == selected_prompt_id)
+    {
+        Some(prompt) => prompt.prompt.clone(),
+        None => {
+            debug!(
+                "Post-processing skipped because prompt '{}' was not found",
+                selected_prompt_id
+            );
+            return None;
+        }
+    };
+
+    if prompt.trim().is_empty() {
+        debug!("Post-processing skipped because the selected prompt is empty");
+        return None;
+    }
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    debug!(
+        "Starting LLM post-processing with provider '{}' (model: {})",
+        provider.id, model
+    );
+
+    // Replace ${output} variable in the prompt with the actual text
+    let processed_prompt = prompt.replace("${output}", transcription);
+    debug!("Processed prompt length: {} chars", processed_prompt.len());
+
+    // Create OpenAI-compatible client
+    let client = match crate::llm_client::create_client(&provider, api_key) {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Failed to create LLM client: {}", e);
+            return None;
+        }
+    };
+
+    // Build the chat completion request
+    let message = match ChatCompletionRequestUserMessageArgs::default()
+        .content(processed_prompt)
+        .build()
+    {
+        Ok(msg) => ChatCompletionRequestMessage::User(msg),
+        Err(e) => {
+            error!("Failed to build chat message: {}", e);
+            return None;
+        }
+    };
+
+    let request = match CreateChatCompletionRequestArgs::default()
+        .model(&model)
+        .messages(vec![message])
+        .build()
+    {
+        Ok(req) => req,
+        Err(e) => {
+            error!("Failed to build chat completion request: {}", e);
+            return None;
+        }
+    };
+
+    // Send the request
+    match client.chat().create(request).await {
+        Ok(response) => {
+            if let Some(choice) = response.choices.first() {
+                if let Some(content) = &choice.message.content {
+                    debug!(
+                        "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
+                        provider.id,
+                        content.len()
+                    );
+                    return Some(content.clone());
+                }
+            }
+            error!("LLM API response has no content");
+            None
+        }
+        Err(e) => {
+            error!(
+                "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
+                provider.id,
+                e
+            );
+            None
+        }
+    }
+}
 
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
@@ -116,22 +253,51 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            // Save to history
+                            let settings = get_settings(&ah);
+                            let mut final_text = transcription.clone();
+                            let mut post_processed_text: Option<String> = None;
+                            let mut post_process_prompt: Option<String> = None;
+
+                            if let Some(processed_text) =
+                                maybe_post_process_transcription(&settings, &transcription).await
+                            {
+                                final_text = processed_text.clone();
+                                post_processed_text = Some(processed_text);
+
+                                // Get the prompt that was used
+                                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                                    if let Some(prompt) = settings
+                                        .post_process_prompts
+                                        .iter()
+                                        .find(|p| &p.id == prompt_id)
+                                    {
+                                        post_process_prompt = Some(prompt.prompt.clone());
+                                    }
+                                }
+                            }
+
+                            // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
                             tauri::async_runtime::spawn(async move {
                                 if let Err(e) = hm_clone
-                                    .save_transcription(samples_clone, transcription_for_history)
+                                    .save_transcription(
+                                        samples_clone,
+                                        transcription_for_history,
+                                        post_processed_text,
+                                        post_process_prompt,
+                                    )
                                     .await
                                 {
                                     error!("Failed to save transcription to history: {}", e);
                                 }
                             });
-                            let transcription_clone = transcription.clone();
+
+                            // Paste the final text (either processed or original)
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
                             ah.run_on_main_thread(move || {
-                                match utils::paste(transcription_clone, ah_clone.clone()) {
+                                match utils::paste(final_text, ah_clone.clone()) {
                                     Ok(()) => debug!(
                                         "Text pasted successfully in {:?}",
                                         paste_time.elapsed()

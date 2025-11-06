@@ -12,6 +12,24 @@ pub struct ShortcutBinding {
     pub current_binding: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LLMPrompt {
+    pub id: String,
+    pub name: String,
+    pub prompt: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PostProcessProvider {
+    pub id: String,
+    pub label: String,
+    pub base_url: String,
+    #[serde(default)]
+    pub allow_base_url_edit: bool,
+    #[serde(default)]
+    pub models_endpoint: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
@@ -163,6 +181,20 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
+    #[serde(default = "default_post_process_enabled")]
+    pub post_process_enabled: bool,
+    #[serde(default = "default_post_process_provider_id")]
+    pub post_process_provider_id: String,
+    #[serde(default = "default_post_process_providers")]
+    pub post_process_providers: Vec<PostProcessProvider>,
+    #[serde(default = "default_post_process_api_keys")]
+    pub post_process_api_keys: HashMap<String, String>,
+    #[serde(default = "default_post_process_models")]
+    pub post_process_models: HashMap<String, String>,
+    #[serde(default = "default_post_process_prompts")]
+    pub post_process_prompts: Vec<LLMPrompt>,
+    #[serde(default)]
+    pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
 }
@@ -218,6 +250,71 @@ fn default_sound_theme() -> SoundTheme {
     SoundTheme::Marimba
 }
 
+fn default_post_process_enabled() -> bool {
+    false
+}
+
+fn default_post_process_provider_id() -> String {
+    "openai".to_string()
+}
+
+fn default_post_process_providers() -> Vec<PostProcessProvider> {
+    vec![
+        PostProcessProvider {
+            id: "openai".to_string(),
+            label: "OpenAI".to_string(),
+            base_url: "https://api.openai.com/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        },
+        PostProcessProvider {
+            id: "openrouter".to_string(),
+            label: "OpenRouter".to_string(),
+            base_url: "https://openrouter.ai/api/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        },
+        PostProcessProvider {
+            id: "anthropic".to_string(),
+            label: "Anthropic".to_string(),
+            base_url: "https://api.anthropic.com/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        },
+        PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        },
+    ]
+}
+
+fn default_post_process_api_keys() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_post_process_providers() {
+        map.insert(provider.id, String::new());
+    }
+    map
+}
+
+fn default_post_process_models() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_post_process_providers() {
+        map.insert(provider.id, String::new());
+    }
+    map
+}
+
+fn default_post_process_prompts() -> Vec<LLMPrompt> {
+    vec![LLMPrompt {
+        id: "default_improve_transcriptions".to_string(),
+        name: "Improve Transcriptions".to_string(),
+        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+    }]
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -264,7 +361,37 @@ pub fn get_default_settings() -> AppSettings {
         history_limit: default_history_limit(),
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
+        post_process_enabled: default_post_process_enabled(),
+        post_process_provider_id: default_post_process_provider_id(),
+        post_process_providers: default_post_process_providers(),
+        post_process_api_keys: default_post_process_api_keys(),
+        post_process_models: default_post_process_models(),
+        post_process_prompts: default_post_process_prompts(),
+        post_process_selected_prompt_id: None,
         mute_while_recording: false,
+    }
+}
+
+impl AppSettings {
+    pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
+        self.post_process_providers
+            .iter()
+            .find(|provider| provider.id == self.post_process_provider_id)
+    }
+
+    pub fn post_process_provider(&self, provider_id: &str) -> Option<&PostProcessProvider> {
+        self.post_process_providers
+            .iter()
+            .find(|provider| provider.id == provider_id)
+    }
+
+    pub fn post_process_provider_mut(
+        &mut self,
+        provider_id: &str,
+    ) -> Option<&mut PostProcessProvider> {
+        self.post_process_providers
+            .iter_mut()
+            .find(|provider| provider.id == provider_id)
     }
 }
 
@@ -279,27 +406,19 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(settings) => {
                 println!("Found existing settings: {:?}", settings);
-
                 settings
             }
             Err(e) => {
                 println!("Failed to parse settings: {}", e);
                 // Fall back to default settings if parsing fails
                 let default_settings = get_default_settings();
-
-                // Store the default settings
                 store.set("settings", serde_json::to_value(&default_settings).unwrap());
-
                 default_settings
             }
         }
     } else {
-        // Create default settings
         let default_settings = get_default_settings();
-
-        // Store the settings
         store.set("settings", serde_json::to_value(&default_settings).unwrap());
-
         default_settings
     };
 
@@ -312,10 +431,15 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         .expect("Failed to initialize store");
 
     if let Some(settings_value) = store.get("settings") {
-        serde_json::from_value::<AppSettings>(settings_value)
-            .unwrap_or_else(|_| get_default_settings())
+        serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
+            let default_settings = get_default_settings();
+            store.set("settings", serde_json::to_value(&default_settings).unwrap());
+            default_settings
+        })
     } else {
-        get_default_settings()
+        let default_settings = get_default_settings();
+        store.set("settings", serde_json::to_value(&default_settings).unwrap());
+        default_settings
     }
 }
 
