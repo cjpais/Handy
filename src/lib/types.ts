@@ -34,7 +34,7 @@ export const ModelUnloadTimeoutSchema = z.enum([
 ]);
 export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
 
-export const PasteMethodSchema = z.enum(["ctrl_v", "direct"]);
+export const PasteMethodSchema = z.enum(["ctrl_v", "direct", "shift_insert"]);
 export type PasteMethod = z.infer<typeof PasteMethodSchema>;
 
 export const ClipboardHandlingSchema = z.enum(["dont_modify", "copy_to_clipboard"]);
@@ -103,6 +103,7 @@ export const SettingsSchema = z.object({
     .default({}),
   post_process_prompts: z.array(LLMPromptSchema).optional().default([]),
   post_process_selected_prompt_id: z.string().nullable().optional(),
+  mute_while_recording: z.boolean().optional().default(false),
 });
 
 export const BindingResponseSchema = z.object({
@@ -128,6 +129,8 @@ export const ModelInfoSchema = z.object({
   is_downloading: z.boolean(),
   partial_size: z.number(),
   is_directory: z.boolean(),
+  accuracy_score: z.number(),
+  speed_score: z.number(),
 });
 
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;

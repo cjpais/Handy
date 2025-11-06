@@ -268,6 +268,8 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
     let parsed = match method.as_str() {
         "ctrl_v" => PasteMethod::CtrlV,
         "direct" => PasteMethod::Direct,
+        #[cfg(not(target_os = "macos"))]
+        "shift_insert" => PasteMethod::ShiftInsert,
         other => {
             eprintln!("Invalid paste method '{}', defaulting to ctrl_v", other);
             PasteMethod::CtrlV
@@ -606,6 +608,15 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
 
     settings.post_process_selected_prompt_id = Some(id);
     settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.mute_while_recording = enabled;
+    settings::write_settings(&app, settings);
+
     Ok(())
 }
 

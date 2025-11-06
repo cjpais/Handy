@@ -56,6 +56,8 @@ pub enum ModelUnloadTimeout {
 pub enum PasteMethod {
     CtrlV,
     Direct,
+    #[cfg(not(target_os = "macos"))]
+    ShiftInsert,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -193,6 +195,8 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    #[serde(default)]
+    pub mute_while_recording: bool,
 }
 
 fn default_model() -> String {
@@ -364,6 +368,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        mute_while_recording: false,
     }
 }
 

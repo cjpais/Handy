@@ -13,6 +13,8 @@ interface ModelInfo {
   is_downloading: boolean;
   partial_size: number;
   is_directory: boolean;
+  accuracy_score: number;
+  speed_score: number;
 }
 
 interface DownloadProgress {

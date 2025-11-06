@@ -63,6 +63,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   debug_mode: false,
   custom_words: [],
   history_limit: 5,
+  mute_while_recording: false,
 };
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
@@ -115,6 +116,8 @@ const settingUpdaters: {
     invoke("change_post_process_enabled_setting", { enabled: value }),
   post_process_selected_prompt_id: (value) =>
     invoke("set_post_process_selected_prompt", { id: value }),
+  mute_while_recording: (value) =>
+    invoke("change_mute_while_recording_setting", { enabled: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -147,8 +150,8 @@ export const useSettingsStore = create<SettingsStore>()(
       try {
         const { load } = await import("@tauri-apps/plugin-store");
         const store = await load("settings_store.json", {
-          autoSave: false,
-          defaults: {},
+          defaults: DEFAULT_SETTINGS,
+          autoSave: false
         });
         const settings = (await store.get("settings")) as Settings;
 

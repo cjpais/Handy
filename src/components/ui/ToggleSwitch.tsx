@@ -10,6 +10,7 @@ interface ToggleSwitchProps {
   description: string;
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  tooltipPosition?: "top" | "bottom";
 }
 
 export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
@@ -21,6 +22,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   description,
   descriptionMode = "tooltip",
   grouped = false,
+  tooltipPosition = "top",
 }) => {
   return (
     <SettingContainer
@@ -29,6 +31,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
       descriptionMode={descriptionMode}
       grouped={grouped}
       disabled={disabled}
+      tooltipPosition={tooltipPosition}
     >
       <label
         className={`inline-flex items-center ${disabled || isUpdating ? "cursor-not-allowed" : "cursor-pointer"}`}
