@@ -287,9 +287,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
         {!isCreating && hasPrompts && selectedPrompt && (
           <div className="space-y-3">
             <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold text-mid-gray">
-                Prompt Label
-              </label>
+              <label className="text-sm font-semibold">Prompt Label</label>
               <Input
                 type="text"
                 value={draftName}
@@ -300,7 +298,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
             </div>
 
             <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold text-mid-gray">
+              <label className="text-sm font-semibold">
                 Prompt Instructions
               </label>
               <Textarea
@@ -351,7 +349,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
         {isCreating && (
           <div className="space-y-3">
             <div className="space-y-2 block flex flex-col">
-              <label className="text-sm font-semibold text-mid-gray">
+              <label className="text-sm font-semibold text-text">
                 Prompt Label
               </label>
               <Input
@@ -364,7 +362,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
             </div>
 
             <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold text-mid-gray">
+              <label className="text-sm font-semibold">
                 Prompt Instructions
               </label>
               <Textarea
