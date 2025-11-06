@@ -1,5 +1,4 @@
 use crate::audio_feedback::{play_feedback_sound, SoundType};
-use crate::llm_processor::post_process_with_llm;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -7,6 +6,10 @@ use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
 use crate::settings::{get_settings, AppSettings};
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils;
+use async_openai::types::{
+    ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
+    CreateChatCompletionRequestArgs,
+};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -87,26 +90,70 @@ async fn maybe_post_process_transcription(
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
-    let api_key = if api_key.trim().is_empty() {
-        None
-    } else {
-        Some(api_key)
+
+    debug!(
+        "Starting LLM post-processing with provider '{}' (model: {})",
+        provider.id, model
+    );
+
+    // Replace ${output} variable in the prompt with the actual text
+    let processed_prompt = prompt.replace("${output}", transcription);
+    debug!("Processed prompt length: {} chars", processed_prompt.len());
+
+    // Create OpenAI-compatible client
+    let client = match crate::llm_client::create_client(&provider, api_key) {
+        Ok(client) => client,
+        Err(e) => {
+            error!("Failed to create LLM client: {}", e);
+            return None;
+        }
     };
 
-    match post_process_with_llm(transcription.to_string(), prompt, &provider, api_key, model).await
+    // Build the chat completion request
+    let message = match ChatCompletionRequestUserMessageArgs::default()
+        .content(processed_prompt)
+        .build()
     {
-        Ok(processed_text) => {
-            debug!(
-                "LLM post-processing succeeded for provider '{}'",
-                provider.id
-            );
-            Some(processed_text)
+        Ok(msg) => ChatCompletionRequestMessage::User(msg),
+        Err(e) => {
+            error!("Failed to build chat message: {}", e);
+            return None;
         }
-        Err(error_message) => {
+    };
+
+    let request = match CreateChatCompletionRequestArgs::default()
+        .model(&model)
+        .messages(vec![message])
+        .build()
+    {
+        Ok(req) => req,
+        Err(e) => {
+            error!("Failed to build chat completion request: {}", e);
+            return None;
+        }
+    };
+
+    // Send the request
+    match client.chat().create(request).await {
+        Ok(response) => {
+            if let Some(choice) = response.choices.first() {
+                if let Some(content) = &choice.message.content {
+                    debug!(
+                        "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
+                        provider.id,
+                        content.len()
+                    );
+                    return Some(content.clone());
+                }
+            }
+            error!("LLM API response has no content");
+            None
+        }
+        Err(e) => {
             error!(
                 "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
                 provider.id,
-                error_message
+                e
             );
             None
         }

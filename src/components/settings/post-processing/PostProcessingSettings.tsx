@@ -116,7 +116,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             }
             onSelect={state.handleModelSelect}
             onCreate={state.handleModelCreate}
-            onBlur={state.handleModelChange}
+            onBlur={() => {}}
             className="flex-1 min-w-[380px]"
           />
           <ResetButton

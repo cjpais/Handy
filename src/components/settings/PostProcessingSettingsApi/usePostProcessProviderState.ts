@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useSettings } from "../../../hooks/useSettings";
+import { useSettingsStore } from "../../../stores/settingsStore";
 import type { PostProcessProvider } from "../../../lib/types";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
@@ -166,22 +167,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   const isCustomProvider = selectedProvider?.id === "custom";
 
-  useEffect(() => {
-    if (isCustomProvider) {
-      return;
-    }
-
-    const modelCount = postProcessModelOptions[selectedProviderId]?.length ?? 0;
-    if (modelCount === 0 && !isFetchingModels) {
-      void fetchPostProcessModels(selectedProviderId);
-    }
-  }, [
-    isCustomProvider,
-    isFetchingModels,
-    fetchPostProcessModels,
-    postProcessModelOptions,
-    selectedProviderId,
-  ]);
+  // No automatic fetching - user must click refresh button
 
   return {
     enabled,

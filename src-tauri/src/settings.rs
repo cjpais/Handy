@@ -28,21 +28,6 @@ pub struct PostProcessProvider {
     pub allow_base_url_edit: bool,
     #[serde(default)]
     pub models_endpoint: Option<String>,
-    #[serde(default)]
-    pub kind: PostProcessProviderKind,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum PostProcessProviderKind {
-    OpenAiCompatible,
-    Anthropic,
-}
-
-impl Default for PostProcessProviderKind {
-    fn default() -> Self {
-        PostProcessProviderKind::OpenAiCompatible
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -296,7 +281,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.openai.com/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
-            kind: PostProcessProviderKind::OpenAiCompatible,
         },
         PostProcessProvider {
             id: "openrouter".to_string(),
@@ -304,7 +288,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://openrouter.ai/api/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
-            kind: PostProcessProviderKind::OpenAiCompatible,
         },
         PostProcessProvider {
             id: "anthropic".to_string(),
@@ -312,7 +295,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.anthropic.com/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
-            kind: PostProcessProviderKind::Anthropic,
         },
         PostProcessProvider {
             id: "custom".to_string(),
@@ -320,7 +302,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "http://localhost:11434/v1".to_string(),
             allow_base_url_edit: true,
             models_endpoint: Some("/models".to_string()),
-            kind: PostProcessProviderKind::OpenAiCompatible,
         },
     ]
 }

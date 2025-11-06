@@ -334,7 +334,10 @@ pub fn change_post_process_base_url_setting(
 }
 
 /// Generic helper to validate provider exists
-fn validate_provider_exists(settings: &settings::AppSettings, provider_id: &str) -> Result<(), String> {
+fn validate_provider_exists(
+    settings: &settings::AppSettings,
+    provider_id: &str,
+) -> Result<(), String> {
     if !settings
         .post_process_providers
         .iter()
@@ -451,6 +454,145 @@ pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), Stri
 
     settings::write_settings(&app, settings);
     Ok(())
+}
+
+#[tauri::command]
+pub async fn fetch_post_process_models(
+    app: AppHandle,
+    provider_id: String,
+) -> Result<Vec<String>, String> {
+    let settings = settings::get_settings(&app);
+
+    // Find the provider
+    let provider = settings
+        .post_process_providers
+        .iter()
+        .find(|p| p.id == provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    // Get API key
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider_id)
+        .cloned()
+        .unwrap_or_default();
+
+    // Skip fetching if no API key for providers that typically need one
+    if api_key.trim().is_empty() && provider.id != "custom" {
+        return Err(format!(
+            "API key is required for {}. Please add an API key to list available models.",
+            provider.label
+        ));
+    }
+
+    // TODO: In the future, we can use async-openai's models API:
+    // let client = crate::llm_client::create_client(provider, api_key)?;
+    // let response = client.models().list().await?;
+    // return Ok(response.data.iter().map(|m| m.id.clone()).collect());
+
+    // For now, use manual HTTP request to have more control over the endpoint
+    fetch_models_manual(provider, api_key).await
+}
+
+/// Fetch models using manual HTTP request
+/// This gives us more control and avoids issues with non-standard endpoints
+async fn fetch_models_manual(
+    provider: &crate::settings::PostProcessProvider,
+    api_key: String,
+) -> Result<Vec<String>, String> {
+    // Build the endpoint URL
+    let base_url = provider.base_url.trim_end_matches('/');
+    let models_endpoint = provider
+        .models_endpoint
+        .as_ref()
+        .map(|s| s.trim_start_matches('/'))
+        .unwrap_or("models");
+    let endpoint = format!("{}/{}", base_url, models_endpoint);
+
+    // Create HTTP client with headers
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(
+        "HTTP-Referer",
+        reqwest::header::HeaderValue::from_static("https://github.com/cjpais/Handy"),
+    );
+    headers.insert(
+        "X-Title",
+        reqwest::header::HeaderValue::from_static("Handy"),
+    );
+
+    // Add provider-specific headers
+    if provider.id == "anthropic" {
+        if !api_key.is_empty() {
+            headers.insert(
+                "x-api-key",
+                reqwest::header::HeaderValue::from_str(&api_key)
+                    .map_err(|e| format!("Invalid API key: {}", e))?,
+            );
+        }
+        headers.insert(
+            "anthropic-version",
+            reqwest::header::HeaderValue::from_static("2023-06-01"),
+        );
+    } else if !api_key.is_empty() {
+        headers.insert(
+            "Authorization",
+            reqwest::header::HeaderValue::from_str(&format!("Bearer {}", api_key))
+                .map_err(|e| format!("Invalid API key: {}", e))?,
+        );
+    }
+
+    let http_client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
+
+    // Make the request
+    let response = http_client
+        .get(&endpoint)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch models: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Unknown error".to_string());
+        return Err(format!(
+            "Model list request failed ({}): {}",
+            status, error_text
+        ));
+    }
+
+    // Parse the response
+    let parsed: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    let mut models = Vec::new();
+
+    // Handle OpenAI format: { data: [ { id: "..." }, ... ] }
+    if let Some(data) = parsed.get("data").and_then(|d| d.as_array()) {
+        for entry in data {
+            if let Some(id) = entry.get("id").and_then(|i| i.as_str()) {
+                models.push(id.to_string());
+            } else if let Some(name) = entry.get("name").and_then(|n| n.as_str()) {
+                models.push(name.to_string());
+            }
+        }
+    }
+    // Handle array format: [ "model1", "model2", ... ]
+    else if let Some(array) = parsed.as_array() {
+        for entry in array {
+            if let Some(model) = entry.as_str() {
+                models.push(model.to_string());
+            }
+        }
+    }
+
+    Ok(models)
 }
 
 #[tauri::command]

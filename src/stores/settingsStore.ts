@@ -424,6 +424,13 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     updatePostProcessApiKey: async (providerId, apiKey) => {
+      // Clear cached models when API key changes - user should click refresh after
+      set((state) => ({
+        postProcessModelOptions: {
+          ...state.postProcessModelOptions,
+          [providerId]: [],
+        },
+      }));
       return get().updatePostProcessSetting('api_key', providerId, apiKey);
     },
 
@@ -433,137 +440,21 @@ export const useSettingsStore = create<SettingsStore>()(
 
     fetchPostProcessModels: async (providerId) => {
       const updateKey = `post_process_models_fetch:${providerId}`;
-      const {
-        setUpdating,
-        setPostProcessModelOptions,
-        refreshSettings,
-        settings,
-      } = get();
+      const { setUpdating, setPostProcessModelOptions } = get();
 
       setUpdating(updateKey, true);
 
       try {
-        if (!settings) {
-          await refreshSettings();
-        }
-
-        const currentSettings = get().settings;
-        const providers = currentSettings?.post_process_providers || [];
-
-        const provider = providers.find((p) => p.id === providerId);
-        if (!provider) {
-          throw new Error(`Provider '${providerId}' not found`);
-        }
-
-        const baseUrl = (provider.base_url || "").replace(/\/$/, "");
-        if (!baseUrl) {
-          throw new Error("Provider base URL is not configured.");
-        }
-        const endpointPath = (provider.models_endpoint || "/models").replace(
-          /^\//,
-          "",
-        );
-        const endpoint = `${baseUrl}/${endpointPath}`;
-
-        const headers: Record<string, string> = {
-          "HTTP-Referer": "https://github.com/cjpais/Handy",
-          "X-Title": "Handy",
-        };
-
-        const apiKey =
-          currentSettings?.post_process_api_keys?.[providerId]?.trim() || "";
-
-        if (provider.kind === "anthropic") {
-          if (!apiKey) {
-            throw new Error(
-              "An Anthropic API key is required to list available models.",
-            );
-          }
-          headers["x-api-key"] = apiKey;
-          headers["anthropic-version"] = "2023-06-01";
-        } else if (apiKey) {
-          headers.Authorization = `Bearer ${apiKey}`;
-        }
-
-        const response = await fetch(endpoint, {
-          method: "GET",
-          headers,
+        // Call Tauri backend command instead of fetch
+        const models: string[] = await invoke("fetch_post_process_models", {
+          providerId,
         });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Model list request failed (${response.status}): ${errorText || "unknown error"}`,
-          );
-        }
-
-        let parsed: unknown;
-        try {
-          parsed = await response.json();
-        } catch (error) {
-          throw new Error(
-            `Failed to parse model list response: ${(error as Error).message}`,
-          );
-        }
-
-        const collected: Array<{ id: string; created?: number }> = [];
-
-        if (
-          parsed &&
-          typeof parsed === "object" &&
-          Array.isArray((parsed as { data?: unknown[] }).data)
-        ) {
-          for (const entry of (parsed as { data: any[] }).data) {
-            if (entry && typeof entry === "object") {
-              const id = typeof entry.id === "string" ? entry.id : undefined;
-              const name = typeof entry.name === "string" ? entry.name : undefined;
-              const created =
-                typeof entry.created === "number"
-                  ? entry.created
-                  : undefined;
-              const identifier = id || name;
-              if (identifier) {
-                collected.push({ id: identifier, created });
-              }
-            }
-          }
-        } else if (Array.isArray(parsed)) {
-          for (const entry of parsed) {
-            if (typeof entry === "string") {
-              collected.push({ id: entry });
-            }
-          }
-        }
-
-        const dedup = new Map<string, number | undefined>();
-        for (const { id, created } of collected) {
-          const existing = dedup.get(id);
-          if (existing === undefined) {
-            dedup.set(id, created);
-          } else if (
-            created !== undefined &&
-            (existing === undefined || created > existing)
-          ) {
-            dedup.set(id, created);
-          }
-        }
-
-        const models = Array.from(dedup.entries())
-          .sort(([idA, createdA], [idB, createdB]) => {
-            if (createdA !== undefined && createdB !== undefined) {
-              return createdB - createdA;
-            }
-            if (createdA !== undefined) return -1;
-            if (createdB !== undefined) return 1;
-            return idA.localeCompare(idB);
-          })
-          .map(([id]) => id);
 
         setPostProcessModelOptions(providerId, models);
         return models;
       } catch (error) {
         console.error("Failed to fetch models:", error);
-        setPostProcessModelOptions(providerId, []);
+        // Don't cache empty array on error - let user retry
         return [];
       } finally {
         setUpdating(updateKey, false);
