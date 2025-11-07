@@ -159,7 +159,7 @@ New-Item -ItemType Directory -Force -Path "$env:APPDATA\com.pais.handy\models"
 
 #### Step 3: Download Model Files
 
-Download the models you want from https://blob.handy.computer/ using your web browser or download tool. All files are publicly accessible.
+Download the models you want from below
 
 **Whisper Models (single .bin files):**
 - Small (487 MB): `https://blob.handy.computer/ggml-small.bin`
