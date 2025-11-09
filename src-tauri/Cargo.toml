@@ -53,7 +53,7 @@ env_logger = "0.11.6"
 log = "0.4.25"
 tokio = "1.43.0"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
-enigo = "0.6.1"
+enigo = { version = "0.6.1", features = ["wayland"] }
 rodio = { git = "https://github.com/cjpais/rodio.git" }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 async-openai = "0.30.1"
