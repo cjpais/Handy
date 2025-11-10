@@ -25,6 +25,7 @@ Handy isn't trying to be the best speech-to-text app—it's trying to be the mos
 4. **Get** your transcribed text pasted directly into whatever app you're using
 
 The process is entirely local:
+
 - Silence is filtered using VAD (Voice Activity Detection) with Silero
 - Transcription uses your choice of models:
   - **Whisper models** (Small/Medium/Turbo/Large) with GPU acceleration when available
@@ -62,6 +63,7 @@ Handy is built as a Tauri application combining:
 ### Debug Mode
 
 Handy includes an advanced debug mode for development and troubleshooting. Access it by pressing:
+
 - **macOS**: `Cmd+Shift+D`
 - **Windows/Linux**: `Ctrl+Shift+D`
 
@@ -72,14 +74,17 @@ This project is actively being developed and has some [known issues](https://git
 ### Major Issues (Help Wanted)
 
 **Whisper Model Crashes:**
+
 - Whisper models crash on certain system configurations (Windows and Linux)
 - Does not affect all systems - issue is configuration-dependent
   - If you experience crashes and are a developer, please help to fix and provide debug logs!
 
 **Wayland Support (Linux):**
+
 - Limited or no support for Wayland display server
 
 ### Platform Support
+
 - **macOS (both Intel and Apple Silicon)**
 - **x64 Windows**
 - **x64 Linux**
@@ -89,12 +94,14 @@ This project is actively being developed and has some [known issues](https://git
 The following are recommendations for running Handy on your own machine. If you don't meet the system requirements, the performance of the application may be degraded. We are working on improving the performance across all kinds of computers and hardware.
 
 **For Whisper Models:**
+
 - **macOS**: M series Mac, Intel Mac
 - **Windows**: Intel, AMD, or NVIDIA GPU
 - **Linux**: Intel, AMD, or NVIDIA GPU
-  * Ubuntu 22.04, 24.04
+  - Ubuntu 22.04, 24.04
 
 **For Parakeet V3 Model:**
+
 - **CPU-only operation** - runs on a wide variety of hardware
 - **Minimum**: Intel Skylake (6th gen) or equivalent AMD processors
 - **Performance**: ~5x real-time speed on mid-range hardware (tested on i5)
@@ -107,24 +114,28 @@ We're actively working on several features and improvements. Contributions and f
 ### In Progress
 
 **Debug Logging:**
+
 - Adding debug logging to a file to help diagnose issues
 
 **macOS Keyboard Improvements:**
+
 - Support for Globe key as transcription trigger
 - A rewrite of global shortcut handling for MacOS, and potentially other OS's too.
 
 **Opt-in Analytics:**
+
 - Collect anonymous usage data to help improve Handy
 - Privacy-first approach with clear opt-in
 
 **Settings Refactoring:**
+
 - Cleanup and refactor settings system which is becoming bloated and messy
 - Implement better abstractions for settings management
 
 **Tauri Commands Cleanup:**
+
 - Abstract and organize Tauri command patterns
 - Investigate tauri-specta for improved type safety and organization
-
 
 ## Troubleshooting
 
@@ -141,6 +152,7 @@ If you're behind a proxy, firewall, or in a restricted network environment where
    - **Windows/Linux**: `Ctrl+Shift+D` to open debug menu
 
 The typical paths are:
+
 - **macOS**: `~/Library/Application Support/com.pais.handy/`
 - **Windows**: `C:\Users\{username}\AppData\Roaming\com.pais.handy\`
 - **Linux**: `~/.config/com.pais.handy/`
@@ -162,12 +174,14 @@ New-Item -ItemType Directory -Force -Path "$env:APPDATA\com.pais.handy\models"
 Download the models you want from below
 
 **Whisper Models (single .bin files):**
+
 - Small (487 MB): `https://blob.handy.computer/ggml-small.bin`
 - Medium (492 MB): `https://blob.handy.computer/whisper-medium-q4_1.bin`
 - Turbo (1600 MB): `https://blob.handy.computer/ggml-large-v3-turbo.bin`
 - Large (1100 MB): `https://blob.handy.computer/ggml-large-v3-q5_0.bin`
 
 **Parakeet Models (compressed archives):**
+
 - V2 (473 MB): `https://blob.handy.computer/parakeet-v2-int8.tar.gz`
 - V3 (478 MB): `https://blob.handy.computer/parakeet-v3-int8.tar.gz`
 
@@ -206,6 +220,7 @@ Final structure should look like:
 ```
 
 **Important Notes:**
+
 - For Parakeet models, the extracted directory name **must** match exactly as shown above
 - Do not rename the `.bin` files for Whisper models—use the exact filenames from the download URLs
 - After placing the files, restart Handy to detect the new models
@@ -260,4 +275,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-*"Your search for the right speech-to-text tool can end here—not because Handy is perfect, but because you can make it perfect for you."*
+_"Your search for the right speech-to-text tool can end here—not because Handy is perfect, but because you can make it perfect for you."_

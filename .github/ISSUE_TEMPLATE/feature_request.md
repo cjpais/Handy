@@ -1,18 +1,19 @@
 ---
 name: Feature Request
 about: Suggest an idea or new feature for Handy
-title: ''
+title: ""
 labels: []
-assignees: ''
+assignees: ""
 ---
 
 ## 🎯 Feature Requests Go in Discussions!
 
-Thanks for your interest in improving Handy! 
+Thanks for your interest in improving Handy!
 
 **Please post feature requests in our [Discussions tab](https://github.com/cjpais/Handy/discussions) instead of opening an issue.**
 
 This helps us:
+
 - Keep issues focused on bugs and actionable tasks
 - Have more open-ended conversations about features
 - Gather community feedback and input
