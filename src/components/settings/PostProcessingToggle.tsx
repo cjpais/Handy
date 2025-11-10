@@ -7,8 +7,8 @@ interface PostProcessingToggleProps {
   grouped?: boolean;
 }
 
-export const PostProcessingToggle: React.FC<PostProcessingToggleProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+export const PostProcessingToggle: React.FC<PostProcessingToggleProps> =
+  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
     const enabled = getSetting("post_process_enabled") || false;
@@ -24,5 +24,4 @@ export const PostProcessingToggle: React.FC<PostProcessingToggleProps> = React.m
         grouped={grouped}
       />
     );
-  },
-);
+  });

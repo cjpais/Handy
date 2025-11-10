@@ -37,7 +37,10 @@ export type ModelUnloadTimeout = z.infer<typeof ModelUnloadTimeoutSchema>;
 export const PasteMethodSchema = z.enum(["ctrl_v", "direct", "shift_insert"]);
 export type PasteMethod = z.infer<typeof PasteMethodSchema>;
 
-export const ClipboardHandlingSchema = z.enum(["dont_modify", "copy_to_clipboard"]);
+export const ClipboardHandlingSchema = z.enum([
+  "dont_modify",
+  "copy_to_clipboard",
+]);
 export type ClipboardHandling = z.infer<typeof ClipboardHandlingSchema>;
 
 export const LLMPromptSchema = z.object({
@@ -93,14 +96,8 @@ export const SettingsSchema = z.object({
     .array(PostProcessProviderSchema)
     .optional()
     .default([]),
-  post_process_api_keys: z
-    .record(z.string())
-    .optional()
-    .default({}),
-  post_process_models: z
-    .record(z.string())
-    .optional()
-    .default({}),
+  post_process_api_keys: z.record(z.string()).optional().default({}),
+  post_process_models: z.record(z.string()).optional().default({}),
   post_process_prompts: z.array(LLMPromptSchema).optional().default([]),
   post_process_selected_prompt_id: z.string().nullable().optional(),
   mute_while_recording: z.boolean().optional().default(false),

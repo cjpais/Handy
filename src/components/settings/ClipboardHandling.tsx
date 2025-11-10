@@ -14,30 +14,28 @@ const clipboardHandlingOptions = [
   { value: "copy_to_clipboard", label: "Copy to Clipboard" },
 ];
 
-export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> = React.memo(({
-  descriptionMode = "tooltip",
-  grouped = false,
-}) => {
-  const { getSetting, updateSetting, isUpdating } = useSettings();
+export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
+  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+    const { getSetting, updateSetting, isUpdating } = useSettings();
 
-  const selectedHandling = (getSetting("clipboard_handling") ||
-    "dont_modify") as ClipboardHandling;
+    const selectedHandling = (getSetting("clipboard_handling") ||
+      "dont_modify") as ClipboardHandling;
 
-  return (
-    <SettingContainer
-      title="Clipboard Handling"
-      description="Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting."
-      descriptionMode={descriptionMode}
-      grouped={grouped}
-    >
-      <Dropdown
-        options={clipboardHandlingOptions}
-        selectedValue={selectedHandling}
-        onSelect={(value) =>
-          updateSetting("clipboard_handling", value as ClipboardHandling)
-        }
-        disabled={isUpdating("clipboard_handling")}
-      />
-    </SettingContainer>
-  );
-});
+    return (
+      <SettingContainer
+        title="Clipboard Handling"
+        description="Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting."
+        descriptionMode={descriptionMode}
+        grouped={grouped}
+      >
+        <Dropdown
+          options={clipboardHandlingOptions}
+          selectedValue={selectedHandling}
+          onSelect={(value) =>
+            updateSetting("clipboard_handling", value as ClipboardHandling)
+          }
+          disabled={isUpdating("clipboard_handling")}
+        />
+      </SettingContainer>
+    );
+  });

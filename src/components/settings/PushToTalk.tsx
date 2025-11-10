@@ -7,23 +7,22 @@ interface PushToTalkProps {
   grouped?: boolean;
 }
 
-export const PushToTalk: React.FC<PushToTalkProps> = React.memo(({
-  descriptionMode = "tooltip",
-  grouped = false,
-}) => {
-  const { getSetting, updateSetting, isUpdating } = useSettings();
+export const PushToTalk: React.FC<PushToTalkProps> = React.memo(
+  ({ descriptionMode = "tooltip", grouped = false }) => {
+    const { getSetting, updateSetting, isUpdating } = useSettings();
 
-  const pttEnabled = getSetting("push_to_talk") || false;
+    const pttEnabled = getSetting("push_to_talk") || false;
 
-  return (
-    <ToggleSwitch
-      checked={pttEnabled}
-      onChange={(enabled) => updateSetting("push_to_talk", enabled)}
-      isUpdating={isUpdating("push_to_talk")}
-      label="Push To Talk"
-      description="Hold to record, release to stop"
-      descriptionMode={descriptionMode}
-      grouped={grouped}
-    />
-  );
-});
+    return (
+      <ToggleSwitch
+        checked={pttEnabled}
+        onChange={(enabled) => updateSetting("push_to_talk", enabled)}
+        isUpdating={isUpdating("push_to_talk")}
+        label="Push To Talk"
+        description="Hold to record, release to stop"
+        descriptionMode={descriptionMode}
+        grouped={grouped}
+      />
+    );
+  },
+);

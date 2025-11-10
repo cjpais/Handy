@@ -26,22 +26,26 @@ Before you begin, ensure you have the following installed:
 1. **Fork the repository** on GitHub
 
 2. **Clone your fork**:
+
    ```bash
    git clone git@github.com:YOUR_USERNAME/Handy.git
    cd Handy
    ```
 
 3. **Add upstream remote**:
+
    ```bash
    git remote add upstream git@github.com:cjpais/Handy.git
    ```
 
 4. **Install dependencies**:
+
    ```bash
    bun install
    ```
 
 5. **Download required models**:
+
    ```bash
    mkdir -p src-tauri/resources/models
    curl -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
@@ -61,6 +65,7 @@ For detailed platform-specific setup instructions, see [BUILD.md](BUILD.md).
 Handy follows a clean architecture pattern:
 
 **Backend (Rust - `src-tauri/src/`):**
+
 - `lib.rs` - Main application entry point with Tauri setup
 - `managers/` - Core business logic (audio, model, transcription)
 - `audio_toolkit/` - Low-level audio processing (recording, VAD)
@@ -69,6 +74,7 @@ Handy follows a clean architecture pattern:
 - `settings.rs` - Application settings management
 
 **Frontend (React/TypeScript - `src/`):**
+
 - `App.tsx` - Main application component
 - `components/` - React UI components
 - `hooks/` - Reusable React hooks
@@ -90,12 +96,14 @@ For more details, see the Architecture section in [README.md](README.md) or [AGE
 When creating a bug report, please include:
 
 **System Information:**
+
 - App version (found in settings or about section)
 - Operating System (e.g., macOS 14.1, Windows 11, Ubuntu 22.04)
 - CPU (e.g., Apple M2, Intel i7-12700K, AMD Ryzen 7 5800X)
 - GPU (e.g., Apple M2 GPU, NVIDIA RTX 4080, Intel UHD Graphics)
 
 **Bug Details:**
+
 - Clear description of the bug
 - Steps to reproduce
 - Expected behavior
@@ -132,6 +140,7 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
 ### Development Workflow
 
 1. **Create a feature branch**:
+
    ```bash
    git checkout -b feature/your-feature-name
    # or
@@ -151,6 +160,7 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
    - Use debug mode to verify audio/transcription behavior
 
 4. **Commit your changes**:
+
    ```bash
    git add .
    git commit -m "feat: add your feature description"
@@ -167,12 +177,14 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
    - `chore:` for maintenance tasks
 
 5. **Keep your fork updated**:
+
    ```bash
    git fetch upstream
    git rebase upstream/main
    ```
 
 6. **Push to your fork**:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -191,6 +203,7 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
 ### Code Style Guidelines
 
 **Rust:**
+
 - Follow standard Rust formatting (`cargo fmt`)
 - Run `cargo clippy` and address warnings
 - Use descriptive variable and function names
@@ -198,6 +211,7 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
 - Handle errors explicitly (avoid unwrap in production code)
 
 **TypeScript/React:**
+
 - Use TypeScript strictly, avoid `any` types
 - Follow React hooks best practices
 - Use functional components
@@ -205,6 +219,7 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
 - Use Tailwind CSS for styling
 
 **General:**
+
 - Write self-documenting code
 - Add comments for non-obvious logic
 - Keep functions small and single-purpose
@@ -213,6 +228,7 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
 ### Testing Your Changes
 
 **Manual Testing:**
+
 - Run the app in development mode: `bun run tauri dev`
 - Test your changes with debug mode enabled
 - Verify on multiple platforms if possible
@@ -220,6 +236,7 @@ We use GitHub Discussions for feature requests rather than issues. This keeps is
 - Try various transcription scenarios
 
 **Building for Production:**
+
 ```bash
 bun run tauri build
 ```
@@ -247,6 +264,7 @@ Documentation improvements are highly valued! You can contribute by:
 ## 🎯 Good First Issues
 
 Look for issues labeled `good first issue` or `help wanted` if you're new to the project. These are typically:
+
 - Well-defined and scoped
 - Good for learning the codebase
 - Mentor support available

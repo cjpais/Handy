@@ -29,9 +29,19 @@ interface SettingsStore {
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
-  updatePostProcessSetting: (settingType: 'base_url' | 'api_key' | 'model', providerId: string, value: string) => Promise<void>;
-  updatePostProcessBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
-  updatePostProcessApiKey: (providerId: string, apiKey: string) => Promise<void>;
+  updatePostProcessSetting: (
+    settingType: "base_url" | "api_key" | "model",
+    providerId: string,
+    value: string,
+  ) => Promise<void>;
+  updatePostProcessBaseUrl: (
+    providerId: string,
+    baseUrl: string,
+  ) => Promise<void>;
+  updatePostProcessApiKey: (
+    providerId: string,
+    apiKey: string,
+  ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
@@ -151,7 +161,7 @@ export const useSettingsStore = create<SettingsStore>()(
         const { load } = await import("@tauri-apps/plugin-store");
         const store = await load("settings_store.json", {
           defaults: DEFAULT_SETTINGS,
-          autoSave: false
+          autoSave: false,
         });
         const settings = (await store.get("settings")) as Settings;
 
@@ -233,7 +243,6 @@ export const useSettingsStore = create<SettingsStore>()(
         console.error(`Failed to play test sound (${soundType}):`, error);
       }
     },
-
 
     checkCustomSounds: async () => {
       try {
@@ -386,25 +395,25 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Generic updater for post-processing provider settings
     updatePostProcessSetting: async (
-      settingType: 'base_url' | 'api_key' | 'model',
+      settingType: "base_url" | "api_key" | "model",
       providerId: string,
-      value: string
+      value: string,
     ) => {
       const { setUpdating, refreshSettings } = get();
       const updateKey = `post_process_${settingType}:${providerId}`;
 
       // Map setting types to command names
       const commandMap = {
-        base_url: 'change_post_process_base_url_setting',
-        api_key: 'change_post_process_api_key_setting',
-        model: 'change_post_process_model_setting',
+        base_url: "change_post_process_base_url_setting",
+        api_key: "change_post_process_api_key_setting",
+        model: "change_post_process_model_setting",
       };
 
       // Map setting types to param names
       const paramMap = {
-        base_url: 'baseUrl',
-        api_key: 'apiKey',
-        model: 'model',
+        base_url: "baseUrl",
+        api_key: "apiKey",
+        model: "model",
       };
 
       setUpdating(updateKey, true);
@@ -416,14 +425,17 @@ export const useSettingsStore = create<SettingsStore>()(
         });
         await refreshSettings();
       } catch (error) {
-        console.error(`Failed to update post-process ${settingType.replace('_', ' ')}:`, error);
+        console.error(
+          `Failed to update post-process ${settingType.replace("_", " ")}:`,
+          error,
+        );
       } finally {
         setUpdating(updateKey, false);
       }
     },
 
     updatePostProcessBaseUrl: async (providerId, baseUrl) => {
-      return get().updatePostProcessSetting('base_url', providerId, baseUrl);
+      return get().updatePostProcessSetting("base_url", providerId, baseUrl);
     },
 
     updatePostProcessApiKey: async (providerId, apiKey) => {
@@ -434,11 +446,11 @@ export const useSettingsStore = create<SettingsStore>()(
           [providerId]: [],
         },
       }));
-      return get().updatePostProcessSetting('api_key', providerId, apiKey);
+      return get().updatePostProcessSetting("api_key", providerId, apiKey);
     },
 
     updatePostProcessModel: async (providerId, model) => {
-      return get().updatePostProcessSetting('model', providerId, model);
+      return get().updatePostProcessSetting("model", providerId, model);
     },
 
     fetchPostProcessModels: async (providerId) => {

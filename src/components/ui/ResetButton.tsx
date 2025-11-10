@@ -10,13 +10,7 @@ interface ResetButtonProps {
 }
 
 export const ResetButton: React.FC<ResetButtonProps> = React.memo(
-  ({
-    onClick,
-    disabled = false,
-    className = "",
-    ariaLabel,
-    children,
-  }) => (
+  ({ onClick, disabled = false, className = "", ariaLabel, children }) => (
     <button
       type="button"
       aria-label={ariaLabel}

@@ -30,7 +30,9 @@ const DownloadProgressDisplay: React.FC<DownloadProgressDisplayProps> = ({
     return null;
   }
 
-  const progressData: ProgressData[] = Array.from(downloadProgress.values()).map((progress) => {
+  const progressData: ProgressData[] = Array.from(
+    downloadProgress.values(),
+  ).map((progress) => {
     const stats = downloadStats.get(progress.model_id);
     return {
       id: progress.model_id,
