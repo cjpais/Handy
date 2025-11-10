@@ -192,6 +192,8 @@ pub fn run() {
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,
+        commands::get_app_settings,
+        commands::get_default_settings,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,

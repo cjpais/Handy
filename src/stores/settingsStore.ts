@@ -1,11 +1,12 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings, AudioDevice } from "../lib/types";
-import { commands } from "../bindings";
+import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import { commands } from "@/bindings";
 
 interface SettingsStore {
   settings: Settings | null;
+  defaultSettings: Settings | null;
   isLoading: boolean;
   isUpdating: Record<string, boolean>;
   audioDevices: AudioDevice[];
@@ -15,6 +16,7 @@ interface SettingsStore {
 
   // Actions
   initialize: () => Promise<void>;
+  loadDefaultSettings: () => Promise<void>;
   updateSetting: <K extends keyof Settings>(
     key: K,
     value: Settings[K],
@@ -49,6 +51,7 @@ interface SettingsStore {
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
+  setDefaultSettings: (defaultSettings: Settings | null) => void;
   setLoading: (loading: boolean) => void;
   setUpdating: (key: string, updating: boolean) => void;
   setAudioDevices: (devices: AudioDevice[]) => void;
@@ -56,26 +59,8 @@ interface SettingsStore {
   setCustomSounds: (sounds: { start: boolean; stop: boolean }) => void;
 }
 
-// Note: Default post-processing settings are now managed in Rust
-// Settings will always have providers after migration
-const DEFAULT_SETTINGS: Partial<Settings> = {
-  always_on_microphone: false,
-  audio_feedback: true,
-  audio_feedback_volume: 1.0,
-  sound_theme: "marimba",
-  start_hidden: false,
-  autostart_enabled: false,
-  push_to_talk: false,
-  selected_microphone: "Default",
-  selected_output_device: "Default",
-  translate_to_english: false,
-  selected_language: "auto",
-  overlay_position: "bottom",
-  debug_mode: false,
-  custom_words: [],
-  history_limit: 5,
-  mute_while_recording: false,
-};
+// Note: Default settings are now fetched from Rust via commands.getDefaultSettings()
+// This ensures platform-specific defaults (like overlay_position, shortcuts, paste_method) work correctly
 
 const DEFAULT_AUDIO_DEVICE: AudioDevice = {
   index: "default",
@@ -101,11 +86,11 @@ const settingUpdaters: {
   push_to_talk: (value) => invoke("change_ptt_setting", { enabled: value }),
   selected_microphone: (value) =>
     invoke("set_selected_microphone", {
-      deviceName: value === "Default" ? "default" : value,
+      deviceName: value === "Default" || value === null ? "default" : value,
     }),
   selected_output_device: (value) =>
     invoke("set_selected_output_device", {
-      deviceName: value === "Default" ? "default" : value,
+      deviceName: value === "Default" || value === null ? "default" : value,
     }),
   translate_to_english: (value) =>
     invoke("change_translate_to_english_setting", { enabled: value }),
@@ -134,6 +119,7 @@ const settingUpdaters: {
 export const useSettingsStore = create<SettingsStore>()(
   subscribeWithSelector((set, get) => ({
     settings: null,
+    defaultSettings: null,
     isLoading: true,
     isUpdating: {},
     audioDevices: [],
@@ -143,6 +129,7 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
+    setDefaultSettings: (defaultSettings) => set({ defaultSettings }),
     setLoading: (isLoading) => set({ isLoading }),
     setUpdating: (key, updating) =>
       set((state) => ({
@@ -161,7 +148,7 @@ export const useSettingsStore = create<SettingsStore>()(
       try {
         const { load } = await import("@tauri-apps/plugin-store");
         const store = await load("settings_store.json", {
-          defaults: DEFAULT_SETTINGS,
+          defaults: {},
           autoSave: false,
         });
         const settings = (await store.get("settings")) as Settings;
@@ -288,9 +275,12 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Reset a setting to its default value
     resetSetting: async (key) => {
-      const defaultValue = DEFAULT_SETTINGS[key];
-      if (defaultValue !== undefined) {
-        await get().updateSetting(key, defaultValue as any);
+      const { defaultSettings } = get();
+      if (defaultSettings) {
+        const defaultValue = defaultSettings[key];
+        if (defaultValue !== undefined) {
+          await get().updateSetting(key, defaultValue as any);
+        }
       }
     },
 
@@ -311,7 +301,7 @@ export const useSettingsStore = create<SettingsStore>()(
                 bindings: {
                   ...state.settings.bindings,
                   [id]: {
-                    ...state.settings.bindings[id],
+                    ...state.settings.bindings[id]!,
                     current_binding: binding,
                   },
                 },
@@ -332,7 +322,7 @@ export const useSettingsStore = create<SettingsStore>()(
                   bindings: {
                     ...state.settings.bindings,
                     [id]: {
-                      ...state.settings.bindings[id],
+                      ...state.settings.bindings[id]!,
                       current_binding: originalBinding,
                     },
                   },
@@ -485,6 +475,20 @@ export const useSettingsStore = create<SettingsStore>()(
         },
       })),
 
+    // Load default settings from Rust
+    loadDefaultSettings: async () => {
+      try {
+        const result = await commands.getDefaultSettings();
+        if (result.status === "ok") {
+          set({ defaultSettings: result.data });
+        } else {
+          console.error("Failed to load default settings:", result.error);
+        }
+      } catch (error) {
+        console.error("Failed to load default settings:", error);
+      }
+    },
+
     // Initialize everything
     initialize: async () => {
       const {
@@ -492,8 +496,10 @@ export const useSettingsStore = create<SettingsStore>()(
         refreshAudioDevices,
         refreshOutputDevices,
         checkCustomSounds,
+        loadDefaultSettings,
       } = get();
       await Promise.all([
+        loadDefaultSettings(),
         refreshSettings(),
         refreshAudioDevices(),
         refreshOutputDevices(),
