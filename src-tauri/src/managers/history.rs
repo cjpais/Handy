@@ -3,6 +3,7 @@ use chrono::{DateTime, Local, Utc};
 use log::{debug, error};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter, Manager};
@@ -10,7 +11,7 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 use crate::audio_toolkit::save_wav_file;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct HistoryEntry {
     pub id: i64,
     pub file_name: String,

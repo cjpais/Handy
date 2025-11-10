@@ -1,4 +1,5 @@
 use serde::Serialize;
+use specta::Type;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
@@ -21,7 +22,7 @@ pub fn init_shortcuts(app: &AppHandle) {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Type)]
 pub struct BindingResponse {
     success: bool,
     binding: Option<ShortcutBinding>,
@@ -29,6 +30,7 @@ pub struct BindingResponse {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_binding(
     app: AppHandle,
     id: String,
@@ -92,6 +94,7 @@ pub fn change_binding(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
     let binding = settings::get_stored_binding(&app, &id);
 
@@ -99,6 +102,7 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
 
@@ -112,6 +116,7 @@ pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_audio_feedback_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.audio_feedback = enabled;
@@ -120,6 +125,7 @@ pub fn change_audio_feedback_setting(app: AppHandle, enabled: bool) -> Result<()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_audio_feedback_volume_setting(app: AppHandle, volume: f32) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.audio_feedback_volume = volume;
@@ -128,6 +134,7 @@ pub fn change_audio_feedback_volume_setting(app: AppHandle, volume: f32) -> Resu
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match theme.as_str() {
@@ -145,6 +152,7 @@ pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), S
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.translate_to_english = enabled;
@@ -153,6 +161,7 @@ pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Res
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_selected_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.selected_language = language;
@@ -161,6 +170,7 @@ pub fn change_selected_language_setting(app: AppHandle, language: String) -> Res
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {
@@ -182,6 +192,7 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.debug_mode = enabled;
@@ -200,6 +211,7 @@ pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), St
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.start_hidden = enabled;
@@ -218,6 +230,7 @@ pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), 
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.autostart_enabled = enabled;
@@ -244,6 +257,7 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.custom_words = words;
@@ -252,6 +266,7 @@ pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), Str
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_word_correction_threshold_setting(
     app: AppHandle,
     threshold: f64,
@@ -263,6 +278,7 @@ pub fn change_word_correction_threshold_setting(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match method.as_str() {
@@ -281,6 +297,7 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match handling.as_str() {
@@ -300,6 +317,7 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.post_process_enabled = enabled;
@@ -308,6 +326,7 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_post_process_base_url_setting(
     app: AppHandle,
     provider_id: String,
@@ -351,6 +370,7 @@ fn validate_provider_exists(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_post_process_api_key_setting(
     app: AppHandle,
     provider_id: String,
@@ -364,6 +384,7 @@ pub fn change_post_process_api_key_setting(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_post_process_model_setting(
     app: AppHandle,
     provider_id: String,
@@ -377,6 +398,7 @@ pub fn change_post_process_model_setting(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_post_process_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     validate_provider_exists(&settings, &provider_id)?;
@@ -386,6 +408,7 @@ pub fn set_post_process_provider(app: AppHandle, provider_id: String) -> Result<
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn add_post_process_prompt(
     app: AppHandle,
     name: String,
@@ -409,6 +432,7 @@ pub fn add_post_process_prompt(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn update_post_process_prompt(
     app: AppHandle,
     id: String,
@@ -432,6 +456,7 @@ pub fn update_post_process_prompt(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
 
@@ -459,6 +484,7 @@ pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), Stri
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn fetch_post_process_models(
     app: AppHandle,
     provider_id: String,
@@ -598,6 +624,7 @@ async fn fetch_models_manual(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
 
@@ -612,6 +639,7 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.mute_while_recording = enabled;
@@ -641,6 +669,7 @@ fn validate_shortcut_string(raw: &str) -> Result<(), String> {
 /// Temporarily unregister a binding while the user is editing it in the UI.
 /// This avoids firing the action while keys are being recorded.
 #[tauri::command]
+#[specta::specta]
 pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = _unregister_shortcut(&app, b) {
@@ -653,6 +682,7 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 
 /// Re-register the binding after the user has finished editing.
 #[tauri::command]
+#[specta::specta]
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = _register_shortcut(&app, b) {

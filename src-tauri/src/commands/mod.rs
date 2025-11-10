@@ -7,11 +7,13 @@ use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
 
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
     cancel_current_operation(&app);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
     let app_data_dir = app
         .path()
