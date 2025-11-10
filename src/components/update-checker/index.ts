@@ -1,1 +1,1 @@
-export { default } from './UpdateChecker';
+export { default } from "./UpdateChecker";

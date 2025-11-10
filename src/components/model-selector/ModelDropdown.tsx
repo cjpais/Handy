@@ -184,22 +184,22 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                     </div>
                   </div>
                   <div className="text-xs text-logo-primary tabular-nums">
-                    {isDownloading && progress ? (
-                      `${Math.max(0, Math.min(100, Math.round(progress.percentage)))}%`
-                    ) : (
-                      "Download"
-                    )}
+                    {isDownloading && progress
+                      ? `${Math.max(0, Math.min(100, Math.round(progress.percentage)))}%`
+                      : "Download"}
                   </div>
                 </div>
 
                 {isDownloading && progress && (
                   <div className="mt-2">
                     <ProgressBar
-                      progress={[{
-                        id: model.id,
-                        percentage: progress.percentage,
-                        label: model.name
-                      }]}
+                      progress={[
+                        {
+                          id: model.id,
+                          percentage: progress.percentage,
+                          label: model.name,
+                        },
+                      ]}
                       size="small"
                     />
                   </div>

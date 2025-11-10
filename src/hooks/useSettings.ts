@@ -21,7 +21,7 @@ interface UseSettingsReturn {
   refreshSettings: () => Promise<void>;
   refreshAudioDevices: () => Promise<void>;
   refreshOutputDevices: () => Promise<void>;
-  
+
   // Binding-specific actions
   updateBinding: (id: string, binding: string) => Promise<void>;
   resetBinding: (id: string) => Promise<void>;
@@ -31,8 +31,14 @@ interface UseSettingsReturn {
 
   // Post-processing helpers
   setPostProcessProvider: (providerId: string) => Promise<void>;
-  updatePostProcessBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
-  updatePostProcessApiKey: (providerId: string, apiKey: string) => Promise<void>;
+  updatePostProcessBaseUrl: (
+    providerId: string,
+    baseUrl: string,
+  ) => Promise<void>;
+  updatePostProcessApiKey: (
+    providerId: string,
+    apiKey: string,
+  ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
 }

@@ -180,7 +180,7 @@ export const useModels = () => {
     );
 
     const extractionCompletedUnlisten = listen<string>(
-      "model-extraction-completed", 
+      "model-extraction-completed",
       (event) => {
         const modelId = event.payload;
         setExtractingModels((prev) => {
@@ -193,18 +193,18 @@ export const useModels = () => {
       },
     );
 
-    const extractionFailedUnlisten = listen<{model_id: string, error: string}>(
-      "model-extraction-failed",
-      (event) => {
-        const modelId = event.payload.model_id;
-        setExtractingModels((prev) => {
-          const next = new Set(prev);
-          next.delete(modelId);
-          return next;
-        });
-        setError(`Failed to extract model: ${event.payload.error}`);
-      },
-    );
+    const extractionFailedUnlisten = listen<{
+      model_id: string;
+      error: string;
+    }>("model-extraction-failed", (event) => {
+      const modelId = event.payload.model_id;
+      setExtractingModels((prev) => {
+        const next = new Set(prev);
+        next.delete(modelId);
+        return next;
+      });
+      setError(`Failed to extract model: ${event.payload.error}`);
+    });
 
     return () => {
       progressUnlisten.then((fn) => fn());

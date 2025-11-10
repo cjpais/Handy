@@ -199,19 +199,19 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       },
     );
 
-    const extractionFailedUnlisten = listen<{model_id: string, error: string}>(
-      "model-extraction-failed",
-      (event) => {
-        const modelId = event.payload.model_id;
-        setExtractingModels((prev) => {
-          const next = new Set(prev);
-          next.delete(modelId);
-          return next;
-        });
-        setModelError(`Failed to extract model: ${event.payload.error}`);
-        setModelStatus("error");
-      },
-    );
+    const extractionFailedUnlisten = listen<{
+      model_id: string;
+      error: string;
+    }>("model-extraction-failed", (event) => {
+      const modelId = event.payload.model_id;
+      setExtractingModels((prev) => {
+        const next = new Set(prev);
+        next.delete(modelId);
+        return next;
+      });
+      setModelError(`Failed to extract model: ${event.payload.error}`);
+      setModelStatus("error");
+    });
 
     // Click outside to close dropdown
     const handleClickOutside = (event: MouseEvent) => {
@@ -304,8 +304,8 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     if (extractingModels.size > 0) {
       if (extractingModels.size === 1) {
         const [modelId] = Array.from(extractingModels);
-        const model = models.find(m => m.id === modelId);
-        return `Extracting ${model?.name || 'Model'}...`;
+        const model = models.find((m) => m.id === modelId);
+        return `Extracting ${model?.name || "Model"}...`;
       } else {
         return `Extracting ${extractingModels.size} models...`;
       }
@@ -332,7 +332,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       case "loading":
         return currentModel ? `Loading ${currentModel.name}...` : "Loading...";
       case "extracting":
-        return currentModel ? `Extracting ${currentModel.name}...` : "Extracting...";
+        return currentModel
+          ? `Extracting ${currentModel.name}...`
+          : "Extracting...";
       case "error":
         return modelError || "Model Error";
       case "unloaded":

@@ -28,7 +28,9 @@ export const DebugPaths: React.FC<DebugPathsProps> = ({
         </div>
         <div>
           <span className="font-medium">Settings:</span>{" "}
-          <span className="font-mono text-xs">%APPDATA%/handy/settings_store.json</span>
+          <span className="font-mono text-xs">
+            %APPDATA%/handy/settings_store.json
+          </span>
         </div>
       </div>
     </SettingContainer>
