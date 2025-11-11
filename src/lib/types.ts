@@ -79,6 +79,7 @@ export const SettingsSchema = z.object({
   selected_model: z.string(),
   always_on_microphone: z.boolean(),
   selected_microphone: z.string().nullable().optional(),
+  clamshell_microphone: z.string().nullable().optional(),
   selected_output_device: z.string().nullable().optional(),
   translate_to_english: z.boolean(),
   selected_language: z.string(),

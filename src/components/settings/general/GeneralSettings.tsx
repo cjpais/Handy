@@ -1,5 +1,6 @@
 import React from "react";
 import { MicrophoneSelector } from "../MicrophoneSelector";
+import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
 import { LanguageSelector } from "../LanguageSelector";
 import { HandyShortcut } from "../HandyShortcut";
 import { SettingsGroup } from "../../ui/SettingsGroup";
@@ -20,6 +21,7 @@ export const GeneralSettings: React.FC = () => {
       </SettingsGroup>
       <SettingsGroup title="Sound">
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
+        <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <AudioFeedback descriptionMode="tooltip" grouped={true} />
         <OutputDeviceSelector
           descriptionMode="tooltip"
