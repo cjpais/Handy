@@ -142,7 +142,7 @@ jobs:
         run: bun install
 
       - name: rustup install target
-        if: ${{ inputs.target != '' && !contains(inputs.target, 'unknown-linux-gnu') && !contains(inputs.target, 'pc-windows-msvc') }}
+        if: ${{ inputs.target != '' && !contains(inputs.target, 'unknown-linux-gnu') && !contains(inputs.target, 'x86_64-pc-windows-msvc') }}
         run: rustup target add ${{ inputs.target }}
 
       - name: import Apple Developer Certificate
