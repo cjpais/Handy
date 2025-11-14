@@ -127,43 +127,15 @@ jobs:
           cache: true
 
       # humbletim/install-vulkan-sdk@v1.2 cannot target Windows ARM64 yet.
-      # See https://github.com/humbletim/install-vulkan-sdk/pull/22 – once merged we can switch back.
-      - name: Prepare Vulkan SDK env (Windows ARM64)
+      # The ARM64 installer only contains binaries, not headers/libs, so we build from source instead.
+      # See https://github.com/humbletim/install-vulkan-sdk/pull/22 for prebuilt ARM64 support progress.
+      - name: Build Vulkan SDK components (Windows ARM64)
         if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $sdkDir = Join-Path $env:GITHUB_WORKSPACE "VULKAN_SDK"
-          New-Item -ItemType Directory -Force -Path $sdkDir | Out-Null
-          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK=$sdkDir"
-          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK_VERSION=1.4.309.0"
-          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK_PLATFORM=windows"
-
-      - name: Download Vulkan SDK (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $url = "https://sdk.lunarg.com/sdk/download/1.4.309.0/warm/InstallVulkanARM64-1.4.309.0.exe"
-          $outFile = "vulkan_sdk_arm.exe"
-          if (-not (Test-Path $outFile)) {
-            Write-Host "Downloading Vulkan SDK from $url"
-            Invoke-WebRequest -Uri $url -OutFile $outFile
-          } else {
-            Write-Host "Using cached installer $outFile"
-          }
-
-      - name: Install Vulkan SDK (Windows ARM64)
-        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
-        shell: pwsh
-        run: |
-          $sdkDir = $env:VULKAN_SDK
-          if (-not $sdkDir) {
-            throw "VULKAN_SDK is not set"
-          }
-          $sevenZip = (Get-Command 7z.exe -ErrorAction Stop).Source
-          & $sevenZip x "./vulkan_sdk_arm.exe" "-o$sdkDir" -aoa
-          $binPath = Join-Path $sdkDir "Bin"
-          Add-Content -Path $env:GITHUB_PATH -Value $binPath
-          & (Join-Path $binPath "glslangValidator.exe") --version
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.309.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
 
       - name: Install trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries
