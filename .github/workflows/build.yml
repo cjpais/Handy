@@ -149,7 +149,12 @@ jobs:
           sudo apt-get install -y mesa-vulkan-drivers
 
       - name: install frontend dependencies
+        if: ${{ !(contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')) }}
         run: bun install
+
+      - name: install frontend dependencies (Windows ARM64)
+        if: ${{ contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64') }}
+        run: bun install --cpu=arm64
 
       - name: rustup install target
         if: ${{ inputs.target != '' && !contains(inputs.target, 'unknown-linux-gnu') && !contains(inputs.target, 'x86_64-pc-windows-msvc') }}
