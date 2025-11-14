@@ -340,7 +340,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
+          # Default Windows builds place bundles under release/, but cross-compiles (ARM64) nest under target/<triple>/release.
+          # This ternary keeps x86_64 uploads working while pointing cross-builds at their nested bundle directory.
           path: |
-            src-tauri/target/${{ inputs.target }}/${{ steps.build-profile.outputs.profile }}/bundle/msi/*.msi
-            src-tauri/target/${{ inputs.target }}/${{ steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' ? format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) : steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' ? format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) : steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30
