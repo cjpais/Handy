@@ -119,12 +119,51 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev libopenblas-dev libx11-dev libxtst-dev libxrandr-dev
 
-      - name: Install Vulkan SDK (Windows)
-        if: contains(inputs.platform, 'windows')
+      - name: Install Vulkan SDK (Windows x64)
+        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
           version: 1.4.309.0
           cache: true
+
+      # humbletim/install-vulkan-sdk@v1.2 cannot target Windows ARM64 yet.
+      # See https://github.com/humbletim/install-vulkan-sdk/pull/22 – once merged we can switch back.
+      - name: Prepare Vulkan SDK env (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $sdkDir = Join-Path $env:GITHUB_WORKSPACE "VULKAN_SDK"
+          New-Item -ItemType Directory -Force -Path $sdkDir | Out-Null
+          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK=$sdkDir"
+          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK_VERSION=1.4.309.0"
+          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK_PLATFORM=windows"
+
+      - name: Download Vulkan SDK (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $url = "https://sdk.lunarg.com/sdk/download/1.4.309.0/warm/InstallVulkanARM64-1.4.309.0.exe"
+          $outFile = "vulkan_sdk_arm.exe"
+          if (-not (Test-Path $outFile)) {
+            Write-Host "Downloading Vulkan SDK from $url"
+            Invoke-WebRequest -Uri $url -OutFile $outFile
+          } else {
+            Write-Host "Using cached installer $outFile"
+          }
+
+      - name: Install Vulkan SDK (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $sdkDir = $env:VULKAN_SDK
+          if (-not $sdkDir) {
+            throw "VULKAN_SDK is not set"
+          }
+          $sevenZip = (Get-Command 7z.exe -ErrorAction Stop).Source
+          & $sevenZip x "./vulkan_sdk_arm.exe" "-o$sdkDir" -aoa
+          $binPath = Join-Path $sdkDir "Bin"
+          Add-Content -Path $env:GITHUB_PATH -Value $binPath
+          & (Join-Path $binPath "glslangValidator.exe") --version
 
       - name: Install trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries
