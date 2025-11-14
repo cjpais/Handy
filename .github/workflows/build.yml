@@ -341,6 +341,6 @@ jobs:
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
           path: |
-            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/msi/*.msi
-            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
+            src-tauri/target/${{ inputs.target }}/${{ steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            src-tauri/target/${{ inputs.target }}/${{ steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30
