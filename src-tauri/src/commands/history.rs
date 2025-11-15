@@ -60,7 +60,35 @@ pub async fn update_history_limit(
     crate::settings::write_settings(&app, settings);
 
     history_manager
-        .update_history_limit()
+        .cleanup_old_entries()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_recording_retention_period(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    period: String,
+) -> Result<(), String> {
+    use crate::settings::RecordingRetentionPeriod;
+    
+    let retention_period = match period.as_str() {
+        "never" => RecordingRetentionPeriod::Never,
+        "preserve_limit" => RecordingRetentionPeriod::PreserveLimit,
+        "days3" => RecordingRetentionPeriod::Days3,
+        "weeks2" => RecordingRetentionPeriod::Weeks2,
+        "months3" => RecordingRetentionPeriod::Months3,
+        _ => return Err(format!("Invalid retention period: {}", period)),
+    };
+
+    let mut settings = crate::settings::get_settings(&app);
+    settings.recording_retention_period = retention_period;
+    crate::settings::write_settings(&app, settings);
+
+    history_manager
+        .cleanup_old_entries()
         .map_err(|e| e.to_string())?;
 
     Ok(())
