@@ -10,6 +10,7 @@ mod settings;
 mod shortcut;
 mod tray;
 mod utils;
+mod helpers;
 
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
@@ -274,6 +275,11 @@ pub fn run() {
             commands::audio::get_selected_output_device,
             commands::audio::play_test_sound,
             commands::audio::check_custom_sounds,
+            commands::audio::set_clamshell_microphone,
+            commands::audio::get_clamshell_microphone,
+            helpers::clamshell::is_clamshell,
+            helpers::clamshell::has_builtin_display,
+            helpers::clamshell::get_clamshell_info,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,
