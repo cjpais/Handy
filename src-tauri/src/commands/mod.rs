@@ -3,15 +3,18 @@ pub mod history;
 pub mod models;
 pub mod transcription;
 
+use crate::settings::{get_settings, AppSettings};
 use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
 
 #[tauri::command]
+#[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
     cancel_current_operation(&app);
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
     let app_data_dir = app
         .path()
@@ -19,4 +22,16 @@ pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
 
     Ok(app_data_dir.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
+    Ok(get_settings(&app))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_default_settings() -> Result<AppSettings, String> {
+    Ok(crate::settings::get_default_settings())
 }

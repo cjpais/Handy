@@ -3,7 +3,7 @@ import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
-import { AudioDevice } from "../../lib/types";
+import type { AudioDevice } from "@/bindings";
 
 interface OutputDeviceSelectorProps {
   descriptionMode?: "inline" | "tooltip";

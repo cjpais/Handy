@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettings } from "../../hooks/useSettings";
-import { ModelUnloadTimeout } from "../../lib/types";
+import type { ModelUnloadTimeout } from "@/bindings";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 

@@ -16,7 +16,7 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { useSettings } from "../../../hooks/useSettings";
-import type { LLMPrompt } from "../../../lib/types";
+import type { LLMPrompt } from "@/bindings";
 
 const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({
   children,

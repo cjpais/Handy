@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::collections::HashMap;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct ShortcutBinding {
     pub id: String,
     pub name: String,
@@ -12,14 +13,14 @@ pub struct ShortcutBinding {
     pub current_binding: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct LLMPrompt {
     pub id: String,
     pub name: String,
     pub prompt: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct PostProcessProvider {
     pub id: String,
     pub label: String,
@@ -28,9 +29,22 @@ pub struct PostProcessProvider {
     pub allow_base_url_edit: bool,
     #[serde(default)]
     pub models_endpoint: Option<String>,
+    #[serde(default = "default_kind")]
+    pub kind: ProviderKind,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ProviderKind {
+    OpenaiCompatible,
+    Anthropic,
+}
+
+fn default_kind() -> ProviderKind {
+    ProviderKind::OpenaiCompatible
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
     None,
@@ -38,7 +52,7 @@ pub enum OverlayPosition {
     Bottom,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
@@ -51,16 +65,15 @@ pub enum ModelUnloadTimeout {
     Sec5, // Debug mode only
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum PasteMethod {
     CtrlV,
     Direct,
-    #[cfg(not(target_os = "macos"))]
     ShiftInsert,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ClipboardHandling {
     DontModify,
@@ -113,7 +126,7 @@ impl ModelUnloadTimeout {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SoundTheme {
     Marimba,
@@ -140,7 +153,7 @@ impl SoundTheme {
 }
 
 /* still handy for composing the initial JSON in the store ------------- */
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
@@ -266,6 +279,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.openai.com/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            kind: ProviderKind::OpenaiCompatible,
         },
         PostProcessProvider {
             id: "openrouter".to_string(),
@@ -273,6 +287,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://openrouter.ai/api/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            kind: ProviderKind::OpenaiCompatible,
         },
         PostProcessProvider {
             id: "anthropic".to_string(),
@@ -280,6 +295,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.anthropic.com/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            kind: ProviderKind::Anthropic,
         },
         PostProcessProvider {
             id: "custom".to_string(),
@@ -287,6 +303,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "http://localhost:11434/v1".to_string(),
             allow_base_url_edit: true,
             models_endpoint: Some("/models".to_string()),
+            kind: ProviderKind::OpenaiCompatible,
         },
     ]
 }

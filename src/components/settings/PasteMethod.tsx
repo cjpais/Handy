@@ -3,7 +3,7 @@ import { type as getOsType } from "@tauri-apps/plugin-os";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import type { PasteMethod } from "../../lib/types";
+import type { PasteMethod } from "@/bindings";
 
 interface PasteMethodProps {
   descriptionMode?: "inline" | "tooltip";

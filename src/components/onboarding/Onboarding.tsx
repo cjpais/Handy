@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { ModelInfo } from "../../lib/types";
+import type { ModelInfo } from "@/bindings";
 import ModelCard from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
 
@@ -80,7 +80,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
           {availableModels
             .filter((model) => !getRecommendedBadge(model.id))
-            .sort((a, b) => a.size_mb - b.size_mb)
+            .sort((a, b) => Number(a.size_mb) - Number(b.size_mb))
             .map((model) => (
               <ModelCard
                 key={model.id}

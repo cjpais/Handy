@@ -2,7 +2,7 @@ import React from "react";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import type { ClipboardHandling } from "../../lib/types";
+import type { ClipboardHandling } from "@/bindings";
 
 interface ClipboardHandlingProps {
   descriptionMode?: "inline" | "tooltip";
