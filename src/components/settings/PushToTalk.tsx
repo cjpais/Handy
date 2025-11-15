@@ -1,6 +1,7 @@
 import React from "react";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
+import { ToggleSwitch } from "../ui/ToggleSwitch";
 
 interface PushToTalkProps {
   descriptionMode?: "inline" | "tooltip";

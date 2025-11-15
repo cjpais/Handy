@@ -6,8 +6,12 @@ import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
 import { SoundPicker } from "../SoundPicker";
 import { PostProcessingToggle } from "../PostProcessingToggle";
 import { MuteWhileRecording } from "../MuteWhileRecording";
+import { useSettings } from "../../../hooks/useSettings";
 
 export const DebugSettings: React.FC = () => {
+  const { getSetting } = useSettings();
+  const pushToTalk = getSetting("push_to_talk");
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title="Debug">
@@ -20,6 +24,11 @@ export const DebugSettings: React.FC = () => {
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
         <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
+		<HandyShortcut
+    		shortcutIds={["cancel"]}
+    		grouped={true}
+    		disabled={pushToTalk}
+        />
       </SettingsGroup>
     </div>
   );
