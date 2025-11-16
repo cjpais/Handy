@@ -41,7 +41,7 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
 
     return (
       <SettingContainer
-        title="Desktop Microphone"
+        title="Closed Laptop Microphone"
         description="Choose a different microphone to use when your laptop lid is closed"
         descriptionMode={descriptionMode}
         grouped={grouped}
