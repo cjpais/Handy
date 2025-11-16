@@ -5,6 +5,7 @@ pub mod transcription;
 
 use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
+use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command]
 pub fn cancel_operation(app: AppHandle) {
@@ -30,30 +31,10 @@ pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
     
     let recordings_dir = app_data_dir.join("recordings");
     
-    // Use the `open` command to open the folder in the default file manager
-    #[cfg(target_os = "macos")]
-    {
-        std::process::Command::new("open")
-            .arg(&recordings_dir)
-            .spawn()
-            .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
-    }
-    
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("explorer")
-            .arg(&recordings_dir)
-            .spawn()
-            .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
-    }
-    
-    #[cfg(target_os = "linux")]
-    {
-        std::process::Command::new("xdg-open")
-            .arg(&recordings_dir)
-            .spawn()
-            .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
-    }
+    let path = recordings_dir.to_string_lossy().as_ref().to_string();
+    app.opener()
+        .open_path(path, None::<String>)
+        .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
     
     Ok(())
 }
