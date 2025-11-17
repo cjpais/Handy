@@ -12,6 +12,7 @@ mod shortcut;
 mod tray;
 mod utils;
 
+use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
@@ -30,6 +31,33 @@ use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKi
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+
+fn level_filter_from_u8(value: u8) -> log::LevelFilter {
+    match value {
+        0 => log::LevelFilter::Off,
+        1 => log::LevelFilter::Error,
+        2 => log::LevelFilter::Warn,
+        3 => log::LevelFilter::Info,
+        4 => log::LevelFilter::Debug,
+        5 => log::LevelFilter::Trace,
+        _ => log::LevelFilter::Trace,
+    }
+}
+
+fn build_console_filter() -> env_filter::Filter {
+    let mut builder = EnvFilterBuilder::new();
+
+    match std::env::var("RUST_LOG") {
+        Ok(spec) if !spec.trim().is_empty() => {
+            builder.parse(&spec);
+        }
+        _ => {
+            builder.filter_level(log::LevelFilter::Info);
+        }
+    }
+
+    builder.build()
+}
 
 #[derive(Default)]
 struct ShortcutToggleStates {
@@ -161,23 +189,22 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Determine console log level from RUST_LOG env var, default to Info
-    let console_level = std::env::var("RUST_LOG")
-        .ok()
-        .and_then(|s| s.parse::<log::LevelFilter>().ok())
-        .unwrap_or(log::LevelFilter::Info);
+    // Parse console logging directives from RUST_LOG, falling back to info-level logging
+    // when the variable is unset
+    let console_filter = build_console_filter();
 
     tauri::Builder::default()
         .plugin(
             LogBuilder::new()
                 .level(log::LevelFilter::Trace) // Set to most verbose level globally
-                .max_file_size(100_000)
+                .max_file_size(500_000)
                 .rotation_strategy(RotationStrategy::KeepOne)
                 .clear_targets()
                 .targets([
                     // Console output respects RUST_LOG environment variable
-                    Target::new(TargetKind::Stdout).filter(move |metadata| {
-                        metadata.level() <= console_level
+                    Target::new(TargetKind::Stdout).filter({
+                        let console_filter = console_filter.clone();
+                        move |metadata| console_filter.enabled(metadata)
                     }),
                     // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
                     Target::new(TargetKind::LogDir {
@@ -185,7 +212,7 @@ pub fn run() {
                     })
                     .filter(|metadata| {
                         let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
-                        metadata.level() as u8 <= file_level
+                        metadata.level() <= level_filter_from_u8(file_level)
                     }),
                 ])
                 .build(),

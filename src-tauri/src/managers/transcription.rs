@@ -393,7 +393,11 @@ impl TranscriptionManager {
         } else {
             ""
         };
-        info!("Transcription completed in {}ms{}", (et - st).as_millis(), translation_note);
+        info!(
+            "Transcription completed in {}ms{}",
+            (et - st).as_millis(),
+            translation_note
+        );
 
         // Check if we should immediately unload the model after transcription
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {

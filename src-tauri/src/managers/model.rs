@@ -573,10 +573,7 @@ impl ModelManager {
         if model_info.is_directory {
             // Delete complete model directory if it exists
             if model_path.exists() && model_path.is_dir() {
-                info!(
-                    "Deleting model directory at: {:?}",
-                    model_path
-                );
+                info!("Deleting model directory at: {:?}", model_path);
                 fs::remove_dir_all(&model_path)?;
                 info!("Model directory deleted successfully");
                 deleted_something = true;

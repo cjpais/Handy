@@ -2334,6 +2334,7 @@ dependencies = [
  "chrono",
  "cpal",
  "enigo",
+ "env_filter",
  "flate2",
  "futures-util",
  "hound",

@@ -37,7 +37,10 @@ pub fn get_log_dir_path(app: AppHandle) -> Result<String, String> {
 pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
     let log_level: log::Level = level.clone().into();
     // Update the file log level atomic so the filter picks up the new level
-    crate::FILE_LOG_LEVEL.store(log_level.to_level_filter() as u8, std::sync::atomic::Ordering::Relaxed);
+    crate::FILE_LOG_LEVEL.store(
+        log_level.to_level_filter() as u8,
+        std::sync::atomic::Ordering::Relaxed,
+    );
 
     let mut settings = settings::get_settings(&app);
     settings.log_level = level;
