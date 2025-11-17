@@ -2,6 +2,7 @@ use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -225,9 +226,9 @@ impl ModelManager {
 
                     // Only copy if user doesn't already have the model
                     if !user_path.exists() {
-                        println!("Migrating bundled model {} to user directory", filename);
+                        info!("Migrating bundled model {} to user directory", filename);
                         fs::copy(&bundled_path, &user_path)?;
-                        println!("Successfully migrated {}", filename);
+                        info!("Successfully migrated {}", filename);
                     }
                 }
             }
@@ -250,7 +251,7 @@ impl ModelManager {
 
                 // Clean up any leftover .extracting directories from interrupted extractions
                 if extracting_path.exists() {
-                    println!("Cleaning up interrupted extraction for model: {}", model.id);
+                    warn!("Cleaning up interrupted extraction for model: {}", model.id);
                     let _ = fs::remove_dir_all(&extracting_path);
                 }
 
@@ -292,7 +293,7 @@ impl ModelManager {
             // Find the first available (downloaded) model
             let models = self.available_models.lock().unwrap();
             if let Some(available_model) = models.values().find(|model| model.is_downloaded) {
-                println!(
+                info!(
                     "Auto-selecting model: {} ({})",
                     available_model.id, available_model.name
                 );
@@ -302,7 +303,7 @@ impl ModelManager {
                 updated_settings.selected_model = available_model.id.clone();
                 write_settings(&self.app_handle, updated_settings);
 
-                println!("Successfully auto-selected model: {}", available_model.id);
+                info!("Successfully auto-selected model: {}", available_model.id);
             }
         }
 
@@ -339,10 +340,10 @@ impl ModelManager {
         // Check if we have a partial download to resume
         let resume_from = if partial_path.exists() {
             let size = partial_path.metadata()?.len();
-            println!("Resuming download of model {} from byte {}", model_id, size);
+            info!("Resuming download of model {} from byte {}", model_id, size);
             size
         } else {
-            println!("Starting fresh download of model {} from {}", model_id, url);
+            info!("Starting fresh download of model {} from {}", model_id, url);
             0
         };
 
@@ -456,7 +457,7 @@ impl ModelManager {
         if model_info.is_directory {
             // Emit extraction started event
             let _ = self.app_handle.emit("model-extraction-started", model_id);
-            println!("Extracting archive for directory-based model: {}", model_id);
+            info!("Extracting archive for directory-based model: {}", model_id);
 
             // Use a temporary extraction directory to ensure atomic operations
             let temp_extract_dir = self
@@ -515,7 +516,7 @@ impl ModelManager {
                 fs::rename(&temp_extract_dir, &final_model_dir)?;
             }
 
-            println!("Successfully extracted archive for model: {}", model_id);
+            info!("Successfully extracted archive for model: {}", model_id);
             // Emit extraction completed event
             let _ = self.app_handle.emit("model-extraction-completed", model_id);
 
@@ -539,7 +540,7 @@ impl ModelManager {
         // Emit completion event
         let _ = self.app_handle.emit("model-download-complete", model_id);
 
-        println!(
+        info!(
             "Successfully downloaded model {} to {:?}",
             model_id, model_path
         );
@@ -548,7 +549,7 @@ impl ModelManager {
     }
 
     pub fn delete_model(&self, model_id: &str) -> Result<()> {
-        println!("ModelManager: delete_model called for: {}", model_id);
+        debug!("ModelManager: delete_model called for: {}", model_id);
 
         let model_info = {
             let models = self.available_models.lock().unwrap();
@@ -558,43 +559,40 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
-        println!("ModelManager: Found model info: {:?}", model_info);
+        debug!("ModelManager: Found model info: {:?}", model_info);
 
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
             .models_dir
             .join(format!("{}.partial", &model_info.filename));
-        println!("ModelManager: Model path: {:?}", model_path);
-        println!("ModelManager: Partial path: {:?}", partial_path);
+        debug!("ModelManager: Model path: {:?}", model_path);
+        debug!("ModelManager: Partial path: {:?}", partial_path);
 
         let mut deleted_something = false;
 
         if model_info.is_directory {
             // Delete complete model directory if it exists
             if model_path.exists() && model_path.is_dir() {
-                println!(
-                    "ModelManager: Deleting model directory at: {:?}",
-                    model_path
-                );
+                info!("Deleting model directory at: {:?}", model_path);
                 fs::remove_dir_all(&model_path)?;
-                println!("ModelManager: Model directory deleted successfully");
+                info!("Model directory deleted successfully");
                 deleted_something = true;
             }
         } else {
             // Delete complete model file if it exists
             if model_path.exists() {
-                println!("ModelManager: Deleting model file at: {:?}", model_path);
+                info!("Deleting model file at: {:?}", model_path);
                 fs::remove_file(&model_path)?;
-                println!("ModelManager: Model file deleted successfully");
+                info!("Model file deleted successfully");
                 deleted_something = true;
             }
         }
 
         // Delete partial file if it exists (same for both types)
         if partial_path.exists() {
-            println!("ModelManager: Deleting partial file at: {:?}", partial_path);
+            info!("Deleting partial file at: {:?}", partial_path);
             fs::remove_file(&partial_path)?;
-            println!("ModelManager: Partial file deleted successfully");
+            info!("Partial file deleted successfully");
             deleted_something = true;
         }
 
@@ -604,7 +602,7 @@ impl ModelManager {
 
         // Update download status
         self.update_download_status()?;
-        println!("ModelManager: Download status updated");
+        debug!("ModelManager: download status updated");
 
         Ok(())
     }
@@ -655,7 +653,7 @@ impl ModelManager {
     }
 
     pub fn cancel_download(&self, model_id: &str) -> Result<()> {
-        println!("ModelManager: cancel_download called for: {}", model_id);
+        debug!("ModelManager: cancel_download called for: {}", model_id);
 
         let _model_info = {
             let models = self.available_models.lock().unwrap();
@@ -680,7 +678,7 @@ impl ModelManager {
         // Update download status to reflect current state
         self.update_download_status()?;
 
-        println!("ModelManager: Download cancelled for: {}", model_id);
+        info!("Download cancelled for: {}", model_id);
         Ok(())
     }
 }

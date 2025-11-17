@@ -1,6 +1,8 @@
+use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri::AppHandle;
+use tauri_plugin_log::LogLevel;
 use tauri_plugin_store::StoreExt;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -181,6 +183,8 @@ pub struct AppSettings {
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
     pub debug_mode: bool,
+    #[serde(default = "default_log_level")]
+    pub log_level: LogLevel,
     #[serde(default)]
     pub custom_words: Vec<String>,
     #[serde(default)]
@@ -246,6 +250,10 @@ fn default_overlay_position() -> OverlayPosition {
 
 fn default_debug_mode() -> bool {
     false
+}
+
+fn default_log_level() -> LogLevel {
+    LogLevel::Debug
 }
 
 fn default_word_correction_threshold() -> f64 {
@@ -374,6 +382,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_language: "auto".to_string(),
         overlay_position: OverlayPosition::Bottom,
         debug_mode: false,
+        log_level: default_log_level(),
         custom_words: Vec::new(),
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
@@ -425,11 +434,11 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(settings) => {
-                println!("Found existing settings: {:?}", settings);
+                debug!("Found existing settings: {:?}", settings);
                 settings
             }
             Err(e) => {
-                println!("Failed to parse settings: {}", e);
+                warn!("Failed to parse settings: {}", e);
                 // Fall back to default settings if parsing fails
                 let default_settings = get_default_settings();
                 store.set("settings", serde_json::to_value(&default_settings).unwrap());

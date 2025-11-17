@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { TextDisplay } from "../ui";
+import { SettingContainer } from "../ui/SettingContainer";
+import { Button } from "../ui/Button";
 
 interface AppDataDirectoryProps {
   descriptionMode?: "tooltip" | "inline";
@@ -32,9 +33,13 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
     loadAppDirectory();
   }, []);
 
-  const handleCopy = (value: string) => {
-    // Could add a toast notification here if desired
-    console.log("Copied to clipboard:", value);
+  const handleOpen = async () => {
+    if (!appDirPath) return;
+    try {
+      await invoke("open_app_data_dir");
+    } catch (openError) {
+      console.error("Failed to open app data directory:", openError);
+    }
   };
 
   if (loading) {
@@ -57,15 +62,27 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
   }
 
   return (
-    <TextDisplay
-      label="App Data Directory"
+    <SettingContainer
+      title="App Data Directory"
       description="Main directory where application data, settings, and models are stored"
-      value={appDirPath}
       descriptionMode={descriptionMode}
       grouped={grouped}
-      copyable={true}
-      monospace={true}
-      onCopy={handleCopy}
-    />
+      layout="stacked"
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0 px-2 py-2 bg-mid-gray/10 border border-mid-gray/80 rounded text-xs font-mono break-all">
+          {appDirPath}
+        </div>
+        <Button
+          onClick={handleOpen}
+          variant="secondary"
+          size="sm"
+          disabled={!appDirPath}
+          className="px-3 py-2"
+        >
+          Open
+        </Button>
+      </div>
+    </SettingContainer>
   );
 };

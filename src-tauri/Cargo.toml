@@ -34,6 +34,7 @@ tauri = { version = "2.9.1", features = [
     "tray-icon",
     'image-png',
 ] }
+tauri-plugin-log = "2.7.1"
 tauri-plugin-opener = "2.5.2"
 tauri-plugin-store = "2.4.1"
 tauri-plugin-os = "2.3.2"
@@ -49,8 +50,8 @@ cpal = "0.16.0"
 anyhow = "1.0.95"
 rubato = "0.16.2"
 hound = "3.5.1"
-env_logger = "0.11.6"
 log = "0.4.25"
+env_filter = "0.1.0"
 tokio = "1.43.0"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 enigo = "0.6.1"

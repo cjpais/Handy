@@ -43,6 +43,9 @@ export const ClipboardHandlingSchema = z.enum([
 ]);
 export type ClipboardHandling = z.infer<typeof ClipboardHandlingSchema>;
 
+export const LogLevelSchema = z.number().int().min(1).max(5).default(2);
+export type LogLevelValue = z.infer<typeof LogLevelSchema>;
+
 export const RecordingRetentionPeriodSchema = z.enum([
   "never",
   "preserve_limit",
@@ -96,6 +99,7 @@ export const SettingsSchema = z.object({
   selected_language: z.string(),
   overlay_position: OverlayPositionSchema,
   debug_mode: z.boolean(),
+  log_level: LogLevelSchema.optional().default(2),
   custom_words: z.array(z.string()).optional().default([]),
   model_unload_timeout: ModelUnloadTimeoutSchema.optional().default("never"),
   word_correction_threshold: z.number().optional().default(0.18),

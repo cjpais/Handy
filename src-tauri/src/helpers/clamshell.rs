@@ -79,7 +79,7 @@ mod tests {
         // This will run on macOS and should not panic
         let result = is_clamshell();
         assert!(result.is_ok());
-        println!("Clamshell state: {:?}", result.unwrap());
+        let _ = result.unwrap();
     }
 
     #[test]
@@ -87,8 +87,6 @@ mod tests {
     fn test_has_builtin_display() {
         let result = has_builtin_display();
         assert!(result.is_ok());
-        if let Ok(has_builtin) = result {
-            println!("Has built-in display (is laptop): {}", has_builtin);
-        }
+        let _ = result.unwrap();
     }
 }

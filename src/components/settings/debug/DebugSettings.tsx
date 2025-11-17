@@ -1,5 +1,7 @@
 import React from "react";
 import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
+import { LogDirectory } from "./LogDirectory";
+import { LogLevelSelector } from "./LogLevelSelector";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { HistoryLimit } from "../HistoryLimit";
 import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
@@ -13,6 +15,8 @@ export const DebugSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title="Debug">
+        <LogDirectory grouped={true} />
+        <LogLevelSelector grouped={true} />
         <SoundPicker
           label="Sound Theme"
           description="Choose a sound theme for recording start and stop feedback"
