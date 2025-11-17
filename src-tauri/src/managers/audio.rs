@@ -182,6 +182,28 @@ impl AudioRecordingManager {
 
     /* ---------- microphone life-cycle -------------------------------------- */
 
+    /// Applies mute if mute_while_recording is enabled and stream is open
+    pub fn apply_mute(&self) {
+        let settings = get_settings(&self.app_handle);
+        let mut did_mute_guard = self.did_mute.lock().unwrap();
+
+        if settings.mute_while_recording && *self.is_open.lock().unwrap() {
+            set_mute(true);
+            *did_mute_guard = true;
+            debug!("Mute applied");
+        }
+    }
+
+    /// Removes mute if it was applied
+    pub fn remove_mute(&self) {
+        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        if *did_mute_guard {
+            set_mute(false);
+            *did_mute_guard = false;
+            debug!("Mute removed");
+        }
+    }
+
     pub fn start_microphone_stream(&self) -> Result<(), anyhow::Error> {
         let mut open_flag = self.is_open.lock().unwrap();
         if *open_flag {
@@ -191,14 +213,9 @@ impl AudioRecordingManager {
 
         let start_time = Instant::now();
 
-        let settings = get_settings(&self.app_handle);
+        // Don't mute immediately - caller will handle muting after audio feedback
         let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if settings.mute_while_recording {
-            set_mute(true);
-            *did_mute_guard = true;
-        } else {
-            *did_mute_guard = false;
-        }
+        *did_mute_guard = false;
 
         let vad_path = self
             .app_handle
