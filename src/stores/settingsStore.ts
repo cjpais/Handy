@@ -74,6 +74,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   debug_mode: false,
   custom_words: [],
   history_limit: 5,
+  recording_retention_period: "preserve_limit",
   mute_while_recording: false,
 };
 
@@ -111,6 +112,8 @@ const settingUpdaters: {
     invoke("set_selected_output_device", {
       deviceName: value === "Default" ? "default" : value,
     }),
+  recording_retention_period: (value) =>
+    invoke("update_recording_retention_period", { period: value }),
   translate_to_english: (value) =>
     invoke("change_translate_to_english_setting", { enabled: value }),
   selected_language: (value) =>

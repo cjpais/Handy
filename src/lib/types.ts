@@ -43,6 +43,15 @@ export const ClipboardHandlingSchema = z.enum([
 ]);
 export type ClipboardHandling = z.infer<typeof ClipboardHandlingSchema>;
 
+export const RecordingRetentionPeriodSchema = z.enum([
+  "never",
+  "preserve_limit",
+  "days3",
+  "weeks2",
+  "months3",
+]);
+export type RecordingRetentionPeriod = z.infer<typeof RecordingRetentionPeriodSchema>;
+
 export const LLMPromptSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -89,6 +98,7 @@ export const SettingsSchema = z.object({
   model_unload_timeout: ModelUnloadTimeoutSchema.optional().default("never"),
   word_correction_threshold: z.number().optional().default(0.18),
   history_limit: z.number().optional().default(5),
+  recording_retention_period: RecordingRetentionPeriodSchema.optional().default("preserve_limit"),
   paste_method: PasteMethodSchema.optional().default("ctrl_v"),
   clipboard_handling: ClipboardHandlingSchema.optional().default("dont_modify"),
   post_process_enabled: z.boolean().optional().default(false),
