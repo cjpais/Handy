@@ -1,5 +1,5 @@
-import React from "react";
-import { type as getOsType } from "@tauri-apps/plugin-os";
+import React, { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -22,9 +22,25 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
       refreshAudioDevices,
     } = useSettings();
 
-    // Only render on macOS
-    const isMacOS = getOsType() === "macos";
-    if (!isMacOS) {
+    const [hasBuiltinDisplay, setHasBuiltinDisplay] = useState<boolean>(false);
+
+    useEffect(() => {
+      // Check if the device has a built-in display (i.e., is a laptop)
+      const checkBuiltinDisplay = async () => {
+        try {
+          const result = await invoke<boolean>("has_builtin_display");
+          setHasBuiltinDisplay(result);
+        } catch (error) {
+          console.error("Failed to check for built-in display:", error);
+          setHasBuiltinDisplay(false);
+        }
+      };
+
+      checkBuiltinDisplay();
+    }, []);
+
+    // Only render on devices with built-in displays (laptops)
+    if (!hasBuiltinDisplay) {
       return null;
     }
 
