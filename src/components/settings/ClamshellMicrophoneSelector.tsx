@@ -22,25 +22,24 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
       refreshAudioDevices,
     } = useSettings();
 
-    const [hasBuiltinDisplay, setHasBuiltinDisplay] = useState<boolean>(false);
+    const [isLaptop, setIsLaptop] = useState<boolean>(false);
 
     useEffect(() => {
-      // Check if the device has a built-in display (i.e., is a laptop)
-      const checkBuiltinDisplay = async () => {
+      const checkIsLaptop = async () => {
         try {
-          const result = await invoke<boolean>("has_builtin_display");
-          setHasBuiltinDisplay(result);
+          const result = await invoke<boolean>("is_laptop");
+          setIsLaptop(result);
         } catch (error) {
-          console.error("Failed to check for built-in display:", error);
-          setHasBuiltinDisplay(false);
+          console.error("Failed to check if device is laptop:", error);
+          setIsLaptop(false);
         }
       };
 
-      checkBuiltinDisplay();
+      checkIsLaptop();
     }, []);
 
-    // Only render on devices with built-in displays (laptops)
-    if (!hasBuiltinDisplay) {
+    // Only render on laptops
+    if (!isLaptop) {
       return null;
     }
 

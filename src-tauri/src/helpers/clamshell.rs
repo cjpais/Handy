@@ -26,31 +26,23 @@ pub fn is_clamshell() -> Result<bool, String> {
     Ok(stdout.contains("\"AppleClamshellState\" = Yes"))
 }
 
-/// Checks if the Mac has a built-in display (i.e., is a laptop)
+/// Checks if the Mac is a laptop by detecting battery presence
 ///
-/// This queries the macOS IORegistry for built-in displays.
-/// Returns true if a built-in display is found (MacBook), false otherwise (Mac Mini, Mac Studio, etc.)
+/// This uses pmset to check for battery information.
+/// Returns true if a battery is detected (laptop), false otherwise (desktop)
 #[cfg(target_os = "macos")]
 #[tauri::command]
-pub fn has_builtin_display() -> Result<bool, String> {
-    let output = Command::new("ioreg")
-        .args(["-l", "-w", "0", "-r", "-c", "IODisplayConnect"])
+pub fn is_laptop() -> Result<bool, String> {
+    let output = Command::new("pmset")
+        .arg("-g")
+        .arg("batt")
         .output()
-        .map_err(|e| format!("Failed to execute ioreg: {}", e))?;
-
-    if !output.status.success() {
-        return Err(format!(
-            "ioreg command failed with status: {}",
-            output.status
-        ));
-    }
-
+        .map_err(|e| e.to_string())?;
+    
     let stdout = String::from_utf8_lossy(&output.stdout);
-
-    // Look for built-in display indicators
-    // Built-in displays typically have AppleDisplay or AppleBacklightDisplay
-    Ok(stdout.contains("AppleBacklightDisplay")
-        || (stdout.contains("built-in") && stdout.contains("IODisplayConnect")))
+    
+    // Check if InternalBattery is present (laptops have batteries, desktops typically don't)
+    Ok(stdout.contains("InternalBattery"))
 }
 
 /// Stub implementation for non-macOS platforms
@@ -62,10 +54,10 @@ pub fn is_clamshell() -> Result<bool, String> {
 }
 
 /// Stub implementation for non-macOS platforms
-/// Always returns false since built-in display detection is macOS-specific
+/// Always returns false since laptop detection is macOS-specific
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
-pub fn has_builtin_display() -> Result<bool, String> {
+pub fn is_laptop() -> Result<bool, String> {
     Ok(false)
 }
 
@@ -84,9 +76,11 @@ mod tests {
 
     #[test]
     #[cfg(target_os = "macos")]
-    fn test_has_builtin_display() {
-        let result = has_builtin_display();
+    fn test_is_laptop() {
+        let result = is_laptop();
         assert!(result.is_ok());
-        let _ = result.unwrap();
+        if let Ok(is_laptop) = result {
+            println!("Is laptop: {}", is_laptop);
+        }
     }
 }
