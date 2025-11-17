@@ -6,6 +6,95 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
 
+fn set_mute(mute: bool) {
+    // Expected behavior:
+    // - Windows: works on most systems using standard audio drivers.
+    // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
+    //   but some distros may lack the tools used.
+    // - macOS: works on most standard setups via AppleScript.
+    // If unsupported, fails silently.
+
+    #[cfg(target_os = "windows")]
+    {
+        unsafe {
+            use windows::Win32::{
+                Media::Audio::{
+                    eMultimedia, eRender, Endpoints::IAudioEndpointVolume, IMMDeviceEnumerator,
+                    MMDeviceEnumerator,
+                },
+                System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED},
+            };
+
+            macro_rules! unwrap_or_return {
+                ($expr:expr) => {
+                    match $expr {
+                        Ok(val) => val,
+                        Err(_) => return,
+                    }
+                };
+            }
+
+            // Initialize the COM library for this thread.
+            // If already initialized (e.g., by another library like Tauri), this does nothing.
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+            let all_devices: IMMDeviceEnumerator =
+                unwrap_or_return!(CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL));
+            let default_device =
+                unwrap_or_return!(all_devices.GetDefaultAudioEndpoint(eRender, eMultimedia));
+            let volume_interface = unwrap_or_return!(
+                default_device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None)
+            );
+
+            let _ = volume_interface.SetMute(mute, std::ptr::null());
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+
+        let mute_val = if mute { "1" } else { "0" };
+        let amixer_state = if mute { "mute" } else { "unmute" };
+
+        // Try multiple backends to increase compatibility
+        // 1. PipeWire (wpctl)
+        if Command::new("wpctl")
+            .args(["set-mute", "@DEFAULT_AUDIO_SINK@", mute_val])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return;
+        }
+
+        // 2. PulseAudio (pactl)
+        if Command::new("pactl")
+            .args(["set-sink-mute", "@DEFAULT_SINK@", mute_val])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return;
+        }
+
+        // 3. ALSA (amixer)
+        let _ = Command::new("amixer")
+            .args(["set", "Master", amixer_state])
+            .output();
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let script = format!(
+            "set volume output muted {}",
+            if mute { "true" } else { "false" }
+        );
+        let _ = Command::new("osascript").args(["-e", &script]).output();
+    }
+}
+
 const WHISPER_SAMPLE_RATE: usize = 16000;
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -58,7 +147,7 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
-    initial_volume: Arc<Mutex<Option<u8>>>,
+    did_mute: Arc<Mutex<bool>>,
 }
 
 impl AudioRecordingManager {
@@ -80,7 +169,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
-            initial_volume: Arc::new(Mutex::new(None)),
+            did_mute: Arc::new(Mutex::new(false)),
         };
 
         // Always-on?  Open immediately.
@@ -93,6 +182,28 @@ impl AudioRecordingManager {
 
     /* ---------- microphone life-cycle -------------------------------------- */
 
+    /// Applies mute if mute_while_recording is enabled and stream is open
+    pub fn apply_mute(&self) {
+        let settings = get_settings(&self.app_handle);
+        let mut did_mute_guard = self.did_mute.lock().unwrap();
+
+        if settings.mute_while_recording && *self.is_open.lock().unwrap() {
+            set_mute(true);
+            *did_mute_guard = true;
+            debug!("Mute applied");
+        }
+    }
+
+    /// Removes mute if it was applied
+    pub fn remove_mute(&self) {
+        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        if *did_mute_guard {
+            set_mute(false);
+            *did_mute_guard = false;
+            debug!("Mute removed");
+        }
+    }
+
     pub fn start_microphone_stream(&self) -> Result<(), anyhow::Error> {
         let mut open_flag = self.is_open.lock().unwrap();
         if *open_flag {
@@ -102,15 +213,9 @@ impl AudioRecordingManager {
 
         let start_time = Instant::now();
 
-        let settings = get_settings(&self.app_handle);
-        let mut initial_volume_guard = self.initial_volume.lock().unwrap();
-
-        if settings.mute_while_recording {
-            *initial_volume_guard = Some(cpvc::get_system_volume());
-            cpvc::set_system_volume(0);
-        } else {
-            *initial_volume_guard = None;
-        }
+        // Don't mute immediately - caller will handle muting after audio feedback
+        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        *did_mute_guard = false;
 
         let vad_path = self
             .app_handle
@@ -166,11 +271,11 @@ impl AudioRecordingManager {
             return;
         }
 
-        let mut initial_volume_guard = self.initial_volume.lock().unwrap();
-        if let Some(vol) = *initial_volume_guard {
-            cpvc::set_system_volume(vol);
+        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        if *did_mute_guard {
+            set_mute(false);
         }
-        *initial_volume_guard = None;
+        *did_mute_guard = false;
 
         if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
             // If still recording, stop first.
