@@ -2,6 +2,7 @@ use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
+use log::warn;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
@@ -153,7 +154,7 @@ pub fn play_test_sound(app: AppHandle, sound_type: String) {
         "start" => audio_feedback::SoundType::Start,
         "stop" => audio_feedback::SoundType::Stop,
         _ => {
-            eprintln!("Unknown sound type: {}", sound_type);
+            warn!("Unknown sound type: {}", sound_type);
             return;
         }
     };

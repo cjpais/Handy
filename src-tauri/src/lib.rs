@@ -17,6 +17,7 @@ use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 
@@ -25,6 +26,10 @@ use tauri::Emitter;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
+
+// Global atomic to store the file log level filter
+// We use u8 to store the log::LevelFilter as a number
+pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
 
 #[derive(Default)]
 struct ShortcutToggleStates {
@@ -38,21 +43,21 @@ fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         // First, ensure the window is visible
         if let Err(e) = main_window.show() {
-            eprintln!("Failed to show window: {}", e);
+            log::error!("Failed to show window: {}", e);
         }
         // Then, bring it to the front and give it focus
         if let Err(e) = main_window.set_focus() {
-            eprintln!("Failed to focus window: {}", e);
+            log::error!("Failed to focus window: {}", e);
         }
         // Optional: On macOS, ensure the app becomes active if it was an accessory
         #[cfg(target_os = "macos")]
         {
             if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
-                eprintln!("Failed to set activation policy to Regular: {}", e);
+                log::error!("Failed to set activation policy to Regular: {}", e);
             }
         }
     } else {
-        eprintln!("Main window not found.");
+        log::error!("Main window not found.");
     }
 }
 
@@ -156,17 +161,31 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Determine console log level from RUST_LOG env var, default to Info
+    let console_level = std::env::var("RUST_LOG")
+        .ok()
+        .and_then(|s| s.parse::<log::LevelFilter>().ok())
+        .unwrap_or(log::LevelFilter::Info);
+
     tauri::Builder::default()
         .plugin(
             LogBuilder::new()
-                .level(log::LevelFilter::Debug)
+                .level(log::LevelFilter::Trace) // Set to most verbose level globally
                 .max_file_size(100_000)
                 .rotation_strategy(RotationStrategy::KeepOne)
                 .clear_targets()
                 .targets([
-                    Target::new(TargetKind::Stdout),
+                    // Console output respects RUST_LOG environment variable
+                    Target::new(TargetKind::Stdout).filter(move |metadata| {
+                        metadata.level() <= console_level
+                    }),
+                    // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
                     Target::new(TargetKind::LogDir {
                         file_name: Some("handy".into()),
+                    })
+                    .filter(|metadata| {
+                        let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
+                        metadata.level() as u8 <= file_level
                     }),
                 ])
                 .build(),
@@ -198,8 +217,9 @@ pub fn run() {
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
             let settings = settings::get_settings(&app.handle());
-            let initial_log_level: log::Level = settings.log_level.clone().into();
-            log::set_max_level(initial_log_level.to_level_filter());
+            let file_log_level: log::Level = settings.log_level.clone().into();
+            // Store the file log level in the atomic for the filter to use
+            FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
 
             initialize_core_logic(&app_handle);
@@ -224,12 +244,12 @@ pub fn run() {
                         .app_handle()
                         .set_activation_policy(tauri::ActivationPolicy::Accessory);
                     if let Err(e) = res {
-                        println!("Failed to set activation policy: {}", e);
+                        log::error!("Failed to set activation policy: {}", e);
                     }
                 }
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
-                println!("Theme changed to: {:?}", theme);
+                log::info!("Theme changed to: {:?}", theme);
                 // Update tray icon to match new theme, maintaining idle state
                 utils::change_tray_icon(&window.app_handle(), utils::TrayIconState::Idle);
             }

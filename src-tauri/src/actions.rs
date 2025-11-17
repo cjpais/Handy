@@ -318,14 +318,14 @@ impl ShortcutAction for TranscribeAction {
                                         "Text pasted successfully in {:?}",
                                         paste_time.elapsed()
                                     ),
-                                    Err(e) => eprintln!("Failed to paste transcription: {}", e),
+                                    Err(e) => error!("Failed to paste transcription: {}", e),
                                 }
                                 // Hide the overlay after transcription is complete
                                 utils::hide_recording_overlay(&ah_clone);
                                 change_tray_icon(&ah_clone, TrayIconState::Idle);
                             })
                             .unwrap_or_else(|e| {
-                                eprintln!("Failed to run paste on main thread: {:?}", e);
+                                error!("Failed to run paste on main thread: {:?}", e);
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             });
@@ -359,7 +359,7 @@ struct TestAction;
 
 impl ShortcutAction for TestAction {
     fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
-        println!(
+        log::info!(
             "Shortcut ID '{}': Started - {} (App: {})", // Changed "Pressed" to "Started" for consistency
             binding_id,
             shortcut_str,
@@ -368,7 +368,7 @@ impl ShortcutAction for TestAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
-        println!(
+        log::info!(
             "Shortcut ID '{}': Stopped - {} (App: {})", // Changed "Released" to "Stopped" for consistency
             binding_id,
             shortcut_str,

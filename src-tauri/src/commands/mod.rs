@@ -36,7 +36,8 @@ pub fn get_log_dir_path(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
     let log_level: log::Level = level.clone().into();
-    log::set_max_level(log_level.to_level_filter());
+    // Update the file log level atomic so the filter picks up the new level
+    crate::FILE_LOG_LEVEL.store(log_level.to_level_filter() as u8, std::sync::atomic::Ordering::Relaxed);
 
     let mut settings = settings::get_settings(&app);
     settings.log_level = level;

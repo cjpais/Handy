@@ -43,8 +43,6 @@ impl VoiceActivityDetector for SileroVad {
             .compute(frame)
             .map_err(|e| anyhow::anyhow!("Silero VAD error: {e}"))?;
 
-        // println!("Silero VAD result: prob = {}", result.prob);
-
         if result.prob > self.threshold {
             Ok(VadFrame::Speech(frame))
         } else {

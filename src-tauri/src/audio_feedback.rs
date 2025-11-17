@@ -1,5 +1,6 @@
 use crate::settings;
 use cpal::traits::{DeviceTrait, HostTrait};
+use log::{debug, error, warn};
 use rodio::OutputStreamBuilder;
 use std::fs::File;
 use std::io::BufReader;
@@ -21,7 +22,7 @@ fn play_sound(app: &AppHandle, resource_path: &str, base_dir: tauri::path::BaseD
         let audio_path = match app_handle.path().resolve(&resource_path, base_dir) {
             Ok(path) => path.to_path_buf(),
             Err(e) => {
-                eprintln!(
+                error!(
                     "Failed to resolve audio file path '{}': {}",
                     resource_path, e
                 );
@@ -33,7 +34,7 @@ fn play_sound(app: &AppHandle, resource_path: &str, base_dir: tauri::path::BaseD
         let selected_device = settings.selected_output_device.clone();
 
         if let Err(e) = play_audio_file(&audio_path, selected_device, volume) {
-            eprintln!("Failed to play sound '{}': {}", resource_path, e);
+            error!("Failed to play sound '{}': {}", resource_path, e);
         }
     });
 }
@@ -87,7 +88,7 @@ fn play_audio_file(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let stream_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
-            println!("Using default device");
+            debug!("Using default device");
             OutputStreamBuilder::from_default_device()?
         } else {
             let host = crate::audio_toolkit::get_cpal_host();
@@ -104,13 +105,13 @@ fn play_audio_file(
             match found_device {
                 Some(device) => OutputStreamBuilder::from_device(device)?,
                 None => {
-                    eprintln!("Device '{}' not found, using default device", device_name);
+                    warn!("Device '{}' not found, using default device", device_name);
                     OutputStreamBuilder::from_default_device()?
                 }
             }
         }
     } else {
-        println!("Using default device");
+        debug!("Using default device");
         OutputStreamBuilder::from_default_device()?
     };
 

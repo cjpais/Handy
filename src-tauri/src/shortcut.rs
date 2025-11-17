@@ -1,3 +1,4 @@
+use log::{error, warn};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
@@ -16,7 +17,7 @@ pub fn init_shortcuts(app: &AppHandle) {
     // Register shortcuts with the bindings from settings
     for (_id, binding) in settings.bindings {
         if let Err(e) = _register_shortcut(app, binding) {
-            eprintln!("Failed to register shortcut {} during init: {}", _id, e);
+            error!("Failed to register shortcut {} during init: {}", _id, e);
         }
     }
 }
@@ -41,7 +42,7 @@ pub fn change_binding(
         Some(binding) => binding.clone(),
         None => {
             let error_msg = format!("Binding with id '{}' not found", id);
-            eprintln!("change_binding error: {}", error_msg);
+            warn!("change_binding error: {}", error_msg);
             return Ok(BindingResponse {
                 success: false,
                 binding: None,
@@ -53,12 +54,12 @@ pub fn change_binding(
     // Unregister the existing binding
     if let Err(e) = _unregister_shortcut(&app, binding_to_modify.clone()) {
         let error_msg = format!("Failed to unregister shortcut: {}", e);
-        eprintln!("change_binding error: {}", error_msg);
+        error!("change_binding error: {}", error_msg);
     }
 
     // Validate the new shortcut before we touch the current registration
     if let Err(e) = validate_shortcut_string(&binding) {
-        eprintln!("change_binding validation error: {}", e);
+        warn!("change_binding validation error: {}", e);
         return Err(e);
     }
 
@@ -69,7 +70,7 @@ pub fn change_binding(
     // Register the new binding
     if let Err(e) = _register_shortcut(&app, updated_binding.clone()) {
         let error_msg = format!("Failed to register shortcut: {}", e);
-        eprintln!("change_binding error: {}", error_msg);
+        error!("change_binding error: {}", error_msg);
         return Ok(BindingResponse {
             success: false,
             binding: None,
@@ -135,7 +136,7 @@ pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), S
         "pop" => SoundTheme::Pop,
         "custom" => SoundTheme::Custom,
         other => {
-            eprintln!("Invalid sound theme '{}', defaulting to marimba", other);
+            warn!("Invalid sound theme '{}', defaulting to marimba", other);
             SoundTheme::Marimba
         }
     };
@@ -168,7 +169,7 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
         "top" => OverlayPosition::Top,
         "bottom" => OverlayPosition::Bottom,
         other => {
-            eprintln!("Invalid overlay position '{}', defaulting to bottom", other);
+            warn!("Invalid overlay position '{}', defaulting to bottom", other);
             OverlayPosition::Bottom
         }
     };
@@ -271,7 +272,7 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
         #[cfg(not(target_os = "macos"))]
         "shift_insert" => PasteMethod::ShiftInsert,
         other => {
-            eprintln!("Invalid paste method '{}', defaulting to ctrl_v", other);
+            warn!("Invalid paste method '{}', defaulting to ctrl_v", other);
             PasteMethod::CtrlV
         }
     };
@@ -287,7 +288,7 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
         "dont_modify" => ClipboardHandling::DontModify,
         "copy_to_clipboard" => ClipboardHandling::CopyToClipboard,
         other => {
-            eprintln!(
+            warn!(
                 "Invalid clipboard handling '{}', defaulting to dont_modify",
                 other
             );
@@ -644,7 +645,7 @@ fn validate_shortcut_string(raw: &str) -> Result<(), String> {
 pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = _unregister_shortcut(&app, b) {
-            eprintln!("suspend_binding error for id '{}': {}", id, e);
+            error!("suspend_binding error for id '{}': {}", id, e);
             return Err(e);
         }
     }
@@ -656,7 +657,7 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = _register_shortcut(&app, b) {
-            eprintln!("resume_binding error for id '{}': {}", id, e);
+            error!("resume_binding error for id '{}': {}", id, e);
             return Err(e);
         }
     }
@@ -666,7 +667,7 @@ pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
 fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     // Validate human-level rules first
     if let Err(e) = validate_shortcut_string(&binding.current_binding) {
-        eprintln!(
+        warn!(
             "_register_shortcut validation error for binding '{}': {}",
             binding.current_binding, e
         );
@@ -681,7 +682,7 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
                 "Failed to parse shortcut '{}': {}",
                 binding.current_binding, e
             );
-            eprintln!("_register_shortcut parse error: {}", error_msg);
+            error!("_register_shortcut parse error: {}", error_msg);
             return Err(error_msg);
         }
     };
@@ -689,7 +690,7 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
     // Prevent duplicate registrations that would silently shadow one another
     if app.global_shortcut().is_registered(shortcut) {
         let error_msg = format!("Shortcut '{}' is already in use", binding.current_binding);
-        eprintln!("_register_shortcut duplicate error: {}", error_msg);
+        warn!("_register_shortcut duplicate error: {}", error_msg);
         return Err(error_msg);
     }
 
@@ -733,8 +734,8 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
                         }
                     }
                 } else {
-                    println!(
-                        "Warning: No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', State: {:?}",
+                    warn!(
+                        "No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', State: {:?}",
                         binding_id_for_closure, shortcut_string, event.state
                     );
                 }
@@ -742,7 +743,7 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
         })
         .map_err(|e| {
             let error_msg = format!("Couldn't register shortcut '{}': {}", binding.current_binding, e);
-            eprintln!("_register_shortcut registration error: {}", error_msg);
+            error!("_register_shortcut registration error: {}", error_msg);
             error_msg
         })?;
 
@@ -757,7 +758,7 @@ fn _unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(),
                 "Failed to parse shortcut '{}' for unregistration: {}",
                 binding.current_binding, e
             );
-            eprintln!("_unregister_shortcut parse error: {}", error_msg);
+            error!("_unregister_shortcut parse error: {}", error_msg);
             return Err(error_msg);
         }
     };
@@ -767,7 +768,7 @@ fn _unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(),
             "Failed to unregister shortcut '{}': {}",
             binding.current_binding, e
         );
-        eprintln!("_unregister_shortcut error: {}", error_msg);
+        error!("_unregister_shortcut error: {}", error_msg);
         error_msg
     })?;
 

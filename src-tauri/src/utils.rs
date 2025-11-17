@@ -1,6 +1,7 @@
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::ManagedToggleState;
+use log::{info, warn};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
@@ -13,7 +14,7 @@ pub use crate::tray::*;
 /// Centralized cancellation function that can be called from anywhere in the app.
 /// Handles cancelling both recording and transcription operations and updates UI state.
 pub fn cancel_current_operation(app: &AppHandle) {
-    println!("Initiating operation cancellation...");
+    info!("Initiating operation cancellation...");
 
     // First, reset all shortcut toggle states and call stop actions
     // This is critical for non-push-to-talk mode where shortcuts toggle on/off
@@ -28,7 +29,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
             .collect();
 
         for binding_id in active_bindings {
-            println!("Stopping active action for binding: {}", binding_id);
+            info!("Stopping active action for binding: {}", binding_id);
 
             // Call the action's stop method to ensure proper cleanup
             if let Some(action) = ACTION_MAP.get(&binding_id) {
@@ -41,7 +42,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
             }
         }
     } else {
-        eprintln!("Warning: Failed to lock toggle state manager during cancellation");
+        warn!("Failed to lock toggle state manager during cancellation");
     }
 
     // Cancel any ongoing recording
@@ -51,5 +52,5 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Update tray icon and menu to idle state
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
 
-    println!("Operation cancellation completed - returned to idle state");
+    info!("Operation cancellation completed - returned to idle state");
 }
