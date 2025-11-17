@@ -974,21 +974,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cpvc"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30cefc7f947361fa9b9b2709391ac9ab8970f8150bcdbc7dab6287399f5fda34"
-dependencies = [
- "alsa",
- "core-foundation 0.10.1",
- "libpulse-binding",
- "libpulse-sys",
- "objc2-core-audio",
- "objc2-core-audio-types",
- "windows 0.61.3",
-]
-
-[[package]]
 name = "crc"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2306,7 +2291,6 @@ dependencies = [
  "async-openai 0.30.1",
  "chrono",
  "cpal",
- "cpvc",
  "enigo",
  "env_logger 0.11.8",
  "flate2",
@@ -2342,6 +2326,7 @@ dependencies = [
  "tokio",
  "transcribe-rs",
  "vad-rs",
+ "windows 0.61.3",
 ]
 
 [[package]]
@@ -3088,33 +3073,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
-name = "libpulse-binding"
-version = "2.30.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "909eb3049e16e373680fe65afe6e2a722ace06b671250cc4849557bc57d6a397"
-dependencies = [
- "bitflags 2.10.0",
- "libc",
- "libpulse-sys",
- "num-derive",
- "num-traits",
- "winapi",
-]
-
-[[package]]
-name = "libpulse-sys"
-version = "1.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d74371848b22e989f829cc1621d2ebd74960711557d8b45cfe740f60d0a05e61"
-dependencies = [
- "libc",
- "num-derive",
- "num-traits",
- "pkg-config",
- "winapi",
-]
-
-[[package]]
 name = "libredox"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3695,13 +3653,10 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1eebcea8b0dbff5f7c8504f3107c68fc061a3eb44932051c8cf8a68d969c3b2"
 dependencies = [
- "block2 0.6.2",
  "dispatch2",
- "libc",
  "objc2 0.6.3",
  "objc2-core-audio-types",
  "objc2-core-foundation",
- "objc2-foundation 0.3.2",
 ]
 
 [[package]]
