@@ -45,6 +45,7 @@ pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
 pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
     let app_data_dir = app
         .path()
@@ -57,6 +58,36 @@ pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
     app.opener()
         .open_path(path, None::<String>)
         .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn open_log_dir(app: AppHandle) -> Result<(), String> {
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("Failed to get log directory: {}", e))?;
+
+    let path = log_dir.to_string_lossy().as_ref().to_string();
+    app.opener()
+        .open_path(path, None::<String>)
+        .map_err(|e| format!("Failed to open log directory: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+
+    let path = app_data_dir.to_string_lossy().as_ref().to_string();
+    app.opener()
+        .open_path(path, None::<String>)
+        .map_err(|e| format!("Failed to open app data directory: {}", e))?;
 
     Ok(())
 }

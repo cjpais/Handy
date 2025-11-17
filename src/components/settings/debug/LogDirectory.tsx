@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { SettingContainer } from "../../ui/SettingContainer";
-
-const COPY_FEEDBACK_DURATION_MS = 1500;
+import { Button } from "../../ui/Button";
 
 interface LogDirectoryProps {
   descriptionMode?: "tooltip" | "inline";
@@ -16,8 +15,6 @@ export const LogDirectory: React.FC<LogDirectoryProps> = ({
   const [logDir, setLogDir] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const copyTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const loadLogDirectory = async () => {
@@ -38,30 +35,14 @@ export const LogDirectory: React.FC<LogDirectoryProps> = ({
     loadLogDirectory();
   }, []);
 
-  const handleCopy = async () => {
+  const handleOpen = async () => {
     if (!logDir) return;
     try {
-      await navigator.clipboard.writeText(logDir);
-      setCopied(true);
-      if (copyTimeoutRef.current) {
-        window.clearTimeout(copyTimeoutRef.current);
-      }
-      copyTimeoutRef.current = window.setTimeout(() => {
-        setCopied(false);
-        copyTimeoutRef.current = null;
-      }, COPY_FEEDBACK_DURATION_MS);
-    } catch (copyError) {
-      console.error("Failed to copy log directory:", copyError);
+      await invoke("open_log_dir");
+    } catch (openError) {
+      console.error("Failed to open log directory:", openError);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      if (copyTimeoutRef.current) {
-        window.clearTimeout(copyTimeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <SettingContainer
@@ -84,14 +65,15 @@ export const LogDirectory: React.FC<LogDirectoryProps> = ({
           <div className="flex-1 min-w-0 px-2 py-2 bg-mid-gray/10 border border-mid-gray/80 rounded text-xs font-mono break-all">
             {logDir}
           </div>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="flex items-center justify-center px-3 py-2 text-xs font-semibold bg-mid-gray/10 hover:bg-logo-primary/10 border border-mid-gray/80 hover:border-logo-primary hover:text-logo-primary rounded transition-all"
+          <Button
+            onClick={handleOpen}
+            variant="secondary"
+            size="sm"
             disabled={!logDir}
+            className="px-3 py-2"
           >
-            {copied ? "Copied" : "Copy"}
-          </button>
+            Open
+          </Button>
         </div>
       )}
     </SettingContainer>
