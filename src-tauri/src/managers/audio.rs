@@ -1,7 +1,7 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
+use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
-use crate::helpers::clamshell;
 use log::{debug, info};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;

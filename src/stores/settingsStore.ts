@@ -171,13 +171,17 @@ export const useSettingsStore = create<SettingsStore>()(
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls
-        const [microphoneMode, selectedMicrophone, clamshellMicrophone, selectedOutputDevice] =
-          await Promise.allSettled([
-            invoke("get_microphone_mode"),
-            invoke("get_selected_microphone"),
-            invoke("get_clamshell_microphone"),
-            invoke("get_selected_output_device"),
-          ]);
+        const [
+          microphoneMode,
+          selectedMicrophone,
+          clamshellMicrophone,
+          selectedOutputDevice,
+        ] = await Promise.allSettled([
+          invoke("get_microphone_mode"),
+          invoke("get_selected_microphone"),
+          invoke("get_clamshell_microphone"),
+          invoke("get_selected_output_device"),
+        ]);
 
         // Merge all settings
         const mergedSettings: Settings = {

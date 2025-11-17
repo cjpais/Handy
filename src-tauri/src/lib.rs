@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod helpers;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -10,7 +11,6 @@ mod settings;
 mod shortcut;
 mod tray;
 mod utils;
-mod helpers;
 
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
