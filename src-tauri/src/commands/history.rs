@@ -73,7 +73,7 @@ pub async fn update_recording_retention_period(
     period: String,
 ) -> Result<(), String> {
     use crate::settings::RecordingRetentionPeriod;
-    
+
     let retention_period = match period.as_str() {
         "never" => RecordingRetentionPeriod::Never,
         "preserve_limit" => RecordingRetentionPeriod::PreserveLimit,

@@ -229,7 +229,10 @@ impl HistoryManager {
         Ok(())
     }
 
-    fn cleanup_by_time(&self, retention_period: crate::settings::RecordingRetentionPeriod) -> Result<()> {
+    fn cleanup_by_time(
+        &self,
+        retention_period: crate::settings::RecordingRetentionPeriod,
+    ) -> Result<()> {
         let conn = self.get_connection()?;
 
         // Calculate cutoff timestamp (current time minus retention period)
@@ -243,7 +246,7 @@ impl HistoryManager {
 
         // Get all unsaved entries older than the cutoff timestamp
         let mut stmt = conn.prepare(
-            "SELECT id, file_name FROM transcription_history WHERE saved = 0 AND timestamp < ?1"
+            "SELECT id, file_name FROM transcription_history WHERE saved = 0 AND timestamp < ?1",
         )?;
 
         let rows = stmt.query_map(params![cutoff_timestamp], |row| {
@@ -258,7 +261,10 @@ impl HistoryManager {
         let deleted_count = self.delete_entries_and_files(&entries_to_delete)?;
 
         if deleted_count > 0 {
-            debug!("Cleaned up {} old history entries based on retention period", deleted_count);
+            debug!(
+                "Cleaned up {} old history entries based on retention period",
+                deleted_count
+            );
         }
 
         Ok(())

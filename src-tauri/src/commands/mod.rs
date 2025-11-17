@@ -28,13 +28,13 @@ pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-    
+
     let recordings_dir = app_data_dir.join("recordings");
-    
+
     let path = recordings_dir.to_string_lossy().as_ref().to_string();
     app.opener()
         .open_path(path, None::<String>)
         .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
-    
+
     Ok(())
 }

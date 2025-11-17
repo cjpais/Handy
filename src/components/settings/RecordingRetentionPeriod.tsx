@@ -9,19 +9,19 @@ interface RecordingRetentionPeriodProps {
   grouped?: boolean;
 }
 
-export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriodProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
-    const {
-      getSetting,
-      updateSetting,
-      isUpdating,
-    } = useSettings();
+export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriodProps> =
+  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+    const { getSetting, updateSetting, isUpdating } = useSettings();
 
-    const selectedRetentionPeriod = getSetting("recording_retention_period") || "never";
+    const selectedRetentionPeriod =
+      getSetting("recording_retention_period") || "never";
     const historyLimit = getSetting("history_limit") || 5;
 
     const handleRetentionPeriodSelect = async (period: string) => {
-      await updateSetting("recording_retention_period", period as RecordingRetentionPeriod);
+      await updateSetting(
+        "recording_retention_period",
+        period as RecordingRetentionPeriod,
+      );
     };
 
     const retentionOptions = [
@@ -48,7 +48,7 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
         />
       </SettingContainer>
     );
-  },
-);
+  });
 
-RecordingRetentionPeriodSelector.displayName = "RecordingRetentionPeriodSelector";
+RecordingRetentionPeriodSelector.displayName =
+  "RecordingRetentionPeriodSelector";
