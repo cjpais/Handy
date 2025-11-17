@@ -1,10 +1,12 @@
 use crate::settings;
 use cpal::traits::{DeviceTrait, HostTrait};
+use hound;
 use log::{debug, error, warn};
 use rodio::OutputStreamBuilder;
 use std::fs::File;
 use std::io::BufReader;
 use std::thread;
+use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
 pub enum SoundType {
@@ -126,4 +128,36 @@ fn play_audio_file(
     sink.sleep_until_end();
 
     Ok(())
+}
+
+/// Returns the duration of the sound as a `Duration` for the given SoundType.
+/// Returns None if the file can't be read or is not a valid WAV.
+pub fn get_sound_duration(app: &tauri::AppHandle, sound_type: SoundType) -> Option<Duration> {
+    let sound_file = get_sound_path(app, sound_type);
+    let settings = settings::get_settings(app);
+    let base_dir = if settings.sound_theme == crate::settings::SoundTheme::Custom {
+        tauri::path::BaseDirectory::AppData
+    } else {
+        tauri::path::BaseDirectory::Resource
+    };
+
+    let audio_path = app.path().resolve(&sound_file, base_dir).ok()?;
+    let file = std::fs::File::open(audio_path).ok()?;
+    let reader = hound::WavReader::new(file).ok()?;
+    let spec = reader.spec();
+    let duration_samples = reader.duration();
+    let sample_rate = spec.sample_rate;
+    let channels = spec.channels as u32;
+
+    if duration_samples == 0 || sample_rate == 0 || channels == 0 {
+        debug!(
+            "Invalid WAV file: duration_samples={}, sample_rate={}, channels={}",
+            duration_samples, sample_rate, channels
+        );
+        return None;
+    }
+
+    let total_samples_per_second = sample_rate * channels;
+    let duration_secs = duration_samples as f64 / total_samples_per_second as f64;
+    Some(Duration::from_secs_f64(duration_secs))
 }

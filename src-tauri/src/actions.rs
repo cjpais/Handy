@@ -1,4 +1,4 @@
-use crate::audio_feedback::{play_feedback_sound, SoundType};
+use crate::audio_feedback::{get_sound_duration, play_feedback_sound, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -14,7 +14,7 @@ use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::AppHandle;
 use tauri::Manager;
 
@@ -180,15 +180,19 @@ impl ShortcutAction for TranscribeAction {
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
+        // Wait for the start sound audio playback to finish before muting
+        // 500ms is a reasonable default if duration cannot be determined
+        let mute_delay =
+            get_sound_duration(app, SoundType::Start).unwrap_or(Duration::from_millis(500));
+
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
             play_feedback_sound(app, SoundType::Start);
 
-            // Apply mute after audio feedback has time to play (500ms should be enough for most sounds)
             let rm_clone = Arc::clone(&rm);
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(500));
+                std::thread::sleep(mute_delay);
                 rm_clone.apply_mute();
             });
 
@@ -209,8 +213,7 @@ impl ShortcutAction for TranscribeAction {
                     debug!("Playing delayed audio feedback");
                     play_feedback_sound(&app_clone, SoundType::Start);
 
-                    // Apply mute after audio feedback has time to play
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    std::thread::sleep(mute_delay);
                     rm_clone.apply_mute();
                 });
             } else {
