@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod helpers;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -269,6 +270,7 @@ pub fn run() {
             commands::get_app_dir_path,
             commands::get_log_dir_path,
             commands::set_log_level,
+            commands::open_recordings_folder,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
@@ -291,6 +293,10 @@ pub fn run() {
             commands::audio::get_selected_output_device,
             commands::audio::play_test_sound,
             commands::audio::check_custom_sounds,
+            commands::audio::set_clamshell_microphone,
+            commands::audio::get_clamshell_microphone,
+            helpers::clamshell::is_clamshell,
+            helpers::clamshell::has_builtin_display,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,
@@ -298,7 +304,8 @@ pub fn run() {
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
-            commands::history::update_history_limit
+            commands::history::update_history_limit,
+            commands::history::update_recording_retention_period
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

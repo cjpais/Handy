@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { SettingsGroup } from "../../ui/SettingsGroup";
 import { AudioPlayer } from "../../ui/AudioPlayer";
-import { Copy, Star, Check, Trash2 } from "lucide-react";
+import { Button } from "../../ui/Button";
+import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
@@ -13,6 +13,25 @@ interface HistoryEntry {
   title: string;
   transcription_text: string;
 }
+
+interface OpenRecordingsButtonProps {
+  onClick: () => void;
+}
+
+const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
+  onClick,
+}) => (
+  <Button
+    onClick={onClick}
+    variant="secondary"
+    size="sm"
+    className="flex items-center gap-2"
+    title="Open recordings folder"
+  >
+    <FolderOpen className="w-4 h-4" />
+    <span>Open Recordings Folder</span>
+  </Button>
+);
 
 export const HistorySettings: React.FC = () => {
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
@@ -93,14 +112,32 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const openRecordingsFolder = async () => {
+    try {
+      await invoke("open_recordings_folder");
+    } catch (error) {
+      console.error("Failed to open recordings folder:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl w-full mx-auto space-y-6">
-        <SettingsGroup title="History">
-          <div className="px-4 py-3 text-center text-text/60">
-            Loading history...
+        <div className="space-y-2">
+          <div className="px-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+                History
+              </h2>
+            </div>
+            <OpenRecordingsButton onClick={openRecordingsFolder} />
           </div>
-        </SettingsGroup>
+          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
+            <div className="px-4 py-3 text-center text-text/60">
+              Loading history...
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -108,29 +145,51 @@ export const HistorySettings: React.FC = () => {
   if (historyEntries.length === 0) {
     return (
       <div className="max-w-3xl w-full mx-auto space-y-6">
-        <SettingsGroup title="History">
-          <div className="px-4 py-3 text-center text-text/60">
-            No transcriptions yet. Start recording to build your history!
+        <div className="space-y-2">
+          <div className="px-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+                History
+              </h2>
+            </div>
+            <OpenRecordingsButton onClick={openRecordingsFolder} />
           </div>
-        </SettingsGroup>
+          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
+            <div className="px-4 py-3 text-center text-text/60">
+              No transcriptions yet. Start recording to build your history!
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title="History">
-        {historyEntries.map((entry) => (
-          <HistoryEntryComponent
-            key={entry.id}
-            entry={entry}
-            onToggleSaved={() => toggleSaved(entry.id)}
-            onCopyText={() => copyToClipboard(entry.transcription_text)}
-            getAudioUrl={getAudioUrl}
-            deleteAudio={deleteAudioEntry}
-          />
-        ))}
-      </SettingsGroup>
+      <div className="space-y-2">
+        <div className="px-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+              History
+            </h2>
+          </div>
+          <OpenRecordingsButton onClick={openRecordingsFolder} />
+        </div>
+        <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
+          <div className="divide-y divide-mid-gray/20">
+            {historyEntries.map((entry) => (
+              <HistoryEntryComponent
+                key={entry.id}
+                entry={entry}
+                onToggleSaved={() => toggleSaved(entry.id)}
+                onCopyText={() => copyToClipboard(entry.transcription_text)}
+                getAudioUrl={getAudioUrl}
+                deleteAudio={deleteAudioEntry}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
