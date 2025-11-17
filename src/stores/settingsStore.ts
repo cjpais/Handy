@@ -71,6 +71,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   selected_language: "auto",
   overlay_position: "bottom",
   debug_mode: false,
+  log_level: 2,
   custom_words: [],
   history_limit: 5,
   mute_while_recording: false,
@@ -128,6 +129,7 @@ const settingUpdaters: {
     invoke("set_post_process_selected_prompt", { id: value }),
   mute_while_recording: (value) =>
     invoke("change_mute_while_recording_setting", { enabled: value }),
+  log_level: (value) => invoke("set_log_level", { level: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

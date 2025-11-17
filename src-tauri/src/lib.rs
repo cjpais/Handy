@@ -23,6 +23,7 @@ use tauri::tray::TrayIconBuilder;
 use tauri::Emitter;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
 #[derive(Default)]
 struct ShortcutToggleStates {
@@ -154,9 +155,21 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    env_logger::init();
-
     tauri::Builder::default()
+        .plugin(
+            LogBuilder::new()
+                .level(log::LevelFilter::Debug)
+                .max_file_size(1_000_000)
+                .rotation_strategy(RotationStrategy::KeepOne)
+                .clear_targets()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("handy".into()),
+                    }),
+                ])
+                .build(),
+        )
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
         }))
@@ -184,6 +197,8 @@ pub fn run() {
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
             let settings = settings::get_settings(&app.handle());
+            let initial_log_level: log::Level = settings.log_level.clone().into();
+            log::set_max_level(initial_log_level.to_level_filter());
             let app_handle = app.handle().clone();
 
             initialize_core_logic(&app_handle);
@@ -252,6 +267,8 @@ pub fn run() {
             trigger_update_check,
             commands::cancel_operation,
             commands::get_app_dir_path,
+            commands::get_log_dir_path,
+            commands::set_log_level,
             commands::models::get_available_models,
             commands::models::get_model_info,
             commands::models::download_model,
