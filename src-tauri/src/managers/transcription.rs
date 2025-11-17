@@ -399,6 +399,14 @@ impl TranscriptionManager {
             translation_note
         );
 
+        let final_result = corrected_result.trim().to_string();
+
+        if final_result.is_empty() {
+            info!("Transcription result is empty");
+        } else {
+            info!("Transcription result: {}", final_result);
+        }
+
         // Check if we should immediately unload the model after transcription
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
             info!("Immediately unloading model after transcription");
@@ -407,7 +415,7 @@ impl TranscriptionManager {
             }
         }
 
-        Ok(corrected_result.trim().to_string())
+        Ok(final_result)
     }
 }
 

@@ -49,7 +49,14 @@ fn build_console_filter() -> env_filter::Filter {
 
     match std::env::var("RUST_LOG") {
         Ok(spec) if !spec.trim().is_empty() => {
-            builder.parse(&spec);
+            if let Err(err) = builder.try_parse(&spec) {
+                log::warn!(
+                    "Ignoring invalid RUST_LOG value '{}': {}. Falling back to info-level console logging",
+                    spec,
+                    err
+                );
+                builder.filter_level(log::LevelFilter::Info);
+            }
         }
         _ => {
             builder.filter_level(log::LevelFilter::Info);
