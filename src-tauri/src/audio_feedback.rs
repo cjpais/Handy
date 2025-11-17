@@ -1,4 +1,4 @@
-use crate::settings;
+use crate::settings::{self, AppSettings};
 use cpal::traits::{DeviceTrait, HostTrait};
 use hound;
 use log::{debug, error, warn};
@@ -55,31 +55,37 @@ fn get_sound_path(app: &AppHandle, sound_type: SoundType) -> String {
     }
 }
 
+fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
+    if settings.sound_theme == crate::settings::SoundTheme::Custom {
+        tauri::path::BaseDirectory::AppData
+    } else {
+        tauri::path::BaseDirectory::Resource
+    }
+}
+
+fn get_sound_file_and_base_dir(
+    app: &AppHandle,
+    sound_type: SoundType,
+) -> (String, tauri::path::BaseDirectory) {
+    let settings = settings::get_settings(app);
+    let sound_file = get_sound_path(app, sound_type);
+    let base_dir = get_sound_base_dir(&settings);
+    (sound_file, base_dir)
+}
+
 pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
     // Only play if audio feedback is enabled
     let settings = settings::get_settings(app);
     if !settings.audio_feedback {
         return;
     }
-
-    let sound_file = get_sound_path(app, sound_type);
-    let base_dir = if settings.sound_theme == crate::settings::SoundTheme::Custom {
-        tauri::path::BaseDirectory::AppData
-    } else {
-        tauri::path::BaseDirectory::Resource
-    };
+    let (sound_file, base_dir) = get_sound_file_and_base_dir(app, sound_type);
     play_sound(app, &sound_file, base_dir);
 }
 
 pub fn play_test_sound(app: &AppHandle, sound_type: SoundType) {
     // Always play test sound, regardless of audio_feedback setting
-    let settings = settings::get_settings(app);
-    let sound_file = get_sound_path(app, sound_type);
-    let base_dir = if settings.sound_theme == crate::settings::SoundTheme::Custom {
-        tauri::path::BaseDirectory::AppData
-    } else {
-        tauri::path::BaseDirectory::Resource
-    };
+    let (sound_file, base_dir) = get_sound_file_and_base_dir(app, sound_type);
     play_sound(app, &sound_file, base_dir);
 }
 
@@ -133,14 +139,7 @@ fn play_audio_file(
 /// Returns the duration of the sound as a `Duration` for the given SoundType.
 /// Returns None if the file can't be read or is not a valid WAV.
 pub fn get_sound_duration(app: &tauri::AppHandle, sound_type: SoundType) -> Option<Duration> {
-    let sound_file = get_sound_path(app, sound_type);
-    let settings = settings::get_settings(app);
-    let base_dir = if settings.sound_theme == crate::settings::SoundTheme::Custom {
-        tauri::path::BaseDirectory::AppData
-    } else {
-        tauri::path::BaseDirectory::Resource
-    };
-
+    let (sound_file, base_dir) = get_sound_file_and_base_dir(app, sound_type);
     let audio_path = app.path().resolve(&sound_file, base_dir).ok()?;
     let file = std::fs::File::open(audio_path).ok()?;
     let reader = hound::WavReader::new(file).ok()?;
