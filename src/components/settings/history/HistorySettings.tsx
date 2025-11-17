@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { SettingsGroup } from "../../ui/SettingsGroup";
 import { AudioPlayer } from "../../ui/AudioPlayer";
+import { Button } from "../../ui/Button";
 import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -18,15 +18,19 @@ interface OpenRecordingsButtonProps {
   onClick: () => void;
 }
 
-const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({ onClick }) => (
-  <button
+const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
+  onClick,
+}) => (
+  <Button
     onClick={onClick}
-    className="flex items-center space-x-2 px-3 py-1.5 text-xs bg-background border border-mid-gray/20 rounded-md hover:bg-mid-gray/5 transition-colors"
+    variant="secondary"
+    size="sm"
+    className="flex items-center gap-2"
     title="Open recordings folder"
   >
     <FolderOpen className="w-4 h-4" />
     <span>Open Recordings Folder</span>
-  </button>
+  </Button>
 );
 
 export const HistorySettings: React.FC = () => {

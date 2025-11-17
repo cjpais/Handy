@@ -170,6 +170,36 @@ impl HistoryManager {
         }
     }
 
+    fn delete_entries_and_files(&self, entries: &[(i64, String)]) -> Result<usize> {
+        if entries.is_empty() {
+            return Ok(0);
+        }
+
+        let conn = self.get_connection()?;
+        let mut deleted_count = 0;
+
+        for (id, file_name) in entries {
+            // Delete database entry
+            conn.execute(
+                "DELETE FROM transcription_history WHERE id = ?1",
+                params![id],
+            )?;
+
+            // Delete WAV file
+            let file_path = self.recordings_dir.join(file_name);
+            if file_path.exists() {
+                if let Err(e) = fs::remove_file(&file_path) {
+                    error!("Failed to delete WAV file {}: {}", file_name, e);
+                } else {
+                    debug!("Deleted old WAV file: {}", file_name);
+                    deleted_count += 1;
+                }
+            }
+        }
+
+        Ok(deleted_count)
+    }
+
     fn cleanup_by_count(&self, limit: usize) -> Result<()> {
         let conn = self.get_connection()?;
 
@@ -189,26 +219,11 @@ impl HistoryManager {
 
         if entries.len() > limit {
             let entries_to_delete = &entries[limit..];
+            let deleted_count = self.delete_entries_and_files(entries_to_delete)?;
 
-            for (id, file_name) in entries_to_delete {
-                // Delete database entry
-                conn.execute(
-                    "DELETE FROM transcription_history WHERE id = ?1",
-                    params![id],
-                )?;
-
-                // Delete WAV file
-                let file_path = self.recordings_dir.join(file_name);
-                if file_path.exists() {
-                    if let Err(e) = fs::remove_file(&file_path) {
-                        error!("Failed to delete WAV file {}: {}", file_name, e);
-                    } else {
-                        debug!("Deleted old WAV file: {}", file_name);
-                    }
-                }
+            if deleted_count > 0 {
+                debug!("Cleaned up {} old history entries by count", deleted_count);
             }
-
-            debug!("Cleaned up {} old history entries by count", entries_to_delete.len());
         }
 
         Ok(())
@@ -217,7 +232,7 @@ impl HistoryManager {
     fn cleanup_by_time(&self, retention_period: crate::settings::RecordingRetentionPeriod) -> Result<()> {
         let conn = self.get_connection()?;
 
-                // Calculate cutoff timestamp (current time minus retention period)
+        // Calculate cutoff timestamp (current time minus retention period)
         let now = Utc::now().timestamp();
         let cutoff_timestamp = match retention_period {
             crate::settings::RecordingRetentionPeriod::Days3 => now - (3 * 24 * 60 * 60), // 3 days in seconds
@@ -240,25 +255,7 @@ impl HistoryManager {
             entries_to_delete.push(row?);
         }
 
-        let mut deleted_count = 0;
-        for (id, file_name) in entries_to_delete {
-            // Delete database entry
-            conn.execute(
-                "DELETE FROM transcription_history WHERE id = ?1",
-                params![id],
-            )?;
-
-            // Delete WAV file
-            let file_path = self.recordings_dir.join(&file_name);
-            if file_path.exists() {
-                if let Err(e) = fs::remove_file(&file_path) {
-                    error!("Failed to delete WAV file {}: {}", file_name, e);
-                } else {
-                    debug!("Deleted old WAV file: {}", file_name);
-                    deleted_count += 1;
-                }
-            }
-        }
+        let deleted_count = self.delete_entries_and_files(&entries_to_delete)?;
 
         if deleted_count > 0 {
             debug!("Cleaned up {} old history entries based on retention period", deleted_count);
