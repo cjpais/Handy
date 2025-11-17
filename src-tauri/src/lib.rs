@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod helpers;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -274,6 +275,10 @@ pub fn run() {
             commands::audio::get_selected_output_device,
             commands::audio::play_test_sound,
             commands::audio::check_custom_sounds,
+            commands::audio::set_clamshell_microphone,
+            commands::audio::get_clamshell_microphone,
+            helpers::clamshell::is_clamshell,
+            helpers::clamshell::has_builtin_display,
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,

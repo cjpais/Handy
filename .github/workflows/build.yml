@@ -145,7 +145,7 @@ jobs:
           $outFile = "vulkan_sdk_arm.exe"
           Write-Host "Downloading Vulkan SDK binaries from $url"
           Invoke-WebRequest -Uri $url -OutFile $outFile
-          
+
       - name: Extract Vulkan SDK binaries (Windows ARM64)
         if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
         shell: pwsh
