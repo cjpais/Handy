@@ -192,7 +192,9 @@ impl ShortcutAction for TranscribeAction {
 
             let rm_clone = Arc::clone(&rm);
             std::thread::spawn(move || {
-                std::thread::sleep(mute_delay);
+                if settings.audio_feedback {
+                    std::thread::sleep(mute_delay);
+                }
                 rm_clone.apply_mute();
             });
 
@@ -213,7 +215,9 @@ impl ShortcutAction for TranscribeAction {
                     debug!("Playing delayed audio feedback");
                     play_feedback_sound(&app_clone, SoundType::Start);
 
-                    std::thread::sleep(mute_delay);
+                    if settings.audio_feedback {
+                        std::thread::sleep(mute_delay);
+                    }
                     rm_clone.apply_mute();
                 });
             } else {
