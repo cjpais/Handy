@@ -77,7 +77,17 @@ jobs:
             echo "Build profile: release"
           fi
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Setup Bun (standard)
+        if: ${{ !(contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')) }}
+        uses: oven-sh/setup-bun@v2
+
+      # Bun does not fully support Windows ARM64 yet, so we pin the baseline build.
+      # See https://github.com/oven-sh/bun/issues/9824 for details.
+      - name: Setup Bun (Windows ARM64 baseline)
+        if: ${{ contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64') }}
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-download-url: "https://github.com/oven-sh/bun/releases/latest/download/bun-windows-x64-baseline.zip"
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -109,12 +119,53 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev libopenblas-dev libx11-dev libxtst-dev libxrandr-dev
 
-      - name: Install Vulkan SDK (Windows)
-        if: contains(inputs.platform, 'windows')
+      - name: Install Vulkan SDK (Windows x64)
+        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
         uses: humbletim/install-vulkan-sdk@v1.2
         with:
           version: 1.4.309.0
           cache: true
+
+      # humbletim/install-vulkan-sdk@v1.2 cannot target Windows ARM64 yet.
+      # Download prebuilt binaries (Bin) + build headers/libs from source.
+      # See https://github.com/humbletim/install-vulkan-sdk/pull/22 for prebuilt ARM64 support progress.
+      - name: Prepare Vulkan SDK env (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $sdkDir = Join-Path $env:GITHUB_WORKSPACE "VULKAN_SDK"
+          New-Item -ItemType Directory -Force -Path $sdkDir | Out-Null
+          Add-Content -Path $env:GITHUB_ENV -Value "VULKAN_SDK=$sdkDir"
+
+      - name: Download Vulkan SDK binaries (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $url = "https://sdk.lunarg.com/sdk/download/1.4.309.0/warm/InstallVulkanARM64-1.4.309.0.exe"
+          $outFile = "vulkan_sdk_arm.exe"
+          Write-Host "Downloading Vulkan SDK binaries from $url"
+          Invoke-WebRequest -Uri $url -OutFile $outFile
+          
+      - name: Extract Vulkan SDK binaries (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          $sdkDir = $env:VULKAN_SDK
+          $sevenZip = (Get-Command 7z.exe -ErrorAction Stop).Source
+          Write-Host "Extracting binaries to $sdkDir"
+          & $sevenZip x "./vulkan_sdk_arm.exe" "-o$sdkDir" -aoa
+          $binPath = Join-Path $sdkDir "Bin"
+          Add-Content -Path $env:GITHUB_PATH -Value $binPath
+          Write-Host "Verifying glslc..."
+          & (Join-Path $binPath "glslc.exe") --version
+
+      - name: Build Vulkan SDK headers and libs (Windows ARM64)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.309.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
 
       - name: Install trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries
@@ -139,10 +190,15 @@ jobs:
           sudo apt-get install -y mesa-vulkan-drivers
 
       - name: install frontend dependencies
+        if: ${{ !(contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')) }}
         run: bun install
 
+      - name: install frontend dependencies (Windows ARM64)
+        if: ${{ contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64') }}
+        run: bun install --cpu=arm64
+
       - name: rustup install target
-        if: ${{ inputs.target != '' && !contains(inputs.target, 'unknown-linux-gnu') && !contains(inputs.target, 'pc-windows-msvc') }}
+        if: ${{ inputs.target != '' && !contains(inputs.target, 'unknown-linux-gnu') && !contains(inputs.target, 'x86_64-pc-windows-msvc') }}
         run: rustup target add ${{ inputs.target }}
 
       - name: import Apple Developer Certificate
@@ -284,7 +340,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
+          # Default Windows builds place bundles under release/, but cross-compiles (ARM64) nest under target/<triple>/release.
           path: |
-            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/msi/*.msi
-            src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30

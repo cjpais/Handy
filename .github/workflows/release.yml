@@ -61,6 +61,9 @@ jobs:
           - platform: "windows-latest"
             args: ""
             target: "x86_64-pc-windows-msvc"
+          - platform: "windows-11-arm" # for ARM64 Windows runner
+            args: "--target aarch64-pc-windows-msvc"
+            target: "aarch64-pc-windows-msvc"
 
     uses: ./.github/workflows/build.yml
     with:
