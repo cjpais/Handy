@@ -1,4 +1,5 @@
 import React from "react";
+import { type as getOsType } from "@tauri-apps/plugin-os";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -9,8 +10,8 @@ interface ClamshellMicrophoneSelectorProps {
   grouped?: boolean;
 }
 
-export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorProps> =
+  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
     const {
       getSetting,
       updateSetting,
@@ -20,6 +21,12 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
       audioDevices,
       refreshAudioDevices,
     } = useSettings();
+
+    // Only render on macOS
+    const isMacOS = getOsType() === "macos";
+    if (!isMacOS) {
+      return null;
+    }
 
     const selectedClamshellMicrophone =
       getSetting("clamshell_microphone") === "default"
@@ -41,7 +48,7 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
 
     return (
       <SettingContainer
-        title="Closed Laptop Microphone"
+        title="Clamshell Microphone"
         description="Choose a different microphone to use when your laptop lid is closed"
         descriptionMode={descriptionMode}
         grouped={grouped}
@@ -70,7 +77,6 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
         </div>
       </SettingContainer>
     );
-  },
-);
+  });
 
 ClamshellMicrophoneSelector.displayName = "ClamshellMicrophoneSelector";
