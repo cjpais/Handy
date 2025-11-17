@@ -160,7 +160,7 @@ pub fn run() {
         .plugin(
             LogBuilder::new()
                 .level(log::LevelFilter::Debug)
-                .max_file_size(1_000_000)
+                .max_file_size(100_000)
                 .rotation_strategy(RotationStrategy::KeepOne)
                 .clear_targets()
                 .targets([
