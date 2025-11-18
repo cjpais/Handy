@@ -9,6 +9,7 @@ mod managers;
 mod overlay;
 mod settings;
 mod shortcut;
+mod signal_handle;
 mod tray;
 mod utils;
 
@@ -17,6 +18,8 @@ use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+use signal_hook::consts::SIGUSR2;
+use signal_hook::iterator::Signals;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{Arc, Mutex};
@@ -118,6 +121,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
+
+    #[cfg(unix)]
+    let signals = Signals::new(&[SIGUSR2]).unwrap();
+    // Set up SIGUSR2 signal handler for toggling transcription
+    #[cfg(unix)]
+    signal_handle::setup_signal_handler(app_handle.clone(), signals);
 
     // Apply macOS Accessory policy if starting hidden
     #[cfg(target_os = "macos")]
