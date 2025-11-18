@@ -88,10 +88,16 @@ const settingUpdaters: {
     invoke("set_selected_microphone", {
       deviceName: value === "Default" || value === null ? "default" : value,
     }),
+  clamshell_microphone: (value) =>
+    invoke("set_clamshell_microphone", {
+      deviceName: value === "Default" ? "default" : value,
+    }),
   selected_output_device: (value) =>
     invoke("set_selected_output_device", {
       deviceName: value === "Default" || value === null ? "default" : value,
     }),
+  recording_retention_period: (value) =>
+    invoke("update_recording_retention_period", { period: value }),
   translate_to_english: (value) =>
     invoke("change_translate_to_english_setting", { enabled: value }),
   selected_language: (value) =>
@@ -114,6 +120,7 @@ const settingUpdaters: {
     invoke("set_post_process_selected_prompt", { id: value }),
   mute_while_recording: (value) =>
     invoke("change_mute_while_recording_setting", { enabled: value }),
+  log_level: (value) => invoke("set_log_level", { level: value }),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -154,12 +161,17 @@ export const useSettingsStore = create<SettingsStore>()(
         const settings = (await store.get("settings")) as Settings;
 
         // Load additional settings that come from invoke calls
-        const [microphoneMode, selectedMicrophone, selectedOutputDevice] =
-          await Promise.allSettled([
-            invoke("get_microphone_mode"),
-            invoke("get_selected_microphone"),
-            invoke("get_selected_output_device"),
-          ]);
+        const [
+          microphoneMode,
+          selectedMicrophone,
+          clamshellMicrophone,
+          selectedOutputDevice,
+        ] = await Promise.allSettled([
+          invoke("get_microphone_mode"),
+          invoke("get_selected_microphone"),
+          invoke("get_clamshell_microphone"),
+          invoke("get_selected_output_device"),
+        ]);
 
         // Merge all settings
         const mergedSettings: Settings = {
@@ -171,6 +183,10 @@ export const useSettingsStore = create<SettingsStore>()(
           selected_microphone:
             selectedMicrophone.status === "fulfilled"
               ? (selectedMicrophone.value as string)
+              : "Default",
+          clamshell_microphone:
+            clamshellMicrophone.status === "fulfilled"
+              ? (clamshellMicrophone.value as string)
               : "Default",
           selected_output_device:
             selectedOutputDevice.status === "fulfilled"

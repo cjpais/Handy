@@ -181,13 +181,21 @@ impl ShortcutAction for TranscribeAction {
         debug!("Microphone mode - always_on: {}", is_always_on);
 
         if is_always_on {
-            // Always-on mode: Play audio feedback immediately
+            // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
             play_feedback_sound(app, SoundType::Start);
+
+            // Apply mute after audio feedback has time to play (500ms should be enough for most sounds)
+            let rm_clone = Arc::clone(&rm);
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                rm_clone.apply_mute();
+            });
+
             let recording_started = rm.try_start_recording(&binding_id);
             debug!("Recording started: {}", recording_started);
         } else {
-            // On-demand mode: Start recording first, then play audio feedback
+            // On-demand mode: Start recording first, then play audio feedback, then apply mute
             // This allows the microphone to be activated before playing the sound
             debug!("On-demand mode: Starting recording first, then audio feedback");
             let recording_start_time = Instant::now();
@@ -195,10 +203,15 @@ impl ShortcutAction for TranscribeAction {
                 debug!("Recording started in {:?}", recording_start_time.elapsed());
                 // Small delay to ensure microphone stream is active
                 let app_clone = app.clone();
+                let rm_clone = Arc::clone(&rm);
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_millis(100));
                     debug!("Playing delayed audio feedback");
                     play_feedback_sound(&app_clone, SoundType::Start);
+
+                    // Apply mute after audio feedback has time to play
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    rm_clone.apply_mute();
                 });
             } else {
                 debug!("Failed to start recording");
@@ -222,6 +235,9 @@ impl ShortcutAction for TranscribeAction {
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
+
+        // Unmute before playing audio feedback so the stop sound is audible
+        rm.remove_mute();
 
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
@@ -302,14 +318,14 @@ impl ShortcutAction for TranscribeAction {
                                         "Text pasted successfully in {:?}",
                                         paste_time.elapsed()
                                     ),
-                                    Err(e) => eprintln!("Failed to paste transcription: {}", e),
+                                    Err(e) => error!("Failed to paste transcription: {}", e),
                                 }
                                 // Hide the overlay after transcription is complete
                                 utils::hide_recording_overlay(&ah_clone);
                                 change_tray_icon(&ah_clone, TrayIconState::Idle);
                             })
                             .unwrap_or_else(|e| {
-                                eprintln!("Failed to run paste on main thread: {:?}", e);
+                                error!("Failed to run paste on main thread: {:?}", e);
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             });
@@ -343,7 +359,7 @@ struct TestAction;
 
 impl ShortcutAction for TestAction {
     fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
-        println!(
+        log::info!(
             "Shortcut ID '{}': Started - {} (App: {})", // Changed "Pressed" to "Started" for consistency
             binding_id,
             shortcut_str,
@@ -352,7 +368,7 @@ impl ShortcutAction for TestAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
-        println!(
+        log::info!(
             "Shortcut ID '{}': Stopped - {} (App: {})", // Changed "Released" to "Stopped" for consistency
             binding_id,
             shortcut_str,

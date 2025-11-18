@@ -55,7 +55,7 @@ impl FrameResampler {
                     .process(&[&self.in_buf[..]], None)
                 {
                     // let duration = start.elapsed();
-                    // println!("Resampler took: {:?}", duration);
+                    // log::debug!("Resampler took: {:?}", duration);
                     self.emit_frames(&out[0], &mut emit);
                 }
                 self.in_buf.clear();

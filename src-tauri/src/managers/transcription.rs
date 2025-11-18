@@ -2,7 +2,7 @@ use crate::audio_toolkit::apply_custom_words;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
-use log::debug;
+use log::{debug, error, info, warn};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
@@ -289,7 +289,7 @@ impl TranscriptionManager {
         thread::spawn(move || {
             let settings = get_settings(&self_clone.app_handle);
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
-                eprintln!("Failed to load model: {}", e);
+                error!("Failed to load model: {}", e);
             }
             let mut is_loading = self_clone.is_loading.lock().unwrap();
             *is_loading = false;
@@ -314,10 +314,10 @@ impl TranscriptionManager {
 
         let st = std::time::Instant::now();
 
-        println!("Audio vector length: {}", audio.len());
+        debug!("Audio vector length: {}", audio.len());
 
         if audio.len() == 0 {
-            println!("Empty audio vector");
+            debug!("Empty audio vector");
             return Ok(String::new());
         }
 
@@ -393,17 +393,29 @@ impl TranscriptionManager {
         } else {
             ""
         };
-        println!("\ntook {}ms{}", (et - st).as_millis(), translation_note);
+        info!(
+            "Transcription completed in {}ms{}",
+            (et - st).as_millis(),
+            translation_note
+        );
+
+        let final_result = corrected_result.trim().to_string();
+
+        if final_result.is_empty() {
+            info!("Transcription result is empty");
+        } else {
+            info!("Transcription result: {}", final_result);
+        }
 
         // Check if we should immediately unload the model after transcription
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
-            println!("⚡ Immediately unloading model after transcription");
+            info!("Immediately unloading model after transcription");
             if let Err(e) = self.unload_model() {
-                eprintln!("Failed to immediately unload model: {}", e);
+                error!("Failed to immediately unload model: {}", e);
             }
         }
 
-        Ok(corrected_result.trim().to_string())
+        Ok(final_result)
     }
 }
 
@@ -417,7 +429,7 @@ impl Drop for TranscriptionManager {
         // Wait for the thread to finish gracefully
         if let Some(handle) = self.watcher_handle.lock().unwrap().take() {
             if let Err(e) = handle.join() {
-                eprintln!("Failed to join idle watcher thread: {:?}", e);
+                warn!("Failed to join idle watcher thread: {:?}", e);
             } else {
                 debug!("Idle watcher thread joined successfully");
             }

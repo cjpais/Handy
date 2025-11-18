@@ -2,6 +2,7 @@ use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
+use log::warn;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
@@ -164,9 +165,29 @@ pub fn play_test_sound(app: AppHandle, sound_type: String) {
         "start" => audio_feedback::SoundType::Start,
         "stop" => audio_feedback::SoundType::Stop,
         _ => {
-            eprintln!("Unknown sound type: {}", sound_type);
+            warn!("Unknown sound type: {}", sound_type);
             return;
         }
     };
     audio_feedback::play_test_sound(&app, sound);
+}
+
+#[tauri::command]
+pub fn set_clamshell_microphone(app: AppHandle, device_name: String) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.clamshell_microphone = if device_name == "default" {
+        None
+    } else {
+        Some(device_name)
+    };
+    write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_clamshell_microphone(app: AppHandle) -> Result<String, String> {
+    let settings = get_settings(&app);
+    Ok(settings
+        .clamshell_microphone
+        .unwrap_or_else(|| "default".to_string()))
 }

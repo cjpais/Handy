@@ -47,7 +47,6 @@ impl VoiceActivityDetector for SmoothedVad {
 
         // 2. Delegate to the wrapped boolean VAD
         let is_voice = self.inner_vad.is_voice(frame)?;
-        // println!("Is Voice: {}", is_voice);
 
         match (self.in_speech, is_voice) {
             // Potential start of speech - need to accumulate onset frames
