@@ -1,4 +1,4 @@
-use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_feedback::{play_feedback_sound, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -188,7 +188,7 @@ impl ShortcutAction for TranscribeAction {
             // The blocking helper exits immediately if audio feedback is disabled,
             // so we can always reuse this thread to ensure mute happens right after playback.
             std::thread::spawn(move || {
-                play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                play_feedback_sound(&app_clone, SoundType::Start, true, false);
                 rm_clone.apply_mute();
             });
 
@@ -209,7 +209,7 @@ impl ShortcutAction for TranscribeAction {
                     debug!("Handling delayed audio feedback/mute sequence");
                     // Helper handles disabled audio feedback by returning early, so we reuse it
                     // to keep mute sequencing consistent in every mode.
-                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                    play_feedback_sound(&app_clone, SoundType::Start, true, false);
                     rm_clone.apply_mute();
                 });
             } else {
@@ -239,7 +239,7 @@ impl ShortcutAction for TranscribeAction {
         rm.remove_mute();
 
         // Play audio feedback for recording stop
-        play_feedback_sound(app, SoundType::Stop);
+        play_feedback_sound(app, SoundType::Stop, false, false);
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
 

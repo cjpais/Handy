@@ -34,31 +34,34 @@ fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
     }
 }
 
-pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
+pub fn play_feedback_sound(
+    app: &AppHandle,
+    sound_type: SoundType,
+    blocking: bool,
+    force_play: bool,
+) {
     let settings = settings::get_settings(app);
-    if !settings.audio_feedback {
+    if !force_play && !settings.audio_feedback {
         return;
     }
     if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_async(app, path);
+        play_sound(app, path, blocking);
     }
 }
 
-pub fn play_feedback_sound_blocking(app: &AppHandle, sound_type: SoundType) {
-    let settings = settings::get_settings(app);
-    if !settings.audio_feedback {
-        return;
-    }
-    if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_blocking(app, &path);
-    }
-}
+fn play_sound(app: &AppHandle, path: PathBuf, blocking: bool) {
+    let play = |app: &AppHandle, path: &Path| {
+        if let Err(e) = play_sound_at_path(app, path) {
+            error!("Failed to play sound '{}': {}", path.display(), e);
+        }
+    };
 
-pub fn play_test_sound(app: &AppHandle, sound_type: SoundType) {
-    // Always play test sound, regardless of audio_feedback setting
-    let settings = settings::get_settings(app);
-    if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_async(app, path);
+    if blocking {
+        play(app, path.as_path());
+    } else {
+        let app_handle = app.clone();
+        let path = path.clone();
+        thread::spawn(move || play(&app_handle, path.as_path()));
     }
 }
 
@@ -70,21 +73,6 @@ fn resolve_sound_path(
     let sound_file = get_sound_path(settings, sound_type);
     let base_dir = get_sound_base_dir(settings);
     app.path().resolve(&sound_file, base_dir).ok()
-}
-
-fn play_sound_async(app: &AppHandle, path: PathBuf) {
-    let app_handle = app.clone();
-    thread::spawn(move || {
-        if let Err(e) = play_sound_at_path(&app_handle, path.as_path()) {
-            error!("Failed to play sound '{}': {}", path.display(), e);
-        }
-    });
-}
-
-fn play_sound_blocking(app: &AppHandle, path: &Path) {
-    if let Err(e) = play_sound_at_path(app, path) {
-        error!("Failed to play sound '{}': {}", path.display(), e);
-    }
 }
 
 fn play_sound_at_path(app: &AppHandle, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
