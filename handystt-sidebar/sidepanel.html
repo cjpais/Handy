@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HandySTT Sidebar</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="sidebar-container">
+    <!-- Header -->
+    <div class="header">
+      <h2>🎤 HandySTT</h2>
+      <button id="settings-btn" title="Settings">⚙️</button>
+    </div>
+
+    <!-- Connection Status -->
+    <div id="connection-status" class="connection-status disconnected">
+      <span class="connection-dot"></span>
+      <span id="connection-text">Connecting to Handy...</span>
+    </div>
+
+    <!-- Recording Status -->
+    <div class="recording-section">
+      <div id="recording-indicator" class="inactive">
+        <span class="status-dot"></span>
+        <span id="status-text">Ready</span>
+      </div>
+      <button id="record-btn" class="record-button" disabled>
+        Start Recording
+      </button>
+    </div>
+
+    <!-- Transcription Display -->
+    <div class="transcription-section">
+      <label>Transcription:</label>
+      <textarea id="transcription"
+                placeholder="Your speech will appear here..."
+                rows="8"></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-section">
+      <button id="paste-btn" class="action-btn" disabled>
+        📋 Paste to Active Field
+      </button>
+      <button id="send-btn" class="action-btn" disabled>
+        🤖 Send to AI
+      </button>
+      <select id="ai-target">
+        <option value="claude">Claude</option>
+        <option value="chatgpt">ChatGPT</option>
+        <option value="gemini">Gemini</option>
+        <option value="custom">Custom...</option>
+      </select>
+    </div>
+
+    <!-- History -->
+    <div class="history-section">
+      <div class="history-header">
+        <label>History:</label>
+        <button id="clear-history" class="text-btn">Clear</button>
+      </div>
+      <div id="history-list" class="history-list">
+        <!-- Dynamic history items -->
+      </div>
+    </div>
+
+    <!-- Settings Panel (Hidden by default) -->
+    <div id="settings-panel" class="settings-panel hidden">
+      <h3>Settings</h3>
+
+      <div class="settings-group">
+        <h4>Auto Actions</h4>
+        <label>
+          <input type="checkbox" id="auto-paste">
+          Auto-paste after transcription
+        </label>
+        <label>
+          <input type="checkbox" id="auto-send-ai">
+          Auto-send to AI
+        </label>
+      </div>
+
+      <div class="settings-group">
+        <h4>STT Model</h4>
+        <select id="model-select">
+          <option value="parakeet-v3">Parakeet V3 (CPU)</option>
+          <option value="whisper-small">Whisper Small</option>
+          <option value="whisper-medium">Whisper Medium</option>
+          <option value="whisper-turbo">Whisper Turbo</option>
+        </select>
+      </div>
+
+      <div class="settings-group">
+        <h4>Custom AI URL</h4>
+        <input type="text" id="custom-ai-url" placeholder="https://your-ai-service.com">
+      </div>
+
+      <button id="close-settings" class="primary-btn">Close</button>
+    </div>
+
+    <!-- Error Display -->
+    <div id="error-toast" class="error-toast hidden">
+      <span id="error-message"></span>
+      <button id="close-error">×</button>
+    </div>
+  </div>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "com.pais.handy.host",
+  "description": "HandySTT Native Messaging Host",
+  "path": "/path/to/handy/executable",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://YOUR_EXTENSION_ID/"
+  ]
+}
