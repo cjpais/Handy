@@ -1,3 +1,4 @@
+use crate::settings::SoundTheme;
 use crate::settings::{self, AppSettings};
 use cpal::traits::{DeviceTrait, HostTrait};
 use log::{debug, error, warn};
@@ -11,27 +12,6 @@ use tauri::{AppHandle, Manager};
 pub enum SoundType {
     Start,
     Stop,
-}
-
-fn get_sound_path(settings: &AppSettings, sound_type: SoundType) -> String {
-    match sound_type {
-        SoundType::Start => match settings.sound_theme {
-            crate::settings::SoundTheme::Custom => "custom_start.wav".to_string(),
-            _ => settings.sound_theme.to_start_path(),
-        },
-        SoundType::Stop => match settings.sound_theme {
-            crate::settings::SoundTheme::Custom => "custom_stop.wav".to_string(),
-            _ => settings.sound_theme.to_stop_path(),
-        },
-    }
-}
-
-fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
-    if settings.sound_theme == crate::settings::SoundTheme::Custom {
-        tauri::path::BaseDirectory::AppData
-    } else {
-        tauri::path::BaseDirectory::Resource
-    }
 }
 
 pub fn play_feedback_sound(
@@ -49,6 +29,32 @@ pub fn play_feedback_sound(
     }
 }
 
+fn resolve_sound_path(
+    app: &AppHandle,
+    settings: &AppSettings,
+    sound_type: SoundType,
+) -> Option<PathBuf> {
+    let sound_file = get_sound_path(settings, sound_type);
+    let base_dir = get_sound_base_dir(settings);
+    app.path().resolve(&sound_file, base_dir).ok()
+}
+
+fn get_sound_path(settings: &AppSettings, sound_type: SoundType) -> String {
+    match (settings.sound_theme, sound_type) {
+        (SoundTheme::Custom, SoundType::Start) => "custom_start.wav".to_string(),
+        (SoundTheme::Custom, SoundType::Stop) => "custom_stop.wav".to_string(),
+        (_, SoundType::Start) => settings.sound_theme.to_start_path(),
+        (_, SoundType::Stop) => settings.sound_theme.to_stop_path(),
+    }
+}
+
+fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
+    match settings.sound_theme {
+        SoundTheme::Custom => tauri::path::BaseDirectory::AppData,
+        _ => tauri::path::BaseDirectory::Resource,
+    }
+}
+
 fn play_sound(app: &AppHandle, path: PathBuf, blocking: bool) {
     let play = |app: &AppHandle, path: &Path| {
         if let Err(e) = play_sound_at_path(app, path) {
@@ -63,16 +69,6 @@ fn play_sound(app: &AppHandle, path: PathBuf, blocking: bool) {
         let path = path.clone();
         thread::spawn(move || play(&app_handle, path.as_path()));
     }
-}
-
-fn resolve_sound_path(
-    app: &AppHandle,
-    settings: &AppSettings,
-    sound_type: SoundType,
-) -> Option<PathBuf> {
-    let sound_file = get_sound_path(settings, sound_type);
-    let base_dir = get_sound_base_dir(settings);
-    app.path().resolve(&sound_file, base_dir).ok()
 }
 
 fn play_sound_at_path(app: &AppHandle, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
