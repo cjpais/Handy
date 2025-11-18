@@ -1,12 +1,11 @@
 use crate::settings::{self, AppSettings};
 use cpal::traits::{DeviceTrait, HostTrait};
-use hound;
 use log::{debug, error, warn};
 use rodio::OutputStreamBuilder;
 use std::fs::File;
 use std::io::BufReader;
+use std::path::{Path, PathBuf};
 use std::thread;
-use std::time::Duration;
 use tauri::{AppHandle, Manager};
 
 pub enum SoundType {
@@ -14,35 +13,7 @@ pub enum SoundType {
     Stop,
 }
 
-/// Plays an audio resource from the specified directory.
-fn play_sound(app: &AppHandle, resource_path: &str, base_dir: tauri::path::BaseDirectory) {
-    let app_handle = app.clone();
-    let resource_path = resource_path.to_string();
-    let volume = settings::get_settings(app).audio_feedback_volume;
-
-    thread::spawn(move || {
-        let audio_path = match app_handle.path().resolve(&resource_path, base_dir) {
-            Ok(path) => path.to_path_buf(),
-            Err(e) => {
-                error!(
-                    "Failed to resolve audio file path '{}': {}",
-                    resource_path, e
-                );
-                return;
-            }
-        };
-
-        let settings = settings::get_settings(&app_handle);
-        let selected_device = settings.selected_output_device.clone();
-
-        if let Err(e) = play_audio_file(&audio_path, selected_device, volume) {
-            error!("Failed to play sound '{}': {}", resource_path, e);
-        }
-    });
-}
-
-fn get_sound_path(app: &AppHandle, sound_type: SoundType) -> String {
-    let settings = settings::get_settings(app);
+fn get_sound_path(settings: &AppSettings, sound_type: SoundType) -> String {
     match sound_type {
         SoundType::Start => match settings.sound_theme {
             crate::settings::SoundTheme::Custom => "custom_start.wav".to_string(),
@@ -63,30 +34,64 @@ fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
     }
 }
 
-fn get_sound_file_and_base_dir(
-    app: &AppHandle,
-    sound_type: SoundType,
-) -> (String, tauri::path::BaseDirectory) {
-    let settings = settings::get_settings(app);
-    let sound_file = get_sound_path(app, sound_type);
-    let base_dir = get_sound_base_dir(&settings);
-    (sound_file, base_dir)
-}
-
 pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
-    // Only play if audio feedback is enabled
     let settings = settings::get_settings(app);
     if !settings.audio_feedback {
         return;
     }
-    let (sound_file, base_dir) = get_sound_file_and_base_dir(app, sound_type);
-    play_sound(app, &sound_file, base_dir);
+    if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
+        play_sound_async(app, path);
+    }
+}
+
+pub fn play_feedback_sound_blocking(app: &AppHandle, sound_type: SoundType) {
+    let settings = settings::get_settings(app);
+    if !settings.audio_feedback {
+        return;
+    }
+    if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
+        play_sound_blocking(app, &path);
+    }
 }
 
 pub fn play_test_sound(app: &AppHandle, sound_type: SoundType) {
     // Always play test sound, regardless of audio_feedback setting
-    let (sound_file, base_dir) = get_sound_file_and_base_dir(app, sound_type);
-    play_sound(app, &sound_file, base_dir);
+    let settings = settings::get_settings(app);
+    if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
+        play_sound_async(app, path);
+    }
+}
+
+fn resolve_sound_path(
+    app: &AppHandle,
+    settings: &AppSettings,
+    sound_type: SoundType,
+) -> Option<PathBuf> {
+    let sound_file = get_sound_path(settings, sound_type);
+    let base_dir = get_sound_base_dir(settings);
+    app.path().resolve(&sound_file, base_dir).ok()
+}
+
+fn play_sound_async(app: &AppHandle, path: PathBuf) {
+    let app_handle = app.clone();
+    thread::spawn(move || {
+        if let Err(e) = play_sound_at_path(&app_handle, path.as_path()) {
+            error!("Failed to play sound '{}': {}", path.display(), e);
+        }
+    });
+}
+
+fn play_sound_blocking(app: &AppHandle, path: &Path) {
+    if let Err(e) = play_sound_at_path(app, path) {
+        error!("Failed to play sound '{}': {}", path.display(), e);
+    }
+}
+
+fn play_sound_at_path(app: &AppHandle, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let settings = settings::get_settings(app);
+    let volume = settings.audio_feedback_volume;
+    let selected_device = settings.selected_output_device.clone();
+    play_audio_file(path, selected_device, volume)
 }
 
 fn play_audio_file(
@@ -134,29 +139,4 @@ fn play_audio_file(
     sink.sleep_until_end();
 
     Ok(())
-}
-
-/// Returns the duration of the sound as a `Duration` for the given SoundType.
-/// Returns None if the file can't be read or is not a valid WAV.
-pub fn get_sound_duration(app: &tauri::AppHandle, sound_type: SoundType) -> Option<Duration> {
-    let (sound_file, base_dir) = get_sound_file_and_base_dir(app, sound_type);
-    let audio_path = app.path().resolve(&sound_file, base_dir).ok()?;
-    let file = std::fs::File::open(audio_path).ok()?;
-    let reader = hound::WavReader::new(file).ok()?;
-    let spec = reader.spec();
-    let duration_samples = reader.duration();
-    let sample_rate = spec.sample_rate;
-    let channels = spec.channels as u32;
-
-    if duration_samples == 0 || sample_rate == 0 || channels == 0 {
-        debug!(
-            "Invalid WAV file: duration_samples={}, sample_rate={}, channels={}",
-            duration_samples, sample_rate, channels
-        );
-        return None;
-    }
-
-    let total_samples_per_second = sample_rate * channels;
-    let duration_secs = duration_samples as f64 / total_samples_per_second as f64;
-    Some(Duration::from_secs_f64(duration_secs))
 }

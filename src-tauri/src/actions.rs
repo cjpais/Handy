@@ -1,4 +1,4 @@
-use crate::audio_feedback::{get_sound_duration, play_feedback_sound, SoundType};
+use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -14,7 +14,7 @@ use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tauri::AppHandle;
 use tauri::Manager;
 
@@ -180,21 +180,15 @@ impl ShortcutAction for TranscribeAction {
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
-        // Wait for the start sound audio playback to finish before muting
-        // 500ms is a reasonable default if duration cannot be determined
-        let mute_delay =
-            get_sound_duration(app, SoundType::Start).unwrap_or(Duration::from_millis(500));
-
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
-            play_feedback_sound(app, SoundType::Start);
-
             let rm_clone = Arc::clone(&rm);
+            let app_clone = app.clone();
+            // The blocking helper exits immediately if audio feedback is disabled,
+            // so we can always reuse this thread to ensure mute happens right after playback.
             std::thread::spawn(move || {
-                if settings.audio_feedback {
-                    std::thread::sleep(mute_delay);
-                }
+                play_feedback_sound_blocking(&app_clone, SoundType::Start);
                 rm_clone.apply_mute();
             });
 
@@ -212,12 +206,10 @@ impl ShortcutAction for TranscribeAction {
                 let rm_clone = Arc::clone(&rm);
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_millis(100));
-                    debug!("Playing delayed audio feedback");
-                    play_feedback_sound(&app_clone, SoundType::Start);
-
-                    if settings.audio_feedback {
-                        std::thread::sleep(mute_delay);
-                    }
+                    debug!("Handling delayed audio feedback/mute sequence");
+                    // Helper handles disabled audio feedback by returning early, so we reuse it
+                    // to keep mute sequencing consistent in every mode.
+                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
                     rm_clone.apply_mute();
                 });
             } else {
