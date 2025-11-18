@@ -3,8 +3,29 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use tauri::AppHandle;
-use tauri_plugin_log::LogLevel;
 use tauri_plugin_store::StoreExt;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl From<LogLevel> for tauri_plugin_log::LogLevel {
+    fn from(level: LogLevel) -> Self {
+        match level {
+            LogLevel::Trace => tauri_plugin_log::LogLevel::Trace,
+            LogLevel::Debug => tauri_plugin_log::LogLevel::Debug,
+            LogLevel::Info => tauri_plugin_log::LogLevel::Info,
+            LogLevel::Warn => tauri_plugin_log::LogLevel::Warn,
+            LogLevel::Error => tauri_plugin_log::LogLevel::Error,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct ShortcutBinding {
@@ -82,7 +103,7 @@ pub enum ClipboardHandling {
     CopyToClipboard,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordingRetentionPeriod {
     Never,

@@ -173,6 +173,7 @@ pub fn play_test_sound(app: AppHandle, sound_type: String) {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn set_clamshell_microphone(app: AppHandle, device_name: String) -> Result<(), String> {
     let mut settings = get_settings(&app);
     settings.clamshell_microphone = if device_name == "default" {
@@ -185,6 +186,7 @@ pub fn set_clamshell_microphone(app: AppHandle, device_name: String) -> Result<(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn get_clamshell_microphone(app: AppHandle) -> Result<String, String> {
     let settings = get_settings(&app);
     Ok(settings

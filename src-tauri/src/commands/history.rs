@@ -72,6 +72,7 @@ pub async fn update_history_limit(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn update_recording_retention_period(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,

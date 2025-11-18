@@ -30,6 +30,8 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
+use crate::settings::get_settings;
+
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
@@ -238,6 +240,11 @@ pub fn run() {
         commands::get_app_dir_path,
         commands::get_app_settings,
         commands::get_default_settings,
+        commands::get_log_dir_path,
+        commands::set_log_level,
+        commands::open_recordings_folder,
+        commands::open_log_dir,
+        commands::open_app_data_dir,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,
@@ -260,6 +267,8 @@ pub fn run() {
         commands::audio::get_selected_output_device,
         commands::audio::play_test_sound,
         commands::audio::check_custom_sounds,
+        commands::audio::set_clamshell_microphone,
+        commands::audio::get_clamshell_microphone,
         commands::transcription::set_model_unload_timeout,
         commands::transcription::get_model_load_status,
         commands::transcription::unload_model_manually,
@@ -267,7 +276,8 @@ pub fn run() {
         commands::history::toggle_history_entry_saved,
         commands::history::get_audio_file_path,
         commands::history::delete_history_entry,
-        commands::history::update_history_limit
+        commands::history::update_history_limit,
+        commands::history::update_recording_retention_period
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -328,8 +338,9 @@ pub fn run() {
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
-            let settings =get_settings(&app.handle());
-            let file_log_level: log::Level = settings.log_level.clone().into();
+            let settings = get_settings(&app.handle());
+            let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
+            let file_log_level: log::Level = tauri_log_level.into();
             // Store the file log level in the atomic for the filter to use
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
