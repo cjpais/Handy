@@ -154,6 +154,24 @@ pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Res
 }
 
 #[tauri::command]
+pub fn change_save_to_history_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.save_to_history = enabled;
+    settings::write_settings(&app, settings);
+
+    // Notify frontend
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "save_to_history",
+            "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn change_selected_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.selected_language = language;

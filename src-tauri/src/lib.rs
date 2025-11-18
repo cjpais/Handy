@@ -299,6 +299,7 @@ pub fn run() {
             shortcut::change_start_hidden_setting,
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
+            shortcut::change_save_to_history_setting,
             shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,
             shortcut::change_debug_mode_setting,

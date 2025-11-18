@@ -96,6 +96,7 @@ export const SettingsSchema = z.object({
   clamshell_microphone: z.string().nullable().optional(),
   selected_output_device: z.string().nullable().optional(),
   translate_to_english: z.boolean(),
+  save_to_history: z.boolean(),
   selected_language: z.string(),
   overlay_position: OverlayPositionSchema,
   debug_mode: z.boolean(),

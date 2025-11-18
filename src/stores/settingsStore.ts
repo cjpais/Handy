@@ -69,6 +69,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   clamshell_microphone: "Default",
   selected_output_device: "Default",
   translate_to_english: false,
+  save_to_history: true,
   selected_language: "auto",
   overlay_position: "bottom",
   debug_mode: false,
@@ -117,6 +118,8 @@ const settingUpdaters: {
     invoke("update_recording_retention_period", { period: value }),
   translate_to_english: (value) =>
     invoke("change_translate_to_english_setting", { enabled: value }),
+  save_to_history: (value) =>
+    invoke("change_save_to_history_setting", { enabled: value }),
   selected_language: (value) =>
     invoke("change_selected_language_setting", { language: value }),
   overlay_position: (value) =>

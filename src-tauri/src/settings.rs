@@ -177,6 +177,8 @@ pub struct AppSettings {
     pub selected_output_device: Option<String>,
     #[serde(default = "default_translate_to_english")]
     pub translate_to_english: bool,
+    #[serde(default = "default_save_to_history")]
+    pub save_to_history: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
     #[serde(default = "default_overlay_position")]
@@ -227,6 +229,10 @@ fn default_always_on_microphone() -> bool {
 
 fn default_translate_to_english() -> bool {
     false
+}
+
+fn default_save_to_history() -> bool {
+    true
 }
 
 fn default_start_hidden() -> bool {
@@ -379,6 +385,7 @@ pub fn get_default_settings() -> AppSettings {
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
+        save_to_history: default_save_to_history(),
         selected_language: "auto".to_string(),
         overlay_position: OverlayPosition::Bottom,
         debug_mode: false,
