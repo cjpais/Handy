@@ -158,7 +158,7 @@ pub fn play_test_sound(app: AppHandle, sound_type: String) {
             return;
         }
     };
-    play_feedback_sound(&app, sound, false, true);
+    play_feedback_sound(&app, sound, true, true);
 }
 
 #[tauri::command]
