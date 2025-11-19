@@ -1,8 +1,29 @@
 use crate::settings;
 use crate::settings::OverlayPosition;
 use enigo::{Enigo, Mouse};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
+
+#[cfg(not(target_os = "macos"))]
 use log::debug;
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindowBuilder};
+
+#[cfg(not(target_os = "macos"))]
+use tauri::WebviewWindowBuilder;
+
+#[cfg(target_os = "macos")]
+use tauri::WebviewUrl;
+
+#[cfg(target_os = "macos")]
+use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
+
+#[cfg(target_os = "macos")]
+tauri_panel! {
+    panel!(RecordingOverlayPanel {
+        config: {
+            can_become_key_window: false,
+            is_floating_panel: true
+        }
+    })
+}
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
@@ -84,6 +105,7 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
+#[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
     if let Some((x, y)) = calculate_overlay_position(app_handle) {
         match WebviewWindowBuilder::new(
@@ -118,6 +140,49 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+/// Creates the recording overlay panel and keeps it hidden by default (macOS)
+#[cfg(target_os = "macos")]
+pub fn create_recording_overlay(app_handle: &AppHandle) {
+    if let Some((x, y)) = calculate_overlay_position(app_handle) {
+        // PanelBuilder creates a Tauri window then converts it to NSPanel.
+        // The window remains registered, so get_webview_window() still works.
+        match PanelBuilder::<_, RecordingOverlayPanel>::new(
+            app_handle,
+            "recording_overlay"
+        )
+        .url(WebviewUrl::App("src/overlay/index.html".into()))
+        .title("Recording")
+        .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
+        .level(PanelLevel::Status)
+        .size(tauri::Size::Logical(tauri::LogicalSize {
+            width: OVERLAY_WIDTH,
+            height: OVERLAY_HEIGHT
+        }))
+        .has_shadow(false)
+        .transparent(true)
+        .no_activate(true)
+        .corner_radius(0.0)
+        .with_window(|w| {
+            w.decorations(false)
+                .transparent(true)
+        })
+        .collection_behavior(
+            CollectionBehavior::new()
+                .can_join_all_spaces()
+                .full_screen_auxiliary()
+        )
+        .build()
+        {
+            Ok(panel) => {
+                let _ = panel.hide();
+            }
+            Err(e) => {
+                log::error!("Failed to create recording overlay panel: {}", e);
+            }
+        }
+    }
+}
+
 /// Shows the recording overlay window with fade-in animation
 pub fn show_recording_overlay(app_handle: &AppHandle) {
     // Check if overlay should be shown based on position setting
@@ -126,9 +191,12 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
         return;
     }
 
-    update_overlay_position(app_handle);
-
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Update position before showing to prevent flicker from position changes
+        if let Some((x, y)) = calculate_overlay_position(app_handle) {
+            let _ = overlay_window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+
         let _ = overlay_window.show();
         // Emit event to trigger fade-in animation with recording state
         let _ = overlay_window.emit("show-overlay", "recording");
