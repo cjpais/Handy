@@ -2341,6 +2341,7 @@ dependencies = [
  "log",
  "natural",
  "once_cell",
+ "opencc-rust",
  "rdev",
  "reqwest",
  "rodio",
@@ -3932,6 +3933,16 @@ dependencies = [
  "is-wsl",
  "libc",
  "pathdiff",
+]
+
+[[package]]
+name = "opencc-rust"
+version = "1.1.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03a70b40c372344205e666303bd9810417bc2ec895e2c608694cc6a04cbc6bfe"
+dependencies = [
+ "libc",
+ "pkg-config",
 ]
 
 [[package]]
