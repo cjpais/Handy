@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { invoke } from "@tauri-apps/api/core";
 import type { AppSettings as Settings, AudioDevice } from "@/bindings";
 import { commands } from "@/bindings";
 
@@ -72,55 +71,55 @@ const settingUpdaters: {
   [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
 } = {
   always_on_microphone: (value) =>
-    invoke("update_microphone_mode", { alwaysOn: value }),
+    commands.updateMicrophoneMode(value as boolean),
   audio_feedback: (value) =>
-    invoke("change_audio_feedback_setting", { enabled: value }),
+    commands.changeAudioFeedbackSetting(value as boolean),
   audio_feedback_volume: (value) =>
-    invoke("change_audio_feedback_volume_setting", { volume: value }),
+    commands.changeAudioFeedbackVolumeSetting(value as number),
   sound_theme: (value) =>
-    invoke("change_sound_theme_setting", { theme: value }),
+    commands.changeSoundThemeSetting(value as string),
   start_hidden: (value) =>
-    invoke("change_start_hidden_setting", { enabled: value }),
+    commands.changeStartHiddenSetting(value as boolean),
   autostart_enabled: (value) =>
-    invoke("change_autostart_setting", { enabled: value }),
-  push_to_talk: (value) => invoke("change_ptt_setting", { enabled: value }),
+    commands.changeAutostartSetting(value as boolean),
+  push_to_talk: (value) => commands.changePttSetting(value as boolean),
   selected_microphone: (value) =>
-    invoke("set_selected_microphone", {
-      deviceName: value === "Default" || value === null ? "default" : value,
-    }),
+    commands.setSelectedMicrophone(
+      (value as string) === "Default" || value === null ? "default" : (value as string)
+    ),
   clamshell_microphone: (value) =>
-    invoke("set_clamshell_microphone", {
-      deviceName: value === "Default" ? "default" : value,
-    }),
+    commands.setClamshellMicrophone(
+      (value as string) === "Default" ? "default" : (value as string)
+    ),
   selected_output_device: (value) =>
-    invoke("set_selected_output_device", {
-      deviceName: value === "Default" || value === null ? "default" : value,
-    }),
+    commands.setSelectedOutputDevice(
+      (value as string) === "Default" || value === null ? "default" : (value as string)
+    ),
   recording_retention_period: (value) =>
-    invoke("update_recording_retention_period", { period: value }),
+    commands.updateRecordingRetentionPeriod(value as string),
   translate_to_english: (value) =>
-    invoke("change_translate_to_english_setting", { enabled: value }),
+    commands.changeTranslateToEnglishSetting(value as boolean),
   selected_language: (value) =>
-    invoke("change_selected_language_setting", { language: value }),
+    commands.changeSelectedLanguageSetting(value as string),
   overlay_position: (value) =>
-    invoke("change_overlay_position_setting", { position: value }),
+    commands.changeOverlayPositionSetting(value as string),
   debug_mode: (value) =>
-    invoke("change_debug_mode_setting", { enabled: value }),
-  custom_words: (value) => invoke("update_custom_words", { words: value }),
+    commands.changeDebugModeSetting(value as boolean),
+  custom_words: (value) => commands.updateCustomWords(value as string[]),
   word_correction_threshold: (value) =>
-    invoke("change_word_correction_threshold_setting", { threshold: value }),
+    commands.changeWordCorrectionThresholdSetting(value as number),
   paste_method: (value) =>
-    invoke("change_paste_method_setting", { method: value }),
+    commands.changePasteMethodSetting(value as string),
   clipboard_handling: (value) =>
-    invoke("change_clipboard_handling_setting", { handling: value }),
-  history_limit: (value) => invoke("update_history_limit", { limit: value }),
+    commands.changeClipboardHandlingSetting(value as string),
+  history_limit: (value) => commands.updateHistoryLimit(value as string),
   post_process_enabled: (value) =>
-    invoke("change_post_process_enabled_setting", { enabled: value }),
+    commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
-    invoke("set_post_process_selected_prompt", { id: value }),
+    commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>
-    invoke("change_mute_while_recording_setting", { enabled: value }),
-  log_level: (value) => invoke("set_log_level", { level: value }),
+    commands.changeMuteWhileRecordingSetting(value as boolean),
+  log_level: (value) => commands.setLogLevel(value as any),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -160,37 +159,37 @@ export const useSettingsStore = create<SettingsStore>()(
         });
         const settings = (await store.get("settings")) as Settings;
 
-        // Load additional settings that come from invoke calls
+        // Load additional settings that come from commands
         const [
           microphoneMode,
           selectedMicrophone,
           clamshellMicrophone,
           selectedOutputDevice,
         ] = await Promise.allSettled([
-          invoke("get_microphone_mode"),
-          invoke("get_selected_microphone"),
-          invoke("get_clamshell_microphone"),
-          invoke("get_selected_output_device"),
+          commands.getMicrophoneMode(),
+          commands.getSelectedMicrophone(),
+          commands.getClamshellMicrophone(),
+          commands.getSelectedOutputDevice(),
         ]);
 
         // Merge all settings
         const mergedSettings: Settings = {
           ...settings,
           always_on_microphone:
-            microphoneMode.status === "fulfilled"
-              ? (microphoneMode.value as boolean)
+            microphoneMode.status === "fulfilled" && microphoneMode.value.status === "ok"
+              ? microphoneMode.value.data
               : false,
           selected_microphone:
-            selectedMicrophone.status === "fulfilled"
-              ? (selectedMicrophone.value as string)
+            selectedMicrophone.status === "fulfilled" && selectedMicrophone.value.status === "ok"
+              ? selectedMicrophone.value.data
               : "Default",
           clamshell_microphone:
-            clamshellMicrophone.status === "fulfilled"
-              ? (clamshellMicrophone.value as string)
+            clamshellMicrophone.status === "fulfilled" && clamshellMicrophone.value.status === "ok"
+              ? clamshellMicrophone.value.data
               : "Default",
           selected_output_device:
-            selectedOutputDevice.status === "fulfilled"
-              ? (selectedOutputDevice.value as string)
+            selectedOutputDevice.status === "fulfilled" && selectedOutputDevice.value.status === "ok"
+              ? selectedOutputDevice.value.data
               : "Default",
         };
 
@@ -204,16 +203,18 @@ export const useSettingsStore = create<SettingsStore>()(
     // Load audio devices
     refreshAudioDevices: async () => {
       try {
-        const devices: AudioDevice[] = await invoke(
-          "get_available_microphones",
-        );
-        const devicesWithDefault = [
-          DEFAULT_AUDIO_DEVICE,
-          ...devices.filter(
-            (d) => d.name !== "Default" && d.name !== "default",
-          ),
-        ];
-        set({ audioDevices: devicesWithDefault });
+        const result = await commands.getAvailableMicrophones();
+        if (result.status === "ok") {
+          const devicesWithDefault = [
+            DEFAULT_AUDIO_DEVICE,
+            ...result.data.filter(
+              (d) => d.name !== "Default" && d.name !== "default",
+            ),
+          ];
+          set({ audioDevices: devicesWithDefault });
+        } else {
+          set({ audioDevices: [DEFAULT_AUDIO_DEVICE] });
+        }
       } catch (error) {
         console.error("Failed to load audio devices:", error);
         set({ audioDevices: [DEFAULT_AUDIO_DEVICE] });
@@ -223,16 +224,18 @@ export const useSettingsStore = create<SettingsStore>()(
     // Load output devices
     refreshOutputDevices: async () => {
       try {
-        const devices: AudioDevice[] = await invoke(
-          "get_available_output_devices",
-        );
-        const devicesWithDefault = [
-          DEFAULT_AUDIO_DEVICE,
-          ...devices.filter(
-            (d) => d.name !== "Default" && d.name !== "default",
-          ),
-        ];
-        set({ outputDevices: devicesWithDefault });
+        const result = await commands.getAvailableOutputDevices();
+        if (result.status === "ok") {
+          const devicesWithDefault = [
+            DEFAULT_AUDIO_DEVICE,
+            ...result.data.filter(
+              (d) => d.name !== "Default" && d.name !== "default",
+            ),
+          ];
+          set({ outputDevices: devicesWithDefault });
+        } else {
+          set({ outputDevices: [DEFAULT_AUDIO_DEVICE] });
+        }
       } catch (error) {
         console.error("Failed to load output devices:", error);
         set({ outputDevices: [DEFAULT_AUDIO_DEVICE] });
@@ -242,7 +245,7 @@ export const useSettingsStore = create<SettingsStore>()(
     // Play a test sound
     playTestSound: async (soundType: "start" | "stop") => {
       try {
-        await invoke("play_test_sound", { soundType });
+        await commands.playTestSound(soundType);
       } catch (error) {
         console.error(`Failed to play test sound (${soundType}):`, error);
       }
@@ -250,8 +253,8 @@ export const useSettingsStore = create<SettingsStore>()(
 
     checkCustomSounds: async () => {
       try {
-        const sounds = await invoke("check_custom_sounds");
-        get().setCustomSounds(sounds as { start: boolean; stop: boolean });
+        const sounds = await commands.checkCustomSounds();
+        get().setCustomSounds(sounds);
       } catch (error) {
         console.error("Failed to check custom sounds:", error);
       }
@@ -325,7 +328,7 @@ export const useSettingsStore = create<SettingsStore>()(
             : null,
         }));
 
-        await invoke("change_binding", { id, binding });
+        await commands.changeBinding(id, binding);
       } catch (error) {
         console.error(`Failed to update binding ${id}:`, error);
 
@@ -359,7 +362,7 @@ export const useSettingsStore = create<SettingsStore>()(
       setUpdating(updateKey, true);
 
       try {
-        await invoke("reset_binding", { id });
+        await commands.resetBinding(id);
         await refreshSettings();
       } catch (error) {
         console.error(`Failed to reset binding ${id}:`, error);
@@ -384,7 +387,7 @@ export const useSettingsStore = create<SettingsStore>()(
       }
 
       try {
-        await invoke("set_post_process_provider", { providerId });
+        await commands.setPostProcessProvider(providerId);
         await refreshSettings();
       } catch (error) {
         console.error("Failed to set post-process provider:", error);
@@ -409,27 +412,16 @@ export const useSettingsStore = create<SettingsStore>()(
       const { setUpdating, refreshSettings } = get();
       const updateKey = `post_process_${settingType}:${providerId}`;
 
-      // Map setting types to command names
-      const commandMap = {
-        base_url: "change_post_process_base_url_setting",
-        api_key: "change_post_process_api_key_setting",
-        model: "change_post_process_model_setting",
-      };
-
-      // Map setting types to param names
-      const paramMap = {
-        base_url: "baseUrl",
-        api_key: "apiKey",
-        model: "model",
-      };
-
       setUpdating(updateKey, true);
 
       try {
-        await invoke(commandMap[settingType], {
-          providerId,
-          [paramMap[settingType]]: value,
-        });
+        if (settingType === "base_url") {
+          await commands.changePostProcessBaseUrlSetting(providerId, value);
+        } else if (settingType === "api_key") {
+          await commands.changePostProcessApiKeySetting(providerId, value);
+        } else if (settingType === "model") {
+          await commands.changePostProcessModelSetting(providerId, value);
+        }
         await refreshSettings();
       } catch (error) {
         console.error(
@@ -468,12 +460,14 @@ export const useSettingsStore = create<SettingsStore>()(
 
       try {
         // Call Tauri backend command instead of fetch
-        const models: string[] = await invoke("fetch_post_process_models", {
-          providerId,
-        });
-
-        setPostProcessModelOptions(providerId, models);
-        return models;
+        const result = await commands.fetchPostProcessModels(providerId);
+        if (result.status === "ok") {
+          setPostProcessModelOptions(providerId, result.data);
+          return result.data;
+        } else {
+          console.error("Failed to fetch models:", result.error);
+          return [];
+        }
       } catch (error) {
         console.error("Failed to fetch models:", error);
         // Don't cache empty array on error - let user retry

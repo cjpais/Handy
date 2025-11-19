@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import type { ModelInfo } from "@/bindings";
+import { commands, type ModelInfo } from "@/bindings";
 import ModelCard from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
 
@@ -19,9 +18,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
   const loadModels = async () => {
     try {
-      const models: ModelInfo[] = await invoke("get_available_models");
-      // Only show downloadable models for onboarding
-      setAvailableModels(models.filter((m) => !m.is_downloaded));
+      const result = await commands.getAvailableModels();
+      if (result.status === "ok") {
+        // Only show downloadable models for onboarding
+        setAvailableModels(result.data.filter((m) => !m.is_downloaded));
+      } else {
+        setError("Failed to load available models");
+      }
     } catch (err) {
       console.error("Failed to load models:", err);
       setError("Failed to load available models");
@@ -36,7 +39,12 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     onModelSelected();
 
     try {
-      await invoke("download_model", { modelId });
+      const result = await commands.downloadModel(modelId);
+      if (result.status === "error") {
+        console.error("Download failed:", result.error);
+        setError(`Failed to download model: ${result.error}`);
+        setDownloading(false);
+      }
     } catch (err) {
       console.error("Download failed:", err);
       setError(`Failed to download model: ${err}`);
