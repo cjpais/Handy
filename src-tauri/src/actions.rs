@@ -12,6 +12,7 @@ use async_openai::types::{
 };
 use log::{debug, error};
 use once_cell::sync::Lazy;
+use ferrous_opencc::{OpenCC, config::BuiltinConfig};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -160,6 +161,47 @@ async fn maybe_post_process_transcription(
     }
 }
 
+async fn maybe_convert_chinese_variant(
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
+    // Check if language is set to Simplified or Traditional Chinese
+    let is_simplified = settings.selected_language == "zh-Hans";
+    let is_traditional = settings.selected_language == "zh-Hant";
+    
+    if !is_simplified && !is_traditional {
+        debug!("selected_language is not Simplified or Traditional Chinese; skipping translation");
+        return None;
+    }
+
+    debug!("Starting Chinese translation using OpenCC for language: {}", settings.selected_language);
+
+    // Use OpenCC to convert based on selected language
+    let config = if is_simplified {
+        // Convert Traditional Chinese to Simplified Chinese
+        BuiltinConfig::Tw2sp
+    } else {
+        // Convert Simplified Chinese to Traditional Chinese
+        BuiltinConfig::S2twp
+    };
+    
+    match OpenCC::from_config(config) {
+        Ok(converter) => {
+            let converted = converter.convert(transcription);
+            debug!(
+                "OpenCC translation completed. Input length: {}, Output length: {}",
+                transcription.len(),
+                converted.len()
+            );
+            Some(converted)
+        }
+        Err(e) => {
+            error!("Failed to initialize OpenCC converter: {}. Falling back to original transcription.", e);
+            None
+        }
+    }
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -273,7 +315,15 @@ impl ShortcutAction for TranscribeAction {
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
 
-                            if let Some(processed_text) =
+                            // First, check if Chinese variant conversion is needed
+                            if let Some(converted_text) =
+                                maybe_convert_chinese_variant(&settings, &transcription).await
+                            {
+                                final_text = converted_text.clone();
+                                post_processed_text = Some(converted_text);
+                            }
+                            // Then apply regular post-processing if enabled
+                            else if let Some(processed_text) =
                                 maybe_post_process_transcription(&settings, &transcription).await
                             {
                                 final_text = processed_text.clone();
