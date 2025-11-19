@@ -152,48 +152,24 @@ export const useSettingsStore = create<SettingsStore>()(
     // Load settings from store
     refreshSettings: async () => {
       try {
-        const { load } = await import("@tauri-apps/plugin-store");
-        const store = await load("settings_store.json", {
-          defaults: {},
-          autoSave: false,
-        });
-        const settings = (await store.get("settings")) as Settings;
-
-        // Load additional settings that come from commands
-        const [
-          microphoneMode,
-          selectedMicrophone,
-          clamshellMicrophone,
-          selectedOutputDevice,
-        ] = await Promise.allSettled([
-          commands.getMicrophoneMode(),
-          commands.getSelectedMicrophone(),
-          commands.getClamshellMicrophone(),
-          commands.getSelectedOutputDevice(),
-        ]);
-
-        // Merge all settings
-        const mergedSettings: Settings = {
-          ...settings,
-          always_on_microphone:
-            microphoneMode.status === "fulfilled" && microphoneMode.value.status === "ok"
-              ? microphoneMode.value.data
-              : false,
-          selected_microphone:
-            selectedMicrophone.status === "fulfilled" && selectedMicrophone.value.status === "ok"
-              ? selectedMicrophone.value.data
-              : "Default",
-          clamshell_microphone:
-            clamshellMicrophone.status === "fulfilled" && clamshellMicrophone.value.status === "ok"
-              ? clamshellMicrophone.value.data
-              : "Default",
-          selected_output_device:
-            selectedOutputDevice.status === "fulfilled" && selectedOutputDevice.value.status === "ok"
-              ? selectedOutputDevice.value.data
-              : "Default",
-        };
-
-        set({ settings: mergedSettings, isLoading: false });
+        const result = await commands.getAppSettings();
+        if (result.status === "ok") {
+          const settings = result.data;
+          const normalizedSettings: Settings = {
+            ...settings,
+            always_on_microphone: settings.always_on_microphone ?? false,
+            selected_microphone:
+              settings.selected_microphone ?? "Default",
+            clamshell_microphone:
+              settings.clamshell_microphone ?? "Default",
+            selected_output_device:
+              settings.selected_output_device ?? "Default",
+          };
+          set({ settings: normalizedSettings, isLoading: false });
+        } else {
+          console.error("Failed to load settings:", result.error);
+          set({ isLoading: false });
+        }
       } catch (error) {
         console.error("Failed to load settings:", error);
         set({ isLoading: false });
