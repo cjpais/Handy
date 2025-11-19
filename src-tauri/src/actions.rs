@@ -221,16 +221,7 @@ impl ShortcutAction for TranscribeAction {
 
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
-            let app_clone = app.clone();
-            tauri::async_runtime::spawn(async move {
-                if let Some(cancel_binding) =
-                    get_settings(&app_clone).bindings.get("cancel").cloned()
-                {
-                    if let Err(e) = shortcut::register_shortcut(&app_clone, cancel_binding) {
-                        eprintln!("Failed to register cancel shortcut: {}", e);
-                    }
-                }
-            });
+            shortcut::register_cancel_shortcut(app);
         }
 
         debug!(
@@ -241,14 +232,7 @@ impl ShortcutAction for TranscribeAction {
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         // Unregister the cancel shortcut when transcription stops
-        let app_clone = app.clone();
-        tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-                if let Err(e) = shortcut::unregister_shortcut(&app_clone, cancel_binding) {
-                    eprintln!("Failed to unregister cancel shortcut on stop: {}", e);
-                }
-            }
-        });
+        shortcut::unregister_cancel_shortcut(app);
 
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);

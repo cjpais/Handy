@@ -1,5 +1,4 @@
 use crate::managers::audio::AudioRecordingManager;
-use crate::settings::get_settings;
 use crate::shortcut;
 use crate::ManagedToggleState;
 use log::{info, warn};
@@ -18,14 +17,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     info!("Initiating operation cancellation...");
 
     // Unregister the cancel shortcut asynchronously
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(async move {
-        if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-            if let Err(e) = shortcut::unregister_shortcut(&app_clone, cancel_binding) {
-                eprintln!("Failed to unregister cancel shortcut during cancel: {}", e);
-            }
-        }
-    });
+    shortcut::unregister_cancel_shortcut(app);
 
     // First, reset all shortcut toggle states.
     // This is critical for non-push-to-talk mode where shortcuts toggle on/off
