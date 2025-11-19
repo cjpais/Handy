@@ -1,4 +1,4 @@
-use crate::audio_feedback::{self, play_feedback_sound};
+use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
 use crate::settings::{get_settings, write_settings};
@@ -158,7 +158,7 @@ pub fn play_test_sound(app: AppHandle, sound_type: String) {
             return;
         }
     };
-    play_feedback_sound(&app, sound, true, true);
+    audio_feedback::play_test_sound(&app, sound);
 }
 
 #[tauri::command]
