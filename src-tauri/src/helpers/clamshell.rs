@@ -31,6 +31,7 @@ pub fn is_clamshell() -> Result<bool, String> {
 /// Returns true if a battery is detected (laptop), false otherwise (desktop)
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn is_laptop() -> Result<bool, String> {
     let output = Command::new("pmset")
         .arg("-g")
@@ -55,6 +56,7 @@ pub fn is_clamshell() -> Result<bool, String> {
 /// Always returns false since laptop detection is macOS-specific
 #[cfg(not(target_os = "macos"))]
 #[tauri::command]
+#[specta::specta]
 pub fn is_laptop() -> Result<bool, String> {
     Ok(false)
 }

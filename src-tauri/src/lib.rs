@@ -286,7 +286,8 @@ pub fn run() {
         commands::history::get_audio_file_path,
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
-        commands::history::update_recording_retention_period
+        commands::history::update_recording_retention_period,
+        helpers::clamshell::is_laptop,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
