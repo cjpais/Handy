@@ -34,6 +34,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
 
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
+    hide_recording_overlay(app);
 
     info!("Operation cancellation completed - returned to idle state");
 }
