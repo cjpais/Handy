@@ -1,4 +1,4 @@
-use crate::audio_feedback::{play_feedback_sound, SoundType};
+use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -183,12 +183,12 @@ impl ShortcutAction for TranscribeAction {
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
-            play_feedback_sound(app, SoundType::Start);
-
-            // Apply mute after audio feedback has time to play (500ms should be enough for most sounds)
             let rm_clone = Arc::clone(&rm);
+            let app_clone = app.clone();
+            // The blocking helper exits immediately if audio feedback is disabled,
+            // so we can always reuse this thread to ensure mute happens right after playback.
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(500));
+                play_feedback_sound_blocking(&app_clone, SoundType::Start);
                 rm_clone.apply_mute();
             });
 
@@ -206,11 +206,10 @@ impl ShortcutAction for TranscribeAction {
                 let rm_clone = Arc::clone(&rm);
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_millis(100));
-                    debug!("Playing delayed audio feedback");
-                    play_feedback_sound(&app_clone, SoundType::Start);
-
-                    // Apply mute after audio feedback has time to play
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    debug!("Handling delayed audio feedback/mute sequence");
+                    // Helper handles disabled audio feedback by returning early, so we reuse it
+                    // to keep mute sequencing consistent in every mode.
+                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
                     rm_clone.apply_mute();
                 });
             } else {

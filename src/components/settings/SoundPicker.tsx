@@ -33,8 +33,6 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
 
   const handlePlayBothSounds = async () => {
     await playTestSound("start");
-    // Wait before playing stop sound
-    await new Promise((resolve) => setTimeout(resolve, 800));
     await playTestSound("stop");
   };
 
