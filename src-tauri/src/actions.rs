@@ -12,7 +12,7 @@ use async_openai::types::{
 };
 use log::{debug, error};
 use once_cell::sync::Lazy;
-use opencc_rust::{OpenCC, DefaultConfig};
+use ferrous_opencc::{OpenCC, config::BuiltinConfig};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -179,13 +179,13 @@ async fn maybe_convert_chinese_variant(
     // Use OpenCC to convert based on selected language
     let config = if is_simplified {
         // Convert Traditional Chinese to Simplified Chinese
-        DefaultConfig::TW2SP
+        BuiltinConfig::Tw2sp
     } else {
         // Convert Simplified Chinese to Traditional Chinese
-        DefaultConfig::S2TWP
+        BuiltinConfig::S2twp
     };
     
-    match OpenCC::new(config) {
+    match OpenCC::from_config(config) {
         Ok(converter) => {
             let converted = converter.convert(transcription);
             debug!(
