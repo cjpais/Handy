@@ -18,7 +18,9 @@ use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+#[cfg(unix)]
 use signal_hook::consts::SIGUSR2;
+#[cfg(unix)]
 use signal_hook::iterator::Signals;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU8, Ordering};
