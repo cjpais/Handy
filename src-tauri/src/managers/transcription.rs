@@ -354,14 +354,16 @@ impl TranscriptionManager {
                     let whisper_language = if settings.selected_language == "auto" {
                         None
                     } else {
-                        let normalized = if settings.selected_language == "zh-Hans" || settings.selected_language == "zh-Hant" {
+                        let normalized = if settings.selected_language == "zh-Hans"
+                            || settings.selected_language == "zh-Hant"
+                        {
                             "zh".to_string()
                         } else {
                             settings.selected_language.clone()
                         };
                         Some(normalized)
                     };
-                    
+
                     let params = WhisperInferenceParams {
                         language: whisper_language,
                         translate: settings.translate_to_english,
