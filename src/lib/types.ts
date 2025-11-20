@@ -90,6 +90,7 @@ export const SettingsSchema = z.object({
     .default("marimba"),
   start_hidden: z.boolean().optional().default(false),
   autostart_enabled: z.boolean().optional().default(false),
+  update_checks_enabled: z.boolean().optional().default(true),
   selected_model: z.string(),
   always_on_microphone: z.boolean(),
   selected_microphone: z.string().nullable().optional(),

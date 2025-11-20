@@ -161,8 +161,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 show_main_window(app);
             }
             "check_updates" => {
-                show_main_window(app);
-                let _ = app.emit("check-for-updates", ());
+                let settings = settings::get_settings(app);
+                if settings.update_checks_enabled {
+                    show_main_window(app);
+                    let _ = app.emit("check-for-updates", ());
+                }
             }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
@@ -200,6 +203,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
 #[tauri::command]
 fn trigger_update_check(app: AppHandle) -> Result<(), String> {
+    let settings = settings::get_settings(&app);
+    if !settings.update_checks_enabled {
+        return Ok(());
+    }
     app.emit("check-for-updates", ())
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -309,6 +316,7 @@ pub fn run() {
             shortcut::change_sound_theme_setting,
             shortcut::change_start_hidden_setting,
             shortcut::change_autostart_setting,
+            shortcut::change_update_checks_setting,
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
             shortcut::change_overlay_position_setting,

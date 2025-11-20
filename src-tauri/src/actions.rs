@@ -10,9 +10,9 @@ use async_openai::types::{
     ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
     CreateChatCompletionRequestArgs,
 };
+use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
-use ferrous_opencc::{OpenCC, config::BuiltinConfig};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -168,13 +168,16 @@ async fn maybe_convert_chinese_variant(
     // Check if language is set to Simplified or Traditional Chinese
     let is_simplified = settings.selected_language == "zh-Hans";
     let is_traditional = settings.selected_language == "zh-Hant";
-    
+
     if !is_simplified && !is_traditional {
         debug!("selected_language is not Simplified or Traditional Chinese; skipping translation");
         return None;
     }
 
-    debug!("Starting Chinese translation using OpenCC for language: {}", settings.selected_language);
+    debug!(
+        "Starting Chinese translation using OpenCC for language: {}",
+        settings.selected_language
+    );
 
     // Use OpenCC to convert based on selected language
     let config = if is_simplified {
@@ -184,7 +187,7 @@ async fn maybe_convert_chinese_variant(
         // Convert Simplified Chinese to Traditional Chinese
         BuiltinConfig::S2twp
     };
-    
+
     match OpenCC::from_config(config) {
         Ok(converter) => {
             let converted = converter.convert(transcription);

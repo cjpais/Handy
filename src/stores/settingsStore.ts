@@ -64,6 +64,7 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   sound_theme: "marimba",
   start_hidden: false,
   autostart_enabled: false,
+  update_checks_enabled: true,
   push_to_talk: false,
   selected_microphone: "Default",
   clamshell_microphone: "Default",
@@ -100,6 +101,8 @@ const settingUpdaters: {
     invoke("change_start_hidden_setting", { enabled: value }),
   autostart_enabled: (value) =>
     invoke("change_autostart_setting", { enabled: value }),
+  update_checks_enabled: (value) =>
+    invoke("change_update_checks_setting", { enabled: value }),
   push_to_talk: (value) => invoke("change_ptt_setting", { enabled: value }),
   selected_microphone: (value) =>
     invoke("set_selected_microphone", {
