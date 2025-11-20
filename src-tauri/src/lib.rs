@@ -211,7 +211,7 @@ pub fn run() {
     // when the variable is unset
     let console_filter = build_console_filter();
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(
             LogBuilder::new()
                 .level(log::LevelFilter::Trace) // Set to most verbose level globally
@@ -234,7 +234,14 @@ pub fn run() {
                     }),
                 ])
                 .build(),
-        )
+        );
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.plugin(tauri_nspanel::init());
+    }
+
+    builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
         }))
