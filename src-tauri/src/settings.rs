@@ -58,6 +58,7 @@ pub enum ModelUnloadTimeout {
 pub enum PasteMethod {
     CtrlV,
     Direct,
+    Disabled,
     #[cfg(not(target_os = "macos"))]
     ShiftInsert,
 }
