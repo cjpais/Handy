@@ -1,15 +1,32 @@
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
+use crate::utils::is_wayland;
 use enigo::Enigo;
 use enigo::Key;
 use enigo::Keyboard;
 use enigo::Settings;
 use log::info;
+use std::process::Command;
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 /// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.
 /// This ensures the paste works regardless of keyboard layout (e.g., Russian, AZERTY, DVORAK).
 fn send_paste_ctrl_v() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if is_wayland() {
+        let command = "echo key ctrl+v | dotool";
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .output()
+            .map_err(|e| format!("Failed to execute dotool: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("dotool failed: {}", stderr));
+        }
+        return Ok(());
+    }
+
     // Platform-specific key definitions
     #[cfg(target_os = "macos")]
     let (modifier_key, v_key_code) = (Key::Meta, Key::Other(9));
@@ -42,6 +59,21 @@ fn send_paste_ctrl_v() -> Result<(), String> {
 /// This is more universal for terminal applications and legacy software.
 #[cfg(not(target_os = "macos"))]
 fn send_paste_shift_insert() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if is_wayland() {
+        let command = "echo key shift+insert | dotool";
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .output()
+            .map_err(|e| format!("Failed to execute dotool: {}", e))?;
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("dotool failed: {}", stderr));
+        }
+        return Ok(());
+    }
+
     #[cfg(target_os = "windows")]
     let insert_key_code = Key::Other(0x2D); // VK_INSERT
     #[cfg(target_os = "linux")]

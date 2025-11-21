@@ -54,3 +54,12 @@ pub fn cancel_current_operation(app: &AppHandle) {
 
     info!("Operation cancellation completed - returned to idle state");
 }
+
+/// Check if using the Wayland display server protocol
+#[cfg(target_os = "linux")]
+pub fn is_wayland() -> bool {
+    std::env::var("WAYLAND_DISPLAY").is_ok()
+        || std::env::var("XDG_SESSION_TYPE")
+            .map(|v| v.to_lowercase() == "wayland")
+            .unwrap_or(false)
+}
