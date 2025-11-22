@@ -4,6 +4,7 @@ use enigo::Key;
 use enigo::Keyboard;
 use enigo::Settings;
 use log::info;
+use std::process::Command;
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -67,9 +68,55 @@ fn send_paste_shift_insert() -> Result<(), String> {
     Ok(())
 }
 
+/// Check if wtype is available (Wayland text input tool)
+#[cfg(target_os = "linux")]
+fn is_wtype_available() -> bool {
+    Command::new("which")
+        .arg("wtype")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn is_wtype_available() -> bool {
+    false
+}
+
+/// Pastes text using wtype (Wayland-native input tool)
+/// This works better with Chrome/Chromium on Wayland as it's trusted by the browser
+#[cfg(target_os = "linux")]
+fn paste_via_wtype(text: &str) -> Result<(), String> {
+    let output = Command::new("wtype")
+        .arg(text)
+        .output()
+        .map_err(|e| format!("Failed to execute wtype: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("wtype failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn paste_via_wtype(_text: &str) -> Result<(), String> {
+    Err("wtype is only available on Linux".to_string())
+}
+
 /// Pastes text directly using the enigo text method.
 /// This tries to use system input methods if possible, otherwise simulates keystrokes one by one.
+/// On Wayland, falls back to wtype if available for better Chrome compatibility.
 fn paste_via_direct_input(text: &str) -> Result<(), String> {
+    // On Linux/Wayland, try wtype first as it works better with Chrome
+    #[cfg(target_os = "linux")]
+    {
+        if std::env::var("WAYLAND_DISPLAY").is_ok() && is_wtype_available() {
+            return paste_via_wtype(text);
+        }
+    }
+
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
 
