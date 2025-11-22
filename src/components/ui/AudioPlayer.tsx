@@ -4,11 +4,13 @@ import { Play, Pause } from "lucide-react";
 interface AudioPlayerProps {
   src: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   src,
   className = "",
+  disabled = false,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -123,7 +125,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   const togglePlay = async () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || disabled) return;
 
     try {
       if (isPlaying) {
@@ -183,6 +185,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         onClick={togglePlay}
         className="transition-colors cursor-pointer text-text hover:text-logo-primary"
         aria-label={isPlaying ? "Pause" : "Play"}
+        disabled={disabled}
+        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
       >
         {isPlaying ? (
           <Pause width={20} height={20} fill="currentColor" />
@@ -205,6 +209,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           onChange={handleSeek}
           onMouseDown={handleSliderMouseDown}
           onTouchStart={handleSliderTouchStart}
+          disabled={disabled}
           className={`flex-1 h-1 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-logo-primary ${progressPercent >= 99.5 ? "[&::-webkit-slider-thumb]:translate-x-0.5 [&::-moz-range-thumb]:translate-x-0.5" : ""}`}
           style={{
             background: `linear-gradient(to right, #FAA2CA 0%, #FAA2CA ${progressPercent}%, rgba(128, 128, 128, 0.2) ${progressPercent}%, rgba(128, 128, 128, 0.2) 100%)`,

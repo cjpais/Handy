@@ -1,6 +1,50 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
+use serde::Serialize;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
+
+#[derive(Serialize)]
+pub struct AudioFileStatus {
+    pub path: String,
+    pub exists: bool,
+    pub is_uploaded: bool,
+}
+
+#[tauri::command]
+pub async fn get_audio_file_path_for_entry(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+) -> Result<AudioFileStatus, String> {
+    // Get the entry from database
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Entry not found".to_string())?;
+
+    let is_uploaded = entry.source_file_path.is_some();
+    let file_path = history_manager.get_audio_file_path_for_entry(&entry);
+
+    // For uploaded files, check if the source file exists
+    // For recordings, assume they exist (Option B)
+    let exists = if is_uploaded {
+        file_path.exists()
+    } else {
+        true
+    };
+
+    let path_str = file_path
+        .to_str()
+        .ok_or_else(|| "Invalid file path".to_string())?
+        .to_string();
+
+    Ok(AudioFileStatus {
+        path: path_str,
+        exists,
+        is_uploaded,
+    })
+}
 
 #[tauri::command]
 pub async fn get_history_entries(

@@ -20,6 +20,7 @@ pub struct HistoryEntry {
     pub transcription_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    pub source_file_path: Option<String>,
 }
 
 pub struct HistoryManager {
@@ -80,6 +81,12 @@ impl HistoryManager {
                 sql: "ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;",
                 kind: MigrationKind::Up,
             },
+            Migration {
+                version: 4,
+                description: "add_source_file_path_column",
+                sql: "ALTER TABLE transcription_history ADD COLUMN source_file_path TEXT;",
+                kind: MigrationKind::Up,
+            },
         ]
     }
 
@@ -95,20 +102,24 @@ impl HistoryManager {
     }
 
     /// Save a transcription to history (both database and WAV file)
+    /// If source_file_path is provided, no WAV file is saved (file upload case)
     pub async fn save_transcription(
         &self,
         audio_samples: Vec<f32>,
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
+        source_file_path: Option<String>,
     ) -> Result<()> {
         let timestamp = Utc::now().timestamp();
         let file_name = format!("handy-{}.wav", timestamp);
         let title = self.format_timestamp_title(timestamp);
 
-        // Save WAV file
-        let file_path = self.recordings_dir.join(&file_name);
-        save_wav_file(file_path, &audio_samples).await?;
+        // Save WAV file only if this is NOT from a file upload (source_file_path is None)
+        if source_file_path.is_none() {
+            let file_path = self.recordings_dir.join(&file_name);
+            save_wav_file(file_path, &audio_samples).await?;
+        }
 
         // Save to database
         self.save_to_database(
@@ -118,6 +129,7 @@ impl HistoryManager {
             transcription_text,
             post_processed_text,
             post_process_prompt,
+            source_file_path,
         )?;
 
         // Clean up old entries
@@ -139,11 +151,12 @@ impl HistoryManager {
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
+        source_file_path: Option<String>,
     ) -> Result<()> {
         let conn = self.get_connection()?;
         conn.execute(
-            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt],
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, source_file_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt, source_file_path],
         )?;
 
         debug!("Saved transcription to database");
@@ -273,7 +286,7 @@ impl HistoryManager {
     pub async fn get_history_entries(&self) -> Result<Vec<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt FROM transcription_history ORDER BY timestamp DESC"
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, source_file_path FROM transcription_history ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -286,6 +299,7 @@ impl HistoryManager {
                 transcription_text: row.get("transcription_text")?,
                 post_processed_text: row.get("post_processed_text")?,
                 post_process_prompt: row.get("post_process_prompt")?,
+                source_file_path: row.get("source_file_path")?,
             })
         })?;
 
@@ -324,6 +338,18 @@ impl HistoryManager {
         Ok(())
     }
 
+    /// Get the audio file path for a history entry
+    /// If source_file_path is provided (from file upload), return that
+    /// Otherwise return the WAV file in recordings directory
+    pub fn get_audio_file_path_for_entry(&self, entry: &HistoryEntry) -> PathBuf {
+        if let Some(ref source_path) = entry.source_file_path {
+            PathBuf::from(source_path)
+        } else {
+            self.recordings_dir.join(&entry.file_name)
+        }
+    }
+
+    /// Get the audio file path by file name (for backward compatibility)
     pub fn get_audio_file_path(&self, file_name: &str) -> PathBuf {
         self.recordings_dir.join(file_name)
     }
@@ -331,7 +357,7 @@ impl HistoryManager {
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, source_file_path
              FROM transcription_history WHERE id = ?1",
         )?;
 
@@ -346,6 +372,7 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    source_file_path: row.get("source_file_path")?,
                 })
             })
             .optional()?;

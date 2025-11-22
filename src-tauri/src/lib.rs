@@ -245,6 +245,7 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
         }))
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -377,9 +378,11 @@ pub fn run() {
             commands::history::get_history_entries,
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
+            commands::history::get_audio_file_path_for_entry,
             commands::history::delete_history_entry,
             commands::history::update_history_limit,
-            commands::history::update_recording_retention_period
+            commands::history::update_recording_retention_period,
+            commands::file_transcription::transcribe_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
