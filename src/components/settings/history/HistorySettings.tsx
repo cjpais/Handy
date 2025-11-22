@@ -391,7 +391,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          {/* Icon indicator: Microphone for recordings, Document for uploads */}
           <div className="flex items-center gap-1">
             {isUploaded ? (
               <>

@@ -345,7 +345,6 @@ pub fn transcribe_file(app: AppHandle, file_path: String) -> Result<(), String> 
 
 /// Process the file transcription pipeline: decode -> transcribe -> post-process -> save -> paste
 async fn process_file_transcription(app: &AppHandle, file_path: &str) -> Result<String, String> {
-    // Step 1: Decode audio file to PCM samples
     info!("Decoding audio file: {}", file_path);
     let audio_samples = decode_audio_file(file_path)
         .await
@@ -353,16 +352,13 @@ async fn process_file_transcription(app: &AppHandle, file_path: &str) -> Result<
     
     info!("Decoded {} audio samples", audio_samples.len());
 
-    // Step 2: Ensure model is loaded before transcription
     let tm = app.state::<Arc<TranscriptionManager>>();
     
-    // Initiate model loading if not already loaded
     if !tm.is_model_loaded() {
         info!("Model not loaded, initiating load");
         tm.initiate_model_load();
         
-        // Wait for model to load (with timeout)
-        let max_wait = std::time::Duration::from_secs(120); // 2 minutes timeout
+        let max_wait = std::time::Duration::from_secs(120);
         let start = std::time::Instant::now();
         
         while !tm.is_model_loaded() && start.elapsed() < max_wait {
@@ -376,7 +372,6 @@ async fn process_file_transcription(app: &AppHandle, file_path: &str) -> Result<
         info!("Model loaded successfully");
     }
     
-    // Step 3: Transcribe audio samples
     info!("Starting transcription");
     let transcription = tm
         .transcribe(audio_samples.clone())
@@ -388,23 +383,18 @@ async fn process_file_transcription(app: &AppHandle, file_path: &str) -> Result<
 
     info!("Transcription completed: '{}'", transcription);
 
-    // Step 4: Apply post-processing pipeline (same as regular recordings)
     let settings = get_settings(app);
     let mut final_text = transcription.clone();
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
-    // First, check if Chinese variant conversion is needed
     if let Some(converted_text) = maybe_convert_chinese_variant(&settings, &transcription).await {
         final_text = converted_text.clone();
         post_processed_text = Some(converted_text);
-    }
-    // Then apply regular post-processing if enabled
-    else if let Some(processed_text) = maybe_post_process_transcription(&settings, &transcription).await {
+    } else if let Some(processed_text) = maybe_post_process_transcription(&settings, &transcription).await {
         final_text = processed_text.clone();
         post_processed_text = Some(processed_text);
 
-        // Get the prompt that was used
         if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
             if let Some(prompt) = settings
                 .post_process_prompts
@@ -416,7 +406,6 @@ async fn process_file_transcription(app: &AppHandle, file_path: &str) -> Result<
         }
     }
 
-    // Step 5: Save to history with source_file_path (no WAV copy)
     let hm = app.state::<Arc<HistoryManager>>();
     info!("Saving transcription to history");
     if let Err(e) = hm
@@ -425,15 +414,13 @@ async fn process_file_transcription(app: &AppHandle, file_path: &str) -> Result<
             transcription.clone(),
             post_processed_text,
             post_process_prompt,
-            Some(file_path.to_string()), // source_file_path - this is a file upload
+            Some(file_path.to_string()),
         )
         .await
     {
         error!("Failed to save transcription to history: {}", e);
-        // Continue with pasting even if history save fails
     }
 
-    // Step 6: Paste the final text (following regular paste settings)
     let final_text_clone = final_text.clone();
     let app_clone = app.clone();
     app.run_on_main_thread(move || {
