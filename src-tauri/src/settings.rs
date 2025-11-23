@@ -364,6 +364,17 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_shortcut.to_string(),
         },
     );
+    bindings.insert(
+        "transcribe_with_post_process".to_string(),
+        ShortcutBinding {
+            id: "transcribe_with_post_process".to_string(),
+            name: "Transcribe with Post-Processing".to_string(),
+            description: "Converts your speech into text and applies AI post-processing."
+                .to_string(),
+            default_binding: String::new(),
+            current_binding: String::new(),
+        },
+    );
 
     AppSettings {
         bindings,
