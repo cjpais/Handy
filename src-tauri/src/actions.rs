@@ -1,4 +1,4 @@
-use crate::audio_feedback::{play_feedback_sound, SoundType};
+use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -10,6 +10,7 @@ use async_openai::types::{
     ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
     CreateChatCompletionRequestArgs,
 };
+use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
@@ -161,6 +162,50 @@ async fn maybe_post_process_transcription(
     }
 }
 
+async fn maybe_convert_chinese_variant(
+    settings: &AppSettings,
+    transcription: &str,
+) -> Option<String> {
+    // Check if language is set to Simplified or Traditional Chinese
+    let is_simplified = settings.selected_language == "zh-Hans";
+    let is_traditional = settings.selected_language == "zh-Hant";
+
+    if !is_simplified && !is_traditional {
+        debug!("selected_language is not Simplified or Traditional Chinese; skipping translation");
+        return None;
+    }
+
+    debug!(
+        "Starting Chinese translation using OpenCC for language: {}",
+        settings.selected_language
+    );
+
+    // Use OpenCC to convert based on selected language
+    let config = if is_simplified {
+        // Convert Traditional Chinese to Simplified Chinese
+        BuiltinConfig::Tw2sp
+    } else {
+        // Convert Simplified Chinese to Traditional Chinese
+        BuiltinConfig::S2twp
+    };
+
+    match OpenCC::from_config(config) {
+        Ok(converter) => {
+            let converted = converter.convert(transcription);
+            debug!(
+                "OpenCC translation completed. Input length: {}, Output length: {}",
+                transcription.len(),
+                converted.len()
+            );
+            Some(converted)
+        }
+        Err(e) => {
+            error!("Failed to initialize OpenCC converter: {}. Falling back to original transcription.", e);
+            None
+        }
+    }
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -184,12 +229,12 @@ impl ShortcutAction for TranscribeAction {
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
-            play_feedback_sound(app, SoundType::Start);
-
-            // Apply mute after audio feedback has time to play (500ms should be enough for most sounds)
             let rm_clone = Arc::clone(&rm);
+            let app_clone = app.clone();
+            // The blocking helper exits immediately if audio feedback is disabled,
+            // so we can always reuse this thread to ensure mute happens right after playback.
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(500));
+                play_feedback_sound_blocking(&app_clone, SoundType::Start);
                 rm_clone.apply_mute();
             });
 
@@ -207,11 +252,10 @@ impl ShortcutAction for TranscribeAction {
                 let rm_clone = Arc::clone(&rm);
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_millis(100));
-                    debug!("Playing delayed audio feedback");
-                    play_feedback_sound(&app_clone, SoundType::Start);
-
-                    // Apply mute after audio feedback has time to play
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    debug!("Handling delayed audio feedback/mute sequence");
+                    // Helper handles disabled audio feedback by returning early, so we reuse it
+                    // to keep mute sequencing consistent in every mode.
+                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
                     rm_clone.apply_mute();
                 });
             } else {
@@ -275,7 +319,15 @@ impl ShortcutAction for TranscribeAction {
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
 
-                            if let Some(processed_text) =
+                            // First, check if Chinese variant conversion is needed
+                            if let Some(converted_text) =
+                                maybe_convert_chinese_variant(&settings, &transcription).await
+                            {
+                                final_text = converted_text.clone();
+                                post_processed_text = Some(converted_text);
+                            }
+                            // Then apply regular post-processing if enabled
+                            else if let Some(processed_text) =
                                 maybe_post_process_transcription(&settings, &transcription, false)
                                     .await
                             {
