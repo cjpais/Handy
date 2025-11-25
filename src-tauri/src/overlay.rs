@@ -197,6 +197,14 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
             let _ = overlay_window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
 
+        // Re-assert always-on-top each time before showing (Windows/Linux)
+        #[cfg(not(target_os = "macos"))]
+        {
+            if let Err(e) = overlay_window.set_always_on_top(true) {
+                debug!("Failed to re-apply always_on_top to overlay: {}", e);
+            }
+        }
+
         let _ = overlay_window.show();
         // Emit event to trigger fade-in animation with recording state
         let _ = overlay_window.emit("show-overlay", "recording");
@@ -214,6 +222,17 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
     update_overlay_position(app_handle);
 
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Also re-assert always-on-top when switching to transcribing (Windows/Linux)
+        #[cfg(not(target_os = "macos"))]
+        {
+            if let Err(e) = overlay_window.set_always_on_top(true) {
+                debug!(
+                    "Failed to re-apply always_on_top to overlay (transcribing): {}",
+                    e
+                );
+            }
+        }
+
         let _ = overlay_window.show();
         // Emit event to switch to transcribing state
         let _ = overlay_window.emit("show-overlay", "transcribing");
