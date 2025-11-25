@@ -68,6 +68,7 @@ tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = "0.1.4"
 ferrous-opencc = "0.2.3"
+symphonia = { version = "0.5.4", features = ["mp3", "isomp4", "pcm", "all-codecs"] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
