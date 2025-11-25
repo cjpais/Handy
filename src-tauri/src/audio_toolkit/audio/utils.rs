@@ -83,11 +83,6 @@ pub fn decode_and_resample(path: std::path::PathBuf) -> Result<Vec<f32>, String>
         .codec_params
         .sample_rate
         .ok_or("missing sample rate")?;
-    let _channels = track
-        .codec_params
-        .channels
-        .ok_or("missing channels")?
-        .count();
 
     let mut samples: Vec<f32> = Vec::new();
 

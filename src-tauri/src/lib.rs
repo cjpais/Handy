@@ -245,6 +245,7 @@ pub fn run() {
             show_main_window(app);
         }))
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
@@ -377,7 +378,6 @@ pub fn run() {
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
-            commands::history::update_history_limit,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             commands::import::import_audio_file

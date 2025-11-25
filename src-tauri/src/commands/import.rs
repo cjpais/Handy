@@ -5,13 +5,14 @@ use chrono::Utc;
 use log::{debug, error, info};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 #[tauri::command]
 pub async fn import_audio_file(
     app_handle: AppHandle,
-    transcription_state: State<'_, TranscriptionManager>,
-    history_state: State<'_, HistoryManager>,
+    transcription_state: State<'_, Arc<TranscriptionManager>>,
+    history_state: State<'_, Arc<HistoryManager>>,
     file_path: String,
 ) -> Result<(), String> {
     info!("Importing audio file: {}", file_path);
@@ -36,7 +37,7 @@ pub async fn import_audio_file(
 
     // 4. Generate Timestamped Filename
     let timestamp = Utc::now().timestamp();
-    let new_filename = format!("handy-{}.wav", timestamp); // Using .wav as standard for internal storage
+    let _new_filename = format!("handy-{}.wav", timestamp); // Using .wav as standard for internal storage
 
     // Get recordings directory
     let app_data_dir = app_handle
