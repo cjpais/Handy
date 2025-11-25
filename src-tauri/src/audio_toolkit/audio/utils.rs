@@ -83,7 +83,7 @@ pub fn decode_and_resample(path: std::path::PathBuf) -> Result<Vec<f32>, String>
         .codec_params
         .sample_rate
         .ok_or("missing sample rate")?;
-    let channels = track
+    let _channels = track
         .codec_params
         .channels
         .ok_or("missing channels")?
@@ -142,9 +142,6 @@ pub fn decode_and_resample(path: std::path::PathBuf) -> Result<Vec<f32>, String>
                         samples.push(sum / buf.spec().channels.count() as f32);
                     }
                 }
-                _ => {
-                    log::warn!("Unsupported integer sample format");
-                }
                 AudioBufferRef::F64(buf) => {
                     for i in 0..buf.frames() {
                         let mut sum: f32 = 0.0;
@@ -153,6 +150,9 @@ pub fn decode_and_resample(path: std::path::PathBuf) -> Result<Vec<f32>, String>
                         }
                         samples.push(sum / buf.spec().channels.count() as f32);
                     }
+                }
+                _ => {
+                    log::warn!("Unsupported integer sample format");
                 }
             },
             Err(Error::DecodeError(e)) => {
