@@ -16,26 +16,33 @@ pub async fn import_audio_file(
     file_path: String,
 ) -> Result<(), String> {
     info!("Importing audio file: {}", file_path);
+    let _ = app_handle.emit("import-status", "Decoding");
 
     let source_path = PathBuf::from(&file_path);
     if !source_path.exists() {
+        let _ = app_handle.emit("import-status", "Failed");
         return Err(format!("File not found: {}", file_path));
     }
 
     // 1. Decode and Resample
-    let samples = decode_and_resample(source_path.clone())
-        .map_err(|e| format!("Failed to decode audio: {}", e))?;
+    let samples = decode_and_resample(source_path.clone()).map_err(|e| {
+        let _ = app_handle.emit("import-status", "Failed");
+        format!("Failed to decode audio: {}", e)
+    })?;
 
     // 2. Calculate Duration
     let duration = samples.len() as f64 / 16000.0;
     debug!("Audio duration: {:.2}s", duration);
 
     // 3. Transcribe
-    let transcription_text = transcription_state
-        .transcribe(samples)
-        .map_err(|e| format!("Transcription failed: {}", e))?;
+    let _ = app_handle.emit("import-status", "Transcribing");
+    let transcription_text = transcription_state.transcribe(samples).map_err(|e| {
+        let _ = app_handle.emit("import-status", "Failed");
+        format!("Transcription failed: {}", e)
+    })?;
 
     // 4. Generate Timestamped Filename
+    let _ = app_handle.emit("import-status", "Saving");
     let timestamp = Utc::now().timestamp();
     let _new_filename = format!("handy-{}.wav", timestamp); // Using .wav as standard for internal storage
 
@@ -119,6 +126,7 @@ pub async fn import_audio_file(
         .emit("history-updated", ())
         .map_err(|e| format!("Failed to emit event: {}", e))?;
 
+    let _ = app_handle.emit("import-status", "Completed");
     info!("Import completed successfully");
     Ok(())
 }

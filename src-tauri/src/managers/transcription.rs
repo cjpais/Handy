@@ -331,71 +331,113 @@ impl TranscriptionManager {
 
             let engine_guard = self.engine.lock().unwrap();
             if engine_guard.is_none() {
-                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
+                drop(engine_guard); // Drop lock before loading
+                let settings = get_settings(&self.app_handle);
+                info!(
+                    "Model not loaded, auto-loading: {}",
+                    settings.selected_model
+                );
+                self.load_model(&settings.selected_model)?;
             }
         }
 
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
-        // Perform transcription with the appropriate engine
-        let result = {
-            let mut engine_guard = self.engine.lock().unwrap();
-            let engine = engine_guard.as_mut().ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Model failed to load after auto-load attempt. Please check your model settings."
-                )
-            })?;
+        // Chunking configuration
+        const CHUNK_DURATION_SECONDS: usize = 30;
+        const SAMPLE_RATE: usize = 16000;
+        const CHUNK_SIZE: usize = CHUNK_DURATION_SECONDS * SAMPLE_RATE;
 
-            match engine {
-                LoadedEngine::Whisper(whisper_engine) => {
-                    // Normalize language code for Whisper
-                    // Convert zh-Hans and zh-Hant to zh since Whisper uses ISO 639-1 codes
-                    let whisper_language = if settings.selected_language == "auto" {
-                        None
-                    } else {
-                        let normalized = if settings.selected_language == "zh-Hans"
-                            || settings.selected_language == "zh-Hant"
-                        {
-                            "zh".to_string()
+        let total_samples = audio.len();
+        let mut full_transcription = String::new();
+        let mut processed_samples = 0;
+
+        // Process audio in chunks
+        for (i, chunk) in audio.chunks(CHUNK_SIZE).enumerate() {
+            let chunk_vec = chunk.to_vec();
+            let chunk_len = chunk_vec.len();
+
+            debug!("Processing chunk {} ({} samples)", i + 1, chunk_len);
+
+            // Perform transcription for the current chunk
+            let chunk_result = {
+                let mut engine_guard = self.engine.lock().unwrap();
+                let engine = engine_guard.as_mut().ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Model failed to load after auto-load attempt. Please check your model settings."
+                    )
+                })?;
+
+                match engine {
+                    LoadedEngine::Whisper(whisper_engine) => {
+                        // Normalize language code for Whisper
+                        let whisper_language = if settings.selected_language == "auto" {
+                            None
                         } else {
-                            settings.selected_language.clone()
+                            let normalized = if settings.selected_language == "zh-Hans"
+                                || settings.selected_language == "zh-Hant"
+                            {
+                                "zh".to_string()
+                            } else {
+                                settings.selected_language.clone()
+                            };
+                            Some(normalized)
                         };
-                        Some(normalized)
-                    };
 
-                    let params = WhisperInferenceParams {
-                        language: whisper_language,
-                        translate: settings.translate_to_english,
-                        ..Default::default()
-                    };
+                        let params = WhisperInferenceParams {
+                            language: whisper_language,
+                            translate: settings.translate_to_english,
+                            ..Default::default()
+                        };
 
-                    whisper_engine
-                        .transcribe_samples(audio, Some(params))
-                        .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
+                        whisper_engine
+                            .transcribe_samples(chunk_vec, Some(params))
+                            .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
+                    }
+                    LoadedEngine::Parakeet(parakeet_engine) => {
+                        let params = ParakeetInferenceParams {
+                            timestamp_granularity: TimestampGranularity::Segment,
+                            ..Default::default()
+                        };
+
+                        parakeet_engine
+                            .transcribe_samples(chunk_vec, Some(params))
+                            .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
+                    }
                 }
-                LoadedEngine::Parakeet(parakeet_engine) => {
-                    let params = ParakeetInferenceParams {
-                        timestamp_granularity: TimestampGranularity::Segment,
-                        ..Default::default()
-                    };
+            };
 
-                    parakeet_engine
-                        .transcribe_samples(audio, Some(params))
-                        .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
-                }
+            // Append chunk result to full transcription
+            if !full_transcription.is_empty() {
+                full_transcription.push(' ');
             }
-        };
+            full_transcription.push_str(&chunk_result.text);
+
+            // Update progress
+            processed_samples += chunk_len;
+            let progress = (processed_samples as f64 / total_samples as f64) * 100.0;
+            let _ = self.app_handle.emit("transcription-progress", progress);
+
+            // Update last activity to prevent timeout during long loops
+            self.last_activity.store(
+                SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64,
+                Ordering::Relaxed,
+            );
+        }
 
         // Apply word correction if custom words are configured
         let corrected_result = if !settings.custom_words.is_empty() {
             apply_custom_words(
-                &result.text,
+                &full_transcription,
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            result.text
+            full_transcription
         };
 
         let et = std::time::Instant::now();

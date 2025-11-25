@@ -6,6 +6,7 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
+import { sendNotification } from "@tauri-apps/plugin-notification";
 
 interface HistoryEntry {
   id: number;
@@ -40,6 +41,8 @@ export const HistorySettings: React.FC = () => {
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string>("");
+  const [progress, setProgress] = useState<number>(0);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -57,13 +60,36 @@ export const HistorySettings: React.FC = () => {
 
     // Listen for history update events
     const setupListener = async () => {
-      const unlisten = await listen("history-updated", () => {
+      const unlistenHistory = await listen("history-updated", () => {
         console.log("History updated, reloading entries...");
         loadHistoryEntries();
       });
 
+      const unlistenImport = await listen<string>("import-status", (event) => {
+        setImportStatus(event.payload);
+        if (event.payload === "Completed") {
+            sendNotification({
+                title: "Import Successful",
+                body: "Audio file has been imported and transcribed.",
+            });
+        } else if (event.payload === "Failed") {
+             sendNotification({
+                title: "Import Failed",
+                body: "Check the app for details.",
+            });
+        }
+      });
+
+      const unlistenProgress = await listen<number>("transcription-progress", (event) => {
+        setProgress(event.payload);
+      });
+
       // Return cleanup function
-      return unlisten;
+      return () => {
+        unlistenHistory();
+        unlistenImport();
+        unlistenProgress();
+      };
     };
 
     let unlistenPromise = setupListener();
@@ -143,6 +169,8 @@ export const HistorySettings: React.FC = () => {
       if (selected) {
         console.log("Selected file:", selected);
         setIsImporting(true);
+        setImportStatus("Initializing...");
+        setProgress(0);
         toast.info("Importing and transcribing audio...");
         
         await invoke("import_audio_file", { filePath: selected });
@@ -155,6 +183,8 @@ export const HistorySettings: React.FC = () => {
       toast.error(`Import failed: ${error}`);
     } finally {
       setIsImporting(false);
+      setImportStatus("");
+      setProgress(0);
     }
   };
 
@@ -177,7 +207,7 @@ export const HistorySettings: React.FC = () => {
                 disabled={isImporting}
               >
                 {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>{isImporting ? "Transcribing..." : "Import Audio File"}</span>
+                <span>{isImporting ? (importStatus || "Transcribing...") : "Import Audio File"}</span>
               </Button>
               <OpenRecordingsButton onClick={openRecordingsFolder} />
             </div>
@@ -211,7 +241,7 @@ export const HistorySettings: React.FC = () => {
                 disabled={isImporting}
               >
                 {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>{isImporting ? "Transcribing..." : "Import Audio File"}</span>
+                <span>{isImporting ? (importStatus || "Transcribing...") : "Import Audio File"}</span>
               </Button>
               <OpenRecordingsButton onClick={openRecordingsFolder} />
             </div>
@@ -244,11 +274,21 @@ export const HistorySettings: React.FC = () => {
               disabled={isImporting}
             >
               {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              <span>{isImporting ? "Transcribing..." : "Import Audio File"}</span>
+              <span>{isImporting ? `${importStatus || "Transcribing..."} ${progress > 0 ? `(${Math.round(progress)}%)` : ""}` : "Import Audio File"}</span>
             </Button>
             <OpenRecordingsButton onClick={openRecordingsFolder} />
           </div>
         </div>
+        {isImporting && (
+            <div className="px-4 -mt-1">
+              <div className="w-full h-1 bg-mid-gray/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-logo-primary transition-all duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           <div className="divide-y divide-mid-gray/20">
             {historyEntries.map((entry) => (
