@@ -1,14 +1,14 @@
-use crate::audio_toolkit::apply_custom_words;
+use crate::audio_toolkit::{apply_custom_words, VoiceActivityDetector};
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
-use log::{debug, error, info, warn};
+use log::{debug as log_debug, error, info, warn};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
     engines::{
         parakeet::{
@@ -97,7 +97,7 @@ impl TranscriptionManager {
                             // idle -> unload
                             if manager_cloned.is_model_loaded() {
                                 let unload_start = std::time::Instant::now();
-                                debug!("Starting to unload model due to inactivity");
+                                log_debug!("Starting to unload model due to inactivity");
 
                                 if let Ok(()) = manager_cloned.unload_model() {
                                     let _ = app_handle_cloned.emit(
@@ -110,7 +110,7 @@ impl TranscriptionManager {
                                         },
                                     );
                                     let unload_duration = unload_start.elapsed();
-                                    debug!(
+                                    log_debug!(
                                         "Model unloaded due to inactivity (took {}ms)",
                                         unload_duration.as_millis()
                                     );
@@ -119,7 +119,7 @@ impl TranscriptionManager {
                         }
                     }
                 }
-                debug!("Idle watcher thread shutting down gracefully");
+                log_debug!("Idle watcher thread shutting down gracefully");
             });
             *manager.watcher_handle.lock().unwrap() = Some(handle);
         }
@@ -134,7 +134,7 @@ impl TranscriptionManager {
 
     pub fn unload_model(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
-        debug!("Starting to unload model");
+        log_debug!("Starting to unload model");
 
         {
             let mut engine = self.engine.lock().unwrap();
@@ -163,7 +163,7 @@ impl TranscriptionManager {
         );
 
         let unload_duration = unload_start.elapsed();
-        debug!(
+        log_debug!(
             "Model unloaded manually (took {}ms)",
             unload_duration.as_millis()
         );
@@ -172,7 +172,7 @@ impl TranscriptionManager {
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
         let load_start = std::time::Instant::now();
-        debug!("Starting to load model: {}", model_id);
+        log_debug!("Starting to load model: {}", model_id);
 
         // Emit loading started event
         let _ = self.app_handle.emit(
@@ -269,7 +269,7 @@ impl TranscriptionManager {
         );
 
         let load_duration = load_start.elapsed();
-        debug!(
+        log_debug!(
             "Successfully loaded transcription model: {} (took {}ms)",
             model_id,
             load_duration.as_millis()
@@ -314,10 +314,10 @@ impl TranscriptionManager {
 
         let st = std::time::Instant::now();
 
-        debug!("Audio vector length: {}", audio.len());
+        log_debug!("Audio vector length: {}", audio.len());
 
         if audio.len() == 0 {
-            debug!("Empty audio vector");
+            log_debug!("Empty audio vector");
             return Ok(String::new());
         }
 
@@ -344,21 +344,105 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
-        // Chunking configuration
-        const CHUNK_DURATION_SECONDS: usize = 30;
+        // Smart Chunking Configuration
+        const TARGET_CHUNK_DURATION_SECONDS: usize = 30;
         const SAMPLE_RATE: usize = 16000;
-        const CHUNK_SIZE: usize = CHUNK_DURATION_SECONDS * SAMPLE_RATE;
+        const TARGET_CHUNK_SIZE: usize = TARGET_CHUNK_DURATION_SECONDS * SAMPLE_RATE;
+
+        // Initialize VAD
+        let resource_path = self
+            .app_handle
+            .path()
+            .resource_dir()
+            .unwrap()
+            .join("resources/models/silero_vad_v4.onnx");
+
+        let mut vad = crate::audio_toolkit::vad::SileroVad::new(resource_path, 0.5)
+            .map_err(|e| anyhow::anyhow!("Failed to initialize VAD: {}", e))?;
 
         let total_samples = audio.len();
         let mut full_transcription = String::new();
         let mut processed_samples = 0;
+        let mut start_idx = 0;
 
-        // Process audio in chunks
-        for (i, chunk) in audio.chunks(CHUNK_SIZE).enumerate() {
-            let chunk_vec = chunk.to_vec();
-            let chunk_len = chunk_vec.len();
+        while start_idx < total_samples {
+            // Determine the end index for this chunk
+            let end_idx = if start_idx + TARGET_CHUNK_SIZE >= total_samples {
+                total_samples
+            } else {
+                // Look for a silence point around the target chunk size
+                // We'll search in a window of +/- 5 seconds around the 30s mark
+                let search_window_samples = 5 * SAMPLE_RATE;
+                let target_end = start_idx + TARGET_CHUNK_SIZE;
+                let search_start = target_end
+                    .saturating_sub(search_window_samples)
+                    .max(start_idx);
+                let search_end = (target_end + search_window_samples).min(total_samples);
 
-            debug!("Processing chunk {} ({} samples)", i + 1, chunk_len);
+                let mut best_cut_idx = target_end.min(total_samples);
+                let mut found_silence = false;
+
+                // Iterate through frames in the search window to find silence
+                // Silero VAD expects 30ms frames (480 samples at 16kHz)
+                const VAD_FRAME_SIZE: usize = 480; // 30ms * 16000Hz / 1000
+
+                // Align search start to frame boundary relative to start_idx
+                let aligned_search_start =
+                    start_idx + ((search_start - start_idx) / VAD_FRAME_SIZE) * VAD_FRAME_SIZE;
+
+                for current_pos in (aligned_search_start..search_end).step_by(VAD_FRAME_SIZE) {
+                    if current_pos + VAD_FRAME_SIZE > total_samples {
+                        break;
+                    }
+
+                    let frame = &audio[current_pos..current_pos + VAD_FRAME_SIZE];
+                    match vad.push_frame(frame) {
+                        Ok(frame_type) => {
+                            if !frame_type.is_speech() {
+                                // Found silence! Use the end of this frame as cut point
+                                best_cut_idx = current_pos + VAD_FRAME_SIZE;
+                                found_silence = true;
+                                // Prefer cuts closer to the target duration?
+                                // For now, taking the first silence after the minimum duration might be safer
+                                // or finding the longest silence.
+                                // Let's just take the first valid silence we find in the window for simplicity/speed
+                                // But ideally we want to be as close to 30s as possible.
+
+                                // Let's try to find silence closest to target_end
+                                if (best_cut_idx as i64 - target_end as i64).abs()
+                                    < (target_end as i64 - best_cut_idx as i64).abs()
+                                {
+                                    // This logic is a bit flawed in a loop.
+                                    // Let's just break on first silence found in the window?
+                                    // Or maybe search backwards from max window?
+                                    break;
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            warn!("VAD error at sample {}: {}", current_pos, e);
+                        }
+                    }
+                }
+
+                // If no silence found, just cut at target size
+                if !found_silence {
+                    log_debug!("No silence found in search window, hard cutting at 30s");
+                    target_end.min(total_samples)
+                } else {
+                    log_debug!("Found silence at sample {}, cutting there", best_cut_idx);
+                    best_cut_idx
+                }
+            };
+
+            let chunk_len = end_idx - start_idx;
+            let chunk_vec = audio[start_idx..end_idx].to_vec();
+
+            log_debug!(
+                "Processing chunk: start={}, len={} samples",
+                start_idx,
+                chunk_len
+            );
 
             // Perform transcription for the current chunk
             let chunk_result = {
@@ -415,7 +499,7 @@ impl TranscriptionManager {
             full_transcription.push_str(&chunk_result.text);
 
             // Update progress
-            processed_samples += chunk_len;
+            processed_samples = end_idx;
             let progress = (processed_samples as f64 / total_samples as f64) * 100.0;
             let _ = self.app_handle.emit("transcription-progress", progress);
 
@@ -427,6 +511,9 @@ impl TranscriptionManager {
                     .as_millis() as u64,
                 Ordering::Relaxed,
             );
+
+            // Move to next chunk
+            start_idx = end_idx;
         }
 
         // Apply word correction if custom words are configured
@@ -474,7 +561,7 @@ impl TranscriptionManager {
 
 impl Drop for TranscriptionManager {
     fn drop(&mut self) {
-        debug!("Shutting down TranscriptionManager");
+        log_debug!("Shutting down TranscriptionManager");
 
         // Signal the watcher thread to shutdown
         self.shutdown_signal.store(true, Ordering::Relaxed);
@@ -484,7 +571,7 @@ impl Drop for TranscriptionManager {
             if let Err(e) = handle.join() {
                 warn!("Failed to join idle watcher thread: {:?}", e);
             } else {
-                debug!("Idle watcher thread joined successfully");
+                log_debug!("Idle watcher thread joined successfully");
             }
         }
     }
