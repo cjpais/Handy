@@ -20,7 +20,9 @@ use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+#[cfg(unix)]
 use signal_hook::consts::SIGUSR2;
+#[cfg(unix)]
 use signal_hook::iterator::Signals;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -214,7 +216,7 @@ pub fn run() {
     // when the variable is unset
     let console_filter = build_console_filter();
 
-    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
+    let specta_builder = Builder::<tauri::Wry>::new().commands(collect_commands![
         shortcut::change_binding,
         shortcut::reset_binding,
         shortcut::change_ptt_setting,
@@ -291,14 +293,14 @@ pub fn run() {
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
-    builder
+    specta_builder
         .export(
             Typescript::default().bigint(BigIntExportBehavior::String),
             "../src/bindings.ts",
         )
         .expect("Failed to export typescript bindings");
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(
             LogBuilder::new()
                 .level(log::LevelFilter::Trace) // Set to most verbose level globally
@@ -321,7 +323,14 @@ pub fn run() {
                     }),
                 ])
                 .build(),
-        )
+        );
+
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.plugin(tauri_nspanel::init());
+    }
+
+    builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app);
         }))
@@ -388,7 +397,7 @@ pub fn run() {
             }
             _ => {}
         })
-        .invoke_handler(builder.invoke_handler())
+        .invoke_handler(specta_builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
