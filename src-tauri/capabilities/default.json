@@ -15,6 +15,8 @@
     "global-shortcut:allow-unregister-all",
     "macos-permissions:default",
     "fs:read-files",
-    "fs:allow-resource-read-recursive"
+    "fs:allow-resource-read-recursive",
+    "dialog:default",
+    "notification:default"
   ]
 }

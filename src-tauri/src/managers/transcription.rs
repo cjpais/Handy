@@ -2,13 +2,13 @@ use crate::audio_toolkit::apply_custom_words;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
-use log::{debug, error, info, warn};
+use log::{debug as log_debug, error, info, warn};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
     engines::{
         parakeet::{
@@ -97,7 +97,7 @@ impl TranscriptionManager {
                             // idle -> unload
                             if manager_cloned.is_model_loaded() {
                                 let unload_start = std::time::Instant::now();
-                                debug!("Starting to unload model due to inactivity");
+                                log_debug!("Starting to unload model due to inactivity");
 
                                 if let Ok(()) = manager_cloned.unload_model() {
                                     let _ = app_handle_cloned.emit(
@@ -110,7 +110,7 @@ impl TranscriptionManager {
                                         },
                                     );
                                     let unload_duration = unload_start.elapsed();
-                                    debug!(
+                                    log_debug!(
                                         "Model unloaded due to inactivity (took {}ms)",
                                         unload_duration.as_millis()
                                     );
@@ -119,7 +119,7 @@ impl TranscriptionManager {
                         }
                     }
                 }
-                debug!("Idle watcher thread shutting down gracefully");
+                log_debug!("Idle watcher thread shutting down gracefully");
             });
             *manager.watcher_handle.lock().unwrap() = Some(handle);
         }
@@ -134,7 +134,7 @@ impl TranscriptionManager {
 
     pub fn unload_model(&self) -> Result<()> {
         let unload_start = std::time::Instant::now();
-        debug!("Starting to unload model");
+        log_debug!("Starting to unload model");
 
         {
             let mut engine = self.engine.lock().unwrap();
@@ -163,7 +163,7 @@ impl TranscriptionManager {
         );
 
         let unload_duration = unload_start.elapsed();
-        debug!(
+        log_debug!(
             "Model unloaded manually (took {}ms)",
             unload_duration.as_millis()
         );
@@ -172,7 +172,7 @@ impl TranscriptionManager {
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
         let load_start = std::time::Instant::now();
-        debug!("Starting to load model: {}", model_id);
+        log_debug!("Starting to load model: {}", model_id);
 
         // Emit loading started event
         let _ = self.app_handle.emit(
@@ -269,7 +269,7 @@ impl TranscriptionManager {
         );
 
         let load_duration = load_start.elapsed();
-        debug!(
+        log_debug!(
             "Successfully loaded transcription model: {} (took {}ms)",
             model_id,
             load_duration.as_millis()
@@ -314,10 +314,10 @@ impl TranscriptionManager {
 
         let st = std::time::Instant::now();
 
-        debug!("Audio vector length: {}", audio.len());
+        log_debug!("Audio vector length: {}", audio.len());
 
         if audio.len() == 0 {
-            debug!("Empty audio vector");
+            log_debug!("Empty audio vector");
             return Ok(String::new());
         }
 
@@ -331,15 +331,21 @@ impl TranscriptionManager {
 
             let engine_guard = self.engine.lock().unwrap();
             if engine_guard.is_none() {
-                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
+                drop(engine_guard); // Drop lock before loading
+                let settings = get_settings(&self.app_handle);
+                info!(
+                    "Model not loaded, auto-loading: {}",
+                    settings.selected_model
+                );
+                self.load_model(&settings.selected_model)?;
             }
         }
 
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
-        // Perform transcription with the appropriate engine
-        let result = {
+        // Perform transcription using the external library's smart chunking
+        let full_transcription = {
             let mut engine_guard = self.engine.lock().unwrap();
             let engine = engine_guard.as_mut().ok_or_else(|| {
                 anyhow::anyhow!(
@@ -347,10 +353,14 @@ impl TranscriptionManager {
                 )
             })?;
 
+            let app_handle = self.app_handle.clone();
+            let progress_callback = move |progress: f64| {
+                let _ = app_handle.emit("transcription-progress", progress);
+            };
+
             match engine {
                 LoadedEngine::Whisper(whisper_engine) => {
                     // Normalize language code for Whisper
-                    // Convert zh-Hans and zh-Hant to zh since Whisper uses ISO 639-1 codes
                     let whisper_language = if settings.selected_language == "auto" {
                         None
                     } else {
@@ -370,8 +380,9 @@ impl TranscriptionManager {
                         ..Default::default()
                     };
 
+                    // Assuming the new API is available on the engine
                     whisper_engine
-                        .transcribe_samples(audio, Some(params))
+                        .transcribe_with_smart_chunking(audio, Some(params), progress_callback)
                         .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
                 }
                 LoadedEngine::Parakeet(parakeet_engine) => {
@@ -381,7 +392,7 @@ impl TranscriptionManager {
                     };
 
                     parakeet_engine
-                        .transcribe_samples(audio, Some(params))
+                        .transcribe_with_smart_chunking(audio, Some(params), progress_callback)
                         .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
                 }
             }
@@ -390,12 +401,12 @@ impl TranscriptionManager {
         // Apply word correction if custom words are configured
         let corrected_result = if !settings.custom_words.is_empty() {
             apply_custom_words(
-                &result.text,
+                &full_transcription.text, // Assuming result is TranscriptionResult
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            result.text
+            full_transcription.text
         };
 
         let et = std::time::Instant::now();
@@ -432,7 +443,7 @@ impl TranscriptionManager {
 
 impl Drop for TranscriptionManager {
     fn drop(&mut self) {
-        debug!("Shutting down TranscriptionManager");
+        log_debug!("Shutting down TranscriptionManager");
 
         // Signal the watcher thread to shutdown
         self.shutdown_signal.store(true, Ordering::Relaxed);
@@ -442,7 +453,7 @@ impl Drop for TranscriptionManager {
             if let Err(e) = handle.join() {
                 warn!("Failed to join idle watcher thread: {:?}", e);
             } else {
-                debug!("Idle watcher thread joined successfully");
+                log_debug!("Idle watcher thread joined successfully");
             }
         }
     }

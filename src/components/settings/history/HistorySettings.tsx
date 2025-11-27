@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import { Copy, Star, Check, Trash2, FolderOpen, Upload, Loader2 } from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-dialog";
+import { toast } from "sonner";
+import { sendNotification } from "@tauri-apps/plugin-notification";
 
 interface HistoryEntry {
   id: number;
@@ -12,6 +15,7 @@ interface HistoryEntry {
   saved: boolean;
   title: string;
   transcription_text: string;
+  duration?: number;
 }
 
 interface OpenRecordingsButtonProps {
@@ -36,6 +40,9 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
 export const HistorySettings: React.FC = () => {
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string>("");
+  const [progress, setProgress] = useState<number>(0);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -53,13 +60,36 @@ export const HistorySettings: React.FC = () => {
 
     // Listen for history update events
     const setupListener = async () => {
-      const unlisten = await listen("history-updated", () => {
+      const unlistenHistory = await listen("history-updated", () => {
         console.log("History updated, reloading entries...");
         loadHistoryEntries();
       });
 
+      const unlistenImport = await listen<string>("import-status", (event) => {
+        setImportStatus(event.payload);
+        if (event.payload === "Completed") {
+            sendNotification({
+                title: "Import Successful",
+                body: "Audio file has been imported and transcribed.",
+            });
+        } else if (event.payload === "Failed") {
+             sendNotification({
+                title: "Import Failed",
+                body: "Check the app for details.",
+            });
+        }
+      });
+
+      const unlistenProgress = await listen<number>("transcription-progress", (event) => {
+        setProgress(event.payload);
+      });
+
       // Return cleanup function
-      return unlisten;
+      return () => {
+        unlistenHistory();
+        unlistenImport();
+        unlistenProgress();
+      };
     };
 
     let unlistenPromise = setupListener();
@@ -85,8 +115,10 @@ export const HistorySettings: React.FC = () => {
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      toast.success("Transcription copied to clipboard");
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
+      toast.error("Failed to copy to clipboard");
     }
   };
 
@@ -106,8 +138,10 @@ export const HistorySettings: React.FC = () => {
   const deleteAudioEntry = async (id: number) => {
     try {
       await invoke("delete_history_entry", { id });
+      toast.success("Entry deleted");
     } catch (error) {
       console.error("Failed to delete audio entry:", error);
+      toast.error("Failed to delete entry");
       throw error;
     }
   };
@@ -117,6 +151,40 @@ export const HistorySettings: React.FC = () => {
       await invoke("open_recordings_folder");
     } catch (error) {
       console.error("Failed to open recordings folder:", error);
+    }
+  };
+
+  const handleImport = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Audio",
+            extensions: ["mp3", "m4a", "wav"],
+          },
+        ],
+      });
+
+      if (selected) {
+        console.log("Selected file:", selected);
+        setIsImporting(true);
+        setImportStatus("Initializing...");
+        setProgress(0);
+        toast.info("Importing and transcribing audio...");
+        
+        await invoke("import_audio_file", { filePath: selected });
+        
+        toast.success("Audio imported successfully");
+        // Refresh is handled by the event listener
+      }
+    } catch (error) {
+      console.error("Failed to import audio:", error);
+      toast.error(`Import failed: ${error}`);
+    } finally {
+      setIsImporting(false);
+      setImportStatus("");
+      setProgress(0);
     }
   };
 
@@ -130,7 +198,19 @@ export const HistorySettings: React.FC = () => {
                 History
               </h2>
             </div>
-            <OpenRecordingsButton onClick={openRecordingsFolder} />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleImport}
+                variant="secondary"
+                size="sm"
+                className="flex items-center gap-2"
+                disabled={isImporting}
+              >
+                {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                <span>{isImporting ? (importStatus || "Transcribing...") : "Import Audio File"}</span>
+              </Button>
+              <OpenRecordingsButton onClick={openRecordingsFolder} />
+            </div>
           </div>
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
@@ -152,7 +232,19 @@ export const HistorySettings: React.FC = () => {
                 History
               </h2>
             </div>
-            <OpenRecordingsButton onClick={openRecordingsFolder} />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleImport}
+                variant="secondary"
+                size="sm"
+                className="flex items-center gap-2"
+                disabled={isImporting}
+              >
+                {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                <span>{isImporting ? (importStatus || "Transcribing...") : "Import Audio File"}</span>
+              </Button>
+              <OpenRecordingsButton onClick={openRecordingsFolder} />
+            </div>
           </div>
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
@@ -173,8 +265,30 @@ export const HistorySettings: React.FC = () => {
               History
             </h2>
           </div>
-          <OpenRecordingsButton onClick={openRecordingsFolder} />
+          <div className="flex gap-2">
+            <Button
+              onClick={handleImport}
+              variant="secondary"
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={isImporting}
+            >
+              {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              <span>{isImporting ? `${importStatus || "Transcribing..."} ${progress > 0 ? `(${Math.round(progress)}%)` : ""}` : "Import Audio File"}</span>
+            </Button>
+            <OpenRecordingsButton onClick={openRecordingsFolder} />
+          </div>
         </div>
+        {isImporting && (
+            <div className="px-4 -mt-1">
+              <div className="w-full h-1 bg-mid-gray/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-logo-primary transition-all duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           <div className="divide-y divide-mid-gray/20">
             {historyEntries.map((entry) => (
@@ -231,14 +345,21 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert("Failed to delete entry. Please try again.");
+      toast.error("Failed to delete entry");
     }
   };
 
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{entry.title}</p>
+        <div className="flex items-center gap-2">
+            <p className="text-sm font-medium">{entry.title}</p>
+            {entry.duration && (
+                <span className="text-xs text-mid-gray bg-mid-gray/10 px-1.5 py-0.5 rounded">
+                    {formatDuration(entry.duration)}
+                </span>
+            )}
+        </div>
         <div className="flex items-center gap-1">
           <button
             onClick={handleCopyText}
@@ -282,3 +403,9 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     </div>
   );
 };
+
+function formatDuration(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}

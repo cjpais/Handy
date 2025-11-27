@@ -43,6 +43,8 @@ tauri-plugin-macos-permissions = "2.3.0"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-sql = { version = "2.3.1", features = ["sqlite"] }
 tauri-plugin-fs = "2.4.4"
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rdev = { git = "https://github.com/rustdesk-org/rdev" }
@@ -66,8 +68,9 @@ chrono = "0.4"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = "0.1.4"
+transcribe-rs = { path = "../transcribe-rs" }
 ferrous-opencc = "0.2.3"
+symphonia = { version = "0.5.4", features = ["mp3", "isomp4", "pcm", "all-codecs"] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
