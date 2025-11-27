@@ -344,6 +344,19 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
+        // Get VAD model path
+        let resource_path = self
+            .app_handle
+            .path()
+            .resource_dir()
+            .unwrap()
+            .join("resources/models/silero_vad_v4.onnx");
+
+        let app_handle = self.app_handle.clone();
+        let progress_callback = move |progress: f64| {
+            let _ = app_handle.emit("transcription-progress", progress);
+        };
+
         // Perform transcription using the external library's smart chunking
         let full_transcription = {
             let mut engine_guard = self.engine.lock().unwrap();
@@ -352,11 +365,6 @@ impl TranscriptionManager {
                     "Model failed to load after auto-load attempt. Please check your model settings."
                 )
             })?;
-
-            let app_handle = self.app_handle.clone();
-            let progress_callback = move |progress: f64| {
-                let _ = app_handle.emit("transcription-progress", progress);
-            };
 
             match engine {
                 LoadedEngine::Whisper(whisper_engine) => {
@@ -380,9 +388,13 @@ impl TranscriptionManager {
                         ..Default::default()
                     };
 
-                    // Assuming the new API is available on the engine
                     whisper_engine
-                        .transcribe_with_smart_chunking(audio, Some(params), progress_callback)
+                        .transcribe_with_smart_chunking(
+                            audio,
+                            &resource_path,
+                            Some(params),
+                            progress_callback,
+                        )
                         .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
                 }
                 LoadedEngine::Parakeet(parakeet_engine) => {
@@ -392,7 +404,12 @@ impl TranscriptionManager {
                     };
 
                     parakeet_engine
-                        .transcribe_with_smart_chunking(audio, Some(params), progress_callback)
+                        .transcribe_with_smart_chunking(
+                            audio,
+                            &resource_path,
+                            Some(params),
+                            progress_callback,
+                        )
                         .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
                 }
             }
@@ -401,12 +418,12 @@ impl TranscriptionManager {
         // Apply word correction if custom words are configured
         let corrected_result = if !settings.custom_words.is_empty() {
             apply_custom_words(
-                &full_transcription.text, // Assuming result is TranscriptionResult
+                &full_transcription,
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            full_transcription.text
+            full_transcription
         };
 
         let et = std::time::Instant::now();

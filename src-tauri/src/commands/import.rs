@@ -1,4 +1,4 @@
-use crate::audio_toolkit::audio::decode_and_resample;
+use crate::audio_toolkit::audio::{decode_and_resample, save_wav_file};
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use chrono::Utc;
@@ -30,16 +30,18 @@ pub async fn import_audio_file(
         format!("Failed to decode audio: {}", e)
     })?;
 
-    // 2. Calculate Duration
+    // 2. Calculate Duration (before transcription to avoid borrow issues)
     let duration = samples.len() as f64 / 16000.0;
     debug!("Audio duration: {:.2}s", duration);
 
     // 3. Transcribe
     let _ = app_handle.emit("import-status", "Transcribing");
-    let transcription_text = transcription_state.transcribe(samples).map_err(|e| {
-        let _ = app_handle.emit("import-status", "Failed");
-        format!("Transcription failed: {}", e)
-    })?;
+    let transcription_text = transcription_state
+        .transcribe(samples.clone())
+        .map_err(|e| {
+            let _ = app_handle.emit("import-status", "Failed");
+            format!("Transcription failed: {}", e)
+        })?;
 
     // 4. Generate Timestamped Filename
     let _ = app_handle.emit("import-status", "Saving");
@@ -58,40 +60,27 @@ pub async fn import_audio_file(
             .map_err(|e| format!("Failed to create recordings dir: {}", e))?;
     }
 
-    // 5. Move (Rename) File
-    // Note: Since we decoded the file, we might want to save the *resampled* audio
-    // instead of the original if we want consistency (16kHz WAV).
-    // However, the requirement says "Move, Don't Copy".
-    // If the original is NOT a WAV, simply renaming it to .wav is bad practice.
-    // BUT, the user requirement explicitly said: "Move, Don't Copy: Use fs::rename to move the file."
-    // AND "Generate a new filename... formatted to match Handy’s existing convention".
-    //
-    // If the source is MP3 and we rename to .wav, players might fail.
-    // Let's preserve the extension if possible, OR just move it.
-    // Handy's history manager seems to expect "handy-{timestamp}.wav" in `save_transcription`.
-    // But `save_to_database` takes a filename string.
+    // 5. Save as new WAV file
+    // Instead of moving the original file (which might fail if it's locked or gone),
+    // we save the decoded samples as a new, clean 16kHz WAV file.
+    let target_path = recordings_dir.join(format!("handy-{}.wav", timestamp));
 
-    // Let's check the source extension.
-    let ext = source_path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("wav");
+    debug!("Saving imported audio to {:?}", target_path);
+    save_wav_file(&target_path, &samples).await.map_err(|e| {
+        let _ = app_handle.emit("import-status", "Failed");
+        format!("Failed to save imported audio: {}", e)
+    })?;
 
-    let new_filename_with_ext = format!("handy-{}.{}", timestamp, ext);
-    let target_path_with_ext = recordings_dir.join(&new_filename_with_ext);
-
-    debug!(
-        "Moving file from {:?} to {:?}",
-        source_path, target_path_with_ext
-    );
-
-    if let Err(e) = fs::rename(&source_path, &target_path_with_ext) {
-        // Fallback to copy + delete if rename fails (e.g. cross-device)
-        debug!("Rename failed ({}), trying copy+delete", e);
-        fs::copy(&source_path, &target_path_with_ext)
-            .map_err(|e| format!("Failed to copy file: {}", e))?;
-        fs::remove_file(&source_path)
-            .map_err(|e| format!("Failed to remove source file: {}", e))?;
+    // Try to remove the source file (Move behavior), but don't fail if we can't.
+    // The user might have deleted it, or it might be read-only.
+    // Since we have successfully saved the audio, the import is effectively complete.
+    debug!("Attempting to remove source file: {:?}", source_path);
+    if let Err(e) = fs::remove_file(&source_path) {
+        // Log warning but continue
+        log::warn!(
+            "Could not remove source file after import: {}. This is non-fatal.",
+            e
+        );
     }
 
     // 6. Save to Database
@@ -110,7 +99,7 @@ pub async fn import_audio_file(
 
     history_state
         .save_to_database(
-            new_filename_with_ext,
+            format!("handy-{}.wav", timestamp),
             timestamp,
             title,
             transcription_text,
