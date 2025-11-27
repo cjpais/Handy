@@ -1,13 +1,16 @@
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
-use crate::utils::is_wayland;
 use enigo::Enigo;
 use enigo::Key;
 use enigo::Keyboard;
 use enigo::Settings;
 use log::info;
-use std::process::Command;
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
+
+#[cfg(target_os = "linux")]
+use crate::utils::is_wayland;
+#[cfg(target_os = "linux")]
+use std::process::Command;
 
 /// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.
 /// This ensures the paste works regardless of keyboard layout (e.g., Russian, AZERTY, DVORAK).
