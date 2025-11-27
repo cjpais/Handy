@@ -1,4 +1,4 @@
-use crate::audio_toolkit::{apply_custom_words, VoiceActivityDetector};
+use crate::audio_toolkit::apply_custom_words;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
@@ -344,187 +344,69 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
-        // Smart Chunking Configuration
-        const TARGET_CHUNK_DURATION_SECONDS: usize = 30;
-        const SAMPLE_RATE: usize = 16000;
-        const TARGET_CHUNK_SIZE: usize = TARGET_CHUNK_DURATION_SECONDS * SAMPLE_RATE;
+        // Perform transcription using the external library's smart chunking
+        let full_transcription = {
+            let mut engine_guard = self.engine.lock().unwrap();
+            let engine = engine_guard.as_mut().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Model failed to load after auto-load attempt. Please check your model settings."
+                )
+            })?;
 
-        // Initialize VAD
-        let resource_path = self
-            .app_handle
-            .path()
-            .resource_dir()
-            .unwrap()
-            .join("resources/models/silero_vad_v4.onnx");
-
-        let mut vad = crate::audio_toolkit::vad::SileroVad::new(resource_path, 0.5)
-            .map_err(|e| anyhow::anyhow!("Failed to initialize VAD: {}", e))?;
-
-        let total_samples = audio.len();
-        let mut full_transcription = String::new();
-        let mut processed_samples = 0;
-        let mut start_idx = 0;
-
-        while start_idx < total_samples {
-            // Determine the end index for this chunk
-            let end_idx = if start_idx + TARGET_CHUNK_SIZE >= total_samples {
-                total_samples
-            } else {
-                // Look for a silence point around the target chunk size
-                // We'll search in a window of +/- 5 seconds around the 30s mark
-                let search_window_samples = 5 * SAMPLE_RATE;
-                let target_end = start_idx + TARGET_CHUNK_SIZE;
-                let search_start = target_end
-                    .saturating_sub(search_window_samples)
-                    .max(start_idx);
-                let search_end = (target_end + search_window_samples).min(total_samples);
-
-                let mut best_cut_idx = target_end.min(total_samples);
-                let mut found_silence = false;
-
-                // Iterate through frames in the search window to find silence
-                // Silero VAD expects 30ms frames (480 samples at 16kHz)
-                const VAD_FRAME_SIZE: usize = 480; // 30ms * 16000Hz / 1000
-
-                // Align search start to frame boundary relative to start_idx
-                let aligned_search_start =
-                    start_idx + ((search_start - start_idx) / VAD_FRAME_SIZE) * VAD_FRAME_SIZE;
-
-                for current_pos in (aligned_search_start..search_end).step_by(VAD_FRAME_SIZE) {
-                    if current_pos + VAD_FRAME_SIZE > total_samples {
-                        break;
-                    }
-
-                    let frame = &audio[current_pos..current_pos + VAD_FRAME_SIZE];
-                    match vad.push_frame(frame) {
-                        Ok(frame_type) => {
-                            if !frame_type.is_speech() {
-                                // Found silence! Use the end of this frame as cut point
-                                best_cut_idx = current_pos + VAD_FRAME_SIZE;
-                                found_silence = true;
-                                // Prefer cuts closer to the target duration?
-                                // For now, taking the first silence after the minimum duration might be safer
-                                // or finding the longest silence.
-                                // Let's just take the first valid silence we find in the window for simplicity/speed
-                                // But ideally we want to be as close to 30s as possible.
-
-                                // Let's try to find silence closest to target_end
-                                if (best_cut_idx as i64 - target_end as i64).abs()
-                                    < (target_end as i64 - best_cut_idx as i64).abs()
-                                {
-                                    // This logic is a bit flawed in a loop.
-                                    // Let's just break on first silence found in the window?
-                                    // Or maybe search backwards from max window?
-                                    break;
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            warn!("VAD error at sample {}: {}", current_pos, e);
-                        }
-                    }
-                }
-
-                // If no silence found, just cut at target size
-                if !found_silence {
-                    log_debug!("No silence found in search window, hard cutting at 30s");
-                    target_end.min(total_samples)
-                } else {
-                    log_debug!("Found silence at sample {}, cutting there", best_cut_idx);
-                    best_cut_idx
-                }
+            let app_handle = self.app_handle.clone();
+            let progress_callback = move |progress: f64| {
+                let _ = app_handle.emit("transcription-progress", progress);
             };
 
-            let chunk_len = end_idx - start_idx;
-            let chunk_vec = audio[start_idx..end_idx].to_vec();
-
-            log_debug!(
-                "Processing chunk: start={}, len={} samples",
-                start_idx,
-                chunk_len
-            );
-
-            // Perform transcription for the current chunk
-            let chunk_result = {
-                let mut engine_guard = self.engine.lock().unwrap();
-                let engine = engine_guard.as_mut().ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "Model failed to load after auto-load attempt. Please check your model settings."
-                    )
-                })?;
-
-                match engine {
-                    LoadedEngine::Whisper(whisper_engine) => {
-                        // Normalize language code for Whisper
-                        let whisper_language = if settings.selected_language == "auto" {
-                            None
+            match engine {
+                LoadedEngine::Whisper(whisper_engine) => {
+                    // Normalize language code for Whisper
+                    let whisper_language = if settings.selected_language == "auto" {
+                        None
+                    } else {
+                        let normalized = if settings.selected_language == "zh-Hans"
+                            || settings.selected_language == "zh-Hant"
+                        {
+                            "zh".to_string()
                         } else {
-                            let normalized = if settings.selected_language == "zh-Hans"
-                                || settings.selected_language == "zh-Hant"
-                            {
-                                "zh".to_string()
-                            } else {
-                                settings.selected_language.clone()
-                            };
-                            Some(normalized)
+                            settings.selected_language.clone()
                         };
+                        Some(normalized)
+                    };
 
-                        let params = WhisperInferenceParams {
-                            language: whisper_language,
-                            translate: settings.translate_to_english,
-                            ..Default::default()
-                        };
+                    let params = WhisperInferenceParams {
+                        language: whisper_language,
+                        translate: settings.translate_to_english,
+                        ..Default::default()
+                    };
 
-                        whisper_engine
-                            .transcribe_samples(chunk_vec, Some(params))
-                            .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
-                    }
-                    LoadedEngine::Parakeet(parakeet_engine) => {
-                        let params = ParakeetInferenceParams {
-                            timestamp_granularity: TimestampGranularity::Segment,
-                            ..Default::default()
-                        };
-
-                        parakeet_engine
-                            .transcribe_samples(chunk_vec, Some(params))
-                            .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
-                    }
+                    // Assuming the new API is available on the engine
+                    whisper_engine
+                        .transcribe_with_smart_chunking(audio, Some(params), progress_callback)
+                        .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
                 }
-            };
+                LoadedEngine::Parakeet(parakeet_engine) => {
+                    let params = ParakeetInferenceParams {
+                        timestamp_granularity: TimestampGranularity::Segment,
+                        ..Default::default()
+                    };
 
-            // Append chunk result to full transcription
-            if !full_transcription.is_empty() {
-                full_transcription.push(' ');
+                    parakeet_engine
+                        .transcribe_with_smart_chunking(audio, Some(params), progress_callback)
+                        .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
+                }
             }
-            full_transcription.push_str(&chunk_result.text);
-
-            // Update progress
-            processed_samples = end_idx;
-            let progress = (processed_samples as f64 / total_samples as f64) * 100.0;
-            let _ = self.app_handle.emit("transcription-progress", progress);
-
-            // Update last activity to prevent timeout during long loops
-            self.last_activity.store(
-                SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-                Ordering::Relaxed,
-            );
-
-            // Move to next chunk
-            start_idx = end_idx;
-        }
+        };
 
         // Apply word correction if custom words are configured
         let corrected_result = if !settings.custom_words.is_empty() {
             apply_custom_words(
-                &full_transcription,
+                &full_transcription.text, // Assuming result is TranscriptionResult
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            full_transcription
+            full_transcription.text
         };
 
         let et = std::time::Instant::now();

@@ -68,7 +68,7 @@ chrono = "0.4"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = "0.1.4"
+transcribe-rs = { path = "../transcribe-rs" }
 ferrous-opencc = "0.2.3"
 symphonia = { version = "0.5.4", features = ["mp3", "isomp4", "pcm", "all-codecs"] }
 
