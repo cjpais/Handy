@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { useSettings } from "../../hooks/useSettings";
-import { ModelUnloadTimeout } from "../../lib/types";
+import { commands, type ModelUnloadTimeout } from "@/bindings";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 
@@ -35,7 +34,7 @@ export const ModelUnloadTimeoutSetting: React.FC<ModelUnloadTimeoutProps> = ({
     const newTimeout = event.target.value as ModelUnloadTimeout;
 
     try {
-      await invoke("set_model_unload_timeout", { timeout: newTimeout });
+      await commands.setModelUnloadTimeout(newTimeout);
       updateSetting("model_unload_timeout", newTimeout);
     } catch (error) {
       console.error("Failed to update model unload timeout:", error);

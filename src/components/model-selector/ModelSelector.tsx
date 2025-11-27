@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { ModelInfo } from "../../lib/types";
+import { commands, type ModelInfo } from "@/bindings";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
@@ -238,8 +237,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
   const loadModels = async () => {
     try {
-      const modelList = await invoke<ModelInfo[]>("get_available_models");
-      setModels(modelList);
+      const result = await commands.getAvailableModels();
+      if (result.status === "ok") {
+        setModels(result.data);
+      }
     } catch (err) {
       console.error("Failed to load models:", err);
     }
@@ -247,21 +248,25 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
   const loadCurrentModel = async () => {
     try {
-      const current = await invoke<string>("get_current_model");
-      setCurrentModelId(current);
+      const result = await commands.getCurrentModel();
+      if (result.status === "ok") {
+        const current = result.data;
+        setCurrentModelId(current);
 
-      if (current) {
-        // Check if model is actually loaded
-        const transcriptionStatus = await invoke<string | null>(
-          "get_transcription_model_status",
-        );
-        if (transcriptionStatus === current) {
-          setModelStatus("ready");
+        if (current) {
+          // Check if model is actually loaded
+          const statusResult = await commands.getTranscriptionModelStatus();
+          if (statusResult.status === "ok") {
+            const transcriptionStatus = statusResult.data;
+            if (transcriptionStatus === current) {
+              setModelStatus("ready");
+            } else {
+              setModelStatus("unloaded");
+            }
+          }
         } else {
-          setModelStatus("unloaded");
+          setModelStatus("none");
         }
-      } else {
-        setModelStatus("none");
       }
     } catch (err) {
       console.error("Failed to load current model:", err);
@@ -272,10 +277,16 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
   const handleModelSelect = async (modelId: string) => {
     try {
+      setCurrentModelId(modelId); // Set optimistically so loading text shows correct model
       setModelError(null);
       setShowModelDropdown(false);
-      await invoke("set_active_model", { modelId });
-      setCurrentModelId(modelId);
+      const result = await commands.setActiveModel(modelId);
+      if (result.status === "error") {
+        const errorMsg = result.error;
+        setModelError(errorMsg);
+        setModelStatus("error");
+        onError?.(errorMsg);
+      }
     } catch (err) {
       const errorMsg = `${err}`;
       setModelError(errorMsg);
@@ -287,7 +298,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const handleModelDownload = async (modelId: string) => {
     try {
       setModelError(null);
-      await invoke("download_model", { modelId });
+      const result = await commands.downloadModel(modelId);
+      if (result.status === "error") {
+        const errorMsg = result.error;
+        setModelError(errorMsg);
+        setModelStatus("error");
+        onError?.(errorMsg);
+      }
     } catch (err) {
       const errorMsg = `${err}`;
       setModelError(errorMsg);
@@ -347,9 +364,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   };
 
   const handleModelDelete = async (modelId: string) => {
-    await invoke("delete_model", { modelId });
-    await loadModels();
-    setModelError(null);
+    const result = await commands.deleteModel(modelId);
+    if (result.status === "ok") {
+      await loadModels();
+      setModelError(null);
+    }
   };
 
   return (

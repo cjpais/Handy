@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import "./App.css";
@@ -7,6 +6,7 @@ import Footer from "./components/footer";
 import Onboarding from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
+import { commands } from "@/bindings";
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -52,8 +52,12 @@ function App() {
   const checkOnboardingStatus = async () => {
     try {
       // Always check if they have any models available
-      const modelsAvailable: boolean = await invoke("has_any_models_available");
-      setShowOnboarding(!modelsAvailable);
+      const result = await commands.hasAnyModelsAvailable();
+      if (result.status === "ok") {
+        setShowOnboarding(!result.data);
+      } else {
+        setShowOnboarding(true);
+      }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);
       setShowOnboarding(true);
