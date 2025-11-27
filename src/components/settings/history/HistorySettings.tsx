@@ -2,17 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-
-interface HistoryEntry {
-  id: number;
-  file_name: string;
-  timestamp: number;
-  saved: boolean;
-  title: string;
-  transcription_text: string;
-}
+import { commands, type HistoryEntry } from "@/bindings";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -39,8 +31,10 @@ export const HistorySettings: React.FC = () => {
 
   const loadHistoryEntries = useCallback(async () => {
     try {
-      const entries = await invoke<HistoryEntry[]>("get_history_entries");
-      setHistoryEntries(entries);
+      const result = await commands.getHistoryEntries();
+      if (result.status === "ok") {
+        setHistoryEntries(result.data);
+      }
     } catch (error) {
       console.error("Failed to load history entries:", error);
     } finally {
@@ -73,9 +67,9 @@ export const HistorySettings: React.FC = () => {
     };
   }, [loadHistoryEntries]);
 
-  const toggleSaved = async (id: number) => {
+  const toggleSaved = async (id: string) => {
     try {
-      await invoke("toggle_history_entry_saved", { id });
+      await commands.toggleHistoryEntrySaved(id);
       // No need to reload here - the event listener will handle it
     } catch (error) {
       console.error("Failed to toggle saved status:", error);
@@ -92,20 +86,20 @@ export const HistorySettings: React.FC = () => {
 
   const getAudioUrl = async (fileName: string) => {
     try {
-      const filePath = await invoke<string>("get_audio_file_path", {
-        fileName,
-      });
-
-      return convertFileSrc(`${filePath}`, "asset");
+      const result = await commands.getAudioFilePath(fileName);
+      if (result.status === "ok") {
+        return convertFileSrc(`${result.data}`, "asset");
+      }
+      return null;
     } catch (error) {
       console.error("Failed to get audio file path:", error);
       return null;
     }
   };
 
-  const deleteAudioEntry = async (id: number) => {
+  const deleteAudioEntry = async (id: string) => {
     try {
-      await invoke("delete_history_entry", { id });
+      await commands.deleteHistoryEntry(id);
     } catch (error) {
       console.error("Failed to delete audio entry:", error);
       throw error;
@@ -114,7 +108,7 @@ export const HistorySettings: React.FC = () => {
 
   const openRecordingsFolder = async () => {
     try {
-      await invoke("open_recordings_folder");
+      await commands.openRecordingsFolder();
     } catch (error) {
       console.error("Failed to open recordings folder:", error);
     }
@@ -199,7 +193,7 @@ interface HistoryEntryProps {
   onToggleSaved: () => void;
   onCopyText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
-  deleteAudio: (id: number) => Promise<void>;
+  deleteAudio: (id: string) => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({

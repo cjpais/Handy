@@ -9,7 +9,7 @@ import {
 import { ResetButton } from "../ui/ResetButton";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import { invoke } from "@tauri-apps/api/core";
+import { commands } from "@/bindings";
 import { toast } from "sonner";
 
 interface HandyShortcutProps {
@@ -84,7 +84,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         if (editingShortcutId && originalBinding) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
-            await invoke("resume_binding", { id: editingShortcutId }).catch(
+            await commands.resumeBinding(editingShortcutId).catch(
               console.error,
             );
           } catch (error) {
@@ -92,7 +92,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
             toast.error("Failed to restore original shortcut");
           }
         } else if (editingShortcutId) {
-          await invoke("resume_binding", { id: editingShortcutId }).catch(
+          await commands.resumeBinding(editingShortcutId).catch(
             console.error,
           );
         }
@@ -138,7 +138,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
           try {
             await updateBinding(editingShortcutId, newShortcut);
             // Re-register the shortcut now that recording is finished
-            await invoke("resume_binding", { id: editingShortcutId }).catch(
+            await commands.resumeBinding(editingShortcutId).catch(
               console.error,
             );
           } catch (error) {
@@ -149,7 +149,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
             if (originalBinding) {
               try {
                 await updateBinding(editingShortcutId, originalBinding);
-                await invoke("resume_binding", { id: editingShortcutId }).catch(
+                await commands.resumeBinding(editingShortcutId).catch(
                   console.error,
                 );
               } catch (resetError) {
@@ -177,7 +177,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         if (editingShortcutId && originalBinding) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
-            await invoke("resume_binding", { id: editingShortcutId }).catch(
+            await commands.resumeBinding(editingShortcutId).catch(
               console.error,
             );
           } catch (error) {
@@ -185,7 +185,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
             toast.error("Failed to restore original shortcut");
           }
         } else if (editingShortcutId) {
-          invoke("resume_binding", { id: editingShortcutId }).catch(
+          commands.resumeBinding(editingShortcutId).catch(
             console.error,
           );
         }
@@ -221,7 +221,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     if (editingShortcutId === id) return; // Already editing this shortcut
 
     // Suspend current binding to avoid firing while recording
-    await invoke("suspend_binding", { id }).catch(console.error);
+    await commands.suspendBinding(id).catch(console.error);
 
     // Store the original binding to restore if canceled
     setOriginalBinding(bindings[id]?.current_binding || "");

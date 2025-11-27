@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { RefreshCcw } from "lucide-react";
+import { commands } from "@/bindings";
 
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
@@ -16,7 +16,7 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { useSettings } from "../../../hooks/useSettings";
-import type { LLMPrompt } from "../../../lib/types";
+import type { LLMPrompt } from "@/bindings";
 
 const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -178,13 +178,15 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!draftName.trim() || !draftText.trim()) return;
 
     try {
-      const newPrompt = await invoke<LLMPrompt>("add_post_process_prompt", {
-        name: draftName.trim(),
-        prompt: draftText.trim(),
-      });
-      await refreshSettings();
-      updateSetting("post_process_selected_prompt_id", newPrompt.id);
-      setIsCreating(false);
+      const result = await commands.addPostProcessPrompt(
+        draftName.trim(),
+        draftText.trim()
+      );
+      if (result.status === "ok") {
+        await refreshSettings();
+        updateSetting("post_process_selected_prompt_id", result.data.id);
+        setIsCreating(false);
+      }
     } catch (error) {
       console.error("Failed to create prompt:", error);
     }
@@ -194,11 +196,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!selectedPromptId || !draftName.trim() || !draftText.trim()) return;
 
     try {
-      await invoke("update_post_process_prompt", {
-        id: selectedPromptId,
-        name: draftName.trim(),
-        prompt: draftText.trim(),
-      });
+      await commands.updatePostProcessPrompt(
+        selectedPromptId,
+        draftName.trim(),
+        draftText.trim()
+      );
       await refreshSettings();
     } catch (error) {
       console.error("Failed to update prompt:", error);
@@ -209,7 +211,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     if (!promptId) return;
 
     try {
-      await invoke("delete_post_process_prompt", { id: promptId });
+      await commands.deletePostProcessPrompt(promptId);
       await refreshSettings();
       setIsCreating(false);
     } catch (error) {

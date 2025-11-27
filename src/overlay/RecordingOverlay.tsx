@@ -1,4 +1,3 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -7,6 +6,7 @@ import {
   CancelIcon,
 } from "../components/icons";
 import "./RecordingOverlay.css";
+import { commands } from "@/bindings";
 
 type OverlayState = "recording" | "transcribing";
 
@@ -93,7 +93,7 @@ const RecordingOverlay: React.FC = () => {
           <div
             className="cancel-button"
             onClick={() => {
-              invoke("cancel_operation");
+              commands.cancelOperation();
             }}
           >
             <CancelIcon />
