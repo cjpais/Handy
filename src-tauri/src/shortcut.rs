@@ -285,6 +285,7 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
     let parsed = match method.as_str() {
         "ctrl_v" => PasteMethod::CtrlV,
         "direct" => PasteMethod::Direct,
+        "none" => PasteMethod::None,
         "shift_insert" => PasteMethod::ShiftInsert,
         other => {
             warn!("Invalid paste method '{}', defaulting to ctrl_v", other);
