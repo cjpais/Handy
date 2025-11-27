@@ -36,10 +36,10 @@ export const DebugSettings: React.FC = () => {
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
-		<HandyShortcut
-    		shortcutIds={["cancel"]}
-    		grouped={true}
-    		disabled={pushToTalk}
+        <HandyShortcut
+          shortcutId="cancel"
+          grouped={true}
+          disabled={pushToTalk}
         />
       </SettingsGroup>
     </div>
