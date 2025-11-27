@@ -277,12 +277,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
   const handleModelSelect = async (modelId: string) => {
     try {
+      setCurrentModelId(modelId); // Set optimistically so loading text shows correct model
       setModelError(null);
       setShowModelDropdown(false);
       const result = await commands.setActiveModel(modelId);
-      if (result.status === "ok") {
-        setCurrentModelId(modelId);
-      } else {
+      if (result.status === "error") {
         const errorMsg = result.error;
         setModelError(errorMsg);
         setModelStatus("error");
