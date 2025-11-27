@@ -40,12 +40,11 @@ fn send_paste_ctrl_v() -> Result<(), String> {
 
 /// Sends a Shift+Insert paste command (Windows and Linux only).
 /// This is more universal for terminal applications and legacy software.
-#[cfg(not(target_os = "macos"))]
 fn send_paste_shift_insert() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let insert_key_code = Key::Other(0x2D); // VK_INSERT
-    #[cfg(target_os = "linux")]
-    let insert_key_code = Key::Other(0x76); // XK_Insert (keycode 118 / 0x76)
+    #[cfg(not(target_os = "windows"))]
+    let insert_key_code = Key::Other(0x76); // XK_Insert (keycode 118 / 0x76, also used as fallback)
 
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
@@ -109,7 +108,6 @@ fn paste_via_clipboard_ctrl_v(text: &str, app_handle: &AppHandle) -> Result<(), 
 
 /// Pastes text using the clipboard method with Shift+Insert (Windows/Linux only).
 /// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-#[cfg(not(target_os = "macos"))]
 fn paste_via_clipboard_shift_insert(text: &str, app_handle: &AppHandle) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
 
@@ -145,7 +143,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     match paste_method {
         PasteMethod::CtrlV => paste_via_clipboard_ctrl_v(&text, &app_handle)?,
         PasteMethod::Direct => paste_via_direct_input(&text)?,
-        #[cfg(not(target_os = "macos"))]
         PasteMethod::ShiftInsert => paste_via_clipboard_shift_insert(&text, &app_handle)?,
     }
 
