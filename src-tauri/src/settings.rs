@@ -1,11 +1,79 @@
 use log::{debug, warn};
-use serde::{Deserialize, Serialize};
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
+use specta::Type;
 use std::collections::HashMap;
 use tauri::AppHandle;
-use tauri_plugin_log::LogLevel;
 use tauri_plugin_store::StoreExt;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+// Custom deserializer to handle both old numeric format (1-5) and new string format ("trace", "debug", etc.)
+impl<'de> Deserialize<'de> for LogLevel {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct LogLevelVisitor;
+
+        impl<'de> Visitor<'de> for LogLevelVisitor {
+            type Value = LogLevel;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string or integer representing log level")
+            }
+
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<LogLevel, E> {
+                match value.to_lowercase().as_str() {
+                    "trace" => Ok(LogLevel::Trace),
+                    "debug" => Ok(LogLevel::Debug),
+                    "info" => Ok(LogLevel::Info),
+                    "warn" => Ok(LogLevel::Warn),
+                    "error" => Ok(LogLevel::Error),
+                    _ => Err(E::unknown_variant(
+                        value,
+                        &["trace", "debug", "info", "warn", "error"],
+                    )),
+                }
+            }
+
+            fn visit_u64<E: de::Error>(self, value: u64) -> Result<LogLevel, E> {
+                match value {
+                    1 => Ok(LogLevel::Trace),
+                    2 => Ok(LogLevel::Debug),
+                    3 => Ok(LogLevel::Info),
+                    4 => Ok(LogLevel::Warn),
+                    5 => Ok(LogLevel::Error),
+                    _ => Err(E::invalid_value(de::Unexpected::Unsigned(value), &"1-5")),
+                }
+            }
+        }
+
+        deserializer.deserialize_any(LogLevelVisitor)
+    }
+}
+
+impl From<LogLevel> for tauri_plugin_log::LogLevel {
+    fn from(level: LogLevel) -> Self {
+        match level {
+            LogLevel::Trace => tauri_plugin_log::LogLevel::Trace,
+            LogLevel::Debug => tauri_plugin_log::LogLevel::Debug,
+            LogLevel::Info => tauri_plugin_log::LogLevel::Info,
+            LogLevel::Warn => tauri_plugin_log::LogLevel::Warn,
+            LogLevel::Error => tauri_plugin_log::LogLevel::Error,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct ShortcutBinding {
     pub id: String,
     pub name: String,
@@ -14,14 +82,14 @@ pub struct ShortcutBinding {
     pub current_binding: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct LLMPrompt {
     pub id: String,
     pub name: String,
     pub prompt: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct PostProcessProvider {
     pub id: String,
     pub label: String,
@@ -32,7 +100,7 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
     None,
@@ -40,7 +108,7 @@ pub enum OverlayPosition {
     Bottom,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
@@ -53,23 +121,23 @@ pub enum ModelUnloadTimeout {
     Sec5, // Debug mode only
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum PasteMethod {
     CtrlV,
     Direct,
-    #[cfg(not(target_os = "macos"))]
+    None,
     ShiftInsert,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ClipboardHandling {
     DontModify,
     CopyToClipboard,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordingRetentionPeriod {
     Never,
@@ -125,7 +193,7 @@ impl ModelUnloadTimeout {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SoundTheme {
     Marimba,
@@ -152,7 +220,7 @@ impl SoundTheme {
 }
 
 /* still handy for composing the initial JSON in the store ------------- */
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
