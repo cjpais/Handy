@@ -14,7 +14,7 @@ const getPasteMethodOptions = (osType: string) => {
   const baseOptions = [
     { value: "ctrl_v", label: "Clipboard (Ctrl+V)" },
     { value: "direct", label: "Direct" },
-    { value: "disabled", label: "Disabled" },
+    { value: "none", label: "None" },
   ];
 
   // Add Shift+Insert option for Windows and Linux only
@@ -45,7 +45,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
     return (
       <SettingContainer
         title="Paste Method"
-        description="Clipboard (Ctrl+V) simulates Ctrl/Cmd+V keystrokes to paste from your clipboard. Direct tries to use system input methods if possible, otherwise inputs keystrokes one by one into the text field. Clipboard (Shift+Insert) uses the more universal Shift+Insert shortcut, ideal for terminal applications and SSH clients. 'Disabled' skips pasting entirely and only updates history/clipboard as configured."
+        description="Ctrl+V: 'pastes' via ctrl+v. Direct: type text directly. Shift+Insert: pastes via shift+insert. None: skip paste; just update history/clipboard."
         descriptionMode={descriptionMode}
         grouped={grouped}
         tooltipPosition="bottom"

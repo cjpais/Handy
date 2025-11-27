@@ -141,9 +141,9 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     // Perform the paste operation
     match paste_method {
-        PasteMethod::Disabled => {
+        PasteMethod::None => {
             // Intentionally do not perform any paste action; history/clipboard update
-            info!("PasteMethod::Disabled selected - skipping paste action");
+            info!("PasteMethod::None selected - skipping paste action");
         }
         PasteMethod::CtrlV => paste_via_clipboard_ctrl_v(&text, &app_handle)?,
         PasteMethod::Direct => paste_via_direct_input(&text)?,
