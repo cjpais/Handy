@@ -1,15 +1,22 @@
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
+use crate::utils::is_wayland;
 use enigo::Enigo;
 use enigo::Key;
 use enigo::Keyboard;
 use enigo::Settings;
 use log::info;
+use std::process::Command;
 use tauri::AppHandle;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 /// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.
 /// This ensures the paste works regardless of keyboard layout (e.g., Russian, AZERTY, DVORAK).
 fn send_paste_ctrl_v() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if try_wayland_send_paste(&PasteMethod::CtrlV)? {
+        return Ok(());
+    }
+
     // Platform-specific key definitions
     #[cfg(target_os = "macos")]
     let (modifier_key, v_key_code) = (Key::Meta, Key::Other(9));
@@ -41,6 +48,11 @@ fn send_paste_ctrl_v() -> Result<(), String> {
 /// Sends a Shift+Insert paste command (Windows and Linux only).
 /// This is more universal for terminal applications and legacy software.
 fn send_paste_shift_insert() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if try_wayland_send_paste(&PasteMethod::ShiftInsert)? {
+        return Ok(());
+    }
+
     #[cfg(target_os = "windows")]
     let insert_key_code = Key::Other(0x2D); // VK_INSERT
     #[cfg(not(target_os = "windows"))]
@@ -129,6 +141,88 @@ fn paste_via_clipboard_shift_insert(text: &str, app_handle: &AppHandle) -> Resul
     clipboard
         .write_text(&clipboard_content)
         .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
+
+    Ok(())
+}
+
+/// Attempts to paste using Wayland-specific tools (`wtype` or `dotool`).
+/// Returns `Ok(true)` if a Wayland tool handled the paste, `Ok(false)` if not applicable,
+/// or `Err` on failure from the underlying tool.
+#[cfg(target_os = "linux")]
+fn try_wayland_send_paste(paste_method: &PasteMethod) -> Result<bool, String> {
+    if is_wayland() {
+        if is_wtype_available() {
+            send_paste_via_wtype(paste_method)?;
+            return Ok(true);
+        } else if is_dotool_available() {
+            send_paste_via_dotool(paste_method)?;
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
+}
+
+/// Check if wtype is available (Wayland text input tool)
+#[cfg(target_os = "linux")]
+fn is_wtype_available() -> bool {
+    Command::new("which")
+        .arg("wtype")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Check if dotool is available (another Wayland text input tool)
+#[cfg(target_os = "linux")]
+fn is_dotool_available() -> bool {
+    Command::new("which")
+        .arg("dotool")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Paste using wtype and return a friendly error on failure.
+#[cfg(target_os = "linux")]
+fn send_paste_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
+    let args: Vec<&str> = match paste_method {
+        PasteMethod::CtrlV => vec!["-M", "ctrl", "-k", "v"],
+        PasteMethod::ShiftInsert => vec!["-M", "shift", "-k", "Insert"],
+        _ => return Err("Unsupported paste method".into()),
+    };
+
+    let output = Command::new("wtype")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute wtype: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("wtype failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+/// Paste using dotool and return a friendly error on failure.
+#[cfg(target_os = "linux")]
+fn send_paste_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
+    let command;
+    match paste_method {
+        PasteMethod::CtrlV => command = "echo key ctrl+v | dotool",
+        PasteMethod::ShiftInsert => command = "echo key shift+insert | dotool",
+        _ => return Err("Unsupported paste method".into()),
+    }
+    let output = Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .output()
+        .map_err(|e| format!("Failed to execute dotool: {}", e))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("dotool failed: {}", stderr));
+    }
 
     Ok(())
 }
