@@ -140,7 +140,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   // Update status functions
   const getUpdateStatusText = () => {
     if (!updateChecksEnabled) {
-      return "Update Checker Disabled";
+      return "Update Checking Disabled";
     }
     if (isInstalling) {
       return downloadProgress > 0 && downloadProgress < 100
