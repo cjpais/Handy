@@ -18,7 +18,6 @@ pub fn init_shortcuts(app: &AppHandle) {
     let default_bindings = settings::get_default_settings().bindings;
     let user_settings = settings::load_or_create_app_settings(app);
 
-
     // Register all default shortcuts, applying user customizations
     for (id, default_binding) in default_bindings {
         if id == "cancel" {
@@ -277,6 +276,24 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
         "settings-changed",
         serde_json::json!({
             "setting": "autostart_enabled",
+            "value": enabled
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_update_checks_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.update_checks_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "update_checks_enabled",
             "value": enabled
         }),
     );

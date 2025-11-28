@@ -76,24 +76,28 @@ const settingUpdaters: {
     commands.changeAudioFeedbackSetting(value as boolean),
   audio_feedback_volume: (value) =>
     commands.changeAudioFeedbackVolumeSetting(value as number),
-  sound_theme: (value) =>
-    commands.changeSoundThemeSetting(value as string),
-  start_hidden: (value) =>
-    commands.changeStartHiddenSetting(value as boolean),
+  sound_theme: (value) => commands.changeSoundThemeSetting(value as string),
+  start_hidden: (value) => commands.changeStartHiddenSetting(value as boolean),
   autostart_enabled: (value) =>
     commands.changeAutostartSetting(value as boolean),
+  update_checks_enabled: (value) =>
+    commands.changeUpdateChecksSetting(value as boolean),
   push_to_talk: (value) => commands.changePttSetting(value as boolean),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
-      (value as string) === "Default" || value === null ? "default" : (value as string)
+      (value as string) === "Default" || value === null
+        ? "default"
+        : (value as string),
     ),
   clamshell_microphone: (value) =>
     commands.setClamshellMicrophone(
-      (value as string) === "Default" ? "default" : (value as string)
+      (value as string) === "Default" ? "default" : (value as string),
     ),
   selected_output_device: (value) =>
     commands.setSelectedOutputDevice(
-      (value as string) === "Default" || value === null ? "default" : (value as string)
+      (value as string) === "Default" || value === null
+        ? "default"
+        : (value as string),
     ),
   recording_retention_period: (value) =>
     commands.updateRecordingRetentionPeriod(value as string),
@@ -103,13 +107,11 @@ const settingUpdaters: {
     commands.changeSelectedLanguageSetting(value as string),
   overlay_position: (value) =>
     commands.changeOverlayPositionSetting(value as string),
-  debug_mode: (value) =>
-    commands.changeDebugModeSetting(value as boolean),
+  debug_mode: (value) => commands.changeDebugModeSetting(value as boolean),
   custom_words: (value) => commands.updateCustomWords(value as string[]),
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
-  paste_method: (value) =>
-    commands.changePasteMethodSetting(value as string),
+  paste_method: (value) => commands.changePasteMethodSetting(value as string),
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
   history_limit: (value) => commands.updateHistoryLimit(value as string),
@@ -158,10 +160,8 @@ export const useSettingsStore = create<SettingsStore>()(
           const normalizedSettings: Settings = {
             ...settings,
             always_on_microphone: settings.always_on_microphone ?? false,
-            selected_microphone:
-              settings.selected_microphone ?? "Default",
-            clamshell_microphone:
-              settings.clamshell_microphone ?? "Default",
+            selected_microphone: settings.selected_microphone ?? "Default",
+            clamshell_microphone: settings.clamshell_microphone ?? "Default",
             selected_output_device:
               settings.selected_output_device ?? "Default",
           };
