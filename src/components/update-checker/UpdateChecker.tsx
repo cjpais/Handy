@@ -17,8 +17,9 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [showUpToDate, setShowUpToDate] = useState(false);
 
-  const { settings } = useSettings();
-  const updateChecksEnabled = settings?.update_checks_enabled ?? true;
+  const { settings, isLoading } = useSettings();
+  const settingsLoaded = !isLoading && settings !== null;
+  const updateChecksEnabled = settings?.update_checks_enabled ?? false;
 
   const upToDateTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const isManualCheckRef = useRef(false);
@@ -26,6 +27,9 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const contentLengthRef = useRef(0);
 
   useEffect(() => {
+    // Wait for settings to load before doing anything
+    if (!settingsLoaded) return;
+
     if (!updateChecksEnabled) {
       if (upToDateTimeoutRef.current) {
         clearTimeout(upToDateTimeoutRef.current);
@@ -49,7 +53,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
       }
       updateUnlisten.then((fn) => fn());
     };
-  }, [updateChecksEnabled]);
+  }, [settingsLoaded, updateChecksEnabled]);
 
   // Update checking functions
   const checkForUpdates = async () => {
@@ -136,7 +140,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   // Update status functions
   const getUpdateStatusText = () => {
     if (!updateChecksEnabled) {
-      return "Updates disabled";
+      return "Update Checker Disabled";
     }
     if (isInstalling) {
       return downloadProgress > 0 && downloadProgress < 100

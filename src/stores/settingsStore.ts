@@ -81,7 +81,7 @@ const settingUpdaters: {
   autostart_enabled: (value) =>
     commands.changeAutostartSetting(value as boolean),
   update_checks_enabled: (value) =>
-    invoke("change_update_checks_setting", { enabled: value }),
+    commands.changeUpdateChecksSetting(value as boolean),
   push_to_talk: (value) => commands.changePttSetting(value as boolean),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
