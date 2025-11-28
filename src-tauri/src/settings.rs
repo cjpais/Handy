@@ -432,6 +432,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_shortcut.to_string(),
         },
     );
+    bindings.insert(
+        "cancel".to_string(),
+        ShortcutBinding {
+            id: "cancel".to_string(),
+            name: "Cancel".to_string(),
+            description: "Cancels the current recording.".to_string(),
+            default_binding: "escape".to_string(),
+            current_binding: "escape".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,
@@ -501,8 +511,25 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     let settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
-            Ok(settings) => {
+            Ok(mut settings) => {
                 debug!("Found existing settings: {:?}", settings);
+                let default_settings = get_default_settings();
+                let mut updated = false;
+
+                // Merge default bindings into existing settings
+                for (key, value) in default_settings.bindings {
+                    if !settings.bindings.contains_key(&key) {
+                        debug!("Adding missing binding: {}", key);
+                        settings.bindings.insert(key, value);
+                        updated = true;
+                    }
+                }
+
+                if updated {
+                    debug!("Settings updated with new bindings");
+                    store.set("settings", serde_json::to_value(&settings).unwrap());
+                }
+
                 settings
             }
             Err(e) => {

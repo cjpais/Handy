@@ -15,11 +15,15 @@ import { toast } from "sonner";
 interface HandyShortcutProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  shortcutId: string;
+  disabled?: boolean;
 }
 
 export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
+  shortcutId,
+  disabled = false,
 }) => {
   const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
     useSettings();
@@ -267,48 +271,50 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     );
   }
 
+  const binding = bindings[shortcutId];
+  if (!binding) {
+    return (
+      <SettingContainer
+        title="Shortcut"
+        description="Shortcut not found"
+        descriptionMode={descriptionMode}
+        grouped={grouped}
+      >
+        <div className="text-sm text-mid-gray">No shortcut configured</div>
+      </SettingContainer>
+    );
+  }
+
   return (
     <SettingContainer
-      title="Handy Shortcut"
-      description="Set the keyboard shortcut to start and stop speech-to-text recording"
+      title={binding.name}
+      description={binding.description}
       descriptionMode={descriptionMode}
       grouped={grouped}
-      tooltipPosition="bottom"
+      disabled={disabled}
+      layout="horizontal"
     >
-      {(() => {
-        const primaryBinding = Object.values(bindings)[0];
-        const primaryId = Object.keys(bindings)[0];
-
-        if (!primaryBinding) {
-          return (
-            <div className="text-sm text-mid-gray">No shortcuts configured</div>
-          );
-        }
-
-        return (
-          <div className="flex items-center space-x-1">
-            {editingShortcutId === primaryId ? (
-              <div
-                ref={(ref) => setShortcutRef(primaryId, ref)}
-                className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
-              >
-                {formatCurrentKeys()}
-              </div>
-            ) : (
-              <div
-                className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
-                onClick={() => startRecording(primaryId)}
-              >
-                {formatKeyCombination(primaryBinding.current_binding, osType)}
-              </div>
-            )}
-            <ResetButton
-              onClick={() => resetBinding(primaryId)}
-              disabled={isUpdating(`binding_${primaryId}`)}
-            />
+      <div className="flex items-center space-x-1">
+        {editingShortcutId === shortcutId ? (
+          <div
+            ref={(ref) => setShortcutRef(shortcutId, ref)}
+            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
+          >
+            {formatCurrentKeys()}
           </div>
-        );
-      })()}
+        ) : (
+          <div
+            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
+            onClick={() => startRecording(shortcutId)}
+          >
+            {formatKeyCombination(binding.current_binding, osType)}
+          </div>
+        )}
+        <ResetButton
+          onClick={() => resetBinding(shortcutId)}
+          disabled={isUpdating(`binding_${shortcutId}`)}
+        />
+      </div>
     </SettingContainer>
   );
 };

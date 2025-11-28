@@ -1,11 +1,13 @@
 use log::{error, warn};
 use serde::Serialize;
 use specta::Type;
+use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
+use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutBinding;
 use crate::settings::{
     self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
@@ -13,12 +15,23 @@ use crate::settings::{
 use crate::ManagedToggleState;
 
 pub fn init_shortcuts(app: &AppHandle) {
-    let settings = settings::load_or_create_app_settings(app);
+    let default_bindings = settings::get_default_settings().bindings;
+    let user_settings = settings::load_or_create_app_settings(app);
 
-    // Register shortcuts with the bindings from settings
-    for (_id, binding) in settings.bindings {
-        if let Err(e) = _register_shortcut(app, binding) {
-            error!("Failed to register shortcut {} during init: {}", _id, e);
+
+    // Register all default shortcuts, applying user customizations
+    for (id, default_binding) in default_bindings {
+        if id == "cancel" {
+            continue; // Skip cancel shortcut, it will be registered dynamically
+        }
+        let binding = user_settings
+            .bindings
+            .get(&id)
+            .cloned()
+            .unwrap_or(default_binding);
+
+        if let Err(e) = register_shortcut(app, binding) {
+            error!("Failed to register shortcut {} during init: {}", id, e);
         }
     }
 }
@@ -52,9 +65,23 @@ pub fn change_binding(
             });
         }
     };
+    // If this is the cancel binding, just update the settings and return
+    // It's managed dynamically, so we don't register/unregister here
+    if id == "cancel" {
+        if let Some(mut b) = settings.bindings.get(&id).cloned() {
+            b.current_binding = binding;
+            settings.bindings.insert(id.clone(), b.clone());
+            settings::write_settings(&app, settings);
+            return Ok(BindingResponse {
+                success: true,
+                binding: Some(b.clone()),
+                error: None,
+            });
+        }
+    }
 
     // Unregister the existing binding
-    if let Err(e) = _unregister_shortcut(&app, binding_to_modify.clone()) {
+    if let Err(e) = unregister_shortcut(&app, binding_to_modify.clone()) {
         let error_msg = format!("Failed to unregister shortcut: {}", e);
         error!("change_binding error: {}", error_msg);
     }
@@ -70,7 +97,7 @@ pub fn change_binding(
     updated_binding.current_binding = binding;
 
     // Register the new binding
-    if let Err(e) = _register_shortcut(&app, updated_binding.clone()) {
+    if let Err(e) = register_shortcut(&app, updated_binding.clone()) {
         let error_msg = format!("Failed to register shortcut: {}", e);
         error!("change_binding error: {}", error_msg);
         return Ok(BindingResponse {
@@ -673,7 +700,7 @@ fn validate_shortcut_string(raw: &str) -> Result<(), String> {
 #[specta::specta]
 pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = _unregister_shortcut(&app, b) {
+        if let Err(e) = unregister_shortcut(&app, b) {
             error!("suspend_binding error for id '{}': {}", id, e);
             return Err(e);
         }
@@ -686,7 +713,7 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 #[specta::specta]
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
-        if let Err(e) = _register_shortcut(&app, b) {
+        if let Err(e) = register_shortcut(&app, b) {
             error!("resume_binding error for id '{}': {}", id, e);
             return Err(e);
         }
@@ -694,7 +721,28 @@ pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
     Ok(())
 }
 
-fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+pub fn register_cancel_shortcut(app: &AppHandle) {
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
+            if let Err(e) = register_shortcut(&app_clone, cancel_binding) {
+                eprintln!("Failed to register cancel shortcut: {}", e);
+            }
+        }
+    });
+}
+
+pub fn unregister_cancel_shortcut(app: &AppHandle) {
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
+            // We ignore errors here as it might already be unregistered
+            let _ = unregister_shortcut(&app_clone, cancel_binding);
+        }
+    });
+}
+
+pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     // Validate human-level rules first
     if let Err(e) = validate_shortcut_string(&binding.current_binding) {
         warn!(
@@ -734,7 +782,13 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
                 let settings = get_settings(ah);
 
                 if let Some(action) = ACTION_MAP.get(&binding_id_for_closure) {
-                    if settings.push_to_talk {
+                    if binding_id_for_closure == "cancel" {
+                        let audio_manager = ah.state::<Arc<AudioRecordingManager>>();
+                        if audio_manager.is_recording() && event.state == ShortcutState::Pressed {
+                            action.start(ah, &binding_id_for_closure, &shortcut_string);
+                        }
+                        return;
+                    } else if settings.push_to_talk {
                         if event.state == ShortcutState::Pressed {
                             action.start(ah, &binding_id_for_closure, &shortcut_string);
                         } else if event.state == ShortcutState::Released {
@@ -780,7 +834,7 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
     Ok(())
 }
 
-fn _unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {

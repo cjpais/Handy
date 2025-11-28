@@ -10,8 +10,13 @@ import { PostProcessingToggle } from "../PostProcessingToggle";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
+import { HandyShortcut } from "../HandyShortcut";
+import { useSettings } from "../../../hooks/useSettings";
 
 export const DebugSettings: React.FC = () => {
+  const { getSetting } = useSettings();
+  const pushToTalk = getSetting("push_to_talk");
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title="Debug">
@@ -31,6 +36,11 @@ export const DebugSettings: React.FC = () => {
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
+        <HandyShortcut
+          shortcutId="cancel"
+          grouped={true}
+          disabled={pushToTalk}
+        />
       </SettingsGroup>
     </div>
   );
