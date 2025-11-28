@@ -53,8 +53,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.repository }}
-          ref: ${{ inputs.ref }}
+          repository: ${{ inputs.repository || github.repository }}
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
       - name: Get version from tauri.conf.json
@@ -62,14 +62,16 @@ jobs:
         shell: bash
         run: |
           VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
-          echo "Application version from tauri.conf.json: $VERSION"
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Application version from tauri.conf.json: ${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Determine build profile
         id: build-profile
         shell: bash
+        env:
+          IS_DEBUG_BUILD: ${{ inputs.is-debug-build }}
         run: |
-          if [[ "${{ inputs.is-debug-build }}" == "true" ]]; then
+          if [[ "${IS_DEBUG_BUILD}" == "true" ]]; then
             echo "profile=debug" >> "$GITHUB_OUTPUT"
             echo "Build profile: debug"
           else
@@ -219,24 +221,31 @@ jobs:
 
       - name: verify certificate
         if: contains(inputs.platform, 'macos') && inputs.sign-binaries
+        shell: bash
         run: |
           CERT_INFO=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
           CERT_ID=$(echo "$CERT_INFO" | awk -F'"' '{print $2}')
-          echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
+          echo "CERT_ID=${CERT_ID}" >> "${GITHUB_ENV}"
           echo "Certificate imported."
 
       - name: Patch asset name pattern
         id: patch-release-name
         shell: bash
         if: ${{ inputs.release-id != '' && inputs.asset-name-pattern != '' }}
+        env:
+          INPUT_PLATFORM: ${{ inputs.platform }}
+          INPUT_ASSET_NAME_PATTERN: ${{ inputs.asset-name-pattern }}
+          INPUT_ASSET_PREFIX: ${{ inputs.asset-prefix }}
         run: |
-          platform="${{ inputs.platform }}"
-          replacement="$(echo ${platform} | sed -E 's/-latest//')"
-          patched_platform=$(echo '${{ inputs.asset-name-pattern }}' | sed -E "s/\[platform\]/${replacement}/")
-          if [[ -n "${{ inputs.asset-prefix }}" ]]; then
-            patched_platform="${{ inputs.asset-prefix }}_${patched_platform}"
+          platform="${INPUT_PLATFORM}"
+          replacement="$(echo "${platform}" | sed -E 's/-latest//')"
+          # Use printf %s to safely escape the replacement value for use in sed
+          escaped_replacement=$(printf '%s\n' "${replacement}" | sed -e 's/[\/&]/\\&/g')
+          patched_platform=$(echo "${INPUT_ASSET_NAME_PATTERN}" | sed -E "s/\[platform\]/${escaped_replacement}/")
+          if [[ -n "${INPUT_ASSET_PREFIX}" ]]; then
+            patched_platform="${INPUT_ASSET_PREFIX}_${patched_platform}"
           fi
-          echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
+          echo "platform=${patched_platform}" >> "${GITHUB_OUTPUT}"
 
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
@@ -281,9 +290,11 @@ jobs:
 
       - name: Remove libwayland-client.so from AppImage
         if: contains(inputs.platform, 'ubuntu')
+        env:
+          BUILD_PROFILE: ${{ steps.build-profile.outputs.profile }}
         run: |
           # Find the AppImage file
-          APPIMAGE_PATH=$(find src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/appimage -name "*.AppImage" | head -1)
+          APPIMAGE_PATH=$(find src-tauri/target/"${BUILD_PROFILE}"/bundle/appimage -name "*.AppImage" | head -1)
 
           if [ -n "$APPIMAGE_PATH" ]; then
             echo "Processing AppImage: $APPIMAGE_PATH"
