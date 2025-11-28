@@ -6,6 +6,9 @@ use std::collections::HashMap;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
+pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
+pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "apple.intelligence.on_device";
+
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
@@ -359,7 +362,7 @@ fn default_post_process_provider_id() -> String {
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
-    vec![
+    let mut providers = vec![
         PostProcessProvider {
             id: "openai".to_string(),
             label: "OpenAI".to_string(),
@@ -388,7 +391,20 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: true,
             models_endpoint: Some("/models".to_string()),
         },
-    ]
+    ];
+
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    {
+        providers.push(PostProcessProvider {
+            id: APPLE_INTELLIGENCE_PROVIDER_ID.to_string(),
+            label: "Apple Intelligence".to_string(),
+            base_url: "apple-intelligence://local".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: None,
+        });
+    }
+
+    providers
 }
 
 fn default_post_process_api_keys() -> HashMap<String, String> {
@@ -399,10 +415,20 @@ fn default_post_process_api_keys() -> HashMap<String, String> {
     map
 }
 
+fn default_model_for_provider(provider_id: &str) -> String {
+    if provider_id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        return APPLE_INTELLIGENCE_DEFAULT_MODEL_ID.to_string();
+    }
+    String::new()
+}
+
 fn default_post_process_models() -> HashMap<String, String> {
     let mut map = HashMap::new();
     for provider in default_post_process_providers() {
-        map.insert(provider.id, String::new());
+        map.insert(
+            provider.id.clone(),
+            default_model_for_provider(&provider.id),
+        );
     }
     map
 }
@@ -413,6 +439,45 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
         name: "Improve Transcriptions".to_string(),
         prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
     }]
+}
+
+fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+    for provider in default_post_process_providers() {
+        if settings
+            .post_process_providers
+            .iter()
+            .all(|existing| existing.id != provider.id)
+        {
+            settings.post_process_providers.push(provider.clone());
+            changed = true;
+        }
+
+        if !settings.post_process_api_keys.contains_key(&provider.id) {
+            settings
+                .post_process_api_keys
+                .insert(provider.id.clone(), String::new());
+            changed = true;
+        }
+
+        let default_model = default_model_for_provider(&provider.id);
+        match settings.post_process_models.get_mut(&provider.id) {
+            Some(existing) => {
+                if existing.is_empty() && !default_model.is_empty() {
+                    *existing = default_model.clone();
+                    changed = true;
+                }
+            }
+            None => {
+                settings
+                    .post_process_models
+                    .insert(provider.id.clone(), default_model);
+                changed = true;
+            }
+        }
+    }
+
+    changed
 }
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
@@ -515,7 +580,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    let settings = if let Some(settings_value) = store.get("settings") {
+    let mut settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(mut settings) => {
@@ -553,6 +618,10 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
+    if ensure_post_process_defaults(&mut settings) {
+        store.set("settings", serde_json::to_value(&settings).unwrap());
+    }
+
     settings
 }
 
@@ -561,7 +630,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
-    if let Some(settings_value) = store.get("settings") {
+    let mut settings = if let Some(settings_value) = store.get("settings") {
         serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
             let default_settings = get_default_settings();
             store.set("settings", serde_json::to_value(&default_settings).unwrap());
@@ -571,7 +640,13 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         let default_settings = get_default_settings();
         store.set("settings", serde_json::to_value(&default_settings).unwrap());
         default_settings
+    };
+
+    if ensure_post_process_defaults(&mut settings) {
+        store.set("settings", serde_json::to_value(&settings).unwrap());
     }
+
+    settings
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
