@@ -1,5 +1,5 @@
 import React from "react";
-import { ModelInfo } from "../../lib/types";
+import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import { ProgressBar } from "../shared";
 
@@ -180,7 +180,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                       {model.description}
                     </div>
                     <div className="mt-1 text-xs text-text/50 tabular-nums">
-                      Download size · {formatModelSize(model.size_mb)}
+                      Download size · {formatModelSize(Number(model.size_mb))}
                     </div>
                   </div>
                   <div className="text-xs text-logo-primary tabular-nums">

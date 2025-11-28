@@ -1,8 +1,29 @@
 use crate::settings;
 use crate::settings::OverlayPosition;
 use enigo::{Enigo, Mouse};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
+
+#[cfg(not(target_os = "macos"))]
 use log::debug;
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindowBuilder};
+
+#[cfg(not(target_os = "macos"))]
+use tauri::WebviewWindowBuilder;
+
+#[cfg(target_os = "macos")]
+use tauri::WebviewUrl;
+
+#[cfg(target_os = "macos")]
+use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
+
+#[cfg(target_os = "macos")]
+tauri_panel! {
+    panel!(RecordingOverlayPanel {
+        config: {
+            can_become_key_window: false,
+            is_floating_panel: true
+        }
+    })
+}
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
@@ -17,6 +38,33 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
 
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
+
+/// Forces a window to be topmost using Win32 API (Windows only)
+/// This is more reliable than Tauri's set_always_on_top which can be overridden
+#[cfg(target_os = "windows")]
+fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowPos, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE, SWP_NOACTIVATE, SWP_SHOWWINDOW,
+    };
+
+    // Clone because run_on_main_thread takes 'static
+    let overlay_clone = overlay_window.clone();
+
+    // Make sure the Win32 call happens on the UI thread
+    let _ = overlay_clone.clone().run_on_main_thread(move || {
+        if let Ok(hwnd) = overlay_clone.hwnd() {
+            unsafe {
+                // Force Z-order: make this window topmost without changing size/pos or stealing focus
+                let _ = SetWindowPos(
+                    hwnd,
+                    Some(HWND_TOPMOST),
+                    0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                );
+            }
+        }
+    });
+}
 
 fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     let enigo = Enigo::new(&Default::default());
@@ -84,6 +132,7 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
+#[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
     if let Some((x, y)) = calculate_overlay_position(app_handle) {
         match WebviewWindowBuilder::new(
@@ -118,6 +167,49 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+/// Creates the recording overlay panel and keeps it hidden by default (macOS)
+#[cfg(target_os = "macos")]
+pub fn create_recording_overlay(app_handle: &AppHandle) {
+    if let Some((x, y)) = calculate_overlay_position(app_handle) {
+        // PanelBuilder creates a Tauri window then converts it to NSPanel.
+        // The window remains registered, so get_webview_window() still works.
+        match PanelBuilder::<_, RecordingOverlayPanel>::new(
+            app_handle,
+            "recording_overlay"
+        )
+        .url(WebviewUrl::App("src/overlay/index.html".into()))
+        .title("Recording")
+        .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
+        .level(PanelLevel::Status)
+        .size(tauri::Size::Logical(tauri::LogicalSize {
+            width: OVERLAY_WIDTH,
+            height: OVERLAY_HEIGHT
+        }))
+        .has_shadow(false)
+        .transparent(true)
+        .no_activate(true)
+        .corner_radius(0.0)
+        .with_window(|w| {
+            w.decorations(false)
+                .transparent(true)
+        })
+        .collection_behavior(
+            CollectionBehavior::new()
+                .can_join_all_spaces()
+                .full_screen_auxiliary()
+        )
+        .build()
+        {
+            Ok(panel) => {
+                let _ = panel.hide();
+            }
+            Err(e) => {
+                log::error!("Failed to create recording overlay panel: {}", e);
+            }
+        }
+    }
+}
+
 /// Shows the recording overlay window with fade-in animation
 pub fn show_recording_overlay(app_handle: &AppHandle) {
     // Check if overlay should be shown based on position setting
@@ -126,10 +218,18 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
         return;
     }
 
-    update_overlay_position(app_handle);
-
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Update position before showing to prevent flicker from position changes
+        if let Some((x, y)) = calculate_overlay_position(app_handle) {
+            let _ = overlay_window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+
         let _ = overlay_window.show();
+
+        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&overlay_window);
+
         // Emit event to trigger fade-in animation with recording state
         let _ = overlay_window.emit("show-overlay", "recording");
     }
@@ -147,6 +247,11 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
 
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
+
+        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&overlay_window);
+
         // Emit event to switch to transcribing state
         let _ = overlay_window.emit("show-overlay", "transcribing");
     }

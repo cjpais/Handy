@@ -68,6 +68,9 @@ tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = "0.1.4"
 ferrous-opencc = "0.2.3"
+specta = "=2.0.0-rc.22"
+specta-typescript = "0.0.9"
+tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
@@ -83,7 +86,12 @@ windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
   "Win32_System_Variant",
+  "Win32_Foundation",
+  "Win32_UI_WindowsAndMessaging",
 ] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
 
 [profile.release]
 lto = true

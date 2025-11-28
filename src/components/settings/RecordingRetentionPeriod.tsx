@@ -2,7 +2,7 @@ import React from "react";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import { RecordingRetentionPeriod } from "../../lib/types";
+import { RecordingRetentionPeriod } from "@/bindings";
 
 interface RecordingRetentionPeriodProps {
   descriptionMode?: "inline" | "tooltip";

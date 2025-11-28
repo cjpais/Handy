@@ -82,6 +82,18 @@ This project is actively being developed and has some [known issues](https://git
 **Wayland Support (Linux):**
 
 - Limited or no support for Wayland display server
+- On Wayland the clipboard-based paste options (`Clipboard (CTRL+V)` / `Clipboard (Shift+Insert)`) copy the transcription once, then try to run [`wtype`](https://github.com/atx/wtype) (preferred) or [`dotool`](https://sr.ht/~geb/dotool/) to fire the paste keystroke. Install one of these tools to let Handy drive the compositor-friendly paste shortcut; otherwise it falls back to Enigo-generated key events, which may not work on Wayland.
+
+### Linux Notes
+
+- The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
+- You can manage global shortcuts outside of Handy and still control the app via signals. Sending `SIGUSR2` to the Handy process toggles recording on/off, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings. Example (Sway):
+
+  ```ini
+  bindsym $mod+o exec pkill -USR2 -n handy
+  ```
+
+  `pkill` here simply delivers the signal—it does not terminate the process.
 
 ### Platform Support
 

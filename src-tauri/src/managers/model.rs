@@ -4,6 +4,7 @@ use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -13,13 +14,13 @@ use std::sync::Mutex;
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
     Whisper,
     Parakeet,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct ModelInfo {
     pub id: String,
     pub name: String,
@@ -36,7 +37,7 @@ pub struct ModelInfo {
     pub speed_score: f32,    // 0.0 to 1.0, higher is faster
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct DownloadProgress {
     pub model_id: String,
     pub downloaded: u64,
@@ -256,7 +257,7 @@ impl ModelManager {
                 }
 
                 model.is_downloaded = model_path.exists() && model_path.is_dir();
-                model.is_downloading = partial_path.exists();
+                model.is_downloading = false;
 
                 // Get partial file size if it exists (for the .tar.gz being downloaded)
                 if partial_path.exists() {
@@ -270,7 +271,7 @@ impl ModelManager {
                 let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
 
                 model.is_downloaded = model_path.exists();
-                model.is_downloading = partial_path.exists();
+                model.is_downloading = false;
 
                 // Get partial file size if it exists
                 if partial_path.exists() {
@@ -338,7 +339,7 @@ impl ModelManager {
         }
 
         // Check if we have a partial download to resume
-        let resume_from = if partial_path.exists() {
+        let mut resume_from = if partial_path.exists() {
             let size = partial_path.metadata()?.len();
             info!("Resuming download of model {} from byte {}", model_id, size);
             size
@@ -363,7 +364,25 @@ impl ModelManager {
             request = request.header("Range", format!("bytes={}-", resume_from));
         }
 
-        let response = request.send().await?;
+        let mut response = request.send().await?;
+
+        // If we tried to resume but server returned 200 (not 206 Partial Content),
+        // the server doesn't support range requests. Delete partial file and restart
+        // fresh to avoid file corruption (appending full file to partial).
+        if resume_from > 0 && response.status() == reqwest::StatusCode::OK {
+            warn!(
+                "Server doesn't support range requests for model {}, restarting download",
+                model_id
+            );
+            drop(response);
+            let _ = fs::remove_file(&partial_path);
+
+            // Reset resume_from since we're starting fresh
+            resume_from = 0;
+
+            // Restart download without range header
+            response = client.get(&url).send().await?;
+        }
 
         // Check for success or partial content status
         if !response.status().is_success()
@@ -452,6 +471,26 @@ impl ModelManager {
 
         file.flush()?;
         drop(file); // Ensure file is closed before moving
+
+        // Verify downloaded file size matches expected size
+        if total_size > 0 {
+            let actual_size = partial_path.metadata()?.len();
+            if actual_size != total_size {
+                // Download is incomplete/corrupted - delete partial and return error
+                let _ = fs::remove_file(&partial_path);
+                {
+                    let mut models = self.available_models.lock().unwrap();
+                    if let Some(model) = models.get_mut(model_id) {
+                        model.is_downloading = false;
+                    }
+                }
+                return Err(anyhow::anyhow!(
+                    "Download incomplete: expected {} bytes, got {} bytes",
+                    total_size,
+                    actual_size
+                ));
+            }
+        }
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {

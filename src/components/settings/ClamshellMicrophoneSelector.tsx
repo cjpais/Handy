@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { commands } from "@/bindings";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -27,8 +27,12 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
     useEffect(() => {
       const checkIsLaptop = async () => {
         try {
-          const result = await invoke<boolean>("is_laptop");
-          setIsLaptop(result);
+          const result = await commands.isLaptop();
+          if (result.status === "ok") {
+            setIsLaptop(result.data);
+          } else {
+            setIsLaptop(false);
+          }
         } catch (error) {
           console.error("Failed to check if device is laptop:", error);
           setIsLaptop(false);
