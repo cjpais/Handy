@@ -25,7 +25,7 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
     return (
       <SettingContainer
         title="Overlay Position"
-        description="Display visual feedback overlay during recording and transcription"
+        description="Display visual feedback overlay during recording and transcription. On Linux 'None' is recommended."
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
