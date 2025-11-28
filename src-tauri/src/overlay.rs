@@ -39,6 +39,33 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
 
+/// Forces a window to be topmost using Win32 API (Windows only)
+/// This is more reliable than Tauri's set_always_on_top which can be overridden
+#[cfg(target_os = "windows")]
+fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowPos, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE, SWP_NOACTIVATE, SWP_SHOWWINDOW,
+    };
+
+    // Clone because run_on_main_thread takes 'static
+    let overlay_clone = overlay_window.clone();
+
+    // Make sure the Win32 call happens on the UI thread
+    let _ = overlay_clone.clone().run_on_main_thread(move || {
+        if let Ok(hwnd) = overlay_clone.hwnd() {
+            unsafe {
+                // Force Z-order: make this window topmost without changing size/pos or stealing focus
+                let _ = SetWindowPos(
+                    hwnd,
+                    Some(HWND_TOPMOST),
+                    0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                );
+            }
+        }
+    });
+}
+
 fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     let enigo = Enigo::new(&Default::default());
     if let Ok(enigo) = enigo {
@@ -198,6 +225,11 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
         }
 
         let _ = overlay_window.show();
+
+        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&overlay_window);
+
         // Emit event to trigger fade-in animation with recording state
         let _ = overlay_window.emit("show-overlay", "recording");
     }
@@ -215,6 +247,11 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
 
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
+
+        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&overlay_window);
+
         // Emit event to switch to transcribing state
         let _ = overlay_window.emit("show-overlay", "transcribing");
     }
