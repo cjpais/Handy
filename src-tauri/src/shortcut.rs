@@ -18,7 +18,6 @@ pub fn init_shortcuts(app: &AppHandle) {
     let default_bindings = settings::get_default_settings().bindings;
     let user_settings = settings::load_or_create_app_settings(app);
 
-
     // Register all default shortcuts, applying user customizations
     for (id, default_binding) in default_bindings {
         if id == "cancel" {

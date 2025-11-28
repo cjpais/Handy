@@ -159,8 +159,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
     return undefined;
   };
 
-  const isUpdateDisabled =
-    !updateChecksEnabled || isChecking || isInstalling;
+  const isUpdateDisabled = !updateChecksEnabled || isChecking || isInstalling;
   const isUpdateClickable =
     !isUpdateDisabled && (updateAvailable || (!isChecking && !showUpToDate));
 

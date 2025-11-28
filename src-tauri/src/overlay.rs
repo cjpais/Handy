@@ -44,7 +44,7 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
 #[cfg(target_os = "windows")]
 fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     use windows::Win32::UI::WindowsAndMessaging::{
-        SetWindowPos, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE, SWP_NOACTIVATE, SWP_SHOWWINDOW,
+        SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
     };
 
     // Clone because run_on_main_thread takes 'static
@@ -58,7 +58,10 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
                 let _ = SetWindowPos(
                     hwnd,
                     Some(HWND_TOPMOST),
-                    0, 0, 0, 0,
+                    0,
+                    0,
+                    0,
+                    0,
                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
                 );
             }
@@ -173,32 +176,26 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     if let Some((x, y)) = calculate_overlay_position(app_handle) {
         // PanelBuilder creates a Tauri window then converts it to NSPanel.
         // The window remains registered, so get_webview_window() still works.
-        match PanelBuilder::<_, RecordingOverlayPanel>::new(
-            app_handle,
-            "recording_overlay"
-        )
-        .url(WebviewUrl::App("src/overlay/index.html".into()))
-        .title("Recording")
-        .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
-        .level(PanelLevel::Status)
-        .size(tauri::Size::Logical(tauri::LogicalSize {
-            width: OVERLAY_WIDTH,
-            height: OVERLAY_HEIGHT
-        }))
-        .has_shadow(false)
-        .transparent(true)
-        .no_activate(true)
-        .corner_radius(0.0)
-        .with_window(|w| {
-            w.decorations(false)
-                .transparent(true)
-        })
-        .collection_behavior(
-            CollectionBehavior::new()
-                .can_join_all_spaces()
-                .full_screen_auxiliary()
-        )
-        .build()
+        match PanelBuilder::<_, RecordingOverlayPanel>::new(app_handle, "recording_overlay")
+            .url(WebviewUrl::App("src/overlay/index.html".into()))
+            .title("Recording")
+            .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
+            .level(PanelLevel::Status)
+            .size(tauri::Size::Logical(tauri::LogicalSize {
+                width: OVERLAY_WIDTH,
+                height: OVERLAY_HEIGHT,
+            }))
+            .has_shadow(false)
+            .transparent(true)
+            .no_activate(true)
+            .corner_radius(0.0)
+            .with_window(|w| w.decorations(false).transparent(true))
+            .collection_behavior(
+                CollectionBehavior::new()
+                    .can_join_all_spaces()
+                    .full_screen_auxiliary(),
+            )
+            .build()
         {
             Ok(panel) => {
                 let _ = panel.hide();
@@ -221,7 +218,8 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         // Update position before showing to prevent flicker from position changes
         if let Some((x, y)) = calculate_overlay_position(app_handle) {
-            let _ = overlay_window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
 
         let _ = overlay_window.show();
