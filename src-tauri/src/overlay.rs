@@ -224,14 +224,6 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
             let _ = overlay_window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
 
-        // Re-assert always-on-top for Linux
-        #[cfg(target_os = "linux")]
-        {
-            if let Err(e) = overlay_window.set_always_on_top(true) {
-                debug!("Failed to re-apply always_on_top to overlay: {}", e);
-            }
-        }
-
         let _ = overlay_window.show();
 
         // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
@@ -254,17 +246,6 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
     update_overlay_position(app_handle);
 
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Re-assert always-on-top for Linux
-        #[cfg(target_os = "linux")]
-        {
-            if let Err(e) = overlay_window.set_always_on_top(true) {
-                debug!(
-                    "Failed to re-apply always_on_top to overlay (transcribing): {}",
-                    e
-                );
-            }
-        }
-
         let _ = overlay_window.show();
 
         // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
