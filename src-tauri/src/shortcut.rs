@@ -739,24 +739,44 @@ pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 pub fn register_cancel_shortcut(app: &AppHandle) {
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(async move {
-        if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-            if let Err(e) = register_shortcut(&app_clone, cancel_binding) {
-                eprintln!("Failed to register cancel shortcut: {}", e);
+    // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+    #[cfg(target_os = "linux")]
+    {
+        let _ = app;
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
+                if let Err(e) = register_shortcut(&app_clone, cancel_binding) {
+                    eprintln!("Failed to register cancel shortcut: {}", e);
+                }
             }
-        }
-    });
+        });
+    }
 }
 
 pub fn unregister_cancel_shortcut(app: &AppHandle) {
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(async move {
-        if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-            // We ignore errors here as it might already be unregistered
-            let _ = unregister_shortcut(&app_clone, cancel_binding);
-        }
-    });
+    // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+    #[cfg(target_os = "linux")]
+    {
+        let _ = app;
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
+                // We ignore errors here as it might already be unregistered
+                let _ = unregister_shortcut(&app_clone, cancel_binding);
+            }
+        });
+    }
 }
 
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
