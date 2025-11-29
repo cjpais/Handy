@@ -281,6 +281,35 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+/// Hides the recording overlay window with fade-out animation and executes callback when done.
+/// This ensures the overlay is fully hidden and focus is restored before the callback runs,
+/// which is critical for reliable paste operations on Wayland/Linux.
+pub fn hide_recording_overlay_with_callback<F>(app_handle: &AppHandle, callback: F)
+where
+    F: FnOnce() + Send + 'static,
+{
+    // Always hide the overlay regardless of settings - if setting was changed while recording,
+    // we still want to hide it properly
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Emit event to trigger fade-out animation
+        let _ = overlay_window.emit("hide-overlay", ());
+        // Hide the window after animation completes, then wait for window manager to restore focus
+        let window_clone = overlay_window.clone();
+        std::thread::spawn(move || {
+            // Wait for fade-out animation to complete
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            let _ = window_clone.hide();
+            // Additional delay for window manager to restore focus to the previous application.
+            // This is especially important on Wayland where focus changes are asynchronous.
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            callback();
+        });
+    } else {
+        // If no overlay window exists, run callback immediately
+        callback();
+    }
+}
+
 pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
     // emit levels to main app
     let _ = app_handle.emit("mic-level", levels);
