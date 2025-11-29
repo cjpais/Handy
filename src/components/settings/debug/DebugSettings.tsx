@@ -1,4 +1,5 @@
 import React from "react";
+import { type } from "@tauri-apps/plugin-os";
 import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
 import { LogDirectory } from "./LogDirectory";
 import { LogLevelSelector } from "./LogLevelSelector";
@@ -17,6 +18,7 @@ import { useSettings } from "../../../hooks/useSettings";
 export const DebugSettings: React.FC = () => {
   const { getSetting } = useSettings();
   const pushToTalk = getSetting("push_to_talk");
+  const isLinux = type() === "linux";
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -38,11 +40,14 @@ export const DebugSettings: React.FC = () => {
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
-        <HandyShortcut
-          shortcutId="cancel"
-          grouped={true}
-          disabled={pushToTalk}
-        />
+        {/* Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration */}
+        {!isLinux && (
+          <HandyShortcut
+            shortcutId="cancel"
+            grouped={true}
+            disabled={pushToTalk}
+          />
+        )}
       </SettingsGroup>
     </div>
   );
