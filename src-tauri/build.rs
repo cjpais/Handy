@@ -11,14 +11,12 @@ fn build_apple_intelligence_bridge() {
     use std::path::{Path, PathBuf};
     use std::process::Command;
 
-    const SWIFT_FILE: &str = "apple_intelligence.swift";
+    const REAL_SWIFT_FILE: &str = "apple_intelligence.swift";
+    const STUB_SWIFT_FILE: &str = "apple_intelligence_stub.swift";
     const BRIDGE_HEADER: &str = "apple_intelligence_bridge.h";
 
-    if !Path::new(SWIFT_FILE).exists() {
-        return;
-    }
-
-    println!("cargo:rerun-if-changed={SWIFT_FILE}");
+    println!("cargo:rerun-if-changed={REAL_SWIFT_FILE}");
+    println!("cargo:rerun-if-changed={STUB_SWIFT_FILE}");
     println!("cargo:rerun-if-changed={BRIDGE_HEADER}");
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
@@ -35,6 +33,23 @@ fn build_apple_intelligence_bridge() {
     .expect("SDK path is not valid UTF-8")
     .trim()
     .to_string();
+
+    // Check if the SDK supports FoundationModels (required for Apple Intelligence)
+    let framework_path = Path::new(&sdk_path)
+        .join("System/Library/Frameworks/FoundationModels.framework");
+    let has_foundation_models = framework_path.exists();
+
+    let source_file = if has_foundation_models {
+        println!("cargo:warning=Building with Apple Intelligence support.");
+        REAL_SWIFT_FILE
+    } else {
+        println!("cargo:warning=Apple Intelligence SDK not found. Building with stubs.");
+        STUB_SWIFT_FILE
+    };
+
+    if !Path::new(source_file).exists() {
+        panic!("Source file {} is missing!", source_file);
+    }
 
     let swiftc_path = String::from_utf8(
         Command::new("xcrun")
@@ -65,7 +80,7 @@ fn build_apple_intelligence_bridge() {
             "-import-objc-header",
             BRIDGE_HEADER,
             "-c",
-            SWIFT_FILE,
+            source_file,
             "-o",
             object_path
                 .to_str()
@@ -75,7 +90,7 @@ fn build_apple_intelligence_bridge() {
         .expect("Failed to invoke swiftc for Apple Intelligence bridge");
 
     if !status.success() {
-        panic!("swiftc failed to compile {SWIFT_FILE}");
+        panic!("swiftc failed to compile {source_file}");
     }
 
     let status = Command::new("libtool")
@@ -104,6 +119,10 @@ fn build_apple_intelligence_bridge() {
     );
     println!("cargo:rustc-link-search=native={}", sdk_swift_lib.display());
     println!("cargo:rustc-link-lib=framework=Foundation");
-    println!("cargo:rustc-link-lib=framework=FoundationModels");
+
+    if has_foundation_models {
+        println!("cargo:rustc-link-lib=framework=FoundationModels");
+    }
+
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
 }
