@@ -2,10 +2,10 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::overlay::{show_recording_overlay, show_transcribing_overlay};
 use crate::settings::{get_settings, AppSettings};
+use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
-use crate::utils;
+use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use async_openai::types::{
     ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
     CreateChatCompletionRequestArgs,
@@ -225,6 +225,7 @@ impl ShortcutAction for TranscribeAction {
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
+        let mut recording_started = false;
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
@@ -237,7 +238,7 @@ impl ShortcutAction for TranscribeAction {
                 rm_clone.apply_mute();
             });
 
-            let recording_started = rm.try_start_recording(&binding_id);
+            recording_started = rm.try_start_recording(&binding_id);
             debug!("Recording started: {}", recording_started);
         } else {
             // On-demand mode: Start recording first, then play audio feedback, then apply mute
@@ -245,6 +246,7 @@ impl ShortcutAction for TranscribeAction {
             debug!("On-demand mode: Starting recording first, then audio feedback");
             let recording_start_time = Instant::now();
             if rm.try_start_recording(&binding_id) {
+                recording_started = true;
                 debug!("Recording started in {:?}", recording_start_time.elapsed());
                 // Small delay to ensure microphone stream is active
                 let app_clone = app.clone();
@@ -262,6 +264,11 @@ impl ShortcutAction for TranscribeAction {
             }
         }
 
+        if recording_started {
+            // Dynamically register the cancel shortcut in a separate task to avoid deadlock
+            shortcut::register_cancel_shortcut(app);
+        }
+
         debug!(
             "TranscribeAction::start completed in {:?}",
             start_time.elapsed()
@@ -269,6 +276,9 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        // Unregister the cancel shortcut when transcription stops
+        shortcut::unregister_cancel_shortcut(app);
+
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
 
@@ -406,6 +416,19 @@ impl ShortcutAction for TranscribeAction {
     }
 }
 
+// Cancel Action
+struct CancelAction;
+
+impl ShortcutAction for CancelAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        utils::cancel_current_operation(app);
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // Nothing to do on stop for cancel
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -435,6 +458,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe".to_string(),
         Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "cancel".to_string(),
+        Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

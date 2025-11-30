@@ -1,5 +1,5 @@
-use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
+use crate::shortcut;
 use crate::ManagedToggleState;
 use log::{info, warn};
 use std::sync::Arc;
@@ -16,31 +16,14 @@ pub use crate::tray::*;
 pub fn cancel_current_operation(app: &AppHandle) {
     info!("Initiating operation cancellation...");
 
-    // First, reset all shortcut toggle states and call stop actions
+    // Unregister the cancel shortcut asynchronously
+    shortcut::unregister_cancel_shortcut(app);
+
+    // First, reset all shortcut toggle states.
     // This is critical for non-push-to-talk mode where shortcuts toggle on/off
     let toggle_state_manager = app.state::<ManagedToggleState>();
     if let Ok(mut states) = toggle_state_manager.lock() {
-        // For each currently active toggle, call its stop action and reset state
-        let active_bindings: Vec<String> = states
-            .active_toggles
-            .iter()
-            .filter(|(_, &is_active)| is_active)
-            .map(|(binding_id, _)| binding_id.clone())
-            .collect();
-
-        for binding_id in active_bindings {
-            info!("Stopping active action for binding: {}", binding_id);
-
-            // Call the action's stop method to ensure proper cleanup
-            if let Some(action) = ACTION_MAP.get(&binding_id) {
-                action.stop(app, &binding_id, "cancelled");
-            }
-
-            // Reset the toggle state
-            if let Some(is_active) = states.active_toggles.get_mut(&binding_id) {
-                *is_active = false;
-            }
-        }
+        states.active_toggles.values_mut().for_each(|v| *v = false);
     } else {
         warn!("Failed to lock toggle state manager during cancellation");
     }
@@ -49,8 +32,9 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.cancel_recording();
 
-    // Update tray icon and menu to idle state
+    // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
+    hide_recording_overlay(app);
 
     info!("Operation cancellation completed - returned to idle state");
 }

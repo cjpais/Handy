@@ -180,7 +180,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
     try {
       const result = await commands.addPostProcessPrompt(
         draftName.trim(),
-        draftText.trim()
+        draftText.trim(),
       );
       if (result.status === "ok") {
         await refreshSettings();
@@ -199,7 +199,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
       await commands.updatePostProcessPrompt(
         selectedPromptId,
         draftName.trim(),
-        draftText.trim()
+        draftText.trim(),
       );
       await refreshSettings();
     } catch (error) {
