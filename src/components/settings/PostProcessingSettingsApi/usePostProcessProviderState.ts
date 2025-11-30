@@ -11,6 +11,7 @@ type PostProcessProviderState = {
   selectedProviderId: string;
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
+  isAppleProvider: boolean;
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
   isBaseUrlUpdating: boolean;
@@ -27,6 +28,8 @@ type PostProcessProviderState = {
   handleModelCreate: (value: string) => void;
   handleRefreshModels: () => void;
 };
+
+const APPLE_PROVIDER_ID = "apple_intelligence";
 
 export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
@@ -55,6 +58,8 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
       providers[0]
     );
   }, [providers, selectedProviderId]);
+
+  const isAppleProvider = selectedProvider?.id === APPLE_PROVIDER_ID;
 
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
@@ -125,8 +130,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   );
 
   const handleRefreshModels = useCallback(() => {
+    if (isAppleProvider) return;
     void fetchPostProcessModels(selectedProviderId);
-  }, [fetchPostProcessModels, selectedProviderId]);
+  }, [fetchPostProcessModels, isAppleProvider, selectedProviderId]);
 
   const availableModelsRaw = postProcessModelOptions[selectedProviderId] || [];
 
@@ -175,6 +181,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     selectedProviderId,
     selectedProvider,
     isCustomProvider,
+    isAppleProvider,
     baseUrl,
     handleBaseUrlChange,
     isBaseUrlUpdating,
