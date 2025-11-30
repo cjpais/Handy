@@ -395,13 +395,15 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     {
-        providers.push(PostProcessProvider {
-            id: APPLE_INTELLIGENCE_PROVIDER_ID.to_string(),
-            label: "Apple Intelligence".to_string(),
-            base_url: "apple-intelligence://local".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: None,
-        });
+        if crate::apple_intelligence::check_apple_intelligence_availability() {
+            providers.push(PostProcessProvider {
+                id: APPLE_INTELLIGENCE_PROVIDER_ID.to_string(),
+                label: "Apple Intelligence".to_string(),
+                base_url: "apple-intelligence://local".to_string(),
+                allow_base_url_edit: false,
+                models_endpoint: None,
+            });
+        }
     }
 
     providers
