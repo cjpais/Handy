@@ -1,13 +1,11 @@
 use log::{debug, error, warn};
 use serde::Serialize;
 use specta::Type;
-use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
-use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutBinding;
 use crate::settings::{
     self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
@@ -52,19 +50,21 @@ pub fn init_shortcuts(app: &AppHandle) {
     let user_settings = settings::load_or_create_app_settings(app);
 
     // Register all default shortcuts, applying user customizations
-    // Skip cancel shortcut, it will be registered dynamically
+    // Skip dynamic bindings - they are registered at runtime when needed
     for (id, default_binding) in default_bindings {
-        if id == "cancel" {
-            continue;
-        }
         let binding = user_settings
             .bindings
             .get(&id)
             .cloned()
             .unwrap_or(default_binding);
 
+        if binding.dynamic {
+            debug!("Skipping dynamic binding '{id}' during init");
+            continue;
+        }
+
         if let Err(e) = register_binding(app, binding) {
-            error!("Failed to register shortcut {} during init: {}", id, e);
+            error!("Failed to register shortcut {id} during init: {e}");
         }
     }
 }
@@ -89,8 +89,8 @@ pub fn change_binding(
     let binding_to_modify = match settings.bindings.get(&id) {
         Some(binding) => binding.clone(),
         None => {
-            let error_msg = format!("Binding with id '{}' not found", id);
-            warn!("change_binding error: {}", error_msg);
+            let error_msg = format!("Binding with id '{id}' not found");
+            warn!("change_binding error: {error_msg}");
             return Ok(BindingResponse {
                 success: false,
                 binding: None,
@@ -115,15 +115,12 @@ pub fn change_binding(
 
     // Unregister the existing binding (ignore errors - it may not be registered)
     if let Err(e) = unregister_binding(&app, binding_to_modify.clone()) {
-        debug!(
-            "change_binding: could not unregister existing binding: {}",
-            e
-        );
+        debug!("change_binding: could not unregister existing binding: {e}");
     }
 
     // Validate the new shortcut before we touch the current registration
     if let Err(e) = validate_shortcut_string(&binding) {
-        warn!("change_binding validation error: {}", e);
+        warn!("change_binding validation error: {e}");
         return Err(e);
     }
 
@@ -133,8 +130,8 @@ pub fn change_binding(
 
     // Register the new binding
     if let Err(e) = register_binding(&app, updated_binding.clone()) {
-        let error_msg = format!("Failed to register shortcut: {}", e);
-        error!("change_binding error: {}", error_msg);
+        let error_msg = format!("Failed to register shortcut: {e}");
+        error!("change_binding error: {error_msg}");
         return Ok(BindingResponse {
             success: false,
             binding: None,
@@ -161,7 +158,7 @@ pub fn change_binding(
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
     let binding = settings::get_stored_binding(&app, &id);
 
-    return change_binding(app, id, binding.default_binding);
+    change_binding(app, id, binding.default_binding)
 }
 
 #[tauri::command]
@@ -205,7 +202,7 @@ pub fn change_sound_theme_setting(app: AppHandle, theme: String) -> Result<(), S
         "pop" => SoundTheme::Pop,
         "custom" => SoundTheme::Custom,
         other => {
-            warn!("Invalid sound theme '{}', defaulting to marimba", other);
+            warn!("Invalid sound theme '{other}', defaulting to marimba");
             SoundTheme::Marimba
         }
     };
@@ -241,7 +238,7 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
         "top" => OverlayPosition::Top,
         "bottom" => OverlayPosition::Bottom,
         other => {
-            warn!("Invalid overlay position '{}', defaulting to bottom", other);
+            warn!("Invalid overlay position '{other}', defaulting to bottom");
             OverlayPosition::Bottom
         }
     };
@@ -368,7 +365,7 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
         "none" => PasteMethod::None,
         "shift_insert" => PasteMethod::ShiftInsert,
         other => {
-            warn!("Invalid paste method '{}', defaulting to ctrl_v", other);
+            warn!("Invalid paste method '{other}', defaulting to ctrl_v");
             PasteMethod::CtrlV
         }
     };
@@ -385,10 +382,7 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
         "dont_modify" => ClipboardHandling::DontModify,
         "copy_to_clipboard" => ClipboardHandling::CopyToClipboard,
         other => {
-            warn!(
-                "Invalid clipboard handling '{}', defaulting to dont_modify",
-                other
-            );
+            warn!("Invalid clipboard handling '{other}', defaulting to dont_modify");
             ClipboardHandling::DontModify
         }
     };
@@ -417,7 +411,7 @@ pub fn change_post_process_base_url_setting(
     let label = settings
         .post_process_provider(&provider_id)
         .map(|provider| provider.label.clone())
-        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+        .ok_or_else(|| format!("Provider '{provider_id}' not found"))?;
 
     let provider = settings
         .post_process_provider_mut(&provider_id)
@@ -425,8 +419,7 @@ pub fn change_post_process_base_url_setting(
 
     if !provider.allow_base_url_edit {
         return Err(format!(
-            "Provider '{}' does not allow editing the base URL",
-            label
+            "Provider '{label}' does not allow editing the base URL"
         ));
     }
 
@@ -445,7 +438,7 @@ fn validate_provider_exists(
         .iter()
         .any(|provider| provider.id == provider_id)
     {
-        return Err(format!("Provider '{}' not found", provider_id));
+        return Err(format!("Provider '{provider_id}' not found"));
     }
     Ok(())
 }
@@ -532,7 +525,7 @@ pub fn update_post_process_prompt(
         settings::write_settings(&app, settings);
         Ok(())
     } else {
-        Err(format!("Prompt with id '{}' not found", id))
+        Err(format!("Prompt with id '{id}' not found"))
     }
 }
 
@@ -551,7 +544,7 @@ pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), Stri
     settings.post_process_prompts.retain(|p| p.id != id);
 
     if settings.post_process_prompts.len() == original_len {
-        return Err(format!("Prompt with id '{}' not found", id));
+        return Err(format!("Prompt with id '{id}' not found"));
     }
 
     // If the deleted prompt was selected, select the first one or None
@@ -577,7 +570,7 @@ pub async fn fetch_post_process_models(
         .post_process_providers
         .iter()
         .find(|p| p.id == provider_id)
-        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+        .ok_or_else(|| format!("Provider '{provider_id}' not found"))?;
 
     // Get API key
     let api_key = settings
@@ -616,7 +609,7 @@ async fn fetch_models_manual(
         .as_ref()
         .map(|s| s.trim_start_matches('/'))
         .unwrap_or("models");
-    let endpoint = format!("{}/{}", base_url, models_endpoint);
+    let endpoint = format!("{base_url}/{models_endpoint}");
 
     // Create HTTP client with headers
     let mut headers = reqwest::header::HeaderMap::new();
@@ -635,7 +628,7 @@ async fn fetch_models_manual(
             headers.insert(
                 "x-api-key",
                 reqwest::header::HeaderValue::from_str(&api_key)
-                    .map_err(|e| format!("Invalid API key: {}", e))?,
+                    .map_err(|e| format!("Invalid API key: {e}"))?,
             );
         }
         headers.insert(
@@ -645,22 +638,22 @@ async fn fetch_models_manual(
     } else if !api_key.is_empty() {
         headers.insert(
             "Authorization",
-            reqwest::header::HeaderValue::from_str(&format!("Bearer {}", api_key))
-                .map_err(|e| format!("Invalid API key: {}", e))?,
+            reqwest::header::HeaderValue::from_str(&format!("Bearer {api_key}"))
+                .map_err(|e| format!("Invalid API key: {e}"))?,
         );
     }
 
     let http_client = reqwest::Client::builder()
         .default_headers(headers)
         .build()
-        .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
+        .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
 
     // Make the request
     let response = http_client
         .get(&endpoint)
         .send()
         .await
-        .map_err(|e| format!("Failed to fetch models: {}", e))?;
+        .map_err(|e| format!("Failed to fetch models: {e}"))?;
 
     if !response.status().is_success() {
         let status = response.status();
@@ -668,17 +661,14 @@ async fn fetch_models_manual(
             .text()
             .await
             .unwrap_or_else(|_| "Unknown error".to_string());
-        return Err(format!(
-            "Model list request failed ({}): {}",
-            status, error_text
-        ));
+        return Err(format!("Model list request failed ({status}): {error_text}"));
     }
 
     // Parse the response
     let parsed: serde_json::Value = response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+        .map_err(|e| format!("Failed to parse response: {e}"))?;
 
     let mut models = Vec::new();
 
@@ -711,7 +701,7 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
 
     // Verify the prompt exists
     if !settings.post_process_prompts.iter().any(|p| p.id == id) {
-        return Err(format!("Prompt with id '{}' not found", id));
+        return Err(format!("Prompt with id '{id}' not found"));
     }
 
     settings.post_process_selected_prompt_id = Some(id);
@@ -763,7 +753,7 @@ fn validate_shortcut_string(raw: &str) -> Result<(), String> {
 pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = unregister_binding(&app, b) {
-            error!("suspend_binding error for id '{}': {}", id, e);
+            error!("suspend_binding error for id '{id}': {e}");
             return Err(e);
         }
     }
@@ -776,51 +766,84 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = register_binding(&app, b) {
-            error!("resume_binding error for id '{}': {}", id, e);
+            error!("resume_binding error for id '{id}': {e}");
             return Err(e);
         }
     }
     Ok(())
 }
 
-pub fn register_cancel_shortcut(app: &AppHandle) {
-    // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+/// Register a dynamic binding at runtime.
+/// Dynamic bindings are shortcuts that are only active during certain states
+/// (e.g., cancel shortcut only active while recording).
+///
+/// This function is idempotent - it will first unregister any existing binding
+/// before registering. This allows safe re-registration without needing to
+/// explicitly unregister first (which can deadlock if called from inside a
+/// shortcut callback).
+///
+/// Note: Dynamic shortcut registration is disabled on Linux due to instability
+/// with the global shortcut plugin. See PR #392.
+pub fn register_dynamic_binding(app: &AppHandle, binding_id: &str) -> Result<(), String> {
+    // Dynamic shortcut registration is disabled on Linux due to instability
     #[cfg(target_os = "linux")]
     {
-        let _ = app;
-        return;
+        let _ = (app, binding_id);
+        debug!(
+            "Skipping dynamic binding registration on Linux (disabled for stability): {binding_id}"
+        );
+        return Ok(());
     }
 
     #[cfg(not(target_os = "linux"))]
     {
-        let app_clone = app.clone();
-        tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-                if let Err(e) = register_binding(&app_clone, cancel_binding) {
-                    eprintln!("Failed to register cancel shortcut: {}", e);
-                }
-            }
-        });
+        let settings = get_settings(app);
+
+        let binding = settings
+            .bindings
+            .get(binding_id)
+            .ok_or_else(|| format!("Dynamic binding '{binding_id}' not found in settings"))?;
+
+        debug!(
+            "register_dynamic_binding: id='{}', binding='{}'",
+            binding.id, binding.current_binding
+        );
+
+        if !binding.dynamic {
+            return Err(format!("Binding '{binding_id}' is not marked as dynamic"));
+        }
+
+        // Try to unregister first (ignore errors - might not be registered)
+        // This makes registration idempotent and avoids "already in use" errors
+        let _ = unregister_binding(app, binding.clone());
+
+        register_binding(app, binding.clone())
     }
 }
 
-pub fn unregister_cancel_shortcut(app: &AppHandle) {
-    // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+/// Unregister a dynamic binding at runtime.
+///
+/// Note: Dynamic shortcut registration is disabled on Linux due to instability.
+/// See PR #392.
+pub fn unregister_dynamic_binding(app: &AppHandle, binding_id: &str) -> Result<(), String> {
+    // Dynamic shortcut registration is disabled on Linux due to instability
     #[cfg(target_os = "linux")]
     {
-        let _ = app;
-        return;
+        let _ = (app, binding_id);
+        return Ok(());
     }
 
     #[cfg(not(target_os = "linux"))]
     {
-        let app_clone = app.clone();
-        tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = get_settings(&app_clone).bindings.get("cancel").cloned() {
-                // We ignore errors here as it might already be unregistered
-                let _ = unregister_binding(&app_clone, cancel_binding);
-            }
-        });
+        let settings = get_settings(app);
+
+        let binding = settings
+            .bindings
+            .get(binding_id)
+            .ok_or_else(|| format!("Dynamic binding '{binding_id}' not found in settings"))?;
+
+        debug!("Unregistering dynamic binding: {binding_id}");
+        unregister_binding(app, binding.clone())
     }
 }
 
@@ -833,21 +856,11 @@ pub(crate) fn dispatch_binding_event(
     state: ShortcutState,
 ) {
     debug!(
-        "dispatch_binding_event: binding_id='{}', shortcut='{}', state={:?}",
-        binding_id, shortcut_string, state
+        "dispatch_binding_event: binding_id='{binding_id}', shortcut='{shortcut_string}', state={state:?}"
     );
     let settings = get_settings(app);
 
     if let Some(action) = ACTION_MAP.get(binding_id) {
-        // Cancel binding has special handling - only fires when recording
-        if binding_id == "cancel" {
-            let audio_manager = app.state::<Arc<AudioRecordingManager>>();
-            if audio_manager.is_recording() && state == ShortcutState::Pressed {
-                action.start(app, binding_id, shortcut_string);
-            }
-            return;
-        }
-
         if settings.push_to_talk {
             // Push-to-talk mode: start on press, stop on release
             if state == ShortcutState::Pressed {
@@ -858,56 +871,57 @@ pub(crate) fn dispatch_binding_event(
         } else {
             // Toggle mode: toggle on press only
             if state == ShortcutState::Pressed {
-                let toggle_state_manager = app.state::<ManagedToggleState>();
-                let mut states = toggle_state_manager
-                    .lock()
-                    .expect("Failed to lock toggle state manager");
+                // Determine action and update state while holding the lock,
+                // but RELEASE the lock before calling the action to avoid deadlocks.
+                // (Actions may need to acquire the lock themselves, e.g., cancel_current_operation)
+                let should_start: bool;
+                {
+                    let toggle_state_manager = app.state::<ManagedToggleState>();
+                    let mut states = toggle_state_manager
+                        .lock()
+                        .expect("Failed to lock toggle state manager");
 
-                let is_currently_active = states
-                    .active_toggles
-                    .entry(binding_id.to_string())
-                    .or_insert(false);
+                    let is_currently_active = states
+                        .active_toggles
+                        .entry(binding_id.to_string())
+                        .or_insert(false);
 
-                if *is_currently_active {
-                    action.stop(app, binding_id, shortcut_string);
-                    *is_currently_active = false;
-                } else {
+                    should_start = !*is_currently_active;
+                    *is_currently_active = should_start;
+                } // Lock released here
+
+                // Now call the action without holding the lock
+                if should_start {
                     action.start(app, binding_id, shortcut_string);
-                    *is_currently_active = true;
+                } else {
+                    action.stop(app, binding_id, shortcut_string);
                 }
             }
         }
     } else {
         warn!(
-            "No action defined in ACTION_MAP for binding ID '{}'. Shortcut: '{}', State: {:?}",
-            binding_id, shortcut_string, state
+            "No action defined in ACTION_MAP for binding ID '{binding_id}'. Shortcut: '{shortcut_string}', State: {state:?}"
         );
     }
 }
 
 fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     // Validate human-level rules first
-    if let Err(e) = validate_shortcut_string(&binding.current_binding) {
-        return Err(e);
-    }
+    validate_shortcut_string(&binding.current_binding)?;
 
     // Parse shortcut and return error if it fails
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {
-            return Err(format!(
-                "Failed to parse shortcut '{}': {}",
-                binding.current_binding, e
-            ));
+            let binding_str = &binding.current_binding;
+            return Err(format!("Failed to parse shortcut '{binding_str}': {e}"));
         }
     };
 
     // Prevent duplicate registrations that would silently shadow one another
     if app.global_shortcut().is_registered(shortcut) {
-        return Err(format!(
-            "Shortcut '{}' is already in use",
-            binding.current_binding
-        ));
+        let binding_str = &binding.current_binding;
+        return Err(format!("Shortcut '{binding_str}' is already in use"));
     }
 
     // Clone binding info for use in the closure
@@ -921,34 +935,27 @@ fn _register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), S
             }
         })
         .map_err(|e| {
-            format!(
-                "Couldn't register shortcut '{}': {}",
-                binding.current_binding, e
-            )
+            let binding_str = &binding.current_binding;
+            format!("Couldn't register shortcut '{binding_str}': {e}")
         })?;
 
     Ok(())
 }
 
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    let binding_str = &binding.current_binding;
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {
-            let error_msg = format!(
-                "Failed to parse shortcut '{}' for unregistration: {}",
-                binding.current_binding, e
-            );
-            error!("_unregister_shortcut parse error: {}", error_msg);
+            let error_msg = format!("Failed to parse shortcut '{binding_str}' for unregistration: {e}");
+            error!("_unregister_shortcut parse error: {error_msg}");
             return Err(error_msg);
         }
     };
 
     app.global_shortcut().unregister(shortcut).map_err(|e| {
-        let error_msg = format!(
-            "Failed to unregister shortcut '{}': {}",
-            binding.current_binding, e
-        );
-        error!("_unregister_shortcut error: {}", error_msg);
+        let error_msg = format!("Failed to unregister shortcut '{binding_str}': {e}");
+        error!("_unregister_shortcut error: {error_msg}");
         error_msg
     })?;
 
