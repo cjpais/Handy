@@ -1,8 +1,10 @@
 use crate::audio_toolkit::apply_custom_words;
+use chrono::Local;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
+use regex::Regex;
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
@@ -18,6 +20,84 @@ use transcribe_rs::{
     },
     TranscriptionEngine,
 };
+
+enum MagicTransformation {
+    Lowercase,
+    Uppercase,
+    NoSpace,
+    Capitalize,
+}
+
+fn parse_magic_transformations(s: &str) -> (Vec<MagicTransformation>, String) {
+    let mut transformations = Vec::new();
+    let mut clean_s = s.to_string();
+
+    // Handle dynamic content tags
+    if clean_s.contains("[date]") {
+        let now = Local::now();
+        clean_s = clean_s.replace("[date]", &now.format("%Y-%m-%d").to_string());
+    }
+    if clean_s.contains("[time]") {
+        let now = Local::now();
+        clean_s = clean_s.replace("[time]", &now.format("%H:%M").to_string());
+    }
+    
+    // Regex to find tags like [lowercase]
+    if let Ok(re) = regex::Regex::new(r"\[([a-zA-Z]+)\]") {
+        let mut tags_to_remove = Vec::new();
+        for cap in re.captures_iter(&clean_s.clone()) {
+            match &cap[1] {
+                "lowercase" | "lowcase" => {
+                    transformations.push(MagicTransformation::Lowercase);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                "uppercase" => {
+                    transformations.push(MagicTransformation::Uppercase);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                "nospace" => {
+                    transformations.push(MagicTransformation::NoSpace);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                "capitalize" => {
+                    transformations.push(MagicTransformation::Capitalize);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                _ => {}
+            }
+        }
+        for tag in tags_to_remove {
+            clean_s = clean_s.replace(&tag, "");
+        }
+    }
+    (transformations, clean_s)
+}
+
+fn apply_transformations(text: &mut String, transformations: &[MagicTransformation]) {
+    for t in transformations {
+        match t {
+            MagicTransformation::Lowercase => *text = text.to_lowercase(),
+            MagicTransformation::Uppercase => *text = text.to_uppercase(),
+            MagicTransformation::NoSpace => *text = text.replace(" ", ""),
+            MagicTransformation::Capitalize => {
+                let mut result = String::new();
+                let mut capitalize_next = true;
+                for c in text.chars() {
+                    if c.is_whitespace() || c.is_ascii_punctuation() {
+                        capitalize_next = true;
+                        result.push(c);
+                    } else if capitalize_next {
+                        result.push(c.to_uppercase().next().unwrap_or(c));
+                        capitalize_next = false;
+                    } else {
+                        result.push(c);
+                    }
+                }
+                *text = result;
+            }
+        }
+    }
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -400,6 +480,8 @@ impl TranscriptionManager {
 
         // Apply replacements
         let mut replaced_result = corrected_result;
+        let mut global_transformations = Vec::new();
+
         for replacement in &settings.replacements {
             let search_pattern = if replacement.is_regex {
                 replacement.search.clone()
@@ -427,10 +509,17 @@ impl TranscriptionManager {
                 Err(_) => continue, // Skip invalid regex
             };
 
-            // Handle \n in replacement string
-            let replace_with = replacement.replace.replace("\\n", "\n");
+            // Check for magic tags
+            let (magic_transformations, clean_replace_with) = parse_magic_transformations(&replacement.replace);
+            let has_magic = !magic_transformations.is_empty();
 
-            if replacement.remove_surrounding_punctuation || replacement.capitalization_rule != crate::settings::CapitalizationRule::None {
+            // Handle \n in replacement string
+            let replace_with = clean_replace_with.replace("\\n", "\n");
+
+            if replacement.remove_surrounding_punctuation 
+                || replacement.capitalization_rule != crate::settings::CapitalizationRule::None 
+                || has_magic
+            {
                 let mut new_text = String::new();
                 let mut last_end = 0;
                 
@@ -439,6 +528,11 @@ impl TranscriptionManager {
                 
                 if matches.is_empty() {
                     continue;
+                }
+
+                // If we have matches and magic transformations, add them to global list
+                if has_magic {
+                    global_transformations.extend(magic_transformations);
                 }
 
                 for mat in matches {
@@ -542,9 +636,21 @@ impl TranscriptionManager {
             } else {
                 // Simple replacement but case-insensitive
                 // We can use regex replace_all
-                replaced_result = re.replace_all(&replaced_result, &replace_with).to_string();
+                
+                // If we have magic tags, we need to check if a match occurs to trigger them
+                if has_magic {
+                    if re.is_match(&replaced_result) {
+                        global_transformations.extend(magic_transformations);
+                        replaced_result = re.replace_all(&replaced_result, &replace_with).to_string();
+                    }
+                } else {
+                    replaced_result = re.replace_all(&replaced_result, &replace_with).to_string();
+                }
             }
         }
+
+        // Apply global transformations
+        apply_transformations(&mut replaced_result, &global_transformations);
 
 
         let et = std::time::Instant::now();

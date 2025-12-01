@@ -4,7 +4,28 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { Replacement, CapitalizationRule } from "@/bindings";
-import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex } from "lucide-react";
+import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2 } from "lucide-react";
+
+const MAGIC_TAGS: Record<string, string> = {
+  '[lowercase]': 'Converts the entire text to lowercase',
+  '[uppercase]': 'Converts the entire text to uppercase',
+  '[capitalize]': 'Capitalizes the first letter of each word',
+  '[nospace]': 'Removes all spaces from the text',
+  '[date]': 'Inserts current date (YYYY-MM-DD)',
+  '[time]': 'Inserts current time (HH:MM)',
+};
+
+const getMagicInfo = (text: string) => {
+  const tags = Object.keys(MAGIC_TAGS);
+  const foundTags = tags.filter(tag => text.includes(tag));
+  
+  if (foundTags.length > 0) {
+    const description = foundTags.map(tag => `${tag}: ${MAGIC_TAGS[tag]}`).join('\n');
+    return { isMagic: true, description };
+  }
+  
+  return { isMagic: false, description: text };
+};
 
 const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -80,6 +101,11 @@ export const Replacements: React.FC = () => {
   const [filterText, setFilterText] = useState("");
   const [lastImportedRange, setLastImportedRange] = useState<{start: number, count: number} | null>(null);
   
+  // Autocomplete state
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [suggestionFilter, setSuggestionFilter] = useState("");
+  
   // Drag and drop state
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
@@ -115,6 +141,56 @@ export const Replacements: React.FC = () => {
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  const handleReplaceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setReplace(value);
+
+    // Check for magic tag trigger
+    const lastOpenBracket = value.lastIndexOf('[');
+    const lastCloseBracket = value.lastIndexOf(']');
+    
+    if (lastOpenBracket !== -1 && lastOpenBracket > lastCloseBracket) {
+      const filter = value.slice(lastOpenBracket + 1).toLowerCase();
+      setSuggestionFilter(filter);
+      setShowSuggestions(true);
+      setActiveSuggestionIndex(0);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleReplaceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions) return;
+
+    const suggestions = Object.keys(MAGIC_TAGS).filter(tag => 
+      tag.toLowerCase().includes(`[${suggestionFilter}`)
+    );
+
+    if (suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestionIndex(prev => (prev + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestionIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      applySuggestion(suggestions[activeSuggestionIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  const applySuggestion = (tag: string) => {
+    const lastOpenBracket = replace.lastIndexOf('[');
+    if (lastOpenBracket !== -1) {
+      const newValue = replace.slice(0, lastOpenBracket) + tag;
+      setReplace(newValue);
+      setShowSuggestions(false);
+    }
+  };
 
   const handleAddOrUpdate = () => {
     if (search && replace) {
@@ -396,14 +472,35 @@ export const Replacements: React.FC = () => {
               variant="compact"
             />
             <ArrowRight className="text-mid-gray w-4 h-4" />
-            <Input
-              type="text"
-              className="flex-1"
-              value={replace}
-              onChange={(e) => setReplace(e.target.value)}
-              placeholder="Replacement"
-              variant="compact"
-            />
+            <div className="flex-1 relative">
+              <Input
+                type="text"
+                className="w-full"
+                value={replace}
+                onChange={handleReplaceChange}
+                onKeyDown={handleReplaceKeyDown}
+                placeholder="Replacement"
+                variant="compact"
+              />
+              {showSuggestions && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-background border border-mid-gray/20 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                  {Object.keys(MAGIC_TAGS)
+                    .filter(tag => tag.toLowerCase().includes(`[${suggestionFilter}`))
+                    .map((tag, index) => (
+                      <button
+                        key={tag}
+                        className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-mid-gray/10 ${
+                          index === activeSuggestionIndex ? 'bg-mid-gray/10 text-white' : 'text-mid-gray'
+                        }`}
+                        onClick={() => applySuggestion(tag)}
+                      >
+                        <span className="font-mono text-purple-400">{tag}</span>
+                        <span className="text-xs opacity-50 truncate ml-2">{MAGIC_TAGS[tag]}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-4 text-sm text-mid-gray">
@@ -412,7 +509,7 @@ export const Replacements: React.FC = () => {
                 <Regex className="w-4 h-4" />
                 <span>Regex</span>
               </label>
-              <InfoTooltip text="Use regular expressions for advanced matching (e.g. 'hello|hi' matches both)" />
+              <InfoTooltip text="Use Rust regex syntax (similar to Perl/Python). Supports (?i) for case-insensitivity, \d for digits, etc." />
               <input
                   type="checkbox"
                   checked={isRegex}
@@ -530,6 +627,8 @@ export const Replacements: React.FC = () => {
 
             if (!matchesFilter) return null;
 
+            const magicInfo = getMagicInfo(item.replace);
+
             return (
             <React.Fragment key={index}>
               {dropIndex === index && (draggingIndex === null || (dropIndex !== draggingIndex && dropIndex !== draggingIndex + 1)) && !filterText && (
@@ -552,7 +651,14 @@ export const Replacements: React.FC = () => {
                         {renderText(item.search)}
                     </span>
                     <ArrowRight className="text-mid-gray w-3 h-3 flex-shrink-0" />
-                    <span className="font-mono text-xs bg-logo-primary/10 rounded px-1 py-0.5 text-logo-primary whitespace-pre border border-logo-primary/20 inline-block max-w-[12rem] overflow-hidden text-ellipsis align-middle" title={item.replace}>
+                    <span 
+                        className={`font-mono text-xs rounded px-1 py-0.5 whitespace-pre border inline-block max-w-[12rem] overflow-hidden text-ellipsis align-middle ${
+                            magicInfo.isMagic 
+                                ? "bg-purple-500/10 text-purple-400 border-purple-500/20 cursor-help" 
+                                : "bg-logo-primary/10 text-logo-primary border-logo-primary/20"
+                        }`} 
+                        title={magicInfo.description}
+                    >
                         {renderText(item.replace)}
                     </span>
                     <div className="ml-auto flex items-center gap-2">
@@ -565,6 +671,11 @@ export const Replacements: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-mid-gray">
+                    {magicInfo.isMagic && (
+                      <span className="flex items-center gap-1 text-purple-400" title="Magic Replacement">
+                        <Wand2 className="w-3 h-3" /> Magic
+                      </span>
+                    )}
                     {item.is_regex && (
                       <span className="flex items-center gap-1 text-logo-primary" title="Regular Expression">
                         <Regex className="w-3 h-3" /> Regex
