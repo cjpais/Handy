@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen, Upload, Loader2 } from "lucide-react";
+import {
+  Copy,
+  Star,
+  Check,
+  Trash2,
+  FolderOpen,
+  Upload,
+  Loader2,
+  Mic,
+  FileText,
+} from "lucide-react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -16,6 +26,7 @@ interface HistoryEntry {
   title: string;
   transcription_text: string;
   duration?: number;
+  source?: string;
 }
 
 interface OpenRecordingsButtonProps {
@@ -68,21 +79,24 @@ export const HistorySettings: React.FC = () => {
       const unlistenImport = await listen<string>("import-status", (event) => {
         setImportStatus(event.payload);
         if (event.payload === "Completed") {
-            sendNotification({
-                title: "Import Successful",
-                body: "Audio file has been imported and transcribed.",
-            });
+          sendNotification({
+            title: "Import Successful",
+            body: "Audio file has been imported and transcribed.",
+          });
         } else if (event.payload === "Failed") {
-             sendNotification({
-                title: "Import Failed",
-                body: "Check the app for details.",
-            });
+          sendNotification({
+            title: "Import Failed",
+            body: "Check the app for details.",
+          });
         }
       });
 
-      const unlistenProgress = await listen<number>("transcription-progress", (event) => {
-        setProgress(event.payload);
-      });
+      const unlistenProgress = await listen<number>(
+        "transcription-progress",
+        (event) => {
+          setProgress(event.payload);
+        },
+      );
 
       // Return cleanup function
       return () => {
@@ -167,14 +181,13 @@ export const HistorySettings: React.FC = () => {
       });
 
       if (selected) {
-        console.log("Selected file:", selected);
         setIsImporting(true);
         setImportStatus("Initializing...");
         setProgress(0);
         toast.info("Importing and transcribing audio...");
-        
+
         await invoke("import_audio_file", { filePath: selected });
-        
+
         toast.success("Audio imported successfully");
         // Refresh is handled by the event listener
       }
@@ -206,8 +219,16 @@ export const HistorySettings: React.FC = () => {
                 className="flex items-center gap-2"
                 disabled={isImporting}
               >
-                {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>{isImporting ? (importStatus || "Transcribing...") : "Import Audio File"}</span>
+                {isImporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                <span>
+                  {isImporting
+                    ? importStatus || "Transcribing..."
+                    : "Import Audio File"}
+                </span>
               </Button>
               <OpenRecordingsButton onClick={openRecordingsFolder} />
             </div>
@@ -240,8 +261,16 @@ export const HistorySettings: React.FC = () => {
                 className="flex items-center gap-2"
                 disabled={isImporting}
               >
-                {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                <span>{isImporting ? (importStatus || "Transcribing...") : "Import Audio File"}</span>
+                {isImporting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                <span>
+                  {isImporting
+                    ? importStatus || "Transcribing..."
+                    : "Import Audio File"}
+                </span>
               </Button>
               <OpenRecordingsButton onClick={openRecordingsFolder} />
             </div>
@@ -273,22 +302,30 @@ export const HistorySettings: React.FC = () => {
               className="flex items-center gap-2"
               disabled={isImporting}
             >
-              {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              <span>{isImporting ? `${importStatus || "Transcribing..."} ${progress > 0 ? `(${Math.round(progress)}%)` : ""}` : "Import Audio File"}</span>
+              {isImporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              <span>
+                {isImporting
+                  ? `${importStatus || "Transcribing..."} ${progress > 0 ? `(${Math.round(progress)}%)` : ""}`
+                  : "Import Audio File"}
+              </span>
             </Button>
             <OpenRecordingsButton onClick={openRecordingsFolder} />
           </div>
         </div>
         {isImporting && (
-            <div className="px-4 -mt-1">
-              <div className="w-full h-1 bg-mid-gray/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-logo-primary transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+          <div className="px-4 -mt-1">
+            <div className="w-full h-1 bg-mid-gray/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary transition-all duration-300 ease-out"
+                style={{ width: `${progress}%` }}
+              />
             </div>
-          )}
+          </div>
+        )}
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           <div className="divide-y divide-mid-gray/20">
             {historyEntries.map((entry) => (
@@ -353,12 +390,21 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-            <p className="text-sm font-medium">{entry.title}</p>
-            {entry.duration && (
-                <span className="text-xs text-mid-gray bg-mid-gray/10 px-1.5 py-0.5 rounded">
-                    {formatDuration(entry.duration)}
-                </span>
-            )}
+          {entry.source === "upload" ? (
+            <span title="Uploaded File">
+              <FileText className="w-4 h-4 text-mid-gray" />
+            </span>
+          ) : (
+            <span title="Recording">
+              <Mic className="w-4 h-4 text-mid-gray" />
+            </span>
+          )}
+          <p className="text-sm font-medium">{entry.title}</p>
+          {entry.duration && (
+            <span className="text-xs text-mid-gray bg-mid-gray/10 px-1.5 py-0.5 rounded">
+              {formatDuration(entry.duration)}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -405,7 +451,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 };
 
 function formatDuration(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }

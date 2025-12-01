@@ -7570,8 +7570,8 @@ dependencies = [
 [[package]]
 name = "transcribe-rs"
 version = "0.1.4"
+source = "git+https://github.com/cjpais/transcribe-rs?branch=main#f89716e39fa73501d7fa04691156f89b03b6f73c"
 dependencies = [
- "anyhow",
  "async-openai 0.29.6",
  "async-trait",
  "derive_builder",

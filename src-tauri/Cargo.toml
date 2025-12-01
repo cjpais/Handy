@@ -68,7 +68,7 @@ chrono = "0.4"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = { path = "C:/transcribe-rs/transcribe-rs_SmartChunking" }
+transcribe-rs = { git = "https://github.com/cjpais/transcribe-rs", branch = "main" }
 ferrous-opencc = "0.2.3"
 symphonia = { version = "0.5.4", features = ["mp3", "isomp4", "pcm", "all-codecs"] }
 

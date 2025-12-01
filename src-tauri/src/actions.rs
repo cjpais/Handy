@@ -354,6 +354,7 @@ impl ShortcutAction for TranscribeAction {
                                         transcription_for_history,
                                         post_processed_text,
                                         post_process_prompt,
+                                        Some("recording".to_string()),
                                     )
                                     .await
                                 {

@@ -1,4 +1,4 @@
-use crate::audio_toolkit::audio::{decode_and_resample, save_wav_file};
+use crate::audio_toolkit::audio::save_wav_file;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use chrono::Utc;
@@ -7,6 +7,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
+use transcribe_rs::audio::decode_and_resample;
 
 #[tauri::command]
 pub async fn import_audio_file(
@@ -106,6 +107,7 @@ pub async fn import_audio_file(
             None, // post_processed_text
             None, // post_process_prompt
             Some(duration),
+            Some("upload".to_string()),
         )
         .map_err(|e| format!("Failed to save to database: {}", e))?;
 
