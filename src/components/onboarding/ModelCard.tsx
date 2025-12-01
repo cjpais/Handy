@@ -1,6 +1,6 @@
 import React from "react";
 import { Download } from "lucide-react";
-import { ModelInfo } from "../../lib/types";
+import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import Badge from "../ui/Badge";
 
@@ -42,7 +42,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
           <h3 className="text-lg font-semibold text-text group-hover:text-logo-primary transition-colors">
             {model.name}
           </h3>
-          <DownloadSize sizeMb={model.size_mb} />
+          <DownloadSize sizeMb={Number(model.size_mb)} />
           {isFeatured && <Badge variant="primary">Recommended</Badge>}
         </div>
         <p className="text-text/60 text-sm leading-relaxed">

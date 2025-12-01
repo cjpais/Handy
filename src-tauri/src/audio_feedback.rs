@@ -63,7 +63,7 @@ pub fn play_feedback_sound_blocking(app: &AppHandle, sound_type: SoundType) {
 pub fn play_test_sound(app: &AppHandle, sound_type: SoundType) {
     let settings = settings::get_settings(app);
     if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
-        play_sound_async(app, path);
+        play_sound_blocking(app, &path);
     }
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { commands } from "@/bindings";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Button } from "../ui/Button";
 
@@ -19,8 +19,12 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
   useEffect(() => {
     const loadAppDirectory = async () => {
       try {
-        const result = await invoke<string>("get_app_dir_path");
-        setAppDirPath(result);
+        const result = await commands.getAppDirPath();
+        if (result.status === "ok") {
+          setAppDirPath(result.data);
+        } else {
+          setError(result.error);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load app directory",
@@ -36,7 +40,7 @@ export const AppDataDirectory: React.FC<AppDataDirectoryProps> = ({
   const handleOpen = async () => {
     if (!appDirPath) return;
     try {
-      await invoke("open_app_data_dir");
+      await commands.openAppDataDir();
     } catch (openError) {
       console.error("Failed to open app data directory:", openError);
     }

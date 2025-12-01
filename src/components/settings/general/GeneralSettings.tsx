@@ -14,7 +14,7 @@ export const GeneralSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title="General">
-        <HandyShortcut descriptionMode="tooltip" grouped={true} />
+        <HandyShortcut shortcutId="transcribe" grouped={true} />
         <LanguageSelector descriptionMode="tooltip" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>

@@ -15,6 +15,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/bindings": ["./src/bindings.ts"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,

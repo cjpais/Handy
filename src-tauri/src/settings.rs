@@ -1,11 +1,79 @@
 use log::{debug, warn};
-use serde::{Deserialize, Serialize};
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
+use specta::Type;
 use std::collections::HashMap;
 use tauri::AppHandle;
-use tauri_plugin_log::LogLevel;
 use tauri_plugin_store::StoreExt;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+// Custom deserializer to handle both old numeric format (1-5) and new string format ("trace", "debug", etc.)
+impl<'de> Deserialize<'de> for LogLevel {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct LogLevelVisitor;
+
+        impl<'de> Visitor<'de> for LogLevelVisitor {
+            type Value = LogLevel;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string or integer representing log level")
+            }
+
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<LogLevel, E> {
+                match value.to_lowercase().as_str() {
+                    "trace" => Ok(LogLevel::Trace),
+                    "debug" => Ok(LogLevel::Debug),
+                    "info" => Ok(LogLevel::Info),
+                    "warn" => Ok(LogLevel::Warn),
+                    "error" => Ok(LogLevel::Error),
+                    _ => Err(E::unknown_variant(
+                        value,
+                        &["trace", "debug", "info", "warn", "error"],
+                    )),
+                }
+            }
+
+            fn visit_u64<E: de::Error>(self, value: u64) -> Result<LogLevel, E> {
+                match value {
+                    1 => Ok(LogLevel::Trace),
+                    2 => Ok(LogLevel::Debug),
+                    3 => Ok(LogLevel::Info),
+                    4 => Ok(LogLevel::Warn),
+                    5 => Ok(LogLevel::Error),
+                    _ => Err(E::invalid_value(de::Unexpected::Unsigned(value), &"1-5")),
+                }
+            }
+        }
+
+        deserializer.deserialize_any(LogLevelVisitor)
+    }
+}
+
+impl From<LogLevel> for tauri_plugin_log::LogLevel {
+    fn from(level: LogLevel) -> Self {
+        match level {
+            LogLevel::Trace => tauri_plugin_log::LogLevel::Trace,
+            LogLevel::Debug => tauri_plugin_log::LogLevel::Debug,
+            LogLevel::Info => tauri_plugin_log::LogLevel::Info,
+            LogLevel::Warn => tauri_plugin_log::LogLevel::Warn,
+            LogLevel::Error => tauri_plugin_log::LogLevel::Error,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct ShortcutBinding {
     pub id: String,
     pub name: String,
@@ -14,14 +82,14 @@ pub struct ShortcutBinding {
     pub current_binding: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct LLMPrompt {
     pub id: String,
     pub name: String,
     pub prompt: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct PostProcessProvider {
     pub id: String,
     pub label: String,
@@ -32,7 +100,7 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
     None,
@@ -40,7 +108,7 @@ pub enum OverlayPosition {
     Bottom,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
@@ -53,23 +121,23 @@ pub enum ModelUnloadTimeout {
     Sec5, // Debug mode only
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum PasteMethod {
     CtrlV,
     Direct,
-    #[cfg(not(target_os = "macos"))]
+    None,
     ShiftInsert,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ClipboardHandling {
     DontModify,
     CopyToClipboard,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordingRetentionPeriod {
     Never,
@@ -125,7 +193,7 @@ impl ModelUnloadTimeout {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SoundTheme {
     Marimba,
@@ -152,7 +220,7 @@ impl SoundTheme {
 }
 
 /* still handy for composing the initial JSON in the store ------------- */
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
@@ -165,6 +233,8 @@ pub struct AppSettings {
     pub start_hidden: bool,
     #[serde(default = "default_autostart_enabled")]
     pub autostart_enabled: bool,
+    #[serde(default = "default_update_checks_enabled")]
+    pub update_checks_enabled: bool,
     #[serde(default = "default_model")]
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
@@ -235,6 +305,10 @@ fn default_start_hidden() -> bool {
 
 fn default_autostart_enabled() -> bool {
     false
+}
+
+fn default_update_checks_enabled() -> bool {
+    true
 }
 
 fn default_selected_language() -> String {
@@ -375,6 +449,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: String::new(),
         },
     );
+    bindings.insert(
+        "cancel".to_string(),
+        ShortcutBinding {
+            id: "cancel".to_string(),
+            name: "Cancel".to_string(),
+            description: "Cancels the current recording.".to_string(),
+            default_binding: "escape".to_string(),
+            current_binding: "escape".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,
@@ -384,6 +468,7 @@ pub fn get_default_settings() -> AppSettings {
         sound_theme: default_sound_theme(),
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
+        update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
         always_on_microphone: false,
         selected_microphone: None,
@@ -391,7 +476,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: "auto".to_string(),
-        overlay_position: OverlayPosition::Bottom,
+        overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
@@ -444,8 +529,25 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     let settings = if let Some(settings_value) = store.get("settings") {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
-            Ok(settings) => {
+            Ok(mut settings) => {
                 debug!("Found existing settings: {:?}", settings);
+                let default_settings = get_default_settings();
+                let mut updated = false;
+
+                // Merge default bindings into existing settings
+                for (key, value) in default_settings.bindings {
+                    if !settings.bindings.contains_key(&key) {
+                        debug!("Adding missing binding: {}", key);
+                        settings.bindings.insert(key, value);
+                        updated = true;
+                    }
+                }
+
+                if updated {
+                    debug!("Settings updated with new bindings");
+                    store.set("settings", serde_json::to_value(&settings).unwrap());
+                }
+
                 settings
             }
             Err(e) => {

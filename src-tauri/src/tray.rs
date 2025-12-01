@@ -1,3 +1,4 @@
+use crate::settings;
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIcon;
@@ -74,6 +75,8 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
 }
 
 pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState) {
+    let settings = settings::get_settings(app);
+
     // Platform-specific accelerators
     #[cfg(target_os = "macos")]
     let (settings_accelerator, quit_accelerator) = (Some("Cmd+,"), Some("Cmd+Q"));
@@ -90,7 +93,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState) {
         app,
         "check_updates",
         "Check for Updates...",
-        true,
+        settings.update_checks_enabled,
         None::<&str>,
     )
     .expect("failed to create check updates item");

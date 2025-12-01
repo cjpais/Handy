@@ -2,7 +2,7 @@ import React from "react";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import type { OverlayPosition } from "../../lib/types";
+import type { OverlayPosition } from "@/bindings";
 
 interface ShowOverlayProps {
   descriptionMode?: "inline" | "tooltip";
@@ -25,7 +25,7 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
     return (
       <SettingContainer
         title="Overlay Position"
-        description="Display visual feedback overlay during recording and transcription"
+        description="Display visual feedback overlay during recording and transcription. On Linux 'None' is recommended."
         descriptionMode={descriptionMode}
         grouped={grouped}
       >

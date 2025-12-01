@@ -3,6 +3,7 @@ import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
 import { ProgressBar } from "../shared";
+import { useSettings } from "../../hooks/useSettings";
 
 interface UpdateCheckerProps {
   className?: string;
@@ -16,12 +17,29 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [showUpToDate, setShowUpToDate] = useState(false);
 
+  const { settings, isLoading } = useSettings();
+  const settingsLoaded = !isLoading && settings !== null;
+  const updateChecksEnabled = settings?.update_checks_enabled ?? false;
+
   const upToDateTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const isManualCheckRef = useRef(false);
   const downloadedBytesRef = useRef(0);
   const contentLengthRef = useRef(0);
 
   useEffect(() => {
+    // Wait for settings to load before doing anything
+    if (!settingsLoaded) return;
+
+    if (!updateChecksEnabled) {
+      if (upToDateTimeoutRef.current) {
+        clearTimeout(upToDateTimeoutRef.current);
+      }
+      setIsChecking(false);
+      setUpdateAvailable(false);
+      setShowUpToDate(false);
+      return;
+    }
+
     checkForUpdates();
 
     // Listen for update check events
@@ -35,11 +53,11 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
       }
       updateUnlisten.then((fn) => fn());
     };
-  }, []);
+  }, [settingsLoaded, updateChecksEnabled]);
 
   // Update checking functions
   const checkForUpdates = async () => {
-    if (isChecking) return;
+    if (!updateChecksEnabled || isChecking) return;
 
     try {
       setIsChecking(true);
@@ -70,11 +88,13 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   };
 
   const handleManualUpdateCheck = () => {
+    if (!updateChecksEnabled) return;
     isManualCheckRef.current = true;
     checkForUpdates();
   };
 
   const installUpdate = async () => {
+    if (!updateChecksEnabled) return;
     try {
       setIsInstalling(true);
       setDownloadProgress(0);
@@ -119,6 +139,9 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
 
   // Update status functions
   const getUpdateStatusText = () => {
+    if (!updateChecksEnabled) {
+      return "Update Checking Disabled";
+    }
     if (isInstalling) {
       return downloadProgress > 0 && downloadProgress < 100
         ? `Downloading... ${downloadProgress.toString().padStart(3)}%`
@@ -133,13 +156,14 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   };
 
   const getUpdateStatusAction = () => {
+    if (!updateChecksEnabled) return undefined;
     if (updateAvailable && !isInstalling) return installUpdate;
     if (!isChecking && !isInstalling && !updateAvailable)
       return handleManualUpdateCheck;
     return undefined;
   };
 
-  const isUpdateDisabled = isChecking || isInstalling;
+  const isUpdateDisabled = !updateChecksEnabled || isChecking || isInstalling;
   const isUpdateClickable =
     !isUpdateDisabled && (updateAvailable || (!isChecking && !showUpToDate));
 

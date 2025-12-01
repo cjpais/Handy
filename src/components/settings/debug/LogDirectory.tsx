@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { commands } from "@/bindings";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 
@@ -19,8 +19,12 @@ export const LogDirectory: React.FC<LogDirectoryProps> = ({
   useEffect(() => {
     const loadLogDirectory = async () => {
       try {
-        const result = await invoke<string>("get_log_dir_path");
-        setLogDir(result);
+        const result = await commands.getLogDirPath();
+        if (result.status === "ok") {
+          setLogDir(result.data);
+        } else {
+          setError(result.error);
+        }
       } catch (err) {
         const errorMessage =
           err && typeof err === "object" && "message" in err
@@ -38,7 +42,7 @@ export const LogDirectory: React.FC<LogDirectoryProps> = ({
   const handleOpen = async () => {
     if (!logDir) return;
     try {
-      await invoke("open_log_dir");
+      await commands.openLogDir();
     } catch (openError) {
       console.error("Failed to open log directory:", openError);
     }
