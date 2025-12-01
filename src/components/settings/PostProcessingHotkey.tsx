@@ -251,7 +251,7 @@ export const PostProcessingHotkey: React.FC<PostProcessingHotkeyProps> = ({
     return (
       <SettingContainer
         title="Post-Processing Hotkey"
-        description="Optional: Set a dedicated keyboard shortcut that always applies post-processing"
+        description="Optional: Sets a dedicated hotkey for post-processing. If configured post-processing will only occur when this hotkey is used."
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
@@ -266,7 +266,7 @@ export const PostProcessingHotkey: React.FC<PostProcessingHotkeyProps> = ({
   return (
     <SettingContainer
       title="Post-Processing Hotkey"
-      description="Optional: Set a dedicated keyboard shortcut that always applies post-processing, regardless of the global setting"
+      description="Optional: Sets a dedicated hotkey for post-processing. If configured post-processing will only occur when this hotkey is used."
       descriptionMode={descriptionMode}
       grouped={grouped}
       tooltipPosition="bottom"
@@ -303,9 +303,8 @@ export const PostProcessingHotkey: React.FC<PostProcessingHotkeyProps> = ({
       </div>
       {!hasBinding && (
         <p className="text-xs text-mid-gray/70 mt-2">
-          Click to set a dedicated hotkey for post-processing. Leave unset to
-          use the standard transcribe hotkey with the global post-processing
-          setting.
+          Use a dedicated hotkey for post-processing. If configured
+          post-processing will only occur when this hotkey is used.
         </p>
       )}
     </SettingContainer>
