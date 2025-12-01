@@ -72,9 +72,7 @@ async fn maybe_post_process_transcription(
     {
         Some(prompt) => prompt.prompt.clone(),
         None => {
-            debug!(
-                "Post-processing skipped because prompt '{selected_prompt_id}' was not found"
-            );
+            debug!("Post-processing skipped because prompt '{selected_prompt_id}' was not found");
             return None;
         }
     };

@@ -661,7 +661,9 @@ async fn fetch_models_manual(
             .text()
             .await
             .unwrap_or_else(|_| "Unknown error".to_string());
-        return Err(format!("Model list request failed ({status}): {error_text}"));
+        return Err(format!(
+            "Model list request failed ({status}): {error_text}"
+        ));
     }
 
     // Parse the response
@@ -947,7 +949,8 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {
-            let error_msg = format!("Failed to parse shortcut '{binding_str}' for unregistration: {e}");
+            let error_msg =
+                format!("Failed to parse shortcut '{binding_str}' for unregistration: {e}");
             error!("_unregister_shortcut parse error: {error_msg}");
             return Err(error_msg);
         }
