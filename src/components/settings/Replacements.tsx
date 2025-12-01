@@ -4,7 +4,7 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { Replacement, CapitalizationRule } from "@/bindings";
-import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload } from "lucide-react";
+import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex } from "lucide-react";
 
 const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -73,6 +73,7 @@ export const Replacements: React.FC = () => {
   const { getSetting, updateSetting, isUpdating } = useSettings();
   const [search, setSearch] = useState("");
   const [replace, setReplace] = useState("");
+  const [isRegex, setIsRegex] = useState(false);
   const [removePunctuation, setRemovePunctuation] = useState(false);
   const [capitalization, setCapitalization] = useState<CapitalizationRule>("none");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -120,6 +121,7 @@ export const Replacements: React.FC = () => {
       const newReplacement: Replacement = { 
         search, 
         replace,
+        is_regex: isRegex,
         remove_surrounding_punctuation: removePunctuation,
         capitalization_rule: capitalization
       };
@@ -140,6 +142,7 @@ export const Replacements: React.FC = () => {
   const resetForm = () => {
     setSearch("");
     setReplace("");
+    setIsRegex(false);
     setRemovePunctuation(false);
     setCapitalization("none");
     setEditingIndex(null);
@@ -149,8 +152,9 @@ export const Replacements: React.FC = () => {
     const item = replacements[index];
     setSearch(item.search);
     setReplace(item.replace);
-    setRemovePunctuation(item.remove_surrounding_punctuation);
-    setCapitalization(item.capitalization_rule);
+    setIsRegex(item.is_regex || false);
+    setRemovePunctuation(item.remove_surrounding_punctuation || false);
+    setCapitalization(item.capitalization_rule || "none");
     setEditingIndex(index);
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -381,7 +385,7 @@ export const Replacements: React.FC = () => {
   return (
     <div className="flex flex-col gap-4 w-full">
       <SettingsGroup title="Text Replacements">
-        <div className="flex flex-col gap-3 w-full p-4" ref={formRef}>
+        <div className="flex flex-col gap-3 w-full p-3" ref={formRef}>
           <div className="flex items-center gap-2 w-full">
             <Input
               type="text"
@@ -403,6 +407,22 @@ export const Replacements: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-4 text-sm text-mid-gray">
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+                <Regex className="w-4 h-4" />
+                <span>Regex</span>
+              </label>
+              <InfoTooltip text="Use regular expressions for advanced matching (e.g. 'hello|hi' matches both)" />
+              <input
+                  type="checkbox"
+                  checked={isRegex}
+                  onChange={(e) => setIsRegex(e.target.checked)}
+                  className="rounded border-mid-gray bg-transparent text-logo-primary focus:ring-logo-primary"
+                />
+            </div>
+
+            <div className="h-4 w-px bg-mid-gray/30" />
+
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
 
@@ -516,7 +536,7 @@ export const Replacements: React.FC = () => {
                 <div className="h-0.5 bg-logo-primary w-full rounded-full animate-pulse drag-indicator" />
               )}
               <div 
-                className={`flex items-center gap-3 p-3 bg-background border border-mid-gray/20 rounded-lg group transition-all ${
+                className={`flex items-center gap-3 p-2 bg-background border border-mid-gray/20 rounded-lg group transition-all ${
                   draggingIndex === index ? 'opacity-50 scale-95 border-dashed border-mid-gray' : 'hover:border-mid-gray/40'
                 } ${isDuplicate ? '!border-orange-500/50 bg-orange-500/5' : ''} ${isNewImport ? '!border-green-500/50 bg-green-500/5' : ''}`}
               >
@@ -545,6 +565,11 @@ export const Replacements: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-mid-gray">
+                    {item.is_regex && (
+                      <span className="flex items-center gap-1 text-logo-primary" title="Regular Expression">
+                        <Regex className="w-3 h-3" /> Regex
+                      </span>
+                    )}
                     {item.remove_surrounding_punctuation && (
                       <span className="flex items-center gap-1" title="Trims surrounding punctuation">
                         <Scissors className="w-3 h-3" /> Trim

@@ -401,21 +401,26 @@ impl TranscriptionManager {
         // Apply replacements
         let mut replaced_result = corrected_result;
         for replacement in &settings.replacements {
-            // Build accent-insensitive regex pattern
-            let mut search_pattern = String::from("(?i)");
-            for c in replacement.search.chars() {
-                match c {
-                    'a' | 'A' | 'à' | 'À' | 'á' | 'Á' | 'â' | 'Â' | 'ã' | 'Ã' | 'ä' | 'Ä' | 'å' | 'Å' => search_pattern.push_str("[aàáâãäå]"),
-                    'e' | 'E' | 'é' | 'É' | 'è' | 'È' | 'ê' | 'Ê' | 'ë' | 'Ë' => search_pattern.push_str("[eéèêë]"),
-                    'i' | 'I' | 'ì' | 'Ì' | 'í' | 'Í' | 'î' | 'Î' | 'ï' | 'Ï' => search_pattern.push_str("[iìíîï]"),
-                    'o' | 'O' | 'ò' | 'Ò' | 'ó' | 'Ó' | 'ô' | 'Ô' | 'õ' | 'Õ' | 'ö' | 'Ö' => search_pattern.push_str("[oòóôõö]"),
-                    'u' | 'U' | 'ù' | 'Ù' | 'ú' | 'Ú' | 'û' | 'Û' | 'ü' | 'Ü' => search_pattern.push_str("[uùúûü]"),
-                    'y' | 'Y' | 'ý' | 'Ý' | 'ÿ' | 'Ÿ' => search_pattern.push_str("[yýÿ]"),
-                    'c' | 'C' | 'ç' | 'Ç' => search_pattern.push_str("[cç]"),
-                    'n' | 'N' | 'ñ' | 'Ñ' => search_pattern.push_str("[nñ]"),
-                    _ => search_pattern.push_str(&regex::escape(&c.to_string())),
+            let search_pattern = if replacement.is_regex {
+                replacement.search.clone()
+            } else {
+                // Build accent-insensitive regex pattern
+                let mut pattern = String::from("(?i)");
+                for c in replacement.search.chars() {
+                    match c {
+                        'a' | 'A' | 'à' | 'À' | 'á' | 'Á' | 'â' | 'Â' | 'ã' | 'Ã' | 'ä' | 'Ä' | 'å' | 'Å' => pattern.push_str("[aàáâãäå]"),
+                        'e' | 'E' | 'é' | 'É' | 'è' | 'È' | 'ê' | 'Ê' | 'ë' | 'Ë' => pattern.push_str("[eéèêë]"),
+                        'i' | 'I' | 'ì' | 'Ì' | 'í' | 'Í' | 'î' | 'Î' | 'ï' | 'Ï' => pattern.push_str("[iìíîï]"),
+                        'o' | 'O' | 'ò' | 'Ò' | 'ó' | 'Ó' | 'ô' | 'Ô' | 'õ' | 'Õ' | 'ö' | 'Ö' => pattern.push_str("[oòóôõö]"),
+                        'u' | 'U' | 'ù' | 'Ù' | 'ú' | 'Ú' | 'û' | 'Û' | 'ü' | 'Ü' => pattern.push_str("[uùúûü]"),
+                        'y' | 'Y' | 'ý' | 'Ý' | 'ÿ' | 'Ÿ' => pattern.push_str("[yýÿ]"),
+                        'c' | 'C' | 'ç' | 'Ç' => pattern.push_str("[cç]"),
+                        'n' | 'N' | 'ñ' | 'Ñ' => pattern.push_str("[nñ]"),
+                        _ => pattern.push_str(&regex::escape(&c.to_string())),
+                    }
                 }
-            }
+                pattern
+            };
 
             let re = match regex::Regex::new(&search_pattern) {
                 Ok(re) => re,

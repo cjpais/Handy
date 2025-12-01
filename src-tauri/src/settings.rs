@@ -308,6 +308,8 @@ pub struct Replacement {
     pub search: String,
     pub replace: String,
     #[serde(default)]
+    pub is_regex: bool,
+    #[serde(default)]
     pub remove_surrounding_punctuation: bool,
     #[serde(default)]
     pub capitalization_rule: CapitalizationRule,
