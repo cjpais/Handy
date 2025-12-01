@@ -22,6 +22,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
   tooltipPosition = "top",
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
+  const [calculatedPosition, setCalculatedPosition] = useState<"top" | "bottom">(tooltipPosition);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   // Handle click outside to close tooltip
@@ -42,8 +43,26 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
     }
   }, [showTooltip]);
 
+  const handleMouseEnter = () => {
+    if (tooltipRef.current) {
+      const rect = tooltipRef.current.getBoundingClientRect();
+      // If we are too close to the top (e.g. < 150px), force bottom
+      // Otherwise respect the prop (default top)
+      if (rect.top < 150) {
+        setCalculatedPosition("bottom");
+      } else {
+        setCalculatedPosition(tooltipPosition);
+      }
+    }
+    setShowTooltip(true);
+  };
+
   const toggleTooltip = () => {
-    setShowTooltip(!showTooltip);
+    if (!showTooltip) {
+      handleMouseEnter();
+    } else {
+      setShowTooltip(false);
+    }
   };
 
   const containerClasses = grouped
@@ -63,7 +82,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             <div
               ref={tooltipRef}
               className="relative"
-              onMouseEnter={() => setShowTooltip(true)}
+              onMouseEnter={handleMouseEnter}
               onMouseLeave={() => setShowTooltip(false)}
               onClick={toggleTooltip}
             >
@@ -90,11 +109,11 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
                 />
               </svg>
               {showTooltip && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 max-w-xs min-w-[200px] whitespace-normal animate-in fade-in-0 zoom-in-95 duration-200">
+                <div className={`absolute ${calculatedPosition === "top" ? "bottom-full mb-2" : "top-full mt-2"} left-1/2 transform -translate-x-1/2 px-3 py-2 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 max-w-sm min-w-[200px] whitespace-normal animate-in fade-in-0 zoom-in-95 duration-200`}>
                   <p className="text-sm text-center leading-relaxed">
                     {description}
                   </p>
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-mid-gray/80"></div>
+                  <div className={`absolute ${calculatedPosition === "top" ? "top-full border-t-mid-gray/80 border-t-[6px]" : "bottom-full border-b-mid-gray/80 border-b-[6px]"} left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-l-transparent border-r-transparent`}></div>
                 </div>
               )}
             </div>
@@ -137,7 +156,7 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
             <div
               ref={tooltipRef}
               className="relative"
-              onMouseEnter={() => setShowTooltip(true)}
+              onMouseEnter={handleMouseEnter}
               onMouseLeave={() => setShowTooltip(false)}
               onClick={toggleTooltip}
             >
@@ -165,13 +184,13 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
               </svg>
               {showTooltip && (
                 <div
-                  className={`absolute ${tooltipPosition === "top" ? "bottom-full" : "top-[150%]"} left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 max-w-xs min-w-[200px] whitespace-normal animate-in fade-in-0 zoom-in-95 duration-200`}
+                  className={`absolute ${calculatedPosition === "top" ? "bottom-full mb-2" : "top-full mt-2"} left-1/2 transform -translate-x-1/2 px-3 py-2 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 max-w-xs min-w-[200px] whitespace-normal animate-in fade-in-0 zoom-in-95 duration-200`}
                 >
                   <p className="text-sm text-center leading-relaxed">
                     {description}
                   </p>
                   <div
-                    className={`absolute ${tooltipPosition === "top" ? "top-full" : "bottom-full rotate-180"} left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-mid-gray/80`}
+                    className={`absolute ${calculatedPosition === "top" ? "top-full border-t-mid-gray/80 border-t-[6px]" : "bottom-full border-b-mid-gray/80 border-b-[6px]"} left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-l-transparent border-r-transparent`}
                   ></div>
                 </div>
               )}

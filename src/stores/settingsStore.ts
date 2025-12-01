@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import type { AppSettings as Settings, AudioDevice, Replacement } from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
@@ -109,6 +109,7 @@ const settingUpdaters: {
     commands.changeOverlayPositionSetting(value as string),
   debug_mode: (value) => commands.changeDebugModeSetting(value as boolean),
   custom_words: (value) => commands.updateCustomWords(value as string[]),
+  replacements: (value) => commands.updateReplacements(value as Replacement[]),
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),

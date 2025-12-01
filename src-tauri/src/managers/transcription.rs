@@ -398,6 +398,150 @@ impl TranscriptionManager {
             result.text
         };
 
+        // Apply replacements
+        let mut replaced_result = corrected_result;
+        for replacement in &settings.replacements {
+            // Build accent-insensitive regex pattern
+            let mut search_pattern = String::from("(?i)");
+            for c in replacement.search.chars() {
+                match c {
+                    'a' | 'A' | 'à' | 'À' | 'á' | 'Á' | 'â' | 'Â' | 'ã' | 'Ã' | 'ä' | 'Ä' | 'å' | 'Å' => search_pattern.push_str("[aàáâãäå]"),
+                    'e' | 'E' | 'é' | 'É' | 'è' | 'È' | 'ê' | 'Ê' | 'ë' | 'Ë' => search_pattern.push_str("[eéèêë]"),
+                    'i' | 'I' | 'ì' | 'Ì' | 'í' | 'Í' | 'î' | 'Î' | 'ï' | 'Ï' => search_pattern.push_str("[iìíîï]"),
+                    'o' | 'O' | 'ò' | 'Ò' | 'ó' | 'Ó' | 'ô' | 'Ô' | 'õ' | 'Õ' | 'ö' | 'Ö' => search_pattern.push_str("[oòóôõö]"),
+                    'u' | 'U' | 'ù' | 'Ù' | 'ú' | 'Ú' | 'û' | 'Û' | 'ü' | 'Ü' => search_pattern.push_str("[uùúûü]"),
+                    'y' | 'Y' | 'ý' | 'Ý' | 'ÿ' | 'Ÿ' => search_pattern.push_str("[yýÿ]"),
+                    'c' | 'C' | 'ç' | 'Ç' => search_pattern.push_str("[cç]"),
+                    'n' | 'N' | 'ñ' | 'Ñ' => search_pattern.push_str("[nñ]"),
+                    _ => search_pattern.push_str(&regex::escape(&c.to_string())),
+                }
+            }
+
+            let re = match regex::Regex::new(&search_pattern) {
+                Ok(re) => re,
+                Err(_) => continue, // Skip invalid regex
+            };
+
+            // Handle \n in replacement string
+            let replace_with = replacement.replace.replace("\\n", "\n");
+
+            if replacement.remove_surrounding_punctuation || replacement.capitalization_rule != crate::settings::CapitalizationRule::None {
+                let mut new_text = String::new();
+                let mut last_end = 0;
+                
+                // Find all matches
+                let matches: Vec<_> = re.find_iter(&replaced_result).collect();
+                
+                if matches.is_empty() {
+                    continue;
+                }
+
+                for mat in matches {
+                    let start = mat.start();
+                    let end = mat.end();
+
+                    // If we've already processed past this match (due to lookahead), skip it
+                    if start < last_end {
+                        continue;
+                    }
+
+                    // 1. Handle text BEFORE the match
+                    let prefix = &replaced_result[last_end..start];
+                    
+                    if replacement.remove_surrounding_punctuation {
+                        // Trim trailing punctuation and whitespace
+                        // Also handles French punctuation and common symbols
+                        let trimmed_prefix = prefix.trim_end_matches(|c: char| 
+                            c.is_ascii_punctuation() || 
+                            c.is_whitespace() || 
+                            ['«', '»', '—', '…', '’', '“', '”'].contains(&c)
+                        );
+                        new_text.push_str(trimmed_prefix);
+                        
+                        // Add space if needed
+                        if !trimmed_prefix.is_empty() {
+                            // Don't add space if replacement starts with punctuation that shouldn't have one
+                            let no_space_before = replace_with.chars().next().map_or(false, |c| 
+                                ['.', ',', ')', ']', '}', '…', '’'].contains(&c)
+                            );
+                            
+                            if !no_space_before {
+                                new_text.push(' ');
+                            }
+                        }
+                    } else {
+                        new_text.push_str(prefix);
+                    }
+
+                    // 2. Append REPLACEMENT
+                    new_text.push_str(&replace_with);
+
+                    // 3. Handle text AFTER the match
+                    let mut current_pos = end;
+                    
+                    if replacement.remove_surrounding_punctuation {
+                        // Skip immediate punctuation/whitespace
+                        let remainder = &replaced_result[current_pos..];
+                        let skipped_len = remainder.chars()
+                            .take_while(|c| 
+                                c.is_ascii_punctuation() || 
+                                c.is_whitespace() || 
+                                ['«', '»', '—', '…', '’', '“', '”'].contains(&c)
+                            )
+                            .map(|c| c.len_utf8())
+                            .sum::<usize>();
+                        current_pos += skipped_len;
+                        
+                        // Add space if replacement is a word
+                        if replace_with.chars().last().map_or(false, |c| c.is_alphanumeric()) {
+                             new_text.push(' ');
+                        }
+                    }
+
+                    // 4. Handle CAPITALIZATION
+                    let remainder = &replaced_result[current_pos..];
+                    let mut chars = remainder.char_indices();
+                    
+                    if let Some((_, c)) = chars.next() {
+                        if c.is_whitespace() {
+                            new_text.push(c);
+                            // Look at next char for capitalization
+                            if let Some((_, c2)) = chars.next() {
+                                let char_to_append = match replacement.capitalization_rule {
+                                    crate::settings::CapitalizationRule::ForceUppercase => c2.to_uppercase().to_string(),
+                                    crate::settings::CapitalizationRule::ForceLowercase => c2.to_lowercase().to_string(),
+                                    _ => c2.to_string(),
+                                };
+                                new_text.push_str(&char_to_append);
+                                current_pos += c.len_utf8() + c2.len_utf8();
+                            } else {
+                                current_pos += c.len_utf8();
+                            }
+                        } else {
+                             let char_to_append = match replacement.capitalization_rule {
+                                crate::settings::CapitalizationRule::ForceUppercase => c.to_uppercase().to_string(),
+                                crate::settings::CapitalizationRule::ForceLowercase => c.to_lowercase().to_string(),
+                                _ => c.to_string(),
+                            };
+                            new_text.push_str(&char_to_append);
+                            current_pos += c.len_utf8();
+                        }
+                    }
+                    
+                    last_end = current_pos;
+                }
+                
+                new_text.push_str(&replaced_result[last_end..]);
+                replaced_result = new_text;
+
+            } else {
+                // Simple replacement but case-insensitive
+                // We can use regex replace_all
+                replaced_result = re.replace_all(&replaced_result, &replace_with).to_string();
+            }
+        }
+
+
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
             " (translated)"
@@ -410,7 +554,7 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = corrected_result.trim().to_string();
+        let final_result = replaced_result.trim().to_string();
 
         if final_result.is_empty() {
             info!("Transcription result is empty");

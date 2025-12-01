@@ -250,6 +250,7 @@ pub fn run() {
         shortcut::delete_post_process_prompt,
         shortcut::set_post_process_selected_prompt,
         shortcut::update_custom_words,
+        shortcut::update_replacements,
         shortcut::suspend_binding,
         shortcut::resume_binding,
         shortcut::change_mute_while_recording_setting,
