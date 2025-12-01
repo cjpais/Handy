@@ -516,7 +516,10 @@ impl TranscriptionManager {
             // Handle \n in replacement string
             let replace_with = clean_replace_with.replace("\\n", "\n");
 
-            if replacement.remove_surrounding_punctuation 
+            if replacement.trim_punctuation_before 
+                || replacement.trim_punctuation_after
+                || replacement.trim_spaces_before
+                || replacement.trim_spaces_after
                 || replacement.capitalization_rule != crate::settings::CapitalizationRule::None 
                 || has_magic
             {
@@ -546,31 +549,43 @@ impl TranscriptionManager {
 
                     // 1. Handle text BEFORE the match
                     let prefix = &replaced_result[last_end..start];
+                    let mut processed_prefix = prefix.to_string();
                     
-                    if replacement.remove_surrounding_punctuation {
-                        // Trim trailing punctuation and whitespace
-                        // Also handles French punctuation and common symbols
-                        let trimmed_prefix = prefix.trim_end_matches(|c: char| 
-                            c.is_ascii_punctuation() || 
-                            c.is_whitespace() || 
-                            ['«', '»', '—', '…', '’', '“', '”'].contains(&c)
-                        );
-                        new_text.push_str(trimmed_prefix);
+                    if replacement.trim_punctuation_before {
+                        let mut chars: Vec<char> = processed_prefix.chars().collect();
+                        let mut last_non_space = chars.len();
+                        // Skip trailing spaces
+                        while last_non_space > 0 && chars[last_non_space - 1].is_whitespace() {
+                            last_non_space -= 1;
+                        }
                         
-                        // Add space if needed
-                        if !trimmed_prefix.is_empty() {
-                            // Don't add space if replacement starts with punctuation that shouldn't have one
-                            let no_space_before = replace_with.chars().next().map_or(false, |c| 
-                                ['.', ',', ')', ']', '}', '…', '’'].contains(&c)
-                            );
-                            
-                            if !no_space_before {
-                                new_text.push(' ');
+                        // Check for punctuation
+                        let mut punctuation_end = last_non_space;
+                        while punctuation_end > 0 {
+                            let c = chars[punctuation_end - 1];
+                            if c.is_ascii_punctuation() || ['«', '»', '—', '…', '’', '“', '”'].contains(&c) {
+                                punctuation_end -= 1;
+                            } else {
+                                break;
                             }
                         }
-                    } else {
-                        new_text.push_str(prefix);
+                        
+                        if punctuation_end < last_non_space {
+                            // Found punctuation. Remove it.
+                            // Keep spaces (from last_non_space to end)
+                            let spaces: String = chars[last_non_space..].iter().collect();
+                            chars.truncate(punctuation_end);
+                            chars.extend(spaces.chars());
+                            processed_prefix = chars.into_iter().collect();
+                        }
                     }
+                    
+                    if replacement.trim_spaces_before {
+                        // Trim trailing whitespace
+                        processed_prefix = processed_prefix.trim_end().to_string();
+                    }
+                    
+                    new_text.push_str(&processed_prefix);
 
                     // 2. Append REPLACEMENT
                     new_text.push_str(&replace_with);
@@ -578,23 +593,57 @@ impl TranscriptionManager {
                     // 3. Handle text AFTER the match
                     let mut current_pos = end;
                     
-                    if replacement.remove_surrounding_punctuation {
-                        // Skip immediate punctuation/whitespace
+                    // Handle trim_punctuation_after with lookahead
+                    if replacement.trim_punctuation_after {
                         let remainder = &replaced_result[current_pos..];
-                        let skipped_len = remainder.chars()
-                            .take_while(|c| 
-                                c.is_ascii_punctuation() || 
-                                c.is_whitespace() || 
-                                ['«', '»', '—', '…', '’', '“', '”'].contains(&c)
-                            )
-                            .map(|c| c.len_utf8())
-                            .sum::<usize>();
-                        current_pos += skipped_len;
+                        let mut spaces_len = 0;
+                        let mut chars = remainder.chars();
                         
-                        // Add space if replacement is a word
-                        if replace_with.chars().last().map_or(false, |c| c.is_alphanumeric()) {
-                             new_text.push(' ');
+                        // Check for spaces
+                        while let Some(c) = chars.next() {
+                            if c.is_whitespace() {
+                                spaces_len += c.len_utf8();
+                            } else {
+                                break;
+                            }
                         }
+                        
+                        // Check for punctuation
+                        let mut punct_len = 0;
+                        let mut punct_iter = remainder[spaces_len..].chars();
+                        while let Some(c) = punct_iter.next() {
+                            if c.is_ascii_punctuation() || ['«', '»', '—', '…', '’', '“', '”'].contains(&c) {
+                                punct_len += c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        if punct_len > 0 {
+                            // Found punctuation to trim
+                            // If we are NOT trimming spaces, we must preserve the spaces we skipped
+                            if !replacement.trim_spaces_after {
+                                new_text.push_str(&remainder[..spaces_len]);
+                            }
+                            // If we ARE trimming spaces, we effectively drop them by advancing current_pos
+                            
+                            // Advance past spaces and punctuation
+                            current_pos += spaces_len + punct_len;
+                        }
+                    }
+                    
+                    // Handle trim_spaces_after
+                    if replacement.trim_spaces_after {
+                        let remainder = &replaced_result[current_pos..];
+                        let mut spaces_len = 0;
+                        for c in remainder.chars() {
+                            if c.is_whitespace() {
+                                spaces_len += c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
+                        current_pos += spaces_len;
                     }
 
                     // 4. Handle CAPITALIZATION

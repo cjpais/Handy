@@ -310,7 +310,13 @@ pub struct Replacement {
     #[serde(default)]
     pub is_regex: bool,
     #[serde(default)]
-    pub remove_surrounding_punctuation: bool,
+    pub trim_punctuation_before: bool,
+    #[serde(default)]
+    pub trim_punctuation_after: bool,
+    #[serde(default)]
+    pub trim_spaces_before: bool,
+    #[serde(default)]
+    pub trim_spaces_after: bool,
     #[serde(default)]
     pub capitalization_rule: CapitalizationRule,
 }

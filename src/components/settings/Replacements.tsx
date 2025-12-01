@@ -4,7 +4,7 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { Replacement, CapitalizationRule } from "@/bindings";
-import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2 } from "lucide-react";
+import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2, Space, X, Copy, Plus } from "lucide-react";
 
 const MAGIC_TAGS: Record<string, string> = {
   '[lowercase]': 'Converts the entire text to lowercase',
@@ -95,9 +95,13 @@ export const Replacements: React.FC = () => {
   const [search, setSearch] = useState("");
   const [replace, setReplace] = useState("");
   const [isRegex, setIsRegex] = useState(false);
-  const [removePunctuation, setRemovePunctuation] = useState(false);
+  const [trimPunctuationBefore, setTrimPunctuationBefore] = useState(false);
+  const [trimPunctuationAfter, setTrimPunctuationAfter] = useState(false);
+  const [trimSpacesBefore, setTrimSpacesBefore] = useState(false);
+  const [trimSpacesAfter, setTrimSpacesAfter] = useState(false);
   const [capitalization, setCapitalization] = useState<CapitalizationRule>("none");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
   const [filterText, setFilterText] = useState("");
   const [lastImportedRange, setLastImportedRange] = useState<{start: number, count: number} | null>(null);
   
@@ -198,7 +202,10 @@ export const Replacements: React.FC = () => {
         search, 
         replace,
         is_regex: isRegex,
-        remove_surrounding_punctuation: removePunctuation,
+        trim_punctuation_before: trimPunctuationBefore,
+        trim_punctuation_after: trimPunctuationAfter,
+        trim_spaces_before: trimSpacesBefore,
+        trim_spaces_after: trimSpacesAfter,
         capitalization_rule: capitalization
       };
 
@@ -219,9 +226,21 @@ export const Replacements: React.FC = () => {
     setSearch("");
     setReplace("");
     setIsRegex(false);
-    setRemovePunctuation(false);
+    setTrimPunctuationBefore(false);
+    setTrimPunctuationAfter(false);
+    setTrimSpacesBefore(false);
+    setTrimSpacesAfter(false);
     setCapitalization("none");
     setEditingIndex(null);
+    setIsAdding(false);
+  };
+
+  const handleStartAdd = () => {
+    resetForm();
+    setIsAdding(true);
+    setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
   };
 
   const handleEdit = (index: number) => {
@@ -229,10 +248,36 @@ export const Replacements: React.FC = () => {
     setSearch(item.search);
     setReplace(item.replace);
     setIsRegex(item.is_regex || false);
-    setRemovePunctuation(item.remove_surrounding_punctuation || false);
+    setTrimPunctuationBefore(item.trim_punctuation_before || false);
+    setTrimPunctuationAfter(item.trim_punctuation_after || false);
+    setTrimSpacesBefore(item.trim_spaces_before || false);
+    setTrimSpacesAfter(item.trim_spaces_after || false);
     setCapitalization(item.capitalization_rule || "none");
     setEditingIndex(index);
-    formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setIsAdding(false);
+    // Wait for render then scroll
+    setTimeout(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
+  };
+
+  const handleDuplicate = (index: number) => {
+    const itemToDuplicate = replacements[index];
+    const newReplacements = [...replacements];
+    newReplacements.splice(index + 1, 0, { ...itemToDuplicate });
+    updateSetting("replacements", newReplacements);
+    
+    if (lastImportedRange) {
+        if (index < lastImportedRange.start) {
+             setLastImportedRange({ ...lastImportedRange, start: lastImportedRange.start + 1 });
+        } else if (index >= lastImportedRange.start && index < lastImportedRange.start + lastImportedRange.count) {
+             setLastImportedRange({ ...lastImportedRange, count: lastImportedRange.count + 1 });
+        }
+    }
+    
+    if (editingIndex !== null && editingIndex > index) {
+        setEditingIndex(editingIndex + 1);
+    }
   };
 
   const handleRemove = (index: number) => {
@@ -458,10 +503,8 @@ export const Replacements: React.FC = () => {
     document.addEventListener('keydown', handleKeyDown);
   };
 
-  return (
-    <div className="flex flex-col gap-4 w-full">
-      <SettingsGroup title="Text Replacements">
-        <div className="flex flex-col gap-3 w-full p-3" ref={formRef}>
+  const renderForm = () => (
+    <div className="flex flex-col gap-3 w-full" ref={formRef}>
           <div className="flex items-center gap-2 w-full">
             <Input
               type="text"
@@ -503,76 +546,121 @@ export const Replacements: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex items-center gap-4 text-sm text-mid-gray">
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
-                <Regex className="w-4 h-4" />
-                <span>Regex</span>
-              </label>
-              <InfoTooltip text="Use Rust regex syntax (similar to Perl/Python). Supports (?i) for case-insensitivity, \d for digits, etc." />
-              <input
-                  type="checkbox"
-                  checked={isRegex}
-                  onChange={(e) => setIsRegex(e.target.checked)}
-                  className="rounded border-mid-gray bg-transparent text-logo-primary focus:ring-logo-primary"
-                />
+          <div className="flex flex-col gap-2 text-sm text-mid-gray">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+                  <Scissors className="w-4 h-4" />
+                  <span>Trim Punctuation:</span>
+                </label>
+                <InfoTooltip text='Removes punctuation around the word (e.g. ". word ," → "word")' />
+                <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-0.5">
+                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                    <input
+                      type="checkbox"
+                      checked={trimPunctuationBefore}
+                      onChange={(e) => setTrimPunctuationBefore(e.target.checked)}
+                      className="hidden"
+                    />
+                    Before
+                  </label>
+                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                    <input
+                      type="checkbox"
+                      checked={trimPunctuationAfter}
+                      onChange={(e) => setTrimPunctuationAfter(e.target.checked)}
+                      className="hidden"
+                    />
+                    After
+                  </label>
+                </div>
+              </div>
+
+              <div className="h-4 w-px bg-mid-gray/30" />
+
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+                  <Space className="w-4 h-4" />
+                  <span>Trim Spaces:</span>
+                </label>
+                <InfoTooltip text='Removes spaces around the word' />
+                <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-0.5">
+                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                    <input
+                      type="checkbox"
+                      checked={trimSpacesBefore}
+                      onChange={(e) => setTrimSpacesBefore(e.target.checked)}
+                      className="hidden"
+                    />
+                    Before
+                  </label>
+                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                    <input
+                      type="checkbox"
+                      checked={trimSpacesAfter}
+                      onChange={(e) => setTrimSpacesAfter(e.target.checked)}
+                      className="hidden"
+                    />
+                    After
+                  </label>
+                </div>
+              </div>
             </div>
 
-            <div className="h-4 w-px bg-mid-gray/30" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+                  <Regex className="w-4 h-4" />
+                  <span>Regex</span>
+                </label>
+                <InfoTooltip text="Use Rust regex syntax (similar to Perl/Python). Supports (?i) for case-insensitivity, \d for digits, etc." />
+                <input
+                    type="checkbox"
+                    checked={isRegex}
+                    onChange={(e) => setIsRegex(e.target.checked)}
+                    className="rounded border-mid-gray bg-transparent text-logo-primary focus:ring-logo-primary"
+                  />
+              </div>
 
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+              <div className="h-4 w-px bg-mid-gray/30" />
 
-                <Scissors className="w-4 h-4" />
-                <span>Trim punctuation</span>                
-              </label>
-              <InfoTooltip text='Removes punctuation and spaces around the word (e.g. ". word ," → "word")' />
-              <input
-                  type="checkbox"
-                  checked={removePunctuation}
-                  onChange={(e) => setRemovePunctuation(e.target.checked)}
-                  className="rounded border-mid-gray bg-transparent text-logo-primary focus:ring-logo-primary"
-                />
-            </div>
-
-            <div className="h-4 w-px bg-mid-gray/30" />
-
-            <div className="flex items-center gap-2">
-              <span>Next word:</span>
-              <InfoTooltip text="Controls capitalization of the word immediately following the replacement. 'None' preserves the original casing." />
-              <div className="flex bg-mid-gray/10 rounded-md p-0.5">
-                <button
-                  onClick={() => setCapitalization("none")}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    capitalization === "none" 
-                      ? "bg-mid-gray/30 text-white" 
-                      : "hover:bg-mid-gray/20"
-                  }`}
-                >
-                  None
-                </button>
-                <button
-                  onClick={() => setCapitalization("force_uppercase")}
-                  className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
-                    capitalization === "force_uppercase" 
-                      ? "bg-mid-gray/30 text-white" 
-                      : "hover:bg-mid-gray/20"
-                  }`}
-                  title="Force Uppercase"
-                >
-                  <CaseUpper className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => setCapitalization("force_lowercase")}
-                  className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
-                    capitalization === "force_lowercase" 
-                      ? "bg-mid-gray/30 text-white" 
-                      : "hover:bg-mid-gray/20"
-                  }`}
-                  title="Force Lowercase"
-                >
-                  <CaseLower className="w-3 h-3" />
-                </button>
+              <div className="flex items-center gap-2">
+                <span>Next word:</span>
+                <InfoTooltip text="Controls capitalization of the word immediately following the replacement. 'None' preserves the original casing." />
+                <div className="flex bg-mid-gray/10 rounded-md p-0.5">
+                  <button
+                    onClick={() => setCapitalization("none")}
+                    className={`px-2 py-1 rounded text-xs transition-colors ${
+                      capitalization === "none" 
+                        ? "bg-mid-gray/30 text-white" 
+                        : "hover:bg-mid-gray/20"
+                    }`}
+                  >
+                    None
+                  </button>
+                  <button
+                    onClick={() => setCapitalization("force_uppercase")}
+                    className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
+                      capitalization === "force_uppercase" 
+                        ? "bg-mid-gray/30 text-white" 
+                        : "hover:bg-mid-gray/20"
+                    }`}
+                    title="Force Uppercase"
+                  >
+                    <CaseUpper className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => setCapitalization("force_lowercase")}
+                    className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
+                      capitalization === "force_lowercase" 
+                        ? "bg-mid-gray/30 text-white" 
+                        : "hover:bg-mid-gray/20"
+                    }`}
+                    title="Force Lowercase"
+                  >
+                    <CaseLower className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -587,7 +675,7 @@ export const Replacements: React.FC = () => {
             >
               {editingIndex !== null ? "Update Replacement" : "Add Replacement"}
             </Button>
-            {editingIndex !== null && (
+            {(editingIndex !== null || isAdding) && (
               <Button
                 onClick={resetForm}
                 variant="ghost"
@@ -598,20 +686,46 @@ export const Replacements: React.FC = () => {
               </Button>
             )}
           </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      <SettingsGroup title="Text Replacements">
+        <div className="p-3">
+            {!isAdding && editingIndex === null && (
+                <Button 
+                    onClick={handleStartAdd}
+                    variant="ghost" 
+                    className="w-full flex items-center justify-center gap-2 border border-dashed border-mid-gray/30 hover:border-mid-gray/60 hover:bg-mid-gray/5 py-3 text-mid-gray hover:text-white transition-all"
+                >
+                    <Plus size={16} />
+                    <span>Add New Replacement</span>
+                </Button>
+            )}
+            {isAdding && renderForm()}
         </div>
       </SettingsGroup>
 
       {replacements.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="px-1">
+          <div className="px-1 relative">
             <Input
               type="text"
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
               placeholder="Filter replacements..."
               variant="compact"
-              className="w-full"
+              className="w-full pr-8"
             />
+            {filterText && (
+              <button
+                onClick={() => setFilterText("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-mid-gray hover:text-white transition-colors"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
           <div 
             ref={listRef}
@@ -647,7 +761,7 @@ export const Replacements: React.FC = () => {
                 </div>
                 <div className="flex-1 flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="font-mono text-xs bg-mid-gray/20 rounded px-1 py-0.5 text-white whitespace-pre border border-mid-gray/30 inline-block max-w-[12rem] overflow-hidden text-ellipsis align-middle" title={item.search}>
+                    <span className="font-mono text-xs bg-mid-gray/20 rounded px-1 py-0.5 text-white whitespace-pre border border-mid-gray/30 inline-block max-w-full overflow-hidden text-ellipsis align-middle" title={item.search}>
                         {renderText(item.search)}
                     </span>
                     <ArrowRight className="text-mid-gray w-3 h-3 flex-shrink-0" />
@@ -681,9 +795,14 @@ export const Replacements: React.FC = () => {
                         <Regex className="w-3 h-3" /> Regex
                       </span>
                     )}
-                    {item.remove_surrounding_punctuation && (
-                      <span className="flex items-center gap-1" title="Trims surrounding punctuation">
-                        <Scissors className="w-3 h-3" /> Trim
+                    {(item.trim_punctuation_before || item.trim_punctuation_after) && (
+                      <span className="flex items-center gap-1" title="Trims punctuation">
+                        <Scissors className="w-3 h-3" /> Trim Punct ({item.trim_punctuation_before ? 'L' : ''}{item.trim_punctuation_after ? 'R' : ''})
+                      </span>
+                    )}
+                    {(item.trim_spaces_before || item.trim_spaces_after) && (
+                      <span className="flex items-center gap-1" title="Trims spaces">
+                        <Space className="w-3 h-3" /> Trim Space ({item.trim_spaces_before ? 'L' : ''}{item.trim_spaces_after ? 'R' : ''})
                       </span>
                     )}
                     {item.capitalization_rule !== "none" && (
@@ -707,6 +826,15 @@ export const Replacements: React.FC = () => {
                     <Pencil size={16} />
                   </Button>
                   <Button
+                    onClick={() => handleDuplicate(index)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-mid-gray hover:text-white hover:bg-mid-gray/20"
+                    title="Duplicate"
+                  >
+                    <Copy size={16} />
+                  </Button>
+                  <Button
                     onClick={() => handleRemove(index)}
                     variant="ghost"
                     size="sm"
@@ -716,6 +844,13 @@ export const Replacements: React.FC = () => {
                   </Button>
                 </div>
               </div>
+              {editingIndex === index && (
+                  <div className="mt-2 p-3 bg-mid-gray/5 rounded-lg border border-mid-gray/20 ml-8 relative">
+                      <div className="absolute -left-2 top-4 w-2 h-px bg-mid-gray/20"></div>
+                      <div className="absolute -left-8 top-[-20px] bottom-4 w-px bg-mid-gray/20 ml-4"></div>
+                      {renderForm()}
+                  </div>
+              )}
             </React.Fragment>
           )})}
           {dropIndex === replacements.length && (draggingIndex === null || (dropIndex !== draggingIndex && dropIndex !== draggingIndex + 1)) && !filterText && (
