@@ -618,7 +618,13 @@ export type OverlayPosition = "none" | "top" | "bottom"
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
-export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
+export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string; 
+/**
+ * If true, this binding is registered/unregistered dynamically at runtime
+ * (e.g., cancel shortcut only active during recording). Dynamic bindings
+ * are not registered at startup and not shown in the UI for editing.
+ */
+dynamic?: boolean }
 export type SoundTheme = "marimba" | "pop" | "custom"
 
 /** tauri-specta globals **/

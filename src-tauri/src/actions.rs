@@ -3,7 +3,6 @@ use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
-use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use async_openai::types::{
@@ -73,10 +72,7 @@ async fn maybe_post_process_transcription(
     {
         Some(prompt) => prompt.prompt.clone(),
         None => {
-            debug!(
-                "Post-processing skipped because prompt '{}' was not found",
-                selected_prompt_id
-            );
+            debug!("Post-processing skipped because prompt '{selected_prompt_id}' was not found");
             return None;
         }
     };
@@ -105,7 +101,7 @@ async fn maybe_post_process_transcription(
     let client = match crate::llm_client::create_client(&provider, api_key) {
         Ok(client) => client,
         Err(e) => {
-            error!("Failed to create LLM client: {}", e);
+            error!("Failed to create LLM client: {e}");
             return None;
         }
     };
@@ -117,7 +113,7 @@ async fn maybe_post_process_transcription(
     {
         Ok(msg) => ChatCompletionRequestMessage::User(msg),
         Err(e) => {
-            error!("Failed to build chat message: {}", e);
+            error!("Failed to build chat message: {e}");
             return None;
         }
     };
@@ -129,7 +125,7 @@ async fn maybe_post_process_transcription(
     {
         Ok(req) => req,
         Err(e) => {
-            error!("Failed to build chat completion request: {}", e);
+            error!("Failed to build chat completion request: {e}");
             return None;
         }
     };
@@ -199,7 +195,7 @@ async fn maybe_convert_chinese_variant(
             Some(converted)
         }
         Err(e) => {
-            error!("Failed to initialize OpenCC converter: {}. Falling back to original transcription.", e);
+            error!("Failed to initialize OpenCC converter: {e}. Falling back to original transcription.");
             None
         }
     }
@@ -208,7 +204,7 @@ async fn maybe_convert_chinese_variant(
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
-        debug!("TranscribeAction::start called for binding: {}", binding_id);
+        debug!("TranscribeAction::start called for binding: {binding_id}");
 
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
@@ -223,7 +219,7 @@ impl ShortcutAction for TranscribeAction {
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
-        debug!("Microphone mode - always_on: {}", is_always_on);
+        debug!("Microphone mode - always_on: {is_always_on}");
 
         let mut recording_started = false;
         if is_always_on {
@@ -239,7 +235,7 @@ impl ShortcutAction for TranscribeAction {
             });
 
             recording_started = rm.try_start_recording(&binding_id);
-            debug!("Recording started: {}", recording_started);
+            debug!("Recording started: {recording_started}");
         } else {
             // On-demand mode: Start recording first, then play audio feedback, then apply mute
             // This allows the microphone to be activated before playing the sound
@@ -265,8 +261,13 @@ impl ShortcutAction for TranscribeAction {
         }
 
         if recording_started {
-            // Dynamically register the cancel shortcut in a separate task to avoid deadlock
-            shortcut::register_cancel_shortcut(app);
+            // Register the cancel shortcut (Escape) so user can cancel mid-recording
+            let app_clone = app.clone();
+            let _ = app.run_on_main_thread(move || {
+                if let Err(e) = crate::shortcut::register_dynamic_binding(&app_clone, "cancel") {
+                    debug!("Failed to register cancel binding: {e}");
+                }
+            });
         }
 
         debug!(
@@ -276,11 +277,16 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
-        // Unregister the cancel shortcut when transcription stops
-        shortcut::unregister_cancel_shortcut(app);
-
         let stop_time = Instant::now();
-        debug!("TranscribeAction::stop called for binding: {}", binding_id);
+        debug!("TranscribeAction::stop called for binding: {binding_id}");
+
+        // Unregister cancel shortcut when transcription completes
+        let app_clone = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            if let Err(e) = crate::shortcut::unregister_dynamic_binding(&app_clone, "cancel") {
+                debug!("Failed to unregister cancel binding: {e}");
+            }
+        });
 
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
@@ -300,10 +306,7 @@ impl ShortcutAction for TranscribeAction {
 
         tauri::async_runtime::spawn(async move {
             let binding_id = binding_id.clone(); // Clone for the inner async task
-            debug!(
-                "Starting async transcription task for binding: {}",
-                binding_id
-            );
+            debug!("Starting async transcription task for binding: {binding_id}");
 
             let stop_recording_time = Instant::now();
             if let Some(samples) = rm.stop_recording(&binding_id) {
@@ -367,7 +370,7 @@ impl ShortcutAction for TranscribeAction {
                                     )
                                     .await
                                 {
-                                    error!("Failed to save transcription to history: {}", e);
+                                    error!("Failed to save transcription to history: {e}");
                                 }
                             });
 
@@ -380,14 +383,14 @@ impl ShortcutAction for TranscribeAction {
                                         "Text pasted successfully in {:?}",
                                         paste_time.elapsed()
                                     ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
+                                    Err(e) => error!("Failed to paste transcription: {e}"),
                                 }
                                 // Hide the overlay after transcription is complete
                                 utils::hide_recording_overlay(&ah_clone);
                                 change_tray_icon(&ah_clone, TrayIconState::Idle);
                             })
                             .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+                                error!("Failed to run paste on main thread: {e:?}");
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             });
@@ -397,7 +400,7 @@ impl ShortcutAction for TranscribeAction {
                         }
                     }
                     Err(err) => {
-                        debug!("Global Shortcut Transcription error: {}", err);
+                        debug!("Global Shortcut Transcription error: {err}");
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                     }
@@ -416,16 +419,27 @@ impl ShortcutAction for TranscribeAction {
     }
 }
 
-// Cancel Action
+// Cancel Action - cancels recording without transcribing
 struct CancelAction;
 
 impl ShortcutAction for CancelAction {
-    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        debug!("CancelAction::start called for binding: {binding_id}");
+
+        // Cancel the recording (handles overlay, mute, tray icon, toggle states)
         utils::cancel_current_operation(app);
+
+        // NOTE: We intentionally do NOT unregister the cancel shortcut here.
+        // Unregistering from inside the shortcut's own callback causes a deadlock
+        // because global_shortcut holds internal locks during callback execution.
+        //
+        // Instead, register_dynamic_binding is idempotent - it unregisters first
+        // before registering. So the next TranscribeAction::start will clean up
+        // any stale registration automatically.
     }
 
     fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
-        // Nothing to do on stop for cancel
+        // Instant action - no stop behavior needed
     }
 }
 

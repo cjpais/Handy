@@ -1,5 +1,4 @@
 use crate::managers::audio::AudioRecordingManager;
-use crate::shortcut;
 use crate::ManagedToggleState;
 use log::{info, warn};
 use std::sync::Arc;
@@ -12,15 +11,26 @@ pub use crate::overlay::*;
 pub use crate::tray::*;
 
 /// Centralized cancellation function that can be called from anywhere in the app.
-/// Handles cancelling both recording and transcription operations and updates UI state.
+/// Handles cancelling recording operations and updates UI state.
+///
+/// IMPORTANT: This function discards the recording without transcribing.
+/// It does NOT call action.stop() because that would trigger transcription.
 pub fn cancel_current_operation(app: &AppHandle) {
-    info!("Initiating operation cancellation...");
+    info!("Cancelling current operation");
 
-    // Unregister the cancel shortcut asynchronously
-    shortcut::unregister_cancel_shortcut(app);
+    // FIRST: Cancel any ongoing recording (BEFORE touching toggle states!)
+    // This ensures audio is discarded and state is set to Idle.
+    // Must happen first so that if TranscribeAction.stop() is called later
+    // (e.g., user releases PTT key), stop_recording() returns None.
+    let audio_manager = app.state::<Arc<AudioRecordingManager>>();
+    audio_manager.cancel_recording();
 
-    // First, reset all shortcut toggle states.
-    // This is critical for non-push-to-talk mode where shortcuts toggle on/off
+    // Remove any applied mute (in case mute-while-recording was enabled)
+    audio_manager.remove_mute();
+
+    // Reset all shortcut toggle states WITHOUT calling action.stop()
+    // We intentionally don't call action.stop() because that would trigger
+    // transcription - we want to discard, not complete.
     let toggle_state_manager = app.state::<ManagedToggleState>();
     if let Ok(mut states) = toggle_state_manager.lock() {
         states.active_toggles.values_mut().for_each(|v| *v = false);
@@ -28,13 +38,11 @@ pub fn cancel_current_operation(app: &AppHandle) {
         warn!("Failed to lock toggle state manager during cancellation");
     }
 
-    // Cancel any ongoing recording
-    let audio_manager = app.state::<Arc<AudioRecordingManager>>();
-    audio_manager.cancel_recording();
-
-    // Update tray icon and hide overlay
-    change_tray_icon(app, crate::tray::TrayIconState::Idle);
+    // Hide the recording/transcribing overlay
     hide_recording_overlay(app);
+
+    // Update tray icon to idle state
+    change_tray_icon(app, TrayIconState::Idle);
 
     info!("Operation cancellation completed - returned to idle state");
 }

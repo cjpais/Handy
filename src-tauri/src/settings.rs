@@ -80,6 +80,11 @@ pub struct ShortcutBinding {
     pub description: String,
     pub default_binding: String,
     pub current_binding: String,
+    /// If true, this binding is registered/unregistered dynamically at runtime
+    /// (e.g., cancel shortcut only active during recording). Dynamic bindings
+    /// are not registered at startup and not shown in the UI for editing.
+    #[serde(default)]
+    pub dynamic: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -211,11 +216,13 @@ impl SoundTheme {
     }
 
     pub fn to_start_path(&self) -> String {
-        format!("resources/{}_start.wav", self.as_str())
+        let name = self.as_str();
+        format!("resources/{name}_start.wav")
     }
 
     pub fn to_stop_path(&self) -> String {
-        format!("resources/{}_stop.wav", self.as_str())
+        let name = self.as_str();
+        format!("resources/{name}_stop.wav")
     }
 }
 
@@ -436,6 +443,7 @@ pub fn get_default_settings() -> AppSettings {
             description: "Converts your speech into text.".to_string(),
             default_binding: default_shortcut.to_string(),
             current_binding: default_shortcut.to_string(),
+            dynamic: false,
         },
     );
     bindings.insert(
@@ -443,9 +451,10 @@ pub fn get_default_settings() -> AppSettings {
         ShortcutBinding {
             id: "cancel".to_string(),
             name: "Cancel".to_string(),
-            description: "Cancels the current recording.".to_string(),
-            default_binding: "escape".to_string(),
-            current_binding: "escape".to_string(),
+            description: "Cancel recording without transcribing.".to_string(),
+            default_binding: "Escape".to_string(),
+            current_binding: "Escape".to_string(),
+            dynamic: true, // Only registered while recording is active
         },
     );
 
@@ -519,14 +528,14 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(mut settings) => {
-                debug!("Found existing settings: {:?}", settings);
+                debug!("Found existing settings: {settings:?}");
                 let default_settings = get_default_settings();
                 let mut updated = false;
 
                 // Merge default bindings into existing settings
                 for (key, value) in default_settings.bindings {
                     if !settings.bindings.contains_key(&key) {
-                        debug!("Adding missing binding: {}", key);
+                        debug!("Adding missing binding: {key}");
                         settings.bindings.insert(key, value);
                         updated = true;
                     }
@@ -540,7 +549,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
                 settings
             }
             Err(e) => {
-                warn!("Failed to parse settings: {}", e);
+                warn!("Failed to parse settings: {e}");
                 // Fall back to default settings if parsing fails
                 let default_settings = get_default_settings();
                 store.set("settings", serde_json::to_value(&default_settings).unwrap());
