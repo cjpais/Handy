@@ -479,11 +479,16 @@ impl TranscriptionManager {
         };
 
         // Apply replacements
-        let mut replaced_result = corrected_result;
+        let mut replaced_result = corrected_result.trim().to_string();
         let mut global_transformations = Vec::new();
 
-        for replacement in &settings.replacements {
-            let search_pattern = if replacement.is_regex {
+        if settings.replacements_enabled {
+            for replacement in &settings.replacements {
+                if !replacement.enabled {
+                    continue;
+                }
+
+                let search_pattern = if replacement.is_regex {
                 replacement.search.clone()
             } else {
                 // Build accent-insensitive regex pattern
@@ -554,9 +559,14 @@ impl TranscriptionManager {
                     if replacement.trim_punctuation_before {
                         let mut chars: Vec<char> = processed_prefix.chars().collect();
                         let mut last_non_space = chars.len();
-                        // Skip trailing spaces
-                        while last_non_space > 0 && chars[last_non_space - 1].is_whitespace() {
-                            last_non_space -= 1;
+                        // Skip trailing spaces (only horizontal)
+                        while last_non_space > 0 {
+                            let c = chars[last_non_space - 1];
+                            if c == ' ' || c == '\t' {
+                                last_non_space -= 1;
+                            } else {
+                                break;
+                            }
                         }
                         
                         // Check for punctuation
@@ -599,9 +609,9 @@ impl TranscriptionManager {
                         let mut spaces_len = 0;
                         let mut chars = remainder.chars();
                         
-                        // Check for spaces
+                        // Check for spaces (only horizontal)
                         while let Some(c) = chars.next() {
-                            if c.is_whitespace() {
+                            if c == ' ' || c == '\t' {
                                 spaces_len += c.len_utf8();
                             } else {
                                 break;
@@ -697,6 +707,7 @@ impl TranscriptionManager {
                 }
             }
         }
+        } // End of if settings.replacements_enabled
 
         // Apply global transformations
         apply_transformations(&mut replaced_result, &global_transformations);
@@ -714,7 +725,7 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = replaced_result.trim().to_string();
+        let final_result = replaced_result;
 
         if final_result.is_empty() {
             info!("Transcription result is empty");

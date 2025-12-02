@@ -3,8 +3,9 @@ import { useSettings } from "../../hooks/useSettings";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { SettingsGroup } from "../ui/SettingsGroup";
+import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { Replacement, CapitalizationRule } from "@/bindings";
-import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2, Space, X, Copy, Plus } from "lucide-react";
+import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2, Space, X, Copy, Plus, Eye, EyeOff } from "lucide-react";
 
 const MAGIC_TAGS: Record<string, string> = {
   '[lowercase]': 'Converts the entire text to lowercase',
@@ -121,24 +122,23 @@ export const Replacements: React.FC = () => {
   const formRef = useRef<HTMLDivElement>(null);
   
   const replacements = getSetting("replacements") || [];
+  const replacementsEnabled = getSetting("replacements_enabled") ?? true;
 
   const renderText = (text: string) => {
     if (!text) return <span className="opacity-50 italic">empty</span>;
-    return text.split('').map((char, i) => 
-      char === ' ' ? <span key={i} className="opacity-30">·</span> : char
-    );
+    return text;
   };
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && editingIndex !== null) {
+      if (e.key === 'Escape' && (editingIndex !== null || isAdding)) {
         resetForm();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editingIndex]);
+  }, [editingIndex, isAdding]);
 
   const searchCounts = replacements.reduce((acc, item) => {
     const key = item.search.trim().toLowerCase();
@@ -259,6 +259,15 @@ export const Replacements: React.FC = () => {
     setTimeout(() => {
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 0);
+  };
+
+  const handleToggleItem = (index: number) => {
+    const newReplacements = [...replacements];
+    newReplacements[index] = {
+        ...newReplacements[index],
+        enabled: !(newReplacements[index].enabled ?? true)
+    };
+    updateSetting("replacements", newReplacements);
   };
 
   const handleDuplicate = (index: number) => {
@@ -692,7 +701,15 @@ export const Replacements: React.FC = () => {
   return (
     <div className="flex flex-col gap-4 w-full">
       <SettingsGroup title="Text Replacements">
-        <div className="p-3">
+        <ToggleSwitch
+            label="Enable Replacements"
+            description="Globally enable or disable all text replacements"
+            checked={replacementsEnabled}
+            onChange={(checked) => updateSetting("replacements_enabled", checked)}
+            isUpdating={isUpdating("replacements_enabled")}
+            grouped
+        />
+        <div className={`p-3 border-t border-mid-gray/20 ${!replacementsEnabled ? 'opacity-50' : ''}`}>
             {!isAdding && editingIndex === null && (
                 <Button 
                     onClick={handleStartAdd}
@@ -708,7 +725,7 @@ export const Replacements: React.FC = () => {
       </SettingsGroup>
 
       {replacements.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className={`flex flex-col gap-2 ${!replacementsEnabled ? 'opacity-50' : ''}`}>
           <div className="px-1 relative">
             <Input
               type="text"
@@ -742,6 +759,7 @@ export const Replacements: React.FC = () => {
             if (!matchesFilter) return null;
 
             const magicInfo = getMagicInfo(item.replace);
+            const isEnabled = item.enabled ?? true;
 
             return (
             <React.Fragment key={index}>
@@ -751,7 +769,15 @@ export const Replacements: React.FC = () => {
               <div 
                 className={`flex items-center gap-3 p-2 bg-background border border-mid-gray/20 rounded-lg group transition-all ${
                   draggingIndex === index ? 'opacity-50 scale-95 border-dashed border-mid-gray' : 'hover:border-mid-gray/40'
-                } ${isDuplicate ? '!border-orange-500/50 bg-orange-500/5' : ''} ${isNewImport ? '!border-green-500/50 bg-green-500/5' : ''}`}
+                } ${
+                    !isEnabled 
+                        ? '!border-red-500/30 bg-red-500/5 opacity-75' 
+                        : isDuplicate 
+                            ? '!border-yellow-500/50 bg-yellow-500/5' 
+                            : isNewImport 
+                                ? '!border-green-500/50 bg-green-500/5' 
+                                : ''
+                }`}
               >
                 <div 
                   className={`text-mid-gray p-1 ${filterText ? 'opacity-30 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing hover:text-white'}`}
@@ -761,7 +787,7 @@ export const Replacements: React.FC = () => {
                 </div>
                 <div className="flex-1 flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-2 text-sm">
-                    <span className="font-mono text-xs bg-mid-gray/20 rounded px-1 py-0.5 text-white whitespace-pre border border-mid-gray/30 inline-block max-w-full overflow-hidden text-ellipsis align-middle" title={item.search}>
+                    <span className="font-mono text-xs bg-mid-gray/20 rounded px-1 py-0.5 text-white whitespace-pre border border-mid-gray/30 inline-block max-w-full overflow-hidden text-ellipsis align-middle" title={item.search.replace(/ /g, '·')}>
                         {renderText(item.search)}
                     </span>
                     <ArrowRight className="text-mid-gray w-3 h-3 flex-shrink-0" />
@@ -771,13 +797,18 @@ export const Replacements: React.FC = () => {
                                 ? "bg-purple-500/10 text-purple-400 border-purple-500/20 cursor-help" 
                                 : "bg-logo-primary/10 text-logo-primary border-logo-primary/20"
                         }`} 
-                        title={magicInfo.description}
+                        title={magicInfo.isMagic ? magicInfo.description : magicInfo.description.replace(/ /g, '·')}
                     >
                         {renderText(item.replace)}
                     </span>
                     <div className="ml-auto flex items-center gap-2">
+                        {!isEnabled && (
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded border border-red-400/20">
+                            Disabled
+                        </span>
+                        )}
                         {isDuplicate && (
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded border border-orange-400/20">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded border border-yellow-400/20">
                             Duplicate
                         </span>
                         )}
@@ -817,6 +848,15 @@ export const Replacements: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <Button
+                    onClick={() => handleToggleItem(index)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-mid-gray hover:text-white hover:bg-mid-gray/20"
+                    title={isEnabled ? "Disable" : "Enable"}
+                  >
+                    {isEnabled ? <Eye size={16} /> : <EyeOff size={16} />}
+                  </Button>
                   <Button
                     onClick={() => handleEdit(index)}
                     variant="ghost"

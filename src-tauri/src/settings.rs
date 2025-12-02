@@ -273,6 +273,8 @@ pub struct AppSettings {
     pub custom_words: Vec<String>,
     #[serde(default)]
     pub replacements: Vec<Replacement>,
+    #[serde(default = "default_true")]
+    pub replacements_enabled: bool,
     #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
@@ -319,6 +321,12 @@ pub struct Replacement {
     pub trim_spaces_after: bool,
     #[serde(default)]
     pub capitalization_rule: CapitalizationRule,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_model() -> String {
@@ -504,6 +512,7 @@ pub fn get_default_settings() -> AppSettings {
         log_level: default_log_level(),
         custom_words: Vec::new(),
         replacements: Vec::new(),
+        replacements_enabled: true,
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
