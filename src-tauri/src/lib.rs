@@ -253,6 +253,7 @@ pub fn run() {
         shortcut::suspend_binding,
         shortcut::resume_binding,
         shortcut::change_mute_while_recording_setting,
+        shortcut::change_append_trailing_space_setting,
         shortcut::change_update_checks_setting,
         trigger_update_check,
         commands::cancel_operation,
