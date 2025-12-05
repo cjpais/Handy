@@ -354,6 +354,16 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
 
+                            // Apply context-aware capitalization if enabled
+                            if settings.context_aware_capitalization {
+                                final_text =
+                                    crate::context::apply_context_aware_capitalization(&final_text);
+                                debug!(
+                                    "Applied context-aware capitalization: '{}'",
+                                    final_text
+                                );
+                            }
+
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
@@ -457,6 +467,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     let mut map = HashMap::new();
     map.insert(
         "transcribe".to_string(),
+        Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe2".to_string(),
         Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(

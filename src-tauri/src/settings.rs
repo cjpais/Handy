@@ -285,6 +285,8 @@ pub struct AppSettings {
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
+    #[serde(default = "default_context_aware_capitalization")]
+    pub context_aware_capitalization: bool,
 }
 
 fn default_model() -> String {
@@ -352,6 +354,10 @@ fn default_sound_theme() -> SoundTheme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_context_aware_capitalization() -> bool {
+    true // Enabled by default on macOS
 }
 
 fn default_post_process_provider_id() -> String {
@@ -439,6 +445,16 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
     bindings.insert(
+        "transcribe2".to_string(),
+        ShortcutBinding {
+            id: "transcribe2".to_string(),
+            name: "Transcribe (Alt)".to_string(),
+            description: "Alternative shortcut for transcription.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
+    bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
             id: "cancel".to_string(),
@@ -483,6 +499,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
+        context_aware_capitalization: default_context_aware_capitalization(),
     }
 }
 

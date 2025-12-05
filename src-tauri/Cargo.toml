@@ -92,6 +92,9 @@ windows = { version = "0.61.3", features = [
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
+accessibility = "0.1"
+accessibility-sys = "0.1"
+core-foundation = "0.9"
 
 [profile.release]
 lto = true

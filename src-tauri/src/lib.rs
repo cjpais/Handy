@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod context;
 mod helpers;
 mod llm_client;
 mod managers;
@@ -253,6 +254,7 @@ pub fn run() {
         shortcut::suspend_binding,
         shortcut::resume_binding,
         shortcut::change_mute_while_recording_setting,
+        shortcut::change_context_aware_capitalization_setting,
         shortcut::change_update_checks_setting,
         trigger_update_check,
         commands::cancel_operation,

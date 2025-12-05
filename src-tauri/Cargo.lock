@@ -9,6 +9,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 
 [[package]]
+name = "accessibility"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68ad4ccded014d35a7b1a262bb1ebbc076593189748f0ff6d2ba19f8ddfecef0"
+dependencies = [
+ "accessibility-sys",
+ "core-foundation 0.9.4",
+]
+
+[[package]]
+name = "accessibility-sys"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf09354dda54177da27bcb8b9b83d8cab947db1dc1538a310a5e9da1c57fd4c2"
+dependencies = [
+ "core-foundation-sys",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2508,9 +2527,12 @@ dependencies = [
 name = "handy"
 version = "0.6.4"
 dependencies = [
+ "accessibility",
+ "accessibility-sys",
  "anyhow",
  "async-openai 0.30.1",
  "chrono",
+ "core-foundation 0.9.4",
  "cpal",
  "enigo",
  "env_filter",
