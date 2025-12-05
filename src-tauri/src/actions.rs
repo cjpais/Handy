@@ -5,6 +5,7 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
+use crate::overlay::hide_recording_overlay_with_callback;
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use async_openai::types::{
     ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
@@ -371,10 +372,14 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             });
 
-                            // Paste the final text (either processed or original)
+                            // Hide overlay first, then paste when focus is restored.
+                            // This ensures reliable paste on Wayland/Linux where focus
+                            // changes are asynchronous.
                             let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
+                            hide_recording_overlay_with_callback(&ah, move || {
+                                let paste_time = Instant::now();
+                                change_tray_icon(&ah_clone, TrayIconState::Idle);
+
                                 match utils::paste(final_text, ah_clone.clone()) {
                                     Ok(()) => debug!(
                                         "Text pasted successfully in {:?}",
@@ -382,14 +387,6 @@ impl ShortcutAction for TranscribeAction {
                                     ),
                                     Err(e) => error!("Failed to paste transcription: {}", e),
                                 }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
-                                utils::hide_recording_overlay(&ah);
-                                change_tray_icon(&ah, TrayIconState::Idle);
                             });
                         } else {
                             utils::hide_recording_overlay(&ah);
