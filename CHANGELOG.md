@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **Context-Aware Capitalization**: Automatically adjusts capitalization based on surrounding text using macOS Accessibility APIs. Capitalizes after sentence-ending punctuation (. ! ?), lowercases after continuation punctuation (, ; : -). Adds smart trailing spaces for consecutive sentence dictation. (macOS only)
+
 ## [0.3.0] - 2025-07-11
 
 ### Added

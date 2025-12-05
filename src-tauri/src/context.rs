@@ -518,4 +518,48 @@ mod tests {
             "a"
         );
     }
+
+    #[test]
+    fn test_find_relevant_punctuation_sentence_end() {
+        // Cursor right after punctuation
+        assert_eq!(find_relevant_punctuation("Hello."), Some('.'));
+        assert_eq!(find_relevant_punctuation("Hello!"), Some('!'));
+        assert_eq!(find_relevant_punctuation("Hello?"), Some('?'));
+    }
+
+    #[test]
+    fn test_find_relevant_punctuation_with_spaces() {
+        // One space after punctuation
+        assert_eq!(find_relevant_punctuation("Hello. "), Some('.'));
+        assert_eq!(find_relevant_punctuation("Hello! "), Some('!'));
+        // Two spaces after punctuation
+        assert_eq!(find_relevant_punctuation("Hello.  "), Some('.'));
+        // Three spaces exceeds MAX_WHITESPACE_LOOKBACK
+        assert_eq!(find_relevant_punctuation("Hello.   "), None);
+    }
+
+    #[test]
+    fn test_find_relevant_punctuation_continuation() {
+        assert_eq!(find_relevant_punctuation("Hey,"), Some(','));
+        assert_eq!(find_relevant_punctuation("Hey, "), Some(','));
+        assert_eq!(find_relevant_punctuation("Note:"), Some(':'));
+        assert_eq!(find_relevant_punctuation("well-"), Some('-'));
+    }
+
+    #[test]
+    fn test_find_relevant_punctuation_newline() {
+        assert_eq!(find_relevant_punctuation("Hello\n"), Some('\n'));
+        assert_eq!(find_relevant_punctuation("Hello\r"), Some('\r'));
+    }
+
+    #[test]
+    fn test_find_relevant_punctuation_edge_cases() {
+        // Empty string
+        assert_eq!(find_relevant_punctuation(""), None);
+        // Only whitespace (within lookback)
+        assert_eq!(find_relevant_punctuation("  "), None);
+        // Regular word ending
+        assert_eq!(find_relevant_punctuation("Hello"), Some('o'));
+        assert_eq!(find_relevant_punctuation("Hello "), Some('o'));
+    }
 }

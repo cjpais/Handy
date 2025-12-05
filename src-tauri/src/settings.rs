@@ -445,16 +445,6 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
     bindings.insert(
-        "transcribe2".to_string(),
-        ShortcutBinding {
-            id: "transcribe2".to_string(),
-            name: "Transcribe (Alt)".to_string(),
-            description: "Alternative shortcut for transcription.".to_string(),
-            default_binding: "".to_string(),
-            current_binding: "".to_string(),
-        },
-    );
-    bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
             id: "cancel".to_string(),

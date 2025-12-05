@@ -21,9 +21,11 @@ export const ContextAwareCapitalization: React.FC<ContextAwareCapitalizationTogg
         }
         isUpdating={isUpdating("context_aware_capitalization")}
         label="Context-Aware Capitalization"
-        description="Automatically adjust capitalization based on surrounding text. Capitalizes after periods, lowercases after commas."
+        description="Automatically adjust capitalization based on surrounding text (macOS only). Capitalizes after periods, lowercases after commas."
         descriptionMode={descriptionMode}
         grouped={grouped}
       />
     );
   });
+
+ContextAwareCapitalization.displayName = "ContextAwareCapitalization";
