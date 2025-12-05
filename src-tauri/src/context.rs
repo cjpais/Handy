@@ -2,6 +2,12 @@
 //!
 //! This module reads the character before the cursor in the currently focused
 //! text field to determine appropriate capitalization for inserted text.
+//!
+//! Features:
+//! - Capitalizes after sentence-ending punctuation (. ! ?)
+//! - Lowercases after continuation punctuation (, ; : -)
+//! - Adds trailing space after sentence-ending punctuation in output
+//! - When context cannot be read (terminal apps), assumes consecutive sentences
 
 use log::{debug, info};
 
@@ -201,45 +207,53 @@ fn find_relevant_punctuation(text: &str) -> Option<char> {
     None
 }
 
-/// Result of context analysis including both capitalization and spacing.
+/// Result of context analysis.
 #[derive(Debug, Clone)]
-pub struct ContextResult {
+struct ContextResult {
     /// Whether to capitalize, lowercase, or leave unchanged
-    pub hint: CapitalizationHint,
-    /// Whether to prepend a space before the text
-    pub needs_leading_space: bool,
+    hint: CapitalizationHint,
+    /// Whether context was successfully read (false = fallback mode)
+    context_readable: bool,
 }
 
-/// Analyze the context and return capitalization hint plus spacing info.
+/// Analyze the context and return capitalization hint plus context readability.
 ///
 /// This function:
 /// 1. Reads text before the cursor
 /// 2. Scans back through whitespace (up to MAX_WHITESPACE_LOOKBACK chars)
 /// 3. Determines capitalization based on the punctuation found
-/// 4. Determines if a leading space is needed
+/// 4. Reports whether context was successfully read
 ///
 /// ## Scenarios handled:
-/// - `"Hello."` → Capitalize, add leading space
-/// - `"Hello. "` → Capitalize, no leading space needed
-/// - `"Hey,"` → Lowercase, add leading space
-/// - `"Hey, "` → Lowercase, no leading space needed
-/// - `"Hello"` → Unknown (mid-word), no change
-/// - Empty/beginning → Capitalize (start of text)
+/// - `"Hello."` → Capitalize (context readable)
+/// - `"Hello. "` → Capitalize (context readable)
+/// - `"Hey,"` → Lowercase (context readable)
+/// - `"Hey, "` → Lowercase (context readable)
+/// - `"Hello"` → Unknown/mid-word (context readable)
+/// - Empty/beginning → Capitalize (context readable)
+/// - Terminal/API failure → Capitalize (context NOT readable - fallback mode)
 fn analyze_context() -> ContextResult {
     let text = match get_text_before_cursor() {
         Some(t) => t,
         None => {
-            // Empty field, can't read, or at beginning - capitalize by default
-            debug!("No text before cursor, defaulting to Capitalize");
+            // Can't read context (unsupported app like terminal, or API failure)
+            // In fallback mode, assume consecutive sentences
+            debug!("No text before cursor (fallback mode), defaulting to Capitalize");
             return ContextResult {
                 hint: CapitalizationHint::Capitalize,
-                needs_leading_space: false,
+                context_readable: false,
             };
         }
     };
 
-    // Check if there's already a space at the end
-    let has_trailing_space = text.ends_with(' ') || text.ends_with('\t');
+    // If we got an empty string, treat as start of text (but context IS readable)
+    if text.is_empty() {
+        debug!("Empty text field, Capitalize (context readable)");
+        return ContextResult {
+            hint: CapitalizationHint::Capitalize,
+            context_readable: true,
+        };
+    }
 
     // Find the relevant punctuation by looking back through whitespace
     let relevant_char = find_relevant_punctuation(&text);
@@ -250,55 +264,39 @@ fn analyze_context() -> ContextResult {
             debug!("No relevant punctuation found, defaulting to Capitalize");
             ContextResult {
                 hint: CapitalizationHint::Capitalize,
-                needs_leading_space: false,
+                context_readable: true,
             }
         }
         Some(c) if CAPITALIZE_AFTER.contains(&c) => {
-            debug!(
-                "Found sentence-ending '{}', Capitalize, needs_space={}",
-                c, !has_trailing_space
-            );
+            debug!("Found sentence-ending '{}', Capitalize", c);
             ContextResult {
                 hint: CapitalizationHint::Capitalize,
-                needs_leading_space: !has_trailing_space,
+                context_readable: true,
             }
         }
         Some(c) if c == '\n' || c == '\r' => {
-            // Newline - capitalize, no space needed (newline acts as separator)
-            debug!("Found newline, Capitalize, no space needed");
+            debug!("Found newline, Capitalize");
             ContextResult {
                 hint: CapitalizationHint::Capitalize,
-                needs_leading_space: false,
+                context_readable: true,
             }
         }
         Some(c) if LOWERCASE_AFTER.contains(&c) => {
-            debug!(
-                "Found continuation '{}', Lowercase, needs_space={}",
-                c, !has_trailing_space
-            );
+            debug!("Found continuation '{}', Lowercase", c);
             ContextResult {
                 hint: CapitalizationHint::Lowercase,
-                needs_leading_space: !has_trailing_space,
+                context_readable: true,
             }
         }
         Some(c) => {
             // Some other character (letter, number, etc.)
-            // Don't change capitalization, but might need space
-            debug!(
-                "Found other char '{}', Unknown, needs_space={}",
-                c, !has_trailing_space
-            );
+            debug!("Found other char '{}', Unknown", c);
             ContextResult {
                 hint: CapitalizationHint::Unknown,
-                needs_leading_space: !has_trailing_space,
+                context_readable: true,
             }
         }
     }
-}
-
-/// Legacy function for getting just the hint (used by tests).
-pub fn get_capitalization_hint() -> CapitalizationHint {
-    analyze_context().hint
 }
 
 /// Apply capitalization hint to the given text.
@@ -345,31 +343,42 @@ pub fn apply_capitalization(text: &str, hint: CapitalizationHint) -> String {
 /// Convenience function that reads context and applies capitalization in one step.
 ///
 /// This is the main entry point for context-aware capitalization.
-/// On non-macOS platforms or if context cannot be read, returns text unchanged.
+/// On non-macOS platforms or if context cannot be read, uses fallback behavior.
 ///
 /// This function:
 /// 1. Analyzes the text before the cursor
 /// 2. Determines appropriate capitalization (capitalize/lowercase/unchanged)
-/// 3. Adds a leading space if needed (no space after punctuation)
+/// 3. Adds a trailing space based on smart logic:
+///    - If output ends with sentence-ending punctuation (. ! ?), add space
+///    - If context was NOT readable (terminal apps, etc.), add space (assume consecutive sentences)
 ///
 /// ## Examples:
-/// - After `"Hello."` with input `"world"` → `" World"` (space + capitalize)
-/// - After `"Hello. "` with input `"world"` → `"World"` (capitalize, space exists)
-/// - After `"Hey,"` with input `"What"` → `" what"` (space + lowercase)
-/// - After `"Hey, "` with input `"What"` → `"what"` (lowercase, space exists)
+/// - After `"Hello."` with input `"world"` → `"World"` (capitalize, context readable)
+/// - After `"Hey,"` with input `"What"` → `"what"` (lowercase, context readable)
+/// - Input `"Hello world."` → `"Hello world. "` (trailing space for punctuation)
+/// - In terminal with input `"hello"` → `"Hello "` (trailing space for fallback mode)
 pub fn apply_context_aware_capitalization(text: &str) -> String {
     let context = analyze_context();
     let capitalized = apply_capitalization(text, context.hint);
 
-    let result = if context.needs_leading_space {
-        format!(" {}", capitalized)
+    // Determine if we should add a trailing space:
+    // 1. Always add space after sentence-ending punctuation
+    // 2. Add space in fallback mode (context not readable) - assume consecutive sentences
+    let ends_with_sentence_punctuation = capitalized.ends_with('.')
+        || capitalized.ends_with('!')
+        || capitalized.ends_with('?');
+
+    let should_add_trailing_space = ends_with_sentence_punctuation || !context.context_readable;
+
+    let result = if should_add_trailing_space {
+        format!("{} ", capitalized)
     } else {
         capitalized
     };
 
     info!(
-        "Context-aware capitalization: hint={:?}, needs_space={}, input='{}', output='{}'",
-        context.hint, context.needs_leading_space, text, result
+        "Context-aware capitalization: hint={:?}, context_readable={}, input='{}', output='{}'",
+        context.hint, context.context_readable, text, result
     );
     result
 }
@@ -485,9 +494,16 @@ mod tests {
             apply_capitalization("42 - hello", CapitalizationHint::Capitalize),
             "42 - Hello"
         );
+        // Lowercase hint only affects the first alphabetic char
+        // Here 'n' in 'note' is already lowercase, so no change
         assert_eq!(
             apply_capitalization("(note: Hello)", CapitalizationHint::Lowercase),
-            "(note: hello)"
+            "(note: Hello)"
+        );
+        // Test with first letter being uppercase
+        assert_eq!(
+            apply_capitalization("(Note: Hello)", CapitalizationHint::Lowercase),
+            "(note: Hello)"
         );
     }
 
