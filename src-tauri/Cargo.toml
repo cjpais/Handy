@@ -41,7 +41,7 @@ tauri-plugin-os = "2.3.2"
 tauri-plugin-clipboard-manager = "2.3.2"
 tauri-plugin-macos-permissions = "2.3.0"
 tauri-plugin-process = "2.3.1"
-tauri-plugin-sql = { version = "2.3.1", features = ["sqlite"] }
+rusqlite_migration = "2.3"
 tauri-plugin-fs = "2.4.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -63,7 +63,7 @@ rustfft = "6.4.0"
 strsim = "0.11.0"
 natural = "0.5.0"
 chrono = "0.4"
-rusqlite = { version = "0.32.1", features = ["bundled"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = "0.1.4"
