@@ -14,6 +14,7 @@ const MAGIC_TAGS: Record<string, string> = {
   '[nospace]': 'Removes all spaces from the text',
   '[date]': 'Inserts current date (YYYY-MM-DD)',
   '[time]': 'Inserts current time (HH:MM)',
+  '[run]': 'Run a command. Usage: [run]"command {text}"',
 };
 
 const getMagicInfo = (text: string) => {

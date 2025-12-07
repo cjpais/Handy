@@ -10,6 +10,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use tauri::{AppHandle, Emitter};
 use transcribe_rs::{
     engines::{
@@ -26,6 +28,7 @@ enum MagicTransformation {
     Uppercase,
     NoSpace,
     Capitalize,
+    Run(String),
 }
 
 fn parse_magic_transformations(s: &str) -> (Vec<MagicTransformation>, String) {
@@ -40,6 +43,18 @@ fn parse_magic_transformations(s: &str) -> (Vec<MagicTransformation>, String) {
     if clean_s.contains("[time]") {
         let now = Local::now();
         clean_s = clean_s.replace("[time]", &now.format("%H:%M").to_string());
+    }
+
+    // Regex to find [run]"command" or [run]'command'
+    if let Ok(re_run) = regex::Regex::new(r#"\[run\]["'](.*?)["']"#) {
+        let mut tags_to_remove = Vec::new();
+        for cap in re_run.captures_iter(&clean_s.clone()) {
+            transformations.push(MagicTransformation::Run(cap[1].to_string()));
+            tags_to_remove.push(cap[0].to_string());
+        }
+        for tag in tags_to_remove {
+            clean_s = clean_s.replace(&tag, "");
+        }
     }
     
     // Regex to find tags like [lowercase]
@@ -74,6 +89,7 @@ fn parse_magic_transformations(s: &str) -> (Vec<MagicTransformation>, String) {
 }
 
 fn apply_transformations(text: &mut String, transformations: &[MagicTransformation]) {
+    let mut should_clear = false;
     for t in transformations {
         match t {
             MagicTransformation::Lowercase => *text = text.to_lowercase(),
@@ -95,7 +111,48 @@ fn apply_transformations(text: &mut String, transformations: &[MagicTransformati
                 }
                 *text = result;
             }
+            MagicTransformation::Run(cmd_template) => {
+                let text_nospace = text.replace(" ", "");
+                
+                let text_nopunctuation: String = text.chars()
+                    .filter(|c| !c.is_ascii_punctuation() && !['«', '»', '—', '…', '’', '“', '”'].contains(c))
+                    .collect();
+                    
+                let text_nospace_nopunctuation: String = text.chars()
+                    .filter(|c| *c != ' ' && !c.is_ascii_punctuation() && !['«', '»', '—', '…', '’', '“', '”'].contains(c))
+                    .collect();
+
+                let cmd_str = cmd_template
+                    .replace("{text}", text)
+                    .replace("{text_nospace}", &text_nospace)
+                    .replace("{text_nopunctuation}", &text_nopunctuation)
+                    .replace("{text_nospace_nopunctuation}", &text_nospace_nopunctuation);
+
+                info!("Executing magic run command: {}", cmd_str);
+                
+                #[cfg(target_os = "windows")]
+                {
+                    const CREATE_NO_WINDOW: u32 = 0x08000000;
+                    std::process::Command::new("cmd")
+                        .args(["/C", &cmd_str])
+                       // .creation_flags(CREATE_NO_WINDOW)
+                        .spawn()
+                        .ok();
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    std::process::Command::new("sh")
+                        .arg("-c")
+                        .arg(&cmd_str)
+                        .spawn()
+                        .ok();
+                }
+                should_clear = true;
+            }
         }
+    }
+    if should_clear {
+        *text = String::new();
     }
 }
 
