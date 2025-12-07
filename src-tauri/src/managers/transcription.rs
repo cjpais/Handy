@@ -4,7 +4,6 @@ use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
-use regex::Regex;
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
@@ -630,6 +629,10 @@ impl TranscriptionManager {
                         let mut punctuation_end = last_non_space;
                         while punctuation_end > 0 {
                             let c = chars[punctuation_end - 1];
+                            // Explicitly stop at newlines
+                            if c == '\n' || c == '\r' {
+                                break;
+                            }
                             if c.is_ascii_punctuation() || ['«', '»', '—', '…', '’', '“', '”'].contains(&c) {
                                 punctuation_end -= 1;
                             } else {
@@ -648,8 +651,8 @@ impl TranscriptionManager {
                     }
                     
                     if replacement.trim_spaces_before {
-                        // Trim trailing whitespace
-                        processed_prefix = processed_prefix.trim_end().to_string();
+                        // Trim trailing horizontal whitespace
+                        processed_prefix = processed_prefix.trim_end_matches(|c| c == ' ' || c == '\t').to_string();
                     }
                     
                     new_text.push_str(&processed_prefix);
@@ -666,7 +669,7 @@ impl TranscriptionManager {
                         let mut spaces_len = 0;
                         let mut chars = remainder.chars();
                         
-                        // Check for spaces (only horizontal)
+                        // Check for spaces (only horizontal, stop at newlines)
                         while let Some(c) = chars.next() {
                             if c == ' ' || c == '\t' {
                                 spaces_len += c.len_utf8();
@@ -675,11 +678,15 @@ impl TranscriptionManager {
                             }
                         }
                         
-                        // Check for punctuation
+                        // Check for punctuation (but NOT newlines)
                         let mut punct_len = 0;
                         let mut punct_iter = remainder[spaces_len..].chars();
                         while let Some(c) = punct_iter.next() {
-                            if c.is_ascii_punctuation() || ['«', '»', '—', '…', '’', '“', '”'].contains(&c) {
+                            // Skip if it's a newline/carriage return
+                            if c == '\n' || c == '\r' {
+                                break;
+                            }
+                            if c.is_ascii_punctuation() || ['«', '»', '—', '…', '\'', '"', '"'].contains(&c) {
                                 punct_len += c.len_utf8();
                             } else {
                                 break;
@@ -704,7 +711,7 @@ impl TranscriptionManager {
                         let remainder = &replaced_result[current_pos..];
                         let mut spaces_len = 0;
                         for c in remainder.chars() {
-                            if c.is_whitespace() {
+                            if c == ' ' || c == '\t' {
                                 spaces_len += c.len_utf8();
                             } else {
                                 break;
