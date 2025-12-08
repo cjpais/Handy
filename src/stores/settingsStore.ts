@@ -123,6 +123,8 @@ const settingUpdaters: {
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
+  streaming_mode_enabled: (value) =>
+    commands.changeStreamingModeSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
 };
 

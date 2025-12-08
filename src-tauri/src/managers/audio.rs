@@ -1,4 +1,6 @@
-use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
+use crate::audio_toolkit::{
+    list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad, VadCallback,
+};
 use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
@@ -117,6 +119,7 @@ pub enum MicrophoneMode {
 fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
+    vad_callback: Option<VadCallback>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let silero = SileroVad::new(vad_path, 0.3)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
@@ -124,7 +127,7 @@ fn create_audio_recorder(
 
     // Recorder with VAD plus a spectrum-level callback that forwards updates to
     // the frontend.
-    let recorder = AudioRecorder::new()
+    let mut recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(Box::new(smoothed_vad))
         .with_level_callback({
@@ -133,6 +136,13 @@ fn create_audio_recorder(
                 utils::emit_levels(&app_handle, &levels);
             }
         });
+
+    // Add VAD callback if provided (for streaming mode)
+    if let Some(cb) = vad_callback {
+        recorder = recorder.with_vad_callback(move |is_speech, samples| {
+            cb(is_speech, samples);
+        });
+    }
 
     Ok(recorder)
 }
@@ -149,6 +159,9 @@ pub struct AudioRecordingManager {
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
+
+    /// Optional VAD callback for streaming transcription
+    vad_callback: Arc<Mutex<Option<VadCallback>>>,
 }
 
 impl AudioRecordingManager {
@@ -171,6 +184,7 @@ impl AudioRecordingManager {
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
+            vad_callback: Arc::new(Mutex::new(None)),
         };
 
         // Always-on?  Open immediately.
@@ -206,6 +220,58 @@ impl AudioRecordingManager {
             Err(e) => {
                 debug!("Failed to list devices, using default: {}", e);
                 None
+            }
+        }
+    }
+
+    /* ---------- streaming mode support --------------------------------------- */
+
+    /// Set the VAD callback for streaming transcription mode.
+    ///
+    /// This callback will be called for each VAD frame during recording,
+    /// allowing the streaming controller to detect pauses.
+    ///
+    /// Note: This must be called before starting the microphone stream.
+    /// If the stream is already open, it will be restarted.
+    pub fn set_vad_callback<F>(&self, callback: F)
+    where
+        F: Fn(bool, &[f32]) + Send + Sync + 'static,
+    {
+        let was_open = *self.is_open.lock().unwrap();
+        let was_recording = *self.is_recording.lock().unwrap();
+
+        // If stream is open, we need to restart it with the new callback
+        if was_open {
+            self.stop_microphone_stream();
+        }
+
+        *self.vad_callback.lock().unwrap() = Some(Arc::new(callback));
+
+        // Restart if it was open
+        if was_open {
+            if let Err(e) = self.start_microphone_stream() {
+                error!("Failed to restart microphone stream with VAD callback: {}", e);
+            }
+            // Note: Recording state is lost - caller must restart recording if needed
+            if was_recording {
+                debug!("Warning: Recording state was lost when setting VAD callback");
+            }
+        }
+    }
+
+    /// Clear the VAD callback.
+    pub fn clear_vad_callback(&self) {
+        let was_open = *self.is_open.lock().unwrap();
+
+        if was_open {
+            self.stop_microphone_stream();
+        }
+
+        *self.vad_callback.lock().unwrap() = None;
+
+        if was_open {
+            if let Err(e) = self.start_microphone_stream() {
+                error!("Failed to restart microphone stream after clearing VAD callback: {}", e);
             }
         }
     }
@@ -258,9 +324,13 @@ impl AudioRecordingManager {
         let mut recorder_opt = self.recorder.lock().unwrap();
 
         if recorder_opt.is_none() {
+            // Get VAD callback if set (for streaming mode)
+            let vad_cb = self.vad_callback.lock().unwrap().clone();
+
             *recorder_opt = Some(create_audio_recorder(
                 vad_path.to_str().unwrap(),
                 &self.app_handle,
+                vad_cb,
             )?);
         }
 
