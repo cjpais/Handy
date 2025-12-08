@@ -287,6 +287,12 @@ pub struct AppSettings {
     pub mute_while_recording: bool,
     #[serde(default = "default_context_aware_capitalization")]
     pub context_aware_capitalization: bool,
+    /// Enable streaming mode for incremental transcription output while recording
+    #[serde(default)]
+    pub streaming_mode_enabled: bool,
+    /// Pause detection threshold in milliseconds (default: 400)
+    #[serde(default = "default_streaming_pause_threshold_ms")]
+    pub streaming_pause_threshold_ms: u32,
 }
 
 fn default_model() -> String {
@@ -413,6 +419,10 @@ fn default_post_process_models() -> HashMap<String, String> {
     map
 }
 
+fn default_streaming_pause_threshold_ms() -> u32 {
+    400
+}
+
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
     vec![LLMPrompt {
         id: "default_improve_transcriptions".to_string(),
@@ -490,6 +500,8 @@ pub fn get_default_settings() -> AppSettings {
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
         context_aware_capitalization: default_context_aware_capitalization(),
+        streaming_mode_enabled: false,
+        streaming_pause_threshold_ms: default_streaming_pause_threshold_ms(),
     }
 }
 

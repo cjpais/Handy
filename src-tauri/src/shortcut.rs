@@ -706,6 +706,16 @@ pub fn change_context_aware_capitalization_setting(
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_streaming_mode_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.streaming_mode_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").

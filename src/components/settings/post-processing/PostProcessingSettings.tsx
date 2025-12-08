@@ -15,6 +15,7 @@ import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
 import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
+import { PostProcessingToggle } from "../PostProcessingToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import type { LLMPrompt } from "@/bindings";
 
@@ -32,8 +33,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
   if (!state.enabled) {
     return (
       <DisabledNotice>
-        Post processing is currently disabled. Enable it in Debug settings to
-        configure.
+        Post processing is currently disabled. Enable it above to configure.
       </DisabledNotice>
     );
   }
@@ -239,8 +239,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   if (!enabled) {
     return (
       <DisabledNotice>
-        Post processing is currently disabled. Enable it in Debug settings to
-        configure.
+        Post processing is currently disabled. Enable it above to configure.
       </DisabledNotice>
     );
   }
@@ -418,6 +417,10 @@ PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
 export const PostProcessingSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <SettingsGroup title="Post Processing">
+        <PostProcessingToggle descriptionMode="inline" grouped={true} />
+      </SettingsGroup>
+
       <SettingsGroup title="API (OpenAI Compatible)">
         <PostProcessingSettingsApi />
       </SettingsGroup>

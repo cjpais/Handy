@@ -4,6 +4,7 @@ use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
 use crate::shortcut;
+use crate::streaming::StreamingManager;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use async_openai::types::{
@@ -219,11 +220,20 @@ impl ShortcutAction for TranscribeAction {
         show_recording_overlay(app);
 
         let rm = app.state::<Arc<AudioRecordingManager>>();
+        let sm = app.state::<Arc<StreamingManager>>();
 
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
+
+        // Set up streaming VAD callback BEFORE starting recording
+        // This avoids recreating the microphone stream after recording starts
+        let streaming_enabled = sm.is_streaming_enabled();
+        if streaming_enabled {
+            sm.setup_vad_callback();
+            debug!("Streaming VAD callback set up before recording");
+        }
 
         let mut recording_started = false;
         if is_always_on {
@@ -267,6 +277,12 @@ impl ShortcutAction for TranscribeAction {
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+
+            // Start streaming session if enabled (VAD callback already set up above)
+            if streaming_enabled {
+                sm.start_controller();
+                debug!("Streaming session started");
+            }
         }
 
         debug!(
@@ -286,6 +302,10 @@ impl ShortcutAction for TranscribeAction {
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        let sm = Arc::clone(&app.state::<Arc<StreamingManager>>());
+
+        // Check if streaming was active
+        let streaming_was_active = sm.is_session_active();
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
@@ -313,20 +333,46 @@ impl ShortcutAction for TranscribeAction {
                     samples.len()
                 );
 
-                let transcription_time = Instant::now();
+                // If streaming was active, get the final text from streaming
+                // (which does its own final transcription)
+                let (transcription, skip_paste) = if streaming_was_active {
+                    let samples_for_streaming = samples.clone();
+                    let streaming_text = sm.stop_session(Some(samples_for_streaming));
+                    match streaming_text {
+                        Some(text) if !text.is_empty() => {
+                            debug!("Streaming session final text: '{}'", text);
+                            // Streaming already pasted incrementally, but we may need to
+                            // replace with post-processed version
+                            (Ok(text), true)
+                        }
+                        _ => {
+                            // Streaming didn't produce output, fall back to normal transcription
+                            debug!("Streaming produced no output, falling back to batch transcription");
+                            let transcription_time = Instant::now();
+                            let result = tm.transcribe(samples.clone());
+                            debug!("Batch transcription completed in {:?}", transcription_time.elapsed());
+                            (result, false)
+                        }
+                    }
+                } else {
+                    // Normal (non-streaming) mode
+                    let transcription_time = Instant::now();
+                    let result = tm.transcribe(samples.clone());
+                    debug!("Transcription completed in {:?}", transcription_time.elapsed());
+                    (result, false)
+                };
+
                 let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
+
+                match transcription {
                     Ok(transcription) => {
-                        debug!(
-                            "Transcription completed in {:?}: '{}'",
-                            transcription_time.elapsed(),
-                            transcription
-                        );
+                        debug!("Final transcription: '{}'", transcription);
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
+                            let mut needs_replacement = false;
 
                             // First, check if Chinese variant conversion is needed
                             if let Some(converted_text) =
@@ -334,6 +380,7 @@ impl ShortcutAction for TranscribeAction {
                             {
                                 final_text = converted_text.clone();
                                 post_processed_text = Some(converted_text);
+                                needs_replacement = skip_paste; // Need to replace streaming output
                             }
                             // Then apply regular post-processing if enabled
                             else if let Some(processed_text) =
@@ -341,6 +388,7 @@ impl ShortcutAction for TranscribeAction {
                             {
                                 final_text = processed_text.clone();
                                 post_processed_text = Some(processed_text);
+                                needs_replacement = skip_paste; // Need to replace streaming output
 
                                 // Get the prompt that was used
                                 if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
@@ -381,26 +429,55 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             });
 
-                            // Paste the final text (either processed or original)
-                            let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
-                                }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+                            // Paste the final text
+                            // - If streaming was active and post-processing changed the text,
+                            //   we need to replace what was streamed
+                            // - If streaming was active but no post-processing, skip pasting
+                            //   (text already output)
+                            // - If not streaming, paste normally
+                            let should_paste = !skip_paste || needs_replacement;
+
+                            if should_paste {
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+
+                                // If replacing streaming output, we need to delete old text first
+                                let chars_to_delete = if needs_replacement {
+                                    transcription.chars().count()
+                                } else {
+                                    0
+                                };
+
+                                ah.run_on_main_thread(move || {
+                                    // Delete streaming output if we're replacing
+                                    if chars_to_delete > 0 {
+                                        debug!("Replacing streaming output ({} chars) with post-processed text", chars_to_delete);
+                                        if let Err(e) = utils::delete_chars(chars_to_delete) {
+                                            error!("Failed to delete streaming output: {}", e);
+                                        }
+                                    }
+
+                                    match utils::paste(final_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    }
+                                    // Hide the overlay after transcription is complete
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            } else {
+                                // Streaming output is already there, just clean up
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
-                            });
+                            }
                         } else {
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
@@ -414,6 +491,10 @@ impl ShortcutAction for TranscribeAction {
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
+                // Also stop streaming session if it was active
+                if streaming_was_active {
+                    sm.stop_session(None);
+                }
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
