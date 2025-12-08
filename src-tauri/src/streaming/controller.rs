@@ -100,6 +100,10 @@ pub struct StreamingController {
 
     /// The last transcription result (for comparison)
     last_transcription: Arc<Mutex<String>>,
+
+    /// Index in audio_buffer where the last transcription ended
+    /// Used for append mode - we only transcribe new audio after this point
+    last_transcribed_index: Arc<Mutex<usize>>,
 }
 
 impl StreamingController {
@@ -124,6 +128,7 @@ impl StreamingController {
             config,
             is_transcribing: Arc::new(AtomicBool::new(false)),
             last_transcription: Arc::new(Mutex::new(String::new())),
+            last_transcribed_index: Arc::new(Mutex::new(0)),
         }
     }
 
@@ -140,6 +145,7 @@ impl StreamingController {
         self.text_replacer.lock().unwrap().reset();
         self.audio_buffer.lock().unwrap().clear();
         *self.last_transcription.lock().unwrap() = String::new();
+        *self.last_transcribed_index.lock().unwrap() = 0;
         self.is_transcribing.store(false, Ordering::SeqCst);
 
         // Emit started event
@@ -159,10 +165,19 @@ impl StreamingController {
     pub fn stop(&self, final_samples: Option<Vec<f32>>) -> Result<String, String> {
         debug!("StreamingController: Stopping session");
 
-        let samples = if let Some(s) = final_samples {
+        // Use final_samples if provided, otherwise use buffer
+        let full_samples = if let Some(s) = final_samples {
             s
         } else {
             self.audio_buffer.lock().unwrap().clone()
+        };
+
+        // Get any remaining audio after the last transcription
+        let last_index = *self.last_transcribed_index.lock().unwrap();
+        let remaining_samples = if last_index < full_samples.len() {
+            full_samples[last_index..].to_vec()
+        } else {
+            Vec::new()
         };
 
         // Update state
@@ -171,36 +186,47 @@ impl StreamingController {
             *state = StreamingState::Idle;
         }
 
-        // Do final transcription if we have samples
-        let final_text = if !samples.is_empty() {
-            match self.transcription_manager.transcribe(samples) {
-                Ok(text) => text,
+        // Transcribe any remaining audio and append it
+        if !remaining_samples.is_empty() {
+            match self.transcription_manager.transcribe(remaining_samples) {
+                Ok(text) => {
+                    if !text.is_empty() {
+                        // Append to last_transcription
+                        {
+                            let mut last = self.last_transcription.lock().unwrap();
+                            if !last.is_empty() {
+                                last.push(' ');
+                            }
+                            last.push_str(&text);
+                        }
+
+                        // Append to output
+                        let text_to_append = {
+                            let replacer = self.text_replacer.lock().unwrap();
+                            if replacer.total_chars_output() > 0 {
+                                format!(" {}", text)
+                            } else {
+                                text.clone()
+                            }
+                        };
+
+                        if let Err(e) = self
+                            .text_replacer
+                            .lock()
+                            .unwrap()
+                            .append(&text_to_append, &self.app_handle)
+                        {
+                            error!("Failed to append final text: {}", e);
+                        }
+                    }
+                }
                 Err(e) => {
                     error!("Final transcription failed: {}", e);
-                    // Fall back to last known transcription
-                    self.last_transcription.lock().unwrap().clone()
                 }
             }
-        } else {
-            self.last_transcription.lock().unwrap().clone()
-        };
-
-        // If the final text differs from what we've output, do a final replacement
-        let current_output = self.text_replacer.lock().unwrap().get_output_text();
-        if final_text != current_output && !final_text.is_empty() {
-            debug!(
-                "Final text differs from output, replacing: '{}' -> '{}'",
-                current_output, final_text
-            );
-            if let Err(e) = self
-                .text_replacer
-                .lock()
-                .unwrap()
-                .replace_all(&final_text, &self.app_handle)
-            {
-                error!("Failed to replace with final text: {}", e);
-            }
         }
+
+        let final_text = self.last_transcription.lock().unwrap().clone();
 
         // Emit ended event
         let _ = self.app_handle.emit(
@@ -251,6 +277,9 @@ impl StreamingController {
     }
 
     /// Trigger an intermediate transcription.
+    ///
+    /// In append mode, we only transcribe audio since the last pause,
+    /// then append it to the output (no backspacing needed).
     fn trigger_intermediate_transcription(&self) {
         // Don't start if already transcribing
         if self.is_transcribing.swap(true, Ordering::SeqCst) {
@@ -258,8 +287,19 @@ impl StreamingController {
             return;
         }
 
-        // Get current audio buffer
-        let samples = self.audio_buffer.lock().unwrap().clone();
+        // Get only the NEW audio since last transcription
+        let (samples, new_end_index) = {
+            let buffer = self.audio_buffer.lock().unwrap();
+            let start_index = *self.last_transcribed_index.lock().unwrap();
+            let end_index = buffer.len();
+
+            if start_index >= end_index {
+                self.is_transcribing.store(false, Ordering::SeqCst);
+                return;
+            }
+
+            (buffer[start_index..end_index].to_vec(), end_index)
+        };
 
         if samples.is_empty() {
             self.is_transcribing.store(false, Ordering::SeqCst);
@@ -275,6 +315,7 @@ impl StreamingController {
         let transcription_manager = self.transcription_manager.clone();
         let text_replacer = self.text_replacer.clone();
         let last_transcription = self.last_transcription.clone();
+        let last_transcribed_index = self.last_transcribed_index.clone();
         let is_transcribing = self.is_transcribing.clone();
         let state = self.state.clone();
         let app_handle = self.app_handle.clone();
@@ -292,14 +333,33 @@ impl StreamingController {
                         text
                     );
 
-                    // Update last transcription
-                    *last_transcription.lock().unwrap() = text.clone();
+                    // Update last transcription (append to existing)
+                    {
+                        let mut last = last_transcription.lock().unwrap();
+                        if !last.is_empty() && !text.is_empty() {
+                            last.push(' ');
+                        }
+                        last.push_str(&text);
+                    }
 
-                    // Replace output text
+                    // Update the index so next transcription starts from here
+                    *last_transcribed_index.lock().unwrap() = new_end_index;
+
+                    // Append output text (no backspacing!)
                     if !text.is_empty() {
-                        if let Err(e) = text_replacer.lock().unwrap().replace_all(&text, &app_handle)
+                        // Add a space before if we have existing output
+                        let text_to_append = {
+                            let replacer = text_replacer.lock().unwrap();
+                            if replacer.total_chars_output() > 0 {
+                                format!(" {}", text)
+                            } else {
+                                text.clone()
+                            }
+                        };
+
+                        if let Err(e) = text_replacer.lock().unwrap().append(&text_to_append, &app_handle)
                         {
-                            error!("Failed to replace text: {}", e);
+                            error!("Failed to append text: {}", e);
                         }
                     }
 

@@ -59,7 +59,7 @@ impl TextReplacer {
 
         // Delete previous output
         if self.total_chars_output > 0 {
-            self.delete_previous_text(self.total_chars_output)?;
+            self.send_backspaces(self.total_chars_output)?;
         }
 
         // Type new text
@@ -131,27 +131,31 @@ impl TextReplacer {
             .collect()
     }
 
-    /// Delete previous text using backspaces.
-    /// Optimized for speed with minimal delays.
-    fn delete_previous_text(&self, count: usize) -> Result<(), String> {
+    /// Send backspace characters to delete text.
+    fn send_backspaces(&self, count: usize) -> Result<(), String> {
         if count == 0 {
             return Ok(());
         }
 
-        debug!("Deleting {} chars with backspaces", count);
+        debug!("Sending {} backspaces", count);
 
         let mut enigo = Enigo::new(&Settings::default())
             .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
 
-        // Send all backspaces as fast as possible
-        for _ in 0..count {
+        // Send backspaces with small delays for reliability
+        for i in 0..count {
             enigo
                 .key(Key::Backspace, Direction::Click)
                 .map_err(|e| format!("Failed to send backspace: {}", e))?;
+
+            // Small delay every 10 backspaces to avoid overwhelming the input system
+            if i > 0 && i % 10 == 0 {
+                std::thread::sleep(Duration::from_millis(5));
+            }
         }
 
-        // Small delay after all backspaces to let the UI catch up
-        std::thread::sleep(Duration::from_millis(10));
+        // Small delay after all backspaces
+        std::thread::sleep(Duration::from_millis(20));
 
         Ok(())
     }
