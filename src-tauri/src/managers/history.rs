@@ -93,7 +93,8 @@ impl HistoryManager {
         migrations.validate().expect("Invalid migrations");
 
         // Get current version before migration
-        let version_before: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        let version_before: i32 =
+            conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
         debug!("Database version before migration: {}", version_before);
 
         // Apply any pending migrations
@@ -133,7 +134,8 @@ impl HistoryManager {
         }
 
         // Check current user_version
-        let current_version: i32 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        let current_version: i32 =
+            conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
 
         if current_version > 0 {
             // Already migrated to rusqlite_migration system
