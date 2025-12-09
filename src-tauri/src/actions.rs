@@ -5,13 +5,13 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
-use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
+use crate::utils::{self, show_recognizing_overlay, show_recording_overlay, show_transcribing_overlay};
 use async_openai::types::{
     ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
     CreateChatCompletionRequestArgs,
 };
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error};
+use log::{debug, error, info};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -27,6 +27,9 @@ pub trait ShortcutAction: Send + Sync {
 
 // Transcribe Action
 struct TranscribeAction;
+
+// Atomic flag to prevent duplicate stop calls
+static IS_PROCESSING_STOP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 async fn maybe_post_process_transcription(
     settings: &AppSettings,
@@ -276,11 +279,17 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        // Prevent duplicate stop calls
+        if IS_PROCESSING_STOP.compare_exchange(false, true, std::sync::atomic::Ordering::SeqCst, std::sync::atomic::Ordering::SeqCst).is_err() {
+            info!("TranscribeAction::stop called but already processing for binding: {}", binding_id);
+            return;
+        }
+
         // Unregister the cancel shortcut when transcription stops
         shortcut::unregister_cancel_shortcut(app);
 
         let stop_time = Instant::now();
-        debug!("TranscribeAction::stop called for binding: {}", binding_id);
+        info!("TranscribeAction::stop called for binding: {} at {:?}", binding_id, stop_time.elapsed());
 
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
@@ -288,7 +297,8 @@ impl ShortcutAction for TranscribeAction {
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
-        show_transcribing_overlay(app);
+        debug!("Calling show_recognizing_overlay - user released shortcut key");
+        show_recognizing_overlay(app);
 
         // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
@@ -315,6 +325,7 @@ impl ShortcutAction for TranscribeAction {
 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
+
                 match tm.transcribe(samples) {
                     Ok(transcription) => {
                         debug!(
@@ -375,6 +386,7 @@ impl ShortcutAction for TranscribeAction {
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
                             ah.run_on_main_thread(move || {
+                                info!("About to paste final text and hide overlay");
                                 match utils::paste(final_text, ah_clone.clone()) {
                                     Ok(()) => debug!(
                                         "Text pasted successfully in {:?}",
@@ -383,36 +395,47 @@ impl ShortcutAction for TranscribeAction {
                                     Err(e) => error!("Failed to paste transcription: {}", e),
                                 }
                                 // Hide the overlay after transcription is complete
+                                info!("Calling hide_recording_overlay after successful transcription");
                                 utils::hide_recording_overlay(&ah_clone);
                                 change_tray_icon(&ah_clone, TrayIconState::Idle);
                             })
                             .unwrap_or_else(|e| {
                                 error!("Failed to run paste on main thread: {:?}", e);
+                                info!("Calling hide_recording_overlay due to main thread error");
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             });
                         } else {
+                            info!("Transcription result is empty, hiding overlay");
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
                     Err(err) => {
                         debug!("Global Shortcut Transcription error: {}", err);
+                        info!("Transcription failed, hiding overlay due to error");
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                     }
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
+                info!("No audio samples, hiding overlay");
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
+
+            // Reset the processing flag AFTER the entire async task completes
+            debug!("Async transcription task completed, resetting IS_PROCESSING_STOP flag");
+            IS_PROCESSING_STOP.store(false, std::sync::atomic::Ordering::SeqCst);
         });
 
         debug!(
             "TranscribeAction::stop completed in {:?}",
             stop_time.elapsed()
         );
+
+        // Don't reset the flag here - let the async task reset it when complete
     }
 }
 

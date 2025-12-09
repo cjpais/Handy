@@ -8,7 +8,7 @@ import {
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
 
-type OverlayState = "recording" | "transcribing";
+type OverlayState = "recording" | "transcribing" | "recognizing";
 
 const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -21,12 +21,14 @@ const RecordingOverlay: React.FC = () => {
       // Listen for show-overlay event from Rust
       const unlistenShow = await listen("show-overlay", (event) => {
         const overlayState = event.payload as OverlayState;
+        console.log("Received show-overlay event with state:", overlayState);
         setState(overlayState);
         setIsVisible(true);
       });
 
       // Listen for hide-overlay event from Rust
       const unlistenHide = await listen("hide-overlay", () => {
+        console.log("Received hide-overlay event");
         setIsVisible(false);
       });
 
@@ -58,8 +60,22 @@ const RecordingOverlay: React.FC = () => {
   const getIcon = () => {
     if (state === "recording") {
       return <MicrophoneIcon />;
+    } else if (state === "recognizing") {
+      return <TranscriptionIcon />;
     } else {
       return <TranscriptionIcon />;
+    }
+  };
+
+  const getStatusText = () => {
+    if (state === "recording") {
+      return "";
+    } else if (state === "recognizing") {
+      return "正在识别";
+    } else if (state === "transcribing") {
+      return "正在转录";
+    } else {
+      return "";
     }
   };
 
@@ -83,8 +99,23 @@ const RecordingOverlay: React.FC = () => {
             ))}
           </div>
         )}
-        {state === "transcribing" && (
-          <div className="transcribing-text">Transcribing...</div>
+        {(state === "recognizing" || state === "transcribing") && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="transcribing-text">
+              {getStatusText()}
+            </div>
+            <div className="bars-container transcribing">
+              {Array.from({ length: 9 }, (_, i) => (
+                <div
+                  key={i}
+                  className="bar transcribing-bar"
+                  style={{
+                    animationDelay: `${i * 100}ms`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

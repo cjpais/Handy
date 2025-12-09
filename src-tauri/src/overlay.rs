@@ -4,7 +4,7 @@ use enigo::{Enigo, Mouse};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
-use log::debug;
+use log::{debug, info};
 
 #[cfg(not(target_os = "macos"))]
 use tauri::WebviewWindowBuilder;
@@ -255,6 +255,38 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
     }
 }
 
+/// Shows the recognizing overlay window (when speech recognition is in progress)
+pub fn show_recognizing_overlay(app_handle: &AppHandle) {
+    log::info!("show_recognizing_overlay called");
+
+    // Check if overlay should be shown based on position setting
+    let settings = settings::get_settings(app_handle);
+    if settings.overlay_position == OverlayPosition::None {
+        log::info!("Overlay position is None, not showing recognizing overlay");
+        return;
+    }
+
+    update_overlay_position(app_handle);
+
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.show();
+        log::info!("Overlay window shown for recognizing state");
+
+        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&overlay_window);
+
+        // Emit event to switch to recognizing state
+        let result = overlay_window.emit("show-overlay", "recognizing");
+        match result {
+            Ok(_) => log::info!("Successfully emitted 'show-overlay' recognizing event"),
+            Err(e) => log::error!("Failed to emit 'show-overlay' recognizing event: {}", e),
+        }
+    } else {
+        log::error!("Could not find recording overlay window");
+    }
+}
+
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -267,17 +299,23 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
 
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
+    info!("hide_recording_overlay called");
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        info!("Found overlay window, emitting hide-overlay event");
         // Emit event to trigger fade-out animation
-        let _ = overlay_window.emit("hide-overlay", ());
+        let result = overlay_window.emit("hide-overlay", ());
+        info!("hide-overlay event emitted with result: {:?}", result);
         // Hide the window after a short delay to allow animation to complete
         let window_clone = overlay_window.clone();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(300));
+            info!("Hiding overlay window after animation delay");
             let _ = window_clone.hide();
         });
+    } else {
+        info!("No overlay window found to hide");
     }
 }
 
