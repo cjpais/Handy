@@ -64,7 +64,7 @@ impl HistoryManager {
             debug!("Created recordings directory: {:?}", recordings_dir);
         }
 
-        let mut manager = Self {
+        let manager = Self {
             app_handle: app_handle.clone(),
             recordings_dir,
             db_path,
@@ -76,7 +76,7 @@ impl HistoryManager {
         Ok(manager)
     }
 
-    fn init_database(&mut self) -> Result<()> {
+    fn init_database(&self) -> Result<()> {
         info!("Initializing database at {:?}", self.db_path);
 
         let mut conn = Connection::open(&self.db_path)?;
