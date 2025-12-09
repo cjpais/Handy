@@ -35,8 +35,8 @@ fn build_apple_intelligence_bridge() {
     .to_string();
 
     // Check if the SDK supports FoundationModels (required for Apple Intelligence)
-    let framework_path = Path::new(&sdk_path)
-        .join("System/Library/Frameworks/FoundationModels.framework");
+    let framework_path =
+        Path::new(&sdk_path).join("System/Library/Frameworks/FoundationModels.framework");
     let has_foundation_models = framework_path.exists();
 
     let source_file = if has_foundation_models {
