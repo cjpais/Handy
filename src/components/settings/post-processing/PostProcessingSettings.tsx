@@ -16,12 +16,11 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { useSettings } from "../../../hooks/useSettings";
-import type { LLMPrompt } from "@/bindings";
 
 const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (
-  <div className="p-4 bg-mid-gray/5 rounded-lg border border-mid-gray/20 text-center">
+  <div className="p-4 bg-mid-gray/5 rounded-lg border border-mid-gray/20">
     <p className="text-sm text-mid-gray">{children}</p>
   </div>
 );
@@ -65,8 +64,8 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
           grouped={true}
         >
           <DisabledNotice>
-            Requires an Apple silicon Mac running macOS Sequoia or later with
-            Apple Intelligence enabled in System Settings.
+            Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later.
+            Apple Intelligence must be enabled in System Settings.
           </DisabledNotice>
         </SettingContainer>
       ) : (
@@ -133,7 +132,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             isLoading={state.isFetchingModels}
             placeholder={
               state.isAppleProvider
-                ? "apple.intelligence.on_device"
+                ? "Apple Intelligence"
                 : state.modelOptions.length > 0
                   ? "Search or select a model"
                   : "Type a model name"

@@ -11,9 +11,9 @@ fn build_apple_intelligence_bridge() {
     use std::path::{Path, PathBuf};
     use std::process::Command;
 
-    const REAL_SWIFT_FILE: &str = "apple_intelligence.swift";
-    const STUB_SWIFT_FILE: &str = "apple_intelligence_stub.swift";
-    const BRIDGE_HEADER: &str = "apple_intelligence_bridge.h";
+    const REAL_SWIFT_FILE: &str = "swift/apple_intelligence.swift";
+    const STUB_SWIFT_FILE: &str = "swift/apple_intelligence_stub.swift";
+    const BRIDGE_HEADER: &str = "swift/apple_intelligence_bridge.h";
 
     println!("cargo:rerun-if-changed={REAL_SWIFT_FILE}");
     println!("cargo:rerun-if-changed={STUB_SWIFT_FILE}");
@@ -73,7 +73,7 @@ fn build_apple_intelligence_bridge() {
         .args([
             "swiftc",
             "-target",
-            "arm64-apple-macosx15.0",
+            "arm64-apple-macosx26.0",
             "-sdk",
             &sdk_path,
             "-O",

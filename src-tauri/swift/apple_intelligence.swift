@@ -77,6 +77,13 @@ public func processTextWithAppleLLM(
     let tokenLimit = max(0, Int(maxTokens))
     let semaphore = DispatchSemaphore(value: 0)
 
+    // Thread-safe container to pass results from async task back to calling thread
+    final class ResultBox: @unchecked Sendable {
+        var response: String?
+        var error: String?
+    }
+    let box = ResultBox()
+
     Task.detached(priority: .userInitiated) {
         defer { semaphore.signal() }
         do {
@@ -97,17 +104,22 @@ public func processTextWithAppleLLM(
             if tokenLimit > 0 {
                 output = truncatedText(output, limit: tokenLimit)
             }
-            responsePtr.pointee.response = duplicateCString(output)
-            responsePtr.pointee.success = 1
-            responsePtr.pointee.error_message = nil
+            box.response = output
         } catch {
-            responsePtr.pointee.response = nil
-            responsePtr.pointee.success = 0
-            responsePtr.pointee.error_message = duplicateCString(error.localizedDescription)
+            box.error = error.localizedDescription
         }
     }
 
     semaphore.wait()
+
+    // Write to responsePtr on the calling thread after task completes
+    if let response = box.response {
+        responsePtr.pointee.response = duplicateCString(response)
+        responsePtr.pointee.success = 1
+    } else {
+        responsePtr.pointee.error_message = duplicateCString(box.error ?? "Unknown error")
+    }
+
     return responsePtr
 }
 
