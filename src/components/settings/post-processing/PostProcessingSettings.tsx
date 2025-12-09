@@ -16,12 +16,11 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { useSettings } from "../../../hooks/useSettings";
-import type { LLMPrompt } from "@/bindings";
 
 const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (
-  <div className="p-4 bg-mid-gray/5 rounded-lg border border-mid-gray/20 text-center">
+  <div className="p-4 bg-mid-gray/5 rounded-lg border border-mid-gray/20">
     <p className="text-sm text-mid-gray">{children}</p>
   </div>
 );
@@ -56,51 +55,70 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         </div>
       </SettingContainer>
 
-      <SettingContainer
-        title="Base URL"
-        description="API base URL for the selected provider. Only the custom provider can be edited."
-        descriptionMode="tooltip"
-        layout="horizontal"
-        grouped={true}
-      >
-        <div className="flex items-center gap-2">
-          <BaseUrlField
-            value={state.baseUrl}
-            onBlur={state.handleBaseUrlChange}
-            placeholder="https://api.openai.com/v1"
-            disabled={
-              !state.selectedProvider?.allow_base_url_edit ||
-              state.isBaseUrlUpdating
-            }
-            className="min-w-[380px]"
-          />
-        </div>
-      </SettingContainer>
+      {state.isAppleProvider ? (
+        <SettingContainer
+          title="Apple Intelligence"
+          description="Runs fully on-device. No API key or network access is required."
+          descriptionMode="tooltip"
+          layout="stacked"
+          grouped={true}
+        >
+          <DisabledNotice>
+            Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later.
+            Apple Intelligence must be enabled in System Settings.
+          </DisabledNotice>
+        </SettingContainer>
+      ) : (
+        <>
+          <SettingContainer
+            title="Base URL"
+            description="API base URL for the selected provider. Only the custom provider can be edited."
+            descriptionMode="tooltip"
+            layout="horizontal"
+            grouped={true}
+          >
+            <div className="flex items-center gap-2">
+              <BaseUrlField
+                value={state.baseUrl}
+                onBlur={state.handleBaseUrlChange}
+                placeholder="https://api.openai.com/v1"
+                disabled={
+                  !state.selectedProvider?.allow_base_url_edit ||
+                  state.isBaseUrlUpdating
+                }
+                className="min-w-[380px]"
+              />
+            </div>
+          </SettingContainer>
 
-      <SettingContainer
-        title="API Key"
-        description="API key for the selected provider."
-        descriptionMode="tooltip"
-        layout="horizontal"
-        grouped={true}
-      >
-        <div className="flex items-center gap-2">
-          <ApiKeyField
-            value={state.apiKey}
-            onBlur={state.handleApiKeyChange}
-            placeholder="sk-..."
-            disabled={state.isApiKeyUpdating}
-            className="min-w-[320px]"
-          />
-        </div>
-      </SettingContainer>
+          <SettingContainer
+            title="API Key"
+            description="API key for the selected provider."
+            descriptionMode="tooltip"
+            layout="horizontal"
+            grouped={true}
+          >
+            <div className="flex items-center gap-2">
+              <ApiKeyField
+                value={state.apiKey}
+                onBlur={state.handleApiKeyChange}
+                placeholder="sk-..."
+                disabled={state.isApiKeyUpdating}
+                className="min-w-[320px]"
+              />
+            </div>
+          </SettingContainer>
+        </>
+      )}
 
       <SettingContainer
         title="Model"
         description={
-          state.isCustomProvider
-            ? "Provide the model identifier expected by your custom endpoint."
-            : "Choose a model exposed by the selected provider."
+          state.isAppleProvider
+            ? "Provide an optional numeric token limit or keep the default on-device preset."
+            : state.isCustomProvider
+              ? "Provide the model identifier expected by your custom endpoint."
+              : "Choose a model exposed by the selected provider."
         }
         descriptionMode="tooltip"
         layout="stacked"
@@ -113,9 +131,11 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             disabled={state.isModelUpdating}
             isLoading={state.isFetchingModels}
             placeholder={
-              state.modelOptions.length > 0
-                ? "Search or select a model"
-                : "Type a model name"
+              state.isAppleProvider
+                ? "Apple Intelligence"
+                : state.modelOptions.length > 0
+                  ? "Search or select a model"
+                  : "Type a model name"
             }
             onSelect={state.handleModelSelect}
             onCreate={state.handleModelCreate}
@@ -124,7 +144,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
           />
           <ResetButton
             onClick={state.handleRefreshModels}
-            disabled={state.isFetchingModels}
+            disabled={state.isFetchingModels || state.isAppleProvider}
             ariaLabel="Refresh models"
             className="flex h-10 w-10 items-center justify-center"
           >
