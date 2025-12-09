@@ -9,6 +9,7 @@ import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
 import { SoundPicker } from "../SoundPicker";
 import { PostProcessingToggle } from "../PostProcessingToggle";
 import { MuteWhileRecording } from "../MuteWhileRecording";
+import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
 import { HandyShortcut } from "../HandyShortcut";
@@ -40,6 +41,7 @@ export const DebugSettings: React.FC = () => {
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
+        <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
         {/* Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration */}
         {!isLinux && (
           <HandyShortcut

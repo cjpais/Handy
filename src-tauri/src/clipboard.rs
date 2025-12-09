@@ -234,6 +234,13 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
 
+    // Append trailing space if setting is enabled
+    let text = if settings.append_trailing_space {
+        format!("{} ", text)
+    } else {
+        text
+    };
+
     info!("Using paste method: {:?}", paste_method);
 
     // Perform the paste operation
