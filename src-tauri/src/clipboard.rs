@@ -136,80 +136,23 @@ fn paste_via_direct_input(text: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Pastes text using the clipboard method with Ctrl+V/Cmd+V.
-/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-fn paste_via_clipboard_ctrl_v(text: &str, app_handle: &AppHandle) -> Result<(), String> {
+/// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
+fn paste_via_clipboard(
+    text: &str,
+    app_handle: &AppHandle,
+    send_paste: fn() -> Result<(), String>,
+) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
     let clipboard_content = clipboard.read_text().unwrap_or_default();
 
     clipboard
         .write_text(text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
 
-    // small delay to ensure the clipboard content has been written to
+    std::thread::sleep(std::time::Duration::from_millis(50));
+    send_paste()?;
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    send_paste_ctrl_v()?;
-
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // restore the clipboard
-    clipboard
-        .write_text(&clipboard_content)
-        .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
-
-    Ok(())
-}
-
-/// Pastes text using the clipboard method with Shift+Insert (Windows/Linux only).
-/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-fn paste_via_clipboard_shift_insert(text: &str, app_handle: &AppHandle) -> Result<(), String> {
-    let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
-
-    clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
-
-    // small delay to ensure the clipboard content has been written to
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    send_paste_shift_insert()?;
-
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // restore the clipboard
-    clipboard
-        .write_text(&clipboard_content)
-        .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
-
-    Ok(())
-}
-
-/// Pastes text using the clipboard method with Ctrl+Shift+V.
-/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-fn paste_via_clipboard_ctrl_shift_v(text: &str, app_handle: &AppHandle) -> Result<(), String> {
-    let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
-
-    clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
-
-    // small delay to ensure the clipboard content has been written to
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    send_paste_ctrl_shift_v()?;
-
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // restore the clipboard
     clipboard
         .write_text(&clipboard_content)
         .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
@@ -317,13 +260,12 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
-            // Intentionally do not perform any paste action; history/clipboard update
             info!("PasteMethod::None selected - skipping paste action");
         }
-        PasteMethod::CtrlV => paste_via_clipboard_ctrl_v(&text, &app_handle)?,
         PasteMethod::Direct => paste_via_direct_input(&text)?,
-        PasteMethod::ShiftInsert => paste_via_clipboard_shift_insert(&text, &app_handle)?,
-        PasteMethod::CtrlShiftV => paste_via_clipboard_ctrl_shift_v(&text, &app_handle)?,
+        PasteMethod::CtrlV => paste_via_clipboard(&text, &app_handle, send_paste_ctrl_v)?,
+        PasteMethod::CtrlShiftV => paste_via_clipboard(&text, &app_handle, send_paste_ctrl_shift_v)?,
+        PasteMethod::ShiftInsert => paste_via_clipboard(&text, &app_handle, send_paste_shift_insert)?,
     }
 
     // After pasting, optionally copy to clipboard based on settings
