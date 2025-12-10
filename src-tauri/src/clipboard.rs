@@ -48,6 +48,48 @@ fn send_paste_ctrl_v() -> Result<(), String> {
     Ok(())
 }
 
+/// Sends a Ctrl+Shift+V paste command.
+/// This is commonly used in terminal applications on Linux to paste without formatting.
+fn send_paste_ctrl_shift_v() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    if try_wayland_send_paste(&PasteMethod::CtrlShiftV)? {
+        return Ok(());
+    }
+
+    // Platform-specific key definitions
+    #[cfg(target_os = "macos")]
+    let (modifier_key, v_key_code) = (Key::Meta, Key::Other(9)); // Cmd+Shift+V on macOS
+    #[cfg(target_os = "windows")]
+    let (modifier_key, v_key_code) = (Key::Control, Key::Other(0x56)); // VK_V
+    #[cfg(target_os = "linux")]
+    let (modifier_key, v_key_code) = (Key::Control, Key::Unicode('v'));
+
+    let mut enigo = Enigo::new(&Settings::default())
+        .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
+
+    // Press Ctrl/Cmd + Shift + V
+    enigo
+        .key(modifier_key, enigo::Direction::Press)
+        .map_err(|e| format!("Failed to press modifier key: {}", e))?;
+    enigo
+        .key(Key::Shift, enigo::Direction::Press)
+        .map_err(|e| format!("Failed to press Shift key: {}", e))?;
+    enigo
+        .key(v_key_code, enigo::Direction::Click)
+        .map_err(|e| format!("Failed to click V key: {}", e))?;
+
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
+    enigo
+        .key(Key::Shift, enigo::Direction::Release)
+        .map_err(|e| format!("Failed to release Shift key: {}", e))?;
+    enigo
+        .key(modifier_key, enigo::Direction::Release)
+        .map_err(|e| format!("Failed to release modifier key: {}", e))?;
+
+    Ok(())
+}
+
 /// Sends a Shift+Insert paste command (Windows and Linux only).
 /// This is more universal for terminal applications and legacy software.
 fn send_paste_shift_insert() -> Result<(), String> {
@@ -94,53 +136,23 @@ fn paste_via_direct_input(text: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Pastes text using the clipboard method with Ctrl+V/Cmd+V.
-/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-fn paste_via_clipboard_ctrl_v(text: &str, app_handle: &AppHandle) -> Result<(), String> {
+/// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
+fn paste_via_clipboard(
+    text: &str,
+    app_handle: &AppHandle,
+    send_paste: fn() -> Result<(), String>,
+) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
     let clipboard_content = clipboard.read_text().unwrap_or_default();
 
     clipboard
         .write_text(text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
 
-    // small delay to ensure the clipboard content has been written to
+    std::thread::sleep(std::time::Duration::from_millis(50));
+    send_paste()?;
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    send_paste_ctrl_v()?;
-
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // restore the clipboard
-    clipboard
-        .write_text(&clipboard_content)
-        .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
-
-    Ok(())
-}
-
-/// Pastes text using the clipboard method with Shift+Insert (Windows/Linux only).
-/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-fn paste_via_clipboard_shift_insert(text: &str, app_handle: &AppHandle) -> Result<(), String> {
-    let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
-
-    clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
-
-    // small delay to ensure the clipboard content has been written to
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    send_paste_shift_insert()?;
-
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // restore the clipboard
     clipboard
         .write_text(&clipboard_content)
         .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
@@ -192,6 +204,7 @@ fn send_paste_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
     let args: Vec<&str> = match paste_method {
         PasteMethod::CtrlV => vec!["-M", "ctrl", "-k", "v"],
         PasteMethod::ShiftInsert => vec!["-M", "shift", "-k", "Insert"],
+        PasteMethod::CtrlShiftV => vec!["-M", "ctrl", "-M", "shift", "-k", "v"],
         _ => return Err("Unsupported paste method".into()),
     };
 
@@ -215,6 +228,7 @@ fn send_paste_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
     match paste_method {
         PasteMethod::CtrlV => command = "echo key ctrl+v | dotool",
         PasteMethod::ShiftInsert => command = "echo key shift+insert | dotool",
+        PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
         _ => return Err("Unsupported paste method".into()),
     }
     let output = Command::new("sh")
@@ -246,12 +260,16 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
-            // Intentionally do not perform any paste action; history/clipboard update
             info!("PasteMethod::None selected - skipping paste action");
         }
-        PasteMethod::CtrlV => paste_via_clipboard_ctrl_v(&text, &app_handle)?,
         PasteMethod::Direct => paste_via_direct_input(&text)?,
-        PasteMethod::ShiftInsert => paste_via_clipboard_shift_insert(&text, &app_handle)?,
+        PasteMethod::CtrlV => paste_via_clipboard(&text, &app_handle, send_paste_ctrl_v)?,
+        PasteMethod::CtrlShiftV => {
+            paste_via_clipboard(&text, &app_handle, send_paste_ctrl_shift_v)?
+        }
+        PasteMethod::ShiftInsert => {
+            paste_via_clipboard(&text, &app_handle, send_paste_shift_insert)?
+        }
     }
 
     // After pasting, optionally copy to clipboard based on settings
