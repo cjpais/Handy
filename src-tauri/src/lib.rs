@@ -374,11 +374,6 @@ pub fn run() {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
 
-            #[cfg(target_os = "linux")]
-            {
-                std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
-            }
-
             initialize_core_logic(&app_handle);
 
             // Show main window only if not starting hidden
