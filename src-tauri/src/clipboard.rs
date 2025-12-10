@@ -264,8 +264,12 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
         PasteMethod::Direct => paste_via_direct_input(&text)?,
         PasteMethod::CtrlV => paste_via_clipboard(&text, &app_handle, send_paste_ctrl_v)?,
-        PasteMethod::CtrlShiftV => paste_via_clipboard(&text, &app_handle, send_paste_ctrl_shift_v)?,
-        PasteMethod::ShiftInsert => paste_via_clipboard(&text, &app_handle, send_paste_shift_insert)?,
+        PasteMethod::CtrlShiftV => {
+            paste_via_clipboard(&text, &app_handle, send_paste_ctrl_shift_v)?
+        }
+        PasteMethod::ShiftInsert => {
+            paste_via_clipboard(&text, &app_handle, send_paste_shift_insert)?
+        }
     }
 
     // After pasting, optionally copy to clipboard based on settings
