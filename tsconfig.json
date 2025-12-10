@@ -16,10 +16,7 @@
     "jsx": "react-jsx",
 
     /* Path Aliases */
-    "baseUrl": ".",
-    "paths": {
-      "@/bindings": ["./src/bindings.ts"]
-    },
+"baseUrl": ".",    "paths": {      "@/*": ["./src/*"],      "@/bindings": ["./src/bindings.ts"],      "@/i18n/*": ["./src/i18n/*"],      "@/stores/*": ["./src/stores/*"],      "@/components/*": ["./src/components/*"],      "@/hooks/*": ["./src/hooks/*"]    },
 
     /* Linting */
     "strict": true,

@@ -12,7 +12,12 @@ export default defineConfig(async () => ({
   // Path aliases
   resolve: {
     alias: {
+      "@/": resolve(__dirname, "./src/"),
       "@/bindings": resolve(__dirname, "./src/bindings.ts"),
+      "@/i18n": resolve(__dirname, "./src/i18n"),
+      "@/stores": resolve(__dirname, "./src/stores"),
+      "@/components": resolve(__dirname, "./src/components"),
+      "@/hooks": resolve(__dirname, "./src/hooks"),
     },
   },
 

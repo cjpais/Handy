@@ -1,0 +1,232 @@
+{
+  "nav": {
+    "general": "General",
+    "advanced": "Advanced",
+    "history": "History",
+    "debug": "Debug",
+    "about": "About",
+    "postProcess": "Post Process"
+  },
+  "settings": {
+    "groups": {
+      "general": "General",
+      "sound": "Sound"
+    },
+    "general": {
+      "title": "General Settings",
+      "uiLanguage": {
+        "title": "UI Language",
+        "description": "Select the language for the application interface"
+      },
+      "speechLanguage": {
+        "title": "Language",
+        "description": "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language.",
+        "autoDetect": "Parakeet model automatically detects the language. No manual selection is needed."
+      },
+      "transcribe": {
+        "title": "Transcribe"
+      },
+      "pushToTalk": {
+        "title": "Push To Talk",
+        "description": "Hold to record, release to stop"
+      },
+      "microphone": {
+        "title": "Microphone",
+        "description": "Select your preferred microphone device",
+        "loading": "Loading...",
+        "select": "Select microphone...",
+        "default": "Default"
+      },
+      "audioFeedback": {
+        "title": "Audio Feedback",
+        "description": "Play sound when recording starts and stops"
+      },
+      "outputDevice": {
+        "title": "Output Device",
+        "description": "Select your preferred output device for audio feedback",
+        "loading": "Loading...",
+        "select": "Select device...",
+        "default": "Default"
+      },
+      "volume": {
+        "title": "Volume",
+        "description": "Adjust the volume of audio feedback sounds"
+      },
+      "autoStart": {
+        "title": "Start with Windows",
+        "description": "Launch Handy automatically when Windows starts"
+      },
+      "startHidden": {
+        "title": "Start Hidden",
+        "description": "Start Handy minimized to system tray"
+      },
+      "translation": {
+        "title": "Auto-Translate to English",
+        "description": "Automatically translate transcribed text to English"
+      }
+    },
+    "shortcuts": {
+      "title": "Handy Shortcuts",
+      "description": "Configure global shortcuts for recording",
+      "pressKeys": "Press keys...",
+      "loading": "Loading shortcuts...",
+      "noShortcuts": "No shortcuts configured",
+      "pushToTalk": "Push to Talk",
+      "pushToTalkDescription": "Hold down the shortcut to record, release to stop",
+      "toggleRecording": "Toggle Recording",
+      "toggleRecordingDescription": "Press the shortcut once to start recording, press again to stop"
+    },
+    "microphone": {
+      "title": "Microphone",
+      "description": "Select your input device",
+      "noDevices": "No microphone devices found"
+    },
+    "speaker": {
+      "title": "Speaker",
+      "description": "Select your output device for audio feedback",
+      "noDevices": "No speaker devices found"
+    },
+    "model": {
+      "title": "Model",
+      "description": "Select the transcription model to use",
+      "download": "Download",
+      "downloading": "Downloading...",
+      "install": "Install",
+      "installing": "Installing...",
+      "installed": "Installed",
+      "upgradeAvailable": "Upgrade Available",
+      "remove": "Remove",
+      "use": "Use"
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "overlay": {
+        "title": "Overlay Position",
+        "description": "Display visual feedback overlay during recording and transcription. On Linux 'None' is recommended.",
+        "none": "None",
+        "bottom": "Bottom",
+        "top": "Top"
+      },
+      "alwaysOnMic": {
+        "title": "Always On Microphone",
+        "description": "Keep microphone active for low latency recording. This may prevent your computer from sleeping."
+      },
+      "offlineMode": {
+        "title": "Offline Mode",
+        "description": "Use local models only (no internet connection required)"
+      },
+      "startHidden": {
+        "title": "Start Hidden",
+        "description": "Launch to system tray without opening the window."
+      },
+      "autostart": {
+        "title": "Launch on Startup",
+        "description": "Automatically start Handy when you log in to your computer."
+      },
+      "pasteMethod": {
+        "title": "Paste Method",
+        "description": "Ctrl+V: 'pastes' via ctrl+v. Direct: type text directly. Shift+Insert: pastes via shift+insert. None: skip paste; just update history/clipboard.",
+        "clipboard": "Clipboard (Ctrl+V)",
+        "direct": "Direct",
+        "none": "None",
+        "shiftInsert": "Clipboard (Shift+Insert)"
+      },
+      "clipboardHandling": {
+        "title": "Clipboard Handling",
+        "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting.",
+        "dontModify": "Don't Modify Clipboard",
+        "copyToClipboard": "Copy to Clipboard"
+      },
+      "translateToEnglish": {
+        "title": "Translate to English",
+        "description": "Automatically translate speech from other languages to English during transcription.",
+        "notSupported": "Translation is not supported by the {model} model."
+      },
+      "modelUnload": {
+        "title": "Unload Model",
+        "description": "Automatically free GPU/CPU memory when the model hasn't been used for the specified time",
+        "never": "Never",
+        "immediately": "Immediately",
+        "after2min": "After 2 minutes",
+        "after5min": "After 5 minutes",
+        "after10min": "After 10 minutes",
+        "after15min": "After 15 minutes",
+        "after1hour": "After 1 hour",
+        "after5sec": "After 5 seconds (Debug)"
+      },
+      "customWords": {
+        "title": "Custom Words",
+        "description": "Add words that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",
+        "addWord": "Add a word",
+        "add": "Add",
+        "remove": "Remove {word}"
+      }
+    },
+    "debug": {
+      "title": "Debug Settings",
+      "titleDescription": "These settings are for debugging purposes only",
+      "debugMode": {
+        "title": "Debug Mode",
+        "description": "Enable debug mode for advanced troubleshooting"
+      },
+      "viewLogs": "View Logs",
+      "clearHistory": "Clear History",
+      "exportHistory": "Export History"
+    },
+    "about": {
+      "title": "About",
+      "description": "Handy is a free and open source speech-to-text application",
+      "version": "Version",
+      "currentVersion": "Current version of Handy",
+      "sourceCode": "Source Code",
+      "sourceCodeDescription": "View source code and contribute",
+      "viewOnGitHub": "View on GitHub",
+      "supportDevelopment": "Support Development",
+      "supportDevelopmentDescription": "Help us continue building Handy",
+      "donate": "Donate",
+      "acknowledgments": "Acknowledgments",
+      "whisperCpp": "Whisper.cpp",
+      "whisperCppDescription": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
+      "whisperCppDetails": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+    },
+    "history": {
+      "title": "History",
+      "loading": "Loading history...",
+      "noTranscriptions": "No transcriptions yet. Start recording to build your history!",
+      "openRecordingsFolder": "Open Recordings Folder",
+      "openRecordingsFolderTooltip": "Open recordings folder",
+      "copyToClipboard": "Copy transcription to clipboard",
+      "removeFromSaved": "Remove from saved",
+      "saveTranscription": "Save transcription",
+      "deleteEntry": "Delete entry",
+      "deleteEntryFailed": "Failed to delete entry. Please try again."
+    }
+  },
+  "overlay": {
+    "recording": "Recording...",
+    "recognizing": "Recognizing...",
+    "transcribing": "Transcribing..."
+  },
+  "common": {
+    "copy": "Copy",
+    "save": "Save",
+    "cancel": "Cancel",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "search": {
+    "languages": "Search languages...",
+    "noLanguages": "No languages found"
+  },
+  "errors": {
+    "microphoneAccess": "Microphone access denied. Please check your system settings.",
+    "networkError": "Network error. Please check your internet connection.",
+    "transcriptionFailed": "Transcription failed. Please try again.",
+    "modelDownloadFailed": "Model download failed. Please try again."
+  }
+}

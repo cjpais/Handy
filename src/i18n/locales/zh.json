@@ -1,0 +1,232 @@
+{
+  "nav": {
+    "general": "常规设置",
+    "advanced": "高级设置",
+    "history": "历史记录",
+    "debug": "调试设置",
+    "about": "关于",
+    "postProcess": "后期处理"
+  },
+  "settings": {
+    "groups": {
+      "general": "常规",
+      "sound": "声音"
+    },
+    "general": {
+      "title": "常规设置",
+      "uiLanguage": {
+        "title": "界面语言",
+        "description": "选择应用程序界面的显示语言"
+      },
+      "speechLanguage": {
+        "title": "识别语言",
+        "description": "选择语音识别的目标语言。自动模式会自动识别语言，选择特定语言可以提高该语言的识别准确性。",
+        "autoDetect": "Parakeet 模型会自动检测语言，无需手动选择。"
+      },
+      "transcribe": {
+        "title": "转录"
+      },
+      "pushToTalk": {
+        "title": "按住说话",
+        "description": "按住录音，松开停止"
+      },
+      "microphone": {
+        "title": "麦克风",
+        "description": "选择您偏好的麦克风设备",
+        "loading": "加载中...",
+        "select": "选择麦克风...",
+        "default": "默认"
+      },
+      "audioFeedback": {
+        "title": "声音反馈",
+        "description": "在录音开始和停止时播放提示音"
+      },
+      "outputDevice": {
+        "title": "输出设备",
+        "description": "选择音频反馈的输出设备",
+        "loading": "加载中...",
+        "select": "选择设备...",
+        "default": "默认"
+      },
+      "volume": {
+        "title": "音量",
+        "description": "调整音频反馈声音的音量"
+      },
+      "autoStart": {
+        "title": "开机自启",
+        "description": "Windows启动时自动运行Handy"
+      },
+      "startHidden": {
+        "title": "隐藏启动",
+        "description": "启动时最小化到系统托盘"
+      },
+      "translation": {
+        "title": "自动翻译成英文",
+        "description": "自动将转录的文本翻译成英文"
+      }
+    },
+    "shortcuts": {
+      "title": "快捷键设置",
+      "description": "配置录音的全局快捷键",
+      "pressKeys": "按下快捷键...",
+      "loading": "加载快捷键中...",
+      "noShortcuts": "未配置快捷键",
+      "pushToTalk": "按住说话",
+      "pushToTalkDescription": "按住快捷键开始录音，松开停止录音",
+      "toggleRecording": "切换录音",
+      "toggleRecordingDescription": "按一次快捷键开始录音，再按一次停止录音"
+    },
+    "microphone": {
+      "title": "麦克风",
+      "description": "选择您的输入设备",
+      "noDevices": "未找到麦克风设备"
+    },
+    "speaker": {
+      "title": "扬声器",
+      "description": "选择音频反馈的输出设备",
+      "noDevices": "未找到扬声器设备"
+    },
+    "model": {
+      "title": "模型",
+      "description": "选择要使用的转录模型",
+      "download": "下载",
+      "downloading": "下载中...",
+      "install": "安装",
+      "installing": "安装中...",
+      "installed": "已安装",
+      "upgradeAvailable": "有可用升级",
+      "remove": "移除",
+      "use": "使用"
+    },
+    "advanced": {
+      "title": "高级设置",
+      "overlay": {
+        "title": "覆盖层位置",
+        "description": "在录音和转录期间显示视觉反馈覆盖层。在 Linux 上建议使用无。",
+        "none": "无",
+        "bottom": "底部",
+        "top": "顶部"
+      },
+      "alwaysOnMic": {
+        "title": "常开麦克风",
+        "description": "保持麦克风活跃以进行低延迟录音。这可能会阻止您的计算机进入睡眠状态。"
+      },
+      "offlineMode": {
+        "title": "离线模式",
+        "description": "仅使用本地模型（无需网络连接）"
+      },
+      "startHidden": {
+        "title": "隐藏启动",
+        "description": "启动到系统托盘而不打开窗口。"
+      },
+      "autostart": {
+        "title": "开机自启",
+        "description": "登录计算机时自动启动 Handy。"
+      },
+      "pasteMethod": {
+        "title": "粘贴方法",
+        "description": "Ctrl+V：通过 ctrl+v 粘贴。Direct：直接输入文本。Shift+Insert：通过 shift+insert 粘贴。None：跳过粘贴，仅更新历史记录/剪贴板。",
+        "clipboard": "剪贴板 (Ctrl+V)",
+        "direct": "直接输入",
+        "none": "无",
+        "shiftInsert": "剪贴板 (Shift+Insert)"
+      },
+      "clipboardHandling": {
+        "title": "剪贴板处理",
+        "description": "不修改剪贴板可在转录后保留您当前的剪贴板内容。复制到剪贴板会在粘贴后将转录结果留在您的剪贴板中。",
+        "dontModify": "不修改剪贴板",
+        "copyToClipboard": "复制到剪贴板"
+      },
+      "translateToEnglish": {
+        "title": "翻译成英文",
+        "description": "在转录过程中自动将其他语言的语音翻译成英文。",
+        "notSupported": "{model} 模型不支持翻译功能。"
+      },
+      "modelUnload": {
+        "title": "卸载模型",
+        "description": "当模型在指定时间内未被使用时自动释放 GPU/CPU 内存",
+        "never": "从不",
+        "immediately": "立即",
+        "after2min": "2分钟后",
+        "after5min": "5分钟后",
+        "after10min": "10分钟后",
+        "after15min": "15分钟后",
+        "after1hour": "1小时后",
+        "after5sec": "5秒后（调试）"
+      },
+      "customWords": {
+        "title": "自定义词汇",
+        "description": "添加在转录过程中经常被误听或拼写错误的词汇。系统会自动纠正发音相似的词汇以匹配您的列表。",
+        "addWord": "添加词汇",
+        "add": "添加",
+        "remove": "移除 {word}"
+      }
+    },
+    "debug": {
+      "title": "调试设置",
+      "titleDescription": "这些设置仅用于调试目的",
+      "debugMode": {
+        "title": "调试模式",
+        "description": "启用调试模式进行高级故障排除"
+      },
+      "viewLogs": "查看日志",
+      "clearHistory": "清除历史",
+      "exportHistory": "导出历史"
+    },
+    "about": {
+      "title": "关于",
+      "description": "Handy 是一个免费开源的语音转文字应用程序",
+      "version": "版本",
+      "currentVersion": "Handy 当前版本",
+      "sourceCode": "源代码",
+      "sourceCodeDescription": "查看源代码并参与贡献",
+      "viewOnGitHub": "在 GitHub 上查看",
+      "supportDevelopment": "支持开发",
+      "supportDevelopmentDescription": "帮助我们持续开发 Handy",
+      "donate": "捐赠",
+      "acknowledgments": "致谢",
+      "whisperCpp": "Whisper.cpp",
+      "whisperCppDescription": "OpenAI Whisper 自动语音识别模型的高性能推理",
+      "whisperCppDetails": "Handy 使用 Whisper.cpp 进行快速、本地语音转文本处理。感谢 Georgi Gerganov 和贡献者的杰出工作。"
+    },
+    "history": {
+      "title": "历史记录",
+      "loading": "加载历史记录中...",
+      "noTranscriptions": "还没有转录记录。开始录音来建立您的历史记录吧！",
+      "openRecordingsFolder": "打开录音文件夹",
+      "openRecordingsFolderTooltip": "打开录音文件夹",
+      "copyToClipboard": "复制转录文本到剪贴板",
+      "removeFromSaved": "从已保存中移除",
+      "saveTranscription": "保存转录",
+      "deleteEntry": "删除条目",
+      "deleteEntryFailed": "删除条目失败。请重试。"
+    }
+  },
+  "overlay": {
+    "recording": "录音中...",
+    "recognizing": "正在识别...",
+    "transcribing": "正在转录..."
+  },
+  "common": {
+    "copy": "复制",
+    "save": "保存",
+    "cancel": "取消",
+    "ok": "确定",
+    "yes": "是",
+    "no": "否",
+    "search": "搜索",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功"
+  },
+  "search": {
+    "languages": "搜索语言...",
+    "noLanguages": "未找到语言"
+  },
+  "errors": {
+    "microphoneAccess": "麦克风访问被拒绝。请检查您的系统设置。",
+    "networkError": "网络错误。请检查您的网络连接。",
+    "transcriptionFailed": "转录失败。请重试。",
+    "modelDownloadFailed": "模型下载失败。请重试。"
+  }
+}

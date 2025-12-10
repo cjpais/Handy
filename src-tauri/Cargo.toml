@@ -7,6 +7,9 @@ edition = "2021"
 license = "MIT"
 default-run = "handy"
 
+[env]
+VULKAN_SDK = { value = "C:\\VulkanSDK\\1.4.328.1", force = true }
+
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
 
