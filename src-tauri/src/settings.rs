@@ -249,6 +249,8 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    #[serde(default = "default_ui_language")]
+    pub ui_language: String,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -315,6 +317,9 @@ fn default_update_checks_enabled() -> bool {
 
 fn default_selected_language() -> String {
     "auto".to_string()
+}
+fn default_ui_language() -> String {
+    "en".to_string()
 }
 
 fn default_overlay_position() -> OverlayPosition {
@@ -467,6 +472,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: "auto".to_string(),
+        ui_language: default_ui_language(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
@@ -608,3 +614,4 @@ pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeri
     let settings = get_settings(app);
     settings.recording_retention_period
 }
+
