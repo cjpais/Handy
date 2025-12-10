@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 
@@ -10,7 +9,6 @@ interface AutostartToggleProps {
 
 export const AutostartToggle: React.FC<AutostartToggleProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
-    const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
     const autostartEnabled = getSetting("autostart_enabled") ?? false;
@@ -20,8 +18,8 @@ export const AutostartToggle: React.FC<AutostartToggleProps> = React.memo(
         checked={autostartEnabled}
         onChange={(enabled) => updateSetting("autostart_enabled", enabled)}
         isUpdating={isUpdating("autostart_enabled")}
-        label={t('settings.advanced.autostart.title')}
-        description={t('settings.advanced.autostart.description')}
+        label="Launch on Startup"
+        description="Automatically start Handy when you log in to your computer."
         descriptionMode={descriptionMode}
         grouped={grouped}
       />

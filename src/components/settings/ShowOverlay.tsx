@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
@@ -9,35 +10,40 @@ interface ShowOverlayProps {
   grouped?: boolean;
 }
 
-const overlayOptions = [
-  { value: "none", label: "None" },
-  { value: "bottom", label: "Bottom" },
-  { value: "top", label: "Top" },
-];
-
 export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
+    const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
     const selectedPosition = (getSetting("overlay_position") ||
       "bottom") as OverlayPosition;
 
+    const overlayOptions = [
+      { value: "none", label: t('settings.advanced.overlay.none') },
+      { value: "bottom", label: t('settings.advanced.overlay.bottom') },
+      { value: "top", label: t('settings.advanced.overlay.top') },
+    ];
+
     return (
       <SettingContainer
-        title="Overlay Position"
-        description="Display visual feedback overlay during recording and transcription. On Linux 'None' is recommended."
+        title={t('settings.advanced.overlay.title')}
+        description={t('settings.advanced.overlay.description')}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <Dropdown
-          options={overlayOptions}
-          selectedValue={selectedPosition}
-          onSelect={(value) =>
-            updateSetting("overlay_position", value as OverlayPosition)
-          }
-          disabled={isUpdating("overlay_position")}
-        />
+        <div className="flex items-center space-x-1">
+          <Dropdown
+            options={overlayOptions}
+            selectedValue={selectedPosition}
+            onSelect={handleOverlayPositionChange}
+            disabled={isUpdating("overlay_position")}
+          />
+        </div>
       </SettingContainer>
     );
+
+    async function handleOverlayPositionChange(position: string) {
+      await updateSetting("overlay_position", position as OverlayPosition);
+    }
   },
 );

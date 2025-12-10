@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -15,7 +14,6 @@ interface OutputDeviceSelectorProps {
 export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
   React.memo(
     ({ descriptionMode = "tooltip", grouped = false, disabled = false }) => {
-      const { t } = useTranslation();
       const {
         getSetting,
         updateSetting,
@@ -28,8 +26,8 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
 
       const selectedOutputDevice =
         getSetting("selected_output_device") === "default"
-          ? t('settings.general.outputDevice.default')
-          : getSetting("selected_output_device") || t('settings.general.outputDevice.default');
+          ? "Default"
+          : getSetting("selected_output_device") || "Default";
 
       const handleOutputDeviceSelect = async (deviceName: string) => {
         await updateSetting("selected_output_device", deviceName);
@@ -46,8 +44,8 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
 
       return (
         <SettingContainer
-          title={t('settings.general.outputDevice.title')}
-          description={t('settings.general.outputDevice.description')}
+          title="Output Device"
+          description="Select your preferred audio output device for feedback sounds"
           descriptionMode={descriptionMode}
           grouped={grouped}
           disabled={disabled}
@@ -59,8 +57,8 @@ export const OutputDeviceSelector: React.FC<OutputDeviceSelectorProps> =
               onSelect={handleOutputDeviceSelect}
               placeholder={
                 isLoading || outputDevices.length === 0
-                  ? t('settings.general.outputDevice.loading')
-                  : t('settings.general.outputDevice.select')
+                  ? "Loading..."
+                  : "Select output device..."
               }
               disabled={
                 disabled ||

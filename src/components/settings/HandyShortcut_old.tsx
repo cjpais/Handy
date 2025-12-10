@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useTranslation } from "react-i18next";
 import { type } from "@tauri-apps/plugin-os";
 import {
   getKeyName,
@@ -26,7 +25,6 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   shortcutId,
   disabled = false,
 }) => {
-  const { t } = useTranslation();
   const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
     useSettings();
   const [keyPressed, setKeyPressed] = useState<string[]>([]);
@@ -230,7 +228,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
   // Format the current shortcut keys being recorded
   const formatCurrentKeys = (): string => {
-    if (recordedKeys.length === 0) return t('settings.shortcuts.pressKeys');
+    if (recordedKeys.length === 0) return "Press keys...";
 
     // Use the same formatting as the display to ensure consistency
     return formatKeyCombination(recordedKeys.join("+"), osType);
@@ -245,12 +243,12 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (isLoading) {
     return (
       <SettingContainer
-        title={t('settings.shortcuts.title')}
-        description={t('settings.shortcuts.description')}
+        title="Handy Shortcuts"
+        description="Configure keyboard shortcuts to trigger speech-to-text recording"
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">{t('settings.shortcuts.loading')}</div>
+        <div className="text-sm text-mid-gray">Loading shortcuts...</div>
       </SettingContainer>
     );
   }
@@ -259,12 +257,12 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (Object.keys(bindings).length === 0) {
     return (
       <SettingContainer
-        title={t('settings.shortcuts.title')}
-        description={t('settings.shortcuts.description')}
+        title="Handy Shortcuts"
+        description="Configure keyboard shortcuts to trigger speech-to-text recording"
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">{t('settings.shortcuts.noShortcuts')}</div>
+        <div className="text-sm text-mid-gray">No shortcuts configured</div>
       </SettingContainer>
     );
   }

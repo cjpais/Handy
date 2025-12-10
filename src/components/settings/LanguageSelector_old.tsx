@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -18,7 +17,6 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
-  const { t } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
   const { currentModel, loadCurrentModel } = useModels();
   const [isOpen, setIsOpen] = useState(false);
@@ -107,11 +105,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   return (
     <SettingContainer
-      title={t('settings.general.speechLanguage.title')}
+      title="Language"
       description={
         isUnsupported
-          ? t('settings.general.speechLanguage.autoDetect')
-          : t('settings.general.speechLanguage.description')
+          ? "Parakeet model automatically detects the language. No manual selection is needed."
+          : "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language."
       }
       descriptionMode={descriptionMode}
       grouped={grouped}
@@ -157,7 +155,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onKeyDown={handleKeyDown}
-                  placeholder={t('search.languages')}
+                  placeholder="Search languages..."
                   className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary focus:border-logo-primary"
                 />
               </div>
@@ -165,7 +163,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
               <div className="max-h-48 overflow-y-auto">
                 {filteredLanguages.length === 0 ? (
                   <div className="px-2 py-2 text-sm text-mid-gray text-center">
-                    {t('search.noLanguages')}
+                    No languages found
                   </div>
                 ) : (
                   filteredLanguages.map((language) => (

@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 
@@ -10,7 +9,6 @@ interface StartHiddenProps {
 
 export const StartHidden: React.FC<StartHiddenProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
-    const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
     const startHidden = getSetting("start_hidden") ?? false;
@@ -20,8 +18,8 @@ export const StartHidden: React.FC<StartHiddenProps> = React.memo(
         checked={startHidden}
         onChange={(enabled) => updateSetting("start_hidden", enabled)}
         isUpdating={isUpdating("start_hidden")}
-        label={t('settings.advanced.startHidden.title')}
-        description={t('settings.advanced.startHidden.description')}
+        label="Start Hidden"
+        description="Launch to system tray without opening the window."
         descriptionMode={descriptionMode}
         grouped={grouped}
         tooltipPosition="bottom"

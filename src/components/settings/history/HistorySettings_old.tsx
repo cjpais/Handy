@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
@@ -13,25 +12,20 @@ interface OpenRecordingsButtonProps {
 
 const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   onClick,
-}) => {
-  const { t } = useTranslation();
-
-  return (
-    <Button
-      onClick={onClick}
-      variant="secondary"
-      size="sm"
-      className="flex items-center gap-2"
-      title={t('settings.history.openRecordingsFolderTooltip')}
-    >
-      <FolderOpen className="w-4 h-4" />
-      <span>{t('settings.history.openRecordingsFolder')}</span>
-    </Button>
-  );
-};
+}) => (
+  <Button
+    onClick={onClick}
+    variant="secondary"
+    size="sm"
+    className="flex items-center gap-2"
+    title="Open recordings folder"
+  >
+    <FolderOpen className="w-4 h-4" />
+    <span>Open Recordings Folder</span>
+  </Button>
+);
 
 export const HistorySettings: React.FC = () => {
-  const { t } = useTranslation();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -127,14 +121,14 @@ export const HistorySettings: React.FC = () => {
           <div className="px-4 flex items-center justify-between">
             <div>
               <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-                {t('settings.history.title')}
+                History
               </h2>
             </div>
             <OpenRecordingsButton onClick={openRecordingsFolder} />
           </div>
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
-              {t('settings.history.loading')}
+              Loading history...
             </div>
           </div>
         </div>
@@ -149,14 +143,14 @@ export const HistorySettings: React.FC = () => {
           <div className="px-4 flex items-center justify-between">
             <div>
               <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-                {t('settings.history.title')}
+                History
               </h2>
             </div>
             <OpenRecordingsButton onClick={openRecordingsFolder} />
           </div>
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
-              {t('settings.history.noTranscriptions')}
+              No transcriptions yet. Start recording to build your history!
             </div>
           </div>
         </div>
@@ -170,7 +164,7 @@ export const HistorySettings: React.FC = () => {
         <div className="px-4 flex items-center justify-between">
           <div>
             <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-              {t('settings.history.title')}
+              History
             </h2>
           </div>
           <OpenRecordingsButton onClick={openRecordingsFolder} />
@@ -209,7 +203,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   getAudioUrl,
   deleteAudio,
 }) => {
-  const { t } = useTranslation();
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
 
@@ -232,7 +225,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert(t('settings.history.deleteEntryFailed'));
+      alert("Failed to delete entry. Please try again.");
     }
   };
 
@@ -244,7 +237,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           <button
             onClick={handleCopyText}
             className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
-            title={t('settings.history.copyToClipboard')}
+            title="Copy transcription to clipboard"
           >
             {showCopied ? (
               <Check width={16} height={16} />
@@ -259,7 +252,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 ? "text-logo-primary hover:text-logo-primary/80"
                 : "text-text/50 hover:text-logo-primary"
             }`}
-            title={entry.saved ? t('settings.history.removeFromSaved') : t('settings.history.saveTranscription')}
+            title={entry.saved ? "Remove from saved" : "Save transcription"}
           >
             <Star
               width={16}
@@ -270,7 +263,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           <button
             onClick={handleDeleteEntry}
             className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
-            title={t('settings.history.deleteEntry')}
+            title="Delete entry"
           >
             <Trash2 width={16} height={16} />
           </button>

@@ -1,5 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MicrophoneIcon,
   TranscriptionIcon,
@@ -11,6 +12,7 @@ import { commands } from "@/bindings";
 type OverlayState = "recording" | "transcribing" | "recognizing";
 
 const RecordingOverlay: React.FC = () => {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
@@ -71,9 +73,9 @@ const RecordingOverlay: React.FC = () => {
     if (state === "recording") {
       return "";
     } else if (state === "recognizing") {
-      return "正在识别";
+      return t('overlay.recognizing');
     } else if (state === "transcribing") {
-      return "正在转录";
+      return t('overlay.transcribing');
     } else {
       return "";
     }

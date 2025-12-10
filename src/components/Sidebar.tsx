@@ -1,5 +1,6 @@
 import React from "react";
 import { Cog, FlaskConical, History, Info, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -78,10 +79,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSectionChange,
 }) => {
   const { settings } = useSettings();
+  const { t } = useTranslation();
 
-  const availableSections = Object.entries(SECTIONS_CONFIG)
+const availableSections = Object.entries(SECTIONS_CONFIG)
     .filter(([_, config]) => config.enabled(settings))
-    .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
+    .map(([id, config]) => ({
+      id: id as SidebarSection,
+      ...config,
+      label: t(`nav.${id}`) // Get translated label
+    }));
 
   return (
     <div className="flex flex-col w-40 h-full border-r border-mid-gray/20 items-center px-2">

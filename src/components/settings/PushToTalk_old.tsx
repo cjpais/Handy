@@ -1,5 +1,4 @@
 import React from "react";
-import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 
@@ -10,7 +9,6 @@ interface PushToTalkProps {
 
 export const PushToTalk: React.FC<PushToTalkProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
-    const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
     const pttEnabled = getSetting("push_to_talk") || false;
@@ -20,8 +18,8 @@ export const PushToTalk: React.FC<PushToTalkProps> = React.memo(
         checked={pttEnabled}
         onChange={(enabled) => updateSetting("push_to_talk", enabled)}
         isUpdating={isUpdating("push_to_talk")}
-        label={t('settings.general.pushToTalk.title')}
-        description={t('settings.general.pushToTalk.description')}
+        label="Push To Talk"
+        description="Hold to record, release to stop"
         descriptionMode={descriptionMode}
         grouped={grouped}
       />
