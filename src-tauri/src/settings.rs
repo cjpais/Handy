@@ -131,6 +131,7 @@ pub enum PasteMethod {
     Direct,
     None,
     ShiftInsert,
+    CtrlShiftV,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
