@@ -261,7 +261,7 @@ jobs:
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseId: ${{ inputs.release-id }}
           assetNamePattern: ${{ steps.patch-release-name.outputs.platform }}
-          args: ${{ inputs.build-args }} -- --locked
+          args: ${{ inputs.build-args }}
 
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
