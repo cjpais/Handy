@@ -2404,7 +2404,7 @@ dependencies = [
 
 [[package]]
 name = "handy"
-version = "0.6.5"
+version = "0.6.6"
 dependencies = [
  "anyhow",
  "async-openai 0.30.1",
