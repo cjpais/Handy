@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 import { VolumeSlider } from "./VolumeSlider";
@@ -11,6 +12,7 @@ interface AudioFeedbackProps {
 
 export const AudioFeedback: React.FC<AudioFeedbackProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
+    const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const audioFeedbackEnabled = getSetting("audio_feedback") || false;
 
@@ -20,8 +22,8 @@ export const AudioFeedback: React.FC<AudioFeedbackProps> = React.memo(
           checked={audioFeedbackEnabled}
           onChange={(enabled) => updateSetting("audio_feedback", enabled)}
           isUpdating={isUpdating("audio_feedback")}
-          label="Audio Feedback"
-          description="Play sound when recording starts and stops"
+          label={t("settings.sound.audioFeedback.label")}
+          description={t("settings.sound.audioFeedback.description")}
           descriptionMode={descriptionMode}
           grouped={grouped}
         />

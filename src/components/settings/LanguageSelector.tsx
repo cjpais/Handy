@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
@@ -17,6 +18,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
+  const { t } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
   const { currentModel, loadCurrentModel } = useModels();
   const [isOpen, setIsOpen] = useState(false);
@@ -70,9 +72,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   );
 
   const selectedLanguageName = isUnsupported
-    ? "Auto"
+    ? t("settings.general.language.auto")
     : LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
-      "Auto";
+      t("settings.general.language.auto");
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);
@@ -105,11 +107,11 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   return (
     <SettingContainer
-      title="Language"
+      title={t("settings.general.language.title")}
       description={
         isUnsupported
-          ? "Parakeet model automatically detects the language. No manual selection is needed."
-          : "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language."
+          ? t("settings.general.language.descriptionUnsupported")
+          : t("settings.general.language.description")
       }
       descriptionMode={descriptionMode}
       grouped={grouped}
@@ -155,7 +157,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Search languages..."
+                  placeholder={t("settings.general.language.searchPlaceholder")}
                   className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary focus:border-logo-primary"
                 />
               </div>
@@ -163,7 +165,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
               <div className="max-h-48 overflow-y-auto">
                 {filteredLanguages.length === 0 ? (
                   <div className="px-2 py-2 text-sm text-mid-gray text-center">
-                    No languages found
+                    {t("settings.general.language.noResults")}
                   </div>
                 ) : (
                   filteredLanguages.map((language) => (

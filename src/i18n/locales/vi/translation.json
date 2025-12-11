@@ -13,10 +13,63 @@
     "recommended": "Đề xuất",
     "download": "Tải xuống",
     "downloading": "Đang tải xuống...",
+    "modelCard": {
+      "accuracy": "độ chính xác",
+      "speed": "tốc độ"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Nhanh và khá chính xác."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Độ chính xác tốt, tốc độ trung bình"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Cân bằng giữa độ chính xác và tốc độ."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Độ chính xác tốt, nhưng chậm."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Chỉ tiếng Anh. Mô hình tốt nhất cho người nói tiếng Anh."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Nhanh và chính xác"
+      }
+    },
     "errors": {
       "loadModels": "Không thể tải các mô hình có sẵn",
       "downloadModel": "Không thể tải mô hình: {{error}}"
     }
+  },
+  "modelSelector": {
+    "welcome": "Chào mừng đến với Handy!",
+    "downloadPrompt": "Tải xuống mô hình bên dưới để bắt đầu chuyển đổi.",
+    "availableModels": "Các Mô Hình Có Sẵn",
+    "downloadModels": "Tải Xuống Mô Hình",
+    "chooseModel": "Chọn Mô Hình",
+    "active": "Đang hoạt động",
+    "download": "Tải xuống",
+    "downloadSize": "Kích thước tải xuống",
+    "noModelsAvailable": "Không có mô hình nào",
+    "extracting": "Đang giải nén {{modelName}}...",
+    "extractingMultiple": "Đang giải nén {{count}} mô hình...",
+    "extractingGeneric": "Đang giải nén...",
+    "downloading": "Đang tải xuống {{percentage}}%",
+    "downloadingMultiple": "Đang tải xuống {{count}} mô hình...",
+    "modelReady": "Mô Hình Sẵn Sàng",
+    "loading": "Đang tải {{modelName}}...",
+    "loadingGeneric": "Đang tải...",
+    "modelError": "Lỗi Mô Hình",
+    "modelUnloaded": "Mô Hình Đã Gỡ",
+    "noModelDownloadRequired": "Chưa Có Mô Hình - Cần Tải Xuống",
+    "deleteModel": "Xóa {{modelName}}"
   },
   "settings": {
     "general": {
@@ -28,6 +81,16 @@
         "none": "Chưa cấu hình phím tắt",
         "notFound": "Không tìm thấy phím tắt",
         "pressKeys": "Nhấn phím...",
+        "bindings": {
+          "transcribe": {
+            "name": "Chuyển đổi",
+            "description": "Chuyển đổi giọng nói của bạn thành văn bản."
+          },
+          "cancel": {
+            "name": "Hủy",
+            "description": "Hủy bản ghi hiện tại."
+          }
+        },
         "errors": {
           "restore": "Không thể khôi phục phím tắt gốc",
           "set": "Không thể đặt phím tắt: {{error}}",
@@ -288,9 +351,15 @@
     "downloadingModel": "Đang tải {{model}}...",
     "checkingUpdates": "Đang kiểm tra cập nhật...",
     "updateAvailable": "Có bản cập nhật: {{version}}",
+    "updateAvailableShort": "Có bản cập nhật",
     "upToDate": "Đã cập nhật",
     "downloadUpdate": "Tải cập nhật",
-    "restart": "Khởi động lại"
+    "restart": "Khởi động lại",
+    "updateCheckingDisabled": "Đã tắt kiểm tra cập nhật",
+    "downloading": "Đang tải... {{progress}}%",
+    "installing": "Đang cài đặt...",
+    "preparing": "Đang chuẩn bị...",
+    "checkForUpdates": "Kiểm tra cập nhật"
   },
   "common": {
     "loading": "Đang tải...",

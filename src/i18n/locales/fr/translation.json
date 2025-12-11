@@ -13,10 +13,63 @@
     "recommended": "Recommandé",
     "download": "Télécharger",
     "downloading": "Téléchargement...",
+    "modelCard": {
+      "accuracy": "précision",
+      "speed": "vitesse"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Rapide et assez précis."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Bonne précision, vitesse moyenne"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Équilibre entre précision et vitesse."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Bonne précision, mais lent."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Anglais uniquement. Le meilleur modèle pour les anglophones."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Rapide et précis"
+      }
+    },
     "errors": {
       "loadModels": "Échec du chargement des modèles disponibles",
       "downloadModel": "Échec du téléchargement du modèle : {{error}}"
     }
+  },
+  "modelSelector": {
+    "welcome": "Bienvenue sur Handy !",
+    "downloadPrompt": "Téléchargez un modèle ci-dessous pour commencer la transcription.",
+    "availableModels": "Modèles Disponibles",
+    "downloadModels": "Télécharger des Modèles",
+    "chooseModel": "Choisir un Modèle",
+    "active": "Actif",
+    "download": "Télécharger",
+    "downloadSize": "Taille du téléchargement",
+    "noModelsAvailable": "Aucun modèle disponible",
+    "extracting": "Extraction de {{modelName}}...",
+    "extractingMultiple": "Extraction de {{count}} modèles...",
+    "extractingGeneric": "Extraction...",
+    "downloading": "Téléchargement {{percentage}}%",
+    "downloadingMultiple": "Téléchargement de {{count}} modèles...",
+    "modelReady": "Modèle Prêt",
+    "loading": "Chargement de {{modelName}}...",
+    "loadingGeneric": "Chargement...",
+    "modelError": "Erreur du Modèle",
+    "modelUnloaded": "Modèle Déchargé",
+    "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
+    "deleteModel": "Supprimer {{modelName}}"
   },
   "settings": {
     "general": {
@@ -28,6 +81,16 @@
         "none": "Aucun raccourci configuré",
         "notFound": "Raccourci non trouvé",
         "pressKeys": "Appuyez sur les touches...",
+        "bindings": {
+          "transcribe": {
+            "name": "Transcrire",
+            "description": "Convertit votre voix en texte."
+          },
+          "cancel": {
+            "name": "Annuler",
+            "description": "Annule l'enregistrement en cours."
+          }
+        },
         "errors": {
           "restore": "Échec de la restauration du raccourci original",
           "set": "Échec de la définition du raccourci : {{error}}",
@@ -288,9 +351,15 @@
     "downloadingModel": "Téléchargement de {{model}}...",
     "checkingUpdates": "Recherche de mises à jour...",
     "updateAvailable": "Mise à jour disponible : {{version}}",
+    "updateAvailableShort": "Mise à jour disponible",
     "upToDate": "À jour",
     "downloadUpdate": "Télécharger la mise à jour",
-    "restart": "Redémarrer"
+    "restart": "Redémarrer",
+    "updateCheckingDisabled": "Vérification des mises à jour désactivée",
+    "downloading": "Téléchargement... {{progress}}%",
+    "installing": "Installation...",
+    "preparing": "Préparation...",
+    "checkForUpdates": "Rechercher des mises à jour"
   },
   "common": {
     "loading": "Chargement...",

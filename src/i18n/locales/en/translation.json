@@ -12,10 +12,63 @@
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",
+    "modelCard": {
+      "accuracy": "accuracy",
+      "speed": "speed"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Fast and fairly accurate."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Good accuracy, medium speed"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Balanced accuracy and speed."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Good accuracy, but slow."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "English only. The best model for English speakers."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Fast and accurate"
+      }
+    },
     "errors": {
       "loadModels": "Failed to load available models",
       "downloadModel": "Failed to download model: {{error}}"
     }
+  },
+  "modelSelector": {
+    "welcome": "Welcome to Handy!",
+    "downloadPrompt": "Download a model below to get started with transcription.",
+    "availableModels": "Available Models",
+    "downloadModels": "Download Models",
+    "chooseModel": "Choose a Model",
+    "active": "Active",
+    "download": "Download",
+    "downloadSize": "Download size",
+    "noModelsAvailable": "No models available",
+    "extracting": "Extracting {{modelName}}...",
+    "extractingMultiple": "Extracting {{count}} models...",
+    "extractingGeneric": "Extracting...",
+    "downloading": "Downloading {{percentage}}%",
+    "downloadingMultiple": "Downloading {{count}} models...",
+    "modelReady": "Model Ready",
+    "loading": "Loading {{modelName}}...",
+    "loadingGeneric": "Loading...",
+    "modelError": "Model Error",
+    "modelUnloaded": "Model Unloaded",
+    "noModelDownloadRequired": "No Model - Download Required",
+    "deleteModel": "Delete {{modelName}}"
   },
   "settings": {
     "general": {
@@ -27,6 +80,16 @@
         "none": "No shortcuts configured",
         "notFound": "Shortcut not found",
         "pressKeys": "Press keys...",
+        "bindings": {
+          "transcribe": {
+            "name": "Transcribe",
+            "description": "Converts your speech into text."
+          },
+          "cancel": {
+            "name": "Cancel",
+            "description": "Cancels the current recording."
+          }
+        },
         "errors": {
           "restore": "Failed to restore original shortcut",
           "set": "Failed to set shortcut: {{error}}",
@@ -226,11 +289,18 @@
       },
       "historyLimit": {
         "title": "History Limit",
-        "description": "Maximum number of history entries to keep"
+        "description": "Maximum number of history entries to keep",
+        "entries": "entries"
       },
       "recordingRetention": {
         "title": "Recording Retention",
-        "description": "How long to keep audio recordings"
+        "description": "How long to keep audio recordings",
+        "never": "Never",
+        "preserveLimit": "Preserve {{count}} Recordings",
+        "days3": "After 3 Days",
+        "weeks2": "After 2 Weeks",
+        "months3": "After 3 Months",
+        "placeholder": "Select retention period..."
       },
       "alwaysOnMicrophone": {
         "label": "Always-On Microphone",
@@ -287,9 +357,15 @@
     "downloadingModel": "Downloading {{model}}...",
     "checkingUpdates": "Checking for updates...",
     "updateAvailable": "Update available: {{version}}",
+    "updateAvailableShort": "Update available",
     "upToDate": "Up to date",
     "downloadUpdate": "Download Update",
-    "restart": "Restart"
+    "restart": "Restart",
+    "updateCheckingDisabled": "Update Checking Disabled",
+    "downloading": "Downloading... {{progress}}%",
+    "installing": "Installing...",
+    "preparing": "Preparing...",
+    "checkForUpdates": "Check for updates"
   },
   "common": {
     "loading": "Loading...",
