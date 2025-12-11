@@ -81,8 +81,6 @@ export const LANGUAGE_METADATA: Record<string, { name: string; nativeName: strin
 };
 ```
 
-That's it! The translation files are automatically discovered by Vite.
-
 ### Step 5: Test Your Translation
 
 1. Run the app: `bun run tauri dev`
@@ -164,4 +162,4 @@ We'd love help with:
 
 ---
 
-Thank you for making Handy accessible to more users around the world! 🌍
+Thank you for making Handy accessible to more people around the world!
