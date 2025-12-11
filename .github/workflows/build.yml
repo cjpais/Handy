@@ -98,8 +98,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          # Windows uses C:\t as CARGO_TARGET_DIR to avoid MAX_PATH issues
-          workspaces: ${{ contains(inputs.platform, 'windows') && './src-tauri -> C:\t' || './src-tauri -> target' }}
+          workspaces: "./src-tauri -> target"
           key: ${{ inputs.platform }}-${{ inputs.target }}
 
       - name: install dependencies (ubuntu 24.04)
@@ -243,9 +242,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Shorten target directory on Windows to avoid exceeding MAX_PATH (260 chars)
-          # when building whisper-rs-sys with deeply nested CMake paths
-          CARGO_TARGET_DIR: ${{ contains(inputs.platform, 'windows') && 'C:\t' || '' }}
           APPLE_ID: ${{ inputs.sign-binaries && secrets.APPLE_ID || '' }}
           APPLE_ID_PASSWORD: ${{ inputs.sign-binaries && secrets.APPLE_ID_PASSWORD || '' }}
           APPLE_PASSWORD: ${{ inputs.sign-binaries && secrets.APPLE_PASSWORD || '' }}
@@ -345,9 +341,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
-          # Windows uses C:\t as CARGO_TARGET_DIR to avoid MAX_PATH issues
-          # ARM64 cross-compiles nest under target/<triple>/release
+          # Default Windows builds place bundles under release/, but cross-compiles (ARM64) nest under target/<triple>/release.
           path: |
-            C:\t\${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}\bundle\msi\*.msi
-            C:\t\${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}\bundle\nsis\*.exe
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30
