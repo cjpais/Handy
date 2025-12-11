@@ -241,7 +241,6 @@ jobs:
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
-          CMAKE_POLICY_VERSION_MINIMUM: "3.5"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_ID: ${{ inputs.sign-binaries && secrets.APPLE_ID || '' }}
           APPLE_ID_PASSWORD: ${{ inputs.sign-binaries && secrets.APPLE_ID_PASSWORD || '' }}
