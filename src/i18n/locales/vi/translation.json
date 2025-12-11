@@ -315,6 +315,11 @@
       "appendTrailingSpace": {
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
+      },
+      "paths": {
+        "appData": "Dữ liệu ứng dụng:",
+        "models": "Mô hình:",
+        "settings": "Cài đặt:"
       }
     },
     "about": {
@@ -380,13 +385,17 @@
     "on": "Bật",
     "off": "Tắt",
     "yes": "Có",
-    "no": "Không"
+    "no": "Không",
+    "noOptionsFound": "Không tìm thấy tùy chọn"
   },
   "accessibility": {
     "permissionsRequired": "Cần quyền truy cập",
     "permissionsDescription": "Handy cần quyền truy cập để gõ văn bản đã chuyển đổi.",
     "openSettings": "Mở Cài đặt Hệ thống",
     "dismiss": "Bỏ qua"
+  },
+  "errors": {
+    "loadDirectory": "Lỗi khi tải thư mục: {{error}}"
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",

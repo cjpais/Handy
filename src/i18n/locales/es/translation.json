@@ -314,6 +314,11 @@
       "appendTrailingSpace": {
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
+      },
+      "paths": {
+        "appData": "Datos de la Aplicación:",
+        "models": "Modelos:",
+        "settings": "Configuración:"
       }
     },
     "about": {
@@ -379,13 +384,17 @@
     "on": "Activado",
     "off": "Desactivado",
     "yes": "Sí",
-    "no": "No"
+    "no": "No",
+    "noOptionsFound": "No se encontraron opciones"
   },
   "accessibility": {
     "permissionsRequired": "Se Requieren Permisos de Accesibilidad",
     "permissionsDescription": "Handy necesita permisos de accesibilidad para escribir texto transcrito.",
     "openSettings": "Abrir Ajustes del Sistema",
     "dismiss": "Descartar"
+  },
+  "errors": {
+    "loadDirectory": "Error al cargar el directorio: {{error}}"
   },
   "appLanguage": {
     "title": "Idioma de la aplicación",

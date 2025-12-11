@@ -85,6 +85,8 @@ const ModelCard: React.FC<ModelCardProps> = ({
 };
 
 const DownloadSize = ({ sizeMb }: { sizeMb: number }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-1.5 text-xs text-text/60 tabular-nums">
       <Download
@@ -92,7 +94,7 @@ const DownloadSize = ({ sizeMb }: { sizeMb: number }) => {
         className="h-3.5 w-3.5 text-text/45"
         strokeWidth={1.75}
       />
-      <span className="sr-only">Download size</span>
+      <span className="sr-only">{t("modelSelector.downloadSize")}</span>
       <span className="font-medium text-text/70">
         {formatModelSize(sizeMb)}
       </span>

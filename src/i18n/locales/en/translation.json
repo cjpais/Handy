@@ -321,6 +321,11 @@
       "appendTrailingSpace": {
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
+      },
+      "paths": {
+        "appData": "App Data:",
+        "models": "Models:",
+        "settings": "Settings:"
       }
     },
     "about": {
@@ -386,13 +391,17 @@
     "on": "On",
     "off": "Off",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "noOptionsFound": "No options found"
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",
     "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
     "openSettings": "Open System Settings",
     "dismiss": "Dismiss"
+  },
+  "errors": {
+    "loadDirectory": "Error loading directory: {{error}}"
   },
   "appLanguage": {
     "title": "Application Language",

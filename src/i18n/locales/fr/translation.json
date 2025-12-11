@@ -315,6 +315,11 @@
       "appendTrailingSpace": {
         "label": "Ajouter un espace final",
         "description": "Ajouter un espace après la transcription collée"
+      },
+      "paths": {
+        "appData": "Données de l'application :",
+        "models": "Modèles :",
+        "settings": "Paramètres :"
       }
     },
     "about": {
@@ -380,13 +385,17 @@
     "on": "Activé",
     "off": "Désactivé",
     "yes": "Oui",
-    "no": "Non"
+    "no": "Non",
+    "noOptionsFound": "Aucune option trouvée"
   },
   "accessibility": {
     "permissionsRequired": "Autorisations d'accessibilité requises",
     "permissionsDescription": "Handy a besoin des autorisations d'accessibilité pour taper le texte transcrit.",
     "openSettings": "Ouvrir les Préférences Système",
     "dismiss": "Ignorer"
+  },
+  "errors": {
+    "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}"
   },
   "appLanguage": {
     "title": "Langue de l'application",
