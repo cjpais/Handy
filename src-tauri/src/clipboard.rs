@@ -248,13 +248,6 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
 
-    // Append trailing space if setting is enabled
-    let text = if settings.append_trailing_space {
-        format!("{} ", text)
-    } else {
-        text
-    };
-
     info!("Using paste method: {:?}", paste_method);
 
     // Perform the paste operation
@@ -279,6 +272,38 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             .write_text(&text)
             .map_err(|e| format!("Failed to copy to clipboard: {}", e))?;
     }
+
+    Ok(())
+}
+
+/// Delete a specified number of characters by sending backspace keys.
+///
+/// This is used when we need to replace previously output text (e.g., when
+/// post-processing changes streaming output).
+pub fn delete_chars(count: usize) -> Result<(), String> {
+    if count == 0 {
+        return Ok(());
+    }
+
+    use enigo::Direction;
+    use std::time::Duration;
+
+    let mut enigo =
+        Enigo::new(&Settings::default()).map_err(|e| format!("Failed to init Enigo: {}", e))?;
+
+    for i in 0..count {
+        enigo
+            .key(Key::Backspace, Direction::Click)
+            .map_err(|e| format!("Failed to send backspace: {}", e))?;
+
+        // Small delay every 10 backspaces to avoid overwhelming the input system
+        if i > 0 && i % 10 == 0 {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    // Small delay after all backspaces
+    std::thread::sleep(Duration::from_millis(20));
 
     Ok(())
 }

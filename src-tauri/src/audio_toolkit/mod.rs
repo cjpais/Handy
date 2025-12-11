@@ -6,6 +6,7 @@ pub mod vad;
 
 pub use audio::{
     list_input_devices, list_output_devices, save_wav_file, AudioRecorder, CpalDeviceInfo,
+    VadCallback,
 };
 pub use text::apply_custom_words;
 pub use utils::get_cpal_host;

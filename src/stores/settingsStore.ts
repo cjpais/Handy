@@ -121,8 +121,10 @@ const settingUpdaters: {
     commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
-  append_trailing_space: (value) =>
-    commands.changeAppendTrailingSpaceSetting(value as boolean),
+  context_aware_capitalization: (value) =>
+    commands.changeContextAwareCapitalizationSetting(value as boolean),
+  streaming_mode_enabled: (value) =>
+    commands.changeStreamingModeSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
 };
 

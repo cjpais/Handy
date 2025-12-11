@@ -289,8 +289,14 @@ pub struct AppSettings {
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
+    #[serde(default = "default_context_aware_capitalization")]
+    pub context_aware_capitalization: bool,
+    /// Enable streaming mode for incremental transcription output while recording
     #[serde(default)]
-    pub append_trailing_space: bool,
+    pub streaming_mode_enabled: bool,
+    /// Pause detection threshold in milliseconds (default: 400)
+    #[serde(default = "default_streaming_pause_threshold_ms")]
+    pub streaming_pause_threshold_ms: u32,
 }
 
 fn default_model() -> String {
@@ -358,6 +364,10 @@ fn default_sound_theme() -> SoundTheme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_context_aware_capitalization() -> bool {
+    true // Enabled by default on macOS
 }
 
 fn default_post_process_provider_id() -> String {
@@ -436,6 +446,10 @@ fn default_post_process_models() -> HashMap<String, String> {
         );
     }
     map
+}
+
+fn default_streaming_pause_threshold_ms() -> u32 {
+    400
 }
 
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
@@ -553,7 +567,9 @@ pub fn get_default_settings() -> AppSettings {
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
-        append_trailing_space: false,
+        context_aware_capitalization: default_context_aware_capitalization(),
+        streaming_mode_enabled: false,
+        streaming_pause_threshold_ms: default_streaming_pause_threshold_ms(),
     }
 }
 

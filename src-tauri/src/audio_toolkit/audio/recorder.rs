@@ -22,12 +22,17 @@ enum Cmd {
     Shutdown,
 }
 
+/// Callback type for VAD frame events.
+/// Arguments: (is_speech: bool, frame_samples: &[f32])
+pub type VadCallback = Arc<dyn Fn(bool, &[f32]) + Send + Sync + 'static>;
+
 pub struct AudioRecorder {
     device: Option<Device>,
     cmd_tx: Option<mpsc::Sender<Cmd>>,
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    vad_cb: Option<VadCallback>,
 }
 
 impl AudioRecorder {
@@ -38,6 +43,7 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            vad_cb: None,
         })
     }
 
@@ -51,6 +57,18 @@ impl AudioRecorder {
         F: Fn(Vec<f32>) + Send + Sync + 'static,
     {
         self.level_cb = Some(Arc::new(cb));
+        self
+    }
+
+    /// Set a callback to receive VAD frame results during recording.
+    ///
+    /// The callback receives (is_speech: bool, frame_samples: &[f32]) for each
+    /// 30ms VAD frame. This is useful for streaming transcription pause detection.
+    pub fn with_vad_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(bool, &[f32]) + Send + Sync + 'static,
+    {
+        self.vad_cb = Some(Arc::new(cb));
         self
     }
 
@@ -74,6 +92,7 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let vad_cb = self.vad_cb.clone();
 
         let worker = std::thread::spawn(move || {
             let config = AudioRecorder::get_preferred_config(&thread_device)
@@ -117,7 +136,7 @@ impl AudioRecorder {
             stream.play().expect("failed to start stream");
 
             // keep the stream alive while we process samples
-            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb);
+            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, vad_cb);
             // stream is dropped here, after run_consumer returns
         });
 
@@ -245,6 +264,7 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<Vec<f32>>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    vad_cb: Option<VadCallback>,
 ) {
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
@@ -266,26 +286,38 @@ fn run_consumer(
         4000.0, // vocal_max_hz
     );
 
-    fn handle_frame(
-        samples: &[f32],
-        recording: bool,
-        vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
-        out_buf: &mut Vec<f32>,
-    ) {
+    // Helper closure to process a VAD frame
+    let handle_frame = |samples: &[f32],
+                            recording: bool,
+                            vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+                            vad_cb: &Option<VadCallback>,
+                            out_buf: &mut Vec<f32>| {
         if !recording {
             return;
         }
 
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
-            match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
+            let vad_result = det.push_frame(samples).unwrap_or(VadFrame::Speech(samples));
+            let is_speech = vad_result.is_speech();
+
+            // Call the VAD callback with the result
+            if let Some(cb) = vad_cb {
+                cb(is_speech, samples);
+            }
+
+            match vad_result {
                 VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
                 VadFrame::Noise => {}
             }
         } else {
+            // No VAD - assume all frames are speech
+            if let Some(cb) = vad_cb {
+                cb(true, samples);
+            }
             out_buf.extend_from_slice(samples);
         }
-    }
+    };
 
     loop {
         let raw = match sample_rx.recv() {
@@ -302,7 +334,7 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            handle_frame(frame, recording, &vad, &vad_cb, &mut processed_samples)
         });
 
         // non-blocking check for a command
@@ -321,7 +353,7 @@ fn run_consumer(
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
                         // we still want to process the last few frames
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        handle_frame(frame, true, &vad, &vad_cb, &mut processed_samples)
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));

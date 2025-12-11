@@ -5,6 +5,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod context;
 mod helpers;
 mod llm_client;
 mod managers;
@@ -12,6 +13,7 @@ mod overlay;
 mod settings;
 mod shortcut;
 mod signal_handle;
+pub mod streaming;
 mod tray;
 mod utils;
 use specta_typescript::{BigIntExportBehavior, Typescript};
@@ -22,6 +24,7 @@ use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+use streaming::StreamingManager;
 #[cfg(unix)]
 use signal_hook::consts::SIGUSR2;
 #[cfg(unix)]
@@ -120,12 +123,20 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+    let streaming_manager = Arc::new(StreamingManager::new(
+        app_handle,
+        transcription_manager.clone(),
+    ));
+
+    // Wire up the audio manager reference for streaming
+    streaming_manager.set_audio_manager(recording_manager.clone());
 
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(streaming_manager.clone());
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
@@ -255,7 +266,8 @@ pub fn run() {
         shortcut::suspend_binding,
         shortcut::resume_binding,
         shortcut::change_mute_while_recording_setting,
-        shortcut::change_append_trailing_space_setting,
+        shortcut::change_context_aware_capitalization_setting,
+        shortcut::change_streaming_mode_setting,
         shortcut::change_update_checks_setting,
         trigger_update_check,
         commands::cancel_operation,
