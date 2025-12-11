@@ -5,6 +5,7 @@ import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 import { AppDataDirectory } from "../AppDataDirectory";
+import { AppLanguageSelector } from "../AppLanguageSelector";
 
 export const AboutSettings: React.FC = () => {
   const [version, setVersion] = useState("");
@@ -34,6 +35,7 @@ export const AboutSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title="About">
+        <AppLanguageSelector descriptionMode="tooltip" grouped={true} />
         <SettingContainer
           title="Version"
           description="Current version of Handy"
