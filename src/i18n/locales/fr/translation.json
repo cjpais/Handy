@@ -276,6 +276,10 @@
         "title": "Niveau de journalisation",
         "description": "Définir le niveau de détail de la journalisation"
       },
+      "whisperRuntime": {
+        "title": "Moteur Whisper",
+        "description": "Choisir entre Whisper standard ou Whisperfile expérimental. Le modèle doit être rechargé pour que les changements prennent effet."
+      },
       "updateChecks": {
         "label": "Vérifier les mises à jour",
         "description": "Vérifier automatiquement les nouvelles versions de Handy"

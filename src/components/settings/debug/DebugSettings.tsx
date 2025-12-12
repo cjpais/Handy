@@ -4,6 +4,7 @@ import { type } from "@tauri-apps/plugin-os";
 import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
 import { LogDirectory } from "./LogDirectory";
 import { LogLevelSelector } from "./LogLevelSelector";
+import { WhisperRuntimeSelector } from "./WhisperRuntimeSelector";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { HistoryLimit } from "../HistoryLimit";
 import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
@@ -28,6 +29,7 @@ export const DebugSettings: React.FC = () => {
       <SettingsGroup title={t("settings.debug.title")}>
         <LogDirectory grouped={true} />
         <LogLevelSelector grouped={true} />
+        <WhisperRuntimeSelector grouped={true} />
         <UpdateChecksToggle descriptionMode="tooltip" grouped={true} />
         <SoundPicker
           label={t("settings.debug.soundTheme.label")}

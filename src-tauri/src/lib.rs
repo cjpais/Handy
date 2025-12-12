@@ -243,6 +243,7 @@ pub fn run() {
         shortcut::change_selected_language_setting,
         shortcut::change_overlay_position_setting,
         shortcut::change_debug_mode_setting,
+        shortcut::change_whisper_runtime_setting,
         shortcut::change_word_correction_threshold_setting,
         shortcut::change_paste_method_setting,
         shortcut::change_clipboard_handling_setting,
@@ -305,6 +306,8 @@ pub fn run() {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::whisperfile::download_whisperfile_binary,
+        commands::whisperfile::is_whisperfile_binary_downloaded,
         helpers::clamshell::is_laptop,
     ]);
 

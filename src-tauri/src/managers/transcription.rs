@@ -1,6 +1,7 @@
 use crate::audio_toolkit::apply_custom_words;
 use crate::managers::model::{EngineType, ModelManager};
-use crate::settings::{get_settings, ModelUnloadTimeout};
+use crate::managers::whisperfile::get_whisperfile_path;
+use crate::settings::{get_settings, ModelUnloadTimeout, WhisperRuntime};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -15,6 +16,7 @@ use transcribe_rs::{
             ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
         },
         whisper::{WhisperEngine, WhisperInferenceParams},
+        whisperfile::{WhisperfileEngine, WhisperfileInferenceParams, WhisperfileModelParams},
     },
     TranscriptionEngine,
 };
@@ -30,6 +32,7 @@ pub struct ModelStateEvent {
 enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetEngine),
+    Whisperfile(WhisperfileEngine),
 }
 
 #[derive(Clone)]
@@ -136,15 +139,24 @@ impl TranscriptionManager {
         let unload_start = std::time::Instant::now();
         debug!("Starting to unload model");
 
-        {
+        let old_engine = {
             let mut engine = self.engine.lock().unwrap();
             if let Some(ref mut loaded_engine) = *engine {
                 match loaded_engine {
                     LoadedEngine::Whisper(ref mut whisper) => whisper.unload_model(),
                     LoadedEngine::Parakeet(ref mut parakeet) => parakeet.unload_model(),
+                    LoadedEngine::Whisperfile(ref mut whisperfile) => whisperfile.unload_model(),
                 }
             }
-            *engine = None; // Drop the engine to free memory
+            engine.take() // Take the engine out to drop it safely
+        };
+
+        // Drop the old engine in a separate thread to avoid Tokio runtime drop panic
+        // This is necessary because WhisperfileEngine contains a Tokio runtime
+        if old_engine.is_some() {
+            thread::spawn(move || {
+                drop(old_engine);
+            });
         }
         {
             let mut current_model = self.current_model_id.lock().unwrap();
@@ -205,25 +217,79 @@ impl TranscriptionManager {
         }
 
         let model_path = self.model_manager.get_model_path(model_id)?;
+        let settings = get_settings(&self.app_handle);
 
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
             EngineType::Whisper => {
-                let mut engine = WhisperEngine::new();
-                engine.load_model(&model_path).map_err(|e| {
-                    let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.clone()),
-                        },
-                    );
-                    anyhow::anyhow!(error_msg)
-                })?;
-                LoadedEngine::Whisper(engine)
+                // Check if we should use Whisperfile runtime
+                if settings.whisper_runtime == WhisperRuntime::Whisperfile {
+                    let binary_path = get_whisperfile_path(&self.app_handle).map_err(|e| {
+                        let error_msg = format!("Failed to get whisperfile path: {}", e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+
+                    if !binary_path.exists() {
+                        let error_msg =
+                            "Whisperfile binary not found. Please download it in Settings > Debug."
+                                .to_string();
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        return Err(anyhow::anyhow!(error_msg));
+                    }
+
+                    info!("Using Whisperfile runtime with binary at {:?}", binary_path);
+                    let mut engine = WhisperfileEngine::new(binary_path);
+                    let params = WhisperfileModelParams::default();
+                    engine.load_model_with_params(&model_path, params).map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load whisperfile model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                    LoadedEngine::Whisperfile(engine)
+                } else {
+                    // Standard Whisper runtime
+                    let mut engine = WhisperEngine::new();
+                    engine.load_model(&model_path).map_err(|e| {
+                        let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                    LoadedEngine::Whisper(engine)
+                }
             }
             EngineType::Parakeet => {
                 let mut engine = ParakeetEngine::new();
@@ -248,9 +314,21 @@ impl TranscriptionManager {
         };
 
         // Update the current engine and model ID
+        // First, take the old engine out to drop it safely in a separate thread
+        // This prevents "Cannot drop a runtime in a context where blocking is not allowed" panic
         {
             let mut engine = self.engine.lock().unwrap();
+            let old_engine = engine.take();
             *engine = Some(loaded_engine);
+
+            // Drop the old engine in a separate thread to avoid Tokio runtime drop panic
+            // WhisperfileEngine contains a Tokio runtime, and dropping it from within
+            // an async context (when called from set_active_model) causes a panic
+            if old_engine.is_some() {
+                thread::spawn(move || {
+                    drop(old_engine);
+                });
+            }
         }
         {
             let mut current_model = self.current_model_id.lock().unwrap();
@@ -383,6 +461,32 @@ impl TranscriptionManager {
                     parakeet_engine
                         .transcribe_samples(audio, Some(params))
                         .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
+                }
+                LoadedEngine::Whisperfile(whisperfile_engine) => {
+                    // Normalize language code (same as Whisper)
+                    let whisperfile_language = if settings.selected_language == "auto" {
+                        None
+                    } else {
+                        let normalized = if settings.selected_language == "zh-Hans"
+                            || settings.selected_language == "zh-Hant"
+                        {
+                            "zh".to_string()
+                        } else {
+                            settings.selected_language.clone()
+                        };
+                        Some(normalized)
+                    };
+
+                    let params = WhisperfileInferenceParams {
+                        language: whisperfile_language,
+                        translate: settings.translate_to_english,
+                        temperature: None,
+                        response_format: Some("verbose_json".to_string()),
+                    };
+
+                    whisperfile_engine
+                        .transcribe_samples(audio, Some(params))
+                        .map_err(|e| anyhow::anyhow!("Whisperfile transcription failed: {}", e))?
                 }
             }
         };

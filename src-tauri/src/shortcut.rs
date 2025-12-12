@@ -259,6 +259,23 @@ pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), 
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_whisper_runtime_setting(app: AppHandle, runtime: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match runtime.as_str() {
+        "whisper" => settings::WhisperRuntime::Whisper,
+        "whisperfile" => settings::WhisperRuntime::Whisperfile,
+        other => {
+            warn!("Invalid whisper runtime '{}', defaulting to whisper", other);
+            settings::WhisperRuntime::Whisper
+        }
+    };
+    settings.whisper_runtime = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.autostart_enabled = enabled;
