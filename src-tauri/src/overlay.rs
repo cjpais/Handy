@@ -1,6 +1,6 @@
+use crate::input;
 use crate::settings;
 use crate::settings::OverlayPosition;
-use enigo::{Enigo, Mouse};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -70,16 +70,13 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
 }
 
 fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
-    let enigo = Enigo::new(&Default::default());
-    if let Ok(enigo) = enigo {
-        if let Ok(mouse_location) = enigo.location() {
-            if let Ok(monitors) = app_handle.available_monitors() {
-                for monitor in monitors {
-                    let is_within =
-                        is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
-                    if is_within {
-                        return Some(monitor);
-                    }
+    if let Some(mouse_location) = input::get_cursor_position(app_handle) {
+        if let Ok(monitors) = app_handle.available_monitors() {
+            for monitor in monitors {
+                let is_within =
+                    is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
+                if is_within {
+                    return Some(monitor);
                 }
             }
         }
