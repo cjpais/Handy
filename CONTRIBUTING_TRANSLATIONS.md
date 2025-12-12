@@ -154,17 +154,17 @@ Some languages have complex plural rules. For now, use a general form that works
 | Language   | Code | Status            |
 | ---------- | ---- | ----------------- |
 | English    | `en` | Complete (source) |
-| Spanish    | `es` | Complete          |
+| Chinese    | `zh` | Complete          |
 | French     | `fr` | Complete          |
+| German     | `de` | Complete          |
+| Japanese   | `ja` | Complete          |
+| Spanish    | `es` | Complete          |
 | Vietnamese | `vi` | Complete          |
 
 ## Requested Languages
 
 We'd love help with:
 
-- German (`de`)
-- Japanese (`ja`)
-- Chinese (`zh`)
 - Korean (`ko`)
 - Portuguese (`pt`)
 - And more!

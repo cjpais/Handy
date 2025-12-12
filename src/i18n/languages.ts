@@ -10,7 +10,10 @@ export const LANGUAGE_METADATA: Record<
   { name: string; nativeName: string }
 > = {
   en: { name: "English", nativeName: "English" },
+  de: { name: "German", nativeName: "Deutsch" },
   es: { name: "Spanish", nativeName: "Español" },
   fr: { name: "French", nativeName: "Français" },
+  ja: { name: "Japanese", nativeName: "日本語" },
   vi: { name: "Vietnamese", nativeName: "Tiếng Việt" },
+  zh: { name: "Chinese", nativeName: "中文" },
 };
