@@ -103,8 +103,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
               onClick={() => onSectionChange(section.id)}
             >
-              <Icon width={24} height={24} />
-              <p className="text-sm font-medium">{t(section.labelKey)}</p>
+              <Icon width={24} height={24} className="shrink-0" />
+              <p
+                className="text-sm font-medium truncate"
+                title={t(section.labelKey)}
+              >
+                {t(section.labelKey)}
+              </p>
             </div>
           );
         })}
