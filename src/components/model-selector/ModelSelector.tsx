@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
+import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
@@ -40,6 +42,7 @@ interface ModelSelectorProps {
 }
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
+  const { t } = useTranslation();
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [currentModelId, setCurrentModelId] = useState<string>("");
   const [modelStatus, setModelStatus] = useState<ModelStatus>("unloaded");
@@ -322,9 +325,14 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       if (extractingModels.size === 1) {
         const [modelId] = Array.from(extractingModels);
         const model = models.find((m) => m.id === modelId);
-        return `Extracting ${model?.name || "Model"}...`;
+        const modelName = model
+          ? getTranslatedModelName(model, t)
+          : t("modelSelector.extractingGeneric").replace("...", "");
+        return t("modelSelector.extracting", { modelName });
       } else {
-        return `Extracting ${extractingModels.size} models...`;
+        return t("modelSelector.extractingMultiple", {
+          count: extractingModels.size,
+        });
       }
     }
 
@@ -335,9 +343,11 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           0,
           Math.min(100, Math.round(progress.percentage)),
         );
-        return `Downloading ${percentage}%`;
+        return t("modelSelector.downloading", { percentage });
       } else {
-        return `Downloading ${modelDownloadProgress.size} models...`;
+        return t("modelSelector.downloadingMultiple", {
+          count: modelDownloadProgress.size,
+        });
       }
     }
 
@@ -345,21 +355,33 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
     switch (modelStatus) {
       case "ready":
-        return currentModel?.name || "Model Ready";
+        return currentModel
+          ? getTranslatedModelName(currentModel, t)
+          : t("modelSelector.modelReady");
       case "loading":
-        return currentModel ? `Loading ${currentModel.name}...` : "Loading...";
+        return currentModel
+          ? t("modelSelector.loading", {
+              modelName: getTranslatedModelName(currentModel, t),
+            })
+          : t("modelSelector.loadingGeneric");
       case "extracting":
         return currentModel
-          ? `Extracting ${currentModel.name}...`
-          : "Extracting...";
+          ? t("modelSelector.extracting", {
+              modelName: getTranslatedModelName(currentModel, t),
+            })
+          : t("modelSelector.extractingGeneric");
       case "error":
-        return modelError || "Model Error";
+        return modelError || t("modelSelector.modelError");
       case "unloaded":
-        return currentModel?.name || "Model Unloaded";
+        return currentModel
+          ? getTranslatedModelName(currentModel, t)
+          : t("modelSelector.modelUnloaded");
       case "none":
-        return "No Model - Download Required";
+        return t("modelSelector.noModelDownloadRequired");
       default:
-        return currentModel?.name || "Model Unloaded";
+        return currentModel
+          ? getTranslatedModelName(currentModel, t)
+          : t("modelSelector.modelUnloaded");
     }
   };
 

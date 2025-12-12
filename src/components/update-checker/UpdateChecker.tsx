@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
@@ -10,6 +11,7 @@ interface UpdateCheckerProps {
 }
 
 const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
+  const { t } = useTranslation();
   // Update checking state
   const [isChecking, setIsChecking] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -140,19 +142,21 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   // Update status functions
   const getUpdateStatusText = () => {
     if (!updateChecksEnabled) {
-      return "Update Checking Disabled";
+      return t("footer.updateCheckingDisabled");
     }
     if (isInstalling) {
       return downloadProgress > 0 && downloadProgress < 100
-        ? `Downloading... ${downloadProgress.toString().padStart(3)}%`
+        ? t("footer.downloading", {
+            progress: downloadProgress.toString().padStart(3),
+          })
         : downloadProgress === 100
-          ? "Installing..."
-          : "Preparing...";
+          ? t("footer.installing")
+          : t("footer.preparing");
     }
-    if (isChecking) return "Checking...";
-    if (showUpToDate) return "Up to date";
-    if (updateAvailable) return "Update available";
-    return "Check for updates";
+    if (isChecking) return t("footer.checkingUpdates");
+    if (showUpToDate) return t("footer.upToDate");
+    if (updateAvailable) return t("footer.updateAvailableShort");
+    return t("footer.checkForUpdates");
   };
 
   const getUpdateStatusAction = () => {

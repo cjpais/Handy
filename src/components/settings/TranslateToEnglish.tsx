@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
@@ -17,6 +18,7 @@ const unsupportedTranslationModels = [
 
 export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
+    const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const { currentModel, loadCurrentModel, models } = useModels();
 
@@ -29,11 +31,16 @@ export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
         const currentModelDisplayName = models.find(
           (model) => model.id === currentModel,
         )?.name;
-        return `Translation is not supported by the ${currentModelDisplayName} model.`;
+        return t(
+          "settings.advanced.translateToEnglish.descriptionUnsupported",
+          {
+            model: currentModelDisplayName,
+          },
+        );
       }
 
-      return "Automatically translate speech from other languages to English during transcription.";
-    }, [models, currentModel, isDisabledTranslation]);
+      return t("settings.advanced.translateToEnglish.description");
+    }, [t, models, currentModel, isDisabledTranslation]);
 
     // Listen for model state changes to update UI reactively
     useEffect(() => {
@@ -52,7 +59,7 @@ export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
         onChange={(enabled) => updateSetting("translate_to_english", enabled)}
         isUpdating={isUpdating("translate_to_english")}
         disabled={isDisabledTranslation}
-        label="Translate to English"
+        label={t("settings.advanced.translateToEnglish.label")}
         description={description}
         descriptionMode={descriptionMode}
         grouped={grouped}
