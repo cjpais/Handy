@@ -121,6 +121,7 @@ export const Replacements: React.FC = () => {
   const scrollInterval = useRef<number | null>(null);
   const scrollSpeed = useRef<number>(0);
   const formRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const replacements = getSetting("replacements") || [];
   const replacementsEnabled = getSetting("replacements_enabled") ?? true;
@@ -241,6 +242,7 @@ export const Replacements: React.FC = () => {
     setIsAdding(true);
     setTimeout(() => {
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        searchInputRef.current?.focus();
     }, 0);
   };
 
@@ -517,6 +519,7 @@ export const Replacements: React.FC = () => {
     <div className="flex flex-col gap-3 w-full" ref={formRef}>
           <div className="flex items-center gap-2 w-full">
             <Input
+              ref={searchInputRef}
               type="text"
               className="flex-1"
               value={search}

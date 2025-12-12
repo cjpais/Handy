@@ -1,15 +1,15 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   variant?: "default" | "compact";
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = forwardRef<HTMLInputElement, InputProps>(({
   className = "",
   variant = "default",
   disabled,
   ...props
-}) => {
+}, ref) => {
   const baseClasses =
     "px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded text-left transition-all duration-150";
 
@@ -24,9 +24,12 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <input
+      ref={ref}
       className={`${baseClasses} ${variantClasses[variant]} ${interactiveClasses} ${className}`}
       disabled={disabled}
       {...props}
     />
   );
-};
+});
+
+Input.displayName = "Input";
