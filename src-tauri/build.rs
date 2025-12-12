@@ -69,11 +69,14 @@ fn build_apple_intelligence_bridge() {
         .expect("Unable to determine Swift toolchain lib directory");
     let sdk_swift_lib = Path::new(&sdk_path).join("usr/lib/swift");
 
+    // Use macOS 11.0 as deployment target for compatibility
+    // The @available(macOS 26.0, *) checks in Swift handle runtime availability
+    // Weak linking for FoundationModels is handled via cargo:rustc-link-arg below
     let status = Command::new("xcrun")
         .args([
             "swiftc",
             "-target",
-            "arm64-apple-macosx26.0",
+            "arm64-apple-macosx11.0",
             "-sdk",
             &sdk_path,
             "-O",
@@ -121,7 +124,9 @@ fn build_apple_intelligence_bridge() {
     println!("cargo:rustc-link-lib=framework=Foundation");
 
     if has_foundation_models {
-        println!("cargo:rustc-link-lib=framework=FoundationModels");
+        // Use weak linking so the app can launch on systems without FoundationModels
+        println!("cargo:rustc-link-arg=-weak_framework");
+        println!("cargo:rustc-link-arg=FoundationModels");
     }
 
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
