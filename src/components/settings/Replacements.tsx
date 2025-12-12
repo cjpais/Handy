@@ -5,7 +5,7 @@ import { Button } from "../ui/Button";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { Replacement, CapitalizationRule } from "@/bindings";
-import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2, Space, X, Copy, Plus, Eye, EyeOff } from "lucide-react";
+import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2, Space, X, Copy, Plus, Power, PowerOff } from "lucide-react";
 
 const MAGIC_TAGS: Record<string, string> = {
   '[lowercase]': 'Converts the entire text to lowercase',
@@ -859,7 +859,7 @@ export const Replacements: React.FC = () => {
                     className="text-mid-gray hover:text-white hover:bg-mid-gray/20"
                     title={isEnabled ? "Disable" : "Enable"}
                   >
-                    {isEnabled ? <Eye size={16} /> : <EyeOff size={16} />}
+                    {isEnabled ? <PowerOff size={16} /> : <Power size={16} />}
                   </Button>
                   <Button
                     onClick={() => handleEdit(index)}
