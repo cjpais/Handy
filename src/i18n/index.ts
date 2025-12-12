@@ -24,11 +24,24 @@ export const SUPPORTED_LANGUAGES = Object.keys(resources)
     const meta = LANGUAGE_METADATA[code];
     if (!meta) {
       console.warn(`Missing metadata for locale "${code}" in languages.ts`);
-      return { code, name: code, nativeName: code };
+      return { code, name: code, nativeName: code, priority: undefined };
     }
-    return { code, name: meta.name, nativeName: meta.nativeName };
+    return {
+      code,
+      name: meta.name,
+      nativeName: meta.nativeName,
+      priority: meta.priority,
+    };
   })
-  .sort((a, b) => a.name.localeCompare(b.name));
+  .sort((a, b) => {
+    // Sort by priority first (lower = higher), then alphabetically
+    if (a.priority !== undefined && b.priority !== undefined) {
+      return a.priority - b.priority;
+    }
+    if (a.priority !== undefined) return -1;
+    if (b.priority !== undefined) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
 export type SupportedLanguageCode = string;
 
