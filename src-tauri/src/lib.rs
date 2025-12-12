@@ -6,6 +6,7 @@ pub mod audio_toolkit;
 mod clipboard;
 mod commands;
 mod helpers;
+mod input;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -108,7 +109,11 @@ fn show_main_window(app: &AppHandle) {
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
-    // First, initialize the managers
+    // Initialize the input state (Enigo singleton for keyboard/mouse simulation)
+    let enigo_state = input::EnigoState::new().expect("Failed to initialize input state (Enigo)");
+    app_handle.manage(enigo_state);
+
+    // Initialize the managers
     let recording_manager = Arc::new(
         AudioRecordingManager::new(app_handle).expect("Failed to initialize recording manager"),
     );
