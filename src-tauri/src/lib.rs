@@ -14,6 +14,7 @@ mod settings;
 mod shortcut;
 mod signal_handle;
 mod tray;
+mod tray_i18n;
 mod utils;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};

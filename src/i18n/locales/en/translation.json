@@ -1,4 +1,10 @@
 {
+  "tray": {
+    "settings": "Settings...",
+    "checkUpdates": "Check for Updates...",
+    "quit": "Quit",
+    "cancel": "Cancel"
+  },
   "sidebar": {
     "general": "General",
     "advanced": "Advanced",

@@ -1,5 +1,11 @@
 {
   "_comment": "Vietnamese translation for Handy. Contribute at: https://github.com/cjpais/Handy",
+  "tray": {
+    "settings": "Cài đặt...",
+    "checkUpdates": "Kiểm tra cập nhật...",
+    "quit": "Thoát",
+    "cancel": "Hủy"
+  },
   "sidebar": {
     "general": "Chung",
     "advanced": "Nâng cao",
