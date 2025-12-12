@@ -164,8 +164,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         });
         loadModels(); // Refresh models list
 
-        // Auto-select the newly downloaded model
-        setTimeout(() => {
+        // Auto-select the newly downloaded model (skip if recording in progress)
+        setTimeout(async () => {
+          const recordingResult = await commands.isRecording();
+          if (recordingResult.status === "ok" && recordingResult.data) {
+            return; // Skip auto-switch if recording in progress
+          }
           loadCurrentModel();
           handleModelSelect(modelId);
         }, 500);
@@ -193,8 +197,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         });
         loadModels(); // Refresh models list
 
-        // Auto-select the newly extracted model
-        setTimeout(() => {
+        // Auto-select the newly extracted model (skip if recording in progress)
+        setTimeout(async () => {
+          const recordingResult = await commands.isRecording();
+          if (recordingResult.status === "ok" && recordingResult.data) {
+            return; // Skip auto-switch if recording in progress
+          }
           loadCurrentModel();
           handleModelSelect(modelId);
         }, 500);
