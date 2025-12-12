@@ -5,8 +5,7 @@
     "postProcessing": "Nachbearbeitung",
     "history": "Verlauf",
     "debug": "Debug",
-    "about": "Info",
-    "analytics": "Statistiken"
+    "about": "Info"
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
@@ -265,24 +264,6 @@
       "unsave": "Aus Gespeicherten entfernen",
       "delete": "Eintrag löschen",
       "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut."
-    },
-    "analytics": {
-      "title": "Statistiken",
-      "loading": "Statistiken werden geladen...",
-      "loadError": "Statistiken konnten nicht geladen werden. Bitte versuche es erneut.",
-      "noData": "Noch keine Statistikdaten. Starte eine Aufnahme, um deine Statistiken aufzubauen!",
-      "periods": {
-        "today": "Heute",
-        "thisWeek": "Diese Woche",
-        "allTime": "Gesamt"
-      },
-      "totalWords": "Wörter gesamt",
-      "recordingTime": "Aufnahmezeit",
-      "averageWpm": "Durchschn. WPM",
-      "wordsPerMinute": "Wörter pro Minute",
-      "currentStreak": "Aktuelle Serie",
-      "day": "Tag",
-      "days": "Tage"
     },
     "debug": {
       "title": "Debug",

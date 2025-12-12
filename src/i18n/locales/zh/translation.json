@@ -5,8 +5,7 @@
     "postProcessing": "后处理",
     "history": "历史记录",
     "debug": "调试",
-    "about": "关于",
-    "analytics": "统计"
+    "about": "关于"
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
@@ -265,24 +264,6 @@
       "unsave": "从已保存中移除",
       "delete": "删除条目",
       "deleteError": "删除条目失败，请重试。"
-    },
-    "analytics": {
-      "title": "统计",
-      "loading": "加载统计中...",
-      "loadError": "加载统计失败，请重试。",
-      "noData": "还没有统计数据。开始录制以建立您的统计！",
-      "periods": {
-        "today": "今天",
-        "thisWeek": "本周",
-        "allTime": "全部"
-      },
-      "totalWords": "总词数",
-      "recordingTime": "录制时长",
-      "averageWpm": "平均 WPM",
-      "wordsPerMinute": "每分钟词数",
-      "currentStreak": "当前连续天数",
-      "day": "天",
-      "days": "天"
     },
     "debug": {
       "title": "调试",

@@ -5,8 +5,7 @@
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
-    "about": "概要",
-    "analytics": "統計"
+    "about": "概要"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",
@@ -265,24 +264,6 @@
       "unsave": "保存から削除",
       "delete": "エントリーを削除",
       "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。"
-    },
-    "analytics": {
-      "title": "統計",
-      "loading": "統計を読み込み中...",
-      "loadError": "統計の読み込みに失敗しました。もう一度お試しください。",
-      "noData": "まだ統計データがありません。録音を開始して統計を作成しましょう！",
-      "periods": {
-        "today": "今日",
-        "thisWeek": "今週",
-        "allTime": "全期間"
-      },
-      "totalWords": "総単語数",
-      "recordingTime": "録音時間",
-      "averageWpm": "平均WPM",
-      "wordsPerMinute": "1分あたりの単語数",
-      "currentStreak": "連続記録",
-      "day": "日",
-      "days": "日"
     },
     "debug": {
       "title": "デバッグ",
