@@ -145,7 +145,7 @@
       },
       "overlay": {
         "title": "悬浮窗位置",
-        "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择"无"。",
+        "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
         "options": {
           "none": "无",
           "bottom": "底部",
@@ -252,7 +252,7 @@
         "createPrompt": "创建提示词",
         "cancel": "取消",
         "selectToEdit": "选择上方的提示词以查看和编辑其详细信息。",
-        "createFirst": "点击上方的"创建新提示词"来创建您的第一个后处理提示词。"
+        "createFirst": "点击上方的「创建新提示词」来创建您的第一个后处理提示词。"
       }
     },
     "history": {
