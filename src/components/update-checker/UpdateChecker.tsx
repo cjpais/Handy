@@ -146,7 +146,9 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
     }
     if (isInstalling) {
       return downloadProgress > 0 && downloadProgress < 100
-        ? t("footer.downloading", { progress: downloadProgress.toString().padStart(3) })
+        ? t("footer.downloading", {
+            progress: downloadProgress.toString().padStart(3),
+          })
         : downloadProgress === 100
           ? t("footer.installing")
           : t("footer.preparing");

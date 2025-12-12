@@ -16,8 +16,14 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
     const clipboardHandlingOptions = [
-      { value: "dont_modify", label: t("settings.advanced.clipboardHandling.options.dontModify") },
-      { value: "copy_to_clipboard", label: t("settings.advanced.clipboardHandling.options.copyToClipboard") },
+      {
+        value: "dont_modify",
+        label: t("settings.advanced.clipboardHandling.options.dontModify"),
+      },
+      {
+        value: "copy_to_clipboard",
+        label: t("settings.advanced.clipboardHandling.options.copyToClipboard"),
+      },
     ];
 
     const selectedHandling = (getSetting("clipboard_handling") ||

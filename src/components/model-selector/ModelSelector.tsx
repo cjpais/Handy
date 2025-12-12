@@ -325,7 +325,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       if (extractingModels.size === 1) {
         const [modelId] = Array.from(extractingModels);
         const model = models.find((m) => m.id === modelId);
-        const modelName = model ? getTranslatedModelName(model, t) : t("modelSelector.extractingGeneric").replace("...", "");
+        const modelName = model
+          ? getTranslatedModelName(model, t)
+          : t("modelSelector.extractingGeneric").replace("...", "");
         return t("modelSelector.extracting", { modelName });
       } else {
         return t("modelSelector.extractingMultiple", {

@@ -28,10 +28,18 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
 
     const retentionOptions = [
       { value: "never", label: t("settings.debug.recordingRetention.never") },
-      { value: "preserve_limit", label: t("settings.debug.recordingRetention.preserveLimit", { count: Number(historyLimit) }) },
+      {
+        value: "preserve_limit",
+        label: t("settings.debug.recordingRetention.preserveLimit", {
+          count: Number(historyLimit),
+        }),
+      },
       { value: "days3", label: t("settings.debug.recordingRetention.days3") },
       { value: "weeks2", label: t("settings.debug.recordingRetention.weeks2") },
-      { value: "months3", label: t("settings.debug.recordingRetention.months3") },
+      {
+        value: "months3",
+        label: t("settings.debug.recordingRetention.months3"),
+      },
     ];
 
     return (

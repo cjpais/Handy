@@ -143,7 +143,11 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
               .catch(console.error);
           } catch (error) {
             console.error("Failed to change binding:", error);
-            toast.error(t("settings.general.shortcut.errors.set", { error: String(error) }));
+            toast.error(
+              t("settings.general.shortcut.errors.set", {
+                error: String(error),
+              }),
+            );
 
             // Reset to original binding on error
             if (originalBinding) {
@@ -230,7 +234,8 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
   // Format the current shortcut keys being recorded
   const formatCurrentKeys = (): string => {
-    if (recordedKeys.length === 0) return t("settings.general.shortcut.pressKeys");
+    if (recordedKeys.length === 0)
+      return t("settings.general.shortcut.pressKeys");
 
     // Use the same formatting as the display to ensure consistency
     return formatKeyCombination(recordedKeys.join("+"), osType);
@@ -250,7 +255,9 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">{t("settings.general.shortcut.loading")}</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.loading")}
+        </div>
       </SettingContainer>
     );
   }
@@ -264,7 +271,9 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">{t("settings.general.shortcut.none")}</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.none")}
+        </div>
       </SettingContainer>
     );
   }
@@ -278,14 +287,22 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">{t("settings.general.shortcut.none")}</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.none")}
+        </div>
       </SettingContainer>
     );
   }
 
   // Get translated name and description for the binding
-  const translatedName = t(`settings.general.shortcut.bindings.${shortcutId}.name`, binding.name);
-  const translatedDescription = t(`settings.general.shortcut.bindings.${shortcutId}.description`, binding.description);
+  const translatedName = t(
+    `settings.general.shortcut.bindings.${shortcutId}.name`,
+    binding.name,
+  );
+  const translatedDescription = t(
+    `settings.general.shortcut.bindings.${shortcutId}.description`,
+    binding.description,
+  );
 
   return (
     <SettingContainer

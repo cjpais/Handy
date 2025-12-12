@@ -129,7 +129,10 @@ export const HistorySettings: React.FC = () => {
                 {t("settings.history.title")}
               </h2>
             </div>
-            <OpenRecordingsButton onClick={openRecordingsFolder} label={t("settings.history.openFolder")} />
+            <OpenRecordingsButton
+              onClick={openRecordingsFolder}
+              label={t("settings.history.openFolder")}
+            />
           </div>
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
@@ -151,7 +154,10 @@ export const HistorySettings: React.FC = () => {
                 {t("settings.history.title")}
               </h2>
             </div>
-            <OpenRecordingsButton onClick={openRecordingsFolder} label={t("settings.history.openFolder")} />
+            <OpenRecordingsButton
+              onClick={openRecordingsFolder}
+              label={t("settings.history.openFolder")}
+            />
           </div>
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
@@ -172,7 +178,10 @@ export const HistorySettings: React.FC = () => {
               {t("settings.history.title")}
             </h2>
           </div>
-          <OpenRecordingsButton onClick={openRecordingsFolder} label={t("settings.history.openFolder")} />
+          <OpenRecordingsButton
+            onClick={openRecordingsFolder}
+            label={t("settings.history.openFolder")}
+          />
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           <div className="divide-y divide-mid-gray/20">
@@ -260,7 +269,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 ? "text-logo-primary hover:text-logo-primary/80"
                 : "text-text/50 hover:text-logo-primary"
             }`}
-            title={entry.saved ? t("settings.history.unsave") : t("settings.history.save")}
+            title={
+              entry.saved
+                ? t("settings.history.unsave")
+                : t("settings.history.save")
+            }
           >
             <Star
               width={16}

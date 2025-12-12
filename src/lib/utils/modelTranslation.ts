@@ -7,10 +7,7 @@ import type { ModelInfo } from "@/bindings";
  * @param t - The translation function from useTranslation
  * @returns The translated model name, or the original name if no translation exists
  */
-export function getTranslatedModelName(
-  model: ModelInfo,
-  t: TFunction
-): string {
+export function getTranslatedModelName(model: ModelInfo, t: TFunction): string {
   const translationKey = `onboarding.models.${model.id}.name`;
   const translated = t(translationKey, { defaultValue: "" });
   return translated !== "" ? translated : model.name;
@@ -24,7 +21,7 @@ export function getTranslatedModelName(
  */
 export function getTranslatedModelDescription(
   model: ModelInfo,
-  t: TFunction
+  t: TFunction,
 ): string {
   const translationKey = `onboarding.models.${model.id}.description`;
   const translated = t(translationKey, { defaultValue: "" });

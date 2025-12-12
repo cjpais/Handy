@@ -21,16 +21,37 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
       const mod = osType === "macos" ? "Cmd" : "Ctrl";
 
       const options = [
-        { value: "ctrl_v", label: t("settings.advanced.pasteMethod.options.clipboard", { modifier: mod }) },
-        { value: "direct", label: t("settings.advanced.pasteMethod.options.direct") },
-        { value: "none", label: t("settings.advanced.pasteMethod.options.none") },
+        {
+          value: "ctrl_v",
+          label: t("settings.advanced.pasteMethod.options.clipboard", {
+            modifier: mod,
+          }),
+        },
+        {
+          value: "direct",
+          label: t("settings.advanced.pasteMethod.options.direct"),
+        },
+        {
+          value: "none",
+          label: t("settings.advanced.pasteMethod.options.none"),
+        },
       ];
 
       // Add Shift+Insert and Ctrl+Shift+V options for Windows and Linux only
       if (osType === "windows" || osType === "linux") {
         options.push(
-          { value: "ctrl_shift_v", label: t("settings.advanced.pasteMethod.options.clipboardCtrlShiftV") },
-          { value: "shift_insert", label: t("settings.advanced.pasteMethod.options.clipboardShiftInsert") },
+          {
+            value: "ctrl_shift_v",
+            label: t(
+              "settings.advanced.pasteMethod.options.clipboardCtrlShiftV",
+            ),
+          },
+          {
+            value: "shift_insert",
+            label: t(
+              "settings.advanced.pasteMethod.options.clipboardShiftInsert",
+            ),
+          },
         );
       }
 

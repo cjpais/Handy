@@ -59,7 +59,9 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
       {state.isAppleProvider ? (
         <SettingContainer
           title={t("settings.postProcessing.api.appleIntelligence.title")}
-          description={t("settings.postProcessing.api.appleIntelligence.description")}
+          description={t(
+            "settings.postProcessing.api.appleIntelligence.description",
+          )}
           descriptionMode="tooltip"
           layout="stacked"
           grouped={true}
@@ -81,7 +83,9 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               <BaseUrlField
                 value={state.baseUrl}
                 onBlur={state.handleBaseUrlChange}
-                placeholder={t("settings.postProcessing.api.baseUrl.placeholder")}
+                placeholder={t(
+                  "settings.postProcessing.api.baseUrl.placeholder",
+                )}
                 disabled={
                   !state.selectedProvider?.allow_base_url_edit ||
                   state.isBaseUrlUpdating
@@ -102,7 +106,9 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               <ApiKeyField
                 value={state.apiKey}
                 onBlur={state.handleApiKeyChange}
-                placeholder={t("settings.postProcessing.api.apiKey.placeholder")}
+                placeholder={t(
+                  "settings.postProcessing.api.apiKey.placeholder",
+                )}
                 disabled={state.isApiKeyUpdating}
                 className="min-w-[320px]"
               />
@@ -134,7 +140,9 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               state.isAppleProvider
                 ? t("settings.postProcessing.api.model.placeholderApple")
                 : state.modelOptions.length > 0
-                  ? t("settings.postProcessing.api.model.placeholderWithOptions")
+                  ? t(
+                      "settings.postProcessing.api.model.placeholderWithOptions",
+                    )
                   : t("settings.postProcessing.api.model.placeholderNoOptions")
             }
             onSelect={state.handleModelSelect}
@@ -274,7 +282,9 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   return (
     <SettingContainer
       title={t("settings.postProcessing.prompts.selectedPrompt.title")}
-      description={t("settings.postProcessing.prompts.selectedPrompt.description")}
+      description={t(
+        "settings.postProcessing.prompts.selectedPrompt.description",
+      )}
       descriptionMode="tooltip"
       layout="stacked"
       grouped={true}
@@ -318,7 +328,9 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 type="text"
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
-                placeholder={t("settings.postProcessing.prompts.promptLabelPlaceholder")}
+                placeholder={t(
+                  "settings.postProcessing.prompts.promptLabelPlaceholder",
+                )}
                 variant="compact"
               />
             </div>
@@ -330,7 +342,9 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               <Textarea
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
-                placeholder={t("settings.postProcessing.prompts.promptInstructionsPlaceholder")}
+                placeholder={t(
+                  "settings.postProcessing.prompts.promptInstructionsPlaceholder",
+                )}
               />
               <p
                 className="text-xs text-mid-gray/70"
@@ -381,7 +395,9 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 type="text"
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
-                placeholder={t("settings.postProcessing.prompts.promptLabelPlaceholder")}
+                placeholder={t(
+                  "settings.postProcessing.prompts.promptLabelPlaceholder",
+                )}
                 variant="compact"
               />
             </div>
@@ -393,7 +409,9 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               <Textarea
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
-                placeholder={t("settings.postProcessing.prompts.promptInstructionsPlaceholder")}
+                placeholder={t(
+                  "settings.postProcessing.prompts.promptInstructionsPlaceholder",
+                )}
               />
               <p
                 className="text-xs text-mid-gray/70"

@@ -12,6 +12,7 @@ Thank you for helping translate Handy! This guide explains how to add or improve
 ## File Structure
 
 Translation files are located in:
+
 ```
 src/i18n/locales/
 ├── en/
@@ -35,6 +36,7 @@ mkdir src/i18n/locales/[language-code]
 ```
 
 Examples:
+
 - `de` for German
 - `es` for Spanish
 - `ja` for Japanese
@@ -63,6 +65,7 @@ Open the file and translate only the **values** (right side), not the keys (left
 ```
 
 **Important:**
+
 - Keep all keys exactly the same
 - Preserve any `{{variables}}` in the text (e.g., `{{error}}`, `{{model}}`)
 - Keep the JSON structure and formatting intact
@@ -72,7 +75,10 @@ Open the file and translate only the **values** (right side), not the keys (left
 Edit `src/i18n/languages.ts` and add your language metadata:
 
 ```typescript
-export const LANGUAGE_METADATA: Record<string, { name: string; nativeName: string }> = {
+export const LANGUAGE_METADATA: Record<
+  string,
+  { name: string; nativeName: string }
+> = {
   en: { name: "English", nativeName: "English" },
   es: { name: "Spanish", nativeName: "Español" },
   fr: { name: "French", nativeName: "Français" },
@@ -106,12 +112,14 @@ Found a typo or better translation?
 ## Translation Guidelines
 
 ### Do:
+
 - Use natural, native-sounding language
 - Keep translations concise (UI space is limited)
 - Match the tone of the English text (friendly, clear)
 - Preserve technical terms when appropriate (e.g., "API", "GPU")
 
 ### Don't:
+
 - Translate brand names (Handy, Whisper.cpp, OpenAI)
 - Change or remove `{{variables}}`
 - Modify JSON keys
@@ -143,16 +151,17 @@ Some languages have complex plural rules. For now, use a general form that works
 
 ## Currently Supported Languages
 
-| Language | Code | Status |
-|----------|------|--------|
-| English | `en` | Complete (source) |
-| Spanish | `es` | Complete |
-| French | `fr` | Complete |
-| Vietnamese | `vi` | Complete |
+| Language   | Code | Status            |
+| ---------- | ---- | ----------------- |
+| English    | `en` | Complete (source) |
+| Spanish    | `es` | Complete          |
+| French     | `fr` | Complete          |
+| Vietnamese | `vi` | Complete          |
 
 ## Requested Languages
 
 We'd love help with:
+
 - German (`de`)
 - Japanese (`ja`)
 - Chinese (`zh`)

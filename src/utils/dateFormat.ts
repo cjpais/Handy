@@ -16,14 +16,14 @@ export const formatDateTime = (timestamp: string, locale: string): string => {
     }
 
     return new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(date);
   } catch (error) {
-    console.error('Failed to format date:', error);
+    console.error("Failed to format date:", error);
     return timestamp; // Fallback to original timestamp
   }
 };
@@ -46,12 +46,12 @@ export const formatDate = (timestamp: string, locale: string): string => {
     }
 
     return new Intl.DateTimeFormat(locale, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     }).format(date);
   } catch (error) {
-    console.error('Failed to format date:', error);
+    console.error("Failed to format date:", error);
     return timestamp; // Fallback to original timestamp
   }
 };
@@ -62,7 +62,10 @@ export const formatDate = (timestamp: string, locale: string): string => {
  * @param locale - BCP 47 language tag (e.g., 'en', 'es', 'fr')
  * @returns Relative time string
  */
-export const formatRelativeTime = (timestamp: string, locale: string): string => {
+export const formatRelativeTime = (
+  timestamp: string,
+  locale: string,
+): string => {
   try {
     // Convert Unix timestamp (seconds) to milliseconds
     const timestampMs = parseInt(timestamp, 10) * 1000;
@@ -77,48 +80,48 @@ export const formatRelativeTime = (timestamp: string, locale: string): string =>
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
     // Use Intl.RelativeTimeFormat for proper localization
-    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
     // Less than a minute
     if (diffInSeconds < 60) {
-      return rtf.format(-diffInSeconds, 'second');
+      return rtf.format(-diffInSeconds, "second");
     }
 
     // Less than an hour
     const diffInMinutes = Math.floor(diffInSeconds / 60);
     if (diffInMinutes < 60) {
-      return rtf.format(-diffInMinutes, 'minute');
+      return rtf.format(-diffInMinutes, "minute");
     }
 
     // Less than a day
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) {
-      return rtf.format(-diffInHours, 'hour');
+      return rtf.format(-diffInHours, "hour");
     }
 
     // Less than a week
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) {
-      return rtf.format(-diffInDays, 'day');
+      return rtf.format(-diffInDays, "day");
     }
 
     // Less than a month (30 days)
     if (diffInDays < 30) {
       const diffInWeeks = Math.floor(diffInDays / 7);
-      return rtf.format(-diffInWeeks, 'week');
+      return rtf.format(-diffInWeeks, "week");
     }
 
     // Less than a year
     if (diffInDays < 365) {
       const diffInMonths = Math.floor(diffInDays / 30);
-      return rtf.format(-diffInMonths, 'month');
+      return rtf.format(-diffInMonths, "month");
     }
 
     // More than a year
     const diffInYears = Math.floor(diffInDays / 365);
-    return rtf.format(-diffInYears, 'year');
+    return rtf.format(-diffInYears, "year");
   } catch (error) {
-    console.error('Failed to format relative time:', error);
+    console.error("Failed to format relative time:", error);
     return formatDateTime(timestamp, locale); // Fallback to absolute time
   }
 };

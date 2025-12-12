@@ -31,9 +31,12 @@ export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
         const currentModelDisplayName = models.find(
           (model) => model.id === currentModel,
         )?.name;
-        return t("settings.advanced.translateToEnglish.descriptionUnsupported", {
-          model: currentModelDisplayName,
-        });
+        return t(
+          "settings.advanced.translateToEnglish.descriptionUnsupported",
+          {
+            model: currentModelDisplayName,
+          },
+        );
       }
 
       return t("settings.advanced.translateToEnglish.description");

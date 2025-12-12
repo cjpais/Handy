@@ -6,7 +6,7 @@ import { LANGUAGE_METADATA } from "./languages";
 // Auto-discover translation files using Vite's glob import
 const localeModules = import.meta.glob<{ default: Record<string, unknown> }>(
   "./locales/*/translation.json",
-  { eager: true }
+  { eager: true },
 );
 
 // Build resources from discovered locale files
@@ -33,7 +33,9 @@ export const SUPPORTED_LANGUAGES = Object.keys(resources)
 export type SupportedLanguageCode = string;
 
 // Check if a language code is supported
-const getSupportedLanguage = (langCode: string | null | undefined): SupportedLanguageCode | null => {
+const getSupportedLanguage = (
+  langCode: string | null | undefined,
+): SupportedLanguageCode | null => {
   if (!langCode) return null;
   const code = langCode.split("-")[0].toLowerCase();
   const supported = SUPPORTED_LANGUAGES.find((lang) => lang.code === code);
