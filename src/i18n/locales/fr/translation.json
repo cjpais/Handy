@@ -1,5 +1,11 @@
 {
   "_comment": "French translation for Handy. Contribute at: https://github.com/cjpais/Handy",
+  "tray": {
+    "settings": "Paramètres...",
+    "checkUpdates": "Rechercher des mises à jour...",
+    "quit": "Quitter",
+    "cancel": "Annuler"
+  },
   "sidebar": {
     "general": "Général",
     "advanced": "Avancé",
