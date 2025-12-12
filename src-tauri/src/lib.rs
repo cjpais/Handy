@@ -305,6 +305,7 @@ pub fn run() {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::history::get_analytics,
         helpers::clamshell::is_laptop,
     ]);
 

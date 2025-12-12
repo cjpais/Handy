@@ -4,6 +4,7 @@
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
+    "analytics": "Analytics",
     "debug": "Debug",
     "about": "About"
   },
@@ -264,6 +265,24 @@
       "unsave": "Remove from saved",
       "delete": "Delete entry",
       "deleteError": "Failed to delete entry. Please try again."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "loading": "Loading analytics...",
+      "loadError": "Failed to load analytics. Please try again.",
+      "noData": "No analytics data yet. Start recording to build your stats!",
+      "periods": {
+        "today": "Today",
+        "thisWeek": "This Week",
+        "allTime": "All Time"
+      },
+      "totalWords": "Total Words",
+      "recordingTime": "Recording Time",
+      "averageWpm": "Avg WPM",
+      "wordsPerMinute": "words per minute",
+      "currentStreak": "Current Streak",
+      "day": "day",
+      "days": "days"
     },
     "debug": {
       "title": "Debug",

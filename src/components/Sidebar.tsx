@@ -1,6 +1,13 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles } from "lucide-react";
+import {
+  BarChart3,
+  Cog,
+  FlaskConical,
+  History,
+  Info,
+  Sparkles,
+} from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -8,6 +15,7 @@ import {
   GeneralSettings,
   AdvancedSettings,
   HistorySettings,
+  AnalyticsSettings,
   DebugSettings,
   AboutSettings,
   PostProcessingSettings,
@@ -53,6 +61,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.history",
     icon: History,
     component: HistorySettings,
+    enabled: () => true,
+  },
+  analytics: {
+    labelKey: "sidebar.analytics",
+    icon: BarChart3,
+    component: AnalyticsSettings,
     enabled: () => true,
   },
   debug: {
