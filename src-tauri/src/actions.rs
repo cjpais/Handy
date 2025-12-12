@@ -1,6 +1,7 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_toolkit::constants;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -395,6 +396,13 @@ impl ShortcutAction for TranscribeAction {
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
+
+                            // Calculate analytics data
+                            let duration_seconds =
+                                samples_clone.len() as f32 / constants::WHISPER_SAMPLE_RATE as f32;
+                            let word_count =
+                                transcription_for_history.split_whitespace().count() as i32;
+
                             tauri::async_runtime::spawn(async move {
                                 if let Err(e) = hm_clone
                                     .save_transcription(
@@ -402,6 +410,8 @@ impl ShortcutAction for TranscribeAction {
                                         transcription_for_history,
                                         post_processed_text,
                                         post_process_prompt,
+                                        duration_seconds,
+                                        word_count,
                                     )
                                     .await
                                 {

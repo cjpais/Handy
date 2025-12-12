@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Datelike, Local, NaiveDate, Utc};
 use log::{debug, error, info};
 use rusqlite::{params, Connection, OptionalExtension};
 use rusqlite_migration::{Migrations, M};
@@ -31,6 +31,8 @@ static MIGRATIONS: &[M] = &[
     ),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN duration_seconds REAL;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN word_count INTEGER;"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -43,6 +45,17 @@ pub struct HistoryEntry {
     pub transcription_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    pub duration_seconds: Option<f32>,
+    pub word_count: Option<i32>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct AnalyticsStats {
+    pub total_words: i32,
+    pub total_duration_seconds: f32,
+    pub transcription_count: i32,
+    pub average_wpm: Option<f32>,
+    pub current_streak_days: i32,
 }
 
 pub struct HistoryManager {
@@ -183,6 +196,8 @@ impl HistoryManager {
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
+        duration_seconds: f32,
+        word_count: i32,
     ) -> Result<()> {
         let timestamp = Utc::now().timestamp();
         let file_name = format!("handy-{}.wav", timestamp);
@@ -200,6 +215,8 @@ impl HistoryManager {
             transcription_text,
             post_processed_text,
             post_process_prompt,
+            duration_seconds,
+            word_count,
         )?;
 
         // Clean up old entries
@@ -221,11 +238,13 @@ impl HistoryManager {
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
+        duration_seconds: f32,
+        word_count: i32,
     ) -> Result<()> {
         let conn = self.get_connection()?;
         conn.execute(
-            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt],
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, duration_seconds, word_count) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt, duration_seconds, word_count],
         )?;
 
         debug!("Saved transcription to database");
@@ -355,7 +374,7 @@ impl HistoryManager {
     pub async fn get_history_entries(&self) -> Result<Vec<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt FROM transcription_history ORDER BY timestamp DESC"
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, duration_seconds, word_count FROM transcription_history ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -368,6 +387,8 @@ impl HistoryManager {
                 transcription_text: row.get("transcription_text")?,
                 post_processed_text: row.get("post_processed_text")?,
                 post_process_prompt: row.get("post_process_prompt")?,
+                duration_seconds: row.get("duration_seconds")?,
+                word_count: row.get("word_count")?,
             })
         })?;
 
@@ -413,7 +434,7 @@ impl HistoryManager {
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, duration_seconds, word_count
              FROM transcription_history WHERE id = ?1",
         )?;
 
@@ -428,6 +449,8 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    duration_seconds: row.get("duration_seconds")?,
+                    word_count: row.get("word_count")?,
                 })
             })
             .optional()?;
@@ -474,5 +497,114 @@ impl HistoryManager {
         } else {
             format!("Recording {}", timestamp)
         }
+    }
+
+    /// Get analytics statistics for a given time period
+    pub fn get_analytics(&self, period: &str) -> Result<AnalyticsStats> {
+        let conn = self.get_connection()?;
+
+        // Calculate timestamp boundary based on period
+        let now = Utc::now();
+        let start_timestamp: i64 = match period {
+            "today" => {
+                // Start of today in local timezone, converted to UTC timestamp
+                let local_now = now.with_timezone(&Local);
+                local_now
+                    .date_naive()
+                    .and_hms_opt(0, 0, 0)
+                    .map(|dt| dt.and_local_timezone(Local).unwrap().timestamp())
+                    .unwrap_or(0)
+            }
+            "this_week" => {
+                // Start of this week (Monday) in local timezone
+                let local_now = now.with_timezone(&Local);
+                let days_since_monday = local_now.weekday().num_days_from_monday() as i64;
+                (local_now - chrono::Duration::days(days_since_monday))
+                    .date_naive()
+                    .and_hms_opt(0, 0, 0)
+                    .map(|dt| dt.and_local_timezone(Local).unwrap().timestamp())
+                    .unwrap_or(0)
+            }
+            _ => 0, // all_time
+        };
+
+        // Aggregate stats - only count entries with analytics data
+        let (total_words, total_duration_seconds, transcription_count): (i32, f64, i32) = conn
+            .query_row(
+                "SELECT
+                    COALESCE(SUM(word_count), 0),
+                    COALESCE(SUM(duration_seconds), 0.0),
+                    COUNT(*)
+                 FROM transcription_history
+                 WHERE timestamp >= ?1
+                   AND word_count IS NOT NULL
+                   AND duration_seconds IS NOT NULL",
+                params![start_timestamp],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )?;
+
+        // Calculate average WPM (avoid division by zero)
+        let average_wpm = if total_duration_seconds > 0.0 {
+            Some((total_words as f32) / (total_duration_seconds as f32 / 60.0))
+        } else {
+            None
+        };
+
+        // Calculate current streak
+        let current_streak_days = self.calculate_streak(&conn)?;
+
+        Ok(AnalyticsStats {
+            total_words,
+            total_duration_seconds: total_duration_seconds as f32,
+            transcription_count,
+            average_wpm,
+            current_streak_days,
+        })
+    }
+
+    /// Calculate the current streak of consecutive days with transcriptions
+    fn calculate_streak(&self, conn: &Connection) -> Result<i32> {
+        // Get distinct days with transcriptions that have analytics data
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT date(timestamp, 'unixepoch', 'localtime') as day
+             FROM transcription_history
+             WHERE word_count IS NOT NULL AND duration_seconds IS NOT NULL
+             ORDER BY day DESC",
+        )?;
+
+        let days: Vec<String> = stmt
+            .query_map([], |row| row.get(0))?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        if days.is_empty() {
+            return Ok(0);
+        }
+
+        let today = Local::now().format("%Y-%m-%d").to_string();
+        let yesterday = (Local::now() - chrono::Duration::days(1))
+            .format("%Y-%m-%d")
+            .to_string();
+
+        // Current streak must include today or yesterday
+        if days.first() != Some(&today) && days.first() != Some(&yesterday) {
+            return Ok(0);
+        }
+
+        let mut current_streak = 1;
+        for i in 1..days.len() {
+            if let (Ok(prev), Ok(curr)) = (
+                NaiveDate::parse_from_str(&days[i - 1], "%Y-%m-%d"),
+                NaiveDate::parse_from_str(&days[i], "%Y-%m-%d"),
+            ) {
+                if prev.signed_duration_since(curr).num_days() == 1 {
+                    current_streak += 1;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        Ok(current_streak)
     }
 }
