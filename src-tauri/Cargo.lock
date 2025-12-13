@@ -6944,7 +6944,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-rs"
-version = "0.1.5"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06b34ced239a20ddef245dbe84c9976f871521c5fa479576f5580e2d24814f12"
 dependencies = [
  "derive_builder",
  "env_logger",
