@@ -256,6 +256,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
           WHISPER_NO_AVX: ${{ contains(inputs.platform, 'ubuntu') && 'ON' || '' }}
           WHISPER_NO_AVX2: ${{ contains(inputs.platform, 'ubuntu') && 'ON' || '' }}
+          GGML_BLAS: ${{ contains(inputs.platform, 'macos') && contains(inputs.target, 'aarch64') && 'OFF' || '' }}
         with:
           tagName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
