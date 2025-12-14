@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "../../hooks/useSettings";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
@@ -93,6 +94,7 @@ const getScrollParent = (node: HTMLElement | null): HTMLElement | null => {
 };
 
 export const Replacements: React.FC = () => {
+  const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
   const [search, setSearch] = useState("");
   const [replace, setReplace] = useState("");
@@ -127,7 +129,7 @@ export const Replacements: React.FC = () => {
   const replacementsEnabled = getSetting("replacements_enabled") ?? true;
 
   const renderText = (text: string) => {
-    if (!text) return <span className="opacity-50 italic">empty</span>;
+    if (!text) return <span className="opacity-50 italic">{t('common.noOptionsFound') /* fallback for empty */}</span>;
     return text;
   };
 
@@ -518,13 +520,13 @@ export const Replacements: React.FC = () => {
   const renderForm = () => (
     <div className="flex flex-col gap-3 w-full" ref={formRef}>
           <div className="flex items-center gap-2 w-full">
-            <Input
+              <Input
               ref={searchInputRef}
               type="text"
               className="flex-1"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Word to replace"
+              placeholder={t('settings.replacements.wordPlaceholder')}
               variant="compact"
             />
             <ArrowRight className="text-mid-gray w-4 h-4" />
@@ -535,7 +537,7 @@ export const Replacements: React.FC = () => {
                 value={replace}
                 onChange={handleReplaceChange}
                 onKeyDown={handleReplaceKeyDown}
-                placeholder="Replacement"
+                placeholder={t('settings.replacements.replacementPlaceholder')}
                 variant="compact"
               />
               {showSuggestions && (
@@ -562,11 +564,11 @@ export const Replacements: React.FC = () => {
           <div className="flex flex-col gap-2 text-sm text-mid-gray">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+                  <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
                   <Scissors className="w-4 h-4" />
-                  <span>Trim Punctuation:</span>
+                  <span>{t('settings.replacements.trimPunctuation')}</span>
                 </label>
-                <InfoTooltip text='Removes punctuation around the word (e.g. ". word ," → "word")' />
+                <InfoTooltip text={t('settings.replacements.trimPunctuationTooltip')} />
                 <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-0.5">
                   <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
                     <input
@@ -575,7 +577,7 @@ export const Replacements: React.FC = () => {
                       onChange={(e) => setTrimPunctuationBefore(e.target.checked)}
                       className="hidden"
                     />
-                    Before
+                    {t('settings.replacements.before')}
                   </label>
                   <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
                     <input
@@ -584,7 +586,7 @@ export const Replacements: React.FC = () => {
                       onChange={(e) => setTrimPunctuationAfter(e.target.checked)}
                       className="hidden"
                     />
-                    After
+                    {t('settings.replacements.after')}
                   </label>
                 </div>
               </div>
@@ -594,9 +596,9 @@ export const Replacements: React.FC = () => {
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
                   <Space className="w-4 h-4" />
-                  <span>Trim Spaces:</span>
+                  <span>{t('settings.replacements.trimSpaces')}</span>
                 </label>
-                <InfoTooltip text='Removes spaces around the word' />
+                <InfoTooltip text={t('settings.replacements.trimSpacesTooltip')} />
                 <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-0.5">
                   <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
                     <input
@@ -605,7 +607,7 @@ export const Replacements: React.FC = () => {
                       onChange={(e) => setTrimSpacesBefore(e.target.checked)}
                       className="hidden"
                     />
-                    Before
+                    {t('settings.replacements.before')}
                   </label>
                   <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
                     <input
@@ -614,7 +616,7 @@ export const Replacements: React.FC = () => {
                       onChange={(e) => setTrimSpacesAfter(e.target.checked)}
                       className="hidden"
                     />
-                    After
+                    {t('settings.replacements.after')}
                   </label>
                 </div>
               </div>
@@ -624,9 +626,9 @@ export const Replacements: React.FC = () => {
               <div className="flex items-center gap-2">
                 <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
                   <Regex className="w-4 h-4" />
-                  <span>Regex</span>
+                  <span>{t('settings.replacements.regex')}</span>
                 </label>
-                <InfoTooltip text="Use Rust regex syntax (similar to Perl/Python). Supports (?i) for case-insensitivity, \d for digits, etc." />
+                <InfoTooltip text={t('settings.replacements.regexTooltip')} />
                 <input
                     type="checkbox"
                     checked={isRegex}
@@ -638,8 +640,8 @@ export const Replacements: React.FC = () => {
               <div className="h-4 w-px bg-mid-gray/30" />
 
               <div className="flex items-center gap-2">
-                <span>Next word:</span>
-                <InfoTooltip text="Controls capitalization of the word immediately following the replacement. 'None' preserves the original casing." />
+                <span>{t('settings.replacements.nextWord')}</span>
+                <InfoTooltip text={t('settings.replacements.nextWordTooltip')} />
                 <div className="flex bg-mid-gray/10 rounded-md p-0.5">
                   <button
                     onClick={() => setCapitalization("none")}
@@ -649,7 +651,7 @@ export const Replacements: React.FC = () => {
                         : "hover:bg-mid-gray/20"
                     }`}
                   >
-                    None
+                    {t('settings.replacements.none')}
                   </button>
                   <button
                     onClick={() => setCapitalization("force_uppercase")}
@@ -679,14 +681,14 @@ export const Replacements: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button
+              <Button
               onClick={handleAddOrUpdate}
               disabled={!search || !replace || isUpdating("replacements")}
               variant="primary"
               size="md"
               className="flex-1"
             >
-              {editingIndex !== null ? "Update Replacement" : "Add Replacement"}
+              {editingIndex !== null ? t('settings.replacements.updateReplacement') : t('settings.replacements.addReplacement')}
             </Button>
             {(editingIndex !== null || isAdding) && (
               <Button
@@ -695,7 +697,7 @@ export const Replacements: React.FC = () => {
                 size="md"
                 className="text-mid-gray hover:text-white"
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
             )}
           </div>
@@ -704,10 +706,10 @@ export const Replacements: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <SettingsGroup title="Text Replacements">
+      <SettingsGroup title={t('settings.replacements.title')}>
         <ToggleSwitch
-            label="Enable Replacements"
-            description="Globally enable or disable all text replacements"
+        label={t('settings.replacements.enableLabel')}
+        description={t('settings.replacements.enableDescription')}
             checked={replacementsEnabled}
             onChange={(checked) => updateSetting("replacements_enabled", checked)}
             isUpdating={isUpdating("replacements_enabled")}
@@ -721,7 +723,7 @@ export const Replacements: React.FC = () => {
                     className="w-full flex items-center justify-center gap-2 border border-dashed border-mid-gray/30 hover:border-mid-gray/60 hover:bg-mid-gray/5 py-3 text-mid-gray hover:text-white transition-all"
                 >
                     <Plus size={16} />
-                    <span>Add New Replacement</span>
+                    <span>{t('settings.replacements.addNew')}</span>
                 </Button>
             )}
             {isAdding && renderForm()}
@@ -731,11 +733,11 @@ export const Replacements: React.FC = () => {
       {replacements.length > 0 && (
         <div className={`flex flex-col gap-2 ${!replacementsEnabled ? 'opacity-50' : ''}`}>
           <div className="px-1 relative">
-            <Input
+              <Input
               type="text"
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              placeholder="Filter replacements..."
+              placeholder={t('settings.replacements.filterPlaceholder')}
               variant="compact"
               className="w-full pr-8"
             />
@@ -805,39 +807,39 @@ export const Replacements: React.FC = () => {
                     >
                         {renderText(item.replace)}
                     </span>
-                    <div className="ml-auto flex items-center gap-2">
-                        {!isEnabled && (
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded border border-red-400/20">
-                            Disabled
-                        </span>
-                        )}
-                        {isDuplicate && (
-                        <span className="text-[10px] uppercase tracking-wider font-bold text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded border border-yellow-400/20">
-                            Duplicate
-                        </span>
-                        )}
-                        {isNewImport && <span title="Newly imported">✨</span>}
-                    </div>
+                  <div className="ml-auto flex items-center gap-2">
+                    {!isEnabled && (
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded border border-red-400/20">
+                      {t('settings.replacements.disabled')}
+                    </span>
+                    )}
+                    {isDuplicate && (
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-yellow-400 bg-yellow-400/10 px-1.5 py-0.5 rounded border border-yellow-400/20">
+                      {t('settings.replacements.duplicate')}
+                    </span>
+                    )}
+                    {isNewImport && <span title={t('settings.replacements.newlyImported')}>✨</span>}
+                  </div>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-mid-gray">
                     {magicInfo.isMagic && (
-                      <span className="flex items-center gap-1 text-purple-400" title="Magic Replacement">
-                        <Wand2 className="w-3 h-3" /> Magic
+                      <span className="flex items-center gap-1 text-purple-400" title={t('settings.replacements.magicTooltip')}>
+                        <Wand2 className="w-3 h-3" /> {t('settings.replacements.magic')}
                       </span>
                     )}
                     {item.is_regex && (
-                      <span className="flex items-center gap-1 text-logo-primary" title="Regular Expression">
-                        <Regex className="w-3 h-3" /> Regex
+                      <span className="flex items-center gap-1 text-logo-primary" title={t('settings.replacements.regularExpression')}>
+                        <Regex className="w-3 h-3" /> {t('settings.replacements.regex')}
                       </span>
                     )}
                     {(item.trim_punctuation_before || item.trim_punctuation_after) && (
-                      <span className="flex items-center gap-1" title="Trims punctuation">
-                        <Scissors className="w-3 h-3" /> Trim Punct ({item.trim_punctuation_before ? 'L' : ''}{item.trim_punctuation_after ? 'R' : ''})
+                      <span className="flex items-center gap-1" title={t('settings.replacements.trimsPunctuation')}>
+                        <Scissors className="w-3 h-3" /> {t('settings.replacements.trimsPunctuationShort', { l: item.trim_punctuation_before ? 'L' : '', r: item.trim_punctuation_after ? 'R' : '' })}
                       </span>
                     )}
                     {(item.trim_spaces_before || item.trim_spaces_after) && (
-                      <span className="flex items-center gap-1" title="Trims spaces">
-                        <Space className="w-3 h-3" /> Trim Space ({item.trim_spaces_before ? 'L' : ''}{item.trim_spaces_after ? 'R' : ''})
+                      <span className="flex items-center gap-1" title={t('settings.replacements.trimsSpaces')}>
+                        <Space className="w-3 h-3" /> {t('settings.replacements.trimsSpacesShort', { l: item.trim_spaces_before ? 'L' : '', r: item.trim_spaces_after ? 'R' : '' })}
                       </span>
                     )}
                     {item.capitalization_rule !== "none" && (
@@ -857,7 +859,7 @@ export const Replacements: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="text-mid-gray hover:text-white hover:bg-mid-gray/20"
-                    title={isEnabled ? "Disable" : "Enable"}
+                    title={isEnabled ? t('settings.replacements.disable') : t('settings.replacements.enable')}
                   >
                     {isEnabled ? <PowerOff size={16} /> : <Power size={16} />}
                   </Button>
@@ -874,7 +876,7 @@ export const Replacements: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="text-mid-gray hover:text-white hover:bg-mid-gray/20"
-                    title="Duplicate"
+                    title={t('settings.replacements.duplicateTitle')}
                   >
                     <Copy size={16} />
                   </Button>
