@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { type } from "@tauri-apps/plugin-os";
 import {
   getKeyName,
@@ -25,6 +26,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   shortcutId,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
   const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
     useSettings();
   const [keyPressed, setKeyPressed] = useState<string[]>([]);
@@ -89,7 +91,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
               .catch(console.error);
           } catch (error) {
             console.error("Failed to restore original binding:", error);
-            toast.error("Failed to restore original shortcut");
+            toast.error(t("settings.general.shortcut.errors.restore"));
           }
         } else if (editingShortcutId) {
           await commands.resumeBinding(editingShortcutId).catch(console.error);
@@ -141,7 +143,11 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
               .catch(console.error);
           } catch (error) {
             console.error("Failed to change binding:", error);
-            toast.error(`Failed to set shortcut: ${error}`);
+            toast.error(
+              t("settings.general.shortcut.errors.set", {
+                error: String(error),
+              }),
+            );
 
             // Reset to original binding on error
             if (originalBinding) {
@@ -152,7 +158,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
                   .catch(console.error);
               } catch (resetError) {
                 console.error("Failed to reset binding:", resetError);
-                toast.error("Failed to reset shortcut to original value");
+                toast.error(t("settings.general.shortcut.errors.reset"));
               }
             }
           }
@@ -180,7 +186,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
               .catch(console.error);
           } catch (error) {
             console.error("Failed to restore original binding:", error);
-            toast.error("Failed to restore original shortcut");
+            toast.error(t("settings.general.shortcut.errors.restore"));
           }
         } else if (editingShortcutId) {
           commands.resumeBinding(editingShortcutId).catch(console.error);
@@ -228,7 +234,8 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
   // Format the current shortcut keys being recorded
   const formatCurrentKeys = (): string => {
-    if (recordedKeys.length === 0) return "Press keys...";
+    if (recordedKeys.length === 0)
+      return t("settings.general.shortcut.pressKeys");
 
     // Use the same formatting as the display to ensure consistency
     return formatKeyCombination(recordedKeys.join("+"), osType);
@@ -243,12 +250,14 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (isLoading) {
     return (
       <SettingContainer
-        title="Handy Shortcuts"
-        description="Configure keyboard shortcuts to trigger speech-to-text recording"
+        title={t("settings.general.shortcut.title")}
+        description={t("settings.general.shortcut.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">Loading shortcuts...</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.loading")}
+        </div>
       </SettingContainer>
     );
   }
@@ -257,12 +266,14 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (Object.keys(bindings).length === 0) {
     return (
       <SettingContainer
-        title="Handy Shortcuts"
-        description="Configure keyboard shortcuts to trigger speech-to-text recording"
+        title={t("settings.general.shortcut.title")}
+        description={t("settings.general.shortcut.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">No shortcuts configured</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.none")}
+        </div>
       </SettingContainer>
     );
   }
@@ -271,20 +282,32 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (!binding) {
     return (
       <SettingContainer
-        title="Shortcut"
-        description="Shortcut not found"
+        title={t("settings.general.shortcut.title")}
+        description={t("settings.general.shortcut.notFound")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">No shortcut configured</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.none")}
+        </div>
       </SettingContainer>
     );
   }
 
+  // Get translated name and description for the binding
+  const translatedName = t(
+    `settings.general.shortcut.bindings.${shortcutId}.name`,
+    binding.name,
+  );
+  const translatedDescription = t(
+    `settings.general.shortcut.bindings.${shortcutId}.description`,
+    binding.description,
+  );
+
   return (
     <SettingContainer
-      title={binding.name}
-      description={binding.description}
+      title={translatedName}
+      description={translatedDescription}
       descriptionMode={descriptionMode}
       grouped={grouped}
       disabled={disabled}

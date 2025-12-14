@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
@@ -12,6 +13,7 @@ interface ClamshellMicrophoneSelectorProps {
 
 export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorProps> =
   React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+    const { t } = useTranslation();
     const {
       getSetting,
       updateSetting,
@@ -67,8 +69,8 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
 
     return (
       <SettingContainer
-        title="Clamshell Microphone"
-        description="Choose a different microphone to use when your laptop lid is closed"
+        title={t("settings.debug.clamshellMicrophone.title")}
+        description={t("settings.debug.clamshellMicrophone.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
@@ -79,8 +81,8 @@ export const ClamshellMicrophoneSelector: React.FC<ClamshellMicrophoneSelectorPr
             onSelect={handleClamshellMicrophoneSelect}
             placeholder={
               isLoading || audioDevices.length === 0
-                ? "Loading..."
-                : "Select microphone..."
+                ? t("common.loading")
+                : t("settings.sound.microphone.placeholder")
             }
             disabled={
               isUpdating("clamshell_microphone") ||

@@ -1,10 +1,8 @@
+use crate::input::{self, EnigoState};
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
 use enigo::Enigo;
-use enigo::Key;
-use enigo::Keyboard;
-use enigo::Settings;
 use log::info;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
@@ -12,135 +10,37 @@ use crate::utils::is_wayland;
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
-/// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.
-/// This ensures the paste works regardless of keyboard layout (e.g., Russian, AZERTY, DVORAK).
-fn send_paste_ctrl_v() -> Result<(), String> {
+/// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
+fn paste_via_clipboard(
+    enigo: &mut Enigo,
+    text: &str,
+    app_handle: &AppHandle,
+    paste_method: &PasteMethod,
+) -> Result<(), String> {
+    // Check for Wayland first
     #[cfg(target_os = "linux")]
-    if try_wayland_send_paste(&PasteMethod::CtrlV)? {
+    if try_wayland_send_paste(paste_method)? {
         return Ok(());
     }
 
-    // Platform-specific key definitions
-    #[cfg(target_os = "macos")]
-    let (modifier_key, v_key_code) = (Key::Meta, Key::Other(9));
-    #[cfg(target_os = "windows")]
-    let (modifier_key, v_key_code) = (Key::Control, Key::Other(0x56)); // VK_V
-    #[cfg(target_os = "linux")]
-    let (modifier_key, v_key_code) = (Key::Control, Key::Unicode('v'));
-
-    let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
-
-    // Press modifier + V
-    enigo
-        .key(modifier_key, enigo::Direction::Press)
-        .map_err(|e| format!("Failed to press modifier key: {}", e))?;
-    enigo
-        .key(v_key_code, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click V key: {}", e))?;
-
-    std::thread::sleep(std::time::Duration::from_millis(100));
-
-    enigo
-        .key(modifier_key, enigo::Direction::Release)
-        .map_err(|e| format!("Failed to release modifier key: {}", e))?;
-
-    Ok(())
-}
-
-/// Sends a Shift+Insert paste command (Windows and Linux only).
-/// This is more universal for terminal applications and legacy software.
-fn send_paste_shift_insert() -> Result<(), String> {
-    #[cfg(target_os = "linux")]
-    if try_wayland_send_paste(&PasteMethod::ShiftInsert)? {
-        return Ok(());
-    }
-
-    #[cfg(target_os = "windows")]
-    let insert_key_code = Key::Other(0x2D); // VK_INSERT
-    #[cfg(not(target_os = "windows"))]
-    let insert_key_code = Key::Other(0x76); // XK_Insert (keycode 118 / 0x76, also used as fallback)
-
-    let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
-
-    // Press Shift + Insert
-    enigo
-        .key(Key::Shift, enigo::Direction::Press)
-        .map_err(|e| format!("Failed to press Shift key: {}", e))?;
-    enigo
-        .key(insert_key_code, enigo::Direction::Click)
-        .map_err(|e| format!("Failed to click Insert key: {}", e))?;
-
-    std::thread::sleep(std::time::Duration::from_millis(100));
-
-    enigo
-        .key(Key::Shift, enigo::Direction::Release)
-        .map_err(|e| format!("Failed to release Shift key: {}", e))?;
-
-    Ok(())
-}
-
-/// Pastes text directly using the enigo text method.
-/// This tries to use system input methods if possible, otherwise simulates keystrokes one by one.
-fn paste_via_direct_input(text: &str) -> Result<(), String> {
-    let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
-
-    enigo
-        .text(text)
-        .map_err(|e| format!("Failed to send text directly: {}", e))?;
-
-    Ok(())
-}
-
-/// Pastes text using the clipboard method with Ctrl+V/Cmd+V.
-/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-fn paste_via_clipboard_ctrl_v(text: &str, app_handle: &AppHandle) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
     let clipboard_content = clipboard.read_text().unwrap_or_default();
 
     clipboard
         .write_text(text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
 
-    // small delay to ensure the clipboard content has been written to
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    send_paste_ctrl_v()?;
-
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // restore the clipboard
-    clipboard
-        .write_text(&clipboard_content)
-        .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
-
-    Ok(())
-}
-
-/// Pastes text using the clipboard method with Shift+Insert (Windows/Linux only).
-/// Saves the current clipboard, writes the text, sends paste command, then restores the clipboard.
-fn paste_via_clipboard_shift_insert(text: &str, app_handle: &AppHandle) -> Result<(), String> {
-    let clipboard = app_handle.clipboard();
-
-    // get the current clipboard content
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
-
-    clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
-
-    // small delay to ensure the clipboard content has been written to
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    send_paste_shift_insert()?;
+    match paste_method {
+        PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
+        PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
+        PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo)?,
+        _ => return Err("Invalid paste method for clipboard paste".into()),
+    }
 
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    // restore the clipboard
     clipboard
         .write_text(&clipboard_content)
         .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
@@ -192,6 +92,7 @@ fn send_paste_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
     let args: Vec<&str> = match paste_method {
         PasteMethod::CtrlV => vec!["-M", "ctrl", "-k", "v"],
         PasteMethod::ShiftInsert => vec!["-M", "shift", "-k", "Insert"],
+        PasteMethod::CtrlShiftV => vec!["-M", "ctrl", "-M", "shift", "-k", "v"],
         _ => return Err("Unsupported paste method".into()),
     };
 
@@ -215,6 +116,7 @@ fn send_paste_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
     match paste_method {
         PasteMethod::CtrlV => command = "echo key ctrl+v | dotool",
         PasteMethod::ShiftInsert => command = "echo key shift+insert | dotool",
+        PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
         _ => return Err("Unsupported paste method".into()),
     }
     let output = Command::new("sh")
@@ -234,17 +136,33 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
 
+    // Append trailing space if setting is enabled
+    let text = if settings.append_trailing_space {
+        format!("{} ", text)
+    } else {
+        text
+    };
+
     info!("Using paste method: {:?}", paste_method);
+
+    // Get the managed Enigo instance
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    let mut enigo = enigo_state
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
 
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
-            // Intentionally do not perform any paste action; history/clipboard update
             info!("PasteMethod::None selected - skipping paste action");
         }
-        PasteMethod::CtrlV => paste_via_clipboard_ctrl_v(&text, &app_handle)?,
-        PasteMethod::Direct => paste_via_direct_input(&text)?,
-        PasteMethod::ShiftInsert => paste_via_clipboard_shift_insert(&text, &app_handle)?,
+        PasteMethod::Direct => input::paste_text_direct(&mut enigo, &text)?,
+        PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            paste_via_clipboard(&mut enigo, &text, &app_handle, &paste_method)?
+        }
     }
 
     // After pasting, optionally copy to clipboard based on settings

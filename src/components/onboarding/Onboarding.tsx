@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { commands, type ModelInfo } from "@/bindings";
 import ModelCard from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
@@ -8,6 +9,7 @@ interface OnboardingProps {
 }
 
 const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
+  const { t } = useTranslation();
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,11 +25,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
         // Only show downloadable models for onboarding
         setAvailableModels(result.data.filter((m) => !m.is_downloaded));
       } else {
-        setError("Failed to load available models");
+        setError(t("onboarding.errors.loadModels"));
       }
     } catch (err) {
       console.error("Failed to load models:", err);
-      setError("Failed to load available models");
+      setError(t("onboarding.errors.loadModels"));
     }
   };
 
@@ -42,12 +44,12 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
       const result = await commands.downloadModel(modelId);
       if (result.status === "error") {
         console.error("Download failed:", result.error);
-        setError(`Failed to download model: ${result.error}`);
+        setError(t("onboarding.errors.downloadModel", { error: result.error }));
         setDownloading(false);
       }
     } catch (err) {
       console.error("Download failed:", err);
-      setError(`Failed to download model: ${err}`);
+      setError(t("onboarding.errors.downloadModel", { error: String(err) }));
       setDownloading(false);
     }
   };
@@ -61,7 +63,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
       <div className="flex flex-col items-center gap-2 shrink-0">
         <HandyTextLogo width={200} />
         <p className="text-text/70 max-w-md font-medium mx-auto">
-          To get started, choose a transcription model
+          {t("onboarding.subtitle")}
         </p>
       </div>
 

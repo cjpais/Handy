@@ -1,7 +1,12 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Download } from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
+import {
+  getTranslatedModelName,
+  getTranslatedModelDescription,
+} from "../../lib/utils/modelTranslation";
 import Badge from "../ui/Badge";
 
 interface ModelCardProps {
@@ -19,7 +24,12 @@ const ModelCard: React.FC<ModelCardProps> = ({
   className = "",
   onSelect,
 }) => {
+  const { t } = useTranslation();
   const isFeatured = variant === "featured";
+
+  // Get translated model name and description
+  const displayName = getTranslatedModelName(model, t);
+  const displayDescription = getTranslatedModelDescription(model, t);
 
   const baseButtonClasses =
     "flex justify-between items-center rounded-xl p-3 px-4 text-left transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-logo-primary/25 active:scale-[0.98] cursor-pointer group";
@@ -40,19 +50,23 @@ const ModelCard: React.FC<ModelCardProps> = ({
       <div className="flex flex-col items-ce">
         <div className="flex items-center gap-4">
           <h3 className="text-lg font-semibold text-text group-hover:text-logo-primary transition-colors">
-            {model.name}
+            {displayName}
           </h3>
           <DownloadSize sizeMb={Number(model.size_mb)} />
-          {isFeatured && <Badge variant="primary">Recommended</Badge>}
+          {isFeatured && (
+            <Badge variant="primary">{t("onboarding.recommended")}</Badge>
+          )}
         </div>
         <p className="text-text/60 text-sm leading-relaxed">
-          {model.description}
+          {displayDescription}
         </p>
       </div>
 
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <p className="text-xs text-text/70 w-16 text-right">accuracy</p>
+          <p className="text-xs text-text/70 w-16 text-right">
+            {t("onboarding.modelCard.accuracy")}
+          </p>
           <div className="w-20 h-2 bg-mid-gray/20 rounded-full overflow-hidden">
             <div
               className="h-full bg-logo-primary rounded-full transition-all duration-300"
@@ -61,7 +75,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <p className="text-xs text-text/70 w-16 text-right">speed</p>
+          <p className="text-xs text-text/70 w-16 text-right">
+            {t("onboarding.modelCard.speed")}
+          </p>
           <div className="w-20 h-2 bg-mid-gray/20 rounded-full overflow-hidden">
             <div
               className="h-full bg-logo-primary rounded-full transition-all duration-300"
@@ -75,6 +91,8 @@ const ModelCard: React.FC<ModelCardProps> = ({
 };
 
 const DownloadSize = ({ sizeMb }: { sizeMb: number }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-1.5 text-xs text-text/60 tabular-nums">
       <Download
@@ -82,7 +100,7 @@ const DownloadSize = ({ sizeMb }: { sizeMb: number }) => {
         className="h-3.5 w-3.5 text-text/45"
         strokeWidth={1.75}
       />
-      <span className="sr-only">Download size</span>
+      <span className="sr-only">{t("modelSelector.downloadSize")}</span>
       <span className="font-medium text-text/70">
         {formatModelSize(sizeMb)}
       </span>

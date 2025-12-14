@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Cog, FlaskConical, History, Info, Sparkles, Replace } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
@@ -24,7 +25,7 @@ interface IconProps {
 }
 
 interface SectionConfig {
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
   enabled: (settings: any) => boolean;
@@ -32,13 +33,13 @@ interface SectionConfig {
 
 export const SECTIONS_CONFIG = {
   general: {
-    label: "General",
+    labelKey: "sidebar.general",
     icon: HandyHand,
     component: GeneralSettings,
     enabled: () => true,
   },
   advanced: {
-    label: "Advanced",
+    labelKey: "sidebar.advanced",
     icon: Cog,
     component: AdvancedSettings,
     enabled: () => true,
@@ -50,25 +51,25 @@ export const SECTIONS_CONFIG = {
     enabled: () => true,
   },
   postprocessing: {
-    label: "Post Process",
+    labelKey: "sidebar.postProcessing",
     icon: Sparkles,
     component: PostProcessingSettings,
     enabled: (settings) => settings?.post_process_enabled ?? false,
   },
   history: {
-    label: "History",
+    labelKey: "sidebar.history",
     icon: History,
     component: HistorySettings,
     enabled: () => true,
   },
   debug: {
-    label: "Debug",
+    labelKey: "sidebar.debug",
     icon: FlaskConical,
     component: DebugSettings,
     enabled: (settings) => settings?.debug_mode ?? false,
   },
   about: {
-    label: "About",
+    labelKey: "sidebar.about",
     icon: Info,
     component: AboutSettings,
     enabled: () => true,
@@ -84,6 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
 }) => {
+  const { t } = useTranslation();
   const { settings } = useSettings();
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
@@ -108,8 +110,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
               onClick={() => onSectionChange(section.id)}
             >
-              <Icon width={24} height={24} />
-              <p className="text-sm font-medium">{section.label}</p>
+              <Icon width={24} height={24} className="shrink-0" />
+              <p
+                className="text-sm font-medium truncate"
+                title={t(section.labelKey)}
+              >
+                {t(section.labelKey)}
+              </p>
             </div>
           );
         })}

@@ -12,6 +12,7 @@ export default defineConfig(async () => ({
   // Path aliases
   resolve: {
     alias: {
+      "@": resolve(__dirname, "./src"),
       "@/bindings": resolve(__dirname, "./src/bindings.ts"),
     },
   },

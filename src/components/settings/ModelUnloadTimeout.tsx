@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "../../hooks/useSettings";
 import { commands, type ModelUnloadTimeout } from "@/bindings";
 import { Dropdown } from "../ui/Dropdown";
@@ -9,26 +10,51 @@ interface ModelUnloadTimeoutProps {
   grouped?: boolean;
 }
 
-const timeoutOptions = [
-  { value: "never" as ModelUnloadTimeout, label: "Never" },
-  { value: "immediately" as ModelUnloadTimeout, label: "Immediately" },
-  { value: "min2" as ModelUnloadTimeout, label: "After 2 minutes" },
-  { value: "min5" as ModelUnloadTimeout, label: "After 5 minutes" },
-  { value: "min10" as ModelUnloadTimeout, label: "After 10 minutes" },
-  { value: "min15" as ModelUnloadTimeout, label: "After 15 minutes" },
-  { value: "hour1" as ModelUnloadTimeout, label: "After 1 hour" },
-];
-
-const debugTimeoutOptions = [
-  ...timeoutOptions,
-  { value: "sec5" as ModelUnloadTimeout, label: "After 5 seconds (Debug)" },
-];
-
 export const ModelUnloadTimeoutSetting: React.FC<ModelUnloadTimeoutProps> = ({
   descriptionMode = "inline",
   grouped = false,
 }) => {
+  const { t } = useTranslation();
   const { settings, getSetting, updateSetting } = useSettings();
+
+  const timeoutOptions = [
+    {
+      value: "never" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.never"),
+    },
+    {
+      value: "immediately" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.immediately"),
+    },
+    {
+      value: "min2" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.min2"),
+    },
+    {
+      value: "min5" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.min5"),
+    },
+    {
+      value: "min10" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.min10"),
+    },
+    {
+      value: "min15" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.min15"),
+    },
+    {
+      value: "hour1" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.hour1"),
+    },
+  ];
+
+  const debugTimeoutOptions = [
+    ...timeoutOptions,
+    {
+      value: "sec5" as ModelUnloadTimeout,
+      label: t("settings.advanced.modelUnload.options.sec5"),
+    },
+  ];
 
   const handleChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newTimeout = event.target.value as ModelUnloadTimeout;
@@ -49,8 +75,8 @@ export const ModelUnloadTimeoutSetting: React.FC<ModelUnloadTimeoutProps> = ({
 
   return (
     <SettingContainer
-      title="Unload Model"
-      description="Automatically free GPU/CPU memory when the model hasn't been used for the specified time"
+      title={t("settings.advanced.modelUnload.title")}
+      description={t("settings.advanced.modelUnload.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
     >
