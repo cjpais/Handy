@@ -1,4 +1,10 @@
 {
+  "tray": {
+    "settings": "Einstellungen...",
+    "checkUpdates": "Nach Updates suchen...",
+    "quit": "Beenden",
+    "cancel": "Abbrechen"
+  },
   "sidebar": {
     "general": "Allgemein",
     "advanced": "Erweitert",

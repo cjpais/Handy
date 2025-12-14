@@ -13,6 +13,7 @@ use crate::settings::{
     self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
     APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
+use crate::tray;
 use crate::ManagedToggleState;
 
 pub fn init_shortcuts(app: &AppHandle) {
@@ -194,6 +195,14 @@ pub fn change_selected_language_setting(app: AppHandle, language: String) -> Res
     let mut settings = settings::get_settings(&app);
     settings.selected_language = language;
     settings::write_settings(&app, settings);
+    Ok(())
+}
+
+/// Refresh the tray menu with the given app UI locale
+#[tauri::command]
+#[specta::specta]
+pub fn refresh_tray_locale(app: AppHandle, locale: String) -> Result<(), String> {
+    tray::refresh_tray_menu_with_locale(&app, &locale);
     Ok(())
 }
 

@@ -14,6 +14,7 @@ mod settings;
 mod shortcut;
 mod signal_handle;
 mod tray;
+mod tray_i18n;
 mod utils;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
@@ -241,6 +242,7 @@ pub fn run() {
         shortcut::change_autostart_setting,
         shortcut::change_translate_to_english_setting,
         shortcut::change_selected_language_setting,
+        shortcut::refresh_tray_locale,
         shortcut::change_overlay_position_setting,
         shortcut::change_debug_mode_setting,
         shortcut::change_word_correction_threshold_setting,

@@ -1,4 +1,10 @@
 {
+  "tray": {
+    "settings": "設定...",
+    "checkUpdates": "アップデートを確認...",
+    "quit": "終了",
+    "cancel": "キャンセル"
+  },
   "sidebar": {
     "general": "一般",
     "advanced": "詳細設定",

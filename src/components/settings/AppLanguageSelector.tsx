@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { SUPPORTED_LANGUAGES, type SupportedLanguageCode } from "../../i18n";
+import { commands } from "../../bindings";
 
 interface AppLanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
@@ -20,10 +21,12 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
       label: `${lang.nativeName} (${lang.name})`,
     }));
 
-    const handleLanguageChange = (langCode: string) => {
+    const handleLanguageChange = async (langCode: string) => {
       i18n.changeLanguage(langCode);
       // Persist to localStorage for next session
       localStorage.setItem("handy-app-language", langCode);
+      // Update tray menu to reflect new language
+      await commands.refreshTrayLocale(langCode);
     };
 
     return (
