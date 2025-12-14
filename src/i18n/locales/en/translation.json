@@ -2,6 +2,7 @@
   "sidebar": {
     "general": "General",
     "advanced": "Advanced",
+    "replacements": "Replacements",
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",

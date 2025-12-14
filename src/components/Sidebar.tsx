@@ -45,7 +45,7 @@ export const SECTIONS_CONFIG = {
     enabled: () => true,
   },
   replacements: {
-    labelKey: "Replacements",
+    labelKey: "sidebar.replacements",
     icon: Replace,
     component: Replacements,
     enabled: () => true,

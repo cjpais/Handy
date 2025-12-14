@@ -3,6 +3,7 @@
   "sidebar": {
     "general": "Général",
     "advanced": "Avancé",
+    "replacements": "Remplacements",
     "postProcessing": "Post-traitement",
     "history": "Historique",
     "debug": "Débogage",
