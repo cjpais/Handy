@@ -66,7 +66,7 @@ chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = { version="0.2.0", features = ["whisper", "parakeet", "whisperfile"] }
+transcribe-rs = { version="0.2.1", features = ["whisper", "parakeet", "whisperfile"] }
 ferrous-opencc = "0.2.3"
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
