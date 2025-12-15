@@ -258,32 +258,6 @@ dependencies = [
 
 [[package]]
 name = "async-openai"
-version = "0.29.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c58fd812d4b7152e0f748254c03927f27126a5d83fccf265b2baddaaa1aeea41"
-dependencies = [
- "async-openai-macros",
- "backoff",
- "base64 0.22.1",
- "bytes",
- "derive_builder",
- "eventsource-stream",
- "futures",
- "rand 0.9.2",
- "reqwest",
- "reqwest-eventsource",
- "secrecy",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "async-openai"
 version = "0.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bf39a15c8d613eb61892dc9a287c02277639ebead41ee611ad23aaa613f1a82"
@@ -2404,7 +2378,7 @@ name = "handy"
 version = "0.6.5"
 dependencies = [
  "anyhow",
- "async-openai 0.30.1",
+ "async-openai",
  "chrono",
  "cpal",
  "enigo",
@@ -6969,12 +6943,10 @@ dependencies = [
 
 [[package]]
 name = "transcribe-rs"
-version = "0.1.5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f01738c67d77f6dc84be57e376ec32f846c177c492e46f9685bdb2801870fe84"
+checksum = "06b34ced239a20ddef245dbe84c9976f871521c5fa479576f5580e2d24814f12"
 dependencies = [
- "async-openai 0.29.6",
- "async-trait",
  "derive_builder",
  "env_logger",
  "hound",
@@ -6983,8 +6955,9 @@ dependencies = [
  "once_cell",
  "ort",
  "regex",
+ "serde",
+ "serde_json",
  "thiserror 2.0.17",
- "tokio",
  "whisper-rs",
 ]
 
