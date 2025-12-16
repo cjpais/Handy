@@ -764,6 +764,11 @@ pub fn change_online_provider_model_setting(
     // Store the model per provider - we need to add this field to settings
     settings.online_provider_models.insert(provider_id, model);
     settings::write_settings(&app, settings);
+pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.app_language = language;
+    settings::write_settings(&app, settings);
+
     Ok(())
 }
 

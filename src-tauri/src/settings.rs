@@ -302,6 +302,8 @@ pub struct AppSettings {
     pub online_provider_models: HashMap<String, String>,
     #[serde(default)]
     pub online_provider_custom_prompt: Option<String>,
+    #[serde(default = "default_app_language")]
+    pub app_language: String,
 }
 
 fn default_model() -> String {
@@ -391,6 +393,8 @@ fn default_online_provider_models() -> HashMap<String, String> {
     map.insert("gemini".to_string(), "gemini-2.0-flash".to_string());
     map.insert("sambanova".to_string(), "whisper-large-v3".to_string());
     map
+fn default_app_language() -> String {
+    "en".to_string()
 }
 
 fn default_post_process_provider_id() -> String {
@@ -614,6 +618,7 @@ pub fn get_default_settings() -> AppSettings {
         online_provider_api_keys: default_online_provider_api_keys(),
         online_provider_models: default_online_provider_models(),
         online_provider_custom_prompt: None,
+        app_language: default_app_language(),
     }
 }
 
