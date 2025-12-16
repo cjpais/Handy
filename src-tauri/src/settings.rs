@@ -393,6 +393,8 @@ fn default_online_provider_models() -> HashMap<String, String> {
     map.insert("gemini".to_string(), "gemini-2.0-flash".to_string());
     map.insert("sambanova".to_string(), "whisper-large-v3".to_string());
     map
+}
+
 fn default_app_language() -> String {
     "en".to_string()
 }
