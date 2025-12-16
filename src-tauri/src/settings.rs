@@ -291,6 +291,8 @@ pub struct AppSettings {
     pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
+    #[serde(default = "default_app_language")]
+    pub app_language: String,
 }
 
 fn default_model() -> String {
@@ -358,6 +360,10 @@ fn default_sound_theme() -> SoundTheme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_app_language() -> String {
+    "en".to_string()
 }
 
 fn default_post_process_provider_id() -> String {
@@ -554,6 +560,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
         append_trailing_space: false,
+        app_language: default_app_language(),
     }
 }
 

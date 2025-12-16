@@ -406,5 +406,8 @@
   "appLanguage": {
     "title": "应用语言",
     "description": "更改 Handy 界面的语言"
+  },
+  "overlay": {
+    "transcribing": "正在转录..."
   }
 }

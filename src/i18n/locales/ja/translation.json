@@ -406,5 +406,8 @@
   "appLanguage": {
     "title": "アプリケーション言語",
     "description": "Handyインターフェースの言語を変更"
+  },
+  "overlay": {
+    "transcribing": "文字起こし中..."
   }
 }
