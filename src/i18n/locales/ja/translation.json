@@ -293,10 +293,10 @@
         "entries": "件"
       },
       "recordingRetention": {
-        "title": "録音の保持",
-        "description": "音声録音を保持する期間",
+        "title": "録音の自動削除",
+        "description": "古い録音を自動的に削除して容量を節約",
         "never": "しない",
-        "preserveLimit": "{{count}}件の録音を保持",
+        "preserveLimit": "最新{{count}}件を保持",
         "days3": "3日後",
         "weeks2": "2週間後",
         "months3": "3ヶ月後",

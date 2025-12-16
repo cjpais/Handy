@@ -293,8 +293,14 @@
         "description": "Số lượng mục lịch sử tối đa cần giữ"
       },
       "recordingRetention": {
-        "title": "Lưu giữ ghi âm",
-        "description": "Thời gian giữ các bản ghi âm"
+        "title": "Tự động xóa ghi âm",
+        "description": "Tự động xóa các bản ghi âm cũ để tiết kiệm dung lượng",
+        "never": "Không bao giờ",
+        "preserveLimit": "Giữ {{count}} bản mới nhất",
+        "days3": "Sau 3 ngày",
+        "weeks2": "Sau 2 tuần",
+        "months3": "Sau 3 tháng",
+        "placeholder": "Chọn thời gian lưu giữ..."
       },
       "alwaysOnMicrophone": {
         "label": "Micrô luôn bật",

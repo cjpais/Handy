@@ -293,10 +293,10 @@
         "entries": "条"
       },
       "recordingRetention": {
-        "title": "录音保留",
-        "description": "保留音频录音的时长",
+        "title": "自动删除录音",
+        "description": "自动删除旧录音以节省空间",
         "never": "从不",
-        "preserveLimit": "保留 {{count}} 条录音",
+        "preserveLimit": "保留最新 {{count}} 条",
         "days3": "3 天后",
         "weeks2": "2 周后",
         "months3": "3 个月后",

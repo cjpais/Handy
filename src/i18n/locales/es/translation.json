@@ -292,8 +292,14 @@
         "description": "Número máximo de entradas de historial a conservar"
       },
       "recordingRetention": {
-        "title": "Retención de Grabaciones",
-        "description": "Cuánto tiempo conservar las grabaciones de audio"
+        "title": "Eliminación automática de grabaciones",
+        "description": "Eliminar automáticamente grabaciones antiguas para ahorrar espacio",
+        "never": "Nunca",
+        "preserveLimit": "Mantener las últimas {{count}}",
+        "days3": "Después de 3 días",
+        "weeks2": "Después de 2 semanas",
+        "months3": "Después de 3 meses",
+        "placeholder": "Seleccionar período de retención..."
       },
       "alwaysOnMicrophone": {
         "label": "Micrófono Siempre Activo",
