@@ -291,6 +291,15 @@ pub struct AppSettings {
     pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
+    // Online provider settings
+    #[serde(default)]
+    pub use_online_provider: bool,
+    #[serde(default = "default_online_provider_id")]
+    pub online_provider_id: String,
+    #[serde(default = "default_online_provider_api_keys")]
+    pub online_provider_api_keys: HashMap<String, String>,
+    #[serde(default)]
+    pub online_provider_custom_prompt: Option<String>,
 }
 
 fn default_model() -> String {
@@ -358,6 +367,19 @@ fn default_sound_theme() -> SoundTheme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_online_provider_id() -> String {
+    "openai".to_string()
+}
+
+fn default_online_provider_api_keys() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    map.insert("openai".to_string(), String::new());
+    map.insert("groq".to_string(), String::new());
+    map.insert("gemini".to_string(), String::new());
+    map.insert("sambanova".to_string(), String::new());
+    map
 }
 
 fn default_post_process_provider_id() -> String {
@@ -554,6 +576,11 @@ pub fn get_default_settings() -> AppSettings {
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
         append_trailing_space: false,
+        // Online provider defaults
+        use_online_provider: false,
+        online_provider_id: default_online_provider_id(),
+        online_provider_api_keys: default_online_provider_api_keys(),
+        online_provider_custom_prompt: None,
     }
 }
 
