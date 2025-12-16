@@ -15,6 +15,7 @@ mod shortcut;
 mod signal_handle;
 mod tray;
 mod utils;
+#[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
