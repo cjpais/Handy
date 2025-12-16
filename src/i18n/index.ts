@@ -2,6 +2,7 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { locale } from "@tauri-apps/plugin-os";
 import { LANGUAGE_METADATA } from "./languages";
+import { commands } from "@/bindings";
 
 // Auto-discover translation files using Vite's glob import
 const localeModules = import.meta.glob<{ default: Record<string, unknown> }>(
@@ -55,17 +56,11 @@ const getSupportedLanguage = (
   return supported ? supported.code : null;
 };
 
-// Get saved language from localStorage
-const getSavedLanguage = (): SupportedLanguageCode | null => {
-  const savedLang = localStorage.getItem("handy-app-language");
-  return getSupportedLanguage(savedLang);
-};
-
-// Initialize i18n with saved language or English as default
-// System locale detection happens async after init
+// Initialize i18n with English as default
+// Language will be synced from settings after init
 i18n.use(initReactI18next).init({
   resources,
-  lng: getSavedLanguage() || "en",
+  lng: "en",
   fallbackLng: "en",
   interpolation: {
     escapeValue: false, // React already escapes values
@@ -75,23 +70,29 @@ i18n.use(initReactI18next).init({
   },
 });
 
-// After init, check system locale if no saved preference
-const initSystemLocale = async () => {
-  // Skip if user has explicitly set a language
-  if (getSavedLanguage()) return;
-
+// Sync language from app settings
+export const syncLanguageFromSettings = async () => {
   try {
-    const systemLocale = await locale();
-    const supported = getSupportedLanguage(systemLocale);
-    if (supported && supported !== i18n.language) {
-      await i18n.changeLanguage(supported);
+    const result = await commands.getAppSettings();
+    if (result.status === "ok" && result.data.app_language) {
+      const supported = getSupportedLanguage(result.data.app_language);
+      if (supported && supported !== i18n.language) {
+        await i18n.changeLanguage(supported);
+      }
+    } else {
+      // Fall back to system locale detection if no saved preference
+      const systemLocale = await locale();
+      const supported = getSupportedLanguage(systemLocale);
+      if (supported && supported !== i18n.language) {
+        await i18n.changeLanguage(supported);
+      }
     }
   } catch (e) {
-    console.warn("Failed to get system locale:", e);
+    console.warn("Failed to sync language from settings:", e);
   }
 };
 
-// Run async locale detection
-initSystemLocale();
+// Run language sync on init
+syncLanguageFromSettings();
 
 export default i18n;

@@ -400,5 +400,8 @@
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",
     "description": "Thay đổi ngôn ngữ giao diện của Handy"
+  },
+  "overlay": {
+    "transcribing": "Đang chuyển đổi..."
   }
 }
