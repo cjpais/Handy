@@ -83,8 +83,8 @@
         "pressKeys": "Appuyez sur les touches...",
         "bindings": {
           "transcribe": {
-            "name": "Transcrire",
-            "description": "Convertit votre voix en texte."
+            "name": "Démarrer la transcription",
+            "description": "Convertir votre voix en texte."
           },
           "cancel": {
             "name": "Annuler",
@@ -114,23 +114,23 @@
       "title": "Son",
       "microphone": {
         "title": "Microphone",
-        "description": "Sélectionnez votre microphone préféré",
+        "description": "Sélectionnez votre périphérique d'entrée audio",
         "placeholder": "Sélectionner un microphone...",
         "loading": "Chargement..."
       },
       "audioFeedback": {
-        "label": "Retour audio",
+        "label": "Signal sonore",
         "description": "Jouer un son au début et à la fin de l'enregistrement"
       },
       "outputDevice": {
         "title": "Périphérique de sortie",
-        "description": "Sélectionnez votre périphérique de sortie audio préféré pour les sons de retour",
+        "description": "Sélectionnez votre périphérique de sortie audio pour le signal sonore",
         "placeholder": "Sélectionner un périphérique de sortie...",
         "loading": "Chargement..."
       },
       "volume": {
         "title": "Volume",
-        "description": "Ajuster le volume des sons de retour audio"
+        "description": "Ajuster le volume du signal sonore"
       }
     },
     "advanced": {
@@ -144,8 +144,8 @@
         "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
       },
       "overlay": {
-        "title": "Position de la superposition",
-        "description": "Afficher une superposition de retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
+        "title": "Position de la fenêtre d'enregistrement",
+        "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
         "options": {
           "none": "Aucune",
           "bottom": "Bas",
@@ -259,7 +259,7 @@
       "title": "Historique",
       "openFolder": "Ouvrir le dossier des enregistrements",
       "loading": "Chargement de l'historique...",
-      "empty": "Pas encore de transcriptions. Commencez à enregistrer pour construire votre historique !",
+      "empty": "Pas encore de transcriptions. Commencez à enregistrer pour créer votre historique !",
       "copyToClipboard": "Copier la transcription dans le presse-papiers",
       "save": "Enregistrer la transcription",
       "unsave": "Retirer des favoris",
@@ -329,7 +329,7 @@
         "description": "Version actuelle de Handy"
       },
       "appDataDirectory": {
-        "title": "Répertoire des données de l'application",
+        "title": "Emplacement des données de l'application",
         "description": "Emplacement où Handy stocke ses données"
       },
       "sourceCode": {
