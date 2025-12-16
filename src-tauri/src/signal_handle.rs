@@ -1,7 +1,12 @@
+#[cfg(unix)]
 use crate::actions::ACTION_MAP;
+#[cfg(unix)]
 use crate::ManagedToggleState;
+#[cfg(unix)]
 use log::{debug, info, warn};
+#[cfg(unix)]
 use std::thread;
+#[cfg(unix)]
 use tauri::{AppHandle, Manager};
 
 #[cfg(unix)]

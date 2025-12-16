@@ -404,6 +404,7 @@ fn default_post_process_provider_id() -> String {
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
+    #[allow(unused_mut)]
     let mut providers = vec![
         PostProcessProvider {
             id: "openai".to_string(),
