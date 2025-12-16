@@ -400,5 +400,8 @@
   "appLanguage": {
     "title": "Langue de l'application",
     "description": "Changer la langue de l'interface de Handy"
+  },
+  "overlay": {
+    "transcribing": "Transcription..."
   }
 }

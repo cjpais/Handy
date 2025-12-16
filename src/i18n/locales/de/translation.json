@@ -406,5 +406,8 @@
   "appLanguage": {
     "title": "Anwendungssprache",
     "description": "Sprache der Handy-Oberfläche ändern"
+  },
+  "overlay": {
+    "transcribing": "Transkribiere..."
   }
 }
