@@ -293,10 +293,10 @@
         "entries": "Einträge"
       },
       "recordingRetention": {
-        "title": "Aufnahme-Aufbewahrung",
-        "description": "Wie lange Audioaufnahmen aufbewahrt werden sollen",
+        "title": "Aufnahmen automatisch löschen",
+        "description": "Alte Aufnahmen automatisch löschen, um Speicherplatz zu sparen",
         "never": "Nie",
-        "preserveLimit": "{{count}} Aufnahmen behalten",
+        "preserveLimit": "Neueste {{count}} behalten",
         "days3": "Nach 3 Tagen",
         "weeks2": "Nach 2 Wochen",
         "months3": "Nach 3 Monaten",

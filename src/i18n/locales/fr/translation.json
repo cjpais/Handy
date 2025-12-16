@@ -293,8 +293,14 @@
         "description": "Nombre maximum d'entrées d'historique à conserver"
       },
       "recordingRetention": {
-        "title": "Conservation des enregistrements",
-        "description": "Durée de conservation des enregistrements audio"
+        "title": "Suppression automatique des enregistrements",
+        "description": "Supprimer automatiquement les anciens enregistrements pour économiser de l'espace",
+        "never": "Jamais",
+        "preserveLimit": "Conserver les {{count}} plus récents",
+        "days3": "Après 3 jours",
+        "weeks2": "Après 2 semaines",
+        "months3": "Après 3 mois",
+        "placeholder": "Sélectionner la période de conservation..."
       },
       "alwaysOnMicrophone": {
         "label": "Microphone toujours actif",

@@ -293,10 +293,10 @@
         "entries": "wpisy"
       },
       "recordingRetention": {
-        "title": "Retencja nagrań",
-        "description": "Jak długo przechowywać nagrania audio",
+        "title": "Automatyczne usuwanie nagrań",
+        "description": "Automatycznie usuwaj stare nagrania, aby zaoszczędzić miejsce",
         "never": "Nigdy",
-        "preserveLimit": "Zachowaj {{count}} nagrań",
+        "preserveLimit": "Zachowaj ostatnie {{count}}",
         "days3": "Po 3 dniach",
         "weeks2": "Po 2 tygodniach",
         "months3": "Po 3 miesiącach",

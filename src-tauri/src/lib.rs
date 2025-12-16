@@ -313,7 +313,7 @@ pub fn run() {
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     specta_builder
         .export(
-            Typescript::default().bigint(BigIntExportBehavior::String),
+            Typescript::default().bigint(BigIntExportBehavior::Number),
             "../src/bindings.ts",
         )
         .expect("Failed to export typescript bindings");

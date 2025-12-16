@@ -293,13 +293,13 @@
         "entries": "entries"
       },
       "recordingRetention": {
-        "title": "Recording Retention",
-        "description": "How long to keep audio recordings",
+        "title": "Auto-Delete Recordings",
+        "description": "Automatically delete old recordings to save space",
         "never": "Never",
-        "preserveLimit": "Preserve {{count}} Recordings",
-        "days3": "After 3 Days",
-        "weeks2": "After 2 Weeks",
-        "months3": "After 3 Months",
+        "preserveLimit": "Keep latest {{count}}",
+        "days3": "After 3 days",
+        "weeks2": "After 2 weeks",
+        "months3": "After 3 months",
         "placeholder": "Select retention period..."
       },
       "alwaysOnMicrophone": {
