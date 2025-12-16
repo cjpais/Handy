@@ -134,6 +134,16 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     void fetchPostProcessModels(selectedProviderId);
   }, [fetchPostProcessModels, isAppleProvider, selectedProviderId]);
 
+  // Auto-fetch models when provider changes and API key is available
+  useEffect(() => {
+    if (isAppleProvider) return;
+    const currentApiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
+    if (currentApiKey.trim() && !postProcessModelOptions[selectedProviderId]) {
+      // Only fetch if we have an API key and haven't fetched before
+      void fetchPostProcessModels(selectedProviderId);
+    }
+  }, [selectedProviderId, settings?.post_process_api_keys, postProcessModelOptions, fetchPostProcessModels, isAppleProvider]);
+
   const availableModelsRaw = postProcessModelOptions[selectedProviderId] || [];
 
   const modelOptions = useMemo<ModelOption[]>(() => {

@@ -111,6 +111,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
                 )}
                 disabled={state.isApiKeyUpdating}
                 className="min-w-[320px]"
+                providerId={state.selectedProviderId}
               />
             </div>
           </SettingContainer>
@@ -127,7 +128,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               : t("settings.postProcessing.api.model.descriptionDefault")
         }
         descriptionMode="tooltip"
-        layout="stacked"
+        layout="horizontal"
         grouped={true}
       >
         <div className="flex items-center gap-2">
@@ -141,14 +142,15 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
                 ? t("settings.postProcessing.api.model.placeholderApple")
                 : state.modelOptions.length > 0
                   ? t(
-                      "settings.postProcessing.api.model.placeholderWithOptions",
-                    )
+                    "settings.postProcessing.api.model.placeholderWithOptions",
+                  )
                   : t("settings.postProcessing.api.model.placeholderNoOptions")
             }
             onSelect={state.handleModelSelect}
             onCreate={state.handleModelCreate}
-            onBlur={() => {}}
+            onBlur={() => { }}
             className="flex-1 min-w-[380px]"
+            providerId={state.selectedProviderId}
           />
           <ResetButton
             onClick={state.handleRefreshModels}

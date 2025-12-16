@@ -10,6 +10,7 @@ import { AudioFeedback } from "../AudioFeedback";
 import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { UseOnlineProviderToggle } from "../UseOnlineProviderToggle";
+import { PostProcessingToggle } from "../PostProcessingToggle";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export const GeneralSettings: React.FC = () => {
         <LanguageSelector descriptionMode="tooltip" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
         <UseOnlineProviderToggle descriptionMode="tooltip" grouped={true} />
+        <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
       <SettingsGroup title={t("settings.sound.title")}>
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />

@@ -190,7 +190,8 @@ export const HistorySettings: React.FC = () => {
                 key={entry.id}
                 entry={entry}
                 onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
+                onCopyRawText={() => copyToClipboard(entry.transcription_text)}
+                onCopyPostProcessedText={() => copyToClipboard(entry.post_processed_text || "")}
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
               />
@@ -205,7 +206,8 @@ export const HistorySettings: React.FC = () => {
 interface HistoryEntryProps {
   entry: HistoryEntry;
   onToggleSaved: () => void;
-  onCopyText: () => void;
+  onCopyRawText: () => void;
+  onCopyPostProcessedText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: string) => Promise<void>;
 }
@@ -213,13 +215,15 @@ interface HistoryEntryProps {
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   entry,
   onToggleSaved,
-  onCopyText,
+  onCopyRawText,
+  onCopyPostProcessedText,
   getAudioUrl,
   deleteAudio,
 }) => {
   const { t, i18n } = useTranslation();
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [showCopied, setShowCopied] = useState(false);
+  const [showCopiedRaw, setShowCopiedRaw] = useState(false);
+  const [showCopiedProcessed, setShowCopiedProcessed] = useState(false);
 
   useEffect(() => {
     const loadAudio = async () => {
@@ -229,10 +233,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     loadAudio();
   }, [entry.file_name, getAudioUrl]);
 
-  const handleCopyText = () => {
-    onCopyText();
-    setShowCopied(true);
-    setTimeout(() => setShowCopied(false), 2000);
+  const handleCopyRawText = () => {
+    onCopyRawText();
+    setShowCopiedRaw(true);
+    setTimeout(() => setShowCopiedRaw(false), 2000);
+  };
+
+  const handleCopyPostProcessedText = () => {
+    onCopyPostProcessedText();
+    setShowCopiedProcessed(true);
+    setTimeout(() => setShowCopiedProcessed(false), 2000);
   };
 
   const handleDeleteEntry = async () => {
@@ -245,30 +255,20 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   };
 
   const formattedDate = formatDateTime(entry.timestamp, i18n.language);
+  const hasPostProcessedText = entry.post_processed_text && entry.post_processed_text.trim() !== "";
 
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
+      {/* Header with date and main actions (star, delete) */}
       <div className="flex justify-between items-center">
         <p className="text-sm font-medium">{formattedDate}</p>
         <div className="flex items-center gap-1">
           <button
-            onClick={handleCopyText}
-            className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
-            title={t("settings.history.copyToClipboard")}
-          >
-            {showCopied ? (
-              <Check width={16} height={16} />
-            ) : (
-              <Copy width={16} height={16} />
-            )}
-          </button>
-          <button
             onClick={onToggleSaved}
-            className={`p-2 rounded  transition-colors cursor-pointer ${
-              entry.saved
-                ? "text-logo-primary hover:text-logo-primary/80"
-                : "text-text/50 hover:text-logo-primary"
-            }`}
+            className={`p-2 rounded transition-colors cursor-pointer ${entry.saved
+              ? "text-logo-primary hover:text-logo-primary/80"
+              : "text-text/50 hover:text-logo-primary"
+              }`}
             title={
               entry.saved
                 ? t("settings.history.unsave")
@@ -290,9 +290,60 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
         </div>
       </div>
-      <p className="italic text-text/90 text-sm pb-2">
-        {entry.transcription_text}
-      </p>
+
+      {/* Raw Transcription Section */}
+      <div className="border border-mid-gray/20 rounded-lg p-3">
+        <div className="flex justify-between items-start gap-2">
+          <div className="flex-1">
+            <p className="text-xs font-medium text-mid-gray uppercase tracking-wide mb-1">
+              {t("settings.history.rawOutput", "Raw Output")}
+            </p>
+            <p className="italic text-text/90 text-sm">
+              {entry.transcription_text}
+            </p>
+          </div>
+          <button
+            onClick={handleCopyRawText}
+            className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer flex-shrink-0"
+            title={t("settings.history.copyToClipboard")}
+          >
+            {showCopiedRaw ? (
+              <Check width={16} height={16} />
+            ) : (
+              <Copy width={16} height={16} />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Post-Processed Section (only shown if there's post-processed text) */}
+      {hasPostProcessedText && (
+        <div className="border border-logo-primary/30 rounded-lg p-3 bg-logo-primary/5">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1">
+              <p className="text-xs font-medium text-logo-primary uppercase tracking-wide mb-1">
+                {t("settings.history.postProcessedOutput", "Post-Processed Output")}
+              </p>
+              <p className="text-text/90 text-sm">
+                {entry.post_processed_text}
+              </p>
+            </div>
+            <button
+              onClick={handleCopyPostProcessedText}
+              className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer flex-shrink-0"
+              title={t("settings.history.copyToClipboard")}
+            >
+              {showCopiedProcessed ? (
+                <Check width={16} height={16} />
+              ) : (
+                <Copy width={16} height={16} />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Audio Player */}
       {audioUrl && <AudioPlayer src={audioUrl} className="w-full" />}
     </div>
   );

@@ -21,6 +21,7 @@ type BaseProps = {
   disabled?: boolean;
   isLoading?: boolean;
   isClearable?: boolean;
+  menuIsOpen?: boolean; // Controls whether dropdown is open
   onChange: (value: string | null, action: ActionMeta<SelectOption>) => void;
   onBlur?: () => void;
   className?: string;
@@ -127,6 +128,7 @@ export const Select: React.FC<SelectProps> = React.memo(
     disabled,
     isLoading,
     isClearable = true,
+    menuIsOpen,
     onChange,
     onBlur,
     className = "",
@@ -160,6 +162,7 @@ export const Select: React.FC<SelectProps> = React.memo(
       onBlur,
       isClearable,
       styles: selectStyles,
+      ...(menuIsOpen !== undefined && { menuIsOpen }),
     };
 
     if (isCreatable) {

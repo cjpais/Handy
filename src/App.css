@@ -35,6 +35,16 @@
   background-color: var(--color-background);
 }
 
+/* Hide scrollbars while keeping scroll functionality */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 .container {
   margin: 0;
   padding-top: 10vh;

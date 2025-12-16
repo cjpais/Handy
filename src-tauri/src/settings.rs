@@ -298,6 +298,8 @@ pub struct AppSettings {
     pub online_provider_id: String,
     #[serde(default = "default_online_provider_api_keys")]
     pub online_provider_api_keys: HashMap<String, String>,
+    #[serde(default = "default_online_provider_models")]
+    pub online_provider_models: HashMap<String, String>,
     #[serde(default)]
     pub online_provider_custom_prompt: Option<String>,
 }
@@ -382,6 +384,15 @@ fn default_online_provider_api_keys() -> HashMap<String, String> {
     map
 }
 
+fn default_online_provider_models() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    map.insert("openai".to_string(), "whisper".to_string());
+    map.insert("groq".to_string(), "whisper-large-v3-turbo".to_string());
+    map.insert("gemini".to_string(), "gemini-2.0-flash".to_string());
+    map.insert("sambanova".to_string(), "whisper-large-v3".to_string());
+    map
+}
+
 fn default_post_process_provider_id() -> String {
     "openai".to_string()
 }
@@ -403,9 +414,30 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             models_endpoint: Some("/models".to_string()),
         },
         PostProcessProvider {
-            id: "anthropic".to_string(),
-            label: "Anthropic".to_string(),
-            base_url: "https://api.anthropic.com/v1".to_string(),
+            id: "gemini".to_string(),
+            label: "Gemini".to_string(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta/openai".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        },
+        PostProcessProvider {
+            id: "groq".to_string(),
+            label: "Groq".to_string(),
+            base_url: "https://api.groq.com/openai/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        },
+        PostProcessProvider {
+            id: "cerebras".to_string(),
+            label: "Cerebras".to_string(),
+            base_url: "https://api.cerebras.ai/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        },
+        PostProcessProvider {
+            id: "sambanova".to_string(),
+            label: "SambaNova".to_string(),
+            base_url: "https://api.sambanova.ai/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
         },
@@ -580,6 +612,7 @@ pub fn get_default_settings() -> AppSettings {
         use_online_provider: false,
         online_provider_id: default_online_provider_id(),
         online_provider_api_keys: default_online_provider_api_keys(),
+        online_provider_models: default_online_provider_models(),
         online_provider_custom_prompt: None,
     }
 }

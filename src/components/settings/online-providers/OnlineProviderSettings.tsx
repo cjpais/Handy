@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Input } from "../../ui/Input";
 import { Dropdown } from "../../ui/Dropdown";
-import { Textarea } from "../../ui/Textarea";
 import { Button } from "../../ui/Button";
 import { useSettings } from "../../../hooks/useSettings";
+import { commands } from "@/bindings";
 
 const ONLINE_PROVIDERS = [
     { value: "openai", label: "OpenAI" },
@@ -48,59 +48,70 @@ const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({
 
 export const OnlineProviderSettings: React.FC = () => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { getSetting, updateSetting, isUpdating, refreshSettings } = useSettings();
 
     const enabled = getSetting("use_online_provider") || false;
     const selectedProviderId = getSetting("online_provider_id") || "openai";
     const apiKeys = getSetting("online_provider_api_keys") || {};
-    const customPrompt = getSetting("online_provider_custom_prompt") || "";
+    const savedModels = getSetting("online_provider_models") || {};
 
     const [localApiKey, setLocalApiKey] = useState(apiKeys[selectedProviderId] || "");
-    const [localCustomPrompt, setLocalCustomPrompt] = useState(customPrompt || "");
-    const [selectedModel, setSelectedModel] = useState<string>("");
+    const [showApiKey, setShowApiKey] = useState(false);
+    const [selectedModel, setSelectedModel] = useState<string>(savedModels[selectedProviderId] || "");
     const [customModelId, setCustomModelId] = useState("");
+    const [isApiKeySaving, setIsApiKeySaving] = useState(false);
 
     const modelOptions = PROVIDER_MODELS[selectedProviderId] || [];
     const isOtherSelected = selectedModel === "other";
 
-    // Set default model when provider changes
+    // Update local state when provider changes
     useEffect(() => {
-        if (modelOptions.length > 0) {
+        setLocalApiKey(apiKeys[selectedProviderId] || "");
+        const savedModel = savedModels[selectedProviderId] || "";
+        if (savedModel) {
+            setSelectedModel(savedModel);
+        } else if (modelOptions.length > 0) {
             setSelectedModel(modelOptions[0].value);
-            setCustomModelId("");
         }
-    }, [selectedProviderId, modelOptions]);
+        setCustomModelId("");
+    }, [selectedProviderId, modelOptions.length]);
 
     const isApiKeyDirty = localApiKey !== (apiKeys[selectedProviderId] || "");
-    const isApiKeySaving = isUpdating("online_provider_api_keys");
 
     const handleProviderChange = (providerId: string | null) => {
         if (!providerId) return;
         updateSetting("online_provider_id", providerId);
-        // Update local API key to show the key for the new provider
-        setLocalApiKey(apiKeys[providerId] || "");
     };
 
-    const handleModelChange = (modelId: string | null) => {
+    const handleModelChange = async (modelId: string | null) => {
         if (!modelId) return;
         setSelectedModel(modelId);
         if (modelId !== "other") {
             setCustomModelId("");
+            // Save the model selection to backend
+            try {
+                await commands.changeOnlineProviderModelSetting(selectedProviderId, modelId);
+                await refreshSettings();
+            } catch (error) {
+                console.error("Failed to save model selection:", error);
+            }
         }
     };
 
-    const handleSaveApiKey = () => {
+    const handleSaveApiKey = async () => {
         if (isApiKeyDirty) {
-            const updatedKeys = { ...apiKeys, [selectedProviderId]: localApiKey };
-            updateSetting("online_provider_api_keys", updatedKeys);
+            setIsApiKeySaving(true);
+            try {
+                await commands.changeOnlineProviderApiKeySetting(selectedProviderId, localApiKey);
+                await refreshSettings();
+            } catch (error) {
+                console.error("Failed to save API key:", error);
+            } finally {
+                setIsApiKeySaving(false);
+            }
         }
     };
 
-    const handleCustomPromptBlur = () => {
-        if (localCustomPrompt !== (customPrompt || "")) {
-            updateSetting("online_provider_custom_prompt", localCustomPrompt || null);
-        }
-    };
 
     if (!enabled) {
         return (
@@ -173,14 +184,28 @@ export const OnlineProviderSettings: React.FC = () => {
                     tooltipPosition="bottom"
                 >
                     <div className="flex items-center gap-2 ml-auto">
-                        <Input
-                            type="password"
-                            value={localApiKey}
-                            onChange={(e) => setLocalApiKey(e.target.value)}
-                            placeholder={t("settings.onlineProviders.apiKey.placeholder")}
-                            className="min-w-[280px]"
-                            variant="compact"
-                        />
+                        <div className="relative flex items-center">
+                            <Input
+                                type={showApiKey ? "text" : "password"}
+                                value={localApiKey}
+                                onChange={(e) => setLocalApiKey(e.target.value)}
+                                placeholder={t("settings.onlineProviders.apiKey.placeholder")}
+                                className="min-w-[280px] pr-10"
+                                variant="compact"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowApiKey(!showApiKey)}
+                                className="absolute right-2 p-1 text-text/50 hover:text-logo-primary transition-colors"
+                                title={showApiKey ? "Hide API key" : "Show API key"}
+                            >
+                                {showApiKey ? (
+                                    <EyeOff className="w-4 h-4" />
+                                ) : (
+                                    <Eye className="w-4 h-4" />
+                                )}
+                            </button>
+                        </div>
                         {isApiKeyDirty && (
                             <Button
                                 onClick={handleSaveApiKey}
@@ -195,34 +220,6 @@ export const OnlineProviderSettings: React.FC = () => {
                     </div>
                 </SettingContainer>
 
-                <SettingContainer
-                    title={t("settings.onlineProviders.customPrompt.title")}
-                    description={t("settings.onlineProviders.customPrompt.description")}
-                    descriptionMode="tooltip"
-                    layout="horizontal"
-                    grouped={true}
-                    tooltipPosition="bottom"
-                >
-                    <div className="flex items-center gap-2 ml-auto flex-1">
-                        <Textarea
-                            value={localCustomPrompt}
-                            onChange={(e) => setLocalCustomPrompt(e.target.value)}
-                            placeholder={t("settings.onlineProviders.customPrompt.placeholder")}
-                            className="min-w-[250px] max-h-20"
-                        />
-                        {localCustomPrompt !== (customPrompt || "") && (
-                            <Button
-                                onClick={handleCustomPromptBlur}
-                                variant="primary"
-                                size="sm"
-                                disabled={isUpdating("online_provider_custom_prompt")}
-                                className="flex items-center gap-1 px-3"
-                            >
-                                <Check className="h-4 w-4" />
-                            </Button>
-                        )}
-                    </div>
-                </SettingContainer>
             </SettingsGroup>
         </div>
     );

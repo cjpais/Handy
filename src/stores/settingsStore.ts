@@ -124,6 +124,10 @@ const settingUpdaters: {
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
+  use_online_provider: (value) =>
+    commands.changeUseOnlineProviderSetting(value as boolean),
+  online_provider_id: (value) =>
+    commands.changeOnlineProviderIdSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -294,15 +298,15 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({
           settings: state.settings
             ? {
-                ...state.settings,
-                bindings: {
-                  ...state.settings.bindings,
-                  [id]: {
-                    ...state.settings.bindings[id]!,
-                    current_binding: binding,
-                  },
+              ...state.settings,
+              bindings: {
+                ...state.settings.bindings,
+                [id]: {
+                  ...state.settings.bindings[id]!,
+                  current_binding: binding,
                 },
-              }
+              },
+            }
             : null,
         }));
 
@@ -315,15 +319,15 @@ export const useSettingsStore = create<SettingsStore>()(
           set((state) => ({
             settings: state.settings
               ? {
-                  ...state.settings,
-                  bindings: {
-                    ...state.settings.bindings,
-                    [id]: {
-                      ...state.settings.bindings[id]!,
-                      current_binding: originalBinding,
-                    },
+                ...state.settings,
+                bindings: {
+                  ...state.settings.bindings,
+                  [id]: {
+                    ...state.settings.bindings[id]!,
+                    current_binding: originalBinding,
                   },
-                }
+                },
+              }
               : null,
           }));
         }

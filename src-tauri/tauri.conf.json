@@ -15,9 +15,9 @@
       {
         "label": "main",
         "title": "Handy",
-        "width": 680,
+        "width": 800,
         "height": 570,
-        "minWidth": 680,
+        "minWidth": 800,
         "minHeight": 570,
         "resizable": true,
         "maximizable": false,
@@ -29,7 +29,9 @@
       "assetProtocol": {
         "enable": true,
         "scope": {
-          "allow": ["**"],
+          "allow": [
+            "**"
+          ],
           "requireLiteralLeadingDot": false
         }
       }
@@ -39,7 +41,9 @@
     "active": true,
     "createUpdaterArtifacts": true,
     "targets": "all",
-    "resources": ["resources/**/*"],
+    "resources": [
+      "resources/**/*"
+    ],
     "license": "MIT",
     "icon": [
       "icons/32x32.png",
