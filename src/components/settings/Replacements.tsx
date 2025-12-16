@@ -6,7 +6,7 @@ import { Button } from "../ui/Button";
 import { SettingsGroup } from "../ui/SettingsGroup";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { Replacement, CapitalizationRule } from "@/bindings";
-import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2, Space, X, Copy, Plus, Power, PowerOff } from "lucide-react";
+import { Trash2, ArrowRight, CaseUpper, CaseLower, Scissors, Pencil, GripVertical, Download, Upload, Regex, Wand2, Space, X, Copy, Plus, Power, PowerOff, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 
 const MAGIC_TAGS: Record<string, string> = {
   '[lowercase]': 'Converts the entire text to lowercase',
@@ -108,6 +108,7 @@ export const Replacements: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [filterText, setFilterText] = useState("");
   const [lastImportedRange, setLastImportedRange] = useState<{start: number, count: number} | null>(null);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   
   // Autocomplete state
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -242,6 +243,7 @@ export const Replacements: React.FC = () => {
   const handleStartAdd = () => {
     resetForm();
     setIsAdding(true);
+    setShowAdvancedOptions(false);
     setTimeout(() => {
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         searchInputRef.current?.focus();
@@ -260,6 +262,9 @@ export const Replacements: React.FC = () => {
     setCapitalization(item.capitalization_rule || "none");
     setEditingIndex(index);
     setIsAdding(false);
+    // auto-expand if non-default advanced options are present
+    const hasAdvanced = !!(item.is_regex || item.trim_punctuation_before || item.trim_punctuation_after || item.trim_spaces_before || item.trim_spaces_after || (item.capitalization_rule && item.capitalization_rule !== 'none'));
+    setShowAdvancedOptions(hasAdvanced);
     // Wait for render then scroll
     setTimeout(() => {
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -560,125 +565,146 @@ export const Replacements: React.FC = () => {
               )}
             </div>
           </div>
-          
-          <div className="flex flex-col gap-2 text-sm text-mid-gray">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
-                  <Scissors className="w-4 h-4" />
-                  <span>{t('settings.replacements.trimPunctuation')}</span>
-                </label>
-                <InfoTooltip text={t('settings.replacements.trimPunctuationTooltip')} />
-                <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-0.5">
-                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
-                    <input
-                      type="checkbox"
-                      checked={trimPunctuationBefore}
-                      onChange={(e) => setTrimPunctuationBefore(e.target.checked)}
-                      className="hidden"
-                    />
-                    {t('settings.replacements.before')}
-                  </label>
-                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
-                    <input
-                      type="checkbox"
-                      checked={trimPunctuationAfter}
-                      onChange={(e) => setTrimPunctuationAfter(e.target.checked)}
-                      className="hidden"
-                    />
-                    {t('settings.replacements.after')}
-                  </label>
-                </div>
-              </div>
+          <div className="flex justify-center">
+            <button
+              className="inline-flex items-center gap-2 text-mid-gray hover:text-white transition-colors px-2 py-1 rounded-md"
+              onClick={() => setShowAdvancedOptions(prev => !prev)}
+              aria-expanded={showAdvancedOptions}
+              title={showAdvancedOptions ? t('common.close') : t('settings.replacements.advancedOptions')}
+            >
+              {showAdvancedOptions ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              <span className="text-sm">{t('settings.replacements.advancedOptions')}</span>
+            </button>
+          </div>
 
-              <div className="h-4 w-px bg-mid-gray/30" />
-
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
-                  <Space className="w-4 h-4" />
-                  <span>{t('settings.replacements.trimSpaces')}</span>
-                </label>
-                <InfoTooltip text={t('settings.replacements.trimSpacesTooltip')} />
-                <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-0.5">
-                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
-                    <input
-                      type="checkbox"
-                      checked={trimSpacesBefore}
-                      onChange={(e) => setTrimSpacesBefore(e.target.checked)}
-                      className="hidden"
-                    />
-                    {t('settings.replacements.before')}
-                  </label>
-                  <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
-                    <input
-                      type="checkbox"
-                      checked={trimSpacesAfter}
-                      onChange={(e) => setTrimSpacesAfter(e.target.checked)}
-                      className="hidden"
-                    />
-                    {t('settings.replacements.after')}
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none hover:text-white transition-colors">
+          {showAdvancedOptions && (
+            <div className="flex flex-col gap-3 text-sm text-mid-gray">
+              {/* Regex at top as a separate option (inline control) */}
+              <div className="flex items-center gap-3">
+                <div className="w-56 flex items-center gap-2">
                   <Regex className="w-4 h-4" />
-                  <span>{t('settings.replacements.regex')}</span>
-                </label>
-                <InfoTooltip text={t('settings.replacements.regexTooltip')} />
-                <input
+                  <span className="font-medium whitespace-nowrap">{t('settings.replacements.regex')}</span>
+                  <InfoTooltip text={t('settings.replacements.regexTooltip')} />
+                </div>
+                <div className="flex items-center">
+                  <input
                     type="checkbox"
                     checked={isRegex}
                     onChange={(e) => setIsRegex(e.target.checked)}
                     className="rounded border-mid-gray bg-transparent text-logo-primary focus:ring-logo-primary"
+                    aria-label={t('settings.replacements.regex')}
                   />
+                </div>
               </div>
 
-              <div className="h-4 w-px bg-mid-gray/30" />
+              {/* Trim Punctuation: inline controls right after label */}
+              <div className="flex items-center gap-3">
+                <div className="w-56 flex items-center gap-2">
+                  <Scissors className="w-4 h-4" />
+                  <span className="font-medium whitespace-nowrap">{t('settings.replacements.trimPunctuation')}</span>
+                  <InfoTooltip text={t('settings.replacements.trimPunctuationTooltip')} />
+                </div>
+                <div className="flex items-center">
+                  <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-1">
+                    <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                      <input
+                        type="checkbox"
+                        checked={trimPunctuationBefore}
+                        onChange={(e) => setTrimPunctuationBefore(e.target.checked)}
+                        className="hidden"
+                      />
+                      {t('settings.replacements.before')}
+                    </label>
+                    <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimPunctuationAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                      <input
+                        type="checkbox"
+                        checked={trimPunctuationAfter}
+                        onChange={(e) => setTrimPunctuationAfter(e.target.checked)}
+                        className="hidden"
+                      />
+                      {t('settings.replacements.after')}
+                    </label>
+                  </div>
+                </div>
+              </div>
 
-              <div className="flex items-center gap-2">
-                <span>{t('settings.replacements.nextWord')}</span>
-                <InfoTooltip text={t('settings.replacements.nextWordTooltip')} />
-                <div className="flex bg-mid-gray/10 rounded-md p-0.5">
-                  <button
-                    onClick={() => setCapitalization("none")}
-                    className={`px-2 py-1 rounded text-xs transition-colors ${
-                      capitalization === "none" 
-                        ? "bg-mid-gray/30 text-white" 
-                        : "hover:bg-mid-gray/20"
-                    }`}
-                  >
-                    {t('settings.replacements.none')}
-                  </button>
-                  <button
-                    onClick={() => setCapitalization("force_uppercase")}
-                    className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
-                      capitalization === "force_uppercase" 
-                        ? "bg-mid-gray/30 text-white" 
-                        : "hover:bg-mid-gray/20"
-                    }`}
-                    title="Force Uppercase"
-                  >
-                    <CaseUpper className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => setCapitalization("force_lowercase")}
-                    className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
-                      capitalization === "force_lowercase" 
-                        ? "bg-mid-gray/30 text-white" 
-                        : "hover:bg-mid-gray/20"
-                    }`}
-                    title="Force Lowercase"
-                  >
-                    <CaseLower className="w-3 h-3" />
-                  </button>
+              {/* Trim Spaces: inline controls right after label */}
+              <div className="flex items-center gap-3">
+                <div className="w-56 flex items-center gap-2">
+                  <Space className="w-4 h-4" />
+                  <span className="font-medium whitespace-nowrap">{t('settings.replacements.trimSpaces')}</span>
+                  <InfoTooltip text={t('settings.replacements.trimSpacesTooltip')} />
+                </div>
+                <div className="flex items-center">
+                  <div className="flex items-center gap-2 bg-mid-gray/10 rounded-md p-1">
+                    <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesBefore ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                      <input
+                        type="checkbox"
+                        checked={trimSpacesBefore}
+                        onChange={(e) => setTrimSpacesBefore(e.target.checked)}
+                        className="hidden"
+                      />
+                      {t('settings.replacements.before')}
+                    </label>
+                    <label className={`px-2 py-1 rounded text-xs cursor-pointer transition-colors ${trimSpacesAfter ? "bg-mid-gray/30 text-white" : "hover:bg-mid-gray/20"}`}>
+                      <input
+                        type="checkbox"
+                        checked={trimSpacesAfter}
+                        onChange={(e) => setTrimSpacesAfter(e.target.checked)}
+                        className="hidden"
+                      />
+                      {t('settings.replacements.after')}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Next word: inline controls */}
+              <div className="flex items-center gap-3">
+                <div className="w-56 flex items-center gap-3">
+                  <CaseUpper className="w-5 h-5" />
+                  <span className="font-medium whitespace-nowrap">{t('settings.replacements.nextWord')}</span>
+                  <InfoTooltip text={t('settings.replacements.nextWordTooltip')} />
+                </div>
+                <div className="flex items-center">
+                  <div className="ml-0 flex items-center gap-2 bg-mid-gray/10 rounded-md p-1">
+                    <button
+                      onClick={() => setCapitalization("none")}
+                      className={`px-2 py-1 rounded text-xs transition-colors ${
+                        capitalization === "none" 
+                          ? "bg-mid-gray/30 text-white" 
+                          : "hover:bg-mid-gray/20"
+                      }`}
+                    >
+                      {t('settings.replacements.none')}
+                    </button>
+                    <button
+                      onClick={() => setCapitalization("force_uppercase")}
+                      className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
+                        capitalization === "force_uppercase" 
+                          ? "bg-mid-gray/30 text-white" 
+                          : "hover:bg-mid-gray/20"
+                      }`}
+                      title="Force Uppercase"
+                    >
+                      <CaseUpper className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => setCapitalization("force_lowercase")}
+                      className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1 ${
+                        capitalization === "force_lowercase" 
+                          ? "bg-mid-gray/30 text-white" 
+                          : "hover:bg-mid-gray/20"
+                      }`}
+                      title="Force Lowercase"
+                    >
+                      <CaseLower className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="flex gap-2">
               <Button
