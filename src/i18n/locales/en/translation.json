@@ -275,6 +275,10 @@
         "title": "Log Level",
         "description": "Set the verbosity of logging"
       },
+      "whisperRuntime": {
+        "title": "Whisper Runtime",
+        "description": "Choose between standard Whisper or experimental Whisperfile. Model must be reloaded for changes to take effect."
+      },
       "updateChecks": {
         "label": "Check for Updates",
         "description": "Automatically check for new versions of Handy"

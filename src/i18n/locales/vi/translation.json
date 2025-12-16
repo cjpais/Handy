@@ -276,6 +276,10 @@
         "title": "Mức nhật ký",
         "description": "Đặt mức độ chi tiết của nhật ký"
       },
+      "whisperRuntime": {
+        "title": "Công cụ Whisper",
+        "description": "Chọn giữa Whisper tiêu chuẩn hoặc Whisperfile thử nghiệm. Mô hình cần được tải lại để thay đổi có hiệu lực."
+      },
       "updateChecks": {
         "label": "Kiểm tra cập nhật",
         "description": "Tự động kiểm tra phiên bản mới của Handy"

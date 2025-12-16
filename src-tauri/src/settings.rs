@@ -151,6 +151,19 @@ pub enum RecordingRetentionPeriod {
     Months3,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum WhisperRuntime {
+    Whisper,
+    Whisperfile,
+}
+
+impl Default for WhisperRuntime {
+    fn default() -> Self {
+        WhisperRuntime::Whisper
+    }
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -259,6 +272,8 @@ pub struct AppSettings {
     pub debug_mode: bool,
     #[serde(default = "default_log_level")]
     pub log_level: LogLevel,
+    #[serde(default)]
+    pub whisper_runtime: WhisperRuntime,
     #[serde(default)]
     pub custom_words: Vec<String>,
     #[serde(default)]
@@ -538,6 +553,7 @@ pub fn get_default_settings() -> AppSettings {
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
+        whisper_runtime: WhisperRuntime::default(),
         custom_words: Vec::new(),
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),

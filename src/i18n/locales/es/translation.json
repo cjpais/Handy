@@ -275,6 +275,10 @@
         "title": "Nivel de Registro",
         "description": "Establece el nivel de detalle del registro"
       },
+      "whisperRuntime": {
+        "title": "Motor de Whisper",
+        "description": "Elige entre Whisper estándar o Whisperfile experimental. El modelo debe recargarse para que los cambios surtan efecto."
+      },
       "updateChecks": {
         "label": "Buscar Actualizaciones",
         "description": "Buscar automáticamente nuevas versiones de Handy"
