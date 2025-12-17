@@ -22,6 +22,7 @@ use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
+use managers::operation::OperationCoordinator;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
 use signal_hook::consts::SIGUSR2;
@@ -125,12 +126,14 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+    let operation_coordinator = Arc::new(OperationCoordinator::new(app_handle));
 
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(operation_coordinator.clone());
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);

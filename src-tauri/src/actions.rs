@@ -3,6 +3,7 @@ use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::managers::operation::OperationCoordinator;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
@@ -13,7 +14,7 @@ use async_openai::types::{
     CreateChatCompletionRequestArgs,
 };
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error};
+use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -248,6 +249,16 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // Start a new operation via the coordinator. This will automatically
+        // mark any in-progress operation as stale, preventing race conditions
+        // when rapidly toggling push-to-talk.
+        let coordinator = app.state::<Arc<OperationCoordinator>>();
+        let operation_id = coordinator.start_recording(binding_id);
+        debug!(
+            "Started operation {} for binding: {}",
+            operation_id, binding_id
+        );
+
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
         tm.initiate_model_load();
@@ -299,6 +310,8 @@ impl ShortcutAction for TranscribeAction {
                 });
             } else {
                 debug!("Failed to start recording");
+                // If recording failed to start, complete the operation
+                coordinator.complete(operation_id);
             }
         }
 
@@ -320,10 +333,34 @@ impl ShortcutAction for TranscribeAction {
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
 
+        // Get the current operation ID from the coordinator
+        let coordinator = app.state::<Arc<OperationCoordinator>>();
+        let operation_id = match coordinator.active_operation_id() {
+            Some(id) => id,
+            None => {
+                warn!("TranscribeAction::stop called but no active operation found");
+                utils::hide_recording_overlay(app);
+                change_tray_icon(app, TrayIconState::Idle);
+                return;
+            }
+        };
+
+        // Transition to processing phase
+        if !coordinator.transition_to_processing(operation_id) {
+            info!(
+                "Operation {} was superseded, aborting stop",
+                operation_id
+            );
+            utils::hide_recording_overlay(app);
+            change_tray_icon(app, TrayIconState::Idle);
+            return;
+        }
+
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        let coordinator = Arc::clone(&coordinator);
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
@@ -339,9 +376,26 @@ impl ShortcutAction for TranscribeAction {
         tauri::async_runtime::spawn(async move {
             let binding_id = binding_id.clone(); // Clone for the inner async task
             debug!(
-                "Starting async transcription task for binding: {}",
-                binding_id
+                "Starting async transcription task for binding: {} (operation {})",
+                binding_id, operation_id
             );
+
+            // Helper to clean up UI and complete operation
+            let cleanup = |ah: &AppHandle, coordinator: &OperationCoordinator, op_id: u64| {
+                utils::hide_recording_overlay(ah);
+                change_tray_icon(ah, TrayIconState::Idle);
+                coordinator.complete(op_id);
+            };
+
+            // Check if operation is still active before proceeding
+            if !coordinator.is_active(operation_id) {
+                info!(
+                    "Operation {} is no longer active, aborting transcription",
+                    operation_id
+                );
+                cleanup(&ah, &coordinator, operation_id);
+                return;
+            }
 
             let stop_recording_time = Instant::now();
             if let Some(samples) = rm.stop_recording(&binding_id) {
@@ -350,6 +404,16 @@ impl ShortcutAction for TranscribeAction {
                     stop_recording_time.elapsed(),
                     samples.len()
                 );
+
+                // Check again before transcription (this is the expensive part)
+                if !coordinator.is_active(operation_id) {
+                    info!(
+                        "Operation {} superseded before transcription, aborting",
+                        operation_id
+                    );
+                    cleanup(&ah, &coordinator, operation_id);
+                    return;
+                }
 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
@@ -360,6 +424,17 @@ impl ShortcutAction for TranscribeAction {
                             transcription_time.elapsed(),
                             transcription
                         );
+
+                        // Check again after transcription before pasting
+                        if !coordinator.is_active(operation_id) {
+                            info!(
+                                "Operation {} superseded after transcription, not pasting",
+                                operation_id
+                            );
+                            cleanup(&ah, &coordinator, operation_id);
+                            return;
+                        }
+
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
@@ -392,6 +467,16 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
 
+                            // Final check before pasting (after potentially slow post-processing)
+                            if !coordinator.is_active(operation_id) {
+                                info!(
+                                    "Operation {} superseded after post-processing, not pasting",
+                                    operation_id
+                                );
+                                cleanup(&ah, &coordinator, operation_id);
+                                return;
+                            }
+
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
@@ -411,6 +496,7 @@ impl ShortcutAction for TranscribeAction {
 
                             // Paste the final text (either processed or original)
                             let ah_clone = ah.clone();
+                            let coordinator_clone = Arc::clone(&coordinator);
                             let paste_time = Instant::now();
                             ah.run_on_main_thread(move || {
                                 match utils::paste(final_text, ah_clone.clone()) {
@@ -423,27 +509,24 @@ impl ShortcutAction for TranscribeAction {
                                 // Hide the overlay after transcription is complete
                                 utils::hide_recording_overlay(&ah_clone);
                                 change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                coordinator_clone.complete(operation_id);
                             })
                             .unwrap_or_else(|e| {
                                 error!("Failed to run paste on main thread: {:?}", e);
-                                utils::hide_recording_overlay(&ah);
-                                change_tray_icon(&ah, TrayIconState::Idle);
+                                cleanup(&ah, &coordinator, operation_id);
                             });
                         } else {
-                            utils::hide_recording_overlay(&ah);
-                            change_tray_icon(&ah, TrayIconState::Idle);
+                            cleanup(&ah, &coordinator, operation_id);
                         }
                     }
                     Err(err) => {
                         debug!("Global Shortcut Transcription error: {}", err);
-                        utils::hide_recording_overlay(&ah);
-                        change_tray_icon(&ah, TrayIconState::Idle);
+                        cleanup(&ah, &coordinator, operation_id);
                     }
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
-                utils::hide_recording_overlay(&ah);
-                change_tray_icon(&ah, TrayIconState::Idle);
+                cleanup(&ah, &coordinator, operation_id);
             }
         });
 
