@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Cloud } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Sparkles } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -11,7 +11,6 @@ import {
   DebugSettings,
   AboutSettings,
   PostProcessingSettings,
-  OnlineProviderSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -43,12 +42,6 @@ export const SECTIONS_CONFIG = {
     icon: Cog,
     component: AdvancedSettings,
     enabled: () => true,
-  },
-  providers: {
-    labelKey: "sidebar.providers",
-    icon: Cloud,
-    component: OnlineProviderSettings,
-    enabled: (settings) => settings?.use_online_provider ?? false,
   },
   postprocessing: {
     labelKey: "sidebar.postProcessing",
@@ -104,8 +97,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               key={section.id}
               className={`flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer transition-colors ${isActive
-                  ? "bg-logo-primary/80"
-                  : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
+                ? "bg-logo-primary/80"
+                : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
                 }`}
               onClick={() => onSectionChange(section.id)}
             >

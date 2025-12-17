@@ -124,10 +124,6 @@ const settingUpdaters: {
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
-  use_online_provider: (value) =>
-    commands.changeUseOnlineProviderSetting(value as boolean),
-  online_provider_id: (value) =>
-    commands.changeOnlineProviderIdSetting(value as string),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
 };
 

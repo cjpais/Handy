@@ -9,7 +9,6 @@ import { PushToTalk } from "../PushToTalk";
 import { AudioFeedback } from "../AudioFeedback";
 import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
-import { UseOnlineProviderToggle } from "../UseOnlineProviderToggle";
 import { PostProcessingToggle } from "../PostProcessingToggle";
 
 export const GeneralSettings: React.FC = () => {
@@ -21,7 +20,6 @@ export const GeneralSettings: React.FC = () => {
         <HandyShortcut shortcutId="transcribe" grouped={true} />
         <LanguageSelector descriptionMode="tooltip" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
-        <UseOnlineProviderToggle descriptionMode="tooltip" grouped={true} />
         <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
       <SettingsGroup title={t("settings.sound.title")}>

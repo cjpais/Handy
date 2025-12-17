@@ -30,176 +30,6 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction;
 
-/// Online provider configuration for audio transcription
-struct OnlineTranscriptionProvider {
-    base_url: String,
-    model: String,
-    api_key: String,
-}
-
-/// Transcribe audio using an online provider (OpenAI, Groq, SambaNova, etc.)
-async fn transcribe_online(
-    provider: OnlineTranscriptionProvider,
-    audio_samples: Vec<f32>,
-    language: Option<String>,
-) -> Result<String, String> {
-    use hound::{WavSpec, WavWriter};
-    use std::io::Cursor;
-
-    debug!(
-        "Starting online transcription with provider base_url: {}",
-        provider.base_url
-    );
-
-    // Convert f32 samples to WAV format in memory
-    let spec = WavSpec {
-        channels: 1,
-        sample_rate: 16000,
-        bits_per_sample: 16,
-        sample_format: hound::SampleFormat::Int,
-    };
-
-    let mut buffer = Cursor::new(Vec::new());
-    {
-        let mut writer = WavWriter::new(&mut buffer, spec)
-            .map_err(|e| format!("Failed to create WAV writer: {}", e))?;
-
-        for sample in &audio_samples {
-            // Convert f32 [-1.0, 1.0] to i16
-            let i16_sample = (sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
-            writer
-                .write_sample(i16_sample)
-                .map_err(|e| format!("Failed to write sample: {}", e))?;
-        }
-        writer
-            .finalize()
-            .map_err(|e| format!("Failed to finalize WAV: {}", e))?;
-    }
-
-    let wav_data = buffer.into_inner();
-    debug!("Created WAV data: {} bytes", wav_data.len());
-
-    // Build the transcription endpoint URL
-    let base_url = provider.base_url.trim_end_matches('/');
-    let endpoint = format!("{}/audio/transcriptions", base_url);
-
-    // Create multipart form
-    let form = reqwest::multipart::Form::new()
-        .text("model", provider.model.clone())
-        .part(
-            "file",
-            reqwest::multipart::Part::bytes(wav_data)
-                .file_name("audio.wav")
-                .mime_str("audio/wav")
-                .map_err(|e| format!("Failed to set MIME type: {}", e))?,
-        );
-
-    // Add language if specified and not "auto"
-    let form = if let Some(lang) = language {
-        if lang != "auto" {
-            form.text("language", lang)
-        } else {
-            form
-        }
-    } else {
-        form
-    };
-
-    // Create HTTP client with authorization header
-    let client = reqwest::Client::new();
-    let response = client
-        .post(&endpoint)
-        .bearer_auth(&provider.api_key)
-        .multipart(form)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to send transcription request: {}", e))?;
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let error_text = response
-            .text()
-            .await
-            .unwrap_or_else(|_| "Unknown error".to_string());
-        return Err(format!(
-            "Transcription request failed ({}): {}",
-            status, error_text
-        ));
-    }
-
-    // Parse the response - OpenAI returns { "text": "..." }
-    let response_text = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
-
-    let parsed: serde_json::Value = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    let text = parsed
-        .get("text")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-
-    debug!(
-        "Online transcription completed. Result length: {} chars",
-        text.len()
-    );
-
-    Ok(text)
-}
-
-/// Get the online provider configuration from settings
-fn get_online_transcription_provider(settings: &AppSettings) -> Option<OnlineTranscriptionProvider> {
-    let provider_id = &settings.online_provider_id;
-    let api_key = settings
-        .online_provider_api_keys
-        .get(provider_id)
-        .cloned()
-        .unwrap_or_default();
-
-    if api_key.trim().is_empty() {
-        error!(
-            "Online transcription skipped: no API key for provider '{}'",
-            provider_id
-        );
-        return None;
-    }
-
-    let model = settings
-        .online_provider_models
-        .get(provider_id)
-        .cloned()
-        .unwrap_or_else(|| {
-            // Default models per provider
-            match provider_id.as_str() {
-                "openai" => "whisper-1".to_string(),
-                "groq" => "whisper-large-v3-turbo".to_string(),
-                "sambanova" => "whisper-large-v3".to_string(),
-                "gemini" => "gemini-2.0-flash".to_string(),
-                _ => "whisper-1".to_string(),
-            }
-        });
-
-    // Provider base URLs
-    let base_url = match provider_id.as_str() {
-        "openai" => "https://api.openai.com/v1".to_string(),
-        "groq" => "https://api.groq.com/openai/v1".to_string(),
-        "sambanova" => "https://api.sambanova.ai/v1".to_string(),
-        "gemini" => "https://generativelanguage.googleapis.com/v1beta/openai".to_string(),
-        _ => {
-            error!("Unknown online provider: {}", provider_id);
-            return None;
-        }
-    };
-
-    Some(OnlineTranscriptionProvider {
-        base_url,
-        model,
-        api_key,
-    })
-}
 
 
 async fn maybe_post_process_transcription(
@@ -420,15 +250,9 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
-        // Only load the local model if we're NOT using an online provider
-        let settings = get_settings(app);
-        if !settings.use_online_provider {
-            // Load model in the background
-            let tm = app.state::<Arc<TranscriptionManager>>();
-            tm.initiate_model_load();
-        } else {
-            debug!("Using online provider for transcription, skipping local model load");
-        }
+        // Load model in the background
+        let tm = app.state::<Arc<TranscriptionManager>>();
+        tm.initiate_model_load();
 
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
@@ -529,33 +353,14 @@ impl ShortcutAction for TranscribeAction {
                     samples.len()
                 );
 
-                // Get settings to check if we should use online provider
                 let settings = get_settings(&ah);
                 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
                 
-                // Use either online or local transcription based on settings
-                let transcription_result: Result<String, String> = if settings.use_online_provider {
-                    // Online transcription
-                    debug!("Using online provider for transcription");
-                    if let Some(provider) = get_online_transcription_provider(&settings) {
-                        let language = if settings.selected_language == "auto" {
-                            None
-                        } else {
-                            Some(settings.selected_language.clone())
-                        };
-                        transcribe_online(provider, samples, language)
-                            .await
-                            .map_err(|e| format!("Online transcription failed: {}", e))
-                    } else {
-                        Err("Online provider not configured properly".to_string())
-                    }
-                } else {
-                    // Local transcription
-                    debug!("Using local model for transcription");
-                    tm.transcribe(samples).map_err(|e| e.to_string())
-                };
+                // Use local transcription
+                debug!("Using local model for transcription");
+                let transcription_result: Result<String, String> = tm.transcribe(samples).map_err(|e| e.to_string());
 
                 match transcription_result {
                     Ok(transcription) => {

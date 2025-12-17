@@ -291,17 +291,6 @@ pub struct AppSettings {
     pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
-    // Online provider settings
-    #[serde(default)]
-    pub use_online_provider: bool,
-    #[serde(default = "default_online_provider_id")]
-    pub online_provider_id: String,
-    #[serde(default = "default_online_provider_api_keys")]
-    pub online_provider_api_keys: HashMap<String, String>,
-    #[serde(default = "default_online_provider_models")]
-    pub online_provider_models: HashMap<String, String>,
-    #[serde(default)]
-    pub online_provider_custom_prompt: Option<String>,
     #[serde(default = "default_app_language")]
     pub app_language: String,
 }
@@ -373,27 +362,6 @@ fn default_post_process_enabled() -> bool {
     false
 }
 
-fn default_online_provider_id() -> String {
-    "openai".to_string()
-}
-
-fn default_online_provider_api_keys() -> HashMap<String, String> {
-    let mut map = HashMap::new();
-    map.insert("openai".to_string(), String::new());
-    map.insert("groq".to_string(), String::new());
-    map.insert("gemini".to_string(), String::new());
-    map.insert("sambanova".to_string(), String::new());
-    map
-}
-
-fn default_online_provider_models() -> HashMap<String, String> {
-    let mut map = HashMap::new();
-    map.insert("openai".to_string(), "whisper".to_string());
-    map.insert("groq".to_string(), "whisper-large-v3-turbo".to_string());
-    map.insert("gemini".to_string(), "gemini-2.0-flash".to_string());
-    map.insert("sambanova".to_string(), "whisper-large-v3".to_string());
-    map
-}
 
 fn default_app_language() -> String {
     "en".to_string()
@@ -615,12 +583,6 @@ pub fn get_default_settings() -> AppSettings {
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
         append_trailing_space: false,
-        // Online provider defaults
-        use_online_provider: false,
-        online_provider_id: default_online_provider_id(),
-        online_provider_api_keys: default_online_provider_api_keys(),
-        online_provider_models: default_online_provider_models(),
-        online_provider_custom_prompt: None,
         app_language: default_app_language(),
     }
 }

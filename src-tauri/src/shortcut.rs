@@ -717,55 +717,6 @@ pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Re
     Ok(())
 }
 
-#[tauri::command]
-#[specta::specta]
-pub fn change_use_online_provider_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.use_online_provider = enabled;
-    settings::write_settings(&app, settings);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn change_online_provider_id_setting(
-    app: AppHandle,
-    provider_id: String,
-) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.online_provider_id = provider_id;
-    settings::write_settings(&app, settings);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn change_online_provider_api_key_setting(
-    app: AppHandle,
-    provider_id: String,
-    api_key: String,
-) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings
-        .online_provider_api_keys
-        .insert(provider_id, api_key);
-    settings::write_settings(&app, settings);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn change_online_provider_model_setting(
-    app: AppHandle,
-    provider_id: String,
-    model: String,
-) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    // Store the model per provider - we need to add this field to settings
-    settings.online_provider_models.insert(provider_id, model);
-    settings::write_settings(&app, settings);
-    Ok(())
-}
 
 #[tauri::command]
 #[specta::specta]
