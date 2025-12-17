@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "../../hooks/useSettings";
 import { Input } from "../ui/Input";
 import { SettingContainer } from "../ui/SettingContainer";
@@ -12,21 +13,22 @@ export const HistoryLimit: React.FC<HistoryLimitProps> = ({
   descriptionMode = "inline",
   grouped = false,
 }) => {
+  const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
 
-  const historyLimit = Number(getSetting("history_limit") ?? "5");
+  const historyLimit = getSetting("history_limit") ?? 5;
 
   const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value, 10);
     if (!isNaN(value) && value >= 0) {
-      updateSetting("history_limit", value.toString());
+      updateSetting("history_limit", value);
     }
   };
 
   return (
     <SettingContainer
-      title="History Limit"
-      description="Maximum number of transcription entries to keep in history"
+      title={t("settings.debug.historyLimit.title")}
+      description={t("settings.debug.historyLimit.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
       layout="horizontal"
@@ -41,7 +43,9 @@ export const HistoryLimit: React.FC<HistoryLimitProps> = ({
           disabled={isUpdating("history_limit")}
           className="w-20"
         />
-        <span className="text-sm text-text">entries</span>
+        <span className="text-sm text-text">
+          {t("settings.debug.historyLimit.entries")}
+        </span>
       </div>
     </SettingContainer>
   );

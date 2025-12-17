@@ -11,6 +11,7 @@ use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutBinding;
 use crate::settings::{
     self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
+    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::ManagedToggleState;
 
@@ -344,6 +345,7 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
         "direct" => PasteMethod::Direct,
         "none" => PasteMethod::None,
         "shift_insert" => PasteMethod::ShiftInsert,
+        "ctrl_shift_v" => PasteMethod::CtrlShiftV,
         other => {
             warn!("Invalid paste method '{}', defaulting to ctrl_v", other);
             PasteMethod::CtrlV
@@ -556,6 +558,18 @@ pub async fn fetch_post_process_models(
         .find(|p| p.id == provider_id)
         .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
 
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            return Ok(vec![APPLE_INTELLIGENCE_DEFAULT_MODEL_ID.to_string()]);
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            return Err("Apple Intelligence is only available on Apple silicon Macs running macOS 15 or later.".to_string());
+        }
+    }
+
     // Get API key
     let api_key = settings
         .post_process_api_keys
@@ -701,6 +715,26 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
 pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.mute_while_recording = enabled;
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.append_trailing_space = enabled;
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.app_language = language;
     settings::write_settings(&app, settings);
 
     Ok(())

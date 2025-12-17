@@ -1,0 +1,413 @@
+{
+  "sidebar": {
+    "general": "通用",
+    "advanced": "高级",
+    "postProcessing": "后处理",
+    "history": "历史记录",
+    "debug": "调试",
+    "about": "关于"
+  },
+  "onboarding": {
+    "subtitle": "请选择一个转录模型以开始使用",
+    "recommended": "推荐",
+    "download": "下载",
+    "downloading": "下载中...",
+    "modelCard": {
+      "accuracy": "准确度",
+      "speed": "速度"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "快速且相当准确。"
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "准确度高，速度适中"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "准确度和速度均衡。"
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "准确度高，但速度较慢。"
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "仅支持英语。英语用户的最佳模型。"
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "快速且准确"
+      }
+    },
+    "errors": {
+      "loadModels": "无法加载可用模型",
+      "downloadModel": "模型下载失败: {{error}}"
+    }
+  },
+  "modelSelector": {
+    "welcome": "欢迎使用 Handy！",
+    "downloadPrompt": "请下载以下模型以开始转录。",
+    "availableModels": "可用模型",
+    "downloadModels": "下载模型",
+    "chooseModel": "选择模型",
+    "active": "活跃",
+    "download": "下载",
+    "downloadSize": "下载大小",
+    "noModelsAvailable": "没有可用的模型",
+    "extracting": "正在解压 {{modelName}}...",
+    "extractingMultiple": "正在解压 {{count}} 个模型...",
+    "extractingGeneric": "解压中...",
+    "downloading": "下载中 {{percentage}}%",
+    "downloadingMultiple": "正在下载 {{count}} 个模型...",
+    "modelReady": "模型已就绪",
+    "loading": "正在加载 {{modelName}}...",
+    "loadingGeneric": "加载中...",
+    "modelError": "模型错误",
+    "modelUnloaded": "模型已卸载",
+    "noModelDownloadRequired": "无模型 - 需要下载",
+    "deleteModel": "删除 {{modelName}}"
+  },
+  "settings": {
+    "general": {
+      "title": "通用",
+      "shortcut": {
+        "title": "Handy 快捷键",
+        "description": "配置启动语音转文字录制的键盘快捷键",
+        "loading": "加载快捷键中...",
+        "none": "未配置快捷键",
+        "notFound": "未找到快捷键",
+        "pressKeys": "请按键...",
+        "bindings": {
+          "transcribe": {
+            "name": "转录",
+            "description": "将语音转换为文字。"
+          },
+          "cancel": {
+            "name": "取消",
+            "description": "取消当前录制。"
+          }
+        },
+        "errors": {
+          "restore": "无法恢复原始快捷键",
+          "set": "无法设置快捷键: {{error}}",
+          "reset": "无法将快捷键重置为原始值"
+        }
+      },
+      "language": {
+        "title": "语言",
+        "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
+        "descriptionUnsupported": "Parakeet 模型会自动检测语言，无需手动选择。",
+        "searchPlaceholder": "搜索语言...",
+        "noResults": "未找到语言",
+        "auto": "自动"
+      },
+      "pushToTalk": {
+        "label": "按住说话",
+        "description": "按住录制，松开停止"
+      }
+    },
+    "sound": {
+      "title": "声音",
+      "microphone": {
+        "title": "麦克风",
+        "description": "选择您偏好的麦克风设备",
+        "placeholder": "选择麦克风...",
+        "loading": "加载中..."
+      },
+      "audioFeedback": {
+        "label": "音频反馈",
+        "description": "录制开始和停止时播放声音"
+      },
+      "outputDevice": {
+        "title": "输出设备",
+        "description": "选择用于反馈声音的音频输出设备",
+        "placeholder": "选择输出设备...",
+        "loading": "加载中..."
+      },
+      "volume": {
+        "title": "音量",
+        "description": "调整音频反馈的音量"
+      }
+    },
+    "advanced": {
+      "title": "高级",
+      "startHidden": {
+        "label": "隐藏启动",
+        "description": "启动到系统托盘而不打开窗口。"
+      },
+      "autostart": {
+        "label": "开机启动",
+        "description": "登录计算机时自动启动 Handy。"
+      },
+      "overlay": {
+        "title": "悬浮窗位置",
+        "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
+        "options": {
+          "none": "无",
+          "bottom": "底部",
+          "top": "顶部"
+        }
+      },
+      "pasteMethod": {
+        "title": "粘贴方式",
+        "description": "选择文字插入方式。直接：通过系统输入模拟打字。无：跳过粘贴，仅更新历史记录/剪贴板。",
+        "options": {
+          "clipboard": "剪贴板 ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "剪贴板 (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "剪贴板 (Shift+Insert)",
+          "direct": "直接",
+          "none": "无"
+        }
+      },
+      "clipboardHandling": {
+        "title": "剪贴板处理",
+        "description": "不修改剪贴板将在转录后保留当前剪贴板内容。复制到剪贴板将在粘贴后将转录结果留在剪贴板中。",
+        "options": {
+          "dontModify": "不修改剪贴板",
+          "copyToClipboard": "复制到剪贴板"
+        }
+      },
+      "translateToEnglish": {
+        "label": "翻译为英语",
+        "description": "在转录过程中自动将其他语言的语音翻译为英语。",
+        "descriptionUnsupported": "{{model}} 模型不支持翻译功能。"
+      },
+      "modelUnload": {
+        "title": "卸载模型",
+        "description": "当模型在指定时间内未使用时自动释放 GPU/CPU 内存",
+        "options": {
+          "never": "从不",
+          "immediately": "立即",
+          "min2": "2 分钟后",
+          "min5": "5 分钟后",
+          "min10": "10 分钟后",
+          "min15": "15 分钟后",
+          "hour1": "1 小时后",
+          "sec5": "5 秒后（调试）"
+        }
+      },
+      "customWords": {
+        "title": "自定义词汇",
+        "description": "添加经常被误听或拼写错误的词汇。系统将自动将发音相似的词汇修正为您列表中的词汇。",
+        "placeholder": "添加词汇",
+        "add": "添加",
+        "remove": "删除 {{word}}"
+      }
+    },
+    "postProcessing": {
+      "title": "后处理",
+      "disabledNotice": "后处理当前已禁用。请在调试设置中启用以进行配置。",
+      "api": {
+        "title": "API（兼容 OpenAI）",
+        "provider": {
+          "title": "提供商",
+          "description": "选择一个兼容 OpenAI 的提供商。"
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "完全在设备上运行。无需 API 密钥或网络访问。",
+          "requirements": "需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac。必须在系统设置中启用 Apple Intelligence。"
+        },
+        "baseUrl": {
+          "title": "基础 URL",
+          "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API 密钥",
+          "description": "所选提供商的 API 密钥。",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "模型",
+          "descriptionApple": "提供可选的数字令牌限制或保持默认的设备预设。",
+          "descriptionCustom": "提供自定义端点期望的模型标识符。",
+          "descriptionDefault": "选择所选提供商提供的模型。",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "搜索或选择模型",
+          "placeholderNoOptions": "输入模型名称",
+          "refreshModels": "刷新模型"
+        }
+      },
+      "prompts": {
+        "title": "提示词",
+        "selectedPrompt": {
+          "title": "已选提示词",
+          "description": "选择用于优化转录的模板或创建新模板。在提示词文本中使用 ${output} 来引用捕获的转录。"
+        },
+        "noPrompts": "没有可用的提示词",
+        "selectPrompt": "选择提示词",
+        "createNew": "创建新提示词",
+        "promptLabel": "提示词名称",
+        "promptLabelPlaceholder": "输入提示词名称",
+        "promptInstructions": "提示词指令",
+        "promptInstructionsPlaceholder": "编写转录后要执行的指令。示例：改进以下文本的语法和清晰度: ${output}",
+        "promptTip": "提示：使用 <code>${output}</code> 将转录文本插入到您的提示词中。",
+        "updatePrompt": "更新提示词",
+        "deletePrompt": "删除提示词",
+        "createPrompt": "创建提示词",
+        "cancel": "取消",
+        "selectToEdit": "选择上方的提示词以查看和编辑其详细信息。",
+        "createFirst": "点击上方的「创建新提示词」来创建您的第一个后处理提示词。"
+      }
+    },
+    "history": {
+      "title": "历史记录",
+      "openFolder": "打开录音文件夹",
+      "loading": "加载历史记录中...",
+      "empty": "还没有转录记录。开始录制以建立您的历史记录！",
+      "copyToClipboard": "复制转录到剪贴板",
+      "save": "保存转录",
+      "unsave": "从已保存中移除",
+      "delete": "删除条目",
+      "deleteError": "删除条目失败，请重试。"
+    },
+    "debug": {
+      "title": "调试",
+      "logDirectory": {
+        "title": "日志目录",
+        "description": "日志文件的存储位置"
+      },
+      "logLevel": {
+        "title": "日志级别",
+        "description": "设置日志的详细程度"
+      },
+      "updateChecks": {
+        "label": "检查更新",
+        "description": "自动检查 Handy 的新版本"
+      },
+      "soundTheme": {
+        "label": "声音主题",
+        "description": "选择录制开始和停止反馈的声音主题"
+      },
+      "wordCorrectionThreshold": {
+        "title": "词汇修正阈值",
+        "description": "自定义词汇修正的灵敏度"
+      },
+      "historyLimit": {
+        "title": "历史记录上限",
+        "description": "保留的最大历史条目数",
+        "entries": "条"
+      },
+      "recordingRetention": {
+        "title": "自动删除录音",
+        "description": "自动删除旧录音以节省空间",
+        "never": "从不",
+        "preserveLimit": "保留最新 {{count}} 条",
+        "days3": "3 天后",
+        "weeks2": "2 周后",
+        "months3": "3 个月后",
+        "placeholder": "选择保留期限..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "麦克风常开",
+        "description": "保持麦克风活跃以获得更快的响应"
+      },
+      "clamshellMicrophone": {
+        "title": "合盖麦克风",
+        "description": "笔记本电脑盖子关闭时使用的麦克风"
+      },
+      "postProcessingToggle": {
+        "label": "后处理",
+        "description": "启用转录后的 AI 文本优化"
+      },
+      "muteWhileRecording": {
+        "label": "录制时静音",
+        "description": "录制期间静音系统音频"
+      },
+      "appendTrailingSpace": {
+        "label": "追加尾部空格",
+        "description": "在粘贴的转录后添加空格"
+      },
+      "paths": {
+        "appData": "应用数据:",
+        "models": "模型:",
+        "settings": "设置:"
+      }
+    },
+    "about": {
+      "title": "关于",
+      "version": {
+        "title": "版本",
+        "description": "Handy 的当前版本"
+      },
+      "appDataDirectory": {
+        "title": "应用数据目录",
+        "description": "Handy 存储数据的位置"
+      },
+      "sourceCode": {
+        "title": "源代码",
+        "description": "查看源代码并贡献",
+        "button": "在 GitHub 上查看"
+      },
+      "supportDevelopment": {
+        "title": "支持开发",
+        "description": "帮助我们继续开发 Handy",
+        "button": "捐赠"
+      },
+      "acknowledgments": {
+        "title": "致谢",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
+          "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "正在下载 {{model}}...",
+    "checkingUpdates": "检查更新中...",
+    "updateAvailable": "有可用更新: {{version}}",
+    "updateAvailableShort": "有可用更新",
+    "upToDate": "已是最新版本",
+    "downloadUpdate": "下载更新",
+    "restart": "重启",
+    "updateCheckingDisabled": "更新检查已禁用",
+    "downloading": "下载中... {{progress}}%",
+    "installing": "安装中...",
+    "preparing": "准备中...",
+    "checkForUpdates": "检查更新"
+  },
+  "common": {
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "reset": "重置",
+    "add": "添加",
+    "remove": "移除",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "update": "更新",
+    "close": "关闭",
+    "open": "打开",
+    "default": "默认",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "on": "开",
+    "off": "关",
+    "yes": "是",
+    "no": "否",
+    "noOptionsFound": "未找到选项"
+  },
+  "accessibility": {
+    "permissionsRequired": "需要辅助功能权限",
+    "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
+    "openSettings": "打开系统设置",
+    "dismiss": "关闭"
+  },
+  "errors": {
+    "loadDirectory": "加载目录时出错: {{error}}"
+  },
+  "appLanguage": {
+    "title": "应用语言",
+    "description": "更改 Handy 界面的语言"
+  },
+  "overlay": {
+    "transcribing": "正在转录..."
+  }
+}

@@ -114,14 +114,17 @@ const settingUpdaters: {
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
-  history_limit: (value) => commands.updateHistoryLimit(value as string),
+  history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
+  append_trailing_space: (value) =>
+    commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
+  app_language: (value) => commands.changeAppLanguageSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

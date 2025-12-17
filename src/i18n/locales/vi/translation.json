@@ -1,0 +1,413 @@
+{
+  "_comment": "Vietnamese translation for Handy. Contribute at: https://github.com/cjpais/Handy",
+  "sidebar": {
+    "general": "Chung",
+    "advanced": "Nâng cao",
+    "postProcessing": "Xử lý sau",
+    "history": "Lịch sử",
+    "debug": "Gỡ lỗi",
+    "about": "Giới thiệu"
+  },
+  "onboarding": {
+    "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
+    "recommended": "Đề xuất",
+    "download": "Tải xuống",
+    "downloading": "Đang tải xuống...",
+    "modelCard": {
+      "accuracy": "độ chính xác",
+      "speed": "tốc độ"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Nhanh và khá chính xác."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Độ chính xác tốt, tốc độ trung bình"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Cân bằng giữa độ chính xác và tốc độ."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Độ chính xác tốt, nhưng chậm."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Chỉ tiếng Anh. Mô hình tốt nhất cho người nói tiếng Anh."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Nhanh và chính xác"
+      }
+    },
+    "errors": {
+      "loadModels": "Không thể tải các mô hình có sẵn",
+      "downloadModel": "Không thể tải mô hình: {{error}}"
+    }
+  },
+  "modelSelector": {
+    "welcome": "Chào mừng đến với Handy!",
+    "downloadPrompt": "Tải xuống mô hình bên dưới để bắt đầu chuyển đổi.",
+    "availableModels": "Các Mô Hình Có Sẵn",
+    "downloadModels": "Tải Xuống Mô Hình",
+    "chooseModel": "Chọn Mô Hình",
+    "active": "Đang hoạt động",
+    "download": "Tải xuống",
+    "downloadSize": "Kích thước tải xuống",
+    "noModelsAvailable": "Không có mô hình nào",
+    "extracting": "Đang giải nén {{modelName}}...",
+    "extractingMultiple": "Đang giải nén {{count}} mô hình...",
+    "extractingGeneric": "Đang giải nén...",
+    "downloading": "Đang tải xuống {{percentage}}%",
+    "downloadingMultiple": "Đang tải xuống {{count}} mô hình...",
+    "modelReady": "Mô Hình Sẵn Sàng",
+    "loading": "Đang tải {{modelName}}...",
+    "loadingGeneric": "Đang tải...",
+    "modelError": "Lỗi Mô Hình",
+    "modelUnloaded": "Mô Hình Đã Gỡ",
+    "noModelDownloadRequired": "Chưa Có Mô Hình - Cần Tải Xuống",
+    "deleteModel": "Xóa {{modelName}}"
+  },
+  "settings": {
+    "general": {
+      "title": "Chung",
+      "shortcut": {
+        "title": "Phím tắt Handy",
+        "description": "Cấu hình phím tắt để kích hoạt ghi âm chuyển đổi giọng nói thành văn bản",
+        "loading": "Đang tải phím tắt...",
+        "none": "Chưa cấu hình phím tắt",
+        "notFound": "Không tìm thấy phím tắt",
+        "pressKeys": "Nhấn phím...",
+        "bindings": {
+          "transcribe": {
+            "name": "Chuyển đổi",
+            "description": "Chuyển đổi giọng nói của bạn thành văn bản."
+          },
+          "cancel": {
+            "name": "Hủy",
+            "description": "Hủy bản ghi hiện tại."
+          }
+        },
+        "errors": {
+          "restore": "Không thể khôi phục phím tắt gốc",
+          "set": "Không thể đặt phím tắt: {{error}}",
+          "reset": "Không thể đặt lại phím tắt về giá trị gốc"
+        }
+      },
+      "language": {
+        "title": "Ngôn ngữ",
+        "description": "Chọn ngôn ngữ để nhận dạng giọng nói. Tự động sẽ tự động xác định ngôn ngữ, trong khi chọn một ngôn ngữ cụ thể có thể cải thiện độ chính xác cho ngôn ngữ đó.",
+        "descriptionUnsupported": "Mô hình Parakeet tự động phát hiện ngôn ngữ. Không cần chọn thủ công.",
+        "searchPlaceholder": "Tìm kiếm ngôn ngữ...",
+        "noResults": "Không tìm thấy ngôn ngữ",
+        "auto": "Tự động"
+      },
+      "pushToTalk": {
+        "label": "Nhấn để nói",
+        "description": "Giữ để ghi âm, thả để dừng"
+      }
+    },
+    "sound": {
+      "title": "Âm thanh",
+      "microphone": {
+        "title": "Micrô",
+        "description": "Chọn thiết bị micrô ưa thích của bạn",
+        "placeholder": "Chọn micrô...",
+        "loading": "Đang tải..."
+      },
+      "audioFeedback": {
+        "label": "Phản hồi âm thanh",
+        "description": "Phát âm thanh khi bắt đầu và kết thúc ghi âm"
+      },
+      "outputDevice": {
+        "title": "Thiết bị đầu ra",
+        "description": "Chọn thiết bị đầu ra âm thanh ưa thích của bạn cho âm thanh phản hồi",
+        "placeholder": "Chọn thiết bị đầu ra...",
+        "loading": "Đang tải..."
+      },
+      "volume": {
+        "title": "Âm lượng",
+        "description": "Điều chỉnh âm lượng của âm thanh phản hồi"
+      }
+    },
+    "advanced": {
+      "title": "Nâng cao",
+      "startHidden": {
+        "label": "Khởi động ẩn",
+        "description": "Khởi động vào khay hệ thống mà không mở cửa sổ."
+      },
+      "autostart": {
+        "label": "Khởi động cùng hệ thống",
+        "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."
+      },
+      "overlay": {
+        "title": "Vị trí lớp phủ",
+        "description": "Hiển thị lớp phủ phản hồi trực quan trong quá trình ghi âm và chuyển đổi. Trên Linux, 'Không có' được khuyến nghị.",
+        "options": {
+          "none": "Không có",
+          "bottom": "Dưới",
+          "top": "Trên"
+        }
+      },
+      "pasteMethod": {
+        "title": "Phương thức dán",
+        "description": "Chọn cách chèn văn bản. Trực tiếp: mô phỏng gõ phím qua đầu vào hệ thống. Không có: bỏ qua dán, chỉ cập nhật lịch sử/clipboard.",
+        "options": {
+          "clipboard": "Clipboard ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Clipboard (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Clipboard (Shift+Insert)",
+          "direct": "Trực tiếp",
+          "none": "Không có"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Xử lý Clipboard",
+        "description": "Không sửa đổi Clipboard giữ nguyên nội dung clipboard hiện tại sau khi chuyển đổi. Sao chép vào Clipboard để lại kết quả chuyển đổi trong clipboard sau khi dán.",
+        "options": {
+          "dontModify": "Không sửa đổi Clipboard",
+          "copyToClipboard": "Sao chép vào Clipboard"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Dịch sang tiếng Anh",
+        "description": "Tự động dịch giọng nói từ các ngôn ngữ khác sang tiếng Anh trong quá trình chuyển đổi.",
+        "descriptionUnsupported": "Mô hình {{model}} không hỗ trợ dịch thuật."
+      },
+      "modelUnload": {
+        "title": "Giải phóng mô hình",
+        "description": "Tự động giải phóng bộ nhớ GPU/CPU khi mô hình không được sử dụng trong thời gian quy định",
+        "options": {
+          "never": "Không bao giờ",
+          "immediately": "Ngay lập tức",
+          "min2": "Sau 2 phút",
+          "min5": "Sau 5 phút",
+          "min10": "Sau 10 phút",
+          "min15": "Sau 15 phút",
+          "hour1": "Sau 1 giờ",
+          "sec5": "Sau 5 giây (Gỡ lỗi)"
+        }
+      },
+      "customWords": {
+        "title": "Từ tùy chỉnh",
+        "description": "Thêm các từ thường bị nghe nhầm hoặc viết sai trong quá trình chuyển đổi. Hệ thống sẽ tự động sửa các từ có âm thanh tương tự để khớp với danh sách của bạn.",
+        "placeholder": "Thêm một từ",
+        "add": "Thêm",
+        "remove": "Xóa {{word}}"
+      }
+    },
+    "postProcessing": {
+      "title": "Xử lý sau",
+      "disabledNotice": "Xử lý sau hiện đang bị tắt. Bật nó trong cài đặt Gỡ lỗi để cấu hình.",
+      "api": {
+        "title": "API (Tương thích OpenAI)",
+        "provider": {
+          "title": "Nhà cung cấp",
+          "description": "Chọn một nhà cung cấp tương thích OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Chạy hoàn toàn trên thiết bị. Không cần khóa API hoặc truy cập mạng.",
+          "requirements": "Yêu cầu Mac Apple Silicon chạy macOS Tahoe (26.0) trở lên. Apple Intelligence phải được bật trong Cài đặt Hệ thống."
+        },
+        "baseUrl": {
+          "title": "URL cơ sở",
+          "description": "URL cơ sở API cho nhà cung cấp đã chọn. Chỉ có thể chỉnh sửa nhà cung cấp tùy chỉnh.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Khóa API",
+          "description": "Khóa API cho nhà cung cấp đã chọn.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Mô hình",
+          "descriptionApple": "Cung cấp giới hạn token tùy chọn hoặc giữ cài đặt mặc định trên thiết bị.",
+          "descriptionCustom": "Cung cấp định danh mô hình được yêu cầu bởi điểm cuối tùy chỉnh của bạn.",
+          "descriptionDefault": "Chọn một mô hình được cung cấp bởi nhà cung cấp đã chọn.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "Tìm kiếm hoặc chọn một mô hình",
+          "placeholderNoOptions": "Nhập tên mô hình",
+          "refreshModels": "Làm mới mô hình"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Prompt đã chọn",
+          "description": "Chọn một mẫu để tinh chỉnh bản ghi hoặc tạo mới. Sử dụng ${output} trong văn bản prompt để tham chiếu bản ghi đã chụp."
+        },
+        "noPrompts": "Không có prompt nào",
+        "selectPrompt": "Chọn một prompt",
+        "createNew": "Tạo Prompt mới",
+        "promptLabel": "Nhãn Prompt",
+        "promptLabelPlaceholder": "Nhập tên prompt",
+        "promptInstructions": "Hướng dẫn Prompt",
+        "promptInstructionsPlaceholder": "Viết hướng dẫn để chạy sau khi chuyển đổi. Ví dụ: Cải thiện ngữ pháp và độ rõ ràng cho văn bản sau: ${output}",
+        "promptTip": "Mẹo: Sử dụng <code>${output}</code> để chèn văn bản đã chuyển đổi vào prompt của bạn.",
+        "updatePrompt": "Cập nhật Prompt",
+        "deletePrompt": "Xóa Prompt",
+        "createPrompt": "Tạo Prompt",
+        "cancel": "Hủy",
+        "selectToEdit": "Chọn một prompt ở trên để xem và chỉnh sửa chi tiết.",
+        "createFirst": "Nhấn 'Tạo Prompt mới' ở trên để tạo prompt xử lý sau đầu tiên của bạn."
+      }
+    },
+    "history": {
+      "title": "Lịch sử",
+      "openFolder": "Mở thư mục ghi âm",
+      "loading": "Đang tải lịch sử...",
+      "empty": "Chưa có bản ghi nào. Bắt đầu ghi âm để xây dựng lịch sử của bạn!",
+      "copyToClipboard": "Sao chép bản ghi vào clipboard",
+      "save": "Lưu bản ghi",
+      "unsave": "Xóa khỏi đã lưu",
+      "delete": "Xóa mục",
+      "deleteError": "Không thể xóa mục. Vui lòng thử lại."
+    },
+    "debug": {
+      "title": "Gỡ lỗi",
+      "logDirectory": {
+        "title": "Thư mục nhật ký",
+        "description": "Vị trí lưu trữ các tệp nhật ký"
+      },
+      "logLevel": {
+        "title": "Mức nhật ký",
+        "description": "Đặt mức độ chi tiết của nhật ký"
+      },
+      "updateChecks": {
+        "label": "Kiểm tra cập nhật",
+        "description": "Tự động kiểm tra phiên bản mới của Handy"
+      },
+      "soundTheme": {
+        "label": "Chủ đề âm thanh",
+        "description": "Chọn chủ đề âm thanh cho phản hồi bắt đầu và kết thúc ghi âm"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Ngưỡng sửa từ",
+        "description": "Độ nhạy cho việc sửa từ tùy chỉnh"
+      },
+      "historyLimit": {
+        "title": "Giới hạn lịch sử",
+        "description": "Số lượng mục lịch sử tối đa cần giữ"
+      },
+      "recordingRetention": {
+        "title": "Tự động xóa ghi âm",
+        "description": "Tự động xóa các bản ghi âm cũ để tiết kiệm dung lượng",
+        "never": "Không bao giờ",
+        "preserveLimit": "Giữ {{count}} bản mới nhất",
+        "days3": "Sau 3 ngày",
+        "weeks2": "Sau 2 tuần",
+        "months3": "Sau 3 tháng",
+        "placeholder": "Chọn thời gian lưu giữ..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Micrô luôn bật",
+        "description": "Giữ micrô hoạt động để phản hồi nhanh hơn"
+      },
+      "clamshellMicrophone": {
+        "title": "Micrô chế độ gập",
+        "description": "Micrô sử dụng khi nắp laptop được đóng"
+      },
+      "postProcessingToggle": {
+        "label": "Xử lý sau",
+        "description": "Bật tinh chỉnh văn bản bằng AI sau khi chuyển đổi"
+      },
+      "muteWhileRecording": {
+        "label": "Tắt tiếng khi ghi âm",
+        "description": "Tắt tiếng âm thanh hệ thống trong khi ghi âm"
+      },
+      "appendTrailingSpace": {
+        "label": "Thêm dấu cách cuối",
+        "description": "Thêm một dấu cách sau bản ghi đã dán"
+      },
+      "paths": {
+        "appData": "Dữ liệu ứng dụng:",
+        "models": "Mô hình:",
+        "settings": "Cài đặt:"
+      }
+    },
+    "about": {
+      "title": "Giới thiệu",
+      "version": {
+        "title": "Phiên bản",
+        "description": "Phiên bản hiện tại của Handy"
+      },
+      "appDataDirectory": {
+        "title": "Thư mục dữ liệu ứng dụng",
+        "description": "Vị trí Handy lưu trữ dữ liệu"
+      },
+      "sourceCode": {
+        "title": "Mã nguồn",
+        "description": "Xem mã nguồn và đóng góp",
+        "button": "Xem trên GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Hỗ trợ phát triển",
+        "description": "Giúp chúng tôi tiếp tục xây dựng Handy",
+        "button": "Quyên góp"
+      },
+      "acknowledgments": {
+        "title": "Lời cảm ơn",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "Suy luận hiệu suất cao của mô hình nhận dạng giọng nói tự động Whisper của OpenAI",
+          "details": "Handy sử dụng Whisper.cpp để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "Đang tải {{model}}...",
+    "checkingUpdates": "Đang kiểm tra cập nhật...",
+    "updateAvailable": "Có bản cập nhật: {{version}}",
+    "updateAvailableShort": "Có bản cập nhật",
+    "upToDate": "Đã cập nhật",
+    "downloadUpdate": "Tải cập nhật",
+    "restart": "Khởi động lại",
+    "updateCheckingDisabled": "Đã tắt kiểm tra cập nhật",
+    "downloading": "Đang tải... {{progress}}%",
+    "installing": "Đang cài đặt...",
+    "preparing": "Đang chuẩn bị...",
+    "checkForUpdates": "Kiểm tra cập nhật"
+  },
+  "common": {
+    "loading": "Đang tải...",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "reset": "Đặt lại",
+    "add": "Thêm",
+    "remove": "Xóa",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "create": "Tạo",
+    "update": "Cập nhật",
+    "close": "Đóng",
+    "open": "Mở",
+    "default": "Mặc định",
+    "enabled": "Đã bật",
+    "disabled": "Đã tắt",
+    "on": "Bật",
+    "off": "Tắt",
+    "yes": "Có",
+    "no": "Không",
+    "noOptionsFound": "Không tìm thấy tùy chọn"
+  },
+  "accessibility": {
+    "permissionsRequired": "Cần quyền truy cập",
+    "permissionsDescription": "Handy cần quyền truy cập để gõ văn bản đã chuyển đổi.",
+    "openSettings": "Mở Cài đặt Hệ thống",
+    "dismiss": "Bỏ qua"
+  },
+  "errors": {
+    "loadDirectory": "Lỗi khi tải thư mục: {{error}}"
+  },
+  "appLanguage": {
+    "title": "Ngôn ngữ ứng dụng",
+    "description": "Thay đổi ngôn ngữ giao diện của Handy"
+  },
+  "overlay": {
+    "transcribing": "Đang chuyển đổi..."
+  }
+}

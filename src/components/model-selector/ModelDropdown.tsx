@@ -1,6 +1,11 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
+import {
+  getTranslatedModelName,
+  getTranslatedModelDescription,
+} from "../../lib/utils/modelTranslation";
 import { ProgressBar } from "../shared";
 
 interface DownloadProgress {
@@ -29,6 +34,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   onModelDelete,
   onError,
 }) => {
+  const { t } = useTranslation();
   const availableModels = models.filter((m) => m.is_downloaded);
   const downloadableModels = models.filter((m) => !m.is_downloaded);
   const isFirstRun = availableModels.length === 0 && models.length > 0;
@@ -65,10 +71,10 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
       {isFirstRun && (
         <div className="px-3 py-2 bg-logo-primary/10 border-b border-logo-primary/20">
           <div className="text-xs font-medium text-logo-primary mb-1">
-            Welcome to Handy!
+            {t("modelSelector.welcome")}
           </div>
           <div className="text-xs text-text/70">
-            Download a model below to get started with transcription.
+            {t("modelSelector.downloadPrompt")}
           </div>
         </div>
       )}
@@ -77,7 +83,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
       {availableModels.length > 0 && (
         <div>
           <div className="px-3 py-1 text-xs font-medium text-text/80 border-b border-mid-gray/10">
-            Available Models
+            {t("modelSelector.availableModels")}
           </div>
           {availableModels.map((model) => (
             <div
@@ -99,20 +105,26 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm">{model.name}</div>
+                  <div className="text-sm">
+                    {getTranslatedModelName(model, t)}
+                  </div>
                   <div className="text-xs text-text/40 italic pr-4">
-                    {model.description}
+                    {getTranslatedModelDescription(model, t)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {currentModelId === model.id && (
-                    <div className="text-xs text-logo-primary">Active</div>
+                    <div className="text-xs text-logo-primary">
+                      {t("modelSelector.active")}
+                    </div>
                   )}
                   {currentModelId !== model.id && (
                     <button
                       onClick={(e) => handleDeleteClick(e, model.id)}
                       className="text-red-400 hover:text-red-300 p-1 hover:bg-red-500/10 rounded transition-colors"
-                      title={`Delete ${model.name}`}
+                      title={t("modelSelector.deleteModel", {
+                        modelName: getTranslatedModelName(model, t),
+                      })}
                     >
                       <svg
                         className="w-3 h-3"
@@ -141,7 +153,9 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
             <div className="border-t border-mid-gray/10 my-1" />
           )}
           <div className="px-3 py-1 text-xs font-medium text-text/80">
-            {isFirstRun ? "Choose a Model" : "Download Models"}
+            {isFirstRun
+              ? t("modelSelector.chooseModel")
+              : t("modelSelector.downloadModels")}
           </div>
           {downloadableModels.map((model) => {
             const isDownloading = downloadProgress.has(model.id);
@@ -169,24 +183,25 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm">
-                      {model.name}
-                      {model.id === "small" && isFirstRun && (
+                      {getTranslatedModelName(model, t)}
+                      {model.id === "parakeet-tdt-0.6b-v3" && isFirstRun && (
                         <span className="ml-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
-                          Recommended
+                          {t("onboarding.recommended")}
                         </span>
                       )}
                     </div>
                     <div className="text-xs text-text/40 italic pr-4">
-                      {model.description}
+                      {getTranslatedModelDescription(model, t)}
                     </div>
                     <div className="mt-1 text-xs text-text/50 tabular-nums">
-                      Download size · {formatModelSize(Number(model.size_mb))}
+                      {t("modelSelector.downloadSize")} ·{" "}
+                      {formatModelSize(Number(model.size_mb))}
                     </div>
                   </div>
                   <div className="text-xs text-logo-primary tabular-nums">
                     {isDownloading && progress
                       ? `${Math.max(0, Math.min(100, Math.round(progress.percentage)))}%`
-                      : "Download"}
+                      : t("modelSelector.download")}
                   </div>
                 </div>
 
@@ -213,7 +228,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
       {/* No Models Available */}
       {availableModels.length === 0 && downloadableModels.length === 0 && (
         <div className="px-3 py-2 text-sm text-text/60">
-          No models available
+          {t("modelSelector.noModelsAvailable")}
         </div>
       )}
     </div>

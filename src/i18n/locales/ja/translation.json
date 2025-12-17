@@ -1,0 +1,413 @@
+{
+  "sidebar": {
+    "general": "一般",
+    "advanced": "詳細設定",
+    "postProcessing": "後処理",
+    "history": "履歴",
+    "debug": "デバッグ",
+    "about": "概要"
+  },
+  "onboarding": {
+    "subtitle": "開始するには、文字起こしモデルを選択してください",
+    "recommended": "おすすめ",
+    "download": "ダウンロード",
+    "downloading": "ダウンロード中...",
+    "modelCard": {
+      "accuracy": "精度",
+      "speed": "速度"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "高速でそこそこ正確。"
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "良好な精度、中程度の速度"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "精度と速度のバランスが良い。"
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "良好な精度、ただし低速。"
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "英語のみ。英語話者に最適なモデル。"
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "高速で正確"
+      }
+    },
+    "errors": {
+      "loadModels": "利用可能なモデルの読み込みに失敗しました",
+      "downloadModel": "モデルのダウンロードに失敗しました: {{error}}"
+    }
+  },
+  "modelSelector": {
+    "welcome": "Handyへようこそ！",
+    "downloadPrompt": "文字起こしを開始するには、下からモデルをダウンロードしてください。",
+    "availableModels": "利用可能なモデル",
+    "downloadModels": "モデルをダウンロード",
+    "chooseModel": "モデルを選択",
+    "active": "アクティブ",
+    "download": "ダウンロード",
+    "downloadSize": "ダウンロードサイズ",
+    "noModelsAvailable": "利用可能なモデルがありません",
+    "extracting": "{{modelName}}を展開中...",
+    "extractingMultiple": "{{count}}個のモデルを展開中...",
+    "extractingGeneric": "展開中...",
+    "downloading": "ダウンロード中 {{percentage}}%",
+    "downloadingMultiple": "{{count}}個のモデルをダウンロード中...",
+    "modelReady": "モデル準備完了",
+    "loading": "{{modelName}}を読み込み中...",
+    "loadingGeneric": "読み込み中...",
+    "modelError": "モデルエラー",
+    "modelUnloaded": "モデルがアンロードされました",
+    "noModelDownloadRequired": "モデルなし - ダウンロードが必要",
+    "deleteModel": "{{modelName}}を削除"
+  },
+  "settings": {
+    "general": {
+      "title": "一般",
+      "shortcut": {
+        "title": "Handyショートカット",
+        "description": "音声録音を開始するキーボードショートカットを設定",
+        "loading": "ショートカットを読み込み中...",
+        "none": "ショートカットが設定されていません",
+        "notFound": "ショートカットが見つかりません",
+        "pressKeys": "キーを押してください...",
+        "bindings": {
+          "transcribe": {
+            "name": "文字起こし",
+            "description": "音声をテキストに変換します。"
+          },
+          "cancel": {
+            "name": "キャンセル",
+            "description": "現在の録音をキャンセルします。"
+          }
+        },
+        "errors": {
+          "restore": "元のショートカットを復元できませんでした",
+          "set": "ショートカットを設定できませんでした: {{error}}",
+          "reset": "ショートカットを元の値にリセットできませんでした"
+        }
+      },
+      "language": {
+        "title": "言語",
+        "description": "音声認識の言語を選択してください。自動を選択すると言語を自動的に判定します。特定の言語を選択すると、その言語の精度が向上する場合があります。",
+        "descriptionUnsupported": "Parakeetモデルは言語を自動的に検出します。手動選択は不要です。",
+        "searchPlaceholder": "言語を検索...",
+        "noResults": "言語が見つかりません",
+        "auto": "自動"
+      },
+      "pushToTalk": {
+        "label": "プッシュトゥトーク",
+        "description": "押し続けて録音、離して停止"
+      }
+    },
+    "sound": {
+      "title": "サウンド",
+      "microphone": {
+        "title": "マイク",
+        "description": "使用するマイクデバイスを選択",
+        "placeholder": "マイクを選択...",
+        "loading": "読み込み中..."
+      },
+      "audioFeedback": {
+        "label": "音声フィードバック",
+        "description": "録音の開始と停止時にサウンドを再生"
+      },
+      "outputDevice": {
+        "title": "出力デバイス",
+        "description": "フィードバックサウンド用の音声出力デバイスを選択",
+        "placeholder": "出力デバイスを選択...",
+        "loading": "読み込み中..."
+      },
+      "volume": {
+        "title": "音量",
+        "description": "音声フィードバックの音量を調整"
+      }
+    },
+    "advanced": {
+      "title": "詳細設定",
+      "startHidden": {
+        "label": "非表示で起動",
+        "description": "ウィンドウを開かずにシステムトレイに起動。"
+      },
+      "autostart": {
+        "label": "起動時に実行",
+        "description": "コンピューターにログインしたときにHandyを自動的に起動。"
+      },
+      "overlay": {
+        "title": "オーバーレイ位置",
+        "description": "録音と文字起こし中に視覚的なフィードバックオーバーレイを表示。Linuxでは「なし」を推奨。",
+        "options": {
+          "none": "なし",
+          "bottom": "下",
+          "top": "上"
+        }
+      },
+      "pasteMethod": {
+        "title": "貼り付け方法",
+        "description": "テキストの挿入方法を選択。直接：システム入力でタイピングをシミュレート。なし：貼り付けをスキップし、履歴/クリップボードのみ更新。",
+        "options": {
+          "clipboard": "クリップボード ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "クリップボード (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "クリップボード (Shift+Insert)",
+          "direct": "直接",
+          "none": "なし"
+        }
+      },
+      "clipboardHandling": {
+        "title": "クリップボードの処理",
+        "description": "クリップボードを変更しないを選択すると、文字起こし後も現在のクリップボード内容が保持されます。クリップボードにコピーを選択すると、貼り付け後も文字起こし結果がクリップボードに残ります。",
+        "options": {
+          "dontModify": "クリップボードを変更しない",
+          "copyToClipboard": "クリップボードにコピー"
+        }
+      },
+      "translateToEnglish": {
+        "label": "英語に翻訳",
+        "description": "文字起こし中に他の言語から英語に自動的に翻訳。",
+        "descriptionUnsupported": "翻訳は{{model}}モデルではサポートされていません。"
+      },
+      "modelUnload": {
+        "title": "モデルのアンロード",
+        "description": "指定時間モデルが使用されていない場合、GPU/CPUメモリを自動的に解放",
+        "options": {
+          "never": "しない",
+          "immediately": "即座に",
+          "min2": "2分後",
+          "min5": "5分後",
+          "min10": "10分後",
+          "min15": "15分後",
+          "hour1": "1時間後",
+          "sec5": "5秒後（デバッグ）"
+        }
+      },
+      "customWords": {
+        "title": "カスタム単語",
+        "description": "よく誤認識または誤入力される単語を追加します。システムは自動的に類似した発音の単語をリストに合わせて修正します。",
+        "placeholder": "単語を追加",
+        "add": "追加",
+        "remove": "{{word}}を削除"
+      }
+    },
+    "postProcessing": {
+      "title": "後処理",
+      "disabledNotice": "後処理は現在無効です。設定するにはデバッグ設定で有効にしてください。",
+      "api": {
+        "title": "API（OpenAI互換）",
+        "provider": {
+          "title": "プロバイダー",
+          "description": "OpenAI互換のプロバイダーを選択。"
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "完全にデバイス上で動作。APIキーやネットワークアクセスは不要。",
+          "requirements": "macOS Tahoe（26.0）以降を実行するApple Silicon Macが必要です。システム設定でApple Intelligenceを有効にする必要があります。"
+        },
+        "baseUrl": {
+          "title": "ベースURL",
+          "description": "選択したプロバイダーのAPIベースURL。カスタムプロバイダーのみ編集可能。",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "APIキー",
+          "description": "選択したプロバイダーのAPIキー。",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "モデル",
+          "descriptionApple": "オプションの数値トークン制限を指定するか、デフォルトのオンデバイスプリセットを使用。",
+          "descriptionCustom": "カスタムエンドポイントが期待するモデル識別子を指定。",
+          "descriptionDefault": "選択したプロバイダーが提供するモデルを選択。",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "モデルを検索または選択",
+          "placeholderNoOptions": "モデル名を入力",
+          "refreshModels": "モデルを更新"
+        }
+      },
+      "prompts": {
+        "title": "プロンプト",
+        "selectedPrompt": {
+          "title": "選択したプロンプト",
+          "description": "文字起こしを改善するテンプレートを選択するか、新しく作成します。プロンプトテキスト内で${output}を使用して、キャプチャした文字起こしを参照します。"
+        },
+        "noPrompts": "プロンプトがありません",
+        "selectPrompt": "プロンプトを選択",
+        "createNew": "新しいプロンプトを作成",
+        "promptLabel": "プロンプト名",
+        "promptLabelPlaceholder": "プロンプト名を入力",
+        "promptInstructions": "プロンプトの指示",
+        "promptInstructionsPlaceholder": "文字起こし後に実行する指示を記述します。例：以下のテキストの文法と明瞭さを改善してください: ${output}",
+        "promptTip": "ヒント：<code>${output}</code>を使用して、文字起こしテキストをプロンプトに挿入します。",
+        "updatePrompt": "プロンプトを更新",
+        "deletePrompt": "プロンプトを削除",
+        "createPrompt": "プロンプトを作成",
+        "cancel": "キャンセル",
+        "selectToEdit": "上からプロンプトを選択して、詳細を表示・編集します。",
+        "createFirst": "上の「新しいプロンプトを作成」をクリックして、最初の後処理プロンプトを作成してください。"
+      }
+    },
+    "history": {
+      "title": "履歴",
+      "openFolder": "録音フォルダを開く",
+      "loading": "履歴を読み込み中...",
+      "empty": "まだ文字起こしがありません。録音を開始して履歴を作成しましょう！",
+      "copyToClipboard": "文字起こしをクリップボードにコピー",
+      "save": "文字起こしを保存",
+      "unsave": "保存から削除",
+      "delete": "エントリーを削除",
+      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。"
+    },
+    "debug": {
+      "title": "デバッグ",
+      "logDirectory": {
+        "title": "ログディレクトリ",
+        "description": "ログファイルの保存場所"
+      },
+      "logLevel": {
+        "title": "ログレベル",
+        "description": "ログの詳細度を設定"
+      },
+      "updateChecks": {
+        "label": "アップデートを確認",
+        "description": "Handyの新しいバージョンを自動的にチェック"
+      },
+      "soundTheme": {
+        "label": "サウンドテーマ",
+        "description": "録音開始・停止フィードバックのサウンドテーマを選択"
+      },
+      "wordCorrectionThreshold": {
+        "title": "単語修正しきい値",
+        "description": "カスタム単語修正の感度"
+      },
+      "historyLimit": {
+        "title": "履歴上限",
+        "description": "保持する履歴エントリーの最大数",
+        "entries": "件"
+      },
+      "recordingRetention": {
+        "title": "録音の自動削除",
+        "description": "古い録音を自動的に削除して容量を節約",
+        "never": "しない",
+        "preserveLimit": "最新{{count}}件を保持",
+        "days3": "3日後",
+        "weeks2": "2週間後",
+        "months3": "3ヶ月後",
+        "placeholder": "保持期間を選択..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "マイク常時オン",
+        "description": "より速い応答のためにマイクをアクティブに保つ"
+      },
+      "clamshellMicrophone": {
+        "title": "クラムシェルマイク",
+        "description": "ノートパソコンの蓋を閉じたときに使用するマイク"
+      },
+      "postProcessingToggle": {
+        "label": "後処理",
+        "description": "文字起こし後のAIによるテキスト改善を有効化"
+      },
+      "muteWhileRecording": {
+        "label": "録音中にミュート",
+        "description": "録音中にシステムオーディオをミュート"
+      },
+      "appendTrailingSpace": {
+        "label": "末尾にスペースを追加",
+        "description": "貼り付けた文字起こしの後にスペースを追加"
+      },
+      "paths": {
+        "appData": "アプリデータ:",
+        "models": "モデル:",
+        "settings": "設定:"
+      }
+    },
+    "about": {
+      "title": "概要",
+      "version": {
+        "title": "バージョン",
+        "description": "Handyの現在のバージョン"
+      },
+      "appDataDirectory": {
+        "title": "アプリデータディレクトリ",
+        "description": "Handyがデータを保存する場所"
+      },
+      "sourceCode": {
+        "title": "ソースコード",
+        "description": "ソースコードを見て貢献する",
+        "button": "GitHubで見る"
+      },
+      "supportDevelopment": {
+        "title": "開発を支援",
+        "description": "Handyの開発を支援してください",
+        "button": "寄付する"
+      },
+      "acknowledgments": {
+        "title": "謝辞",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
+          "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "{{model}}をダウンロード中...",
+    "checkingUpdates": "アップデートを確認中...",
+    "updateAvailable": "アップデートあり: {{version}}",
+    "updateAvailableShort": "アップデートあり",
+    "upToDate": "最新です",
+    "downloadUpdate": "アップデートをダウンロード",
+    "restart": "再起動",
+    "updateCheckingDisabled": "アップデート確認無効",
+    "downloading": "ダウンロード中... {{progress}}%",
+    "installing": "インストール中...",
+    "preparing": "準備中...",
+    "checkForUpdates": "アップデートを確認"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "reset": "リセット",
+    "add": "追加",
+    "remove": "削除",
+    "delete": "削除",
+    "edit": "編集",
+    "create": "作成",
+    "update": "更新",
+    "close": "閉じる",
+    "open": "開く",
+    "default": "デフォルト",
+    "enabled": "有効",
+    "disabled": "無効",
+    "on": "オン",
+    "off": "オフ",
+    "yes": "はい",
+    "no": "いいえ",
+    "noOptionsFound": "オプションが見つかりません"
+  },
+  "accessibility": {
+    "permissionsRequired": "アクセシビリティ権限が必要です",
+    "permissionsDescription": "Handyが文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",
+    "openSettings": "システム設定を開く",
+    "dismiss": "閉じる"
+  },
+  "errors": {
+    "loadDirectory": "ディレクトリの読み込みエラー: {{error}}"
+  },
+  "appLanguage": {
+    "title": "アプリケーション言語",
+    "description": "Handyインターフェースの言語を変更"
+  },
+  "overlay": {
+    "transcribing": "文字起こし中..."
+  }
+}

@@ -1,0 +1,413 @@
+{
+  "sidebar": {
+    "general": "Generale",
+    "advanced": "Avanzate",
+    "postProcessing": "Post-Elaborazione",
+    "history": "Cronologia",
+    "debug": "Debug",
+    "about": "Informazioni"
+  },
+  "onboarding": {
+    "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
+    "recommended": "Raccomandato",
+    "download": "Scaricare",
+    "downloading": "Download in corso...",
+    "modelCard": {
+      "accuracy": "accuratezza",
+      "speed": "velocità"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Veloce e abbastanza accurato."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Buona accuratezza, velocità nella media"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Bilanciato fra accuratezza e velocità."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Buona accuratezza, ma lento."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Solo inglese. Il miglior modello per chi parla inglese."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Veloce e accurato"
+      }
+    },
+    "errors": {
+      "loadModels": "Errore di caricamento dei modelli disponibili",
+      "downloadModel": "Errore nel download del modello: {{error}}"
+    }
+  },
+  "modelSelector": {
+    "welcome": "Benvenuto in Handy!",
+    "downloadPrompt": "Scarica un modello per cominciare a trascrivere.",
+    "availableModels": "Modelli Disponibili",
+    "downloadModels": "Scarica Modelli",
+    "chooseModel": "Scegli un Modello",
+    "active": "Attivo",
+    "download": "Scarica",
+    "downloadSize": "Dimensione download",
+    "noModelsAvailable": "Nessun modello disponibile",
+    "extracting": "Estrazione di {{modelName}}...",
+    "extractingMultiple": "Estrazione di {{count}} modelli...",
+    "extractingGeneric": "Estrazione...",
+    "downloading": "Download {{percentage}}%",
+    "downloadingMultiple": "Download di {{count}} modelli...",
+    "modelReady": "Modello Pronto",
+    "loading": "Caricamento di {{modelName}}...",
+    "loadingGeneric": "Caricamento...",
+    "modelError": "Errore del Modello",
+    "modelUnloaded": "Modello Disattivato",
+    "noModelDownloadRequired": "Nessun Modello - Download Richiesto",
+    "deleteModel": "Elimina {{modelName}}"
+  },
+  "settings": {
+    "general": {
+      "title": "Generale",
+      "shortcut": {
+        "title": "Scorciatoie di Handy",
+        "description": "Configura le scorciatoie per attivare la trascrizione vocale",
+        "loading": "Caricamento delle scorciatoie...",
+        "none": "Nessuna scorciatoia configurata",
+        "notFound": "Scorciatoia non trovata",
+        "pressKeys": "Premi i tasti...",
+        "bindings": {
+          "transcribe": {
+            "name": "Trascrivi",
+            "description": "Converti la tua voce in testo."
+          },
+          "cancel": {
+            "name": "Annulla",
+            "description": "Annulla la registrazione in corso."
+          }
+        },
+        "errors": {
+          "restore": "Errore nel ripristino della scorciatoia originale",
+          "set": "Errore nella configurazione della scorciatoia: {{error}}",
+          "reset": "Errore nella reinizializzazione della scorciatoia al valore originale"
+        }
+      },
+      "language": {
+        "title": "Lingua",
+        "description": "Scegli la lingua per il riconoscimento vocale. Auto la determinerà automaticamente, mentre scegliere una lingua specifica può migliorare l'accuratezza per quella lingua.",
+        "descriptionUnsupported": "Il modello Parakeet sceglie automaticamente la lingua. Non serve scegliere manualmente.",
+        "searchPlaceholder": "Cerca lingue...",
+        "noResults": "Nessuna lingua trovata",
+        "auto": "Auto"
+      },
+      "pushToTalk": {
+        "label": "Premi per Parlare",
+        "description": "Tieni premuto per parlare, rilascia per interrompere"
+      }
+    },
+    "sound": {
+      "title": "Suono",
+      "microphone": {
+        "title": "Microfono",
+        "description": "Scegli il microfono preferito",
+        "placeholder": "Scegli microfono...",
+        "loading": "Caricamento..."
+      },
+      "audioFeedback": {
+        "label": "Feedback Audio",
+        "description": "Riproduci un suono quando la registrazione inizia e finisce"
+      },
+      "outputDevice": {
+        "title": "Dispositivo di Output",
+        "description": "Scegli il dispositivo di output per il feedback audio",
+        "placeholder": "Scegli dispositivo di output...",
+        "loading": "Caricamento..."
+      },
+      "volume": {
+        "title": "Volume",
+        "description": "Regola il volume del feedback audio"
+      }
+    },
+    "advanced": {
+      "title": "Avanzate",
+      "startHidden": {
+        "label": "Avvia in Background",
+        "description": "Avvia l'applicazione in background senza aprire la finestra."
+      },
+      "autostart": {
+        "label": "Avvia all'Accensione",
+        "description": "Avvia Handy automaticamente quando accedi al computer."
+      },
+      "overlay": {
+        "title": "Posizione della Sovrimpressione",
+        "description": "Mostra un feedback visivo in sovrimpressione durante la registrazione e la trascrizione. Su Linux si raccomanda 'Nessuna'.",
+        "options": {
+          "none": "Nessuna",
+          "bottom": "In basso",
+          "top": "In alto"
+        }
+      },
+      "pasteMethod": {
+        "title": "Metodo di Incolla",
+        "description": "Scegli come viene inserito il testo. Diretto: simula l'input da tastiera. Nessuno: non incolla, aggiorna solo la cronologia/appunti.",
+        "options": {
+          "clipboard": "Appunti ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Appunti (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Appunti (Shift+Insert)",
+          "direct": "Diretto",
+          "none": "Nessuno"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Gestione Appunti",
+        "description": "Non Modificare gli Appunti mantiene il contenuto dei tuoi appunti dopo la trascrizione. Copia negli Appunti lascia il risultato della trascrizione negli appunti dopo aver incollato.",
+        "options": {
+          "dontModify": "Non Modificare gli Appunti",
+          "copyToClipboard": "Copia negli Appunti"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Traduci in inglese",
+        "description": "Traduci automaticamente in inglese la voce in altre lingue durante la trascrizione.",
+        "descriptionUnsupported": "La traduzione non è supportata dal modello {{model}}."
+      },
+      "modelUnload": {
+        "title": "Disattiva Model",
+        "description": "Libera automaticamente la memoria della GPU/CPU quando il modello non viene utilizzato per un certo periodo.",
+        "options": {
+          "never": "Mai",
+          "immediately": "Immediatamente",
+          "min2": "Dopo 2 minuti",
+          "min5": "Dopo 5 minuti",
+          "min10": "Dopo 10 minuti",
+          "min15": "Dopo 15 minuti",
+          "hour1": "Dopo 1 ora",
+          "sec5": "Dopo 5 secondi (Debug)"
+        }
+      },
+      "customWords": {
+        "title": "Parole personalizzate",
+        "description": "Aggiungi parole che vengono spesso fraintese o scritte in modo errato durante la trascrizione. Il sistema correggerà automaticamente le parole dal suono simile in modo che corrispondano al tuo elenco.",
+        "placeholder": "Aggiungi una parola",
+        "add": "Aggiungi",
+        "remove": "Rimuovi {{word}}"
+      }
+    },
+    "postProcessing": {
+      "title": "Post-Elaborazione",
+      "disabledNotice": "La post-elaborazione è attualmente disattivata. Abilitala nelle opzioni di debug per configurarla.",
+      "api": {
+        "title": "API (Compatibile con OpenAI)",
+        "provider": {
+          "title": "Provider",
+          "description": "Seleziona un provider compatibile con OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Si esegue completamente in locale. Non è necessaria una chiave API né l'accesso alla rete.",
+          "requirements": "Necessita di un Mac con Apple Silicon e macOS Tahoe (26.0) o successivi. Apple Intelligence deve essere abilitata nelle Impostazioni di Sistema."
+        },
+        "baseUrl": {
+          "title": "URL Base",
+          "description": "URL di base per l'API del provider selezionato. Solo per i provider personalizzati.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Chiave API",
+          "description": "Chiave API per il provider selezionato.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modello",
+          "descriptionApple": "Fornisci un limite numerico facoltativo per i token o mantenere l'impostazione predefinita sul dispositivo.",
+          "descriptionCustom": "Fornisci l'identificatore del modello previsto dal tuo endpoint personalizzato.",
+          "descriptionDefault": "Scegli un modello reso disponibile dal provider personalizzato.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "Cerca o scegli un modello",
+          "placeholderNoOptions": "Digita il nome di un modello",
+          "refreshModels": "Aggiorna modelli"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Prompt Selezionato",
+          "description": "Seleziona un template per migliorare le trascrizioni o creane uno nuovo. Usa ${output} nel prompt per fare riferimento alla trascrizione."
+        },
+        "noPrompts": "Nessun prompt disponibile.",
+        "selectPrompt": "Scegli un prompt",
+        "createNew": "Crea un nuovo prompt",
+        "promptLabel": "Etichetta del Prompt",
+        "promptLabelPlaceholder": "Inserisci il nome del prompt",
+        "promptInstructions": "Istruzioni del Prompt",
+        "promptInstructionsPlaceholder": "Scrivi le istruzioni da eseguire dopo la trascrizione. Esempio: Migliora la grammatica e la chiarezza per il seguente testo: ${output}",
+        "promptTip": "Suggerimento: Usa <code>${output}</code> per inserire il testo trascritto nel tuo prompt.",
+        "updatePrompt": "Aggiorna Prompt",
+        "deletePrompt": "Elimina Prompt",
+        "createPrompt": "Crea Prompt",
+        "cancel": "Annulla",
+        "selectToEdit": "Scegli un prompt qui sopra per visualizzare o modificare i dettagli.",
+        "createFirst": "Clicca 'Crea un nuovo prompt' qui sopra per creare il tuo primo prompt di post-elaborazione."
+      }
+    },
+    "history": {
+      "title": "Cronologia",
+      "openFolder": "Apri la cartella delle registrazioni",
+      "loading": "Caricamento cronologia...",
+      "empty": "Non ci sono ancora trascrizioni. Comincia a registrare per costruire la tua cronologia!",
+      "copyToClipboard": "Copia la trascrizione negli appunti",
+      "save": "Salva la trascrizione",
+      "unsave": "Rimuovi dai salvataggi",
+      "delete": "Elimina elemento",
+      "deleteError": "Errore nell'eliminazione dell'elemento. Per favore, prova di nuovo."
+    },
+    "debug": {
+      "title": "Debug",
+      "logDirectory": {
+        "title": "Cartella dei Log",
+        "description": "Cartella dove vengono salvati i file di log"
+      },
+      "logLevel": {
+        "title": "Livello di Log",
+        "description": "Scegli il livello di dettaglio dei log"
+      },
+      "updateChecks": {
+        "label": "Controlla aggiornamenti",
+        "description": "Controlla automaticamente la disponibilità di nuove versioni di Handy"
+      },
+      "soundTheme": {
+        "label": "Tema Sonoro",
+        "description": "Scegli un tema sonoro per il feedback di inizio e fine registrazione"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Soglia di Correzione Parole",
+        "description": "Sensibilità per la correzione delle parole personalizzate"
+      },
+      "historyLimit": {
+        "title": "Limite della Cronologia",
+        "description": "Massimo numero di elementi da conservare nella cronologia",
+        "entries": "elementi"
+      },
+      "recordingRetention": {
+        "title": "Salvataggio delle Registrazioni",
+        "description": "Per quanto conservare le registrazioni audio",
+        "never": "Mai",
+        "preserveLimit": "Conserva {{count}} Registrazioni",
+        "days3": "Dopo 3 Giorni",
+        "weeks2": "Dopo 2 Settimane",
+        "months3": "Dopo 3 Mesi",
+        "placeholder": "Seleziona periodo di salvataggio..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Microfono Sempre Attivo",
+        "description": "Tieni il microfono attivo per una risposta più rapida"
+      },
+      "clamshellMicrophone": {
+        "title": "Microfono a portatile chiuso",
+        "description": "Microfono da usare quando il portatile è chiuso"
+      },
+      "postProcessingToggle": {
+        "label": "Post-Elaborazione",
+        "description": "Abilita il miglioramento della trascrizione con IA"
+      },
+      "muteWhileRecording": {
+        "label": "Silenzia durante la registrazione",
+        "description": "Silenzia l'audio di sistema durante la registrazione"
+      },
+      "appendTrailingSpace": {
+        "label": "Aggiungi Spazio Finale",
+        "description": "Aggiungi uno spazio dopo la trascrizione incollata"
+      },
+      "paths": {
+        "appData": "Dati App:",
+        "models": "Modelli:",
+        "settings": "Impostazioni:"
+      }
+    },
+    "about": {
+      "title": "Informazioni",
+      "version": {
+        "title": "Versione",
+        "description": "Versione attuale di Handy"
+      },
+      "appDataDirectory": {
+        "title": "Cartella Dati App",
+        "description": "Cartella in cui Handy salva i dati"
+      },
+      "sourceCode": {
+        "title": "Codice Sorgente",
+        "description": "Vedi e contribuisci al codice sorgente",
+        "button": "Vedi su GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Supporta lo Sviluppo",
+        "description": "Aiutaci a sviluppare Handy",
+        "button": "Dona"
+      },
+      "acknowledgments": {
+        "title": "Ringraziamenti",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "Inferenza ad alte prestazioni del modello di riconoscimento vocale automatico Whisper di OpenAI",
+          "details": "Handy usa Whisper.cpp per il riconoscimento vocale veloce in locale. Grazie a Georgi Gerganov e collaboratori per il fantastico lavoro."
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "Download di {{model}}...",
+    "checkingUpdates": "Controllo aggiornamenti...",
+    "updateAvailable": "Aggiornamento disponibile: {{version}}",
+    "updateAvailableShort": "Aggiornamento disponibile",
+    "upToDate": "Aggiornato",
+    "downloadUpdate": "Scarica Aggiornamento",
+    "restart": "Riavvia",
+    "updateCheckingDisabled": "Controllo Aggiornamenti Disabilitato",
+    "downloading": "Download... {{progress}}%",
+    "installing": "Installazione...",
+    "preparing": "Preparazione...",
+    "checkForUpdates": "Controlla aggiornamenti"
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "reset": "Reimposta",
+    "add": "Aggiungi",
+    "remove": "Rimuovi",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "create": "Crea",
+    "update": "Aggiorna",
+    "close": "Chiudi",
+    "open": "Apri",
+    "default": "Default",
+    "enabled": "Abilitato",
+    "disabled": "Disabilitato",
+    "on": "On",
+    "off": "Off",
+    "yes": "Sì",
+    "no": "No",
+    "noOptionsFound": "Nessuna opzione trovata"
+  },
+  "accessibility": {
+    "permissionsRequired": "Richiesti Permessi di Accessibilità",
+    "permissionsDescription": "Handy ha bisogno dei permessi di accessibilità per digitare il testo trascritto.",
+    "openSettings": "Apri Impostazioni di Sistema",
+    "dismiss": "Ignora"
+  },
+  "errors": {
+    "loadDirectory": "Errore di caricamento cartella: {{error}}"
+  },
+  "appLanguage": {
+    "title": "Lingua Applicazione",
+    "description": "Cambia la lingua dell'interfaccia di Handy"
+  },
+  "overlay": {
+    "transcribing": "Trascrizione..."
+  }
+}
