@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { RefreshCcw } from "lucide-react";
 import type { ModelOption } from "./types";
 import { Select } from "../../ui/Select";
 
@@ -11,6 +12,8 @@ type ModelSelectProps = {
   onSelect: (value: string) => void;
   onCreate: (value: string) => void;
   onBlur: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
   className?: string;
   providerId?: string; // Track provider changes to reset menu state
 };
@@ -25,6 +28,8 @@ export const ModelSelect: React.FC<ModelSelectProps> = React.memo(
     onSelect,
     onCreate,
     onBlur,
+    onRefresh,
+    isRefreshing,
     className = "flex-1 min-w-[360px]",
     providerId,
   }) => {
@@ -50,7 +55,32 @@ export const ModelSelect: React.FC<ModelSelectProps> = React.memo(
       setIsMenuOpen(false);
     };
 
+    const handleRefreshClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (onRefresh && !isRefreshing && !disabled) {
+        onRefresh();
+      }
+    };
+
     const computedClassName = `text-sm ${className}`;
+
+    // Custom dropdown indicator with refresh icon
+    const customComponents = {
+      DropdownIndicator: () => (
+        <button
+          type="button"
+          onClick={handleRefreshClick}
+          disabled={isRefreshing || disabled}
+          className="p-2 mr-1 text-text/50 hover:text-logo-primary transition-colors disabled:opacity-50"
+          title="Refresh models"
+        >
+          <RefreshCcw
+            className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+        </button>
+      ),
+    };
 
     return (
       <Select
@@ -69,9 +99,11 @@ export const ModelSelect: React.FC<ModelSelectProps> = React.memo(
         isCreatable
         formatCreateLabel={(input) => `Use "${input}"`}
         menuIsOpen={isMenuOpen}
+        components={customComponents}
       />
     );
   },
 );
 
 ModelSelect.displayName = "ModelSelect";
+

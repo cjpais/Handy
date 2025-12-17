@@ -1,11 +1,13 @@
 import React from "react";
-import SelectComponent from "react-select";
+import SelectComponent, { components } from "react-select";
 import CreatableSelect from "react-select/creatable";
 import type {
   ActionMeta,
   Props as ReactSelectProps,
   SingleValue,
   StylesConfig,
+  GroupBase,
+  DropdownIndicatorProps,
 } from "react-select";
 
 export type SelectOption = {
@@ -26,6 +28,9 @@ type BaseProps = {
   onBlur?: () => void;
   className?: string;
   formatCreateLabel?: (input: string) => string;
+  components?: {
+    DropdownIndicator?: React.ComponentType<DropdownIndicatorProps<SelectOption, false, GroupBase<SelectOption>>> | null;
+  };
 };
 
 type CreatableProps = {
@@ -52,8 +57,8 @@ const neutralBorder =
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
-    minHeight: 40,
-    borderRadius: 6,
+    minHeight: 10,
+    borderRadius: 4,
     borderColor: state.isFocused ? "var(--color-logo-primary)" : neutralBorder,
     boxShadow: state.isFocused ? "0 0 0 1px var(--color-logo-primary)" : "none",
     backgroundColor: state.isFocused ? focusBackground : baseBackground,
@@ -67,8 +72,8 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   }),
   valueContainer: (base) => ({
     ...base,
-    paddingInline: 10,
-    paddingBlock: 6,
+    paddingInline: 8,
+    paddingBlock: 0,
   }),
   input: (base) => ({
     ...base,
@@ -135,6 +140,7 @@ export const Select: React.FC<SelectProps> = React.memo(
     isCreatable,
     formatCreateLabel,
     onCreateOption,
+    components: customComponents,
   }) => {
     const selectValue = React.useMemo(() => {
       if (!value) return null;
@@ -163,6 +169,7 @@ export const Select: React.FC<SelectProps> = React.memo(
       isClearable,
       styles: selectStyles,
       ...(menuIsOpen !== undefined && { menuIsOpen }),
+      ...(customComponents && { components: customComponents }),
     };
 
     if (isCreatable) {

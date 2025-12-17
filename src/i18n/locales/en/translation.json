@@ -238,7 +238,7 @@
         }
       },
       "prompts": {
-        "title": "Prompt",
+        "title": "Post Processing Prompt",
         "selectedPrompt": {
           "title": "Selected Prompt",
           "description": "Select a template for refining transcriptions or create a new one. Use ${output} inside the prompt text to reference the captured transcript."
@@ -246,6 +246,8 @@
         "noPrompts": "No prompts available",
         "selectPrompt": "Select a prompt",
         "createNew": "Create New Prompt",
+        "createNewPrompt": "Create New Prompt",
+        "editPrompt": "Edit Prompt",
         "promptLabel": "Prompt Label",
         "promptLabelPlaceholder": "Enter prompt name",
         "promptInstructions": "Prompt Instructions",
@@ -256,7 +258,13 @@
         "createPrompt": "Create Prompt",
         "cancel": "Cancel",
         "selectToEdit": "Select a prompt above to view and edit its details.",
-        "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
+        "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt.",
+        "searchPlaceholder": "Search prompts...",
+        "noSearchResults": "No prompts match your search.",
+        "active": "Active",
+        "edit": "Edit",
+        "setAsActive": "Set as active",
+        "currentlyActive": "Currently active"
       }
     },
     "onlineProviders": {

@@ -410,13 +410,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             models_endpoint: Some("/models".to_string()),
         },
         PostProcessProvider {
-            id: "sambanova".to_string(),
-            label: "SambaNova".to_string(),
-            base_url: "https://api.sambanova.ai/v1".to_string(),
-            allow_base_url_edit: false,
-            models_endpoint: Some("/models".to_string()),
-        },
-        PostProcessProvider {
             id: "custom".to_string(),
             label: "Custom".to_string(),
             base_url: "http://localhost:11434/v1".to_string(),

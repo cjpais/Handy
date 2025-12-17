@@ -8,10 +8,6 @@ use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID}
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
-use async_openai::types::{
-    ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequestArgs,
-};
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
@@ -150,45 +146,20 @@ async fn maybe_post_process_transcription(
         }
     };
 
-    // Build the chat completion request
-    let message = match ChatCompletionRequestUserMessageArgs::default()
-        .content(processed_prompt)
-        .build()
-    {
-        Ok(msg) => ChatCompletionRequestMessage::User(msg),
-        Err(e) => {
-            error!("Failed to build chat message: {}", e);
-            return None;
-        }
-    };
-
-    let request = match CreateChatCompletionRequestArgs::default()
-        .model(&model)
-        .messages(vec![message])
-        .build()
-    {
-        Ok(req) => req,
-        Err(e) => {
-            error!("Failed to build chat completion request: {}", e);
-            return None;
-        }
-    };
-
-    // Send the request
-    match client.chat().create(request).await {
-        Ok(response) => {
-            if let Some(choice) = response.choices.first() {
-                if let Some(content) = &choice.message.content {
-                    debug!(
-                        "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
-                        provider.id,
-                        content.len()
-                    );
-                    return Some(content.clone());
-                }
+    // Send the chat completion request using our custom client
+    match client.chat_completion(&model, &processed_prompt).await {
+        Ok(content) => {
+            if content.trim().is_empty() {
+                error!("LLM API response has empty content");
+                None
+            } else {
+                debug!(
+                    "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
+                    provider.id,
+                    content.len()
+                );
+                Some(content)
             }
-            error!("LLM API response has no content");
-            None
         }
         Err(e) => {
             error!(
