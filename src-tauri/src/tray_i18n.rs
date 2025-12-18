@@ -1,55 +1,22 @@
 //! Tray menu internationalization
 //!
-//! Loads translations from the shared frontend JSON files at compile time.
+//! Everything is auto-generated at compile time by build.rs from the
+//! frontend locale files (src/i18n/locales/*/translation.json).
 //!
-//! NOTE: When adding a new language to the frontend (src/i18n/locales/),
-//! remember to also add it to the load_translations! macro below.
+//! The English translation.json is the single source of truth:
+//! - TrayStrings struct fields are derived from the English "tray" keys
+//! - All languages are auto-discovered from the locales directory
+//!
+//! To add a new tray menu item:
+//! 1. Add the key to en/translation.json under "tray"
+//! 2. Add translations to other locale files
+//! 3. Update tray.rs to use the new field (e.g., strings.new_field)
 
 use once_cell::sync::Lazy;
-use serde::Deserialize;
 use std::collections::HashMap;
 
-/// Localized strings for the tray menu
-#[derive(Debug, Clone, Deserialize)]
-pub struct TrayStrings {
-    pub settings: String,
-    #[serde(rename = "checkUpdates")]
-    pub check_updates: String,
-    pub quit: String,
-    pub cancel: String,
-}
-
-/// Wrapper for deserializing the translation file
-#[derive(Deserialize)]
-struct TranslationFile {
-    tray: TrayStrings,
-}
-
-/// Macro to load and parse tray translations at compile time
-macro_rules! load_translations {
-    ($($code:literal => $path:literal),* $(,)?) => {{
-        let mut map = HashMap::new();
-        $(
-            if let Ok(file) = serde_json::from_str::<TranslationFile>(include_str!($path)) {
-                map.insert($code, file.tray);
-            }
-        )*
-        map
-    }};
-}
-
-// Embed translation JSON files at compile time
-static TRANSLATIONS: Lazy<HashMap<&'static str, TrayStrings>> = Lazy::new(|| {
-    load_translations! {
-        "en" => "../../src/i18n/locales/en/translation.json",
-        "es" => "../../src/i18n/locales/es/translation.json",
-        "fr" => "../../src/i18n/locales/fr/translation.json",
-        "vi" => "../../src/i18n/locales/vi/translation.json",
-        "de" => "../../src/i18n/locales/de/translation.json",
-        "ja" => "../../src/i18n/locales/ja/translation.json",
-        "zh" => "../../src/i18n/locales/zh/translation.json",
-    }
-});
+// Include the auto-generated TrayStrings struct and TRANSLATIONS static
+include!(concat!(env!("OUT_DIR"), "/tray_translations.rs"));
 
 /// Get the language code from a locale string (e.g., "en-US" -> "en")
 fn get_language_code(locale: &str) -> &str {
