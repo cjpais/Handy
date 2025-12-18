@@ -14,6 +14,7 @@ mod settings;
 mod shortcut;
 mod signal_handle;
 mod tray;
+mod tray_i18n;
 mod utils;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
@@ -194,7 +195,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(tray);
 
     // Initialize tray menu with idle state
-    utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle);
+    utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
 
     // Get the autostart manager and configure based on user setting
     let autostart_manager = app_handle.autolaunch();

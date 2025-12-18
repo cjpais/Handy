@@ -1,4 +1,5 @@
 use crate::settings;
+use crate::tray_i18n::get_tray_translations;
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIcon;
@@ -71,11 +72,14 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
     ));
 
     // Update menu based on state
-    update_tray_menu(app, &icon);
+    update_tray_menu(app, &icon, None);
 }
 
-pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState) {
+pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
     let settings = settings::get_settings(app);
+
+    let locale = locale.unwrap_or(&settings.app_language);
+    let strings = get_tray_translations(Some(locale.to_string()));
 
     // Platform-specific accelerators
     #[cfg(target_os = "macos")]
@@ -87,23 +91,29 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState) {
     let version_label = format!("Handy v{}", env!("CARGO_PKG_VERSION"));
     let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)
         .expect("failed to create version item");
-    let settings_i = MenuItem::with_id(app, "settings", "Settings...", true, settings_accelerator)
-        .expect("failed to create settings item");
+    let settings_i = MenuItem::with_id(
+        app,
+        "settings",
+        &strings.settings,
+        true,
+        settings_accelerator,
+    )
+    .expect("failed to create settings item");
     let check_updates_i = MenuItem::with_id(
         app,
         "check_updates",
-        "Check for Updates...",
+        &strings.check_updates,
         settings.update_checks_enabled,
         None::<&str>,
     )
     .expect("failed to create check updates item");
-    let quit_i = MenuItem::with_id(app, "quit", "Quit", true, quit_accelerator)
+    let quit_i = MenuItem::with_id(app, "quit", &strings.quit, true, quit_accelerator)
         .expect("failed to create quit item");
     let separator = || PredefinedMenuItem::separator(app).expect("failed to create separator");
 
     let menu = match state {
         TrayIconState::Recording | TrayIconState::Transcribing => {
-            let cancel_i = MenuItem::with_id(app, "cancel", "Cancel", true, None::<&str>)
+            let cancel_i = MenuItem::with_id(app, "cancel", &strings.cancel, true, None::<&str>)
                 .expect("failed to create cancel item");
             Menu::with_items(
                 app,

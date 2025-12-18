@@ -219,7 +219,7 @@ Community feedback is essential to keeping Handy the best it can be for everyone
      - How you tested the changes
      - Screenshots/videos if applicable
      - Breaking changes (if any)
-     
+
    **Remember:** PRs with community support are prioritized. If you haven't already, start a [discussion](https://github.com/cjpais/Handy/discussions) to gather feedback before or alongside your PR. It is not explicitly required to gather feedback, but it certainly helps your PR get merged faster.
 
 ### Code Style Guidelines
