@@ -34,8 +34,3 @@ pub fn get_tray_translations(locale: Option<String>) -> TrayStrings {
         .cloned()
         .expect("English translations must exist")
 }
-
-/// Get the current system locale
-pub fn get_system_locale() -> Option<String> {
-    tauri_plugin_os::locale()
-}

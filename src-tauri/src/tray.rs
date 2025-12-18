@@ -1,5 +1,5 @@
 use crate::settings;
-use crate::tray_i18n::{get_system_locale, get_tray_translations};
+use crate::tray_i18n::get_tray_translations;
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIcon;
@@ -78,8 +78,8 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
 pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
     let settings = settings::get_settings(app);
 
-    let locale = locale.map(String::from).or_else(get_system_locale);
-    let strings = get_tray_translations(locale);
+    let locale = locale.unwrap_or(&settings.app_language);
+    let strings = get_tray_translations(Some(locale.to_string()));
 
     // Platform-specific accelerators
     #[cfg(target_os = "macos")]

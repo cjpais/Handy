@@ -363,7 +363,9 @@ fn default_post_process_enabled() -> bool {
 }
 
 fn default_app_language() -> String {
-    "en".to_string()
+    tauri_plugin_os::locale()
+        .and_then(|l| l.split(['-', '_']).next().map(String::from))
+        .unwrap_or_else(|| "en".to_string())
 }
 
 fn default_post_process_provider_id() -> String {
