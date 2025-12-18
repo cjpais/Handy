@@ -13,7 +13,7 @@ use crate::settings::{
     self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
     APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
-use crate::tray;
+use crate::tray::{self, refresh_tray_menu_with_locale};
 use crate::ManagedToggleState;
 
 pub fn init_shortcuts(app: &AppHandle) {
@@ -729,9 +729,12 @@ pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Re
 #[tauri::command]
 #[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
+    let lang_str = language.as_str();
     let mut settings = settings::get_settings(&app);
-    settings.app_language = language;
+    settings.app_language = language.clone();
     settings::write_settings(&app, settings);
+
+    refresh_tray_menu_with_locale(&app, lang_str);
 
     Ok(())
 }
