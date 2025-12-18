@@ -263,6 +263,7 @@ pub fn run() {
         shortcut::resume_binding,
         shortcut::change_mute_while_recording_setting,
         shortcut::change_append_trailing_space_setting,
+        shortcut::change_app_language_setting,
         shortcut::change_update_checks_setting,
         trigger_update_check,
         commands::cancel_operation,
@@ -314,7 +315,7 @@ pub fn run() {
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     specta_builder
         .export(
-            Typescript::default().bigint(BigIntExportBehavior::String),
+            Typescript::default().bigint(BigIntExportBehavior::Number),
             "../src/bindings.ts",
         )
         .expect("Failed to export typescript bindings");

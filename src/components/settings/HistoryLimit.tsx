@@ -16,12 +16,12 @@ export const HistoryLimit: React.FC<HistoryLimitProps> = ({
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
 
-  const historyLimit = Number(getSetting("history_limit") ?? "5");
+  const historyLimit = getSetting("history_limit") ?? 5;
 
   const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(event.target.value, 10);
     if (!isNaN(value) && value >= 0) {
-      updateSetting("history_limit", value.toString());
+      updateSetting("history_limit", value);
     }
   };
 
