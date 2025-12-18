@@ -88,7 +88,11 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
     let (settings_accelerator, quit_accelerator) = (Some("Ctrl+,"), Some("Ctrl+Q"));
 
     // Create common menu items
-    let version_label = format!("Handy v{}", env!("CARGO_PKG_VERSION"));
+    let version_label = if cfg!(debug_assertions) {
+        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+    } else {
+        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+    };
     let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)
         .expect("failed to create version item");
     let settings_i = MenuItem::with_id(
