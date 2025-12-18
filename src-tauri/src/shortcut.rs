@@ -870,25 +870,32 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
                             action.stop(ah, &binding_id_for_closure, &shortcut_string);
                         }
                     } else {
+                        // Toggle mode: toggle on press only
                         if event.state == ShortcutState::Pressed {
-                            let toggle_state_manager = ah.state::<ManagedToggleState>();
+                            // Determine action and update state while holding the lock,
+                            // but RELEASE the lock before calling the action to avoid deadlocks.
+                            // (Actions may need to acquire the lock themselves, e.g., cancel_current_operation)
+                            let should_start: bool;
+                            {
+                                let toggle_state_manager = ah.state::<ManagedToggleState>();
+                                let mut states = toggle_state_manager
+                                    .lock()
+                                    .expect("Failed to lock toggle state manager");
 
-                            let mut states = toggle_state_manager.lock().expect("Failed to lock toggle state manager");
+                                let is_currently_active = states
+                                    .active_toggles
+                                    .entry(binding_id_for_closure.clone())
+                                    .or_insert(false);
 
-                            let is_currently_active = states.active_toggles
-                                .entry(binding_id_for_closure.clone())
-                                .or_insert(false);
+                                should_start = !*is_currently_active;
+                                *is_currently_active = should_start;
+                            } // Lock released here
 
-                            if *is_currently_active {
-                                action.stop(
-                                    ah,
-                                    &binding_id_for_closure,
-                                    &shortcut_string,
-                                );
-                                *is_currently_active = false; // Update state to inactive
-                            } else {
+                            // Now call the action without holding the lock
+                            if should_start {
                                 action.start(ah, &binding_id_for_closure, &shortcut_string);
-                                *is_currently_active = true; // Update state to active
+                            } else {
+                                action.stop(ah, &binding_id_for_closure, &shortcut_string);
                             }
                         }
                     }
