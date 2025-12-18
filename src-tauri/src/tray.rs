@@ -72,23 +72,13 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
     ));
 
     // Update menu based on state
-    update_tray_menu(app, &icon);
+    update_tray_menu(app, &icon, None);
 }
 
-/// Refresh the tray menu with a specific locale (called from frontend when app UI language changes)
-pub fn refresh_tray_menu_with_locale(app: &AppHandle, locale: &str) {
-    update_tray_menu_impl(app, &TrayIconState::Idle, Some(locale.to_string()));
-}
-
-pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState) {
-    update_tray_menu_impl(app, state, None);
-}
-
-fn update_tray_menu_impl(app: &AppHandle, state: &TrayIconState, override_locale: Option<String>) {
+pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
     let settings = settings::get_settings(app);
 
-    // Get locale: use override if provided, otherwise fall back to OS locale
-    let locale = override_locale.or_else(get_system_locale);
+    let locale = locale.map(String::from).or_else(get_system_locale);
     let strings = get_tray_translations(locale);
 
     // Platform-specific accelerators
