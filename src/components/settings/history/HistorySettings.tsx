@@ -72,7 +72,7 @@ export const HistorySettings: React.FC = () => {
     };
   }, [loadHistoryEntries]);
 
-  const toggleSaved = async (id: string) => {
+  const toggleSaved = async (id: number) => {
     try {
       await commands.toggleHistoryEntrySaved(id);
       // No need to reload here - the event listener will handle it
@@ -102,7 +102,7 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
-  const deleteAudioEntry = async (id: string) => {
+  const deleteAudioEntry = async (id: number) => {
     try {
       await commands.deleteHistoryEntry(id);
     } catch (error) {
@@ -207,7 +207,7 @@ interface HistoryEntryProps {
   onToggleSaved: () => void;
   onCopyText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
-  deleteAudio: (id: string) => Promise<void>;
+  deleteAudio: (id: number) => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -244,7 +244,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
   };
 
-  const formattedDate = formatDateTime(entry.timestamp, i18n.language);
+  const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
