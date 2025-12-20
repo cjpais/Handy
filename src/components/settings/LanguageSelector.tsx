@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
@@ -12,22 +11,23 @@ interface LanguageSelectorProps {
   grouped?: boolean;
 }
 
-const unsupportedModels = ["parakeet-tdt-0.6b-v2", "parakeet-tdt-0.6b-v3"];
-
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
-  const { currentModel, loadCurrentModel } = useModels();
+  const { currentModel, models } = useModels();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selectedLanguage = getSetting("selected_language") || "auto";
-  const isUnsupported = unsupportedModels.includes(currentModel);
+  const currentModelInfo = models.find((m) => m.id === currentModel);
+  const isUnsupported = currentModelInfo
+    ? !currentModelInfo.supports_language_selection
+    : false;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,17 +45,6 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  // Listen for model state changes to update UI reactively
-  useEffect(() => {
-    const modelStateUnlisten = listen("model-state-changed", () => {
-      loadCurrentModel();
-    });
-
-    return () => {
-      modelStateUnlisten.then((fn) => fn());
-    };
-  }, [loadCurrentModel]);
 
   useEffect(() => {
     if (isOpen && searchInputRef.current) {

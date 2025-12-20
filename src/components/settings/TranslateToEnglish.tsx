@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
 import { useModels } from "../../hooks/useModels";
@@ -10,21 +9,17 @@ interface TranslateToEnglishProps {
   grouped?: boolean;
 }
 
-const unsupportedTranslationModels = [
-  "parakeet-tdt-0.6b-v2",
-  "parakeet-tdt-0.6b-v3",
-  "turbo",
-];
-
 export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
-    const { currentModel, loadCurrentModel, models } = useModels();
+    const { currentModel, models } = useModels();
 
     const translateToEnglish = getSetting("translate_to_english") || false;
-    const isDisabledTranslation =
-      unsupportedTranslationModels.includes(currentModel);
+    const currentModelInfo = models.find((m) => m.id === currentModel);
+    const isDisabledTranslation = currentModelInfo
+      ? !currentModelInfo.supports_translation
+      : false;
 
     const description = useMemo(() => {
       if (isDisabledTranslation) {
@@ -41,17 +36,6 @@ export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
 
       return t("settings.advanced.translateToEnglish.description");
     }, [t, models, currentModel, isDisabledTranslation]);
-
-    // Listen for model state changes to update UI reactively
-    useEffect(() => {
-      const modelStateUnlisten = listen("model-state-changed", () => {
-        loadCurrentModel();
-      });
-
-      return () => {
-        modelStateUnlisten.then((fn) => fn());
-      };
-    }, [loadCurrentModel]);
 
     return (
       <ToggleSwitch
