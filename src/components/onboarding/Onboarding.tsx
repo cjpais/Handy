@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { commands, type ModelInfo } from "@/bindings";
+import type { ModelInfo } from "@/bindings";
 import ModelCard from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
+import { useModels } from "../../hooks/useModels";
 
 interface OnboardingProps {
   onModelSelected: () => void;
@@ -10,52 +11,33 @@ interface OnboardingProps {
 
 const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   const { t } = useTranslation();
-  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  const { models, downloadModel, error: modelError } = useModels();
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadModels();
-  }, []);
-
-  const loadModels = async () => {
-    try {
-      const result = await commands.getAvailableModels();
-      if (result.status === "ok") {
-        // Only show downloadable models for onboarding
-        setAvailableModels(result.data.filter((m) => !m.is_downloaded));
-      } else {
-        setError(t("onboarding.errors.loadModels"));
-      }
-    } catch (err) {
-      console.error("Failed to load models:", err);
-      setError(t("onboarding.errors.loadModels"));
-    }
-  };
+  // Only show downloadable models for onboarding
+  const availableModels = models.filter((m) => !m.is_downloaded);
 
   const handleDownloadModel = async (modelId: string) => {
     setDownloading(true);
     setError(null);
 
+    // Start the download (updates Zustand store)
+    const downloadPromise = downloadModel(modelId);
+
     // Immediately transition to main app - download will continue in footer
     onModelSelected();
 
-    try {
-      const result = await commands.downloadModel(modelId);
-      if (result.status === "error") {
-        console.error("Download failed:", result.error);
-        setError(t("onboarding.errors.downloadModel", { error: result.error }));
-        setDownloading(false);
-      }
-    } catch (err) {
+    // Note: We don't await or handle the result here since the component
+    // will unmount. The Zustand store handles download state, and any errors
+    // will be visible in the main app's ModelSelector.
+    downloadPromise.catch((err) => {
       console.error("Download failed:", err);
-      setError(t("onboarding.errors.downloadModel", { error: String(err) }));
-      setDownloading(false);
-    }
+    });
   };
 
-  const getRecommendedBadge = (modelId: string): boolean => {
-    return modelId === "parakeet-tdt-0.6b-v3";
+  const isRecommendedModel = (model: ModelInfo): boolean => {
+    return model.is_recommended;
   };
 
   return (
@@ -76,7 +58,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
         <div className="flex flex-col gap-4 pb-6">
           {availableModels
-            .filter((model) => getRecommendedBadge(model.id))
+            .filter((model) => isRecommendedModel(model))
             .map((model) => (
               <ModelCard
                 key={model.id}
@@ -88,7 +70,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
             ))}
 
           {availableModels
-            .filter((model) => !getRecommendedBadge(model.id))
+            .filter((model) => !isRecommendedModel(model))
             .sort((a, b) => Number(a.size_mb) - Number(b.size_mb))
             .map((model) => (
               <ModelCard

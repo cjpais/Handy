@@ -10,16 +10,25 @@ interface DownloadProgress {
   percentage: number;
 }
 
-interface ModelStore {
+interface DownloadStats {
+  startTime: number;
+  lastUpdate: number;
+  totalDownloaded: number;
+  speed: number; // MB/s
+}
+
+interface ModelsStore {
   models: ModelInfo[];
   currentModel: string;
   downloadingModels: Set<string>;
   extractingModels: Set<string>;
   downloadProgress: Map<string, DownloadProgress>;
+  downloadStats: Map<string, DownloadStats>;
   loading: boolean;
   error: string | null;
   hasAnyModels: boolean;
   isFirstRun: boolean;
+  initialized: boolean;
 
   // Actions
   initialize: () => Promise<void>;
@@ -29,8 +38,6 @@ interface ModelStore {
   selectModel: (modelId: string) => Promise<boolean>;
   downloadModel: (modelId: string) => Promise<boolean>;
   deleteModel: (modelId: string) => Promise<boolean>;
-
-  // Getters
   getModelInfo: (modelId: string) => ModelInfo | undefined;
   isModelDownloading: (modelId: string) => boolean;
   isModelExtracting: (modelId: string) => boolean;
@@ -38,85 +45,42 @@ interface ModelStore {
 
   // Internal setters
   setModels: (models: ModelInfo[]) => void;
-  setCurrentModel: (model: string) => void;
-  setLoading: (loading: boolean) => void;
+  setCurrentModel: (modelId: string) => void;
   setError: (error: string | null) => void;
-  setHasAnyModels: (hasAny: boolean) => void;
-  setIsFirstRun: (isFirst: boolean) => void;
-  addDownloadingModel: (modelId: string) => void;
-  removeDownloadingModel: (modelId: string) => void;
-  addExtractingModel: (modelId: string) => void;
-  removeExtractingModel: (modelId: string) => void;
-  setDownloadProgress: (modelId: string, progress: DownloadProgress) => void;
-  removeDownloadProgress: (modelId: string) => void;
+  setLoading: (loading: boolean) => void;
 }
 
-export const useModelStore = create<ModelStore>()(
+export const useModelStore = create<ModelsStore>()(
   subscribeWithSelector((set, get) => ({
     models: [],
     currentModel: "",
     downloadingModels: new Set(),
     extractingModels: new Set(),
     downloadProgress: new Map(),
+    downloadStats: new Map(),
     loading: true,
     error: null,
     hasAnyModels: false,
     isFirstRun: false,
+    initialized: false,
 
     // Internal setters
     setModels: (models) => set({ models }),
     setCurrentModel: (currentModel) => set({ currentModel }),
-    setLoading: (loading) => set({ loading }),
     setError: (error) => set({ error }),
-    setHasAnyModels: (hasAnyModels) => set({ hasAnyModels }),
-    setIsFirstRun: (isFirstRun) => set({ isFirstRun }),
-    addDownloadingModel: (modelId) =>
-      set((state) => ({
-        downloadingModels: new Set(state.downloadingModels).add(modelId),
-      })),
-    removeDownloadingModel: (modelId) =>
-      set((state) => {
-        const next = new Set(state.downloadingModels);
-        next.delete(modelId);
-        return { downloadingModels: next };
-      }),
-    addExtractingModel: (modelId) =>
-      set((state) => ({
-        extractingModels: new Set(state.extractingModels).add(modelId),
-      })),
-    removeExtractingModel: (modelId) =>
-      set((state) => {
-        const next = new Set(state.extractingModels);
-        next.delete(modelId);
-        return { extractingModels: next };
-      }),
-    setDownloadProgress: (modelId, progress) =>
-      set((state) => ({
-        downloadProgress: new Map(state.downloadProgress).set(
-          modelId,
-          progress,
-        ),
-      })),
-    removeDownloadProgress: (modelId) =>
-      set((state) => {
-        const next = new Map(state.downloadProgress);
-        next.delete(modelId);
-        return { downloadProgress: next };
-      }),
+    setLoading: (loading) => set({ loading }),
 
-    // Getters
-    getModelInfo: (modelId) =>
-      get().models.find((model) => model.id === modelId),
-    isModelDownloading: (modelId) => get().downloadingModels.has(modelId),
-    isModelExtracting: (modelId) => get().extractingModels.has(modelId),
-    getDownloadProgress: (modelId) => get().downloadProgress.get(modelId),
-
-    // Actions
     loadModels: async () => {
       try {
         const result = await commands.getAvailableModels();
         if (result.status === "ok") {
           set({ models: result.data, error: null });
+
+          // Sync downloading state from backend
+          const currentlyDownloading = new Set(
+            result.data.filter((m) => m.is_downloading).map((m) => m.id),
+          );
+          set({ downloadingModels: currentlyDownloading });
         } else {
           set({ error: `Failed to load models: ${result.error}` });
         }
@@ -153,12 +117,16 @@ export const useModelStore = create<ModelStore>()(
       }
     },
 
-    selectModel: async (modelId) => {
+    selectModel: async (modelId: string) => {
       try {
         set({ error: null });
         const result = await commands.setActiveModel(modelId);
         if (result.status === "ok") {
-          set({ currentModel: modelId, isFirstRun: false, hasAnyModels: true });
+          set({
+            currentModel: modelId,
+            isFirstRun: false,
+            hasAnyModels: true,
+          });
           return true;
         } else {
           set({ error: `Failed to switch to model: ${result.error}` });
@@ -170,33 +138,41 @@ export const useModelStore = create<ModelStore>()(
       }
     },
 
-    downloadModel: async (modelId) => {
-      const { addDownloadingModel, removeDownloadingModel } = get();
+    downloadModel: async (modelId: string) => {
       try {
         set({ error: null });
-        addDownloadingModel(modelId);
+        set((state) => ({
+          downloadingModels: new Set(state.downloadingModels).add(modelId),
+        }));
         const result = await commands.downloadModel(modelId);
         if (result.status === "ok") {
           return true;
         } else {
           set({ error: `Failed to download model: ${result.error}` });
-          removeDownloadingModel(modelId);
+          set((state) => {
+            const next = new Set(state.downloadingModels);
+            next.delete(modelId);
+            return { downloadingModels: next };
+          });
           return false;
         }
       } catch (err) {
         set({ error: `Failed to download model: ${err}` });
-        removeDownloadingModel(modelId);
+        set((state) => {
+          const next = new Set(state.downloadingModels);
+          next.delete(modelId);
+          return { downloadingModels: next };
+        });
         return false;
       }
     },
 
-    deleteModel: async (modelId) => {
-      const { loadModels } = get();
+    deleteModel: async (modelId: string) => {
       try {
         set({ error: null });
         const result = await commands.deleteModel(modelId);
         if (result.status === "ok") {
-          await loadModels();
+          await get().loadModels();
           return true;
         } else {
           set({ error: `Failed to delete model: ${result.error}` });
@@ -208,47 +184,139 @@ export const useModelStore = create<ModelStore>()(
       }
     },
 
+    getModelInfo: (modelId: string) => {
+      return get().models.find((model) => model.id === modelId);
+    },
+
+    isModelDownloading: (modelId: string) => {
+      return get().downloadingModels.has(modelId);
+    },
+
+    isModelExtracting: (modelId: string) => {
+      return get().extractingModels.has(modelId);
+    },
+
+    getDownloadProgress: (modelId: string) => {
+      return get().downloadProgress.get(modelId);
+    },
+
     initialize: async () => {
+      if (get().initialized) return;
+
       const { loadModels, loadCurrentModel, checkFirstRun } = get();
+
+      // Load initial data
       await Promise.all([loadModels(), loadCurrentModel(), checkFirstRun()]);
+
+      // Set up event listeners
+      listen<DownloadProgress>("model-download-progress", (event) => {
+        const progress = event.payload;
+        set((state) => ({
+          downloadProgress: new Map(state.downloadProgress).set(
+            progress.model_id,
+            progress,
+          ),
+        }));
+
+        // Update download stats for speed calculation
+        const now = Date.now();
+        set((state) => {
+          const current = state.downloadStats.get(progress.model_id);
+          const newStats = new Map(state.downloadStats);
+
+          if (!current) {
+            newStats.set(progress.model_id, {
+              startTime: now,
+              lastUpdate: now,
+              totalDownloaded: progress.downloaded,
+              speed: 0,
+            });
+          } else {
+            const timeDiff = (now - current.lastUpdate) / 1000;
+            const bytesDiff = progress.downloaded - current.totalDownloaded;
+
+            if (timeDiff > 0.5) {
+              const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff;
+              const validCurrentSpeed = Math.max(0, currentSpeed);
+              const smoothedSpeed =
+                current.speed > 0
+                  ? current.speed * 0.8 + validCurrentSpeed * 0.2
+                  : validCurrentSpeed;
+
+              newStats.set(progress.model_id, {
+                startTime: current.startTime,
+                lastUpdate: now,
+                totalDownloaded: progress.downloaded,
+                speed: Math.max(0, smoothedSpeed),
+              });
+            }
+          }
+
+          return { downloadStats: newStats };
+        });
+      });
+
+      listen<string>("model-download-complete", (event) => {
+        const modelId = event.payload;
+        set((state) => {
+          const nextDownloading = new Set(state.downloadingModels);
+          nextDownloading.delete(modelId);
+          const nextProgress = new Map(state.downloadProgress);
+          nextProgress.delete(modelId);
+          const nextStats = new Map(state.downloadStats);
+          nextStats.delete(modelId);
+          return {
+            downloadingModels: nextDownloading,
+            downloadProgress: nextProgress,
+            downloadStats: nextStats,
+          };
+        });
+        get().loadModels();
+      });
+
+      listen<string>("model-extraction-started", (event) => {
+        const modelId = event.payload;
+        set((state) => ({
+          extractingModels: new Set(state.extractingModels).add(modelId),
+        }));
+      });
+
+      listen<string>("model-extraction-completed", (event) => {
+        const modelId = event.payload;
+        set((state) => {
+          const next = new Set(state.extractingModels);
+          next.delete(modelId);
+          return { extractingModels: next };
+        });
+        get().loadModels();
+      });
+
+      listen<{ model_id: string; error: string }>(
+        "model-extraction-failed",
+        (event) => {
+          const modelId = event.payload.model_id;
+          set((state) => {
+            const next = new Set(state.extractingModels);
+            next.delete(modelId);
+            return {
+              extractingModels: next,
+              error: `Failed to extract model: ${event.payload.error}`,
+            };
+          });
+        },
+      );
+
+      listen<string>("model-deleted", () => {
+        get().loadModels();
+        get().loadCurrentModel();
+      });
+
+      listen("model-state-changed", () => {
+        get().loadModels();
+        get().loadCurrentModel();
+      });
+
+      set({ initialized: true });
     },
   })),
-);
-
-// Set up event listeners at module load
-listen("model-state-changed", () => {
-  useModelStore.getState().loadCurrentModel();
-});
-
-listen<DownloadProgress>("model-download-progress", (event) => {
-  useModelStore
-    .getState()
-    .setDownloadProgress(event.payload.model_id, event.payload);
-});
-
-listen<string>("model-download-complete", (event) => {
-  const modelId = event.payload;
-  const state = useModelStore.getState();
-  state.removeDownloadingModel(modelId);
-  state.removeDownloadProgress(modelId);
-  state.loadModels();
-});
-
-listen<string>("model-extraction-started", (event) => {
-  useModelStore.getState().addExtractingModel(event.payload);
-});
-
-listen<string>("model-extraction-completed", (event) => {
-  const state = useModelStore.getState();
-  state.removeExtractingModel(event.payload);
-  state.loadModels();
-});
-
-listen<{ model_id: string; error: string }>(
-  "model-extraction-failed",
-  (event) => {
-    const state = useModelStore.getState();
-    state.removeExtractingModel(event.payload.model_id);
-    state.setError(`Failed to extract model: ${event.payload.error}`);
-  },
 );

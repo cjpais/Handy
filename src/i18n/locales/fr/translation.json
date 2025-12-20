@@ -9,6 +9,7 @@
   },
   "sidebar": {
     "general": "Général",
+    "models": "Modèles",
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "history": "Historique",
@@ -82,6 +83,7 @@
     "downloadModels": "Télécharger des Modèles",
     "chooseModel": "Choisir un Modèle",
     "active": "Actif",
+    "switching": "Changement...",
     "download": "Télécharger",
     "downloadSize": "Taille du téléchargement",
     "noModelsAvailable": "Aucun modèle disponible",
@@ -96,9 +98,34 @@
     "modelError": "Erreur du Modèle",
     "modelUnloaded": "Modèle Déchargé",
     "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
-    "deleteModel": "Supprimer {{modelName}}"
+    "deleteModel": "Supprimer {{modelName}}",
+    "downloadSpeed": "{{speed}} Mo/s",
+    "capabilities": {
+      "languageSelection": "Prend en charge plusieurs langues d'entrée",
+      "multiLanguage": "Multilingue",
+      "translation": "Peut traduire en anglais",
+      "translate": "Traduire en anglais"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Paramètres de {{model}}",
+      "noSettingsNeeded": "Ce modèle fonctionne automatiquement sans configuration nécessaire."
+    },
+    "models": {
+      "title": "Modèles de Transcription",
+      "description": "Sélectionnez un modèle de transcription ou téléchargez des modèles supplémentaires. Différents modèles offrent différents niveaux de précision et de vitesse.",
+      "downloaded": "Téléchargés",
+      "available": "Disponibles au Téléchargement",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
+      "deleteTitle": "Supprimer le modèle",
+      "filters": {
+        "all": "Tous",
+        "multiLanguage": "Multilingue",
+        "translation": "Traduction"
+      },
+      "noModelsMatch": "Aucun modèle ne correspond à ce filtre."
+    },
     "general": {
       "title": "Général",
       "shortcut": {

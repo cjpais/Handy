@@ -9,6 +9,7 @@
   },
   "sidebar": {
     "general": "Chung",
+    "models": "Mô hình",
     "advanced": "Nâng cao",
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
@@ -82,6 +83,7 @@
     "downloadModels": "Tải Xuống Mô Hình",
     "chooseModel": "Chọn Mô Hình",
     "active": "Đang hoạt động",
+    "switching": "Đang chuyển...",
     "download": "Tải xuống",
     "downloadSize": "Kích thước tải xuống",
     "noModelsAvailable": "Không có mô hình nào",
@@ -96,9 +98,34 @@
     "modelError": "Lỗi Mô Hình",
     "modelUnloaded": "Mô Hình Đã Gỡ",
     "noModelDownloadRequired": "Chưa Có Mô Hình - Cần Tải Xuống",
-    "deleteModel": "Xóa {{modelName}}"
+    "deleteModel": "Xóa {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Hỗ trợ nhiều ngôn ngữ đầu vào",
+      "multiLanguage": "Đa ngôn ngữ",
+      "translation": "Có thể dịch sang tiếng Anh",
+      "translate": "Dịch sang tiếng Anh"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Cài đặt {{model}}",
+      "noSettingsNeeded": "Mô hình này hoạt động tự động mà không cần cấu hình."
+    },
+    "models": {
+      "title": "Mô hình chuyển đổi",
+      "description": "Chọn mô hình chuyển đổi hoặc tải thêm mô hình. Các mô hình khác nhau có mức độ chính xác và tốc độ khác nhau.",
+      "downloaded": "Đã tải xuống",
+      "available": "Có thể tải xuống",
+      "deleteConfirm": "Bạn có chắc chắn muốn xóa {{modelName}}? Bạn sẽ cần tải lại để sử dụng.",
+      "deleteTitle": "Xóa mô hình",
+      "filters": {
+        "all": "Tất cả",
+        "multiLanguage": "Đa ngôn ngữ",
+        "translation": "Dịch thuật"
+      },
+      "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này."
+    },
     "general": {
       "title": "Chung",
       "shortcut": {

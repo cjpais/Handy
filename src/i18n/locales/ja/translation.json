@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "一般",
+    "models": "モデル",
     "advanced": "詳細設定",
     "postProcessing": "後処理",
     "history": "履歴",
@@ -81,6 +82,7 @@
     "downloadModels": "モデルをダウンロード",
     "chooseModel": "モデルを選択",
     "active": "アクティブ",
+    "switching": "切替中...",
     "download": "ダウンロード",
     "downloadSize": "ダウンロードサイズ",
     "noModelsAvailable": "利用可能なモデルがありません",
@@ -95,9 +97,34 @@
     "modelError": "モデルエラー",
     "modelUnloaded": "モデルがアンロードされました",
     "noModelDownloadRequired": "モデルなし - ダウンロードが必要",
-    "deleteModel": "{{modelName}}を削除"
+    "deleteModel": "{{modelName}}を削除",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "複数の入力言語をサポート",
+      "multiLanguage": "多言語",
+      "translation": "英語への翻訳が可能",
+      "translate": "英語に翻訳"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} 設定",
+      "noSettingsNeeded": "このモデルは設定不要で自動的に動作します。"
+    },
+    "models": {
+      "title": "転写モデル",
+      "description": "転写モデルを選択するか、追加のモデルをダウンロードします。異なるモデルは精度と速度のレベルが異なります。",
+      "downloaded": "ダウンロード済み",
+      "available": "ダウンロード可能",
+      "deleteConfirm": "{{modelName}}を削除してもよろしいですか？再度使用するにはダウンロードが必要です。",
+      "deleteTitle": "モデルを削除",
+      "filters": {
+        "all": "すべて",
+        "multiLanguage": "多言語",
+        "translation": "翻訳"
+      },
+      "noModelsMatch": "このフィルターに一致するモデルがありません。"
+    },
     "general": {
       "title": "一般",
       "shortcut": {
