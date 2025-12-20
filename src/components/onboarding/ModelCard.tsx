@@ -1,109 +1,247 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Download } from "lucide-react";
+import {
+  Check,
+  Download,
+  Globe,
+  Languages,
+  Loader2,
+  Trash2,
+} from "lucide-react";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import {
-  getTranslatedModelName,
   getTranslatedModelDescription,
+  getTranslatedModelName,
 } from "../../lib/utils/modelTranslation";
 import Badge from "../ui/Badge";
+
+export type ModelCardStatus =
+  | "downloadable"
+  | "downloading"
+  | "extracting"
+  | "switching"
+  | "active"
+  | "available";
 
 interface ModelCardProps {
   model: ModelInfo;
   variant?: "default" | "featured";
+  status?: ModelCardStatus;
   disabled?: boolean;
   className?: string;
   onSelect: (modelId: string) => void;
+  onDownload?: (modelId: string) => void;
+  onDelete?: (modelId: string) => void;
+  downloadProgress?: number;
+  downloadSpeed?: number; // MB/s
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
   model,
   variant = "default",
+  status = "downloadable",
   disabled = false,
   className = "",
   onSelect,
+  onDownload,
+  onDelete,
+  downloadProgress,
+  downloadSpeed,
 }) => {
   const { t } = useTranslation();
   const isFeatured = variant === "featured";
+  // Card is clickable if model is available/active, OR if downloadable without explicit download button
+  const canSelect =
+    status === "available" ||
+    status === "active" ||
+    (status === "downloadable" && !onDownload);
 
   // Get translated model name and description
   const displayName = getTranslatedModelName(model, t);
   const displayDescription = getTranslatedModelDescription(model, t);
 
-  const baseButtonClasses =
-    "flex justify-between items-center rounded-xl p-3 px-4 text-start transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-logo-primary/25 active:scale-[0.98] cursor-pointer group";
+  const baseClasses =
+    "flex justify-between items-center rounded-xl p-4 text-left transition-all duration-200";
 
-  const variantClasses = isFeatured
-    ? "border-2 border-logo-primary/25 bg-logo-primary/5 hover:border-logo-primary/40 hover:bg-logo-primary/8 hover:shadow-lg hover:scale-[1.02] disabled:hover:border-logo-primary/25 disabled:hover:bg-logo-primary/5 disabled:hover:shadow-none disabled:hover:scale-100"
-    : "border-2 border-mid-gray/20 hover:border-logo-primary/50 hover:bg-logo-primary/5 hover:shadow-lg hover:scale-[1.02] disabled:hover:border-mid-gray/20 disabled:hover:bg-transparent disabled:hover:shadow-none disabled:hover:scale-100";
+  const getVariantClasses = () => {
+    if (status === "active") {
+      return "border-2 border-logo-primary/50 bg-logo-primary/10";
+    }
+    if (isFeatured) {
+      return "border-2 border-logo-primary/25 bg-logo-primary/5";
+    }
+    return "border-2 border-mid-gray/20";
+  };
+
+  const getInteractiveClasses = () => {
+    if (!canSelect) return "";
+    if (disabled) return "opacity-50 cursor-not-allowed";
+    return "cursor-pointer hover:border-logo-primary/50 hover:bg-logo-primary/5 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] group";
+  };
+
+  const handleClick = () => {
+    if (canSelect && !disabled) {
+      onSelect(model.id);
+    }
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDownload?.(model.id);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(model.id);
+  };
 
   return (
-    <button
-      onClick={() => onSelect(model.id)}
-      disabled={disabled}
-      className={[baseButtonClasses, variantClasses, className]
+    <div
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && canSelect) handleClick();
+      }}
+      role={canSelect ? "button" : undefined}
+      tabIndex={canSelect ? 0 : undefined}
+      className={[
+        baseClasses,
+        getVariantClasses(),
+        getInteractiveClasses(),
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
-      type="button"
     >
-      <div className="flex flex-col items-ce">
-        <div className="flex items-center gap-4">
-          <h3 className="text-lg font-semibold text-text group-hover:text-logo-primary transition-colors">
+      <div className="flex flex-col items-start flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3
+            className={`text-base font-semibold text-text ${canSelect ? "group-hover:text-logo-primary" : ""} transition-colors`}
+          >
             {displayName}
           </h3>
-          <DownloadSize sizeMb={Number(model.size_mb)} />
-          {isFeatured && (
+          {model.is_recommended && (
             <Badge variant="primary">{t("onboarding.recommended")}</Badge>
           )}
+          {status === "active" && (
+            <Badge variant="success">
+              <Check className="w-3 h-3 mr-1" />
+              {t("modelSelector.active")}
+            </Badge>
+          )}
+          {status === "switching" && (
+            <Badge variant="secondary">
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+              {t("modelSelector.switching")}
+            </Badge>
+          )}
         </div>
-        <p className="text-text/60 text-sm leading-relaxed">
+        <p className="text-text/60 text-sm leading-relaxed mt-1">
           {displayDescription}
         </p>
+        <div className="flex items-center gap-3 mt-2">
+          {model.supports_language_selection && (
+            <div
+              className="flex items-center gap-1 text-xs text-text/50"
+              title={t("modelSelector.capabilities.languageSelection")}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>{t("modelSelector.capabilities.multiLanguage")}</span>
+            </div>
+          )}
+          {model.supports_translation && (
+            <div
+              className="flex items-center gap-1 text-xs text-text/50"
+              title={t("modelSelector.capabilities.translation")}
+            >
+              <Languages className="w-3.5 h-3.5" />
+              <span>{t("modelSelector.capabilities.translate")}</span>
+            </div>
+          )}
+        </div>
+        {status === "downloading" && downloadProgress !== undefined && (
+          <div className="w-full mt-3">
+            <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary rounded-full transition-all duration-300"
+                style={{ width: `${downloadProgress}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs text-text/50 mt-1">
+              <span>
+                {t("modelSelector.downloading", {
+                  percentage: Math.round(downloadProgress),
+                })}
+              </span>
+              {downloadSpeed !== undefined && downloadSpeed > 0 && (
+                <span className="tabular-nums">
+                  {t("modelSelector.downloadSpeed", {
+                    speed: downloadSpeed.toFixed(1),
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+        {status === "extracting" && (
+          <div className="w-full mt-3">
+            <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+              <div className="h-full bg-logo-primary rounded-full animate-pulse w-full" />
+            </div>
+            <p className="text-xs text-text/50 mt-1">
+              {t("modelSelector.extractingGeneric")}
+            </p>
+          </div>
+        )}
       </div>
 
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-text/70 w-16 text-end">
-            {t("onboarding.modelCard.accuracy")}
-          </p>
-          <div className="w-20 h-2 bg-mid-gray/20 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-logo-primary rounded-full transition-all duration-300"
-              style={{ width: `${model.accuracy_score * 100}%` }}
-            />
+      <div className="flex items-center gap-3 ml-4">
+        <div className="space-y-1 hidden sm:block">
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-text/60 w-14 text-right">
+              {t("onboarding.modelCard.accuracy")}
+            </p>
+            <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary rounded-full"
+                style={{ width: `${model.accuracy_score * 100}%` }}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-text/60 w-14 text-right">
+              {t("onboarding.modelCard.speed")}
+            </p>
+            <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary rounded-full"
+                style={{ width: `${model.speed_score * 100}%` }}
+              />
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-text/70 w-16 text-end">
-            {t("onboarding.modelCard.speed")}
-          </p>
-          <div className="w-20 h-2 bg-mid-gray/20 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-logo-primary rounded-full transition-all duration-300"
-              style={{ width: `${model.speed_score * 100}%` }}
-            />
-          </div>
-        </div>
+        {status === "downloadable" && onDownload && (
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={disabled}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text bg-logo-primary/20 hover:bg-logo-primary/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            <span>{formatModelSize(Number(model.size_mb))}</span>
+          </button>
+        )}
+        {onDelete && status === "available" && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+            title={t("modelSelector.deleteModel", { modelName: displayName })}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
-    </button>
-  );
-};
-
-const DownloadSize = ({ sizeMb }: { sizeMb: number }) => {
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex items-center gap-1.5 text-xs text-text/60 tabular-nums">
-      <Download
-        aria-hidden="true"
-        className="h-3.5 w-3.5 text-text/45"
-        strokeWidth={1.75}
-      />
-      <span className="sr-only">{t("modelSelector.downloadSize")}</span>
-      <span className="font-medium text-text/70">
-        {formatModelSize(sizeMb)}
-      </span>
     </div>
   );
 };

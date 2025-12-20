@@ -36,6 +36,9 @@ pub struct ModelInfo {
     pub engine_type: EngineType,
     pub accuracy_score: f32, // 0.0 to 1.0, higher is more accurate
     pub speed_score: f32,    // 0.0 to 1.0, higher is faster
+    pub supports_language_selection: bool, // Whether the model supports selecting input language
+    pub supports_translation: bool, // Whether the model supports translating to English
+    pub is_recommended: bool, // Whether this is the recommended model for new users
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -84,6 +87,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.60,
                 speed_score: 0.85,
+                supports_language_selection: true,
+                supports_translation: true,
+                is_recommended: false,
             },
         );
 
@@ -104,6 +110,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.75,
                 speed_score: 0.60,
+                supports_language_selection: true,
+                supports_translation: true,
+                is_recommended: false,
             },
         );
 
@@ -123,6 +132,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.80,
                 speed_score: 0.40,
+                supports_language_selection: true,
+                supports_translation: false, // Turbo doesn't support translation
+                is_recommended: false,
             },
         );
 
@@ -142,6 +154,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.85,
                 speed_score: 0.30,
+                supports_language_selection: true,
+                supports_translation: true,
+                is_recommended: false,
             },
         );
 
@@ -162,6 +177,9 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.85,
                 speed_score: 0.85,
+                supports_language_selection: false, // Parakeet is English-only
+                supports_translation: false,        // Parakeet doesn't support translation
+                is_recommended: false,
             },
         );
 
@@ -181,6 +199,9 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.80,
                 speed_score: 0.85,
+                supports_language_selection: false, // Parakeet is English-only
+                supports_translation: false,        // Parakeet doesn't support translation
+                is_recommended: true,               // Recommended for new users
             },
         );
 
@@ -662,6 +683,9 @@ impl ModelManager {
         // Update download status
         self.update_download_status()?;
         debug!("ModelManager: download status updated");
+
+        // Emit event to notify UI
+        let _ = self.app_handle.emit("model-deleted", model_id);
 
         Ok(())
     }

@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "General",
+    "models": "Modelos",
     "advanced": "Avanzado",
     "postProcessing": "Post Proceso",
     "history": "Historial",
@@ -81,6 +82,7 @@
     "downloadModels": "Descargar Modelos",
     "chooseModel": "Elegir un Modelo",
     "active": "Activo",
+    "switching": "Cambiando...",
     "download": "Descargar",
     "downloadSize": "Tamaño de descarga",
     "noModelsAvailable": "No hay modelos disponibles",
@@ -95,9 +97,34 @@
     "modelError": "Error del Modelo",
     "modelUnloaded": "Modelo Descargado",
     "noModelDownloadRequired": "Sin Modelo - Descarga Requerida",
-    "deleteModel": "Eliminar {{modelName}}"
+    "deleteModel": "Eliminar {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Soporta múltiples idiomas de entrada",
+      "multiLanguage": "Multiidioma",
+      "translation": "Puede traducir al inglés",
+      "translate": "Traducir al inglés"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Configuración de {{model}}",
+      "noSettingsNeeded": "Este modelo funciona automáticamente sin necesidad de configuración."
+    },
+    "models": {
+      "title": "Modelos de Transcripción",
+      "description": "Selecciona un modelo de transcripción o descarga modelos adicionales. Diferentes modelos ofrecen distintos niveles de precisión y velocidad.",
+      "downloaded": "Descargados",
+      "available": "Disponibles para Descargar",
+      "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
+      "deleteTitle": "Eliminar modelo",
+      "filters": {
+        "all": "Todos",
+        "multiLanguage": "Multiidioma",
+        "translation": "Traducción"
+      },
+      "noModelsMatch": "Ningún modelo coincide con este filtro."
+    },
     "general": {
       "title": "General",
       "shortcut": {

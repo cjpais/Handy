@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { ask } from "@tauri-apps/plugin-dialog";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import {
@@ -42,6 +43,19 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   const handleDeleteClick = async (e: React.MouseEvent, modelId: string) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const model = models.find((m) => m.id === modelId);
+    const modelName = model?.name || modelId;
+
+    const confirmed = await ask(
+      t("settings.models.deleteConfirm", { modelName }),
+      {
+        title: t("settings.models.deleteTitle"),
+        kind: "warning",
+      },
+    );
+
+    if (!confirmed) return;
 
     try {
       await onModelDelete(modelId);
@@ -184,8 +198,8 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                   <div>
                     <div className="text-sm">
                       {getTranslatedModelName(model, t)}
-                      {model.id === "parakeet-tdt-0.6b-v3" && isFirstRun && (
-                        <span className="ms-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
+                      {model.is_recommended && isFirstRun && (
+                        <span className="ml-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
                           {t("onboarding.recommended")}
                         </span>
                       )}

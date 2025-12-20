@@ -128,10 +128,3 @@ pub async fn cancel_download(
         .cancel_download(&model_id)
         .map_err(|e| e.to_string())
 }
-
-#[tauri::command]
-#[specta::specta]
-pub async fn get_recommended_first_model() -> Result<String, String> {
-    // Recommend Parakeet V3 model for first-time users - fastest and most accurate
-    Ok("parakeet-tdt-0.6b-v3".to_string())
-}

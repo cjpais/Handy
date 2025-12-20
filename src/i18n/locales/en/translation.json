@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "General",
+    "models": "Models",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -85,6 +86,7 @@
     "downloadModels": "Download Models",
     "chooseModel": "Choose a Model",
     "active": "Active",
+    "switching": "Switching...",
     "download": "Download",
     "downloadSize": "Download size",
     "noModelsAvailable": "No models available",
@@ -99,9 +101,20 @@
     "modelError": "Model Error",
     "modelUnloaded": "Model Unloaded",
     "noModelDownloadRequired": "No Model - Download Required",
-    "deleteModel": "Delete {{modelName}}"
+    "deleteModel": "Delete {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Supports multiple input languages",
+      "multiLanguage": "Multi-language",
+      "translation": "Can translate to English",
+      "translate": "Translate to English"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Settings",
+      "noSettingsNeeded": "This model works automatically with no configuration needed."
+    },
     "general": {
       "title": "General",
       "shortcut": {
@@ -143,6 +156,20 @@
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
       }
+    },
+    "models": {
+      "title": "Transcription Models",
+      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "downloaded": "Downloaded",
+      "available": "Available to Download",
+      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
+      "deleteTitle": "Delete Model",
+      "filters": {
+        "all": "All",
+        "multiLanguage": "Multi-language",
+        "translation": "Translation"
+      },
+      "noModelsMatch": "No models match this filter."
     },
     "sound": {
       "title": "Sound",

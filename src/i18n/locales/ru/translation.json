@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Общие",
+    "models": "Модели",
     "advanced": "Продвинутые",
     "postProcessing": "Постобработка",
     "history": "История",
@@ -81,6 +82,7 @@
     "downloadModels": "Скачать модели",
     "chooseModel": "Выберите модель",
     "active": "Активный",
+    "switching": "Переключение...",
     "download": "Скачать",
     "downloadSize": "Размер загрузки",
     "noModelsAvailable": "Нет доступных моделей",
@@ -95,9 +97,34 @@
     "modelError": "Ошибка модели",
     "modelUnloaded": "Модель выгружена",
     "noModelDownloadRequired": "Нет модели – требуется загрузка",
-    "deleteModel": "Удалить {{modelName}}"
+    "deleteModel": "Удалить {{modelName}}",
+    "downloadSpeed": "{{speed}} МБ/с",
+    "capabilities": {
+      "languageSelection": "Поддерживает несколько языков ввода",
+      "multiLanguage": "Многоязычный",
+      "translation": "Может переводить на английский",
+      "translate": "Перевести на английский"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Настройки {{model}}",
+      "noSettingsNeeded": "Эта модель работает автоматически без необходимости настройки."
+    },
+    "models": {
+      "title": "Модели транскрипции",
+      "description": "Выберите модель транскрипции или загрузите дополнительные модели. Разные модели предлагают разные уровни точности и скорости.",
+      "downloaded": "Загружено",
+      "available": "Доступно для загрузки",
+      "deleteConfirm": "Вы уверены, что хотите удалить {{modelName}}? Вам нужно будет загрузить её снова, чтобы использовать.",
+      "deleteTitle": "Удалить модель",
+      "filters": {
+        "all": "Все",
+        "multiLanguage": "Многоязычные",
+        "translation": "Перевод"
+      },
+      "noModelsMatch": "Нет моделей, соответствующих этому фильтру."
+    },
     "general": {
       "title": "Общие",
       "shortcut": {
