@@ -1,4 +1,10 @@
 {
+  "tray": {
+    "settings": "Настройки...",
+    "checkUpdates": "Проверить обновления...",
+    "quit": "Выход",
+    "cancel": "Отмена"
+  },
   "sidebar": {
     "general": "Общие",
     "advanced": "Продвинутые",
