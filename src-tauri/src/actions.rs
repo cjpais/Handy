@@ -8,10 +8,6 @@ use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID}
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
-use async_openai::types::{
-    ChatCompletionRequestMessage, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequestArgs,
-};
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
@@ -139,52 +135,19 @@ async fn maybe_post_process_transcription(
         .cloned()
         .unwrap_or_default();
 
-    // Create OpenAI-compatible client
-    let client = match crate::llm_client::create_client(&provider, api_key) {
-        Ok(client) => client,
-        Err(e) => {
-            error!("Failed to create LLM client: {}", e);
-            return None;
-        }
-    };
-
-    // Build the chat completion request
-    let message = match ChatCompletionRequestUserMessageArgs::default()
-        .content(processed_prompt)
-        .build()
+    // Send the chat completion request
+    match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
+        .await
     {
-        Ok(msg) => ChatCompletionRequestMessage::User(msg),
-        Err(e) => {
-            error!("Failed to build chat message: {}", e);
-            return None;
+        Ok(Some(content)) => {
+            debug!(
+                "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
+                provider.id,
+                content.len()
+            );
+            Some(content)
         }
-    };
-
-    let request = match CreateChatCompletionRequestArgs::default()
-        .model(&model)
-        .messages(vec![message])
-        .build()
-    {
-        Ok(req) => req,
-        Err(e) => {
-            error!("Failed to build chat completion request: {}", e);
-            return None;
-        }
-    };
-
-    // Send the request
-    match client.chat().create(request).await {
-        Ok(response) => {
-            if let Some(choice) = response.choices.first() {
-                if let Some(content) = &choice.message.content {
-                    debug!(
-                        "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
-                        provider.id,
-                        content.len()
-                    );
-                    return Some(content.clone());
-                }
-            }
+        Ok(None) => {
             error!("LLM API response has no content");
             None
         }
