@@ -28,6 +28,8 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    auto_stop_cb: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
+    auto_stop_timeout_secs: Arc<Mutex<Option<u64>>>,
 }
 
 impl AudioRecorder {
@@ -38,6 +40,8 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            auto_stop_cb: None,
+            auto_stop_timeout_secs: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -52,6 +56,20 @@ impl AudioRecorder {
     {
         self.level_cb = Some(Arc::new(cb));
         self
+    }
+
+    pub fn with_auto_stop_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.auto_stop_cb = Some(Arc::new(cb));
+        self
+    }
+
+    pub fn set_auto_stop_timeout(&self, timeout_secs: Option<u64>) {
+        if let Ok(mut guard) = self.auto_stop_timeout_secs.lock() {
+            *guard = timeout_secs;
+        }
     }
 
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
@@ -74,6 +92,8 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let auto_stop_cb = self.auto_stop_cb.clone();
+        let auto_stop_timeout = self.auto_stop_timeout_secs.clone();
 
         let worker = std::thread::spawn(move || {
             let config = AudioRecorder::get_preferred_config(&thread_device)
@@ -117,7 +137,15 @@ impl AudioRecorder {
             stream.play().expect("failed to start stream");
 
             // keep the stream alive while we process samples
-            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb);
+            run_consumer(
+                sample_rate,
+                vad,
+                sample_rx,
+                cmd_rx,
+                level_cb,
+                auto_stop_cb,
+                auto_stop_timeout,
+            );
             // stream is dropped here, after run_consumer returns
         });
 
@@ -245,6 +273,8 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<Vec<f32>>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    auto_stop_cb: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
+    auto_stop_timeout: Arc<Mutex<Option<u64>>>,
 ) {
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
@@ -254,6 +284,13 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut auto_stop_triggered = false;
+
+    // Silence tracking for auto-stop feature
+    // Each frame is 30ms, so we count frames to track silence duration
+    const FRAME_DURATION_MS: u64 = 30;
+    let mut consecutive_silence_frames: u64 = 0;
+    let mut has_detected_speech = false;
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -271,19 +308,24 @@ fn run_consumer(
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
-    ) {
+    ) -> bool {
+        // Returns true if speech was detected
         if !recording {
-            return;
+            return false;
         }
 
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    out_buf.extend_from_slice(buf);
+                    true
+                }
+                VadFrame::Noise => false,
             }
         } else {
             out_buf.extend_from_slice(samples);
+            true // No VAD means we assume all audio is speech
         }
     }
 
@@ -302,7 +344,38 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            let is_speech = handle_frame(frame, recording, &vad, &mut processed_samples);
+
+            // Track silence for auto-stop feature (only when recording and not already triggered)
+            if recording && !auto_stop_triggered {
+                if is_speech {
+                    has_detected_speech = true;
+                    consecutive_silence_frames = 0;
+                } else if has_detected_speech {
+                    // Only count silence after we've detected speech at least once
+                    consecutive_silence_frames += 1;
+
+                    // Check if we've exceeded the timeout
+                    if let Ok(guard) = auto_stop_timeout.lock() {
+                        if let Some(timeout_secs) = *guard {
+                            let silence_duration_ms = consecutive_silence_frames * FRAME_DURATION_MS;
+                            let timeout_ms = timeout_secs * 1000;
+
+                            if silence_duration_ms >= timeout_ms {
+                                auto_stop_triggered = true;
+                                log::debug!(
+                                    "Auto-stop triggered: {}ms silence detected (threshold: {}ms)",
+                                    silence_duration_ms,
+                                    timeout_ms
+                                );
+                                if let Some(cb) = &auto_stop_cb {
+                                    cb();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         // non-blocking check for a command
@@ -311,6 +384,9 @@ fn run_consumer(
                 Cmd::Start => {
                     processed_samples.clear();
                     recording = true;
+                    auto_stop_triggered = false;
+                    consecutive_silence_frames = 0;
+                    has_detected_speech = false;
                     visualizer.reset(); // Reset visualization buffer
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
@@ -318,10 +394,13 @@ fn run_consumer(
                 }
                 Cmd::Stop(reply_tx) => {
                     recording = false;
+                    auto_stop_triggered = false;
+                    consecutive_silence_frames = 0;
+                    has_detected_speech = false;
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
                         // we still want to process the last few frames
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        handle_frame(frame, true, &vad, &mut processed_samples);
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));

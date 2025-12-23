@@ -1,7 +1,8 @@
+use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::shortcut;
 use crate::ManagedToggleState;
-use log::{info, warn};
+use log::{debug, info, warn};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
@@ -37,6 +38,46 @@ pub fn cancel_current_operation(app: &AppHandle) {
     hide_recording_overlay(app);
 
     info!("Operation cancellation completed - returned to idle state");
+}
+
+/// Trigger transcription stop from auto-stop on silence feature.
+/// This is called when silence timeout is exceeded during recording.
+pub fn trigger_auto_stop_transcription(app: &AppHandle) {
+    debug!("Auto-stop: Triggering transcription stop from silence timeout");
+
+    let binding_id = "transcribe";
+    let shortcut_string = "auto-stop-silence";
+
+    // Get the audio manager to check if we're actually recording
+    let audio_manager = app.state::<Arc<AudioRecordingManager>>();
+    if !audio_manager.is_recording() {
+        debug!("Auto-stop: Not currently recording, ignoring");
+        return;
+    }
+
+    // Update toggle state to reflect that we're stopping
+    let toggle_state_manager = app.state::<ManagedToggleState>();
+    if let Ok(mut states) = toggle_state_manager.lock() {
+        if let Some(is_active) = states.active_toggles.get_mut(binding_id) {
+            if !*is_active {
+                debug!("Auto-stop: Toggle state already inactive, ignoring");
+                return;
+            }
+            *is_active = false;
+        }
+    } else {
+        warn!("Auto-stop: Failed to lock toggle state manager");
+        return;
+    }
+
+    // Get the action and trigger stop
+    if let Some(action) = ACTION_MAP.get(binding_id) {
+        debug!("Auto-stop: Calling transcribe action stop");
+        action.stop(app, binding_id, shortcut_string);
+        info!("Auto-stop: Transcription stopped due to silence timeout");
+    } else {
+        warn!("Auto-stop: No action found for binding '{}'", binding_id);
+    }
 }
 
 /// Check if using the Wayland display server protocol

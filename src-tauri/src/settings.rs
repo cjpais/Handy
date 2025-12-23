@@ -113,6 +113,34 @@ pub enum OverlayPosition {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
+pub enum AutoStopSilenceTimeout {
+    Disabled,
+    Sec2,
+    Sec3,
+    Sec5,
+    Sec10,
+}
+
+impl Default for AutoStopSilenceTimeout {
+    fn default() -> Self {
+        AutoStopSilenceTimeout::Disabled
+    }
+}
+
+impl AutoStopSilenceTimeout {
+    pub fn to_seconds(self) -> Option<u64> {
+        match self {
+            AutoStopSilenceTimeout::Disabled => None,
+            AutoStopSilenceTimeout::Sec2 => Some(2),
+            AutoStopSilenceTimeout::Sec3 => Some(3),
+            AutoStopSilenceTimeout::Sec5 => Some(5),
+            AutoStopSilenceTimeout::Sec10 => Some(10),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
     Immediately,
@@ -293,6 +321,8 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default)]
+    pub auto_stop_silence_timeout: AutoStopSilenceTimeout,
 }
 
 fn default_model() -> String {
@@ -563,6 +593,7 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        auto_stop_silence_timeout: AutoStopSilenceTimeout::default(),
     }
 }
 

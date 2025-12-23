@@ -132,6 +132,13 @@ fn create_audio_recorder(
             move |levels| {
                 utils::emit_levels(&app_handle, &levels);
             }
+        })
+        .with_auto_stop_callback({
+            let app_handle = app_handle.clone();
+            move || {
+                debug!("Auto-stop callback triggered");
+                utils::trigger_auto_stop_transcription(&app_handle);
+            }
         });
 
     Ok(recorder)
@@ -345,6 +352,12 @@ impl AudioRecordingManager {
             }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                // Configure auto-stop timeout from settings
+                let settings = get_settings(&self.app_handle);
+                let timeout_secs = settings.auto_stop_silence_timeout.to_seconds();
+                rec.set_auto_stop_timeout(timeout_secs);
+                debug!("Auto-stop timeout set to: {:?} seconds", timeout_secs);
+
                 if rec.start().is_ok() {
                     *self.is_recording.lock().unwrap() = true;
                     *state = RecordingState::Recording {
@@ -419,6 +432,13 @@ impl AudioRecordingManager {
             *self.state.lock().unwrap(),
             RecordingState::Recording { .. }
         )
+    }
+
+    pub fn current_binding_id(&self) -> Option<String> {
+        match &*self.state.lock().unwrap() {
+            RecordingState::Recording { binding_id } => Some(binding_id.clone()),
+            RecordingState::Idle => None,
+        }
     }
 
     /// Cancel any ongoing recording without returning audio samples

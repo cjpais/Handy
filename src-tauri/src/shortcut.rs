@@ -10,8 +10,8 @@ use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutBinding;
 use crate::settings::{
-    self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
-    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AutoStopSilenceTimeout, ClipboardHandling, LLMPrompt, OverlayPosition,
+    PasteMethod, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 use crate::ManagedToggleState;
@@ -728,6 +728,32 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     // Refresh the tray menu with the new language
     tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
 
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_auto_stop_silence_timeout_setting(
+    app: AppHandle,
+    timeout: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match timeout.as_str() {
+        "disabled" => AutoStopSilenceTimeout::Disabled,
+        "sec2" => AutoStopSilenceTimeout::Sec2,
+        "sec3" => AutoStopSilenceTimeout::Sec3,
+        "sec5" => AutoStopSilenceTimeout::Sec5,
+        "sec10" => AutoStopSilenceTimeout::Sec10,
+        other => {
+            warn!(
+                "Invalid auto-stop silence timeout '{}', defaulting to disabled",
+                other
+            );
+            AutoStopSilenceTimeout::Disabled
+        }
+    };
+    settings.auto_stop_silence_timeout = parsed;
+    settings::write_settings(&app, settings);
     Ok(())
 }
 
