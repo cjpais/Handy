@@ -434,13 +434,6 @@ impl AudioRecordingManager {
         )
     }
 
-    pub fn current_binding_id(&self) -> Option<String> {
-        match &*self.state.lock().unwrap() {
-            RecordingState::Recording { binding_id } => Some(binding_id.clone()),
-            RecordingState::Idle => None,
-        }
-    }
-
     /// Cancel any ongoing recording without returning audio samples
     pub fn cancel_recording(&self) {
         let mut state = self.state.lock().unwrap();

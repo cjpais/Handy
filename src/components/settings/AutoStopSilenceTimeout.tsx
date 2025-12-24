@@ -39,11 +39,6 @@ export const AutoStopSilenceTimeoutSetting: React.FC<
     },
   ];
 
-  const handleChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newTimeout = event.target.value as AutoStopSilenceTimeout;
-    await updateSetting("auto_stop_silence_timeout", newTimeout);
-  };
-
   const currentValue = getSetting("auto_stop_silence_timeout") ?? "disabled";
 
   return (
@@ -57,9 +52,7 @@ export const AutoStopSilenceTimeoutSetting: React.FC<
         options={timeoutOptions}
         selectedValue={currentValue}
         onSelect={(value) =>
-          handleChange({
-            target: { value },
-          } as React.ChangeEvent<HTMLSelectElement>)
+          updateSetting("auto_stop_silence_timeout", value as AutoStopSilenceTimeout)
         }
         disabled={isUpdating("auto_stop_silence_timeout")}
       />

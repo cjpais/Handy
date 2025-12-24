@@ -286,8 +286,6 @@ fn run_consumer(
     let mut recording = false;
     let mut auto_stop_triggered = false;
 
-    // Silence tracking for auto-stop feature
-    // Each frame is 30ms, so we count frames to track silence duration
     const FRAME_DURATION_MS: u64 = 30;
     let mut consecutive_silence_frames: u64 = 0;
     let mut has_detected_speech = false;
@@ -309,7 +307,6 @@ fn run_consumer(
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
     ) -> bool {
-        // Returns true if speech was detected
         if !recording {
             return false;
         }
@@ -346,16 +343,13 @@ fn run_consumer(
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
             let is_speech = handle_frame(frame, recording, &vad, &mut processed_samples);
 
-            // Track silence for auto-stop feature (only when recording and not already triggered)
             if recording && !auto_stop_triggered {
                 if is_speech {
                     has_detected_speech = true;
                     consecutive_silence_frames = 0;
                 } else if has_detected_speech {
-                    // Only count silence after we've detected speech at least once
                     consecutive_silence_frames += 1;
 
-                    // Check if we've exceeded the timeout
                     if let Ok(guard) = auto_stop_timeout.lock() {
                         if let Some(timeout_secs) = *guard {
                             let silence_duration_ms = consecutive_silence_frames * FRAME_DURATION_MS;
