@@ -86,6 +86,61 @@ fn is_dotool_available() -> bool {
         .unwrap_or(false)
 }
 
+#[cfg(target_os = "linux")]
+fn is_xdotool_available() -> bool {
+    Command::new("which")
+        .arg("xdotool")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+#[cfg(target_os = "linux")]
+fn type_text_via_xdotool(text: &str) -> Result<(), String> {
+    let output = Command::new("xdotool")
+        .arg("type")
+        .arg("--clearmodifiers")
+        .arg("--")
+        .arg(text)
+        .output()
+        .map_err(|e| format!("Failed to execute xdotool: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("xdotool failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn type_text_via_dotool(text: &str) -> Result<(), String> {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let mut child = Command::new("dotool")
+        .stdin(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to spawn dotool: {}", e))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        // dotool uses "type <text>" command
+        writeln!(stdin, "type {}", text)
+            .map_err(|e| format!("Failed to write to dotool stdin: {}", e))?;
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|e| format!("Failed to wait for dotool: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("dotool failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
 /// Paste using wtype and return a friendly error on failure.
 #[cfg(target_os = "linux")]
 fn send_paste_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
@@ -159,7 +214,25 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         PasteMethod::None => {
             info!("PasteMethod::None selected - skipping paste action");
         }
-        PasteMethod::Direct => input::paste_text_direct(&mut enigo, &text)?,
+        PasteMethod::Direct => {
+            #[cfg(target_os = "linux")]
+            {
+                if !is_wayland() && is_xdotool_available() {
+                    info!("Using xdotool for direct text input");
+                    type_text_via_xdotool(&text)?;
+                } else if is_dotool_available() {
+                    info!("Using dotool for direct text input");
+                    type_text_via_dotool(&text)?;
+                } else {
+                    info!("Falling back to enigo for direct text input");
+                    input::paste_text_direct(&mut enigo, &text)?;
+                }
+            }
+            #[cfg(not(target_os = "linux"))]
+            {
+                input::paste_text_direct(&mut enigo, &text)?;
+            }
+        }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(&mut enigo, &text, &app_handle, &paste_method)?
         }
