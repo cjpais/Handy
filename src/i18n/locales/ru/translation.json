@@ -60,14 +60,14 @@
     "extracting": "Извлечение {{modelName}}...",
     "extractingMultiple": "Извлечение моделей {{count}}...",
     "extractingGeneric": "Извлечение...",
-    "downloading": "Загрузка {{percentage}} %",
+    "downloading": "Загрузка {{percentage}} %",
     "downloadingMultiple": "Загрузка моделей {{count}}...",
     "modelReady": "Модель готова",
     "loading": "Загрузка {{modelName}}...",
     "loadingGeneric": "Загрузка...",
     "modelError": "Ошибка модели",
     "modelUnloaded": "Модель выгружена",
-    "noModelDownloadRequired": "Нет модели – требуется загрузка",
+    "noModelDownloadRequired": "Нет модели – требуется загрузка",
     "deleteModel": "Удалить {{modelName}}"
   },
   "settings": {
@@ -367,7 +367,7 @@
     "downloadUpdate": "Скачать обновление",
     "restart": "Перезапуск",
     "updateCheckingDisabled": "Проверка обновлений отключена",
-    "downloading": "Загрузка... {{progress}} %",
+    "downloading": "Загрузка... {{progress}} %",
     "installing": "Установка...",
     "preparing": "Подготовка...",
     "checkForUpdates": "Проверьте наличие обновлений"
