@@ -201,6 +201,17 @@
         "placeholder": "Add a word",
         "add": "Add",
         "remove": "Remove {{word}}"
+      },
+      "autoStopSilence": {
+        "title": "Auto-Stop on Silence",
+        "description": "Automatically stop recording after a period of silence following speech. Useful for hands-free operation.",
+        "options": {
+          "disabled": "Disabled",
+          "sec2": "After 2 seconds",
+          "sec3": "After 3 seconds",
+          "sec5": "After 5 seconds",
+          "sec10": "After 10 seconds"
+        }
       }
     },
     "postProcessing": {

@@ -1,3 +1,4 @@
+use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::shortcut;
 use crate::ManagedToggleState;
@@ -37,6 +38,35 @@ pub fn cancel_current_operation(app: &AppHandle) {
     hide_recording_overlay(app);
 
     info!("Operation cancellation completed - returned to idle state");
+}
+
+/// Stops transcription when silence timeout is exceeded.
+pub fn trigger_auto_stop_transcription(app: &AppHandle) {
+    let binding_id = "transcribe";
+    let shortcut_string = "auto-stop-silence";
+
+    let audio_manager = app.state::<Arc<AudioRecordingManager>>();
+    if !audio_manager.is_recording() {
+        return;
+    }
+
+    let toggle_state_manager = app.state::<ManagedToggleState>();
+    if let Ok(mut states) = toggle_state_manager.lock() {
+        if let Some(is_active) = states.active_toggles.get_mut(binding_id) {
+            if !*is_active {
+                return;
+            }
+            *is_active = false;
+        }
+    } else {
+        warn!("Auto-stop: Failed to lock toggle state");
+        return;
+    }
+
+    if let Some(action) = ACTION_MAP.get(binding_id) {
+        action.stop(app, binding_id, shortcut_string);
+        info!("Auto-stop: Transcription stopped due to silence");
+    }
 }
 
 /// Check if using the Wayland display server protocol
