@@ -215,7 +215,8 @@
         "appleIntelligence": {
           "title": "Apple Интеллект",
           "description": "Полностью работает на устройстве. Никакой ключ API или доступ к сети не требуется.",
-          "requirements": "Требуется Apple Silicon Mac под управлением macOS Tahoe (26.0) или более поздней версии. Apple Intelligence должен быть включен в настройках системы."
+          "requirements": "Требуется Apple Silicon Mac под управлением macOS Tahoe (26.0) или более поздней версии. Apple Intelligence должен быть включен в настройках системы.",
+          "unavailable": "Apple Intelligence недоступен на этом устройстве. Требуется Apple Silicon Mac под управлением macOS Tahoe (26.0) или более поздней версии с включенным Apple Intelligence в настройках системы."
         },
         "baseUrl": {
           "title": "Базовый URL",

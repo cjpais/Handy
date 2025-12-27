@@ -215,7 +215,8 @@
         "appleIntelligence": {
           "title": "Apple Intelligence",
           "description": "Działa całkowicie na urządzeniu. Nie wymaga klucza API ani dostępu do sieci.",
-          "requirements": "Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym. Apple Intelligence musi być włączone w Ustawieniach systemowych."
+          "requirements": "Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym. Apple Intelligence musi być włączone w Ustawieniach systemowych.",
+          "unavailable": "Apple Intelligence nie jest dostępne na tym urządzeniu. Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym z włączonym Apple Intelligence w Ustawieniach systemowych."
         },
         "baseUrl": {
           "title": "Adres bazowy",
