@@ -316,17 +316,40 @@ impl TranscriptionManager {
 
         debug!("Audio vector length: {}", audio.len());
 
-        if audio.len() == 0 {
+        if audio.is_empty() {
             debug!("Empty audio vector");
             return Ok(String::new());
         }
 
         // Check if model is loaded, if not try to load it
         {
-            // If the model is loading, wait for it to complete.
+            // If the model is loading, wait for it to complete with a timeout.
+            // This prevents indefinite hangs if model loading fails or gets stuck.
             let mut is_loading = self.is_loading.lock().unwrap();
+            let timeout = Duration::from_secs(60); // 60 second timeout for model loading
+            let deadline = std::time::Instant::now() + timeout;
+
             while *is_loading {
-                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                if remaining.is_zero() {
+                    warn!("Timed out waiting for model to load after {:?}", timeout);
+                    return Err(anyhow::anyhow!(
+                        "Timed out waiting for model to load. Please try again."
+                    ));
+                }
+
+                let (guard, wait_result) = self
+                    .loading_condvar
+                    .wait_timeout(is_loading, remaining)
+                    .unwrap();
+                is_loading = guard;
+
+                if wait_result.timed_out() && *is_loading {
+                    warn!("Timed out waiting for model to load after {:?}", timeout);
+                    return Err(anyhow::anyhow!(
+                        "Timed out waiting for model to load. Please try again."
+                    ));
+                }
             }
 
             let engine_guard = self.engine.lock().unwrap();

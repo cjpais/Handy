@@ -1,4 +1,5 @@
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::operation::OperationCoordinator;
 use crate::shortcut;
 use crate::ManagedToggleState;
 use log::{info, warn};
@@ -19,7 +20,12 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Unregister the cancel shortcut asynchronously
     shortcut::unregister_cancel_shortcut(app);
 
-    // First, reset all shortcut toggle states.
+    // Cancel the current operation via the coordinator
+    // This marks any in-progress operation as stale, so async tasks will abort
+    let coordinator = app.state::<Arc<OperationCoordinator>>();
+    coordinator.cancel();
+
+    // Reset all shortcut toggle states.
     // This is critical for non-push-to-talk mode where shortcuts toggle on/off
     let toggle_state_manager = app.state::<ManagedToggleState>();
     if let Ok(mut states) = toggle_state_manager.lock() {
