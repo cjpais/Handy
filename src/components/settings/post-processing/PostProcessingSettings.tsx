@@ -72,28 +72,27 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         </SettingContainer>
       ) : (
         <>
-          <SettingContainer
-            title={t("settings.postProcessing.api.baseUrl.title")}
-            description={t("settings.postProcessing.api.baseUrl.description")}
-            descriptionMode="tooltip"
-            layout="horizontal"
-            grouped={true}
-          >
-            <div className="flex items-center gap-2">
-              <BaseUrlField
-                value={state.baseUrl}
-                onBlur={state.handleBaseUrlChange}
-                placeholder={t(
-                  "settings.postProcessing.api.baseUrl.placeholder",
-                )}
-                disabled={
-                  !state.selectedProvider?.allow_base_url_edit ||
-                  state.isBaseUrlUpdating
-                }
-                className="min-w-[380px]"
-              />
-            </div>
-          </SettingContainer>
+          {state.selectedProvider?.id === "custom" && (
+            <SettingContainer
+              title={t("settings.postProcessing.api.baseUrl.title")}
+              description={t("settings.postProcessing.api.baseUrl.description")}
+              descriptionMode="tooltip"
+              layout="horizontal"
+              grouped={true}
+            >
+              <div className="flex items-center gap-2">
+                <BaseUrlField
+                  value={state.baseUrl}
+                  onBlur={state.handleBaseUrlChange}
+                  placeholder={t(
+                    "settings.postProcessing.api.baseUrl.placeholder",
+                  )}
+                  disabled={state.isBaseUrlUpdating}
+                  className="min-w-[380px]"
+                />
+              </div>
+            </SettingContainer>
+          )}
 
           <SettingContainer
             title={t("settings.postProcessing.api.apiKey.title")}
