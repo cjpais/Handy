@@ -296,7 +296,8 @@
       },
       "historyLimit": {
         "title": "Giới hạn lịch sử",
-        "description": "Số lượng mục lịch sử tối đa cần giữ"
+        "description": "Số lượng mục lịch sử tối đa cần giữ",
+        "entries": "mục"
       },
       "recordingRetention": {
         "title": "Tự động xóa ghi âm",

@@ -295,7 +295,8 @@
       },
       "historyLimit": {
         "title": "Límite de Historial",
-        "description": "Número máximo de entradas de historial a conservar"
+        "description": "Número máximo de entradas de historial a conservar",
+        "entries": "entradas"
       },
       "recordingRetention": {
         "title": "Eliminación automática de grabaciones",
