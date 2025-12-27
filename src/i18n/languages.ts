@@ -19,4 +19,5 @@ export const LANGUAGE_METADATA: Record<
   vi: { name: "Vietnamese", nativeName: "Tiếng Việt", priority: 7 },
   pl: { name: "Polish", nativeName: "Polski", priority: 8 },
   it: { name: "Italian", nativeName: "Italiano", priority: 9 },
+  ru: { name: "Russian", nativeName: "Русский", priority: 10 },
 };
