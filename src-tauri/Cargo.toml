@@ -72,13 +72,13 @@ ferrous-opencc = "0.2.3"
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
+keyboard_shortcuts = { package = "keyboard-playground", path = "../../../tmp/keyboard-playground" }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.1"
-tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.9.0"
 

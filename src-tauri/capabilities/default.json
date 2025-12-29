@@ -9,10 +9,6 @@
     "store:default",
     "updater:default",
     "process:default",
-    "global-shortcut:allow-is-registered",
-    "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister",
-    "global-shortcut:allow-unregister-all",
     "macos-permissions:default",
     "fs:read-files",
     "fs:allow-resource-read-recursive"

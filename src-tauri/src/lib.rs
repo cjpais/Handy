@@ -7,6 +7,7 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
+mod keyboard;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -133,8 +134,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
 
-    // Initialize the shortcuts
+    // Initialize the shortcuts and start hotkey processing
     shortcut::init_shortcuts(app_handle);
+    keyboard::start_hotkey_processing(app_handle);
 
     #[cfg(unix)]
     let signals = Signals::new(&[SIGUSR2]).unwrap();
@@ -265,6 +267,9 @@ pub fn run() {
         shortcut::change_app_language_setting,
         shortcut::change_update_checks_setting,
         trigger_update_check,
+        keyboard::start_keyboard_recording,
+        keyboard::stop_keyboard_recording,
+        keyboard::cancel_keyboard_recording,
         commands::cancel_operation,
         commands::get_app_dir_path,
         commands::get_app_settings,
@@ -360,13 +365,17 @@ pub fn run() {
         .plugin(tauri_plugin_macos_permissions::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
+        .manage(Mutex::new(keyboard::KeyboardRecordingState::default()))
         .setup(move |app| {
+            // Start keyboard manager thread and get handle
+            let keyboard_handle = keyboard::start_keyboard_manager(&app.handle());
+            app.handle().manage(keyboard_handle);
+
             let settings = get_settings(&app.handle());
             let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
             let file_log_level: log::Level = tauri_log_level.into();
