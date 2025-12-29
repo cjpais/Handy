@@ -90,11 +90,11 @@ This project is actively being developed and has some [known issues](https://git
 
 For reliable text input on Linux, install the appropriate tool for your display server:
 
-| Display Server | Recommended Tool | Install Command |
-|----------------|------------------|-----------------|
-| X11 | `xdotool` | `sudo apt install xdotool` |
-| Wayland | `wtype` | `sudo apt install wtype` |
-| Both | `dotool` | `sudo apt install dotool` (requires `input` group) |
+| Display Server | Recommended Tool | Install Command                                    |
+| -------------- | ---------------- | -------------------------------------------------- |
+| X11            | `xdotool`        | `sudo apt install xdotool`                         |
+| Wayland        | `wtype`          | `sudo apt install wtype`                           |
+| Both           | `dotool`         | `sudo apt install dotool` (requires `input` group) |
 
 - **X11**: Install `xdotool` for both direct typing and clipboard paste shortcuts
 - **Wayland**: Install `wtype` (preferred) or `dotool` for text input to work correctly
