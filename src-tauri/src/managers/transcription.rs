@@ -170,6 +170,19 @@ impl TranscriptionManager {
         Ok(())
     }
 
+    /// Unloads the model immediately if the setting is enabled and the model is loaded
+    pub fn maybe_unload_immediately(&self, context: &str) {
+        let settings = get_settings(&self.app_handle);
+        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
+            && self.is_model_loaded()
+        {
+            info!("Immediately unloading model after {}", context);
+            if let Err(e) = self.unload_model() {
+                warn!("Failed to immediately unload model: {}", e);
+            }
+        }
+    }
+
     pub fn load_model(&self, model_id: &str) -> Result<()> {
         let load_start = std::time::Instant::now();
         debug!("Starting to load model: {}", model_id);
@@ -316,8 +329,9 @@ impl TranscriptionManager {
 
         debug!("Audio vector length: {}", audio.len());
 
-        if audio.len() == 0 {
+        if audio.is_empty() {
             debug!("Empty audio vector");
+            self.maybe_unload_immediately("empty audio");
             return Ok(String::new());
         }
 
@@ -418,13 +432,7 @@ impl TranscriptionManager {
             info!("Transcription result: {}", final_result);
         }
 
-        // Check if we should immediately unload the model after transcription
-        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
-            info!("Immediately unloading model after transcription");
-            if let Err(e) = self.unload_model() {
-                error!("Failed to immediately unload model: {}", e);
-            }
-        }
+        self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
     }
