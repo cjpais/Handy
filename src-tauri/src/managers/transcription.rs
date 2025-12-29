@@ -318,6 +318,14 @@ impl TranscriptionManager {
 
         if audio.len() == 0 {
             debug!("Empty audio vector");
+            // Check if we should immediately unload the model
+            let settings = get_settings(&self.app_handle);
+            if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
+                info!("Immediately unloading model after empty audio");
+                if let Err(e) = self.unload_model() {
+                    warn!("Failed to immediately unload model: {}", e);
+                }
+            }
             return Ok(String::new());
         }
 
