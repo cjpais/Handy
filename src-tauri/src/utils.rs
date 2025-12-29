@@ -1,4 +1,5 @@
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
 use crate::ManagedToggleState;
 use log::{info, warn};
@@ -35,6 +36,10 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
+
+    // Unload model if immediate unload is enabled
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    tm.maybe_unload_immediately("cancellation");
 
     info!("Operation cancellation completed - returned to idle state");
 }
