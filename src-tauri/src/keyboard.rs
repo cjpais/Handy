@@ -4,7 +4,9 @@
 //! - Global hotkey registration and event handling
 //! - Keyboard recording for the settings UI
 
-use keyboard_shortcuts::{Hotkey, HotkeyId, HotkeyManager, HotkeyManagerExt, HotkeyState, KeyboardListener, KeyEvent};
+use keyboard_shortcuts::{
+    Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyEvent, KeyboardListener,
+};
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
@@ -55,7 +57,8 @@ impl KeyboardManagerHandle {
                 response: tx,
             })
             .map_err(|_| "Keyboard manager thread not running".to_string())?;
-        rx.recv().map_err(|_| "Keyboard manager thread died".to_string())?
+        rx.recv()
+            .map_err(|_| "Keyboard manager thread died".to_string())?
     }
 
     /// Unregister a shortcut
@@ -67,7 +70,8 @@ impl KeyboardManagerHandle {
                 response: tx,
             })
             .map_err(|_| "Keyboard manager thread not running".to_string())?;
-        rx.recv().map_err(|_| "Keyboard manager thread died".to_string())?
+        rx.recv()
+            .map_err(|_| "Keyboard manager thread died".to_string())?
     }
 
     /// Check if a binding is registered
@@ -259,7 +263,10 @@ pub fn start_keyboard_recording(app: AppHandle, binding_id: String) -> Result<()
             }
         }
 
-        info!("Keyboard recording thread stopped for binding '{}'", binding_id_clone);
+        info!(
+            "Keyboard recording thread stopped for binding '{}'",
+            binding_id_clone
+        );
     });
 
     info!("Started keyboard recording for binding '{}'", binding_id);
@@ -291,9 +298,12 @@ pub fn cancel_keyboard_recording(app: AppHandle, binding_id: String) -> Result<(
     stop_keyboard_recording(app.clone(), binding_id.clone())?;
 
     // Emit cancellation event
-    let _ = app.emit("keyboard:recording-cancelled", serde_json::json!({
-        "binding_id": binding_id
-    }));
+    let _ = app.emit(
+        "keyboard:recording-cancelled",
+        serde_json::json!({
+            "binding_id": binding_id
+        }),
+    );
 
     Ok(())
 }
@@ -342,13 +352,16 @@ pub fn start_keyboard_manager(app: &AppHandle) -> KeyboardManagerHandle {
 
                             // Check if already registered
                             if binding_to_hotkey.contains_key(&binding_id) {
-                                return Err(format!("Binding '{}' is already registered", binding_id));
+                                return Err(format!(
+                                    "Binding '{}' is already registered",
+                                    binding_id
+                                ));
                             }
 
                             // Register
-                            let hotkey_id = hotkey_manager.register(hotkey).map_err(|e| {
-                                format!("Failed to register shortcut: {}", e)
-                            })?;
+                            let hotkey_id = hotkey_manager
+                                .register(hotkey)
+                                .map_err(|e| format!("Failed to register shortcut: {}", e))?;
 
                             // Store mappings
                             binding_to_hotkey.insert(binding_id.clone(), hotkey_id);
@@ -356,10 +369,19 @@ pub fn start_keyboard_manager(app: &AppHandle) -> KeyboardManagerHandle {
                             hotkey_to_string.insert(hotkey_id, shortcut_str.clone());
 
                             // Update the shared maps for the event thread
-                            hotkey_to_binding_shared.lock().unwrap().insert(hotkey_id, binding_id.clone());
-                            hotkey_to_string_shared.lock().unwrap().insert(hotkey_id, shortcut_str.clone());
+                            hotkey_to_binding_shared
+                                .lock()
+                                .unwrap()
+                                .insert(hotkey_id, binding_id.clone());
+                            hotkey_to_string_shared
+                                .lock()
+                                .unwrap()
+                                .insert(hotkey_id, shortcut_str.clone());
 
-                            info!("Registered shortcut '{}' for binding '{}'", shortcut_str, binding_id);
+                            info!(
+                                "Registered shortcut '{}' for binding '{}'",
+                                shortcut_str, binding_id
+                            );
                             Ok(())
                         })();
                         let _ = response.send(result);
@@ -369,13 +391,14 @@ pub fn start_keyboard_manager(app: &AppHandle) -> KeyboardManagerHandle {
                         response,
                     } => {
                         let result = (|| {
-                            let hotkey_id = binding_to_hotkey.get(&binding_id).copied().ok_or_else(|| {
-                                format!("Binding '{}' is not registered", binding_id)
-                            })?;
+                            let hotkey_id =
+                                binding_to_hotkey.get(&binding_id).copied().ok_or_else(|| {
+                                    format!("Binding '{}' is not registered", binding_id)
+                                })?;
 
-                            hotkey_manager.unregister(hotkey_id).map_err(|e| {
-                                format!("Failed to unregister shortcut: {}", e)
-                            })?;
+                            hotkey_manager
+                                .unregister(hotkey_id)
+                                .map_err(|e| format!("Failed to unregister shortcut: {}", e))?;
 
                             binding_to_hotkey.remove(&binding_id);
                             hotkey_to_binding.remove(&hotkey_id);
@@ -409,7 +432,12 @@ pub fn start_keyboard_manager(app: &AppHandle) -> KeyboardManagerHandle {
                         let shortcut_str = hotkey_to_string.get(&event.id).cloned();
 
                         if let (Some(binding_id), Some(shortcut_str)) = (binding_id, shortcut_str) {
-                            handle_hotkey_event(&app_clone, &binding_id, &shortcut_str, event.state);
+                            handle_hotkey_event(
+                                &app_clone,
+                                &binding_id,
+                                &shortcut_str,
+                                event.state,
+                            );
                         } else {
                             warn!("Received event for unknown hotkey ID: {:?}", event.id);
                         }
@@ -430,7 +458,10 @@ pub fn start_keyboard_manager(app: &AppHandle) -> KeyboardManagerHandle {
 
 /// Handle a hotkey event
 fn handle_hotkey_event(app: &AppHandle, binding_id: &str, shortcut_str: &str, state: HotkeyState) {
-    debug!("Hotkey event: binding='{}', shortcut='{}', state={:?}", binding_id, shortcut_str, state);
+    debug!(
+        "Hotkey event: binding='{}', shortcut='{}', state={:?}",
+        binding_id, shortcut_str, state
+    );
 
     // Look up the action
     if let Some(action) = ACTION_MAP.get(binding_id) {
@@ -511,7 +542,10 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
 
     // Check if already registered
     if keyboard_handle.is_registered(&binding.id) {
-        return Err(format!("Shortcut '{}' is already registered", binding.current_binding));
+        return Err(format!(
+            "Shortcut '{}' is already registered",
+            binding.current_binding
+        ));
     }
 
     keyboard_handle.register(&binding.id, &binding.current_binding)
@@ -536,9 +570,15 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = settings::get_settings(&app_clone).bindings.get("cancel").cloned() {
+            if let Some(cancel_binding) = settings::get_settings(&app_clone)
+                .bindings
+                .get("cancel")
+                .cloned()
+            {
                 let keyboard_handle = app_clone.state::<KeyboardManagerHandle>();
-                if let Err(e) = keyboard_handle.register(&cancel_binding.id, &cancel_binding.current_binding) {
+                if let Err(e) =
+                    keyboard_handle.register(&cancel_binding.id, &cancel_binding.current_binding)
+                {
                     error!("Failed to register cancel shortcut: {}", e);
                 }
             }
@@ -559,7 +599,11 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     {
         let app_clone = app.clone();
         tauri::async_runtime::spawn(async move {
-            if let Some(cancel_binding) = settings::get_settings(&app_clone).bindings.get("cancel").cloned() {
+            if let Some(cancel_binding) = settings::get_settings(&app_clone)
+                .bindings
+                .get("cancel")
+                .cloned()
+            {
                 let keyboard_handle = app_clone.state::<KeyboardManagerHandle>();
                 // We ignore errors here as it might already be unregistered
                 let _ = keyboard_handle.unregister(&cancel_binding.id);
