@@ -138,7 +138,8 @@
       "filters": {
         "all": "All",
         "multiLanguage": "Multi-language",
-        "translation": "Translation"
+        "translation": "Translation",
+        "allLanguages": "All Languages"
       },
       "noModelsMatch": "No models match this filter."
     },
