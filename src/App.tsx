@@ -69,6 +69,15 @@ function App() {
     setShowOnboarding(false);
   };
 
+  // Show loading state while checking onboarding status
+  if (showOnboarding === null) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-logo-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (showOnboarding) {
     return <Onboarding onModelSelected={handleModelSelected} />;
   }

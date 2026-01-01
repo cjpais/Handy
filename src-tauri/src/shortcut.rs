@@ -10,8 +10,8 @@ use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutBinding;
 use crate::settings::{
-    self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
-    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, ClipboardHandling, FillerOutputMode, LLMPrompt, OverlayPosition,
+    PasteMethod, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 use crate::ManagedToggleState;
@@ -621,6 +621,57 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     // Refresh the tray menu with the new language
     tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
 
+    Ok(())
+}
+
+// ==================== Filler Word Detection Commands ====================
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_filler_detection_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.filler_detection_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_filler_output_mode_setting(app: AppHandle, mode: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match mode.as_str() {
+        "coaching_only" => FillerOutputMode::CoachingOnly,
+        "paste_cleaned" => FillerOutputMode::PasteCleaned,
+        "paste_original" => FillerOutputMode::PasteOriginal,
+        "both" => FillerOutputMode::Both,
+        other => {
+            warn!(
+                "Invalid filler output mode '{}', defaulting to coaching_only",
+                other
+            );
+            FillerOutputMode::CoachingOnly
+        }
+    };
+    settings.filler_output_mode = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn update_custom_filler_words(app: AppHandle, words: Vec<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.custom_filler_words = words;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_show_filler_overlay_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.show_filler_overlay = enabled;
+    settings::write_settings(&app, settings);
     Ok(())
 }
 

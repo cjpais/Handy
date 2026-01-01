@@ -125,6 +125,15 @@ const settingUpdaters: {
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
+  // Filler word detection settings
+  filler_detection_enabled: (value) =>
+    commands.changeFillerDetectionSetting(value as boolean),
+  filler_output_mode: (value) =>
+    commands.changeFillerOutputModeSetting(value as string),
+  custom_filler_words: (value) =>
+    commands.updateCustomFillerWords(value as string[]),
+  show_filler_overlay: (value) =>
+    commands.changeShowFillerOverlaySetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Sparkles, Mic, Radio } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -11,6 +11,8 @@ import {
   DebugSettings,
   AboutSettings,
   PostProcessingSettings,
+  CoachingSettings,
+  LiveSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -35,6 +37,18 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.general",
     icon: HandyHand,
     component: GeneralSettings,
+    enabled: () => true,
+  },
+  coaching: {
+    labelKey: "sidebar.coaching",
+    icon: Mic,
+    component: CoachingSettings,
+    enabled: () => true,
+  },
+  live: {
+    labelKey: "sidebar.live",
+    icon: Radio,
+    component: LiveSettings,
     enabled: () => true,
   },
   advanced: {

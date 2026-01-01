@@ -3,10 +3,13 @@ pub mod history;
 pub mod models;
 pub mod transcription;
 
-use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
+use crate::settings::{get_settings, write_settings, AppSettings, LogLevel, SETTINGS_STORE_PATH};
 use crate::utils::cancel_current_operation;
+use log::info;
+use std::fs;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_store::StoreExt;
 
 #[tauri::command]
 #[specta::specta]
@@ -113,5 +116,53 @@ pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
         .open_path(path, None::<String>)
         .map_err(|e| format!("Failed to open app data directory: {}", e))?;
 
+    Ok(())
+}
+
+/// Reset the app to a fresh state by deleting all data, models, and settings.
+/// After this command, the app should be restarted to complete the reset.
+#[specta::specta]
+#[tauri::command]
+pub fn reset_app_data(app: AppHandle) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+
+    info!("Resetting app data at {:?}", app_data_dir);
+
+    // Delete models directory
+    let models_dir = app_data_dir.join("models");
+    if models_dir.exists() {
+        fs::remove_dir_all(&models_dir)
+            .map_err(|e| format!("Failed to delete models directory: {}", e))?;
+        info!("Deleted models directory");
+    }
+
+    // Delete recordings directory
+    let recordings_dir = app_data_dir.join("recordings");
+    if recordings_dir.exists() {
+        fs::remove_dir_all(&recordings_dir)
+            .map_err(|e| format!("Failed to delete recordings directory: {}", e))?;
+        info!("Deleted recordings directory");
+    }
+
+    // Delete history database
+    let history_db = app_data_dir.join("history.db");
+    if history_db.exists() {
+        fs::remove_file(&history_db)
+            .map_err(|e| format!("Failed to delete history database: {}", e))?;
+        info!("Deleted history database");
+    }
+
+    // Clear settings store
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|e| format!("Failed to access settings store: {}", e))?;
+    store.clear();
+    let _ = store.save();
+    info!("Cleared settings store");
+
+    info!("App data reset complete. App should be restarted.");
     Ok(())
 }

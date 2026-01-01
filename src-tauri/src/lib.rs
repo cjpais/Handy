@@ -5,8 +5,10 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+pub mod filler_detector;
 mod helpers;
 mod input;
+pub mod live_coaching;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -16,10 +18,12 @@ mod signal_handle;
 mod tray;
 mod tray_i18n;
 mod utils;
+mod vad_model;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
+use live_coaching::LiveCoachingManager;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
@@ -127,11 +131,19 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
+    // Initialize live coaching manager
+    let live_coaching_manager = Arc::new(LiveCoachingManager::new(
+        app_handle,
+        recording_manager.clone(),
+        transcription_manager.clone(),
+    ));
+
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(live_coaching_manager.clone());
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
@@ -264,6 +276,10 @@ pub fn run() {
         shortcut::change_append_trailing_space_setting,
         shortcut::change_app_language_setting,
         shortcut::change_update_checks_setting,
+        shortcut::change_filler_detection_setting,
+        shortcut::change_filler_output_mode_setting,
+        shortcut::update_custom_filler_words,
+        shortcut::change_show_filler_overlay_setting,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,
@@ -308,7 +324,10 @@ pub fn run() {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::reset_app_data,
         helpers::clamshell::is_laptop,
+        vad_model::is_vad_model_ready,
+        vad_model::download_vad_model_if_needed,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -333,7 +352,7 @@ pub fn run() {
                 }),
                 // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
                 Target::new(TargetKind::LogDir {
-                    file_name: Some("handy".into()),
+                    file_name: Some("kbve".into()),
                 })
                 .filter(|metadata| {
                     let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);

@@ -2377,58 +2377,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "handy"
-version = "0.6.9"
-dependencies = [
- "anyhow",
- "chrono",
- "cpal",
- "enigo",
- "env_filter",
- "ferrous-opencc",
- "flate2",
- "futures-util",
- "hound",
- "log",
- "natural",
- "once_cell",
- "rdev",
- "reqwest",
- "rodio",
- "rubato",
- "rusqlite",
- "rusqlite_migration",
- "rustfft",
- "serde",
- "serde_json",
- "signal-hook",
- "specta",
- "specta-typescript",
- "strsim",
- "tar",
- "tauri",
- "tauri-build",
- "tauri-nspanel",
- "tauri-plugin-autostart",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-fs",
- "tauri-plugin-global-shortcut",
- "tauri-plugin-log",
- "tauri-plugin-macos-permissions",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-process",
- "tauri-plugin-single-instance",
- "tauri-plugin-store",
- "tauri-plugin-updater",
- "tauri-specta",
- "tokio",
- "transcribe-rs",
- "vad-rs",
- "windows 0.61.3",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3016,6 +2964,58 @@ checksum = "5dea2b27dd239b2556ed7a25ba842fe47fd602e7fc7433c2a8d6106d4d9edd70"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "kbve"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "cpal",
+ "enigo",
+ "env_filter",
+ "ferrous-opencc",
+ "flate2",
+ "futures-util",
+ "hound",
+ "log",
+ "natural",
+ "once_cell",
+ "rdev",
+ "reqwest",
+ "rodio",
+ "rubato",
+ "rusqlite",
+ "rusqlite_migration",
+ "rustfft",
+ "serde",
+ "serde_json",
+ "signal-hook",
+ "specta",
+ "specta-typescript",
+ "strsim",
+ "tar",
+ "tauri",
+ "tauri-build",
+ "tauri-nspanel",
+ "tauri-plugin-autostart",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-fs",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-log",
+ "tauri-plugin-macos-permissions",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-process",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-store",
+ "tauri-plugin-updater",
+ "tauri-specta",
+ "tokio",
+ "transcribe-rs",
+ "vad-rs",
+ "windows 0.61.3",
 ]
 
 [[package]]

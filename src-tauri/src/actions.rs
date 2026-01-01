@@ -4,7 +4,9 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::filler_detector::detect_filler_words;
+use crate::live_coaching::LiveCoachingManager;
+use crate::settings::{get_settings, AppSettings, FillerOutputMode, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
@@ -15,6 +17,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::AppHandle;
+use tauri::Emitter;
 use tauri::Manager;
 
 // Shortcut Action Trait
@@ -268,6 +271,10 @@ impl ShortcutAction for TranscribeAction {
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+
+            // Start live coaching for real-time filler word feedback
+            let lc = app.state::<Arc<LiveCoachingManager>>();
+            lc.start();
         }
 
         debug!(
@@ -279,6 +286,10 @@ impl ShortcutAction for TranscribeAction {
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         // Unregister the cancel shortcut when transcription stops
         shortcut::unregister_cancel_shortcut(app);
+
+        // Stop live coaching
+        let lc = app.state::<Arc<LiveCoachingManager>>();
+        lc.stop();
 
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
@@ -329,6 +340,42 @@ impl ShortcutAction for TranscribeAction {
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
 
+                            // Always detect filler words for the Live tab feedback
+                            let custom_fillers = if settings.custom_filler_words.is_empty() {
+                                None
+                            } else {
+                                Some(settings.custom_filler_words.as_slice())
+                            };
+                            let filler_analysis = detect_filler_words(&transcription, custom_fillers);
+
+                            // Emit transcription result event for Live tab
+                            if let Err(e) = ah.emit("transcription-result", transcription.clone()) {
+                                error!("Failed to emit transcription result event: {}", e);
+                            }
+
+                            // Emit filler analysis event for Live tab (always emit)
+                            if let Err(e) = ah.emit("filler-analysis", filler_analysis.clone()) {
+                                error!("Failed to emit filler analysis event: {}", e);
+                            }
+
+                            // Determine final text based on filler output mode (only if filler detection is enabled)
+                            if settings.filler_detection_enabled {
+                                match settings.filler_output_mode {
+                                    FillerOutputMode::PasteCleaned | FillerOutputMode::Both => {
+                                        final_text = filler_analysis.cleaned_text.clone();
+                                        debug!("Using cleaned text (filler words removed)");
+                                    }
+                                    FillerOutputMode::CoachingOnly => {
+                                        // Don't paste anything, just show coaching feedback
+                                        debug!("Coaching only mode - skipping paste");
+                                    }
+                                    FillerOutputMode::PasteOriginal => {
+                                        // Keep original text
+                                        debug!("Pasting original text with filler words");
+                                    }
+                                }
+                            }
+
                             // First, check if Chinese variant conversion is needed
                             if let Some(converted_text) =
                                 maybe_convert_chinese_variant(&settings, &transcription).await
@@ -372,26 +419,42 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             });
 
-                            // Paste the final text (either processed or original)
-                            let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
+                            // Determine if we should paste based on filler output mode
+                            let should_paste = if settings.filler_detection_enabled {
+                                match settings.filler_output_mode {
+                                    FillerOutputMode::CoachingOnly => false,
+                                    _ => true,
                                 }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+                            } else {
+                                true
+                            };
+
+                            if should_paste {
+                                // Paste the final text (either processed or original)
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+                                ah.run_on_main_thread(move || {
+                                    match utils::paste(final_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    }
+                                    // Hide the overlay after transcription is complete
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            } else {
+                                // Coaching only mode - just hide overlay and reset tray
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
-                            });
+                            }
                         } else {
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);

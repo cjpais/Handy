@@ -2,10 +2,10 @@ use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, 
 use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
+use crate::vad_model;
 use log::{debug, error, info};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tauri::Manager;
 
 fn set_mute(mute: bool) {
     // Expected behavior:
@@ -247,14 +247,9 @@ impl AudioRecordingManager {
         let mut did_mute_guard = self.did_mute.lock().unwrap();
         *did_mute_guard = false;
 
-        let vad_path = self
-            .app_handle
-            .path()
-            .resolve(
-                "resources/models/silero_vad_v4.onnx",
-                tauri::path::BaseDirectory::Resource,
-            )
-            .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {}", e))?;
+        // Get VAD model path - checks both bundled resources and fallback location
+        let vad_path = vad_model::get_best_vad_model_path(&self.app_handle)
+            .map_err(|e| anyhow::anyhow!("VAD model not available: {}. Please ensure the model is downloaded.", e))?;
         let mut recorder_opt = self.recorder.lock().unwrap();
 
         if recorder_opt.is_none() {
@@ -419,6 +414,26 @@ impl AudioRecordingManager {
             *self.state.lock().unwrap(),
             RecordingState::Recording { .. }
         )
+    }
+
+    /// Peek at current recording samples without stopping
+    /// Returns None if not currently recording
+    pub fn peek_samples(&self) -> Option<Vec<f32>> {
+        if !self.is_recording() {
+            return None;
+        }
+
+        if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+            match rec.peek() {
+                Ok(samples) => Some(samples),
+                Err(e) => {
+                    error!("Failed to peek samples: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        }
     }
 
     /// Cancel any ongoing recording without returning audio samples

@@ -25,7 +25,10 @@ bun run format            # Prettier + cargo fmt
 bun run format:check      # Check formatting without changes
 ```
 
-**Model Setup (Required for Development):**
+**Model Setup (Optional - Auto-downloads if missing):**
+
+The VAD (Voice Activity Detection) model is automatically downloaded if not present.
+For manual setup during development:
 
 ```bash
 mkdir -p src-tauri/resources/models
@@ -34,7 +37,8 @@ curl -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.compute
 
 ## Architecture Overview
 
-Handy is a cross-platform desktop speech-to-text app built with Tauri 2.x (Rust backend + React/TypeScript frontend).
+KBVE is a cross-platform desktop speech coaching app built with Tauri 2.x (Rust backend + React/TypeScript frontend).
+It detects and analyzes filler words (um, uh, like, etc.) to help users improve their speaking patterns.
 
 ### Backend Structure (src-tauri/src/)
 
@@ -50,11 +54,15 @@ Handy is a cross-platform desktop speech-to-text app built with Tauri 2.x (Rust 
 - `commands/` - Tauri command handlers for frontend communication
 - `shortcut.rs` - Global keyboard shortcut handling
 - `settings.rs` - Application settings management
+- `filler_detector.rs` - Filler word detection engine
+- `vad_model.rs` - VAD model download and management
+- `actions.rs` - Transcription pipeline with filler detection integration
 
 ### Frontend Structure (src/)
 
 - `App.tsx` - Main component with onboarding flow
 - `components/settings/` - Settings UI (35+ files)
+  - `coaching/` - Speech coaching settings (filler word detection)
 - `components/model-selector/` - Model management interface
 - `components/onboarding/` - First-run experience
 - `hooks/useSettings.ts`, `useModels.ts` - State management hooks
@@ -68,7 +76,7 @@ Handy is a cross-platform desktop speech-to-text app built with Tauri 2.x (Rust 
 
 **Command-Event Architecture:** Frontend → Backend via Tauri commands; Backend → Frontend via events.
 
-**Pipeline Processing:** Audio → VAD → Whisper/Parakeet → Text output → Clipboard/Paste
+**Pipeline Processing:** Audio → VAD → Whisper/Parakeet → Filler Detection → Text output → Clipboard/Paste
 
 **State Flow:** Zustand → Tauri Command → Rust State → Persistence (tauri-plugin-store)
 

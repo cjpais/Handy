@@ -5,6 +5,8 @@ export { DebugSettings } from "./debug/DebugSettings";
 export { HistorySettings } from "./history/HistorySettings";
 export { AboutSettings } from "./about/AboutSettings";
 export { PostProcessingSettings } from "./post-processing/PostProcessingSettings";
+export { CoachingSettings } from "./coaching/CoachingSettings";
+export { LiveSettings } from "./live/LiveSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";

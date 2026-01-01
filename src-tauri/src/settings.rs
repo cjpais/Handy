@@ -147,6 +147,21 @@ pub enum RecordingRetentionPeriod {
     Months3,
 }
 
+/// Output mode for filler word detection
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum FillerOutputMode {
+    /// Show coaching feedback only, don't paste anything
+    #[default]
+    CoachingOnly,
+    /// Remove filler words and paste cleaned text
+    PasteCleaned,
+    /// Paste original text and show coaching feedback
+    PasteOriginal,
+    /// Remove filler words, paste cleaned text, and show coaching feedback
+    Both,
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -289,6 +304,15 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    // Filler word detection settings
+    #[serde(default = "default_filler_detection_enabled")]
+    pub filler_detection_enabled: bool,
+    #[serde(default)]
+    pub filler_output_mode: FillerOutputMode,
+    #[serde(default = "default_custom_filler_words")]
+    pub custom_filler_words: Vec<String>,
+    #[serde(default = "default_show_filler_overlay")]
+    pub show_filler_overlay: bool,
 }
 
 fn default_model() -> String {
@@ -362,6 +386,18 @@ fn default_app_language() -> String {
     tauri_plugin_os::locale()
         .and_then(|l| l.split(['-', '_']).next().map(String::from))
         .unwrap_or_else(|| "en".to_string())
+}
+
+fn default_filler_detection_enabled() -> bool {
+    false
+}
+
+fn default_custom_filler_words() -> Vec<String> {
+    Vec::new()
+}
+
+fn default_show_filler_overlay() -> bool {
+    true
 }
 
 fn default_post_process_provider_id() -> String {
@@ -559,6 +595,10 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        filler_detection_enabled: default_filler_detection_enabled(),
+        filler_output_mode: FillerOutputMode::default(),
+        custom_filler_words: default_custom_filler_words(),
+        show_filler_overlay: default_show_filler_overlay(),
     }
 }
 

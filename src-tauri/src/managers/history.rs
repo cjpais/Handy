@@ -185,7 +185,7 @@ impl HistoryManager {
         post_process_prompt: Option<String>,
     ) -> Result<()> {
         let timestamp = Utc::now().timestamp();
-        let file_name = format!("handy-{}.wav", timestamp);
+        let file_name = format!("kbve-{}.wav", timestamp);
         let title = self.format_timestamp_title(timestamp);
 
         // Save WAV file

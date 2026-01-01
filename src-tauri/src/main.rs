@@ -12,5 +12,5 @@ fn main() {
         }
     }
 
-    handy_app_lib::run()
+    kbve_app_lib::run()
 }

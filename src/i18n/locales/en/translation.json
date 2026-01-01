@@ -7,6 +7,8 @@
   },
   "sidebar": {
     "general": "General",
+    "coaching": "Coaching",
+    "live": "Live",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -15,6 +17,16 @@
   },
   "onboarding": {
     "subtitle": "To get started, choose a transcription model",
+    "vadSubtitle": "First, let's set up voice detection",
+    "vad": {
+      "title": "Voice Activity Detection",
+      "description": "This small model detects when you're speaking and helps improve transcription accuracy.",
+      "download": "Download Voice Detection Model",
+      "downloading": "Downloading... {{progress}}%",
+      "ready": "Voice detection is ready!",
+      "continue": "Continue",
+      "size": "~1.8 MB download"
+    },
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",
@@ -50,7 +62,8 @@
     },
     "errors": {
       "loadModels": "Failed to load available models",
-      "downloadModel": "Failed to download model: {{error}}"
+      "downloadModel": "Failed to download model: {{error}}",
+      "vadDownload": "Failed to download voice detection model: {{error}}"
     }
   },
   "modelSelector": {
@@ -201,6 +214,18 @@
         "placeholder": "Add a word",
         "add": "Add",
         "remove": "Remove {{word}}"
+      },
+      "privacy": {
+        "title": "Privacy"
+      },
+      "resetApp": {
+        "title": "Reset App",
+        "description": "Delete all data including models, recordings, history, and settings. The app will restart fresh with onboarding.",
+        "button": "Reset All Data",
+        "confirmTitle": "Are you sure?",
+        "confirmDescription": "This will permanently delete all your data including downloaded models, recordings, transcription history, and settings. This action cannot be undone. The app will restart after reset.",
+        "confirmButton": "Yes, Reset Everything",
+        "resetting": "Resetting..."
       }
     },
     "postProcessing": {
@@ -415,5 +440,74 @@
   },
   "overlay": {
     "transcribing": "Transcribing..."
+  },
+  "coaching": {
+    "title": "Speech Coaching",
+    "fillerDetection": {
+      "label": "Filler Word Detection",
+      "description": "Detect and analyze filler words like 'um', 'uh', 'like' in your speech"
+    },
+    "outputMode": {
+      "label": "Output Mode",
+      "description": "Choose what happens after filler words are detected",
+      "coachingOnly": "Coaching Only (don't paste)",
+      "pasteCleaned": "Paste Cleaned Text",
+      "pasteOriginal": "Paste Original + Show Feedback",
+      "both": "Paste Cleaned + Show Feedback"
+    },
+    "showOverlay": {
+      "label": "Show Filler Stats",
+      "description": "Display filler word statistics after each transcription"
+    },
+    "customWords": {
+      "title": "Custom Filler Words",
+      "description": "Add your own filler words or phrases to detect in addition to the defaults",
+      "placeholder": "Add a filler word",
+      "add": "Add",
+      "remove": "Remove {{word}}"
+    },
+    "stats": {
+      "fillerCount": "Filler Words",
+      "percentage": "of speech",
+      "topFillers": "Most Used",
+      "improvement": "Improvement"
+    },
+    "tips": {
+      "title": "Tips to Reduce Filler Words",
+      "pause": "Pause instead of filling silence",
+      "slow": "Slow down your speaking pace",
+      "practice": "Practice with shorter recordings"
+    }
+  },
+  "live": {
+    "title": "Live Coaching",
+    "status": {
+      "idle": "Ready",
+      "recording": "Recording",
+      "transcribing": "Transcribing...",
+      "complete": "Complete"
+    },
+    "trafficLight": {
+      "idle": "Press your shortcut to start",
+      "green": "Great flow!",
+      "yellow": "Some filler words detected",
+      "red": "Too many filler words"
+    },
+    "stats": {
+      "fillerWords": "Filler Words",
+      "totalWords": "Total Words",
+      "fillerPercentage": "Filler %"
+    },
+    "transcription": {
+      "title": "Transcription"
+    },
+    "breakdown": {
+      "title": "Filler Word Breakdown"
+    },
+    "fillerWord": "Filler word",
+    "instructions": {
+      "title": "Ready for Live Coaching",
+      "description": "Use your recording shortcut to start. Your speech will be analyzed in real-time for filler words."
+    }
   }
 }
