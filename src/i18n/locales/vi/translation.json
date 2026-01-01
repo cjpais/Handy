@@ -122,7 +122,8 @@
       "filters": {
         "all": "Tất cả",
         "multiLanguage": "Đa ngôn ngữ",
-        "translation": "Dịch thuật"
+        "translation": "Dịch thuật",
+        "allLanguages": "Tất cả ngôn ngữ"
       },
       "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này."
     },

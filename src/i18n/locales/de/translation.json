@@ -121,7 +121,8 @@
       "filters": {
         "all": "Alle",
         "multiLanguage": "Mehrsprachig",
-        "translation": "Übersetzung"
+        "translation": "Übersetzung",
+        "allLanguages": "Alle Sprachen"
       },
       "noModelsMatch": "Keine Modelle entsprechen diesem Filter."
     },

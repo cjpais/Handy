@@ -121,7 +121,8 @@
       "filters": {
         "all": "すべて",
         "multiLanguage": "多言語",
-        "translation": "翻訳"
+        "translation": "翻訳",
+        "allLanguages": "すべての言語"
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。"
     },

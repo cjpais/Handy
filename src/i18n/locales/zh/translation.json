@@ -121,7 +121,8 @@
       "filters": {
         "all": "全部",
         "multiLanguage": "多语言",
-        "translation": "翻译"
+        "translation": "翻译",
+        "allLanguages": "所有语言"
       },
       "noModelsMatch": "没有符合此筛选条件的模型。"
     },
