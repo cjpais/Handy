@@ -1,17 +1,34 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { Globe, Languages } from "lucide-react";
-import type { ModelCardStatus } from "../../onboarding";
-import { ModelCard } from "../../onboarding";
-import { useModels } from "../../../hooks/useModels";
+import { ChevronDown, Globe, Languages } from "lucide-react";
+import type { ModelCardStatus } from "@/components/onboarding";
+import { ModelCard } from "@/components/onboarding";
+import { useModels } from "@/hooks/useModels.ts";
+import { LANGUAGES } from "@/lib/constants/languages.ts";
+import type { ModelInfo } from "@/bindings";
 
 type ModelFilter = "all" | "multiLanguage" | "translation";
+
+// check if model supports a language based on its capabilities
+const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
+  // models with language selection support all languages in the LANGUAGES list, like Whisper
+  if (model.supports_language_selection) {
+    return true;
+  }
+  // models without language selection only support English, like Parakeet
+  return langCode === "en";
+};
 
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState<ModelFilter>("all");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
+  const [languageFilter, setLanguageFilter] = useState("all");
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
+  const [languageSearch, setLanguageSearch] = useState("");
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
+  const languageSearchInputRef = useRef<HTMLInputElement>(null);
   const {
     models,
     currentModel,
@@ -24,6 +41,45 @@ export const ModelsSettings: React.FC = () => {
     selectModel,
     deleteModel,
   } = useModels();
+
+  // click outside handler for language dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        languageDropdownRef.current &&
+        !languageDropdownRef.current.contains(event.target as Node)
+      ) {
+        setLanguageDropdownOpen(false);
+        setLanguageSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // focus search input when dropdown opens
+  useEffect(() => {
+    if (languageDropdownOpen && languageSearchInputRef.current) {
+      languageSearchInputRef.current.focus();
+    }
+  }, [languageDropdownOpen]);
+
+  // filtered languages for dropdown (exclude "auto")
+  const filteredLanguages = useMemo(() => {
+    return LANGUAGES.filter(
+      (lang) =>
+        lang.value !== "auto" &&
+        lang.label.toLowerCase().includes(languageSearch.toLowerCase()),
+    );
+  }, [languageSearch]);
+
+  // Get selected language label
+  const selectedLanguageLabel = useMemo(() => {
+    if (languageFilter === "all") {
+      return t("settings.models.filters.allLanguages");
+    }
+    return LANGUAGES.find((lang) => lang.value === languageFilter)?.label || "";
+  }, [languageFilter, t]);
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (extractingModels.has(modelId)) {
@@ -89,19 +145,27 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
-  // Filter models based on active filter
+  // Filter models based on active filter and language filter
   const filteredModels = useMemo(() => {
     return models.filter((model) => {
+      // Capability filters
       switch (activeFilter) {
         case "multiLanguage":
-          return model.supports_language_selection;
+          if (!model.supports_language_selection) return false;
+          break;
         case "translation":
-          return model.supports_translation;
-        default:
-          return true;
+          if (!model.supports_translation) return false;
+          break;
       }
+
+      // Language filter
+      if (languageFilter !== "all") {
+        if (!modelSupportsLanguage(model, languageFilter)) return false;
+      }
+
+      return true;
     });
-  }, [models, activeFilter]);
+  }, [models, activeFilter, languageFilter]);
 
   if (loading) {
     return (
@@ -159,6 +223,94 @@ export const ModelsSettings: React.FC = () => {
           <Languages className="w-3.5 h-3.5" />
           {t("settings.models.filters.translation")}
         </button>
+
+        {/* Language filter dropdown */}
+        <div className="relative ml-auto" ref={languageDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              languageFilter !== "all"
+                ? "bg-logo-primary/20 text-logo-primary"
+                : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span className="max-w-[120px] truncate">
+              {selectedLanguageLabel}
+            </span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform ${
+                languageDropdownOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {languageDropdownOpen && (
+            <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+              <div className="p-2 border-b border-mid-gray/40">
+                <input
+                  ref={languageSearchInputRef}
+                  type="text"
+                  value={languageSearch}
+                  onChange={(e) => setLanguageSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && filteredLanguages.length > 0) {
+                      setLanguageFilter(filteredLanguages[0].value);
+                      setLanguageDropdownOpen(false);
+                      setLanguageSearch("");
+                    } else if (e.key === "Escape") {
+                      setLanguageDropdownOpen(false);
+                      setLanguageSearch("");
+                    }
+                  }}
+                  placeholder={t("settings.general.language.searchPlaceholder")}
+                  className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLanguageFilter("all");
+                    setLanguageDropdownOpen(false);
+                    setLanguageSearch("");
+                  }}
+                  className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                    languageFilter === "all"
+                      ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                      : "hover:bg-mid-gray/10"
+                  }`}
+                >
+                  {t("settings.models.filters.allLanguages")}
+                </button>
+                {filteredLanguages.map((lang) => (
+                  <button
+                    key={lang.value}
+                    type="button"
+                    onClick={() => {
+                      setLanguageFilter(lang.value);
+                      setLanguageDropdownOpen(false);
+                      setLanguageSearch("");
+                    }}
+                    className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                      languageFilter === lang.value
+                        ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                        : "hover:bg-mid-gray/10"
+                    }`}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+                {filteredLanguages.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-text/50 text-center">
+                    {t("settings.general.language.noResults")}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       {filteredModels.length > 0 ? (
         <div className="space-y-3">

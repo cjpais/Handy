@@ -121,7 +121,8 @@
       "filters": {
         "all": "Все",
         "multiLanguage": "Многоязычные",
-        "translation": "Перевод"
+        "translation": "Перевод",
+        "allLanguages": "Все языки"
       },
       "noModelsMatch": "Нет моделей, соответствующих этому фильтру."
     },
