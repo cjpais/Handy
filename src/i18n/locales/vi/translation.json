@@ -234,6 +234,14 @@
         "placeholder": "Thêm một từ",
         "add": "Thêm",
         "remove": "Xóa {{word}}"
+      },
+      "local_api": {
+        "label": "API cục bộ",
+        "description": "Cung cấp API chuyển đổi giọng nói thành văn bản tương thích với OpenAI trên cổng {{port}}.",
+        "port": {
+          "label": "Cổng API cục bộ",
+          "description": "Cổng để lắng nghe. Thay đổi cổng sẽ khởi động lại máy chủ."
+        }
       }
     },
     "postProcessing": {

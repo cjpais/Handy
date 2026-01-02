@@ -922,6 +922,57 @@ pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_local_api_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Only take action if the setting actually changes
+    if settings.local_api_enabled != enabled {
+        settings.local_api_enabled = enabled;
+        settings::write_settings(&app, settings);
+
+        // Manage server state
+        let server_mutex = app.state::<std::sync::Mutex<crate::server::ApiServer>>();
+        let mut server = server_mutex.lock().map_err(|e| e.to_string())?;
+
+        if enabled {
+            let tm = app.state::<Arc<crate::managers::transcription::TranscriptionManager>>();
+            server.start(tm.inner().clone());
+        } else {
+            server.stop();
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_local_api_port_setting(app: AppHandle, port: u16) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Only take action if the setting actually changes
+    if settings.local_api_port != port {
+        settings.local_api_port = port;
+        settings::write_settings(&app, settings.clone());
+
+        // Restart server if enabled
+        if settings.local_api_enabled {
+            let server_mutex = app.state::<std::sync::Mutex<crate::server::ApiServer>>();
+            let mut server = server_mutex.lock().map_err(|e| e.to_string())?;
+            server.stop();
+            server.port = port; // Ensure field is pub or add setter method.
+
+            // Wait a bit for port release? Usually instant.
+            let tm = app.state::<Arc<crate::managers::transcription::TranscriptionManager>>();
+            server.start(tm.inner().clone());
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.append_trailing_space = enabled;

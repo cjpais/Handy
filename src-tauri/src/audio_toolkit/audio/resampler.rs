@@ -1,3 +1,5 @@
+use anyhow::{anyhow, Result};
+use rodio::Source;
 use rubato::{FftFixedIn, Resampler};
 use std::time::Duration;
 
@@ -96,4 +98,75 @@ impl FrameResampler {
             }
         }
     }
+}
+
+pub fn resample_audio<S>(source: S) -> Result<Vec<f32>>
+where
+    S: Source<Item = f32> + Send + 'static,
+{
+    let target_sample_rate = 16000;
+    let source_rate = source.sample_rate();
+    let channels = source.channels();
+
+    if channels == 0 {
+        return Err(anyhow!("Audio has no channels"));
+    }
+
+    // 1. Convert to mono and collect all samples
+    let mut mono_samples = Vec::new();
+    let mut channel_sum = 0.0;
+    let mut channel_count = 0;
+
+    for sample in source {
+        channel_sum += sample;
+        channel_count += 1;
+        if channel_count == channels {
+            mono_samples.push(channel_sum / channels as f32);
+            channel_sum = 0.0;
+            channel_count = 0;
+        }
+    }
+
+    if source_rate == target_sample_rate {
+        return Ok(mono_samples);
+    }
+
+    // 2. High-quality resampling using rubato
+    // We use a fixed chunk size for the resampler
+    let chunk_size = 1024;
+    let mut resampler = FftFixedIn::<f32>::new(
+        source_rate as usize,
+        target_sample_rate as usize,
+        chunk_size,
+        1,
+        1,
+    )
+    .map_err(|e| anyhow!("Failed to create resampler: {}", e))?;
+
+    let mut output = Vec::new();
+    let mut input_pos = 0;
+
+    while input_pos + chunk_size <= mono_samples.len() {
+        let chunk = &mono_samples[input_pos..input_pos + chunk_size];
+        if let Ok(resampled_chunk) = resampler.process(&[chunk], None) {
+            output.extend_from_slice(&resampled_chunk[0]);
+        }
+        input_pos += chunk_size;
+    }
+
+    // Handle remaining samples by padding with zeros
+    if input_pos < mono_samples.len() {
+        let mut last_chunk = vec![0.0; chunk_size];
+        let remaining = mono_samples.len() - input_pos;
+        last_chunk[..remaining].copy_from_slice(&mono_samples[input_pos..]);
+        if let Ok(resampled_chunk) = resampler.process(&[last_chunk], None) {
+            // Only take the relevant part of the output to avoid too much padding
+            // (Though for transcription a bit of silence at the end is fine)
+            let out_len =
+                (remaining as f32 * (target_sample_rate as f32 / source_rate as f32)) as usize;
+            output.extend_from_slice(&resampled_chunk[0][..out_len.min(resampled_chunk[0].len())]);
+        }
+    }
+
+    Ok(output)
 }

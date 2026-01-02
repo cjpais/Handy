@@ -17,6 +17,7 @@ import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
+import { LocalApiService } from "../LocalApiService";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ export const AdvancedSettings: React.FC = () => {
       <SettingsGroup title={t("settings.advanced.groups.output")}>
         <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />
+        <LocalApiService descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>

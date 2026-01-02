@@ -127,6 +127,10 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  local_api_enabled: (value) =>
+    commands.changeLocalApiSetting(value as boolean),
+  local_api_port: (value) =>
+    commands.changeLocalApiPortSetting(value as number),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -297,15 +301,15 @@ export const useSettingsStore = create<SettingsStore>()(
         set((state) => ({
           settings: state.settings
             ? {
-                ...state.settings,
-                bindings: {
-                  ...state.settings.bindings,
-                  [id]: {
-                    ...state.settings.bindings[id]!,
-                    current_binding: binding,
-                  },
+              ...state.settings,
+              bindings: {
+                ...state.settings.bindings,
+                [id]: {
+                  ...state.settings.bindings[id]!,
+                  current_binding: binding,
                 },
-              }
+              },
+            }
             : null,
         }));
 
@@ -328,15 +332,15 @@ export const useSettingsStore = create<SettingsStore>()(
           set((state) => ({
             settings: state.settings
               ? {
-                  ...state.settings,
-                  bindings: {
-                    ...state.settings.bindings,
-                    [id]: {
-                      ...state.settings.bindings[id]!,
-                      current_binding: originalBinding,
-                    },
+                ...state.settings,
+                bindings: {
+                  ...state.settings.bindings,
+                  [id]: {
+                    ...state.settings.bindings[id]!,
+                    current_binding: originalBinding,
                   },
-                }
+                },
+              }
               : null,
           }));
         }
