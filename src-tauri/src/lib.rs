@@ -16,6 +16,7 @@ mod signal_handle;
 mod tray;
 mod tray_i18n;
 mod utils;
+mod volume_control;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
@@ -261,6 +262,8 @@ pub fn run() {
         shortcut::suspend_binding,
         shortcut::resume_binding,
         shortcut::change_mute_while_recording_setting,
+        shortcut::change_audio_ducking_enabled_setting,
+        shortcut::change_audio_ducking_amount_setting,
         shortcut::change_append_trailing_space_setting,
         shortcut::change_app_language_setting,
         shortcut::change_update_checks_setting,

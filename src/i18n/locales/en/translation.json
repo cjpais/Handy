@@ -136,6 +136,14 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "audioDucking": {
+        "label": "Reduce System Volume",
+        "description": "Automatically lower system audio while recording",
+        "reductionLabel": "Reduction Amount",
+        "reductionDescription": "How much to reduce the system volume (0% = no change, 100% = mute)",
+        "muted": "Muted",
+        "noChange": "No change"
       }
     },
     "advanced": {
