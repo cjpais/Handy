@@ -151,6 +151,14 @@ pub enum RecordingRetentionPeriod {
     Months3,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum CapitalizationRule {
+    None,
+    ForceUppercase,
+    ForceLowercase,
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -170,6 +178,12 @@ impl Default for PasteMethod {
 impl Default for ClipboardHandling {
     fn default() -> Self {
         ClipboardHandling::DontModify
+    }
+}
+
+impl Default for CapitalizationRule {
+    fn default() -> Self {
+        CapitalizationRule::None
     }
 }
 
@@ -262,6 +276,10 @@ pub struct AppSettings {
     #[serde(default)]
     pub custom_words: Vec<String>,
     #[serde(default)]
+    pub replacements: Vec<Replacement>,
+    #[serde(default = "default_true")]
+    pub replacements_enabled: bool,
+    #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
@@ -293,6 +311,30 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct Replacement {
+    pub search: String,
+    pub replace: String,
+    #[serde(default)]
+    pub is_regex: bool,
+    #[serde(default)]
+    pub trim_punctuation_before: bool,
+    #[serde(default)]
+    pub trim_punctuation_after: bool,
+    #[serde(default)]
+    pub trim_spaces_before: bool,
+    #[serde(default)]
+    pub trim_spaces_after: bool,
+    #[serde(default)]
+    pub capitalization_rule: CapitalizationRule,
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_model() -> String {
@@ -565,6 +607,8 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
+        replacements: Vec::new(),
+        replacements_enabled: true,
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
