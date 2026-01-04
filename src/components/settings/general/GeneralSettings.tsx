@@ -18,6 +18,7 @@ export const GeneralSettings: React.FC = () => {
       <SettingsGroup title={t("settings.general.title")}>
         <HandyShortcut shortcutId="transcribe" grouped={true} />
         <LanguageSelector descriptionMode="tooltip" grouped={true} />
+        <LanguageSelector descriptionMode="tooltip" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
       <SettingsGroup title={t("settings.sound.title")}>

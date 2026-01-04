@@ -5,6 +5,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod fn_listener;
 mod helpers;
 mod input;
 mod llm_client;
@@ -135,6 +136,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
+    // Initialize Fn listener
+    fn_listener::custom_fn_event_handler(app_handle.clone());
 
     #[cfg(unix)]
     let signals = Signals::new(&[SIGUSR2]).unwrap();
