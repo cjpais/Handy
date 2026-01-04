@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { type } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
@@ -19,6 +20,9 @@ const AccessibilityPermissions: React.FC = () => {
   const [hasAccessibility, setHasAccessibility] = useState<boolean>(false);
   const [permissionState, setPermissionState] =
     useState<PermissionState>("request");
+
+  // Accessibility permissions are only required on macOS
+  const isMacOS = type() === "macos";
 
   // Check permissions without requesting
   const checkPermissions = async (): Promise<boolean> => {
@@ -45,8 +49,10 @@ const AccessibilityPermissions: React.FC = () => {
     }
   };
 
-  // On app boot - check permissions
+  // On app boot - check permissions (only on macOS)
   useEffect(() => {
+    if (!isMacOS) return;
+
     const initialSetup = async (): Promise<void> => {
       const hasPermissions: boolean = await checkAccessibilityPermission();
       setHasAccessibility(hasPermissions);
@@ -54,9 +60,10 @@ const AccessibilityPermissions: React.FC = () => {
     };
 
     initialSetup();
-  }, []);
+  }, [isMacOS]);
 
-  if (hasAccessibility) {
+  // Skip rendering on non-macOS platforms or if permission is already granted
+  if (!isMacOS || hasAccessibility) {
     return null;
   }
 
