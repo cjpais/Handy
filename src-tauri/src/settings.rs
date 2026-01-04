@@ -293,6 +293,10 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default = "default_local_api_enabled")]
+    pub local_api_enabled: bool,
+    #[serde(default = "default_local_api_port")]
+    pub local_api_port: u16,
 }
 
 fn default_model() -> String {
@@ -370,6 +374,14 @@ fn default_app_language() -> String {
 
 fn default_post_process_provider_id() -> String {
     "openai".to_string()
+}
+
+fn default_local_api_enabled() -> bool {
+    false
+}
+
+fn default_local_api_port() -> u16 {
+    5500
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
@@ -581,6 +593,8 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        local_api_enabled: default_local_api_enabled(),
+        local_api_port: default_local_api_port(),
     }
 }
 
