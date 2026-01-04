@@ -628,6 +628,9 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").
 fn validate_shortcut_string(raw: &str) -> Result<(), String> {
+    if raw.eq_ignore_ascii_case("fn") {
+        return Ok(());
+    }
     let modifiers = [
         "ctrl", "control", "shift", "alt", "option", "meta", "command", "cmd", "super", "win",
         "windows",
@@ -721,6 +724,12 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
     }
 
     // Parse shortcut and return error if it fails
+    // Special case: "Fn" is handled by our custom listener, not the global shortcut plugin
+    if binding.current_binding.eq_ignore_ascii_case("fn") {
+        // We "register" it by just returning Ok. The fn_listener handles the actual event.
+        return Ok(());
+    }
+
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {
@@ -810,6 +819,11 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
 }
 
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    // Special case: "Fn" is handled by our custom listener, nothing to unregister
+    if binding.current_binding.eq_ignore_ascii_case("fn") {
+        return Ok(());
+    }
+
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {

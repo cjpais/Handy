@@ -12,6 +12,7 @@ import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
+import { listen } from "@tauri-apps/api/event";
 
 interface HandyShortcutProps {
   descriptionMode?: "inline" | "tooltip";
@@ -217,6 +218,38 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     updateBinding,
     osType,
   ]);
+
+  // Listen for Fn key events from backend
+  useEffect(() => {
+    if (editingShortcutId === null) return;
+    
+    // We only care if we are in recording mode
+    const unlisten = listen("fn-key-pressed", async () => {
+        // If Fn is pressed, we immediately set it as the shortcut and commit
+        if (editingShortcutId && bindings[editingShortcutId]) {
+           try {
+             // Fn key is special, it stands alone
+             const newShortcut = "Fn";
+             
+             await updateBinding(editingShortcutId, newShortcut);
+             await commands
+               .resumeBinding(editingShortcutId)
+               .catch(console.error);
+
+             setEditingShortcutId(null);
+             setKeyPressed([]);
+             setRecordedKeys([]);
+             setOriginalBinding("");
+           } catch (error) {
+             console.error("Failed to set Fn binding:", error);
+           }
+        }
+    });
+
+    return () => {
+        unlisten.then(f => f());
+    };
+  }, [editingShortcutId, bindings, updateBinding]);
 
   // Start recording a new shortcut
   const startRecording = async (id: string) => {

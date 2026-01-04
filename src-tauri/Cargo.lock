@@ -2382,6 +2382,8 @@ version = "0.6.10"
 dependencies = [
  "anyhow",
  "chrono",
+ "core-foundation 0.10.1",
+ "core-graphics 0.24.0",
  "cpal",
  "enigo",
  "env_filter",
