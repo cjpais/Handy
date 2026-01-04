@@ -655,9 +655,6 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
-    // Save all pending changes to disk
-    store.save().expect("Failed to save settings to disk");
-
     settings
 }
 
@@ -682,9 +679,6 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
-    // Save all pending changes to disk
-    store.save().expect("Failed to save settings to disk");
-
     settings
 }
 
@@ -694,7 +688,6 @@ pub fn write_settings(app: &AppHandle, settings: AppSettings) {
         .expect("Failed to initialize store");
 
     store.set("settings", serde_json::to_value(&settings).unwrap());
-    store.save().expect("Failed to save settings to disk");
 }
 
 pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
