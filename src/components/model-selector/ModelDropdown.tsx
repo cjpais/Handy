@@ -18,7 +18,7 @@ interface DownloadProgress {
 interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
-  downloadProgress: Map<string, DownloadProgress>;
+  downloadProgress: Record<string, DownloadProgress>;
   onModelSelect: (modelId: string) => void;
   onModelDownload: (modelId: string) => void;
   onModelDelete: (modelId: string) => Promise<void>;
@@ -52,14 +52,14 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   };
 
   const handleModelClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (modelId in downloadProgress) {
       return; // Don't allow interaction while downloading
     }
     onModelSelect(modelId);
   };
 
   const handleDownloadClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (modelId in downloadProgress) {
       return; // Don't allow interaction while downloading
     }
     onModelDownload(modelId);
@@ -158,8 +158,8 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
               : t("modelSelector.downloadModels")}
           </div>
           {downloadableModels.map((model) => {
-            const isDownloading = downloadProgress.has(model.id);
-            const progress = downloadProgress.get(model.id);
+            const isDownloading = model.id in downloadProgress;
+            const progress = downloadProgress[model.id];
 
             return (
               <div
