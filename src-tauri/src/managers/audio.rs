@@ -228,11 +228,11 @@ impl AudioRecordingManager {
         // Restore volume if ducking was applied
         let mut did_duck_guard = self.did_duck.lock().unwrap();
         if *did_duck_guard {
-            if let Err(e) = volume_control::restore_volume() {
-                error!("Failed to restore volume on stream stop: {}", e);
+            match volume_control::restore_volume() {
+                Ok(()) => *did_duck_guard = false,
+                Err(e) => error!("Failed to restore volume on stream stop: {}", e),
             }
         }
-        *did_duck_guard = false;
 
         if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
             // If still recording, stop first.
@@ -379,6 +379,9 @@ impl AudioRecordingManager {
             // In on-demand mode turn the mic off again
             if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
                 self.stop_microphone_stream();
+            } else {
+                // In always-on mode, stream stays open but we still need to restore volume
+                self.remove_ducking();
             }
         }
     }

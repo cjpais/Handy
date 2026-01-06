@@ -136,10 +136,9 @@ pub fn apply_ducking(ducking_amount: f32) -> Result<(), String> {
 
     // Store original volume if not already stored
     let mut original = ORIGINAL_VOLUME.lock().map_err(|e| e.to_string())?;
-    if original.is_none() {
+    let is_first_duck = original.is_none();
+    if is_first_duck {
         *original = Some(current_volume);
-        // Persist to disk for crash recovery
-        persist_volume(current_volume);
         debug!("Stored original volume: {}", current_volume);
     }
 
@@ -154,18 +153,27 @@ pub fn apply_ducking(ducking_amount: f32) -> Result<(), String> {
         ducking_amount * 100.0
     );
 
-    set_volume(target_volume)
+    let result = set_volume(target_volume);
+
+    // Only persist after successful volume change to avoid false recovery
+    if result.is_ok() && is_first_duck {
+        persist_volume(current_volume);
+    }
+
+    result
 }
 
 /// Restore the original volume after ducking
 pub fn restore_volume() -> Result<(), String> {
     let mut original = ORIGINAL_VOLUME.lock().map_err(|e| e.to_string())?;
 
-    if let Some(vol) = original.take() {
+    if let Some(&vol) = original.as_ref() {
         debug!("Restoring original volume: {}", vol);
         let result = set_volume(vol);
-        // Clear persisted file on successful restore
+
+        // Only clear state on successful restore - allows retry on failure
         if result.is_ok() {
+            *original = None;
             clear_persisted_volume();
         }
         result
