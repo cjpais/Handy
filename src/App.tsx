@@ -74,7 +74,7 @@ function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col select-none cursor-default">
       <Toaster />
       {/* Main content area that takes remaining space */}
       <div className="flex-1 flex overflow-hidden">
