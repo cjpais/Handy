@@ -236,6 +236,10 @@ async resumeBinding(id: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Deprecated: Use `change_audio_ducking_enabled_setting` instead.
+ * This command now redirects to the audio ducking system for backward compatibility.
+ */
 async changeMuteWhileRecordingSetting(enabled: boolean) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_mute_while_recording_setting", { enabled }) };
