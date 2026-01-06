@@ -54,11 +54,18 @@ pub fn recover_volume_on_startup() {
         );
         match set_volume(volume) {
             Ok(()) => {
-                info!("Successfully restored volume to {}%", (volume * 100.0) as i32);
+                info!(
+                    "Successfully restored volume to {}%",
+                    (volume * 100.0) as i32
+                );
                 clear_persisted_volume();
             }
             Err(e) => {
-                warn!("Failed to restore volume: {}. You may need to manually set your volume to {}%", e, (volume * 100.0) as i32);
+                warn!(
+                    "Failed to restore volume: {}. You may need to manually set your volume to {}%",
+                    e,
+                    (volume * 100.0) as i32
+                );
             }
         }
     }

@@ -54,5 +54,5 @@ export const AudioDucking: React.FC<AudioDuckingProps> = React.memo(
         )}
       </>
     );
-  }
+  },
 );
