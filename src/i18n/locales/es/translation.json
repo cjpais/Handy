@@ -136,6 +136,14 @@
       "volume": {
         "title": "Volumen",
         "description": "Ajusta el volumen de los sonidos de retroalimentación de audio"
+      },
+      "audioDucking": {
+        "label": "Reducir Volumen del Sistema",
+        "description": "Reducir automáticamente el audio del sistema durante la grabación",
+        "reductionLabel": "Cantidad de Reducción",
+        "reductionDescription": "Cuánto reducir el volumen del sistema (0% = sin cambio, 100% = silenciar)",
+        "muted": "Silenciado",
+        "noChange": "Sin cambio"
       }
     },
     "advanced": {

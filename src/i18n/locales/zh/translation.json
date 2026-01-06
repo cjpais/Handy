@@ -136,6 +136,14 @@
       "volume": {
         "title": "音量",
         "description": "调整音频反馈的音量"
+      },
+      "audioDucking": {
+        "label": "降低系统音量",
+        "description": "录音时自动降低系统音量",
+        "reductionLabel": "降低程度",
+        "reductionDescription": "降低系统音量的程度（0% = 无变化，100% = 静音）",
+        "muted": "静音",
+        "noChange": "无变化"
       }
     },
     "advanced": {

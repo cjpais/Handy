@@ -136,6 +136,14 @@
       "volume": {
         "title": "Głośność",
         "description": "Dostosuj głośność dźwięków informacyjnych"
+      },
+      "audioDucking": {
+        "label": "Zmniejsz Głośność Systemową",
+        "description": "Automatycznie zmniejsz głośność systemu podczas nagrywania",
+        "reductionLabel": "Poziom Redukcji",
+        "reductionDescription": "O ile zmniejszyć głośność systemu (0% = bez zmian, 100% = wyciszenie)",
+        "muted": "Wyciszony",
+        "noChange": "Bez zmian"
       }
     },
     "advanced": {

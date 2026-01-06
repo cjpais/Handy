@@ -137,6 +137,14 @@
       "volume": {
         "title": "Volume",
         "description": "Ajuster le volume du signal sonore"
+      },
+      "audioDucking": {
+        "label": "Réduire le Volume Système",
+        "description": "Réduire automatiquement le volume du système pendant l'enregistrement",
+        "reductionLabel": "Niveau de Réduction",
+        "reductionDescription": "Réduction du volume système (0% = aucun changement, 100% = muet)",
+        "muted": "Muet",
+        "noChange": "Aucun changement"
       }
     },
     "advanced": {

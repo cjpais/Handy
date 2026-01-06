@@ -136,6 +136,14 @@
       "volume": {
         "title": "音量",
         "description": "音声フィードバックの音量を調整"
+      },
+      "audioDucking": {
+        "label": "システム音量を下げる",
+        "description": "録音中にシステム音量を自動的に下げる",
+        "reductionLabel": "減少量",
+        "reductionDescription": "システム音量をどれだけ下げるか（0% = 変更なし、100% = ミュート）",
+        "muted": "ミュート",
+        "noChange": "変更なし"
       }
     },
     "advanced": {

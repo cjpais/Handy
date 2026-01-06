@@ -60,7 +60,7 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
-    did_mute: Arc<Mutex<bool>>,
+    did_duck: Arc<Mutex<bool>>,
 }
 
 impl AudioRecordingManager {
@@ -82,7 +82,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
-            did_mute: Arc::new(Mutex::new(false)),
+            did_duck: Arc::new(Mutex::new(false)),
         };
 
         // Always-on?  Open immediately.
@@ -127,12 +127,12 @@ impl AudioRecordingManager {
     /// Applies audio ducking if enabled in settings and stream is open
     pub fn apply_ducking(&self) {
         let settings = get_settings(&self.app_handle);
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        let mut did_duck_guard = self.did_duck.lock().unwrap();
 
         if settings.audio_ducking_enabled && *self.is_open.lock().unwrap() {
             match volume_control::apply_ducking(settings.audio_ducking_amount) {
                 Ok(()) => {
-                    *did_mute_guard = true;
+                    *did_duck_guard = true;
                     debug!(
                         "Audio ducking applied ({}% reduction)",
                         settings.audio_ducking_amount * 100.0
@@ -147,11 +147,11 @@ impl AudioRecordingManager {
 
     /// Removes audio ducking and restores original volume
     pub fn remove_ducking(&self) {
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
+        let mut did_duck_guard = self.did_duck.lock().unwrap();
+        if *did_duck_guard {
             match volume_control::restore_volume() {
                 Ok(()) => {
-                    *did_mute_guard = false;
+                    *did_duck_guard = false;
                     debug!("Audio ducking removed, volume restored");
                 }
                 Err(e) => {
@@ -182,8 +182,8 @@ impl AudioRecordingManager {
         let start_time = Instant::now();
 
         // Don't mute immediately - caller will handle muting after audio feedback
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        *did_mute_guard = false;
+        let mut did_duck_guard = self.did_duck.lock().unwrap();
+        *did_duck_guard = false;
 
         let vad_path = self
             .app_handle
@@ -226,13 +226,13 @@ impl AudioRecordingManager {
         }
 
         // Restore volume if ducking was applied
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
+        let mut did_duck_guard = self.did_duck.lock().unwrap();
+        if *did_duck_guard {
             if let Err(e) = volume_control::restore_volume() {
                 error!("Failed to restore volume on stream stop: {}", e);
             }
         }
-        *did_mute_guard = false;
+        *did_duck_guard = false;
 
         if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
             // If still recording, stop first.

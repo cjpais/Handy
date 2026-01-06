@@ -591,11 +591,17 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
     Ok(())
 }
 
+/// Deprecated: Use `change_audio_ducking_enabled_setting` instead.
+/// This command now redirects to the audio ducking system for backward compatibility.
 #[tauri::command]
 #[specta::specta]
 pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    // Redirect to new audio ducking system
     let mut settings = settings::get_settings(&app);
-    settings.mute_while_recording = enabled;
+    settings.audio_ducking_enabled = enabled;
+    if enabled {
+        settings.audio_ducking_amount = 1.0; // Full mute for backward compat
+    }
     settings::write_settings(&app, settings);
 
     Ok(())

@@ -136,6 +136,14 @@
       "volume": {
         "title": "Lautstärke",
         "description": "Lautstärke der Audio-Feedback-Töne anpassen"
+      },
+      "audioDucking": {
+        "label": "Systemlautstärke Reduzieren",
+        "description": "Systemlautstärke während der Aufnahme automatisch verringern",
+        "reductionLabel": "Reduzierungsmenge",
+        "reductionDescription": "Wie stark die Systemlautstärke reduziert werden soll (0% = keine Änderung, 100% = stumm)",
+        "muted": "Stumm",
+        "noChange": "Keine Änderung"
       }
     },
     "advanced": {

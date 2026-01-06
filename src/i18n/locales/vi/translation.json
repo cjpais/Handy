@@ -137,6 +137,14 @@
       "volume": {
         "title": "Âm lượng",
         "description": "Điều chỉnh âm lượng của âm thanh phản hồi"
+      },
+      "audioDucking": {
+        "label": "Giảm Âm Lượng Hệ Thống",
+        "description": "Tự động giảm âm lượng hệ thống khi đang ghi âm",
+        "reductionLabel": "Mức Giảm",
+        "reductionDescription": "Giảm âm lượng hệ thống bao nhiêu (0% = không thay đổi, 100% = tắt tiếng)",
+        "muted": "Đã tắt tiếng",
+        "noChange": "Không thay đổi"
       }
     },
     "advanced": {
