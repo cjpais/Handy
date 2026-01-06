@@ -5,7 +5,7 @@ export const useModels = () => {
   const store = useModelsStore();
 
   useEffect(() => {
-    store.initialize();
+    void store.initialize();
   }, []);
 
   return {
@@ -24,6 +24,7 @@ export const useModels = () => {
     checkFirstRun: store.checkFirstRun,
     selectModel: store.selectModel,
     downloadModel: store.downloadModel,
+    cancelDownload: store.cancelDownload,
     deleteModel: store.deleteModel,
     getModelInfo: store.getModelInfo,
     isModelDownloading: store.isModelDownloading,

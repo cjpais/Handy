@@ -10,7 +10,8 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -53,6 +54,7 @@ pub struct ModelManager {
     app_handle: AppHandle,
     models_dir: PathBuf,
     available_models: Mutex<HashMap<String, ModelInfo>>,
+    cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
 }
 
 impl ModelManager {
@@ -228,6 +230,7 @@ impl ModelManager {
             app_handle: app_handle.clone(),
             models_dir,
             available_models: Mutex::new(available_models),
+            cancel_flags: Arc::new(Mutex::new(HashMap::new())),
         };
 
         // Migrate any bundled models to user directory
@@ -397,6 +400,13 @@ impl ModelManager {
             }
         }
 
+        // Create cancellation flag for this download
+        let cancel_flag = Arc::new(AtomicBool::new(false));
+        {
+            let mut flags = self.cancel_flags.lock().unwrap();
+            flags.insert(model_id.to_string(), cancel_flag.clone());
+        }
+
         // Create HTTP client with range request for resuming
         let client = reqwest::Client::new();
         let mut request = client.get(&url);
@@ -479,6 +489,30 @@ impl ModelManager {
 
         // Download with progress
         while let Some(chunk) = stream.next().await {
+            // Check if download was cancelled
+            if cancel_flag.load(Ordering::Relaxed) {
+                // Close the file before returning
+                drop(file);
+                info!("Download cancelled for: {}", model_id);
+
+                // Update state to mark as not downloading
+                {
+                    let mut models = self.available_models.lock().unwrap();
+                    if let Some(model) = models.get_mut(model_id) {
+                        model.is_downloading = false;
+                    }
+                }
+
+                // Remove cancel flag
+                {
+                    let mut flags = self.cancel_flags.lock().unwrap();
+                    flags.remove(model_id);
+                }
+
+                // Keep partial file for resume functionality
+                return Ok(());
+            }
+
             let chunk = chunk.map_err(|e| {
                 // Mark as not downloading on error
                 {
@@ -625,6 +659,12 @@ impl ModelManager {
             model_id, model_path
         );
 
+        // Remove cancel flag on successful completion
+        {
+            let mut flags = self.cancel_flags.lock().unwrap();
+            flags.remove(model_id);
+        }
+
         Ok(())
     }
 
@@ -738,15 +778,18 @@ impl ModelManager {
     pub fn cancel_download(&self, model_id: &str) -> Result<()> {
         debug!("ModelManager: cancel_download called for: {}", model_id);
 
-        let _model_info = {
-            let models = self.available_models.lock().unwrap();
-            models.get(model_id).cloned()
-        };
+        // Set the cancellation flag to stop the download loop
+        {
+            let flags = self.cancel_flags.lock().unwrap();
+            if let Some(flag) = flags.get(model_id) {
+                flag.store(true, Ordering::Relaxed);
+                info!("Cancellation flag set for: {}", model_id);
+            } else {
+                warn!("No active download found for: {}", model_id);
+            }
+        }
 
-        let _model_info =
-            _model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
-
-        // Mark as not downloading
+        // Update state immediately for UI responsiveness
         {
             let mut models = self.available_models.lock().unwrap();
             if let Some(model) = models.get_mut(model_id) {
@@ -754,14 +797,10 @@ impl ModelManager {
             }
         }
 
-        // Note: The actual download cancellation would need to be handled
-        // by the download task itself. This just updates the state.
-        // The partial file is kept so the download can be resumed later.
-
         // Update download status to reflect current state
         self.update_download_status()?;
 
-        info!("Download cancelled for: {}", model_id);
+        info!("Download cancellation initiated for: {}", model_id);
         Ok(())
     }
 }

@@ -7,6 +7,7 @@
   },
   "sidebar": {
     "general": "Geral",
+    "models": "Modelos",
     "advanced": "Avançado",
     "postProcessing": "Pós-Processamento",
     "history": "Histórico",
@@ -64,6 +65,7 @@
     "downloadModels": "Baixar Modelos",
     "chooseModel": "Escolher um Modelo",
     "active": "Ativo",
+    "switching": "Trocando...",
     "download": "Baixar",
     "downloadSize": "Tamanho do download",
     "noModelsAvailable": "Nenhum modelo disponível",
@@ -78,9 +80,37 @@
     "modelError": "Erro no Modelo",
     "modelUnloaded": "Modelo Descarregado",
     "noModelDownloadRequired": "Sem Modelo - Download Necessário",
-    "deleteModel": "Excluir {{modelName}}"
+    "deleteModel": "Excluir {{modelName}}",
+    "cancel": "Cancelar",
+    "cancelDownload": "Cancelar download",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Suporta vários idiomas de entrada",
+      "multiLanguage": "Multilíngue",
+      "translation": "Pode traduzir para inglês",
+      "translate": "Traduzir para inglês"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Configurações do {{model}}",
+      "noSettingsNeeded": "Este modelo funciona automaticamente sem necessidade de configuração."
+    },
+    "models": {
+      "title": "Modelos de Transcrição",
+      "description": "Selecione um modelo de transcrição ou baixe modelos adicionais. Diferentes modelos oferecem diferentes níveis de precisão e velocidade.",
+      "downloaded": "Baixados",
+      "available": "Disponíveis para Download",
+      "deleteConfirm": "Tem certeza de que deseja excluir {{modelName}}? Você precisará baixá-lo novamente para usá-lo.",
+      "deleteTitle": "Excluir modelo",
+      "filters": {
+        "all": "Todos",
+        "multiLanguage": "Multi-idioma",
+        "translation": "Tradução",
+        "allLanguages": "Todos os idiomas"
+      },
+      "noModelsMatch": "Nenhum modelo corresponde a este filtro."
+    },
     "general": {
       "title": "Geral",
       "shortcut": {

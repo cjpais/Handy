@@ -81,6 +81,8 @@
     "modelUnloaded": "Model wyładowany",
     "noModelDownloadRequired": "Brak modelu – wymagane pobranie",
     "deleteModel": "Usuń {{modelName}}",
+    "cancel": "Anuluj",
+    "cancelDownload": "Anuluj pobieranie",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Obsługuje wiele języków wejściowych",
@@ -92,14 +94,14 @@
   "settings": {
     "modelSettings": {
       "title": "Ustawienia {{model}}",
-      "noSettingsNeeded": "Ten model działa automatycznie bez konieczności konfiguracji."
+      "noSettingsNeeded": "Ten model działa automatycznie bez potrzeby konfiguracji."
     },
     "models": {
-      "title": "Modele transkrypcji",
+      "title": "Modele Transkrypcji",
       "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
       "downloaded": "Pobrane",
       "available": "Dostępne do pobrania",
-      "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
+      "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go używać.",
       "deleteTitle": "Usuń model",
       "filters": {
         "all": "Wszystkie",
@@ -107,7 +109,7 @@
         "translation": "Tłumaczenie",
         "allLanguages": "Wszystkie języki"
       },
-      "noModelsMatch": "Żadne modele nie pasują do tego filtra."
+      "noModelsMatch": "Żaden model nie pasuje do tego filtra."
     },
     "general": {
       "title": "Ogólne",

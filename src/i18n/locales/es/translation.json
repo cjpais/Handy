@@ -81,6 +81,8 @@
     "modelUnloaded": "Modelo Descargado",
     "noModelDownloadRequired": "Sin Modelo - Descarga Requerida",
     "deleteModel": "Eliminar {{modelName}}",
+    "cancel": "Cancelar",
+    "cancelDownload": "Cancelar descarga",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Soporta múltiples idiomas de entrada",

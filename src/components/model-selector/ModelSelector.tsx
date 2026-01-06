@@ -37,6 +37,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     downloadStats,
     extractingModels,
     downloadModel,
+    cancelDownload,
     selectModel,
     deleteModel,
   } = useModels();
@@ -203,6 +204,20 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     }
   };
 
+  const handleModelCancel = async (modelId: string) => {
+    try {
+      setModelError(null);
+      const success = await cancelDownload(modelId);
+      if (!success) {
+        onError?.("Failed to cancel download");
+      }
+    } catch (err) {
+      const errorMsg = `Failed to cancel: ${err}`;
+      setModelError(errorMsg);
+      onError?.(errorMsg);
+    }
+  };
+
   const handleModelDelete = async (modelId: string) => {
     try {
       await deleteModel(modelId);
@@ -300,6 +315,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
             downloadProgress={downloadProgress}
             onModelSelect={handleModelSelect}
             onModelDownload={handleModelDownload}
+            onModelCancel={handleModelCancel}
             onModelDelete={handleModelDelete}
             onError={onError}
           />

@@ -81,6 +81,8 @@
     "modelUnloaded": "模型已卸载",
     "noModelDownloadRequired": "无模型 - 需要下载",
     "deleteModel": "删除 {{modelName}}",
+    "cancel": "取消",
+    "cancelDownload": "取消下载",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "支持多种输入语言",
@@ -91,15 +93,15 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} 设置",
-      "noSettingsNeeded": "此模型自动运行，无需配置。"
+      "title": "{{model}}设置",
+      "noSettingsNeeded": "此模型无需配置即可自动运行。"
     },
     "models": {
       "title": "转录模型",
-      "description": "选择转录模型或下载其他模型。不同模型提供不同的准确度和速度。",
+      "description": "选择转录模型或下载其他模型。不同的模型提供不同级别的准确性和速度。",
       "downloaded": "已下载",
-      "available": "可下载",
-      "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
+      "available": "可供下载",
+      "deleteConfirm": "您确定要删除{{modelName}}吗？您需要重新下载才能使用它。",
       "deleteTitle": "删除模型",
       "filters": {
         "all": "全部",
@@ -107,7 +109,7 @@
         "translation": "翻译",
         "allLanguages": "所有语言"
       },
-      "noModelsMatch": "没有符合此筛选条件的模型。"
+      "noModelsMatch": "没有模型匹配此过滤器。"
     },
     "general": {
       "title": "通用",

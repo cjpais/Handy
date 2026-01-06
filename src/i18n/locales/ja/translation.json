@@ -65,7 +65,7 @@
     "downloadModels": "モデルをダウンロード",
     "chooseModel": "モデルを選択",
     "active": "アクティブ",
-    "switching": "切替中...",
+    "switching": "切り替え中...",
     "download": "ダウンロード",
     "downloadSize": "ダウンロードサイズ",
     "noModelsAvailable": "利用可能なモデルがありません",
@@ -81,6 +81,8 @@
     "modelUnloaded": "モデルがアンロードされました",
     "noModelDownloadRequired": "モデルなし - ダウンロードが必要",
     "deleteModel": "{{modelName}}を削除",
+    "cancel": "キャンセル",
+    "cancelDownload": "ダウンロードをキャンセル",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "複数の入力言語をサポート",
@@ -91,15 +93,15 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} 設定",
+      "title": "{{model}}設定",
       "noSettingsNeeded": "このモデルは設定不要で自動的に動作します。"
     },
     "models": {
-      "title": "転写モデル",
-      "description": "転写モデルを選択するか、追加のモデルをダウンロードします。異なるモデルは精度と速度のレベルが異なります。",
+      "title": "文字起こしモデル",
+      "description": "文字起こしモデルを選択するか、追加のモデルをダウンロードします。モデルによって精度と速度が異なります。",
       "downloaded": "ダウンロード済み",
       "available": "ダウンロード可能",
-      "deleteConfirm": "{{modelName}}を削除してもよろしいですか？再度使用するにはダウンロードが必要です。",
+      "deleteConfirm": "{{modelName}}を削除してもよろしいですか？使用するには再度ダウンロードする必要があります。",
       "deleteTitle": "モデルを削除",
       "filters": {
         "all": "すべて",
@@ -107,7 +109,7 @@
         "translation": "翻訳",
         "allLanguages": "すべての言語"
       },
-      "noModelsMatch": "このフィルターに一致するモデルがありません。"
+      "noModelsMatch": "このフィルターに一致するモデルはありません。"
     },
     "general": {
       "title": "一般",

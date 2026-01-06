@@ -22,6 +22,7 @@ interface ModelDropdownProps {
   downloadProgress: Map<string, DownloadProgress>;
   onModelSelect: (modelId: string) => void;
   onModelDownload: (modelId: string) => void;
+  onModelCancel: (modelId: string) => Promise<void>;
   onModelDelete: (modelId: string) => Promise<void>;
   onError?: (error: string) => void;
 }
@@ -32,6 +33,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   downloadProgress,
   onModelSelect,
   onModelDownload,
+  onModelCancel,
   onModelDelete,
   onError,
 }) => {
@@ -61,6 +63,18 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
       await onModelDelete(modelId);
     } catch (err) {
       const errorMsg = `Failed to delete model: ${err}`;
+      onError?.(errorMsg);
+    }
+  };
+
+  const handleCancelClick = async (e: React.MouseEvent, modelId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await onModelCancel(modelId);
+    } catch (err) {
+      const errorMsg = `Failed to cancel download: ${err}`;
       onError?.(errorMsg);
     }
   };
@@ -212,10 +226,29 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                       {formatModelSize(Number(model.size_mb))}
                     </div>
                   </div>
-                  <div className="text-xs text-logo-primary tabular-nums">
-                    {isDownloading && progress
-                      ? `${Math.max(0, Math.min(100, Math.round(progress.percentage)))}%`
-                      : t("modelSelector.download")}
+                  <div className="flex flex-col items-end gap-1">
+                    {isDownloading && progress ? (
+                      <>
+                        <span className="text-xs text-logo-primary tabular-nums">
+                          {Math.max(
+                            0,
+                            Math.min(100, Math.round(progress.percentage)),
+                          )}
+                          %
+                        </span>
+                        <button
+                          onClick={(e) => handleCancelClick(e, model.id)}
+                          className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors"
+                          aria-label={t("modelSelector.cancelDownload")}
+                        >
+                          {t("modelSelector.cancel")}
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-text/60">
+                        {t("modelSelector.download")}
+                      </span>
+                    )}
                   </div>
                 </div>
 

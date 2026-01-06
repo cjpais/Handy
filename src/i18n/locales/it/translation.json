@@ -65,7 +65,7 @@
     "downloadModels": "Scarica Modelli",
     "chooseModel": "Scegli un Modello",
     "active": "Attivo",
-    "switching": "Cambio...",
+    "switching": "Cambiamento...",
     "download": "Scarica",
     "downloadSize": "Dimensione download",
     "noModelsAvailable": "Nessun modello disponibile",
@@ -81,6 +81,8 @@
     "modelUnloaded": "Modello Disattivato",
     "noModelDownloadRequired": "Nessun Modello - Download Richiesto",
     "deleteModel": "Elimina {{modelName}}",
+    "cancel": "Annulla",
+    "cancelDownload": "Annulla download",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Supporta più lingue di input",
@@ -91,19 +93,19 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "Impostazioni di {{model}}",
-      "noSettingsNeeded": "Questo modello funziona automaticamente senza bisogno di configurazione."
+      "title": "Impostazioni {{model}}",
+      "noSettingsNeeded": "Questo modello funziona automaticamente senza configurazione necessaria."
     },
     "models": {
       "title": "Modelli di Trascrizione",
-      "description": "Seleziona un modello di trascrizione o scarica modelli aggiuntivi. Diversi modelli offrono diversi livelli di accuratezza e velocità.",
+      "description": "Seleziona un modello di trascrizione o scarica modelli aggiuntivi. Diversi modelli offrono diversi livelli di precisione e velocità.",
       "downloaded": "Scaricati",
       "available": "Disponibili per il Download",
       "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
       "deleteTitle": "Elimina modello",
       "filters": {
         "all": "Tutti",
-        "multiLanguage": "Multilingua",
+        "multiLanguage": "Multi-lingua",
         "translation": "Traduzione",
         "allLanguages": "Tutte le lingue"
       },

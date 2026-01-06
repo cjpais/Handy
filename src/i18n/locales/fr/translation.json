@@ -1,5 +1,4 @@
 {
-  "_comment": "French translation for Handy. Contribute at: https://github.com/cjpais/Handy",
   "tray": {
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
@@ -82,6 +81,8 @@
     "modelUnloaded": "Modèle Déchargé",
     "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
     "deleteModel": "Supprimer {{modelName}}",
+    "cancel": "Annuler",
+    "cancelDownload": "Annuler le téléchargement",
     "downloadSpeed": "{{speed}} Mo/s",
     "capabilities": {
       "languageSelection": "Prend en charge plusieurs langues d'entrée",
@@ -92,19 +93,19 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "Paramètres de {{model}}",
+      "title": "Paramètres {{model}}",
       "noSettingsNeeded": "Ce modèle fonctionne automatiquement sans configuration nécessaire."
     },
     "models": {
       "title": "Modèles de Transcription",
       "description": "Sélectionnez un modèle de transcription ou téléchargez des modèles supplémentaires. Différents modèles offrent différents niveaux de précision et de vitesse.",
       "downloaded": "Téléchargés",
-      "available": "Disponibles au Téléchargement",
-      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
+      "available": "Disponibles au téléchargement",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}}? Vous devrez le télécharger à nouveau pour l'utiliser.",
       "deleteTitle": "Supprimer le modèle",
       "filters": {
         "all": "Tous",
-        "multiLanguage": "Multilingue",
+        "multiLanguage": "Multi-langue",
         "translation": "Traduction",
         "allLanguages": "Toutes les langues"
       },

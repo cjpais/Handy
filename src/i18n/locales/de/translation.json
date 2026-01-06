@@ -81,6 +81,8 @@
     "modelUnloaded": "Modell entladen",
     "noModelDownloadRequired": "Kein Modell - Download erforderlich",
     "deleteModel": "{{modelName}} löschen",
+    "cancel": "Abbrechen",
+    "cancelDownload": "Download abbrechen",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Unterstützt mehrere Eingabesprachen",

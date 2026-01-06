@@ -37,6 +37,7 @@ interface ModelsStore {
   checkFirstRun: () => Promise<boolean>;
   selectModel: (modelId: string) => Promise<boolean>;
   downloadModel: (modelId: string) => Promise<boolean>;
+  cancelDownload: (modelId: string) => Promise<boolean>;
   deleteModel: (modelId: string) => Promise<boolean>;
   getModelInfo: (modelId: string) => ModelInfo | undefined;
   isModelDownloading: (modelId: string) => boolean;
@@ -163,6 +164,45 @@ export const useModelsStore = create<ModelsStore>()(
           next.delete(modelId);
           return { downloadingModels: next };
         });
+        return false;
+      }
+    },
+
+    cancelDownload: async (modelId: string) => {
+      try {
+        set({ error: null });
+        const result = await commands.cancelDownload(modelId);
+
+        if (result.status === "ok") {
+          // Clean up state immediately
+          set((state) => {
+            const newDownloadingModels = new Set(state.downloadingModels);
+            newDownloadingModels.delete(modelId);
+
+            const newDownloadProgress = new Map(state.downloadProgress);
+            newDownloadProgress.delete(modelId);
+
+            const newDownloadStats = new Map(state.downloadStats);
+            newDownloadStats.delete(modelId);
+
+            return {
+              downloadingModels: newDownloadingModels,
+              downloadProgress: newDownloadProgress,
+              downloadStats: newDownloadStats,
+            };
+          });
+
+          // Reload models to update is_downloading flag
+          await get().loadModels();
+
+          return true;
+        } else {
+          set({ error: `Failed to cancel download: ${result.error}` });
+          return false;
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        set({ error: `Failed to cancel download: ${errorMsg}` });
         return false;
       }
     },
