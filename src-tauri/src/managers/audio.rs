@@ -181,9 +181,14 @@ impl AudioRecordingManager {
 
         let start_time = Instant::now();
 
-        // Don't mute immediately - caller will handle muting after audio feedback
+        // If a previous restore failed, retry before starting new session
         let mut did_duck_guard = self.did_duck.lock().unwrap();
-        *did_duck_guard = false;
+        if *did_duck_guard {
+            debug!("Retrying volume restore from previous failed attempt");
+            if volume_control::restore_volume().is_ok() {
+                *did_duck_guard = false;
+            }
+        }
 
         let vad_path = self
             .app_handle
