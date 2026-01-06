@@ -1,9 +1,68 @@
-use log::debug;
+use log::{debug, info, warn};
 use once_cell::sync::Lazy;
+use std::fs;
+use std::io::Write;
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 /// Stores the original volume before ducking was applied
 static ORIGINAL_VOLUME: Lazy<Mutex<Option<f32>>> = Lazy::new(|| Mutex::new(None));
+
+/// Get the path to the volume recovery file
+/// Uses a temp directory location that persists across app restarts
+fn get_recovery_file_path() -> PathBuf {
+    let mut path = std::env::temp_dir();
+    path.push("handy_volume_recovery.txt");
+    path
+}
+
+/// Persist the original volume to disk for crash recovery
+fn persist_volume(volume: f32) {
+    let path = get_recovery_file_path();
+    if let Ok(mut file) = fs::File::create(&path) {
+        let _ = writeln!(file, "{}", volume);
+        debug!("Persisted original volume {} to {:?}", volume, path);
+    }
+}
+
+/// Clear the persisted volume file (called after successful restore)
+fn clear_persisted_volume() {
+    let path = get_recovery_file_path();
+    if path.exists() {
+        let _ = fs::remove_file(&path);
+        debug!("Cleared volume recovery file");
+    }
+}
+
+/// Load persisted volume from disk (if exists)
+fn load_persisted_volume() -> Option<f32> {
+    let path = get_recovery_file_path();
+    if let Ok(contents) = fs::read_to_string(&path) {
+        contents.trim().parse().ok()
+    } else {
+        None
+    }
+}
+
+/// Recover volume on app startup if a previous session crashed while ducking was active.
+/// Call this once during app initialization.
+pub fn recover_volume_on_startup() {
+    if let Some(volume) = load_persisted_volume() {
+        info!(
+            "Found unrestored volume from previous session: {}%. Restoring...",
+            (volume * 100.0) as i32
+        );
+        match set_volume(volume) {
+            Ok(()) => {
+                info!("Successfully restored volume to {}%", (volume * 100.0) as i32);
+                clear_persisted_volume();
+            }
+            Err(e) => {
+                warn!("Failed to restore volume: {}. You may need to manually set your volume to {}%", e, (volume * 100.0) as i32);
+            }
+        }
+    }
+}
 
 /// Get the current system volume
 /// macOS/Windows: returns 0.0 - 1.0 range
@@ -79,6 +138,8 @@ pub fn apply_ducking(ducking_amount: f32) -> Result<(), String> {
     let mut original = ORIGINAL_VOLUME.lock().map_err(|e| e.to_string())?;
     if original.is_none() {
         *original = Some(current_volume);
+        // Persist to disk for crash recovery
+        persist_volume(current_volume);
         debug!("Stored original volume: {}", current_volume);
     }
 
@@ -102,7 +163,12 @@ pub fn restore_volume() -> Result<(), String> {
 
     if let Some(vol) = original.take() {
         debug!("Restoring original volume: {}", vol);
-        set_volume(vol)
+        let result = set_volume(vol);
+        // Clear persisted file on successful restore
+        if result.is_ok() {
+            clear_persisted_volume();
+        }
+        result
     } else {
         debug!("No original volume to restore");
         Ok(())

@@ -378,6 +378,9 @@ pub fn run() {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
 
+            // Recover volume if previous session crashed while ducking was active
+            volume_control::recover_volume_on_startup();
+
             initialize_core_logic(&app_handle);
 
             // Show main window only if not starting hidden
