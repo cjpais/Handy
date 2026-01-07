@@ -8,5 +8,6 @@
     }
   },
   "push_to_talk": true,
+  "replacements": [],
   "selected_language": "auto"
 }

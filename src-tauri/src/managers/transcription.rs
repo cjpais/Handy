@@ -1,4 +1,5 @@
 use crate::audio_toolkit::apply_custom_words;
+use chrono::Local;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
@@ -8,6 +9,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use tauri::{AppHandle, Emitter};
 use transcribe_rs::{
     engines::{
@@ -18,6 +21,139 @@ use transcribe_rs::{
     },
     TranscriptionEngine,
 };
+
+enum MagicTransformation {
+    Lowercase,
+    Uppercase,
+    NoSpace,
+    Capitalize,
+    Run(String),
+}
+
+fn parse_magic_transformations(s: &str) -> (Vec<MagicTransformation>, String) {
+    let mut transformations = Vec::new();
+    let mut clean_s = s.to_string();
+
+    // Handle dynamic content tags
+    if clean_s.contains("[date]") {
+        let now = Local::now();
+        clean_s = clean_s.replace("[date]", &now.format("%Y-%m-%d").to_string());
+    }
+    if clean_s.contains("[time]") {
+        let now = Local::now();
+        clean_s = clean_s.replace("[time]", &now.format("%H:%M").to_string());
+    }
+
+    // Regex to find [run]"command" or [run]'command'
+    if let Ok(re_run) = regex::Regex::new(r#"\[run\]["'](.*?)["']"#) {
+        let mut tags_to_remove = Vec::new();
+        for cap in re_run.captures_iter(&clean_s.clone()) {
+            transformations.push(MagicTransformation::Run(cap[1].to_string()));
+            tags_to_remove.push(cap[0].to_string());
+        }
+        for tag in tags_to_remove {
+            clean_s = clean_s.replace(&tag, "");
+        }
+    }
+    
+    // Regex to find tags like [lowercase]
+    if let Ok(re) = regex::Regex::new(r"\[([a-zA-Z]+)\]") {
+        let mut tags_to_remove = Vec::new();
+        for cap in re.captures_iter(&clean_s.clone()) {
+            match &cap[1] {
+                "lowercase" | "lowcase" => {
+                    transformations.push(MagicTransformation::Lowercase);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                "uppercase" => {
+                    transformations.push(MagicTransformation::Uppercase);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                "nospace" => {
+                    transformations.push(MagicTransformation::NoSpace);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                "capitalize" => {
+                    transformations.push(MagicTransformation::Capitalize);
+                    tags_to_remove.push(cap[0].to_string());
+                },
+                _ => {}
+            }
+        }
+        for tag in tags_to_remove {
+            clean_s = clean_s.replace(&tag, "");
+        }
+    }
+    (transformations, clean_s)
+}
+
+fn apply_transformations(text: &mut String, transformations: &[MagicTransformation]) {
+    let mut should_clear = false;
+    for t in transformations {
+        match t {
+            MagicTransformation::Lowercase => *text = text.to_lowercase(),
+            MagicTransformation::Uppercase => *text = text.to_uppercase(),
+            MagicTransformation::NoSpace => *text = text.replace(" ", ""),
+            MagicTransformation::Capitalize => {
+                let mut result = String::new();
+                let mut capitalize_next = true;
+                for c in text.chars() {
+                    if c.is_whitespace() || c.is_ascii_punctuation() {
+                        capitalize_next = true;
+                        result.push(c);
+                    } else if capitalize_next {
+                        result.push(c.to_uppercase().next().unwrap_or(c));
+                        capitalize_next = false;
+                    } else {
+                        result.push(c);
+                    }
+                }
+                *text = result;
+            }
+            MagicTransformation::Run(cmd_template) => {
+                let text_nospace = text.replace(" ", "");
+                
+                let text_nopunctuation: String = text.chars()
+                    .filter(|c| !c.is_ascii_punctuation() && !['«', '»', '—', '…', '’', '“', '”'].contains(c))
+                    .collect();
+                    
+                let text_nospace_nopunctuation: String = text.chars()
+                    .filter(|c| *c != ' ' && !c.is_ascii_punctuation() && !['«', '»', '—', '…', '’', '“', '”'].contains(c))
+                    .collect();
+
+                let cmd_str = cmd_template
+                    .replace("{text}", text)
+                    .replace("{text_nospace}", &text_nospace)
+                    .replace("{text_nopunctuation}", &text_nopunctuation)
+                    .replace("{text_nospace_nopunctuation}", &text_nospace_nopunctuation);
+
+                info!("Executing magic run command: {}", cmd_str);
+                
+                #[cfg(target_os = "windows")]
+                {
+                    const CREATE_NO_WINDOW: u32 = 0x08000000;
+                    std::process::Command::new("cmd")
+                        .args(["/C", &cmd_str])
+                       // .creation_flags(CREATE_NO_WINDOW)
+                        .spawn()
+                        .ok();
+                }
+                #[cfg(not(target_os = "windows"))]
+                {
+                    std::process::Command::new("sh")
+                        .arg("-c")
+                        .arg(&cmd_str)
+                        .spawn()
+                        .ok();
+                }
+                should_clear = true;
+            }
+        }
+    }
+    if should_clear {
+        *text = String::new();
+    }
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -412,6 +548,249 @@ impl TranscriptionManager {
             result.text
         };
 
+        // Apply replacements
+        let mut replaced_result = corrected_result.trim().to_string();
+        let mut global_transformations = Vec::new();
+
+        if settings.replacements_enabled {
+            for replacement in &settings.replacements {
+                if !replacement.enabled {
+                    continue;
+                }
+
+                let search_pattern = if replacement.is_regex {
+                replacement.search.clone()
+            } else {
+                // Build accent-insensitive regex pattern
+                let mut pattern = String::from("(?i)");
+                for c in replacement.search.chars() {
+                    match c {
+                        'a' | 'A' | 'à' | 'À' | 'á' | 'Á' | 'â' | 'Â' | 'ã' | 'Ã' | 'ä' | 'Ä' | 'å' | 'Å' => pattern.push_str("[aàáâãäå]"),
+                        'e' | 'E' | 'é' | 'É' | 'è' | 'È' | 'ê' | 'Ê' | 'ë' | 'Ë' => pattern.push_str("[eéèêë]"),
+                        'i' | 'I' | 'ì' | 'Ì' | 'í' | 'Í' | 'î' | 'Î' | 'ï' | 'Ï' => pattern.push_str("[iìíîï]"),
+                        'o' | 'O' | 'ò' | 'Ò' | 'ó' | 'Ó' | 'ô' | 'Ô' | 'õ' | 'Õ' | 'ö' | 'Ö' => pattern.push_str("[oòóôõö]"),
+                        'u' | 'U' | 'ù' | 'Ù' | 'ú' | 'Ú' | 'û' | 'Û' | 'ü' | 'Ü' => pattern.push_str("[uùúûü]"),
+                        'y' | 'Y' | 'ý' | 'Ý' | 'ÿ' | 'Ÿ' => pattern.push_str("[yýÿ]"),
+                        'c' | 'C' | 'ç' | 'Ç' => pattern.push_str("[cç]"),
+                        'n' | 'N' | 'ñ' | 'Ñ' => pattern.push_str("[nñ]"),
+                        _ => pattern.push_str(&regex::escape(&c.to_string())),
+                    }
+                }
+                pattern
+            };
+
+            let re = match regex::Regex::new(&search_pattern) {
+                Ok(re) => re,
+                Err(_) => continue, // Skip invalid regex
+            };
+
+            // Check for magic tags
+            let (magic_transformations, clean_replace_with) = parse_magic_transformations(&replacement.replace);
+            let has_magic = !magic_transformations.is_empty();
+
+            // Handle \n in replacement string
+            let replace_with = clean_replace_with.replace("\\n", "\n");
+
+            if replacement.trim_punctuation_before 
+                || replacement.trim_punctuation_after
+                || replacement.trim_spaces_before
+                || replacement.trim_spaces_after
+                || replacement.capitalization_rule != crate::settings::CapitalizationRule::None 
+                || has_magic
+            {
+                let mut new_text = String::new();
+                let mut last_end = 0;
+                
+                // Find all matches
+                let matches: Vec<_> = re.find_iter(&replaced_result).collect();
+                
+                if matches.is_empty() {
+                    continue;
+                }
+
+                // If we have matches and magic transformations, add them to global list
+                if has_magic {
+                    global_transformations.extend(magic_transformations);
+                }
+
+                for mat in matches {
+                    let start = mat.start();
+                    let end = mat.end();
+
+                    // If we've already processed past this match (due to lookahead), skip it
+                    if start < last_end {
+                        continue;
+                    }
+
+                    // 1. Handle text BEFORE the match
+                    let prefix = &replaced_result[last_end..start];
+                    let mut processed_prefix = prefix.to_string();
+                    
+                    if replacement.trim_punctuation_before {
+                        let mut chars: Vec<char> = processed_prefix.chars().collect();
+                        let mut last_non_space = chars.len();
+                        // Skip trailing spaces (only horizontal)
+                        while last_non_space > 0 {
+                            let c = chars[last_non_space - 1];
+                            if c == ' ' || c == '\t' {
+                                last_non_space -= 1;
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        // Check for punctuation
+                        let mut punctuation_end = last_non_space;
+                        while punctuation_end > 0 {
+                            let c = chars[punctuation_end - 1];
+                            // Explicitly stop at newlines
+                            if c == '\n' || c == '\r' {
+                                break;
+                            }
+                            if c.is_ascii_punctuation() || ['«', '»', '—', '…', '’', '“', '”'].contains(&c) {
+                                punctuation_end -= 1;
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        if punctuation_end < last_non_space {
+                            // Found punctuation. Remove it.
+                            // Keep spaces (from last_non_space to end)
+                            let spaces: String = chars[last_non_space..].iter().collect();
+                            chars.truncate(punctuation_end);
+                            chars.extend(spaces.chars());
+                            processed_prefix = chars.into_iter().collect();
+                        }
+                    }
+                    
+                    if replacement.trim_spaces_before {
+                        // Trim trailing horizontal whitespace
+                        processed_prefix = processed_prefix.trim_end_matches(|c| c == ' ' || c == '\t').to_string();
+                    }
+                    
+                    new_text.push_str(&processed_prefix);
+
+                    // 2. Append REPLACEMENT
+                    new_text.push_str(&replace_with);
+
+                    // 3. Handle text AFTER the match
+                    let mut current_pos = end;
+                    
+                    // Handle trim_punctuation_after with lookahead
+                    if replacement.trim_punctuation_after {
+                        let remainder = &replaced_result[current_pos..];
+                        let mut spaces_len = 0;
+                        let mut chars = remainder.chars();
+                        
+                        // Check for spaces (only horizontal, stop at newlines)
+                        while let Some(c) = chars.next() {
+                            if c == ' ' || c == '\t' {
+                                spaces_len += c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        // Check for punctuation (but NOT newlines)
+                        let mut punct_len = 0;
+                        let mut punct_iter = remainder[spaces_len..].chars();
+                        while let Some(c) = punct_iter.next() {
+                            // Skip if it's a newline/carriage return
+                            if c == '\n' || c == '\r' {
+                                break;
+                            }
+                            if c.is_ascii_punctuation() || ['«', '»', '—', '…', '\'', '"', '"'].contains(&c) {
+                                punct_len += c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
+                        
+                        if punct_len > 0 {
+                            // Found punctuation to trim
+                            // If we are NOT trimming spaces, we must preserve the spaces we skipped
+                            if !replacement.trim_spaces_after {
+                                new_text.push_str(&remainder[..spaces_len]);
+                            }
+                            // If we ARE trimming spaces, we effectively drop them by advancing current_pos
+                            
+                            // Advance past spaces and punctuation
+                            current_pos += spaces_len + punct_len;
+                        }
+                    }
+                    
+                    // Handle trim_spaces_after
+                    if replacement.trim_spaces_after {
+                        let remainder = &replaced_result[current_pos..];
+                        let mut spaces_len = 0;
+                        for c in remainder.chars() {
+                            if c == ' ' || c == '\t' {
+                                spaces_len += c.len_utf8();
+                            } else {
+                                break;
+                            }
+                        }
+                        current_pos += spaces_len;
+                    }
+
+                    // 4. Handle CAPITALIZATION
+                    let remainder = &replaced_result[current_pos..];
+                    let mut chars = remainder.char_indices();
+                    
+                    if let Some((_, c)) = chars.next() {
+                        if c.is_whitespace() {
+                            new_text.push(c);
+                            // Look at next char for capitalization
+                            if let Some((_, c2)) = chars.next() {
+                                let char_to_append = match replacement.capitalization_rule {
+                                    crate::settings::CapitalizationRule::ForceUppercase => c2.to_uppercase().to_string(),
+                                    crate::settings::CapitalizationRule::ForceLowercase => c2.to_lowercase().to_string(),
+                                    _ => c2.to_string(),
+                                };
+                                new_text.push_str(&char_to_append);
+                                current_pos += c.len_utf8() + c2.len_utf8();
+                            } else {
+                                current_pos += c.len_utf8();
+                            }
+                        } else {
+                             let char_to_append = match replacement.capitalization_rule {
+                                crate::settings::CapitalizationRule::ForceUppercase => c.to_uppercase().to_string(),
+                                crate::settings::CapitalizationRule::ForceLowercase => c.to_lowercase().to_string(),
+                                _ => c.to_string(),
+                            };
+                            new_text.push_str(&char_to_append);
+                            current_pos += c.len_utf8();
+                        }
+                    }
+                    
+                    last_end = current_pos;
+                }
+                
+                new_text.push_str(&replaced_result[last_end..]);
+                replaced_result = new_text;
+
+            } else {
+                // Simple replacement but case-insensitive
+                // We can use regex replace_all
+                
+                // If we have magic tags, we need to check if a match occurs to trigger them
+                if has_magic {
+                    if re.is_match(&replaced_result) {
+                        global_transformations.extend(magic_transformations);
+                        replaced_result = re.replace_all(&replaced_result, &replace_with).to_string();
+                    }
+                } else {
+                    replaced_result = re.replace_all(&replaced_result, &replace_with).to_string();
+                }
+            }
+        }
+        } // End of if settings.replacements_enabled
+
+        // Apply global transformations
+        apply_transformations(&mut replaced_result, &global_transformations);
+
+
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
             " (translated)"
@@ -424,7 +803,7 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = corrected_result.trim().to_string();
+        let final_result = replaced_result;
 
         if final_result.is_empty() {
             info!("Transcription result is empty");

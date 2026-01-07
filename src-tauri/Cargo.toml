@@ -50,6 +50,7 @@ serde_json = "1"
 rdev = { git = "https://github.com/rustdesk-org/rdev" }
 cpal = "0.16.0"
 anyhow = "1.0.95"
+regex = "1.10.0"
 rubato = "0.16.2"
 hound = "3.5.1"
 log = "0.4.25"
