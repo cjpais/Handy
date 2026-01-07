@@ -318,6 +318,8 @@ pub struct AppSettings {
     pub accent_theme: AccentTheme,
     #[serde(default)]
     pub overlay_theme: OverlayTheme,
+    #[serde(default = "default_overlay_show_icons")]
+    pub overlay_show_icons: bool,
 }
 
 fn default_model() -> String {
@@ -391,6 +393,10 @@ fn default_app_language() -> String {
     tauri_plugin_os::locale()
         .and_then(|l| l.split(['-', '_']).next().map(String::from))
         .unwrap_or_else(|| "en".to_string())
+}
+
+fn default_overlay_show_icons() -> bool {
+    true
 }
 
 fn default_post_process_provider_id() -> String {
@@ -608,6 +614,7 @@ pub fn get_default_settings() -> AppSettings {
         app_language: default_app_language(),
         accent_theme: AccentTheme::default(),
         overlay_theme: OverlayTheme::default(),
+        overlay_show_icons: default_overlay_show_icons(),
     }
 }
 

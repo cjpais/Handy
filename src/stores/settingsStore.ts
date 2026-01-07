@@ -127,6 +127,8 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   accent_theme: (value) => commands.changeAccentThemeSetting(value as string),
   overlay_theme: (value) => commands.changeOverlayThemeSetting(value as string),
+  overlay_show_icons: (value) =>
+    commands.changeOverlayShowIconsSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

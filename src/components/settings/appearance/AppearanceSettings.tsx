@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
+import { ToggleSwitch } from "../../ui/ToggleSwitch";
 import { useSettings } from "../../../hooks/useSettings";
 import {
   AccentTheme,
@@ -22,8 +23,10 @@ export const AppearanceSettings: React.FC = () => {
     (getSetting("accent_theme") as AccentTheme) ?? "pink";
   const selectedOverlayTheme =
     (getSetting("overlay_theme") as OverlayTheme) ?? "pill";
+  const showIcons = (getSetting("overlay_show_icons") as boolean) ?? true;
   const updatingAccent = isUpdating("accent_theme");
   const updatingOverlay = isUpdating("overlay_theme");
+  const updatingShowIcons = isUpdating("overlay_show_icons");
 
   const handleAccentThemeChange = async (themeId: AccentTheme) => {
     if (updatingAccent || themeId === selectedAccentTheme) return;
@@ -40,6 +43,11 @@ export const AppearanceSettings: React.FC = () => {
 
     // Persist to settings
     await updateSetting("overlay_theme", themeId);
+  };
+
+  const handleShowIconsChange = async (enabled: boolean) => {
+    if (updatingShowIcons) return;
+    await updateSetting("overlay_show_icons", enabled);
   };
 
   return (
@@ -95,6 +103,7 @@ export const AppearanceSettings: React.FC = () => {
             <OverlayPreview
               accentTheme={selectedAccentTheme}
               overlayTheme={selectedOverlayTheme}
+              showIcons={showIcons}
               animate={true}
             />
           </div>
@@ -121,6 +130,7 @@ export const AppearanceSettings: React.FC = () => {
                   <OverlayPreview
                     accentTheme={selectedAccentTheme}
                     overlayTheme={theme.id}
+                    showIcons={showIcons}
                     animate={false}
                   />
 
@@ -147,6 +157,19 @@ export const AppearanceSettings: React.FC = () => {
             })}
           </div>
         </div>
+
+        {/* Show Icons Toggle */}
+        <SettingContainer
+          title={t("settings.appearance.showIcons.label")}
+          description={t("settings.appearance.showIcons.description")}
+          grouped={true}
+        >
+          <ToggleSwitch
+            checked={showIcons}
+            onChange={handleShowIconsChange}
+            disabled={updatingShowIcons}
+          />
+        </SettingContainer>
       </SettingsGroup>
     </div>
   );

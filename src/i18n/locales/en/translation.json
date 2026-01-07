@@ -157,6 +157,10 @@
       "overlayTheme": {
         "title": "Overlay Style"
       },
+      "showIcons": {
+        "label": "Show Icons",
+        "description": "Display microphone and cancel icons in the overlay"
+      },
       "overlayThemes": {
         "pill": {
           "name": "Pill",

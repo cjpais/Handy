@@ -675,6 +675,21 @@ pub fn change_overlay_theme_setting(app: AppHandle, theme: String) -> Result<(),
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_show_icons_setting(app: AppHandle, show_icons: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_show_icons = show_icons;
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify overlay of icon visibility change
+    if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("overlay-show-icons-changed", show_icons);
+    }
+
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").

@@ -266,6 +266,7 @@ pub fn run() {
         shortcut::change_update_checks_setting,
         shortcut::change_accent_theme_setting,
         shortcut::change_overlay_theme_setting,
+        shortcut::change_overlay_show_icons_setting,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,
