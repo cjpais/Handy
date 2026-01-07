@@ -10,8 +10,8 @@ use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutBinding;
 use crate::settings::{
-    self, get_settings, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod, SoundTheme,
-    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AccentTheme, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod,
+    SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 use crate::ManagedToggleState;
@@ -620,6 +620,33 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 
     // Refresh the tray menu with the new language
     tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_accent_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match theme.as_str() {
+        "pink" => AccentTheme::Pink,
+        "blue" => AccentTheme::Blue,
+        "green" => AccentTheme::Green,
+        "purple" => AccentTheme::Purple,
+        "orange" => AccentTheme::Orange,
+        "teal" => AccentTheme::Teal,
+        other => {
+            warn!("Invalid accent theme '{}', defaulting to pink", other);
+            AccentTheme::Pink
+        }
+    };
+    settings.accent_theme = parsed;
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify overlay of theme change
+    if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("theme-changed", theme);
+    }
 
     Ok(())
 }

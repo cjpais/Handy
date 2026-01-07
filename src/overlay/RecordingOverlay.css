@@ -86,7 +86,7 @@
 }
 
 .cancel-button:hover {
-  background: #faa2ca33;
+  background: var(--cancel-hover-bg, #faa2ca33);
   transform: scale(1.05);
 }
 

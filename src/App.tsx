@@ -7,6 +7,7 @@ import Onboarding from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { commands } from "@/bindings";
+import { syncThemeFromSettings } from "./theme";
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -22,6 +23,7 @@ function App() {
 
   useEffect(() => {
     checkOnboardingStatus();
+    syncThemeFromSettings();
   }, []);
 
   // Handle keyboard shortcuts for debug mode toggle

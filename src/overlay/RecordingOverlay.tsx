@@ -9,6 +9,11 @@ import {
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
 import { syncLanguageFromSettings } from "@/i18n";
+import {
+  AccentTheme,
+  syncThemeFromSettings,
+  getThemeColors,
+} from "@/theme";
 
 type OverlayState = "recording" | "transcribing";
 
@@ -17,14 +22,23 @@ const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
+  const [currentTheme, setCurrentTheme] = useState<AccentTheme>("pink");
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
 
+  // Get current theme colors
+  const themeColors = getThemeColors(currentTheme);
+
   useEffect(() => {
+    // Load theme on mount
+    syncThemeFromSettings().then(setCurrentTheme);
+
     const setupEventListeners = async () => {
       // Listen for show-overlay event from Rust
       const unlistenShow = await listen("show-overlay", async (event) => {
-        // Sync language from settings each time overlay is shown
+        // Sync language and theme from settings each time overlay is shown
         await syncLanguageFromSettings();
+        const theme = await syncThemeFromSettings();
+        setCurrentTheme(theme);
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
         setIsVisible(true);
@@ -49,11 +63,18 @@ const RecordingOverlay: React.FC = () => {
         setLevels(smoothed.slice(0, 9));
       });
 
+      // Listen for theme change events from main app
+      const unlistenTheme = await listen<string>("theme-changed", (event) => {
+        const theme = event.payload as AccentTheme;
+        setCurrentTheme(theme);
+      });
+
       // Cleanup function
       return () => {
         unlistenShow();
         unlistenHide();
         unlistenLevel();
+        unlistenTheme();
       };
     };
 
@@ -62,9 +83,9 @@ const RecordingOverlay: React.FC = () => {
 
   const getIcon = () => {
     if (state === "recording") {
-      return <MicrophoneIcon />;
+      return <MicrophoneIcon color={themeColors.primary} />;
     } else {
-      return <TranscriptionIcon />;
+      return <TranscriptionIcon color={themeColors.primary} />;
     }
   };
 
@@ -80,9 +101,10 @@ const RecordingOverlay: React.FC = () => {
                 key={i}
                 className="bar"
                 style={{
-                  height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
+                  height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`,
                   transition: "height 60ms ease-out, opacity 120ms ease-out",
-                  opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
+                  opacity: Math.max(0.2, v * 1.7),
+                  background: themeColors.light,
                 }}
               />
             ))}
@@ -100,8 +122,13 @@ const RecordingOverlay: React.FC = () => {
             onClick={() => {
               commands.cancelOperation();
             }}
+            style={
+              {
+                "--cancel-hover-bg": `${themeColors.primary}33`,
+              } as React.CSSProperties
+            }
           >
-            <CancelIcon />
+            <CancelIcon color={themeColors.primary} />
           </div>
         )}
       </div>

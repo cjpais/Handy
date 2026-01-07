@@ -8,6 +8,7 @@
   --color-logo-stroke: #382731;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
+  --color-accent-light: #ffe5ee;
 }
 
 :root {
@@ -15,13 +16,6 @@
   font-size: 15px;
   line-height: 24px;
   font-weight: 400;
-
-  /* Colors - Light Theme */
-  /* --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-logo-primary: #FAA2CA;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6; */
 
   /* Typography settings */
   font-synthesis: none;
@@ -44,13 +38,86 @@
   text-align: center;
 }
 
+/* Theme definitions - Light mode */
+:root[data-theme="pink"],
+:root:not([data-theme]) {
+  --color-background-ui: #da5893;
+  --color-logo-primary: #faa2ca;
+  --color-logo-stroke: #382731;
+  --color-accent-light: #ffe5ee;
+}
+
+:root[data-theme="blue"] {
+  --color-background-ui: #3a7bd5;
+  --color-logo-primary: #7fb8f0;
+  --color-logo-stroke: #1e3a5f;
+  --color-accent-light: #e0f0ff;
+}
+
+:root[data-theme="green"] {
+  --color-background-ui: #3da36d;
+  --color-logo-primary: #7fd4a0;
+  --color-logo-stroke: #1e4a30;
+  --color-accent-light: #e0f5eb;
+}
+
+:root[data-theme="purple"] {
+  --color-background-ui: #7b5ac5;
+  --color-logo-primary: #b89af0;
+  --color-logo-stroke: #3a2860;
+  --color-accent-light: #f0e5ff;
+}
+
+:root[data-theme="orange"] {
+  --color-background-ui: #d58a3a;
+  --color-logo-primary: #f0b87f;
+  --color-logo-stroke: #5f3a1e;
+  --color-accent-light: #fff0e0;
+}
+
+:root[data-theme="teal"] {
+  --color-background-ui: #3da3a3;
+  --color-logo-primary: #7fd4d4;
+  --color-logo-stroke: #1e4a4a;
+  --color-accent-light: #e0f5f5;
+}
+
+/* Dark mode overrides */
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Colors - Dark Theme */
     --color-text: #fbfbfb;
     --color-background: #2c2b29;
+  }
+
+  :root[data-theme="pink"],
+  :root:not([data-theme]) {
     --color-logo-primary: #f28cbb;
     --color-logo-stroke: #fad1ed;
+  }
+
+  :root[data-theme="blue"] {
+    --color-logo-primary: #5a9be0;
+    --color-logo-stroke: #b8d4f0;
+  }
+
+  :root[data-theme="green"] {
+    --color-logo-primary: #5bc48a;
+    --color-logo-stroke: #b8e5c8;
+  }
+
+  :root[data-theme="purple"] {
+    --color-logo-primary: #9a78e0;
+    --color-logo-stroke: #d4c0f0;
+  }
+
+  :root[data-theme="orange"] {
+    --color-logo-primary: #e0a05a;
+    --color-logo-stroke: #f0d4b8;
+  }
+
+  :root[data-theme="teal"] {
+    --color-logo-primary: #5ac4c4;
+    --color-logo-stroke: #b8e5e5;
   }
 }
 

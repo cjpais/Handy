@@ -125,6 +125,7 @@ const settingUpdaters: {
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
+  accent_theme: (value) => commands.changeAccentThemeSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

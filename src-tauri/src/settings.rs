@@ -223,6 +223,27 @@ impl SoundTheme {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum AccentTheme {
+    #[default]
+    Pink,
+    Blue,
+    Green,
+    Purple,
+    Orange,
+    Teal,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum OverlayTheme {
+    #[default]
+    Pill,
+    Minimal,
+    Glassmorphism,
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -293,6 +314,8 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default)]
+    pub accent_theme: AccentTheme,
 }
 
 fn default_model() -> String {
@@ -581,6 +604,7 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        accent_theme: AccentTheme::default(),
     }
 }
 

@@ -7,6 +7,7 @@
   },
   "sidebar": {
     "general": "General",
+    "appearance": "Appearance",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -136,6 +137,22 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      }
+    },
+    "appearance": {
+      "title": "Appearance",
+      "accentColor": {
+        "title": "Accent Color",
+        "description": "Choose an accent color theme for the app",
+        "selectTheme": "Select {{theme}} theme"
+      },
+      "themes": {
+        "pink": "Pink",
+        "blue": "Ocean Blue",
+        "green": "Forest Green",
+        "purple": "Royal Purple",
+        "orange": "Sunset Orange",
+        "teal": "Teal"
       }
     },
     "advanced": {

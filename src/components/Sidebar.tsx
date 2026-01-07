@@ -1,11 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Palette, Sparkles } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
+  AppearanceSettings,
   AdvancedSettings,
   HistorySettings,
   DebugSettings,
@@ -35,6 +36,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.general",
     icon: HandyHand,
     component: GeneralSettings,
+    enabled: () => true,
+  },
+  appearance: {
+    labelKey: "sidebar.appearance",
+    icon: Palette,
+    component: AppearanceSettings,
     enabled: () => true,
   },
   advanced: {
