@@ -51,6 +51,9 @@ finish-args:
   # WebKit rendering fix for sandboxed environments (fixes white screen when opening)
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
 
+  # Ensure bundled ayatana libraries are found at runtime
+  - --env=LD_LIBRARY_PATH=/app/lib:/app/lib64
+
 modules:
   - name: wtype
     buildsystem: meson
@@ -80,7 +83,6 @@ modules:
     cleanup:
       - "*.la"
       - /include
-      - /lib/pkgconfig
       - /libexec
       - /share/doc
       - /share/gtk-doc
@@ -105,7 +107,6 @@ modules:
     buildsystem: cmake-ninja
     cleanup:
       - /include
-      - /lib/pkgconfig
     config-opts:
       - -DENABLE_INTROSPECTION=OFF
     sources:
@@ -119,9 +120,12 @@ modules:
   # libayatana-indicator - required for libayatana-appindicator
   - name: libayatana-indicator
     buildsystem: cmake-ninja
+    build-options:
+      env:
+        PKG_CONFIG_PATH: /app/lib/pkgconfig:/app/lib64/pkgconfig
+      ldflags: -L/app/lib64
     cleanup:
       - /include
-      - /lib/pkgconfig
       - /libexec
       - /share
     sources:
@@ -133,9 +137,12 @@ modules:
   # libayatana-appindicator - system tray support
   - name: libayatana-appindicator
     buildsystem: cmake-ninja
+    build-options:
+      env:
+        PKG_CONFIG_PATH: /app/lib/pkgconfig:/app/lib64/pkgconfig
+      ldflags: -L/app/lib64
     cleanup:
       - /include
-      - /lib/pkgconfig
     config-opts:
       - -DENABLE_BINDINGS_MONO=NO
       - -DENABLE_BINDINGS_VALA=NO
