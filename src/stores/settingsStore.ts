@@ -125,6 +125,8 @@ const settingUpdaters: {
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
+  auto_stop_silence_timeout: (value) =>
+    commands.changeAutoStopSilenceTimeoutSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
