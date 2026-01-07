@@ -169,6 +169,10 @@
         "label": "Bar Count",
         "description": "Number of audio level bars"
       },
+      "barSize": {
+        "label": "Bar Size",
+        "description": "Width of audio level bars"
+      },
       "barColor": {
         "label": "Bar Color",
         "description": "Color of the audio level bars",
@@ -178,6 +182,10 @@
         "cyan": "Cyan",
         "yellow": "Yellow",
         "mint": "Mint"
+      },
+      "soundTheme": {
+        "label": "Sound Theme",
+        "description": "Sound effects for recording start and stop"
       },
       "overlayThemes": {
         "pill": {

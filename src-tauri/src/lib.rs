@@ -269,6 +269,7 @@ pub fn run() {
         shortcut::change_overlay_show_icons_setting,
         shortcut::change_overlay_bars_centered_setting,
         shortcut::change_overlay_bar_count_setting,
+        shortcut::change_overlay_bar_size_setting,
         shortcut::change_overlay_bar_color_setting,
         trigger_update_check,
         commands::cancel_operation,

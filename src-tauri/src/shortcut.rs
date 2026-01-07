@@ -724,6 +724,23 @@ pub fn change_overlay_bar_count_setting(app: AppHandle, count: u32) -> Result<()
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_overlay_bar_size_setting(app: AppHandle, size: u32) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    // Clamp to reasonable range (2-12)
+    let clamped_size = size.clamp(2, 12);
+    settings.overlay_bar_size = clamped_size;
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify overlay
+    if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("overlay-bar-size-changed", clamped_size);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_overlay_bar_color_setting(app: AppHandle, color: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.overlay_bar_color = color.clone();

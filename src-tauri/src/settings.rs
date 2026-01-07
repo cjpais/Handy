@@ -324,6 +324,8 @@ pub struct AppSettings {
     pub overlay_bars_centered: bool,
     #[serde(default = "default_overlay_bar_count")]
     pub overlay_bar_count: u32,
+    #[serde(default = "default_overlay_bar_size")]
+    pub overlay_bar_size: u32,
     #[serde(default = "default_overlay_bar_color")]
     pub overlay_bar_color: String,
 }
@@ -411,6 +413,10 @@ fn default_overlay_bars_centered() -> bool {
 
 fn default_overlay_bar_count() -> u32 {
     9
+}
+
+fn default_overlay_bar_size() -> u32 {
+    6 // bar width in pixels
 }
 
 fn default_overlay_bar_color() -> String {
@@ -635,6 +641,7 @@ pub fn get_default_settings() -> AppSettings {
         overlay_show_icons: default_overlay_show_icons(),
         overlay_bars_centered: default_overlay_bars_centered(),
         overlay_bar_count: default_overlay_bar_count(),
+        overlay_bar_size: default_overlay_bar_size(),
         overlay_bar_color: default_overlay_bar_color(),
     }
 }

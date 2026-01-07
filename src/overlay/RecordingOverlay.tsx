@@ -24,6 +24,7 @@ const RecordingOverlay: React.FC = () => {
   const [showIcons, setShowIcons] = useState(true);
   const [barsCentered, setBarsCentered] = useState(false);
   const [barCount, setBarCount] = useState(9);
+  const [barSize, setBarSize] = useState(6);
   const [barColor, setBarColor] = useState("accent");
   const smoothedLevelsRef = useRef<number[]>(Array(20).fill(0));
 
@@ -33,6 +34,7 @@ const RecordingOverlay: React.FC = () => {
       setShowIcons(result.data.overlay_show_icons ?? true);
       setBarsCentered(result.data.overlay_bars_centered ?? false);
       setBarCount(result.data.overlay_bar_count ?? 9);
+      setBarSize(result.data.overlay_bar_size ?? 6);
       setBarColor(result.data.overlay_bar_color ?? "accent");
     }
   };
@@ -127,6 +129,14 @@ const RecordingOverlay: React.FC = () => {
         }
       );
 
+      // Listen for bar size change events
+      const unlistenBarSize = await listen<number>(
+        "overlay-bar-size-changed",
+        (event) => {
+          setBarSize(event.payload);
+        }
+      );
+
       // Cleanup function
       return () => {
         unlistenShow();
@@ -138,6 +148,7 @@ const RecordingOverlay: React.FC = () => {
         unlistenBarsCentered();
         unlistenBarCount();
         unlistenBarColor();
+        unlistenBarSize();
       };
     };
 
@@ -162,6 +173,7 @@ const RecordingOverlay: React.FC = () => {
         transcribingText={t("overlay.transcribing")}
         barsCentered={barsCentered}
         customBarCount={barCount}
+        customBarSize={barSize}
         customBarColor={barColor}
       />
     </div>

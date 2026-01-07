@@ -1,5 +1,4 @@
-use crate::settings::SoundTheme;
-use crate::settings::{self, AppSettings};
+use crate::settings::{self, AppSettings, SoundTheme};
 use cpal::traits::{DeviceTrait, HostTrait};
 use log::{debug, error, warn};
 use rodio::OutputStreamBuilder;

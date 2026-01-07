@@ -9,6 +9,7 @@ interface OverlayPreviewProps {
   animate?: boolean;
   barsCentered?: boolean;
   barCount?: number;
+  barSize?: number;
   barColor?: string;
 }
 
@@ -26,6 +27,7 @@ export const OverlayPreview: React.FC<OverlayPreviewProps> = ({
   animate = true,
   barsCentered = false,
   barCount,
+  barSize,
   barColor,
 }) => {
   const [levels, setLevels] = useState<number[]>(generateLevels());
@@ -50,6 +52,7 @@ export const OverlayPreview: React.FC<OverlayPreviewProps> = ({
       animate={animate}
       barsCentered={barsCentered}
       customBarCount={barCount}
+      customBarSize={barSize}
       customBarColor={barColor}
     />
   );

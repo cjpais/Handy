@@ -17,6 +17,7 @@ export interface OverlayDisplayProps {
   // Bar customization
   barsCentered?: boolean;
   customBarCount?: number;
+  customBarSize?: number;
   customBarColor?: string; // "accent" uses theme color, or hex color
 }
 
@@ -49,13 +50,15 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
   className = "",
   barsCentered = false,
   customBarCount,
+  customBarSize,
   customBarColor,
 }) => {
   const themeColors = getThemeColors(accentTheme);
   const config = THEME_CONFIG[overlayTheme][scale];
 
-  // Determine actual bar count and color
+  // Determine actual bar properties
   const barCount = customBarCount ?? config.barCount;
+  const barWidth = customBarSize ?? config.barWidth;
   const barColor = customBarColor === "accent" || !customBarColor
     ? themeColors.light
     : customBarColor;
@@ -88,7 +91,7 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
           <AudioBars
             levels={levels}
             barCount={barCount}
-            barWidth={config.barWidth}
+            barWidth={barWidth}
             gap={config.gap}
             maxHeight={config.maxHeight}
             color={barColor}
@@ -163,7 +166,7 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
           <AudioBars
             levels={levels}
             barCount={barCount}
-            barWidth={config.barWidth}
+            barWidth={barWidth}
             gap={config.gap}
             maxHeight={config.maxHeight}
             color={barColor}
@@ -215,7 +218,7 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
           <AudioBars
             levels={levels}
             barCount={barCount}
-            barWidth={config.barWidth}
+            barWidth={barWidth}
             gap={config.gap}
             maxHeight={config.maxHeight}
             color={barColor}

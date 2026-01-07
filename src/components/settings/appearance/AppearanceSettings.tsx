@@ -36,6 +36,7 @@ export const AppearanceSettings: React.FC = () => {
   const showIcons = (getSetting("overlay_show_icons") as boolean) ?? true;
   const barsCentered = (getSetting("overlay_bars_centered") as boolean) ?? false;
   const barCount = (getSetting("overlay_bar_count") as number) ?? 9;
+  const barSize = (getSetting("overlay_bar_size") as number) ?? 6;
   const barColor = (getSetting("overlay_bar_color") as string) ?? "accent";
 
   const updatingAccent = isUpdating("accent_theme");
@@ -43,6 +44,7 @@ export const AppearanceSettings: React.FC = () => {
   const updatingShowIcons = isUpdating("overlay_show_icons");
   const updatingBarsCentered = isUpdating("overlay_bars_centered");
   const updatingBarCount = isUpdating("overlay_bar_count");
+  const updatingBarSize = isUpdating("overlay_bar_size");
   const updatingBarColor = isUpdating("overlay_bar_color");
 
   const handleAccentThemeChange = async (themeId: AccentTheme) => {
@@ -69,6 +71,11 @@ export const AppearanceSettings: React.FC = () => {
   const handleBarCountChange = async (count: number) => {
     if (updatingBarCount) return;
     await updateSetting("overlay_bar_count", count);
+  };
+
+  const handleBarSizeChange = async (size: number) => {
+    if (updatingBarSize) return;
+    await updateSetting("overlay_bar_size", size);
   };
 
   const handleBarColorChange = async (color: string) => {
@@ -133,6 +140,7 @@ export const AppearanceSettings: React.FC = () => {
               animate={true}
               barsCentered={barsCentered}
               barCount={barCount}
+              barSize={barSize}
               barColor={barColor}
             />
           </div>
@@ -232,6 +240,26 @@ export const AppearanceSettings: React.FC = () => {
               className="w-24 accent-logo-primary"
             />
             <span className="text-sm text-mid-gray w-6 text-center">{barCount}</span>
+          </div>
+        </SettingContainer>
+
+        {/* Bar Size Slider */}
+        <SettingContainer
+          title={t("settings.appearance.barSize.label")}
+          description={t("settings.appearance.barSize.description")}
+          grouped={true}
+        >
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={2}
+              max={12}
+              value={barSize}
+              onChange={(e) => handleBarSizeChange(parseInt(e.target.value))}
+              disabled={updatingBarSize}
+              className="w-24 accent-logo-primary"
+            />
+            <span className="text-sm text-mid-gray w-6 text-center">{barSize}</span>
           </div>
         </SettingContainer>
 

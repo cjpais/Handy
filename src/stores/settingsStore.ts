@@ -133,6 +133,8 @@ const settingUpdaters: {
     commands.changeOverlayBarsCenteredSetting(value as boolean),
   overlay_bar_count: (value) =>
     commands.changeOverlayBarCountSetting(value as number),
+  overlay_bar_size: (value) =>
+    commands.changeOverlayBarSizeSetting(value as number),
   overlay_bar_color: (value) =>
     commands.changeOverlayBarColorSetting(value as string),
 };
