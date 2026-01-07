@@ -18,23 +18,30 @@ const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
-  const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
+  const [levels, setLevels] = useState<number[]>(Array(20).fill(0));
   const [currentTheme, setCurrentTheme] = useState<AccentTheme>("pink");
   const [overlayTheme, setOverlayTheme] = useState<OverlayTheme>("pill");
   const [showIcons, setShowIcons] = useState(true);
-  const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
+  const [barsCentered, setBarsCentered] = useState(false);
+  const [barCount, setBarCount] = useState(9);
+  const [barColor, setBarColor] = useState("accent");
+  const smoothedLevelsRef = useRef<number[]>(Array(20).fill(0));
+
+  const loadSettings = async () => {
+    const result = await commands.getAppSettings();
+    if (result.status === "ok") {
+      setShowIcons(result.data.overlay_show_icons ?? true);
+      setBarsCentered(result.data.overlay_bars_centered ?? false);
+      setBarCount(result.data.overlay_bar_count ?? 9);
+      setBarColor(result.data.overlay_bar_color ?? "accent");
+    }
+  };
 
   useEffect(() => {
     // Load themes on mount
     syncThemeFromSettings().then(setCurrentTheme);
     syncOverlayThemeFromSettings().then(setOverlayTheme);
-
-    // Load icon visibility setting
-    commands.getAppSettings().then((result) => {
-      if (result.status === "ok") {
-        setShowIcons(result.data.overlay_show_icons ?? true);
-      }
-    });
+    loadSettings();
 
     const setupEventListeners = async () => {
       // Listen for show-overlay event from Rust
@@ -46,11 +53,8 @@ const RecordingOverlay: React.FC = () => {
         setCurrentTheme(theme);
         setOverlayTheme(oTheme);
 
-        // Reload icon visibility
-        const settingsResult = await commands.getAppSettings();
-        if (settingsResult.status === "ok") {
-          setShowIcons(settingsResult.data.overlay_show_icons ?? true);
-        }
+        // Reload all settings
+        await loadSettings();
 
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
@@ -73,7 +77,7 @@ const RecordingOverlay: React.FC = () => {
         });
 
         smoothedLevelsRef.current = smoothed;
-        setLevels(smoothed.slice(0, 9));
+        setLevels(smoothed);
       });
 
       // Listen for accent theme change events from main app
@@ -99,6 +103,30 @@ const RecordingOverlay: React.FC = () => {
         }
       );
 
+      // Listen for bars centered change events
+      const unlistenBarsCentered = await listen<boolean>(
+        "overlay-bars-centered-changed",
+        (event) => {
+          setBarsCentered(event.payload);
+        }
+      );
+
+      // Listen for bar count change events
+      const unlistenBarCount = await listen<number>(
+        "overlay-bar-count-changed",
+        (event) => {
+          setBarCount(event.payload);
+        }
+      );
+
+      // Listen for bar color change events
+      const unlistenBarColor = await listen<string>(
+        "overlay-bar-color-changed",
+        (event) => {
+          setBarColor(event.payload);
+        }
+      );
+
       // Cleanup function
       return () => {
         unlistenShow();
@@ -107,6 +135,9 @@ const RecordingOverlay: React.FC = () => {
         unlistenTheme();
         unlistenOverlayTheme();
         unlistenShowIcons();
+        unlistenBarsCentered();
+        unlistenBarCount();
+        unlistenBarColor();
       };
     };
 
@@ -129,6 +160,9 @@ const RecordingOverlay: React.FC = () => {
         onCancel={handleCancel}
         animate={true}
         transcribingText={t("overlay.transcribing")}
+        barsCentered={barsCentered}
+        customBarCount={barCount}
+        customBarColor={barColor}
       />
     </div>
   );

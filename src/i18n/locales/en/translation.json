@@ -161,6 +161,24 @@
         "label": "Show Icons",
         "description": "Display microphone and cancel icons in the overlay"
       },
+      "barsCentered": {
+        "label": "Centered Bars",
+        "description": "Bars grow from center instead of bottom"
+      },
+      "barCount": {
+        "label": "Bar Count",
+        "description": "Number of audio level bars"
+      },
+      "barColor": {
+        "label": "Bar Color",
+        "description": "Color of the audio level bars",
+        "accent": "Accent",
+        "white": "White",
+        "red": "Red",
+        "cyan": "Cyan",
+        "yellow": "Yellow",
+        "mint": "Mint"
+      },
       "overlayThemes": {
         "pill": {
           "name": "Pill",

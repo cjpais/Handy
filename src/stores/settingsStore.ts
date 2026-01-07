@@ -129,6 +129,12 @@ const settingUpdaters: {
   overlay_theme: (value) => commands.changeOverlayThemeSetting(value as string),
   overlay_show_icons: (value) =>
     commands.changeOverlayShowIconsSetting(value as boolean),
+  overlay_bars_centered: (value) =>
+    commands.changeOverlayBarsCenteredSetting(value as boolean),
+  overlay_bar_count: (value) =>
+    commands.changeOverlayBarCountSetting(value as number),
+  overlay_bar_color: (value) =>
+    commands.changeOverlayBarColorSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

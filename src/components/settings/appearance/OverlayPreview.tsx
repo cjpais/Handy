@@ -7,11 +7,14 @@ interface OverlayPreviewProps {
   overlayTheme: OverlayTheme;
   showIcons?: boolean;
   animate?: boolean;
+  barsCentered?: boolean;
+  barCount?: number;
+  barColor?: string;
 }
 
 // Simulated audio levels for animation
 const generateLevels = (): number[] => {
-  return Array(9)
+  return Array(20) // Generate enough for any bar count
     .fill(0)
     .map(() => Math.random() * 0.8 + 0.2);
 };
@@ -21,6 +24,9 @@ export const OverlayPreview: React.FC<OverlayPreviewProps> = ({
   overlayTheme,
   showIcons = true,
   animate = true,
+  barsCentered = false,
+  barCount,
+  barColor,
 }) => {
   const [levels, setLevels] = useState<number[]>(generateLevels());
 
@@ -42,6 +48,9 @@ export const OverlayPreview: React.FC<OverlayPreviewProps> = ({
       showIcons={showIcons}
       scale="preview"
       animate={animate}
+      barsCentered={barsCentered}
+      customBarCount={barCount}
+      customBarColor={barColor}
     />
   );
 };

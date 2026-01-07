@@ -690,6 +690,53 @@ pub fn change_overlay_show_icons_setting(app: AppHandle, show_icons: bool) -> Re
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_bars_centered_setting(app: AppHandle, centered: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_bars_centered = centered;
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify overlay
+    if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("overlay-bars-centered-changed", centered);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_bar_count_setting(app: AppHandle, count: u32) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    // Clamp to reasonable range (1-20)
+    let clamped_count = count.clamp(1, 20);
+    settings.overlay_bar_count = clamped_count;
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify overlay
+    if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("overlay-bar-count-changed", clamped_count);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_bar_color_setting(app: AppHandle, color: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.overlay_bar_color = color.clone();
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify overlay
+    if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("overlay-bar-color-changed", color);
+    }
+
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").

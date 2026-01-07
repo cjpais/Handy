@@ -14,6 +14,10 @@ export interface OverlayDisplayProps {
   animate?: boolean;
   transcribingText?: string;
   className?: string;
+  // Bar customization
+  barsCentered?: boolean;
+  customBarCount?: number;
+  customBarColor?: string; // "accent" uses theme color, or hex color
 }
 
 // Configuration for each theme at each scale
@@ -43,9 +47,18 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
   animate = true,
   transcribingText = "Transcribing...",
   className = "",
+  barsCentered = false,
+  customBarCount,
+  customBarColor,
 }) => {
   const themeColors = getThemeColors(accentTheme);
   const config = THEME_CONFIG[overlayTheme][scale];
+
+  // Determine actual bar count and color
+  const barCount = customBarCount ?? config.barCount;
+  const barColor = customBarColor === "accent" || !customBarColor
+    ? themeColors.light
+    : customBarColor;
 
   const Icon = state === "recording" ? MicrophoneIcon : TranscriptionIcon;
 
@@ -74,12 +87,13 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
         {state === "recording" ? (
           <AudioBars
             levels={levels}
-            barCount={config.barCount}
+            barCount={barCount}
             barWidth={config.barWidth}
             gap={config.gap}
             maxHeight={config.maxHeight}
-            color={themeColors.light}
+            color={barColor}
             animate={animate}
+            centered={barsCentered}
           />
         ) : (
           <span
@@ -148,12 +162,13 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
         {state === "recording" ? (
           <AudioBars
             levels={levels}
-            barCount={config.barCount}
+            barCount={barCount}
             barWidth={config.barWidth}
             gap={config.gap}
             maxHeight={config.maxHeight}
-            color={themeColors.light}
+            color={barColor}
             animate={animate}
+            centered={barsCentered}
           />
         ) : (
           <span
@@ -199,12 +214,13 @@ export const OverlayDisplay: React.FC<OverlayDisplayProps> = ({
         {state === "recording" ? (
           <AudioBars
             levels={levels}
-            barCount={config.barCount}
+            barCount={barCount}
             barWidth={config.barWidth}
             gap={config.gap}
             maxHeight={config.maxHeight}
-            color={themeColors.light}
+            color={barColor}
             animate={animate}
+            centered={barsCentered}
           />
         ) : (
           <span
