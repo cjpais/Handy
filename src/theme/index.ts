@@ -1,5 +1,6 @@
 import { commands } from "@/bindings";
 
+// Accent color themes
 export type AccentTheme =
   | "pink"
   | "blue"
@@ -64,6 +65,28 @@ export const THEME_OPTIONS = [
   { id: "teal" as const, nameKey: "settings.appearance.themes.teal" },
 ];
 
+// Overlay visual themes
+export type OverlayTheme = "pill" | "minimal" | "glassmorphism";
+
+export const OVERLAY_THEME_OPTIONS = [
+  {
+    id: "pill" as const,
+    nameKey: "settings.appearance.overlayThemes.pill.name",
+    descriptionKey: "settings.appearance.overlayThemes.pill.description",
+  },
+  {
+    id: "minimal" as const,
+    nameKey: "settings.appearance.overlayThemes.minimal.name",
+    descriptionKey: "settings.appearance.overlayThemes.minimal.description",
+  },
+  {
+    id: "glassmorphism" as const,
+    nameKey: "settings.appearance.overlayThemes.glassmorphism.name",
+    descriptionKey:
+      "settings.appearance.overlayThemes.glassmorphism.description",
+  },
+];
+
 export const applyTheme = (theme: AccentTheme): void => {
   document.documentElement.setAttribute("data-theme", theme);
 };
@@ -80,6 +103,18 @@ export const syncThemeFromSettings = async (): Promise<AccentTheme> => {
     console.warn("Failed to sync theme from settings:", e);
   }
   return "pink";
+};
+
+export const syncOverlayThemeFromSettings = async (): Promise<OverlayTheme> => {
+  try {
+    const result = await commands.getAppSettings();
+    if (result.status === "ok") {
+      return (result.data.overlay_theme as OverlayTheme) || "pill";
+    }
+  } catch (e) {
+    console.warn("Failed to sync overlay theme from settings:", e);
+  }
+  return "pill";
 };
 
 export const getThemeColors = (

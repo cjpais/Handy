@@ -126,6 +126,7 @@ const settingUpdaters: {
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   accent_theme: (value) => commands.changeAccentThemeSetting(value as string),
+  overlay_theme: (value) => commands.changeOverlayThemeSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

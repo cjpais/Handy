@@ -10,8 +10,8 @@ use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::ShortcutBinding;
 use crate::settings::{
-    self, get_settings, AccentTheme, ClipboardHandling, LLMPrompt, OverlayPosition, PasteMethod,
-    SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AccentTheme, ClipboardHandling, LLMPrompt, OverlayPosition, OverlayTheme,
+    PasteMethod, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 use crate::ManagedToggleState;
@@ -646,6 +646,30 @@ pub fn change_accent_theme_setting(app: AppHandle, theme: String) -> Result<(), 
     // Emit event to notify overlay of theme change
     if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
         let _ = overlay_window.emit("theme-changed", theme);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_overlay_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match theme.as_str() {
+        "pill" => OverlayTheme::Pill,
+        "minimal" => OverlayTheme::Minimal,
+        "glassmorphism" => OverlayTheme::Glassmorphism,
+        other => {
+            warn!("Invalid overlay theme '{}', defaulting to pill", other);
+            OverlayTheme::Pill
+        }
+    };
+    settings.overlay_theme = parsed;
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify overlay of theme change
+    if let Some(overlay_window) = app.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("overlay-theme-changed", theme);
     }
 
     Ok(())

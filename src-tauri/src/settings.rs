@@ -316,6 +316,8 @@ pub struct AppSettings {
     pub app_language: String,
     #[serde(default)]
     pub accent_theme: AccentTheme,
+    #[serde(default)]
+    pub overlay_theme: OverlayTheme,
 }
 
 fn default_model() -> String {
@@ -605,6 +607,7 @@ pub fn get_default_settings() -> AppSettings {
         append_trailing_space: false,
         app_language: default_app_language(),
         accent_theme: AccentTheme::default(),
+        overlay_theme: OverlayTheme::default(),
     }
 }
 

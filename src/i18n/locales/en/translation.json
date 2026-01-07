@@ -153,6 +153,23 @@
         "purple": "Royal Purple",
         "orange": "Sunset Orange",
         "teal": "Teal"
+      },
+      "overlayTheme": {
+        "title": "Overlay Style"
+      },
+      "overlayThemes": {
+        "pill": {
+          "name": "Pill",
+          "description": "Classic rounded pill with icon and cancel button"
+        },
+        "minimal": {
+          "name": "Minimal",
+          "description": "Compact bars only, no icons"
+        },
+        "glassmorphism": {
+          "name": "Glass",
+          "description": "Modern frosted glass effect"
+        }
       }
     },
     "advanced": {
