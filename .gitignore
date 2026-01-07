@@ -27,3 +27,10 @@ dist-ssr
 /target/
 recording_*
 .crush/
+
+# Flatpak build artifacts
+flatpak-build/
+flatpak-repo/
+*.flatpak
+src-tauri/flatpak/.flatpak-builder/
+src-tauri/flatpak/handy.deb

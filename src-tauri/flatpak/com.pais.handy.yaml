@@ -1,0 +1,189 @@
+id: com.pais.handy
+
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+
+command: handy
+
+finish-args:
+  - --socket=x11
+  - --socket=wayland
+  - --share=ipc
+  - --env=GDK_BACKEND=x11
+
+  # GPU access for Vulkan (Whisper acceleration)
+  - --device=dri
+
+  # Audio - use PipeWire
+  - --socket=pulseaudio
+  - --filesystem=xdg-run/pipewire-0:ro
+
+  # Tray icon temp directory - needed for libayatana-appindicator to work in Flatpak
+  # The host StatusNotifierWatcher needs to read icon files from this shared location
+  - --filesystem=xdg-run/tray-icon:create
+
+  # Network access for model downloads
+  - --share=network
+
+  # System tray support
+  - --talk-name=org.kde.StatusNotifierWatcher
+
+  # Notifications
+  - --talk-name=org.freedesktop.Notifications
+
+  # Filesystem access for custom sounds (optional)
+  - --filesystem=xdg-config/handy:ro
+
+  # Autostart - needs write access to create autostart desktop file
+  - --filesystem=xdg-config/autostart:create
+
+  # Access to XDG portals for clipboard and settings
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --talk-name=org.freedesktop.portal.Flatpak
+  - --talk-name=org.freedesktop.portal.Settings
+
+  # Read GTK theme to allow dark mode detection
+  - --filesystem=xdg-config/gtk-3.0:ro
+  - --filesystem=xdg-config/gtk-4.0:ro
+  - --filesystem=~/.gtkrc-2.0:ro
+
+  # WebKit rendering fix for sandboxed environments (fixes white screen when opening)
+  - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
+
+modules:
+  - name: wtype
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://github.com/atx/wtype/archive/refs/tags/v0.4.tar.gz
+        sha256: da91786d828b6a6e29b884bc510473939eda052658ebef87d7bdeafa6a8746f9
+
+  # intltool - required for libdbusmenu build
+  # Patch: fixes Perl 5.22+ regex compatibility (unescaped '{' in patterns)
+  - name: intltool
+    cleanup:
+      - "*"
+    sources:
+      - type: archive
+        url: https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz
+        sha256: 67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd
+      - type: patch
+        path: patches/intltool-perl5.26-regex-fixes.patch
+
+  # libdbusmenu - required for libayatana-appindicator
+  # Patch: fixes HAVE_VALGRIND automake conditional when --disable-tests is used
+  - name: libdbusmenu
+    buildsystem: autotools
+    build-options:
+      cflags: -Wno-error
+    cleanup:
+      - "*.la"
+      - /include
+      - /lib/pkgconfig
+      - /libexec
+      - /share/doc
+      - /share/gtk-doc
+    config-opts:
+      - --with-gtk=3
+      - --disable-dumper
+      - --disable-static
+      - --disable-tests
+      - --disable-gtk-doc
+      - --enable-introspection=no
+      - --disable-vala
+    sources:
+      - type: archive
+        url: https://launchpad.net/libdbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
+        sha256: b9cc4a2acd74509435892823607d966d424bd9ad5d0b00938f27240a1bfa878a
+      - type: patch
+        path: patches/0001-Fix-HAVE_VALGRIND-AM_CONDITIONAL.patch
+
+  # ayatana-ido - required for libayatana-appindicator
+  # Patch: adds ENABLE_INTROSPECTION cmake option (not present upstream)
+  - name: ayatana-ido
+    buildsystem: cmake-ninja
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    config-opts:
+      - -DENABLE_INTROSPECTION=OFF
+    sources:
+      - type: git
+        url: https://github.com/AyatanaIndicators/ayatana-ido.git
+        tag: 0.10.4
+        commit: f968079b09e2310fefc3fc307359025f1c74b3eb
+      - type: patch
+        path: patches/0001-Make-introspection-configurable.patch
+
+  # libayatana-indicator - required for libayatana-appindicator
+  - name: libayatana-indicator
+    buildsystem: cmake-ninja
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+      - /libexec
+      - /share
+    sources:
+      - type: git
+        url: https://github.com/AyatanaIndicators/libayatana-indicator.git
+        tag: 0.9.4
+        commit: 611bb384b73fa6311777ba4c41381a06f5b99dad
+
+  # libayatana-appindicator - system tray support
+  - name: libayatana-appindicator
+    buildsystem: cmake-ninja
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    config-opts:
+      - -DENABLE_BINDINGS_MONO=NO
+      - -DENABLE_BINDINGS_VALA=NO
+      - -DENABLE_GTKDOC=NO
+    sources:
+      - type: git
+        url: https://github.com/AyatanaIndicators/libayatana-appindicator.git
+        tag: 0.5.94
+        commit: 31e8bb083b307e1cc96af4874a94707727bd1e79
+
+  - name: handy
+    buildsystem: simple
+
+    sources:
+      # Metainfo file for AppStream
+      - type: file
+        path: com.pais.handy.metainfo.xml
+
+      # The .deb file - for local builds, use a local path
+      # For CI builds, this will be replaced with the actual URL and sha256
+      - type: file
+        path: handy.deb
+        dest-filename: handy.deb
+
+    build-commands:
+      - set -e
+
+      # Extract the deb package
+      - mkdir -p deb-extract
+      - ar -x handy.deb --output deb-extract
+      - tar -C deb-extract -xf deb-extract/data.tar.gz
+
+      # Install binary
+      - install -Dm755 deb-extract/usr/bin/handy /app/bin/handy
+
+      # Install bundled resources (models, sounds, etc.)
+      - mkdir -p /app/lib/Handy
+      - cp -r deb-extract/usr/lib/Handy/. /app/lib/Handy/
+      - find /app/lib/Handy -type f -exec chmod 644 {} \;
+
+      # Install desktop file with correct icon reference
+      - sed -i 's/^Icon=.*/Icon=com.pais.handy/' deb-extract/usr/share/applications/Handy.desktop
+      - install -Dm644 deb-extract/usr/share/applications/Handy.desktop /app/share/applications/com.pais.handy.desktop
+
+      # Install icons
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/32x32/apps/handy.png /app/share/icons/hicolor/32x32/apps/com.pais.handy.png
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/128x128/apps/handy.png /app/share/icons/hicolor/128x128/apps/com.pais.handy.png
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/256x256@2/apps/handy.png /app/share/icons/hicolor/256x256@2/apps/com.pais.handy.png || true
+
+      # Install metainfo
+      - install -Dm644 com.pais.handy.metainfo.xml /app/share/metainfo/com.pais.handy.metainfo.xml
