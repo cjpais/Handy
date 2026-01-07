@@ -263,6 +263,7 @@ pub fn run() {
         shortcut::change_mute_while_recording_setting,
         shortcut::change_append_trailing_space_setting,
         shortcut::change_app_language_setting,
+        shortcut::change_live_transcription_setting,
         shortcut::change_update_checks_setting,
         trigger_update_check,
         commands::cancel_operation,

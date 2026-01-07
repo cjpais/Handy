@@ -113,6 +113,11 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "liveTranscription": {
+        "label": "Live Transcription (Beta)",
+        "description": "Type text in real-time as you speak. May show temporary corrections.",
+        "descriptionDisabled": "Disabled when Post Processing is enabled."
       }
     },
     "sound": {

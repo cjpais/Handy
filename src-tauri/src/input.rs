@@ -121,3 +121,14 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
 
     Ok(())
 }
+
+/// Sends backspace key presses to delete characters.
+/// Used for live transcription to correct previous output.
+pub fn send_backspace(enigo: &mut Enigo, count: usize) -> Result<(), String> {
+    for _ in 0..count {
+        enigo
+            .key(Key::Backspace, enigo::Direction::Click)
+            .map_err(|e| format!("Failed to send backspace: {}", e))?;
+    }
+    Ok(())
+}

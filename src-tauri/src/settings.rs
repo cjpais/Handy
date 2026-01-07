@@ -293,6 +293,8 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default = "default_live_transcription_enabled")]
+    pub live_transcription_enabled: bool,
 }
 
 fn default_model() -> String {
@@ -366,6 +368,10 @@ fn default_app_language() -> String {
     tauri_plugin_os::locale()
         .and_then(|l| l.split(['-', '_']).next().map(String::from))
         .unwrap_or_else(|| "en".to_string())
+}
+
+fn default_live_transcription_enabled() -> bool {
+    false
 }
 
 fn default_post_process_provider_id() -> String {
@@ -581,6 +587,7 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        live_transcription_enabled: default_live_transcription_enabled(),
     }
 }
 

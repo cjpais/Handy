@@ -125,6 +125,8 @@ const settingUpdaters: {
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
+  live_transcription_enabled: (value) =>
+    commands.changeLiveTranscriptionSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

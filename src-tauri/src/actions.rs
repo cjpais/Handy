@@ -1,6 +1,7 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::input::{self, EnigoState};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -9,11 +10,12 @@ use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error};
+use log::{debug, error, info};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::AppHandle;
 use tauri::Manager;
 
@@ -25,6 +27,13 @@ pub trait ShortcutAction: Send + Sync {
 
 // Transcribe Action
 struct TranscribeAction;
+
+/// Static signal to stop the live transcription polling loop
+static LIVE_TRANSCRIPTION_STOP: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
+
+/// Minimum audio length (in samples) before attempting transcription
+/// 16000 samples = 1 second at 16kHz
+const MIN_AUDIO_SAMPLES_FOR_TRANSCRIPTION: usize = 16000;
 
 async fn maybe_post_process_transcription(
     settings: &AppSettings,
@@ -206,6 +215,106 @@ async fn maybe_convert_chinese_variant(
     }
 }
 
+/// Runs the live transcription polling loop.
+/// Periodically fetches new audio chunks, transcribes them, and appends the text.
+fn run_live_transcription_loop(app: AppHandle, stop_signal: Arc<AtomicBool>) {
+    info!("Live transcription loop started");
+    
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    
+    // Track how many samples have already been transcribed
+    let mut last_sample_count: usize = 0;
+    
+    // Poll interval: 2 seconds
+    let poll_interval = Duration::from_secs(2);
+    
+    loop {
+        std::thread::sleep(poll_interval);
+        
+        // Check if we should stop
+        if stop_signal.load(Ordering::SeqCst) {
+            info!("Live transcription loop received stop signal");
+            break;
+        }
+        
+        // Check if still recording
+        if !rm.is_recording() {
+            info!("Live transcription loop: recording stopped");
+            break;
+        }
+        
+        // Get current audio chunk (all accumulated samples)
+        let samples = match rm.get_current_chunk() {
+            Some(s) if s.len() >= MIN_AUDIO_SAMPLES_FOR_TRANSCRIPTION => s,
+            _ => {
+                debug!("Live transcription: not enough audio yet");
+                continue;
+            }
+        };
+        
+        // Only transcribe if we have new samples
+        if samples.len() <= last_sample_count {
+            continue; // No new audio
+        }
+        
+        // Need at least 1 second of new audio to transcribe
+        let new_samples_count = samples.len() - last_sample_count;
+        if new_samples_count < MIN_AUDIO_SAMPLES_FOR_TRANSCRIPTION {
+            debug!("Live transcription: not enough new audio yet ({} samples)", new_samples_count);
+            continue;
+        }
+        
+        // Extract only the new samples
+        let new_samples: Vec<f32> = samples[last_sample_count..].to_vec();
+        debug!("Live transcription: processing {} new samples (total: {})", new_samples.len(), samples.len());
+        
+        // Transcribe only the new audio
+        let transcription = match tm.transcribe(new_samples) {
+            Ok(text) => text.trim().to_string(),
+            Err(e) => {
+                error!("Live transcription error: {}", e);
+                continue;
+            }
+        };
+        
+        if transcription.is_empty() {
+            // Still update sample count even if transcription is empty
+            // to avoid re-transcribing silence
+            last_sample_count = samples.len();
+            continue;
+        }
+        
+        debug!("Live transcription result: '{}'", transcription);
+        
+        // Prepare text to type: add space before if this isn't the first chunk
+        let text_to_type = if last_sample_count == 0 {
+            transcription.clone()
+        } else {
+            format!(" {}", transcription)
+        };
+        
+        // Type the new text on the main thread (append only, no backspacing)
+        let app_clone = app.clone();
+        let app_for_closure = app_clone.clone();
+        let text_to_type_clone = text_to_type.clone();
+        
+        let _ = app_clone.run_on_main_thread(move || {
+            if let Some(enigo_state) = app_for_closure.try_state::<EnigoState>() {
+                let mut enigo = enigo_state.0.lock().unwrap();
+                if let Err(e) = input::paste_text_direct(&mut enigo, &text_to_type_clone) {
+                    error!("Failed to type live text: {}", e);
+                }
+            }
+        });
+        
+        // Update sample count to mark these samples as transcribed
+        last_sample_count = samples.len();
+    }
+    
+    info!("Live transcription loop ended");
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -268,6 +377,17 @@ impl ShortcutAction for TranscribeAction {
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+
+            // If live transcription is enabled, start the polling loop
+            if settings.live_transcription_enabled {
+                LIVE_TRANSCRIPTION_STOP.store(false, Ordering::SeqCst);
+                let app_handle = app.clone();
+                let stop_signal = Arc::clone(&LIVE_TRANSCRIPTION_STOP);
+
+                std::thread::spawn(move || {
+                    run_live_transcription_loop(app_handle, stop_signal);
+                });
+            }
         }
 
         debug!(
@@ -280,8 +400,14 @@ impl ShortcutAction for TranscribeAction {
         // Unregister the cancel shortcut when transcription stops
         shortcut::unregister_cancel_shortcut(app);
 
+        // Signal live transcription loop to stop
+        LIVE_TRANSCRIPTION_STOP.store(true, Ordering::SeqCst);
+
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
+
+        let settings = get_settings(app);
+        let live_mode = settings.live_transcription_enabled;
 
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
@@ -372,26 +498,34 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             });
 
-                            // Paste the final text (either processed or original)
-                            let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
-                                }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+                            // In live mode, text was already typed progressively, so just clean up
+                            // In normal mode, paste the final text
+                            if live_mode {
+                                debug!("Live mode: skipping paste, text was typed progressively");
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
-                            });
+                            } else {
+                                // Paste the final text (either processed or original)
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+                                ah.run_on_main_thread(move || {
+                                    match utils::paste(final_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    }
+                                    // Hide the overlay after transcription is complete
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            }
                         } else {
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);

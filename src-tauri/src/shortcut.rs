@@ -624,6 +624,22 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_live_transcription_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    
+    // Live transcription is mutually exclusive with post-processing
+    if enabled && settings.post_process_enabled {
+        settings.post_process_enabled = false;
+    }
+    
+    settings.live_transcription_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").
