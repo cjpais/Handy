@@ -39,7 +39,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding-top: 2px;
+  padding-top: 0px;
   padding-bottom: 0px;
   height: 24px;
   background: transparent;
@@ -54,7 +54,7 @@
   max-height: 50px;
   border-radius: 10px;
   min-height: 4px;
-  transition: height 80ms linear;
+  transition: height 60ms ease-out, opacity 120ms ease-out;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   backface-visibility: hidden;
