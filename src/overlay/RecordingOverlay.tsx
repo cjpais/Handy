@@ -16,8 +16,8 @@ const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
-  const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
-  const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
+  const [levels, setLevels] = useState<number[]>(Array(25).fill(0));
+  const smoothedLevelsRef = useRef<number[]>(Array(25).fill(0));
 
   useEffect(() => {
     const setupEventListeners = async () => {
@@ -84,8 +84,8 @@ const RecordingOverlay: React.FC = () => {
                 key={i}
                 className="bar"
                 style={{
-                  height: `${Math.min(50, 4 + Math.pow(v, 0.7) * 32)}px`,
-                  opacity: Math.max(0.3, Math.min(1, v * 1.5)),
+                  height: `${Math.min(24, 4 + Math.pow(v * 0.8, 0.6) * 22)}px`,
+                  opacity: Math.max(0.4, Math.min(1, v * 3)),
                 }}
               />
             ))}

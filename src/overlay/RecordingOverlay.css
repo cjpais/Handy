@@ -10,11 +10,6 @@
   opacity: 0;
   transition: opacity 300ms ease-out;
   box-sizing: border-box;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  isolation: isolate;
 }
 
 .overlay-left {
@@ -39,26 +34,17 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding-top: 0px;
-  padding-bottom: 0px;
   height: 24px;
-  background: transparent;
-  isolation: auto;
-  filter: none;
-  contain: layout style;
+  background: transparent !important;
 }
 
 .bar {
   width: 2px;
   background: #ffe5ee;
-  max-height: 50px;
+  max-height: 24px;
   border-radius: 10px;
-  min-height: 4px;
   transition: height 60ms ease-out, opacity 120ms ease-out;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  min-height: 4px;
 }
 
 .recording-overlay.fade-in {
