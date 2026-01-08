@@ -198,30 +198,24 @@ export const AppearanceSettings: React.FC = () => {
         </div>
 
         {/* Show Icons Toggle */}
-        <SettingContainer
-          title={t("settings.appearance.showIcons.label")}
+        <ToggleSwitch
+          label={t("settings.appearance.showIcons.label")}
           description={t("settings.appearance.showIcons.description")}
           grouped={true}
-        >
-          <ToggleSwitch
-            checked={showIcons}
-            onChange={handleShowIconsChange}
-            disabled={updatingShowIcons}
-          />
-        </SettingContainer>
+          checked={showIcons}
+          onChange={handleShowIconsChange}
+          disabled={updatingShowIcons}
+        />
 
         {/* Centered Bars Toggle */}
-        <SettingContainer
-          title={t("settings.appearance.barsCentered.label")}
+        <ToggleSwitch
+          label={t("settings.appearance.barsCentered.label")}
           description={t("settings.appearance.barsCentered.description")}
           grouped={true}
-        >
-          <ToggleSwitch
-            checked={barsCentered}
-            onChange={handleBarsCenteredChange}
-            disabled={updatingBarsCentered}
-          />
-        </SettingContainer>
+          checked={barsCentered}
+          onChange={handleBarsCenteredChange}
+          disabled={updatingBarsCentered}
+        />
 
         {/* Bar Count Slider */}
         <SettingContainer

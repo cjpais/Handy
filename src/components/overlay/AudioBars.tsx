@@ -42,7 +42,7 @@ export const AudioBars: React.FC<AudioBarsProps> = ({
             key={i}
             style={{
               width: `${barWidth}px`,
-              height: `${barHeight}px`,
+              height: centered ? `${maxHeight}px` : `${barHeight}px`,
               background: color,
               borderRadius: "2px",
               transition: animate ? "height 60ms ease-out, opacity 120ms ease-out, transform 60ms ease-out" : "none",
@@ -52,7 +52,6 @@ export const AudioBars: React.FC<AudioBarsProps> = ({
               ...(centered
                 ? {
                     transform: `scaleY(${barHeight / maxHeight})`,
-                    height: `${maxHeight}px`,
                   }
                 : {
                     alignSelf: "flex-end",
