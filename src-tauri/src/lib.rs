@@ -10,6 +10,10 @@ mod helpers;
 mod input;
 pub mod live_coaching;
 mod llm_client;
+mod local_llm;
+mod local_tts;
+pub mod onichan;
+pub mod onichan_models;
 mod managers;
 mod overlay;
 mod settings;
@@ -24,10 +28,14 @@ use tauri_specta::{collect_commands, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use live_coaching::LiveCoachingManager;
+use local_llm::LocalLlmManager;
+use local_tts::LocalTtsManager;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+use onichan::OnichanManager;
+use onichan_models::OnichanModelManager;
 #[cfg(unix)]
 use signal_hook::consts::SIGUSR2;
 #[cfg(unix)]
@@ -138,12 +146,49 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         transcription_manager.clone(),
     ));
 
+    // Initialize Onichan manager
+    let onichan_manager = Arc::new(OnichanManager::new(app_handle));
+
+    // Initialize Onichan model manager
+    let onichan_model_manager = Arc::new(
+        OnichanModelManager::new(app_handle).expect("Failed to initialize onichan model manager"),
+    );
+
+    // Initialize local LLM and TTS managers
+    // The LLM sidecar is bundled with the app to avoid GGML conflicts with whisper-rs
+    // In dev mode, use the debug build path; in prod, use the bundled sidecar
+    let sidecar_path = if cfg!(debug_assertions) {
+        // In dev, the sidecar is built to target/debug/
+        std::env::current_exe()
+            .expect("Failed to get current exe path")
+            .parent()
+            .expect("Failed to get parent dir")
+            .join("llm-sidecar")
+    } else {
+        // In prod, Tauri bundles the sidecar in the resources/bin directory
+        app_handle
+            .path()
+            .resource_dir()
+            .expect("Failed to get resource dir")
+            .join("llm-sidecar")
+    };
+    log::info!("LLM sidecar path: {:?}", sidecar_path);
+    let local_llm_manager = Arc::new(LocalLlmManager::new(sidecar_path));
+    let local_tts_manager = Arc::new(LocalTtsManager::new());
+
+    // Wire up the LLM manager to the Onichan manager for local processing
+    onichan_manager.set_llm_manager(local_llm_manager.clone());
+
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(live_coaching_manager.clone());
+    app_handle.manage(onichan_manager.clone());
+    app_handle.manage(onichan_model_manager.clone());
+    app_handle.manage(local_llm_manager.clone());
+    app_handle.manage(local_tts_manager.clone());
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
@@ -325,6 +370,28 @@ pub fn run() {
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
         commands::reset_app_data,
+        commands::onichan::onichan_enable,
+        commands::onichan::onichan_disable,
+        commands::onichan::onichan_is_active,
+        commands::onichan::onichan_get_mode,
+        commands::onichan::onichan_set_mode,
+        commands::onichan::onichan_process_input,
+        commands::onichan::onichan_speak,
+        commands::onichan::onichan_clear_history,
+        commands::onichan::onichan_get_history,
+        commands::onichan::get_onichan_models,
+        commands::onichan::get_onichan_llm_models,
+        commands::onichan::get_onichan_tts_models,
+        commands::onichan::download_onichan_model,
+        commands::onichan::delete_onichan_model,
+        commands::onichan::load_local_llm,
+        commands::onichan::unload_local_llm,
+        commands::onichan::is_local_llm_loaded,
+        commands::onichan::local_llm_chat,
+        commands::onichan::load_local_tts,
+        commands::onichan::unload_local_tts,
+        commands::onichan::is_local_tts_loaded,
+        commands::onichan::local_tts_speak,
         helpers::clamshell::is_laptop,
         vad_model::is_vad_model_ready,
         vad_model::download_vad_model_if_needed,

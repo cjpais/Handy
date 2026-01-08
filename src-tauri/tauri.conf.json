@@ -40,6 +40,7 @@
     "createUpdaterArtifacts": true,
     "targets": "all",
     "resources": ["resources/**/*"],
+    "externalBin": ["llm-sidecar/llm-sidecar"],
     "license": "MIT",
     "icon": [
       "icons/32x32.png",

@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Mic, Radio } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Sparkles, Mic, Radio, Bot } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -13,6 +13,7 @@ import {
   PostProcessingSettings,
   CoachingSettings,
   LiveSettings,
+  OnichanSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -49,6 +50,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.live",
     icon: Radio,
     component: LiveSettings,
+    enabled: () => true,
+  },
+  onichan: {
+    labelKey: "sidebar.onichan",
+    icon: Bot,
+    component: OnichanSettings,
     enabled: () => true,
   },
   advanced: {

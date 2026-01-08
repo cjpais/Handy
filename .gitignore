@@ -27,3 +27,7 @@ dist-ssr
 /target/
 recording_*
 .crush/
+
+# LLM sidecar build artifacts
+src-tauri/llm-sidecar/target/
+src-tauri/llm-sidecar/llm-sidecar-*

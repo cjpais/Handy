@@ -73,6 +73,13 @@ specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 
+# Local TTS support - placeholder for future Piper ONNX integration
+# ort = { version = "2.0.0-rc.9", default-features = false, features = ["load-dynamic"] }
+# ndarray = "0.16"
+
+# Note: LLM support is provided via a separate sidecar process (llm-sidecar)
+# to avoid GGML symbol conflicts with whisper-rs. See src-tauri/llm-sidecar/
+
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 

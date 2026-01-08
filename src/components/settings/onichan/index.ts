@@ -1,0 +1,1 @@
+export { OnichanSettings } from "./OnichanSettings";

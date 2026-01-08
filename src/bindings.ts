@@ -639,6 +639,112 @@ async resetAppData() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async onichanEnable() : Promise<void> {
+    await TAURI_INVOKE("onichan_enable");
+},
+async onichanDisable() : Promise<void> {
+    await TAURI_INVOKE("onichan_disable");
+},
+async onichanIsActive() : Promise<boolean> {
+    return await TAURI_INVOKE("onichan_is_active");
+},
+async onichanGetMode() : Promise<OnichanMode> {
+    return await TAURI_INVOKE("onichan_get_mode");
+},
+async onichanSetMode(mode: OnichanMode) : Promise<void> {
+    await TAURI_INVOKE("onichan_set_mode", { mode });
+},
+async onichanProcessInput(text: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("onichan_process_input", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async onichanSpeak(text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("onichan_speak", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async onichanClearHistory() : Promise<void> {
+    await TAURI_INVOKE("onichan_clear_history");
+},
+async onichanGetHistory() : Promise<ConversationMessage[]> {
+    return await TAURI_INVOKE("onichan_get_history");
+},
+async getOnichanModels() : Promise<OnichanModelInfo[]> {
+    return await TAURI_INVOKE("get_onichan_models");
+},
+async getOnichanLlmModels() : Promise<OnichanModelInfo[]> {
+    return await TAURI_INVOKE("get_onichan_llm_models");
+},
+async getOnichanTtsModels() : Promise<OnichanModelInfo[]> {
+    return await TAURI_INVOKE("get_onichan_tts_models");
+},
+async downloadOnichanModel(modelId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("download_onichan_model", { modelId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteOnichanModel(modelId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_onichan_model", { modelId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async loadLocalLlm(modelId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("load_local_llm", { modelId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async unloadLocalLlm() : Promise<void> {
+    await TAURI_INVOKE("unload_local_llm");
+},
+async isLocalLlmLoaded() : Promise<boolean> {
+    return await TAURI_INVOKE("is_local_llm_loaded");
+},
+async localLlmChat(systemPrompt: string, userMessage: string, maxTokens: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("local_llm_chat", { systemPrompt, userMessage, maxTokens }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async loadLocalTts(modelId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("load_local_tts", { modelId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async unloadLocalTts() : Promise<void> {
+    await TAURI_INVOKE("unload_local_tts");
+},
+async isLocalTtsLoaded() : Promise<boolean> {
+    return await TAURI_INVOKE("is_local_tts_loaded");
+},
+async localTtsSpeak(text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("local_tts_speak", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Checks if the Mac is a laptop by detecting battery presence
  * 
@@ -686,6 +792,10 @@ export type AppSettings = { bindings: Partial<{ [key in string]: ShortcutBinding
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
+/**
+ * Message in the conversation
+ */
+export type ConversationMessage = { role: string; content: string }
 export type CustomSounds = { start: boolean; stop: boolean }
 export type EngineType = "Whisper" | "Parakeet"
 /**
@@ -714,6 +824,30 @@ export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"
+/**
+ * Mode for Onichan LLM processing
+ */
+export type OnichanMode = "Cloud" | "Local"
+/**
+ * Information about an Onichan model (LLM or TTS)
+ */
+export type OnichanModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; model_type: OnichanModelType; 
+/**
+ * For LLM models: context size
+ */
+context_size: number | null; 
+/**
+ * For TTS models: sample rate
+ */
+sample_rate: number | null; 
+/**
+ * For TTS models: voice name/style
+ */
+voice_name: string | null }
+/**
+ * Type of Onichan model
+ */
+export type OnichanModelType = "Llm" | "Tts"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v"
 export type PostProcessProvider = { id: string; label: string; base_url: string }

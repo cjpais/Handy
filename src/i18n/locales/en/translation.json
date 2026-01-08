@@ -9,6 +9,7 @@
     "general": "General",
     "coaching": "Coaching",
     "live": "Live",
+    "onichan": "Onichan",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -508,6 +509,44 @@
     "instructions": {
       "title": "Ready for Live Coaching",
       "description": "Use your recording shortcut to start. Your speech will be analyzed in real-time for filler words."
+    }
+  },
+  "onichan": {
+    "title": "Onichan Voice Assistant",
+    "enable": "Enable",
+    "disable": "Disable",
+    "status": {
+      "idle": "Ready to listen",
+      "listening": "Listening...",
+      "thinking": "Thinking...",
+      "speaking": "Speaking..."
+    },
+    "instructions": "Use your recording shortcut to speak. Onichan will respond when you stop.",
+    "liveTranscription": "You said",
+    "listeningPlaceholder": "Listening...",
+    "processingPlaceholder": "Processing...",
+    "conversation": "Conversation",
+    "clearHistory": "Clear conversation",
+    "setupTitle": "Voice Assistant",
+    "setupDescription": "Enable Onichan to have voice conversations. Download and load a local LLM model below, or configure a cloud provider in Post Process settings.",
+    "mode": {
+      "label": "Processing Mode",
+      "local": "Local",
+      "cloud": "Cloud",
+      "localWarning": "No local LLM loaded. Download and load a model below to use Local mode.",
+      "cloudInfo": "Uses your configured Post Process API provider. Make sure you have an API key set in Post Process settings."
+    },
+    "models": {
+      "llmTitle": "Language Model (LLM)",
+      "llmDescription": "Download and load a local language model for AI responses.",
+      "ttsTitle": "Text-to-Speech (TTS)",
+      "ttsDescription": "Download and load a local voice for spoken responses.",
+      "ttsNote": "Note: TTS integration is coming soon. Currently responses are not spoken aloud.",
+      "active": "Active",
+      "load": "Load model",
+      "unload": "Unload model",
+      "download": "Download model",
+      "delete": "Delete model"
     }
   }
 }
