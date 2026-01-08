@@ -1,15 +1,20 @@
 .recording-overlay {
-  height: 36px;
+  height: 40px;
   width: 172px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   padding: 6px;
   background: #000000cc;
-  border-radius: 18px;
+  border-radius: 22px;
   opacity: 0;
   transition: opacity 300ms ease-out;
   box-sizing: border-box;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  isolation: isolate;
 }
 
 .overlay-left {
@@ -31,21 +36,29 @@
 
 .bars-container {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
+  padding-top: 2px;
   padding-bottom: 0px;
   height: 24px;
-  overflow: hidden;
+  background: transparent;
+  isolation: auto;
+  filter: none;
+  contain: layout style;
 }
 
 .bar {
-  width: 6px;
+  width: 2px;
   background: #ffe5ee;
-  max-height: 20px;
-  border-radius: 2px;
-  transition: height 80ms linear;
+  max-height: 50px;
+  border-radius: 10px;
   min-height: 4px;
+  transition: height 80ms linear;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .recording-overlay.fade-in {

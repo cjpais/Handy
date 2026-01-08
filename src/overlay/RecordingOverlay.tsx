@@ -46,7 +46,11 @@ const RecordingOverlay: React.FC = () => {
         });
 
         smoothedLevelsRef.current = smoothed;
-        setLevels(smoothed.slice(0, 9));
+
+        // Symmetric mirror effect for Apple-like visualization
+        const half = smoothed.slice(0, 12);
+        const symmetricLevels = [...half.slice().reverse(), ...half];
+        setLevels(symmetricLevels);
       });
 
       // Cleanup function
@@ -80,9 +84,8 @@ const RecordingOverlay: React.FC = () => {
                 key={i}
                 className="bar"
                 style={{
-                  height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
-                  transition: "height 60ms ease-out, opacity 120ms ease-out",
-                  opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
+                  height: `${Math.min(50, 4 + Math.pow(v, 0.7) * 32)}px`,
+                  opacity: Math.max(0.3, Math.min(1, v * 1.5)),
                 }}
               />
             ))}
