@@ -6,6 +6,7 @@ export { HistorySettings } from "./history/HistorySettings";
 export { AboutSettings } from "./about/AboutSettings";
 export { PostProcessingSettings } from "./post-processing/PostProcessingSettings";
 export { CoachingSettings } from "./coaching/CoachingSettings";
+export { CoachSettings } from "./coaching/CoachSettings";
 export { LiveSettings } from "./live/LiveSettings";
 export { OnichanSettings } from "./onichan/OnichanSettings";
 

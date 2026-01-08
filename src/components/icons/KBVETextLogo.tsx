@@ -23,7 +23,7 @@ const KBVETextLogo = ({
         y="50%"
         dominantBaseline="middle"
         textAnchor="middle"
-        className="logo-primary"
+        fill="#67e8f9"
         style={{
           fontSize: "72px",
           fontWeight: 700,

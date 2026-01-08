@@ -325,6 +325,7 @@ pub fn run() {
         shortcut::change_filler_output_mode_setting,
         shortcut::update_custom_filler_words,
         shortcut::change_show_filler_overlay_setting,
+        shortcut::set_active_ui_section,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,

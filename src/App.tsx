@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Toaster } from "sonner";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
@@ -19,6 +19,14 @@ function App() {
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
+
+  // Notify backend of section changes for context-aware shortcuts
+  const handleSectionChange = useCallback((section: SidebarSection) => {
+    setCurrentSection(section);
+    commands.setActiveUiSection(section).catch((err) => {
+      console.error("Failed to set active UI section:", err);
+    });
+  }, []);
 
   useEffect(() => {
     checkOnboardingStatus();
@@ -89,7 +97,7 @@ function App() {
       <div className="flex-1 flex overflow-hidden">
         <Sidebar
           activeSection={currentSection}
-          onSectionChange={setCurrentSection}
+          onSectionChange={handleSectionChange}
         />
         {/* Scrollable content area */}
         <div className="flex-1 flex flex-col overflow-hidden">

@@ -675,6 +675,15 @@ pub fn change_show_filler_overlay_setting(app: AppHandle, enabled: bool) -> Resu
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn set_active_ui_section(app: AppHandle, section: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.active_ui_section = section;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Determine whether a shortcut string contains at least one non-modifier key.
 /// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
 /// modifier-only combos (e.g. "ctrl" or "ctrl+shift").

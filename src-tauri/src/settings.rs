@@ -317,6 +317,9 @@ pub struct AppSettings {
     pub custom_filler_words: Vec<String>,
     #[serde(default = "default_show_filler_overlay")]
     pub show_filler_overlay: bool,
+    // UI state tracking (not persisted, runtime only)
+    #[serde(default = "default_active_ui_section")]
+    pub active_ui_section: String,
 }
 
 fn default_model() -> String {
@@ -375,7 +378,7 @@ fn default_recording_retention_period() -> RecordingRetentionPeriod {
 }
 
 fn default_audio_feedback_volume() -> f32 {
-    1.0
+    0.4
 }
 
 fn default_sound_theme() -> SoundTheme {
@@ -402,6 +405,10 @@ fn default_custom_filler_words() -> Vec<String> {
 
 fn default_show_filler_overlay() -> bool {
     true
+}
+
+fn default_active_ui_section() -> String {
+    "general".to_string()
 }
 
 fn default_post_process_provider_id() -> String {
@@ -621,6 +628,7 @@ pub fn get_default_settings() -> AppSettings {
         filler_output_mode: FillerOutputMode::default(),
         custom_filler_words: default_custom_filler_words(),
         show_filler_overlay: default_show_filler_overlay(),
+        active_ui_section: default_active_ui_section(),
     }
 }
 

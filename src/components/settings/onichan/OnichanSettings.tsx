@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { commands, OnichanModelInfo, OnichanMode } from "@/bindings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { AudioVisualizer } from "../live/AudioVisualizer";
+import { useSettings } from "../../../hooks/useSettings";
 import {
   Bot,
   Mic,
@@ -52,6 +53,7 @@ interface PartialTranscription {
 
 export const OnichanSettings: React.FC = () => {
   const { t } = useTranslation();
+  const { settings } = useSettings();
   const [isEnabled, setIsEnabled] = useState(false);
   const [status, setStatus] = useState<string>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -155,7 +157,9 @@ export const OnichanSettings: React.FC = () => {
     const unlistenTranscription = listen<string>(
       "transcription-result",
       async (event) => {
-        if (isEnabled && event.payload.trim()) {
+        // Only process if Onichan is enabled AND we're on the onichan tab
+        const isOnOnichanTab = settings?.active_ui_section === "onichan";
+        if (isEnabled && isOnOnichanTab && event.payload.trim()) {
           setLiveTranscription(event.payload);
           setIsTranscribing(false);
           const result = await commands.onichanProcessInput(event.payload);
@@ -203,7 +207,7 @@ export const OnichanSettings: React.FC = () => {
       unlistenProgress.then((fn) => fn());
       unlistenComplete.then((fn) => fn());
     };
-  }, [isEnabled]);
+  }, [isEnabled, settings?.active_ui_section]);
 
   const handleToggle = useCallback(async () => {
     if (isEnabled) {

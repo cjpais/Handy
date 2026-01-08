@@ -3,11 +3,14 @@
 @theme {
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
+  --color-background-ui: #0891b2;
+  --color-logo-primary: #22d3ee;
+  --color-logo-secondary: #a855f7;
+  --color-logo-stroke: #1e1b2e;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
+  --color-accent-cyan: #06b6d4;
+  --color-accent-purple: #8b5cf6;
 }
 
 :root {
@@ -16,12 +19,7 @@
   line-height: 24px;
   font-weight: 400;
 
-  /* Colors - Light Theme */
-  /* --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-logo-primary: #FAA2CA;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6; */
+  /* Colors inherited from @theme above */
 
   /* Typography settings */
   font-synthesis: none;
@@ -46,11 +44,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Colors - Dark Theme */
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    /* Colors - Dark Theme (Cyberpunk) */
+    --color-text: #f0f9ff;
+    --color-background: #0c0a1a;
+    --color-logo-primary: #22d3ee;
+    --color-logo-secondary: #c084fc;
+    --color-logo-stroke: #e0f2fe;
+    --color-accent-cyan: #67e8f9;
+    --color-accent-purple: #a78bfa;
   }
 }
 

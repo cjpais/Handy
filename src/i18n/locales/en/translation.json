@@ -7,6 +7,7 @@
   },
   "sidebar": {
     "general": "General",
+    "coach": "Coach",
     "coaching": "Coaching",
     "live": "Live",
     "onichan": "Onichan",
@@ -444,7 +445,8 @@
     "transcribing": "Transcribing..."
   },
   "coaching": {
-    "title": "Speech Coaching",
+    "title": "Settings",
+    "settingsToggle": "Show coaching settings",
     "fillerDetection": {
       "label": "Filler Word Detection",
       "description": "Detect and analyze filler words like 'um', 'uh', 'like' in your speech"
