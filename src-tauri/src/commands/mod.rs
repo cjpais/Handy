@@ -167,3 +167,18 @@ pub fn reset_app_data(app: AppHandle) -> Result<(), String> {
     info!("App data reset complete. App should be restarted.");
     Ok(())
 }
+
+/// Check if Apple Intelligence is available on this device.
+/// Called by the frontend when the user selects Apple Intelligence provider.
+#[specta::specta]
+#[tauri::command]
+pub fn check_apple_intelligence_available() -> bool {
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    {
+        crate::apple_intelligence::check_apple_intelligence_availability()
+    }
+    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+    {
+        false
+    }
+}

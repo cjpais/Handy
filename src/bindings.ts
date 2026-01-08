@@ -375,6 +375,13 @@ async openAppDataDir() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Check if Apple Intelligence is available on this device.
+ * Called by the frontend when the user selects Apple Intelligence provider.
+ */
+async checkAppleIntelligenceAvailable() : Promise<boolean> {
+    return await TAURI_INVOKE("check_apple_intelligence_available");
+},
 async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_models") };

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSettings } from "../../../hooks/useSettings";
-import { useSettingsStore } from "../../../stores/settingsStore";
-import type { PostProcessProvider } from "@/bindings";
+import { commands, type PostProcessProvider } from "@/bindings";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
@@ -12,6 +11,7 @@ type PostProcessProviderState = {
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
   isAppleProvider: boolean;
+  appleIntelligenceUnavailable: boolean;
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
   isBaseUrlUpdating: boolean;
@@ -60,6 +60,8 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   }, [providers, selectedProviderId]);
 
   const isAppleProvider = selectedProvider?.id === APPLE_PROVIDER_ID;
+  const [appleIntelligenceUnavailable, setAppleIntelligenceUnavailable] =
+    useState(false);
 
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
@@ -74,10 +76,23 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   }, [providers]);
 
   const handleProviderSelect = useCallback(
-    (providerId: string) => {
-      if (providerId !== selectedProviderId) {
-        void setPostProcessProvider(providerId);
+    async (providerId: string) => {
+      // Clear error state on any selection attempt (allows dismissing the error)
+      setAppleIntelligenceUnavailable(false);
+
+      if (providerId === selectedProviderId) return;
+
+      // Check Apple Intelligence availability before selecting
+      if (providerId === APPLE_PROVIDER_ID) {
+        const available = await commands.checkAppleIntelligenceAvailable();
+        if (!available) {
+          setAppleIntelligenceUnavailable(true);
+          // Don't return - still set the provider so dropdown shows the selection
+          // The backend gracefully handles unavailable Apple Intelligence
+        }
       }
+
+      void setPostProcessProvider(providerId);
     },
     [selectedProviderId, setPostProcessProvider],
   );
@@ -182,6 +197,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     selectedProvider,
     isCustomProvider,
     isAppleProvider,
+    appleIntelligenceUnavailable,
     baseUrl,
     handleBaseUrlChange,
     isBaseUrlUpdating,

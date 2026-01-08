@@ -241,7 +241,8 @@
         "appleIntelligence": {
           "title": "Apple Intelligence",
           "description": "Runs fully on-device. No API key or network access is required.",
-          "requirements": "Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later. Apple Intelligence must be enabled in System Settings."
+          "requirements": "Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later. Apple Intelligence must be enabled in System Settings.",
+          "unavailable": "Apple Intelligence is not available on this device. Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings."
         },
         "baseUrl": {
           "title": "Base URL",
