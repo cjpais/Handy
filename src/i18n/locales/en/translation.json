@@ -415,6 +415,27 @@
       "online": "{{name}}: Online",
       "offline": "{{name}}: Offline",
       "loading": "{{name}}: Loading..."
+    },
+    "popover": {
+      "status": "Status",
+      "model": "Model",
+      "loaded": "Loaded",
+      "notLoaded": "Not Loaded",
+      "running": "Running",
+      "stopped": "Stopped",
+      "yes": "Yes",
+      "no": "No",
+      "connected": "Connected",
+      "inVoice": "In Voice",
+      "server": "Server",
+      "channel": "Channel",
+      "sidecar": "Sidecar",
+      "embeddingModel": "Embedding Model",
+      "memories": "Memories",
+      "llmDescription": "Local language model for AI responses in Onichan mode.",
+      "ttsDescription": "Text-to-speech engine for voice responses.",
+      "discordDescription": "Discord bot for voice channel integration.",
+      "memoryDescription": "Long-term memory storage for conversation context."
     }
   },
   "common": {
