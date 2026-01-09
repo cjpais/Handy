@@ -391,17 +391,11 @@ impl TranscriptionManager {
                 LoadedEngine::Whisper(whisper_engine) => {
                     // Normalize language code for Whisper
                     // Convert zh-Hans and zh-Hant to zh since Whisper uses ISO 639-1 codes
-                    let whisper_language = if settings.selected_language == "auto" {
-                        None
-                    } else {
-                        let normalized = if settings.selected_language == "zh-Hans"
-                            || settings.selected_language == "zh-Hant"
-                        {
-                            "zh".to_string()
-                        } else {
-                            settings.selected_language.clone()
-                        };
-                        Some(normalized)
+                    let whisper_language = match settings.selected_language.as_str() {
+                        "auto" => None,
+                        "os_input" => crate::input_source::get_language_from_input_source(),
+                        "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
+                        _ => Some(settings.selected_language.clone()),
                     };
 
                     let params = WhisperInferenceParams {

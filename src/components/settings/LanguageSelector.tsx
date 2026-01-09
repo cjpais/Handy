@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
@@ -18,6 +19,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [osInputLang, setOsInputLang] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +48,15 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   }, [isOpen]);
 
+  // Fetch OS input language when "os_input" is selected
+  useEffect(() => {
+    if (selectedLanguage !== "os_input") return;
+    const fetchOsLang = () => invoke<string | null>("get_language_from_os_input").then(setOsInputLang).catch(() => {});
+    fetchOsLang();
+    const interval = setInterval(fetchOsLang, 5000); // Poll every 5s
+    return () => clearInterval(interval);
+  }, [selectedLanguage]);
+
   const filteredLanguages = useMemo(
     () =>
       LANGUAGES.filter((language) =>
@@ -54,9 +65,18 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     [searchQuery],
   );
 
-  const selectedLanguageName =
-    LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
-    t("settings.general.language.auto");
+const selectedLanguageName = useMemo(() => {
+    if (selectedLanguage === "os_input") {
+      const resolved = LANGUAGES.find((l) => l.value === osInputLang)?.label;
+      return resolved
+        ? t("settings.general.language.followOs", { language: resolved })
+        : t("settings.general.language.followOsInput");
+    }
+    return (
+      LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
+      t("settings.general.language.auto")
+    );
+  }, [selectedLanguage, osInputLang, t]);
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);

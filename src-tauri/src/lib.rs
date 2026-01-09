@@ -7,6 +7,7 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
+mod input_source;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -275,6 +276,7 @@ pub fn run() {
         shortcut::get_keyboard_implementation,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
+        shortcut::get_language_from_os_input,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,
@@ -421,7 +423,7 @@ pub fn run() {
             }
             _ => {}
         })
-        .invoke_handler(specta_builder.invoke_handler())
+.invoke_handler(specta_builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
