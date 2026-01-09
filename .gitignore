@@ -31,3 +31,11 @@ recording_*
 # LLM sidecar build artifacts
 src-tauri/llm-sidecar/target/
 src-tauri/llm-sidecar/llm-sidecar-*
+
+# TTS sidecar build artifacts
+src-tauri/tts-sidecar/target/
+src-tauri/tts-sidecar/tts-sidecar-*
+
+# Discord sidecar build artifacts
+src-tauri/discord-sidecar/target/
+src-tauri/discord-sidecar/discord-sidecar-*

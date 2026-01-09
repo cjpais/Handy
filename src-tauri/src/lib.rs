@@ -5,6 +5,8 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod discord;
+pub mod discord_conversation;
 pub mod filler_detector;
 mod helpers;
 mod input;
@@ -13,6 +15,7 @@ mod llm_client;
 mod local_llm;
 mod local_tts;
 pub mod onichan;
+pub mod onichan_conversation;
 pub mod onichan_models;
 mod managers;
 mod overlay;
@@ -26,6 +29,8 @@ mod vad_model;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
+use discord::DiscordManager;
+use discord_conversation::DiscordConversationManager;
 use env_filter::Builder as EnvFilterBuilder;
 use live_coaching::LiveCoachingManager;
 use local_llm::LocalLlmManager;
@@ -155,29 +160,88 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
 
     // Initialize local LLM and TTS managers
-    // The LLM sidecar is bundled with the app to avoid GGML conflicts with whisper-rs
-    // In dev mode, use the debug build path; in prod, use the bundled sidecar
-    let sidecar_path = if cfg!(debug_assertions) {
-        // In dev, the sidecar is built to target/debug/
-        std::env::current_exe()
-            .expect("Failed to get current exe path")
-            .parent()
-            .expect("Failed to get parent dir")
-            .join("llm-sidecar")
+    // The sidecars are bundled with the app to avoid library version conflicts
+    // Get the platform-specific sidecar paths
+    let target_triple = if cfg!(target_os = "macos") {
+        if cfg!(target_arch = "aarch64") {
+            "aarch64-apple-darwin"
+        } else {
+            "x86_64-apple-darwin"
+        }
+    } else if cfg!(target_os = "linux") {
+        if cfg!(target_arch = "aarch64") {
+            "aarch64-unknown-linux-gnu"
+        } else {
+            "x86_64-unknown-linux-gnu"
+        }
+    } else if cfg!(target_os = "windows") {
+        "x86_64-pc-windows-msvc"
     } else {
-        // In prod, Tauri bundles the sidecar in the resources/bin directory
+        "unknown"
+    };
+
+    // In dev mode, sidecars are in src-tauri/<sidecar>/<name>-<target>
+    // In prod, Tauri bundles them in the resources directory
+    let llm_sidecar_path = if cfg!(debug_assertions) {
+        // In dev, look for the sidecar in the llm-sidecar directory
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        manifest_dir.join(format!("llm-sidecar/llm-sidecar-{}", target_triple))
+    } else {
         app_handle
             .path()
             .resource_dir()
             .expect("Failed to get resource dir")
-            .join("llm-sidecar")
+            .join(format!("llm-sidecar-{}", target_triple))
     };
-    log::info!("LLM sidecar path: {:?}", sidecar_path);
-    let local_llm_manager = Arc::new(LocalLlmManager::new(sidecar_path));
-    let local_tts_manager = Arc::new(LocalTtsManager::new());
+    log::info!("LLM sidecar path: {:?}", llm_sidecar_path);
+    let local_llm_manager = Arc::new(LocalLlmManager::new(llm_sidecar_path));
 
-    // Wire up the LLM manager to the Onichan manager for local processing
+    // TTS sidecar path - similar pattern
+    let tts_sidecar_path = if cfg!(debug_assertions) {
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        manifest_dir.join(format!("tts-sidecar/tts-sidecar-{}", target_triple))
+    } else {
+        app_handle
+            .path()
+            .resource_dir()
+            .expect("Failed to get resource dir")
+            .join(format!("tts-sidecar-{}", target_triple))
+    };
+    log::info!("TTS sidecar path: {:?}", tts_sidecar_path);
+    let local_tts_manager = Arc::new(LocalTtsManager::new(tts_sidecar_path));
+
+    // Discord sidecar path
+    let discord_sidecar_path = if cfg!(debug_assertions) {
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        manifest_dir.join(format!("discord-sidecar/discord-sidecar-{}", target_triple))
+    } else {
+        app_handle
+            .path()
+            .resource_dir()
+            .expect("Failed to get resource dir")
+            .join(format!("discord-sidecar-{}", target_triple))
+    };
+    log::info!("Discord sidecar path: {:?}", discord_sidecar_path);
+    let discord_manager = Arc::new(DiscordManager::new(discord_sidecar_path));
+
+    // Wire up the LLM and TTS managers to the Onichan manager for local processing
     onichan_manager.set_llm_manager(local_llm_manager.clone());
+    onichan_manager.set_tts_manager(local_tts_manager.clone());
+
+    // Initialize Onichan conversation manager for continuous listening mode
+    let onichan_conversation_manager = Arc::new(onichan_conversation::OnichanConversationManager::new(
+        app_handle,
+        transcription_manager.clone(),
+        onichan_manager.clone(),
+    ));
+
+    // Initialize Discord conversation manager for Discord voice integration
+    let discord_conversation_manager = Arc::new(DiscordConversationManager::new(
+        app_handle,
+        transcription_manager.clone(),
+        onichan_manager.clone(),
+        discord_manager.clone(),
+    ));
 
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
@@ -186,9 +250,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(history_manager.clone());
     app_handle.manage(live_coaching_manager.clone());
     app_handle.manage(onichan_manager.clone());
+    app_handle.manage(onichan_conversation_manager.clone());
     app_handle.manage(onichan_model_manager.clone());
     app_handle.manage(local_llm_manager.clone());
     app_handle.manage(local_tts_manager.clone());
+    app_handle.manage(discord_manager.clone());
+    app_handle.manage(discord_conversation_manager.clone());
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
@@ -326,6 +393,7 @@ pub fn run() {
         shortcut::update_custom_filler_words,
         shortcut::change_show_filler_overlay_setting,
         shortcut::set_active_ui_section,
+        shortcut::change_onichan_silence_threshold_setting,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,
@@ -394,6 +462,23 @@ pub fn run() {
         commands::onichan::unload_local_tts,
         commands::onichan::is_local_tts_loaded,
         commands::onichan::local_tts_speak,
+        commands::onichan::onichan_start_conversation,
+        commands::onichan::onichan_stop_conversation,
+        commands::onichan::onichan_is_conversation_running,
+        commands::discord::discord_has_token,
+        commands::discord::discord_get_token,
+        commands::discord::discord_set_token,
+        commands::discord::discord_clear_token,
+        commands::discord::discord_connect_with_stored_token,
+        commands::discord::discord_get_status,
+        commands::discord::discord_get_guilds,
+        commands::discord::discord_get_channels,
+        commands::discord::discord_connect,
+        commands::discord::discord_disconnect,
+        commands::discord::discord_speak,
+        commands::discord::discord_start_conversation,
+        commands::discord::discord_stop_conversation,
+        commands::discord::discord_is_conversation_running,
         helpers::clamshell::is_laptop,
         vad_model::is_vad_model_ready,
         vad_model::download_vad_model_if_needed,

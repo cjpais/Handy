@@ -1,0 +1,42 @@
+[package]
+name = "discord-sidecar"
+version = "0.1.0"
+edition = "2021"
+description = "Discord bot sidecar for KBVE voice coaching"
+
+[dependencies]
+# Serenity for Discord API
+serenity = { version = "0.12", default-features = false, features = [
+    "client",
+    "gateway",
+    "model",
+    "cache",
+    "voice",
+    "rustls_backend"
+] }
+
+# Songbird for voice - the key library for Discord voice
+# default-features includes "driver" which pulls in audiopus for Opus codec
+# "receive" is needed for receiving voice packets from other users
+songbird = { version = "0.5", default-features = true, features = ["builtin-queue", "receive", "serenity"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full", "rt-multi-thread", "macros", "sync"] }
+
+# Serialization for IPC
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Async utilities
+futures = "0.3"
+async-trait = "0.1"
+
+# For audio processing
+byteorder = "1.5"
+base64 = "0.22"
+symphonia = { version = "0.5", features = ["all"] }
+symphonia-core = "0.5"

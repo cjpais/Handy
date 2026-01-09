@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod discord;
 pub mod history;
 pub mod models;
 pub mod onichan;

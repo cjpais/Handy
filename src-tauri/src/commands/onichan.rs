@@ -1,6 +1,7 @@
 use crate::local_llm::LocalLlmManager;
 use crate::local_tts::LocalTtsManager;
 use crate::onichan::{ConversationMessage, OnichanManager, OnichanMode};
+use crate::onichan_conversation::OnichanConversationManager;
 use crate::onichan_models::{OnichanModelInfo, OnichanModelManager};
 use crate::settings::get_settings;
 use std::sync::Arc;
@@ -194,5 +195,33 @@ pub fn local_tts_speak(
 ) -> Result<(), String> {
     let settings = get_settings(&app);
     let volume = settings.audio_feedback_volume;
+    // Set the output device from settings before speaking
+    tts_manager.set_output_device(settings.selected_output_device.clone());
     tts_manager.speak(&text, volume)
+}
+
+// Conversation mode commands
+
+#[tauri::command]
+#[specta::specta]
+pub fn onichan_start_conversation(
+    conversation_manager: State<'_, Arc<OnichanConversationManager>>,
+) -> Result<(), String> {
+    conversation_manager.start()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn onichan_stop_conversation(
+    conversation_manager: State<'_, Arc<OnichanConversationManager>>,
+) {
+    conversation_manager.stop();
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn onichan_is_conversation_running(
+    conversation_manager: State<'_, Arc<OnichanConversationManager>>,
+) -> bool {
+    conversation_manager.is_running()
 }

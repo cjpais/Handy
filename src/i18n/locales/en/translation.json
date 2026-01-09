@@ -11,6 +11,7 @@
     "coaching": "Coaching",
     "live": "Live",
     "onichan": "Onichan",
+    "discord": "Discord",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -525,6 +526,21 @@
       "speaking": "Speaking..."
     },
     "instructions": "Use your recording shortcut to speak. Onichan will respond when you stop.",
+    "instructionsContinuous": "Just start speaking. Onichan is listening and will respond when you pause.",
+    "continuousListening": "Continuous listening active - just start talking",
+    "silenceThreshold": {
+      "label": "Pause Duration",
+      "description": "Time to wait before responding",
+      "min": "0.5s",
+      "max": "5s",
+      "value": "{{value}}s"
+    },
+    "volume": {
+      "label": "TTS Volume",
+      "description": "Speech output volume",
+      "min": "0%",
+      "max": "100%"
+    },
     "liveTranscription": "You said",
     "listeningPlaceholder": "Listening...",
     "processingPlaceholder": "Processing...",
@@ -536,20 +552,115 @@
       "label": "Processing Mode",
       "local": "Local",
       "cloud": "Cloud",
-      "localWarning": "No local LLM loaded. Download and load a model below to use Local mode.",
+      "localWarning": "Load a Language Model below to enable Local mode. TTS uses your system voices automatically.",
       "cloudInfo": "Uses your configured Post Process API provider. Make sure you have an API key set in Post Process settings."
     },
     "models": {
       "llmTitle": "Language Model (LLM)",
       "llmDescription": "Download and load a local language model for AI responses.",
       "ttsTitle": "Text-to-Speech (TTS)",
-      "ttsDescription": "Download and load a local voice for spoken responses.",
-      "ttsNote": "Note: TTS integration is coming soon. Currently responses are not spoken aloud.",
+      "ttsDescription": "Select a voice for spoken responses. In Local mode, uses your system's built-in voices.",
+      "ttsNote": "In Local mode, voices are mapped to system TTS (macOS say, Windows SAPI). In Cloud mode, uses OpenAI TTS.",
       "active": "Active",
+      "available": "Available",
+      "notDownloaded": "Download",
       "load": "Load model",
       "unload": "Unload model",
+      "unloadButton": "Unload",
       "download": "Download model",
-      "delete": "Delete model"
+      "downloadButton": "Download",
+      "delete": "Delete model",
+      "clickToLoad": "Click to load",
+      "loading": "Loading...",
+      "loadingTooltip": "Loading model into memory, this may take a moment"
+    },
+    "tooltips": {
+      "enableDisabled": "Load a Language Model below before enabling Local mode",
+      "enableReady": "Click to enable voice assistant",
+      "disableActive": "Click to disable voice assistant",
+      "modeLocal": "Process locally using downloaded models. No internet required.",
+      "modeCloud": "Process using cloud API. Requires API key in Post Process settings."
+    }
+  },
+  "discord": {
+    "title": "Discord Bot",
+    "botConfiguration": "Bot Configuration",
+    "description": "Connect KBVE to your Discord server to use voice coaching in voice channels.",
+    "botToken": {
+      "label": "Bot Token",
+      "placeholder": "Enter your Discord bot token",
+      "save": "Save",
+      "clear": "Clear",
+      "saved": "Token saved securely",
+      "hint": "Get your bot token from the Discord Developer Portal",
+      "securityNote": "Your token is stored securely and never displayed in full"
+    },
+    "status": {
+      "connected": "Connected to voice channel",
+      "disconnected": "Not connected",
+      "connecting": "Connecting to Discord...",
+      "fetchingServers": "Fetching servers...",
+      "waitingForServers": "Waiting for server list (attempt {{attempt}}/{{max}})...",
+      "noServersFound": "No servers found. Make sure the bot is in at least one server.",
+      "botOnline": "Bot is online",
+      "botOffline": "Bot is offline - click refresh or reconnect"
+    },
+    "connection": {
+      "title": "Voice Channel"
+    },
+    "guild": {
+      "label": "Server",
+      "placeholder": "Select a server...",
+      "loading": "Loading servers...",
+      "refresh": "Refresh server list",
+      "noServersHint": "No servers found. Click refresh or make sure the bot has been invited to your server."
+    },
+    "channel": {
+      "label": "Voice Channel",
+      "placeholder": "Select a voice channel..."
+    },
+    "connect": "Connect to Voice",
+    "connecting": "Connecting...",
+    "reconnect": "Reconnect",
+    "disconnect": "Disconnect",
+    "controls": {
+      "title": "Voice Controls",
+      "description": "You're connected to Discord voice. KBVE will listen and provide coaching feedback."
+    },
+    "setup": {
+      "title": "Discord Integration",
+      "description": "Set up a Discord bot to use voice coaching in voice channels.",
+      "step1": "Go to Discord Developer Portal and create a new application",
+      "step2": "Create a bot and copy the bot token",
+      "step3": "Invite the bot to your server with Voice permissions",
+      "step4": "Paste the bot token above to get started"
+    },
+    "errors": {
+      "tokenRequired": "Bot token is required",
+      "selectChannel": "Please select a server and voice channel"
+    },
+    "models": {
+      "llmTitle": "Language Model (LLM)",
+      "llmDescription": "Select a language model for generating responses in Discord voice chat.",
+      "llmRequired": "Load a language model to enable AI responses in voice chat.",
+      "ttsTitle": "Text-to-Speech (TTS)",
+      "ttsDescription": "Select a TTS model for speaking responses in Discord voice chat.",
+      "ttsRequired": "Load a TTS model to enable voice responses."
+    },
+    "conversation": {
+      "title": "Voice Assistant",
+      "label": "Discord Conversation Mode",
+      "description": "Enable continuous listening in Discord voice. The bot will transcribe what users say, generate AI responses, and speak back to the channel.",
+      "start": "Start Listening",
+      "stop": "Stop Listening",
+      "hint": "Make sure you have a transcription model and TTS loaded. The bot will respond to anyone speaking in the voice channel.",
+      "status": {
+        "active": "Listening for voice...",
+        "listening": "Listening for speech...",
+        "transcribing": "Transcribing...",
+        "thinking": "Generating response...",
+        "speaking": "Speaking response..."
+      }
     }
   }
 }

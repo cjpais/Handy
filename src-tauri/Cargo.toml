@@ -72,13 +72,13 @@ ferrous-opencc = "0.2.3"
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
+base64 = "0.22"
 
-# Local TTS support - placeholder for future Piper ONNX integration
-# ort = { version = "2.0.0-rc.9", default-features = false, features = ["load-dynamic"] }
-# ndarray = "0.16"
-
-# Note: LLM support is provided via a separate sidecar process (llm-sidecar)
-# to avoid GGML symbol conflicts with whisper-rs. See src-tauri/llm-sidecar/
+# Note: LLM and TTS support are provided via separate sidecar processes
+# to avoid library version conflicts:
+# - llm-sidecar: Runs llama.cpp to avoid GGML symbol conflicts with whisper-rs
+# - tts-sidecar: Runs piper-rs to avoid ort version conflicts with vad-rs
+# See src-tauri/llm-sidecar/ and src-tauri/tts-sidecar/
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"

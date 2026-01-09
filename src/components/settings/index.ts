@@ -9,6 +9,7 @@ export { CoachingSettings } from "./coaching/CoachingSettings";
 export { CoachSettings } from "./coaching/CoachSettings";
 export { LiveSettings } from "./live/LiveSettings";
 export { OnichanSettings } from "./onichan/OnichanSettings";
+export { DiscordSettings } from "./discord/DiscordSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";

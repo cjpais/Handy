@@ -320,6 +320,9 @@ pub struct AppSettings {
     // UI state tracking (not persisted, runtime only)
     #[serde(default = "default_active_ui_section")]
     pub active_ui_section: String,
+    // Onichan conversation settings
+    #[serde(default = "default_onichan_silence_threshold")]
+    pub onichan_silence_threshold: u64,
 }
 
 fn default_model() -> String {
@@ -409,6 +412,10 @@ fn default_show_filler_overlay() -> bool {
 
 fn default_active_ui_section() -> String {
     "general".to_string()
+}
+
+fn default_onichan_silence_threshold() -> u64 {
+    1500 // 1.5 seconds in milliseconds
 }
 
 fn default_post_process_provider_id() -> String {
@@ -629,6 +636,7 @@ pub fn get_default_settings() -> AppSettings {
         custom_filler_words: default_custom_filler_words(),
         show_filler_overlay: default_show_filler_overlay(),
         active_ui_section: default_active_ui_section(),
+        onichan_silence_threshold: default_onichan_silence_threshold(),
     }
 }
 

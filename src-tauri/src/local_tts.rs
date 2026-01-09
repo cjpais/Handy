@@ -1,246 +1,401 @@
-use log::{debug, info, warn};
-use rodio::OutputStreamBuilder;
+//! Local TTS Manager - Communicates with TTS sidecar process
+//!
+//! The TTS runs in a separate process to avoid ort version conflicts with vad-rs.
+//! Communication is via JSON over stdin/stdout pipes.
+
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::io::Cursor;
-use std::path::Path;
+use std::io::{BufRead, BufReader, Write};
+use std::path::{Path, PathBuf};
+use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
-/// Piper TTS model configuration
+/// TTS voice configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PiperConfig {
-    pub audio: AudioConfig,
-    pub phoneme_type: Option<String>,
-    pub phoneme_id_map: Option<std::collections::HashMap<String, Vec<i64>>>,
+pub struct TtsVoiceConfig {
+    pub name: String,
+    pub language: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AudioConfig {
-    pub sample_rate: u32,
-}
-
-impl Default for PiperConfig {
+impl Default for TtsVoiceConfig {
     fn default() -> Self {
         Self {
-            audio: AudioConfig { sample_rate: 22050 },
-            phoneme_type: None,
-            phoneme_id_map: None,
+            name: "en_US-amy-medium".to_string(),
+            language: "en-US".to_string(),
         }
     }
 }
 
-/// Local TTS placeholder
-/// Note: Full Piper TTS implementation requires espeak-ng for phonemization
-/// This is a placeholder that can be extended later
-pub struct LocalTts {
-    config: PiperConfig,
+/// Request types sent to the TTS sidecar
+#[derive(Debug, Serialize)]
+#[serde(tag = "type")]
+enum SidecarRequest {
+    #[serde(rename = "load")]
+    Load { model_path: String },
+    #[serde(rename = "unload")]
+    Unload,
+    #[serde(rename = "speak")]
+    Speak {
+        text: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        output_device: Option<String>,
+        volume: f32,
+    },
+    #[serde(rename = "synthesize")]
+    Synthesize { text: String },
+    #[serde(rename = "list_devices")]
+    ListDevices,
+    #[serde(rename = "status")]
+    Status,
+    #[serde(rename = "shutdown")]
+    Shutdown,
+}
+
+/// Response types from the TTS sidecar
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+enum SidecarResponse {
+    #[serde(rename = "ok")]
+    Ok { message: String },
+    #[serde(rename = "error")]
+    Error { message: String },
+    #[serde(rename = "devices")]
+    Devices { devices: Vec<String> },
+    #[serde(rename = "status")]
+    Status {
+        loaded: bool,
+        model_path: Option<String>,
+    },
+    #[serde(rename = "audio")]
+    Audio {
+        audio_base64: String,
+        sample_rate: u32,
+    },
+}
+
+/// Manages communication with the TTS sidecar process
+struct TtsSidecarProcess {
+    child: Child,
     model_path: Option<String>,
-    is_loaded: bool,
 }
 
-impl LocalTts {
-    pub fn new() -> Self {
-        Self {
-            config: PiperConfig::default(),
-            model_path: None,
-            is_loaded: false,
-        }
-    }
+impl TtsSidecarProcess {
+    fn spawn(sidecar_path: &Path) -> Result<Self, String> {
+        info!("Spawning TTS sidecar from: {:?}", sidecar_path);
 
-    pub fn load_model(&mut self, model_path: &Path) -> Result<(), String> {
-        let path_str = model_path.to_string_lossy().to_string();
+        let mut child = Command::new(sidecar_path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit()) // Let stderr go to parent for debugging
+            .spawn()
+            .map_err(|e| format!("Failed to spawn TTS sidecar: {}", e))?;
 
-        // Don't reload if same model
-        if self.model_path.as_ref() == Some(&path_str) && self.is_loaded {
-            debug!("TTS model already loaded: {}", path_str);
-            return Ok(());
-        }
+        // Wait for the ready message
+        let stdout = child
+            .stdout
+            .as_mut()
+            .ok_or_else(|| "Failed to get TTS sidecar stdout".to_string())?;
+        let mut reader = BufReader::new(stdout);
+        let mut line = String::new();
+        reader
+            .read_line(&mut line)
+            .map_err(|e| format!("Failed to read TTS sidecar ready message: {}", e))?;
 
-        info!("Loading TTS model from: {}", path_str);
+        let response: SidecarResponse =
+            serde_json::from_str(&line).map_err(|e| format!("Invalid TTS sidecar response: {}", e))?;
 
-        // Check if model file exists
-        if !model_path.exists() {
-            return Err(format!("TTS model file not found: {}", path_str));
-        }
-
-        // Load config if exists
-        let config_path = model_path.with_extension("onnx.json");
-        if config_path.exists() {
-            match std::fs::read_to_string(&config_path) {
-                Ok(content) => match serde_json::from_str::<PiperConfig>(&content) {
-                    Ok(config) => {
-                        self.config = config;
-                        debug!("Loaded TTS config: sample_rate={}", self.config.audio.sample_rate);
-                    }
-                    Err(e) => {
-                        warn!("Failed to parse TTS config: {}, using defaults", e);
-                    }
-                },
-                Err(e) => {
-                    warn!("Failed to read TTS config: {}, using defaults", e);
-                }
+        match response {
+            SidecarResponse::Ok { message } => {
+                info!("TTS Sidecar ready: {}", message);
+            }
+            SidecarResponse::Error { message } => {
+                return Err(format!("TTS Sidecar failed to start: {}", message));
+            }
+            _ => {
+                return Err("Unexpected response from TTS sidecar".to_string());
             }
         }
 
-        // Note: Full ONNX model loading would require proper phonemization
-        // For now, we just mark as loaded and use system TTS as fallback
-        self.model_path = Some(path_str.clone());
-        self.is_loaded = true;
-
-        info!("TTS model loaded (stub): {}", path_str);
-        Ok(())
+        Ok(Self {
+            child,
+            model_path: None,
+        })
     }
 
-    pub fn unload_model(&mut self) {
-        if self.is_loaded {
-            info!("Unloading TTS model");
-            self.is_loaded = false;
-            self.model_path = None;
+    fn send_request(&mut self, request: &SidecarRequest) -> Result<SidecarResponse, String> {
+        let stdin = self
+            .child
+            .stdin
+            .as_mut()
+            .ok_or_else(|| "TTS sidecar stdin not available".to_string())?;
+
+        let json =
+            serde_json::to_string(request).map_err(|e| format!("Failed to serialize request: {}", e))?;
+
+        writeln!(stdin, "{}", json).map_err(|e| format!("Failed to write to TTS sidecar: {}", e))?;
+        stdin
+            .flush()
+            .map_err(|e| format!("Failed to flush TTS sidecar stdin: {}", e))?;
+
+        // Read response
+        let stdout = self
+            .child
+            .stdout
+            .as_mut()
+            .ok_or_else(|| "TTS sidecar stdout not available".to_string())?;
+        let mut reader = BufReader::new(stdout);
+        let mut line = String::new();
+        reader
+            .read_line(&mut line)
+            .map_err(|e| format!("Failed to read TTS sidecar response: {}", e))?;
+
+        serde_json::from_str(&line).map_err(|e| format!("Invalid TTS sidecar response: {}", e))
+    }
+
+    fn load_model(&mut self, model_path: &str) -> Result<(), String> {
+        let response = self.send_request(&SidecarRequest::Load {
+            model_path: model_path.to_string(),
+        })?;
+
+        match response {
+            SidecarResponse::Ok { .. } => {
+                self.model_path = Some(model_path.to_string());
+                Ok(())
+            }
+            SidecarResponse::Error { message } => Err(message),
+            _ => Err("Unexpected response from TTS sidecar".to_string()),
         }
     }
 
-    pub fn is_loaded(&self) -> bool {
-        self.is_loaded
-    }
+    fn unload_model(&mut self) -> Result<(), String> {
+        let response = self.send_request(&SidecarRequest::Unload)?;
 
-    /// Synthesize speech from text
-    /// Note: This is a placeholder - full implementation needs espeak-ng phonemization
-    pub fn synthesize(&self, text: &str) -> Result<Vec<f32>, String> {
-        if !self.is_loaded {
-            return Err("No TTS model loaded".to_string());
+        match response {
+            SidecarResponse::Ok { .. } => {
+                self.model_path = None;
+                Ok(())
+            }
+            SidecarResponse::Error { message } => Err(message),
+            _ => Err("Unexpected response from TTS sidecar".to_string()),
         }
-
-        // Placeholder: Generate silence for the duration that would be spoken
-        // In a full implementation, this would:
-        // 1. Convert text to phonemes using espeak-ng
-        // 2. Convert phonemes to IDs using the model's phoneme_id_map
-        // 3. Run ONNX inference
-        // 4. Return the audio samples
-
-        warn!("TTS synthesis is using placeholder (silence) - full Piper implementation pending");
-
-        // Generate ~1 second of silence per 10 characters as placeholder
-        let sample_rate = self.config.audio.sample_rate;
-        let duration_seconds = (text.len() as f32 / 10.0).max(0.5);
-        let num_samples = (sample_rate as f32 * duration_seconds) as usize;
-
-        Ok(vec![0.0f32; num_samples])
     }
 
-    /// Get sample rate for the loaded model
-    pub fn sample_rate(&self) -> u32 {
-        self.config.audio.sample_rate
+    fn speak(&mut self, text: &str, output_device: Option<&str>, volume: f32) -> Result<(), String> {
+        let response = self.send_request(&SidecarRequest::Speak {
+            text: text.to_string(),
+            output_device: output_device.map(|s| s.to_string()),
+            volume,
+        })?;
+
+        match response {
+            SidecarResponse::Ok { .. } => Ok(()),
+            SidecarResponse::Error { message } => Err(message),
+            _ => Err("Unexpected response from TTS sidecar".to_string()),
+        }
+    }
+
+    /// Synthesize audio and return raw samples as base64
+    fn synthesize(&mut self, text: &str) -> Result<(String, u32), String> {
+        let response = self.send_request(&SidecarRequest::Synthesize {
+            text: text.to_string(),
+        })?;
+
+        match response {
+            SidecarResponse::Audio {
+                audio_base64,
+                sample_rate,
+            } => Ok((audio_base64, sample_rate)),
+            SidecarResponse::Error { message } => Err(message),
+            _ => Err("Unexpected response from TTS sidecar".to_string()),
+        }
+    }
+
+    fn list_devices(&mut self) -> Result<Vec<String>, String> {
+        let response = self.send_request(&SidecarRequest::ListDevices)?;
+
+        match response {
+            SidecarResponse::Devices { devices } => Ok(devices),
+            SidecarResponse::Error { message } => Err(message),
+            _ => Err("Unexpected response from TTS sidecar".to_string()),
+        }
+    }
+
+    fn shutdown(&mut self) {
+        if let Err(e) = self.send_request(&SidecarRequest::Shutdown) {
+            warn!("Error sending shutdown to TTS sidecar: {}", e);
+        }
+        if let Err(e) = self.child.wait() {
+            warn!("Error waiting for TTS sidecar to exit: {}", e);
+        }
+    }
+
+    fn is_loaded(&self) -> bool {
+        self.model_path.is_some()
     }
 }
 
-impl Default for LocalTts {
-    fn default() -> Self {
-        Self::new()
+impl Drop for TtsSidecarProcess {
+    fn drop(&mut self) {
+        info!("Dropping TTS sidecar process");
+        self.shutdown();
     }
 }
 
-/// Thread-safe wrapper for LocalTts
+/// Thread-safe manager for the TTS sidecar
 pub struct LocalTtsManager {
-    tts: Mutex<LocalTts>,
+    sidecar: Mutex<Option<TtsSidecarProcess>>,
+    sidecar_path: PathBuf,
+    output_device: Mutex<Option<String>>,
 }
 
 impl LocalTtsManager {
-    pub fn new() -> Self {
+    pub fn new(sidecar_path: PathBuf) -> Self {
         Self {
-            tts: Mutex::new(LocalTts::new()),
+            sidecar: Mutex::new(None),
+            sidecar_path,
+            output_device: Mutex::new(None),
         }
     }
 
-    pub fn load_model(&self, model_path: &Path) -> Result<(), String> {
-        let mut tts_guard = self.tts.lock().unwrap();
-        tts_guard.load_model(model_path)
-    }
-
-    pub fn unload_model(&self) {
-        let mut tts_guard = self.tts.lock().unwrap();
-        tts_guard.unload_model();
-    }
-
-    pub fn is_loaded(&self) -> bool {
-        let tts_guard = self.tts.lock().unwrap();
-        tts_guard.is_loaded()
-    }
-
-    pub fn synthesize(&self, text: &str) -> Result<Vec<f32>, String> {
-        let tts_guard = self.tts.lock().unwrap();
-        tts_guard.synthesize(text)
-    }
-
-    pub fn sample_rate(&self) -> u32 {
-        let tts_guard = self.tts.lock().unwrap();
-        tts_guard.sample_rate()
-    }
-
-    /// Synthesize and play audio
-    pub fn speak(&self, text: &str, volume: f32) -> Result<(), String> {
-        let samples = self.synthesize(text)?;
-        let sample_rate = self.sample_rate();
-
-        // If we only have silence (placeholder), log warning and return
-        if samples.iter().all(|&s| s.abs() < 0.001) {
-            warn!("TTS produced silence - Piper model integration pending");
-            // For now, just return success - in production this would use system TTS
-            return Ok(());
+    /// Get the sidecar, spawning it if necessary
+    fn ensure_sidecar(&self) -> Result<(), String> {
+        let mut guard = self.sidecar.lock().unwrap();
+        if guard.is_none() {
+            info!("Starting TTS sidecar process...");
+            let sidecar = TtsSidecarProcess::spawn(&self.sidecar_path)?;
+            *guard = Some(sidecar);
         }
-
-        // Convert to WAV in memory
-        let wav_data = self.samples_to_wav(&samples, sample_rate)?;
-
-        // Play using rodio
-        let stream_builder = OutputStreamBuilder::from_default_device()
-            .map_err(|e| format!("Failed to get audio output: {}", e))?;
-
-        let stream_handle = stream_builder
-            .open_stream()
-            .map_err(|e| format!("Failed to open audio stream: {}", e))?;
-
-        let mixer = stream_handle.mixer();
-        let cursor = Cursor::new(wav_data);
-
-        let sink = rodio::play(mixer, cursor)
-            .map_err(|e| format!("Failed to play audio: {}", e))?;
-
-        sink.set_volume(volume);
-        sink.sleep_until_end();
-
         Ok(())
     }
 
-    fn samples_to_wav(&self, samples: &[f32], sample_rate: u32) -> Result<Vec<u8>, String> {
-        let mut wav_data = Vec::new();
-        let mut cursor = std::io::Cursor::new(&mut wav_data);
+    pub fn load_model(&self, model_path: &Path) -> Result<(), String> {
+        info!(
+            "LocalTtsManager::load_model() called with path: {:?}",
+            model_path
+        );
 
-        let spec = hound::WavSpec {
-            channels: 1,
-            sample_rate,
-            bits_per_sample: 16,
-            sample_format: hound::SampleFormat::Int,
-        };
+        // Verify the file exists first (check for both .onnx and .onnx.json)
+        let onnx_path = model_path;
+        let json_path = model_path.with_extension("onnx.json");
 
-        let mut writer = hound::WavWriter::new(&mut cursor, spec)
-            .map_err(|e| format!("Failed to create WAV writer: {}", e))?;
-
-        for &sample in samples {
-            let sample_i16 = (sample.clamp(-1.0, 1.0) * 32767.0) as i16;
-            writer
-                .write_sample(sample_i16)
-                .map_err(|e| format!("Failed to write sample: {}", e))?;
+        if !onnx_path.exists() {
+            let err = format!("Model file does not exist: {:?}", onnx_path);
+            error!("{}", err);
+            return Err(err);
         }
 
-        writer
-            .finalize()
-            .map_err(|e| format!("Failed to finalize WAV: {}", e))?;
+        // Check for config file
+        if !json_path.exists() {
+            // Try the alternate naming convention
+            let alt_json_path = PathBuf::from(format!("{}.json", onnx_path.display()));
+            if !alt_json_path.exists() {
+                let err = format!(
+                    "Model config file does not exist: {:?} or {:?}",
+                    json_path, alt_json_path
+                );
+                error!("{}", err);
+                return Err(err);
+            }
+        }
 
-        Ok(wav_data)
+        self.ensure_sidecar()?;
+
+        let mut guard = self.sidecar.lock().unwrap();
+        let sidecar = guard
+            .as_mut()
+            .ok_or_else(|| "TTS sidecar not available".to_string())?;
+
+        sidecar.load_model(&model_path.to_string_lossy())
+    }
+
+    pub fn unload_model(&self) {
+        let mut guard = self.sidecar.lock().unwrap();
+        if let Some(ref mut sidecar) = *guard {
+            if let Err(e) = sidecar.unload_model() {
+                error!("Failed to unload TTS model: {}", e);
+            }
+        }
+    }
+
+    pub fn is_loaded(&self) -> bool {
+        let guard = self.sidecar.lock().unwrap();
+        guard.as_ref().map(|s| s.is_loaded()).unwrap_or(false)
+    }
+
+    /// Set the output device for TTS playback
+    pub fn set_output_device(&self, device: Option<String>) {
+        let mut guard = self.output_device.lock().unwrap();
+        *guard = device;
+    }
+
+    /// Get the current output device
+    pub fn get_output_device(&self) -> Option<String> {
+        let guard = self.output_device.lock().unwrap();
+        guard.clone()
+    }
+
+    /// Speak the given text
+    pub fn speak(&self, text: &str, volume: f32) -> Result<(), String> {
+        self.ensure_sidecar()?;
+
+        let output_device = self.output_device.lock().unwrap().clone();
+
+        let mut guard = self.sidecar.lock().unwrap();
+        let sidecar = guard
+            .as_mut()
+            .ok_or_else(|| "TTS sidecar not available".to_string())?;
+
+        sidecar.speak(text, output_device.as_deref(), volume)
+    }
+
+    /// Synthesize audio and return as base64-encoded samples
+    /// Returns (audio_base64, sample_rate)
+    pub fn synthesize(&self, text: &str) -> Result<(String, u32), String> {
+        self.ensure_sidecar()?;
+
+        let mut guard = self.sidecar.lock().unwrap();
+        let sidecar = guard
+            .as_mut()
+            .ok_or_else(|| "TTS sidecar not available".to_string())?;
+
+        sidecar.synthesize(text)
+    }
+
+    /// List available output devices
+    pub fn list_devices(&self) -> Result<Vec<String>, String> {
+        self.ensure_sidecar()?;
+
+        let mut guard = self.sidecar.lock().unwrap();
+        let sidecar = guard
+            .as_mut()
+            .ok_or_else(|| "TTS sidecar not available".to_string())?;
+
+        sidecar.list_devices()
+    }
+
+    /// Get sample rate (for compatibility)
+    pub fn sample_rate(&self) -> u32 {
+        22050 // Piper default sample rate
+    }
+
+    /// Shutdown the sidecar process
+    pub fn shutdown(&self) {
+        let mut guard = self.sidecar.lock().unwrap();
+        if let Some(mut sidecar) = guard.take() {
+            sidecar.shutdown();
+        }
     }
 }
 
 impl Default for LocalTtsManager {
     fn default() -> Self {
-        Self::new()
+        // Default path - will be set properly from tauri config
+        Self::new(PathBuf::from("tts-sidecar"))
+    }
+}
+
+impl Drop for LocalTtsManager {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }

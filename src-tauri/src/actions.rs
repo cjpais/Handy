@@ -273,8 +273,11 @@ impl ShortcutAction for TranscribeAction {
             shortcut::register_cancel_shortcut(app);
 
             // Start live coaching for real-time filler word feedback
-            let lc = app.state::<Arc<LiveCoachingManager>>();
-            lc.start();
+            // But NOT when on the onichan tab (it has its own flow)
+            if settings.active_ui_section != "onichan" {
+                let lc = app.state::<Arc<LiveCoachingManager>>();
+                lc.start();
+            }
         }
 
         debug!(
@@ -287,9 +290,12 @@ impl ShortcutAction for TranscribeAction {
         // Unregister the cancel shortcut when transcription stops
         shortcut::unregister_cancel_shortcut(app);
 
-        // Stop live coaching
-        let lc = app.state::<Arc<LiveCoachingManager>>();
-        lc.stop();
+        // Stop live coaching (only if it was started - check active_ui_section)
+        let settings = get_settings(app);
+        if settings.active_ui_section != "onichan" {
+            let lc = app.state::<Arc<LiveCoachingManager>>();
+            lc.stop();
+        }
 
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);

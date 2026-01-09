@@ -308,6 +308,14 @@ async setActiveUiSection(section: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async changeOnichanSilenceThresholdSetting(thresholdMs: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_onichan_silence_threshold_setting", { thresholdMs }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async triggerUpdateCheck() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("trigger_update_check") };
@@ -760,6 +768,150 @@ async localTtsSpeak(text: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async onichanStartConversation() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("onichan_start_conversation") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async onichanStopConversation() : Promise<void> {
+    await TAURI_INVOKE("onichan_stop_conversation");
+},
+async onichanIsConversationRunning() : Promise<boolean> {
+    return await TAURI_INVOKE("onichan_is_conversation_running");
+},
+/**
+ * Check if a Discord bot token is configured (without returning the actual token)
+ */
+async discordHasToken() : Promise<boolean> {
+    return await TAURI_INVOKE("discord_has_token");
+},
+/**
+ * Get a masked version of the Discord bot token for display purposes only
+ * Returns None if no token is set, or a masked string like "********...abcd"
+ */
+async discordGetToken() : Promise<string | null> {
+    return await TAURI_INVOKE("discord_get_token");
+},
+/**
+ * Set the Discord bot token (stores securely, never echoed back in full)
+ */
+async discordSetToken(token: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_set_token", { token }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Clear the stored Discord bot token
+ */
+async discordClearToken() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_clear_token") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Connect to Discord using the stored token
+ */
+async discordConnectWithStoredToken() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_connect_with_stored_token") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Get Discord connection status
+ */
+async discordGetStatus() : Promise<DiscordState> {
+    return await TAURI_INVOKE("discord_get_status");
+},
+/**
+ * Get list of guilds the bot is in
+ */
+async discordGetGuilds() : Promise<Result<GuildInfo[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_get_guilds") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Get voice channels for a guild
+ */
+async discordGetChannels(guildId: string) : Promise<Result<ChannelInfo[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_get_channels", { guildId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Connect to a Discord voice channel
+ */
+async discordConnect(guildId: string, channelId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_connect", { guildId, channelId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Disconnect from Discord voice
+ */
+async discordDisconnect() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_disconnect") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Speak text in the voice channel
+ */
+async discordSpeak(text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_speak", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Start Discord conversation mode (listen and respond to voice in Discord)
+ */
+async discordStartConversation() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("discord_start_conversation") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Stop Discord conversation mode
+ */
+async discordStopConversation() : Promise<void> {
+    await TAURI_INVOKE("discord_stop_conversation");
+},
+/**
+ * Check if Discord conversation mode is running
+ */
+async discordIsConversationRunning() : Promise<boolean> {
+    return await TAURI_INVOKE("discord_is_conversation_running");
+},
 /**
  * Checks if the Mac is a laptop by detecting battery presence
  * 
@@ -803,15 +955,20 @@ async downloadVadModelIfNeeded() : Promise<Result<string, string>> {
 
 /** user-defined types **/
 
-export type AppSettings = { bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; filler_detection_enabled?: boolean; filler_output_mode?: FillerOutputMode; custom_filler_words?: string[]; show_filler_overlay?: boolean; active_ui_section?: string }
+export type AppSettings = { bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; filler_detection_enabled?: boolean; filler_output_mode?: FillerOutputMode; custom_filler_words?: string[]; show_filler_overlay?: boolean; active_ui_section?: string; onichan_silence_threshold?: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
+export type ChannelInfo = { id: string; name: string; kind: string }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 /**
  * Message in the conversation
  */
 export type ConversationMessage = { role: string; content: string }
 export type CustomSounds = { start: boolean; stop: boolean }
+/**
+ * Discord state for frontend
+ */
+export type DiscordState = { connected: boolean; in_voice: boolean; listening: boolean; guild_name: string | null; channel_name: string | null; error: string | null }
 export type EngineType = "Whisper" | "Parakeet"
 /**
  * Output mode for filler word detection
@@ -833,6 +990,7 @@ export type FillerOutputMode =
  * Remove filler words, paste cleaned text, and show coaching feedback
  */
 "both"
+export type GuildInfo = { id: string; name: string }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null }
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
