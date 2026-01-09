@@ -12,6 +12,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -487,6 +488,10 @@ impl ModelManager {
             .app_handle
             .emit("model-download-progress", &initial_progress);
 
+        // Track last emission time for throttling
+        let mut last_emit = Instant::now();
+        let emit_interval = Duration::from_millis(100);
+
         // Download with progress
         while let Some(chunk) = stream.next().await {
             // Check if download was cancelled
@@ -533,19 +538,34 @@ impl ModelManager {
                 0.0
             };
 
-            // Emit progress event
-            let progress = DownloadProgress {
-                model_id: model_id.to_string(),
-                downloaded,
-                total: total_size,
-                percentage,
-            };
+            // Emit progress event (throttled to avoid overwhelming the UI)
+            let now = Instant::now();
+            if now.duration_since(last_emit) >= emit_interval {
+                let progress = DownloadProgress {
+                    model_id: model_id.to_string(),
+                    downloaded,
+                    total: total_size,
+                    percentage,
+                };
 
-            let _ = self.app_handle.emit("model-download-progress", &progress);
+                let _ = self.app_handle.emit("model-download-progress", &progress);
+                last_emit = now;
+            }
         }
 
         file.flush()?;
         drop(file); // Ensure file is closed before moving
+
+        // Emit final progress event to ensure UI shows 100%
+        let final_progress = DownloadProgress {
+            model_id: model_id.to_string(),
+            downloaded,
+            total: total_size,
+            percentage: 100.0,
+        };
+        let _ = self
+            .app_handle
+            .emit("model-download-progress", &final_progress);
 
         // Verify downloaded file size matches expected size
         if total_size > 0 {

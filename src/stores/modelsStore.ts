@@ -77,11 +77,32 @@ export const useModelsStore = create<ModelsStore>()(
         if (result.status === "ok") {
           set({ models: result.data, error: null });
 
-          // Sync downloading state from backend
-          const currentlyDownloading = new Set(
-            result.data.filter((m) => m.is_downloading).map((m) => m.id),
-          );
-          set({ downloadingModels: currentlyDownloading });
+          // Sync downloading state from backend, but merge with current state
+          // to avoid race conditions during download start
+          set((state) => {
+            const backendDownloading = new Set(
+              result.data.filter((m) => m.is_downloading).map((m) => m.id),
+            );
+
+            // Merge: keep frontend state if downloading, add backend state
+            const merged = new Set(state.downloadingModels);
+
+            // Add any models backend says are downloading
+            backendDownloading.forEach((id) => merged.add(id));
+
+            // Remove models that backend says are NOT downloading AND
+            // frontend doesn't have progress for (completed/cancelled)
+            state.downloadingModels.forEach((id) => {
+              if (
+                !backendDownloading.has(id) &&
+                !state.downloadProgress.has(id)
+              ) {
+                merged.delete(id);
+              }
+            });
+
+            return { downloadingModels: merged };
+          });
         } else {
           set({ error: `Failed to load models: ${result.error}` });
         }
@@ -192,10 +213,7 @@ export const useModelsStore = create<ModelsStore>()(
             };
           });
 
-          // Wait a bit for backend to fully update state before reloading
-          await new Promise((resolve) => setTimeout(resolve, 100));
-
-          // Reload models to update is_downloading flag
+          // Reload models to sync with backend state
           await get().loadModels();
 
           return true;
