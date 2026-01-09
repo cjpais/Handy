@@ -572,7 +572,8 @@
       "delete": "Delete model",
       "clickToLoad": "Click to load",
       "loading": "Loading...",
-      "loadingTooltip": "Loading model into memory, this may take a moment"
+      "loadingTooltip": "Loading model into memory, this may take a moment",
+      "downloading": "Downloading..."
     },
     "tooltips": {
       "enableDisabled": "Load a Language Model below before enabling Local mode",

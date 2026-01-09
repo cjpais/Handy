@@ -109,6 +109,10 @@ impl LlmState {
     }
 
     fn generate(&self, prompt: &str, max_tokens: u32) -> Result<String, String> {
+        self.generate_internal(prompt, max_tokens, true)
+    }
+
+    fn generate_internal(&self, prompt: &str, max_tokens: u32, add_bos: bool) -> Result<String, String> {
         let model = self.model.as_ref()
             .ok_or_else(|| "No model loaded".to_string())?;
 
@@ -120,9 +124,14 @@ impl LlmState {
             .new_context(&self.backend, ctx_params)
             .map_err(|e| format!("Failed to create context: {}", e))?;
 
-        // Tokenize the prompt
+        // Tokenize the prompt - don't add BOS if the prompt already has one (like chat format)
+        let bos_setting = if add_bos {
+            llama_cpp_2::model::AddBos::Always
+        } else {
+            llama_cpp_2::model::AddBos::Never
+        };
         let tokens = model
-            .str_to_token(prompt, llama_cpp_2::model::AddBos::Always)
+            .str_to_token(prompt, bos_setting)
             .map_err(|e| format!("Failed to tokenize: {}", e))?;
 
         // Create batch for initial prompt
@@ -139,8 +148,25 @@ impl LlmState {
         ctx.decode(&mut batch)
             .map_err(|e| format!("Failed to decode prompt: {}", e))?;
 
-        // Create a greedy sampler
-        let mut sampler = LlamaSampler::greedy();
+        // Create a sampler chain with parameters tuned for varied, creative responses
+        // Order matters: penalties first, then temperature, then top-p, then final selection
+        let mut sampler = LlamaSampler::chain_simple([
+            // Repetition penalties - strong settings to prevent repetitive phrases
+            // penalty_last_n=128: consider last 128 tokens (covers more context)
+            // penalty_repeat=1.3: repeated tokens are 1.3x less likely (stronger penalty)
+            // penalty_freq=0.1: slight frequency penalty for commonly used tokens
+            // penalty_present=0.1: slight penalty for tokens already present
+            LlamaSampler::penalties(128, 1.3, 0.1, 0.1),
+            // Temperature for creativity (0.9 = more varied and creative)
+            LlamaSampler::temp(0.9),
+            // Top-p (nucleus) sampling - consider tokens in top 92% probability mass
+            LlamaSampler::top_p(0.92, 1),
+            // Final token selection with time-based seed for variation
+            LlamaSampler::dist(std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos() as u32)
+                .unwrap_or(42)),
+        ]);
 
         // Generate tokens
         let mut output_tokens = Vec::new();
@@ -174,23 +200,75 @@ impl LlmState {
         // Convert tokens to string
         let mut output = String::new();
         for token in output_tokens {
-            let piece = model
-                .token_to_str(token, llama_cpp_2::model::Special::Tokenize)
-                .map_err(|e| format!("Failed to convert token: {}", e))?;
-            output.push_str(&piece);
+            match model.token_to_str(token, llama_cpp_2::model::Special::Tokenize) {
+                Ok(piece) => output.push_str(&piece),
+                Err(e) => {
+                    // Log but don't fail on UTF-8 conversion errors (can happen with partial tokens)
+                    log::warn!("Token conversion warning: {}", e);
+                }
+            }
         }
 
         Ok(output.trim().to_string())
     }
 
     fn chat(&self, system_prompt: &str, user_message: &str, max_tokens: u32) -> Result<String, String> {
-        // Format for Llama-style instruct models
-        let prompt = format!(
-            "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
-            system_prompt, user_message
-        );
+        // Detect model type from path to use correct chat format
+        let model_path = self.model_path.as_deref().unwrap_or("");
+        let model_lower = model_path.to_lowercase();
 
-        self.generate(&prompt, max_tokens)
+        log::info!("Chat request - model: {}", model_path);
+        log::debug!("System prompt: {}", system_prompt);
+        log::debug!("User message: {}", user_message);
+
+        let (prompt, add_bos) = if model_lower.contains("mistral") || model_lower.contains("mixtral") {
+            // Mistral/Mixtral format: [INST] ... [/INST]
+            let prompt = format!(
+                "<s>[INST] {}\n\n{} [/INST]",
+                system_prompt, user_message
+            );
+            (prompt, false) // <s> is BOS
+        } else if model_lower.contains("dolphin") || model_lower.contains("chatml") {
+            // ChatML format (used by Dolphin and many fine-tunes)
+            let prompt = format!(
+                "<|im_start|>system\n{}<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
+                system_prompt, user_message
+            );
+            (prompt, true)
+        } else if model_lower.contains("qwen") {
+            // Qwen uses ChatML-like format
+            let prompt = format!(
+                "<|im_start|>system\n{}<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
+                system_prompt, user_message
+            );
+            (prompt, true)
+        } else if model_lower.contains("gpt-oss") || model_lower.contains("heretic") {
+            // GPT-oss / OpenAI Harmony format (specific models only)
+            let prompt = format!(
+                "<|start|>developer<|message|>\n{}\n<|end|>\n<|start|>user<|message|>\n{}\n<|end|>\n<|start|>assistant<|channel|>final<|message|>\n",
+                system_prompt, user_message
+            );
+            (prompt, true)
+        } else if model_lower.contains("openai-") || model_lower.contains("neoplus") || model_lower.contains("neo-") || model_lower.contains("brainstorm") || model_lower.contains("brains") || model_lower.contains("uncensored") {
+            // DavidAU's OpenAI/NEO models and other uncensored models use ChatML format
+            log::info!("Using ChatML format for OpenAI/NEO/uncensored model");
+            let prompt = format!(
+                "<|im_start|>system\n{}<|im_end|>\n<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n",
+                system_prompt, user_message
+            );
+            (prompt, true)
+        } else {
+            // Default: Llama 3 format
+            // Note: <|begin_of_text|> is the BOS token, so we don't add another BOS during tokenization
+            let prompt = format!(
+                "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+                system_prompt, user_message
+            );
+            (prompt, false)
+        };
+
+        log::info!("Using prompt template, length: {} chars", prompt.len());
+        self.generate_internal(&prompt, max_tokens, add_bos)
     }
 }
 

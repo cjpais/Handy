@@ -126,6 +126,83 @@ impl OnichanModelManager {
             },
         );
 
+        // Uncensored/less-restricted models for more fun conversations
+        available_models.insert(
+            "mistral-7b-instruct".to_string(),
+            OnichanModelInfo {
+                id: "mistral-7b-instruct".to_string(),
+                name: "Mistral 7B Instruct (Recommended)".to_string(),
+                description: "Best quality and personality. Less censored, more fun. Recommended for Discord.".to_string(),
+                filename: "mistral-7b-instruct-v0.2.Q4_K_M.gguf".to_string(),
+                url: Some("https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf".to_string()),
+                size_mb: 4370,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                model_type: OnichanModelType::Llm,
+                context_size: Some(32768),
+                sample_rate: None,
+                voice_name: None,
+            },
+        );
+
+        available_models.insert(
+            "dolphin-3.0-llama3.1-8b".to_string(),
+            OnichanModelInfo {
+                id: "dolphin-3.0-llama3.1-8b".to_string(),
+                name: "Dolphin 3.0 Llama 3.1 8B (Recommended Uncensored)".to_string(),
+                description: "Latest Dolphin. Uncensored, great personality, follows instructions well. Best for Discord.".to_string(),
+                filename: "Dolphin3.0-Llama3.1-8B-Q4_K_M.gguf".to_string(),
+                url: Some("https://huggingface.co/bartowski/Dolphin3.0-Llama3.1-8B-GGUF/resolve/main/Dolphin3.0-Llama3.1-8B-Q4_K_M.gguf".to_string()),
+                size_mb: 4920,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                model_type: OnichanModelType::Llm,
+                context_size: Some(131072), // 128k context
+                sample_rate: None,
+                voice_name: None,
+            },
+        );
+
+        available_models.insert(
+            "neoplus-20b-uncensored".to_string(),
+            OnichanModelInfo {
+                id: "neoplus-20b-uncensored".to_string(),
+                name: "NEOPlus 20B Uncensored (Best Quality)".to_string(),
+                description: "Fully uncensored 20B model with DI-MATRIX optimization. Best quality responses. Requires 16GB+ RAM.".to_string(),
+                filename: "OpenAI-20B-NEOPlus-Uncensored-IQ4_NL.gguf".to_string(),
+                url: Some("https://huggingface.co/DavidAU/OpenAi-GPT-oss-20b-HERETIC-uncensored-NEO-Imatrix-gguf/resolve/main/OpenAI-20B-NEOPlus-Uncensored-IQ4_NL.gguf".to_string()),
+                size_mb: 12600,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                model_type: OnichanModelType::Llm,
+                context_size: Some(4096),
+                sample_rate: None,
+                voice_name: None,
+            },
+        );
+
+        available_models.insert(
+            "brainstorm-36b-uncensored".to_string(),
+            OnichanModelInfo {
+                id: "brainstorm-36b-uncensored".to_string(),
+                name: "BrainStorm 36B Uncensored Q8 (Best Quality)".to_string(),
+                description: "Massive 36B uncensored model at Q8 quality. Best responses and creativity. Requires 40GB+ RAM.".to_string(),
+                filename: "OpenAI-36B-Brains20x-Uncensored-Q8_0.gguf".to_string(),
+                url: Some("https://huggingface.co/DavidAU/OpenAi-GPT-oss-36B-BrainStorm20x-uncensored-gguf/resolve/main/OpenAI-36B-Brains20x-Uncensored-Q8_0.gguf".to_string()),
+                size_mb: 38900,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                model_type: OnichanModelType::Llm,
+                context_size: Some(131072), // 128k context
+                sample_rate: None,
+                voice_name: None,
+            },
+        );
+
         // TTS Models (Piper voices)
         available_models.insert(
             "piper-amy".to_string(),
@@ -151,7 +228,7 @@ impl OnichanModelManager {
             OnichanModelInfo {
                 id: "piper-lessac".to_string(),
                 name: "Lessac (English US)".to_string(),
-                description: "Professional male voice. High quality.".to_string(),
+                description: "Professional female voice. Balanced quality.".to_string(),
                 filename: "en_US-lessac-medium.onnx".to_string(),
                 url: Some("https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx".to_string()),
                 size_mb: 63,
@@ -181,6 +258,25 @@ impl OnichanModelManager {
                 context_size: None,
                 sample_rate: Some(22050),
                 voice_name: Some("Jenny".to_string()),
+            },
+        );
+
+        available_models.insert(
+            "piper-lessac-high".to_string(),
+            OnichanModelInfo {
+                id: "piper-lessac-high".to_string(),
+                name: "Lessac High (Anime Style)".to_string(),
+                description: "Youthful female voice. Best for anime/VTuber style. Clear and energetic.".to_string(),
+                filename: "en_US-lessac-high.onnx".to_string(),
+                url: Some("https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/high/en_US-lessac-high.onnx".to_string()),
+                size_mb: 105,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                model_type: OnichanModelType::Tts,
+                context_size: None,
+                sample_rate: Some(22050),
+                voice_name: Some("Lessac (Anime)".to_string()),
             },
         );
 
@@ -302,14 +398,49 @@ impl OnichanModelManager {
             }
         }
 
-        let client = reqwest::Client::new();
+        // Emit initial progress event immediately so UI updates
+        let initial_progress = OnichanDownloadProgress {
+            model_id: model_id.to_string(),
+            downloaded: resume_from,
+            total: model_info.size_mb * 1024 * 1024, // Use expected size
+            percentage: 0.0,
+        };
+        info!("Emitting initial download progress for {}", model_id);
+        let _ = self
+            .app_handle
+            .emit("onichan-model-download-progress", &initial_progress);
+
+        let client = reqwest::Client::builder()
+            .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
+            .redirect(reqwest::redirect::Policy::limited(10))
+            .connect_timeout(std::time::Duration::from_secs(30))
+            .timeout(std::time::Duration::from_secs(600)) // 10 min timeout per chunk
+            .build()
+            .map_err(|e| anyhow::anyhow!("Failed to build HTTP client: {}", e))?;
+
+        info!("Sending HTTP request to: {}", url);
         let mut request = client.get(&url);
 
         if resume_from > 0 {
             request = request.header("Range", format!("bytes={}-", resume_from));
         }
 
-        let mut response = request.send().await?;
+        let mut response = match request.send().await {
+            Ok(r) => {
+                info!("HTTP response status: {}", r.status());
+                r
+            }
+            Err(e) => {
+                log::error!("HTTP request failed: {}", e);
+                {
+                    let mut models = self.available_models.lock().unwrap();
+                    if let Some(model) = models.get_mut(model_id) {
+                        model.is_downloading = false;
+                    }
+                }
+                return Err(anyhow::anyhow!("HTTP request failed: {}", e));
+            }
+        };
 
         if resume_from > 0 && response.status() == reqwest::StatusCode::OK {
             warn!(
@@ -355,7 +486,9 @@ impl OnichanModelManager {
             std::fs::File::create(&partial_path)?
         };
 
-        let initial_progress = OnichanDownloadProgress {
+        // Update progress with real total size now that we know it
+        info!("Download started - total size: {} bytes", total_size);
+        let updated_progress = OnichanDownloadProgress {
             model_id: model_id.to_string(),
             downloaded,
             total: total_size,
@@ -367,7 +500,7 @@ impl OnichanModelManager {
         };
         let _ = self
             .app_handle
-            .emit("onichan-model-download-progress", &initial_progress);
+            .emit("onichan-model-download-progress", &updated_progress);
 
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(|e| {

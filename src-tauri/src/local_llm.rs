@@ -62,7 +62,8 @@ impl SidecarProcess {
         let mut child = Command::new(sidecar_path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit()) // Let stderr go to parent for debugging
+            .stderr(Stdio::null()) // Suppress llama.cpp debug spam
+            .env("LLAMA_LOG_DISABLE", "1") // Try to disable llama.cpp logging
             .spawn()
             .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;
 

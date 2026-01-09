@@ -341,7 +341,7 @@ fn main() {
                 }
             }
             Request::Synthesize { text } => {
-                log::info!("Synthesize request: {} chars", text.len());
+                log::debug!("Synthesize request: {} chars", text.len());
                 match state.synthesize(&text) {
                     Ok((audio_base64, sample_rate)) => {
                         send_response(&Response::Audio {

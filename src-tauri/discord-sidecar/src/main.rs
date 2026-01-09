@@ -266,7 +266,7 @@ impl VoiceEventHandler for VoiceReceiver {
 
                 if is_speaking && !buffer.is_speaking {
                     buffer.is_speaking = true;
-                    log::info!("User {} started speaking (listening={})", user_id, listening);
+                    log::debug!("User {} started speaking", user_id);
                     if listening {
                         send_response(&Response::UserStartedSpeaking {
                             user_id: user_id.clone(),
@@ -274,16 +274,15 @@ impl VoiceEventHandler for VoiceReceiver {
                     }
                 } else if !is_speaking && buffer.is_speaking {
                     buffer.is_speaking = false;
-                    log::info!(
-                        "User {} stopped speaking, buffer has {} samples (listening={})",
+                    log::debug!(
+                        "User {} stopped speaking, buffer has {} samples",
                         user_id,
-                        buffer.samples.len(),
-                        listening
+                        buffer.samples.len()
                     );
 
                     // User stopped speaking - send collected audio if we have enough
                     if listening && !buffer.samples.is_empty() {
-                        log::info!(
+                        log::debug!(
                             "Sending {} audio samples from user {}",
                             buffer.samples.len(),
                             user_id
@@ -298,10 +297,9 @@ impl VoiceEventHandler for VoiceReceiver {
                             .collect();
                         let audio_base64 = BASE64.encode(&bytes);
 
-                        log::info!(
-                            "Sending UserAudio: {} mono samples, {} base64 bytes",
-                            mono_16k.len(),
-                            audio_base64.len()
+                        log::debug!(
+                            "Sending UserAudio: {} mono samples",
+                            mono_16k.len()
                         );
 
                         send_response(&Response::UserAudio {
@@ -364,19 +362,18 @@ impl VoiceEventHandler for VoiceReceiver {
                         // Mark as speaking when we receive audio (in case SpeakingStateUpdate didn't fire)
                         if !buffer.is_speaking {
                             buffer.is_speaking = true;
-                            log::info!("User {} started speaking (detected from audio)", user_id_for_log);
+                            log::debug!("User {} started speaking (detected from audio)", user_id_for_log);
                         }
 
                         buffer.samples.extend_from_slice(decoded);
                         buffer.last_packet_time = Instant::now();
 
-                        // Log progress at meaningful intervals (every ~1 second of audio at 48kHz stereo)
-                        if buffer.samples.len() % 96000 < decoded.len() {
-                            log::info!(
-                                "VoiceTick: collected {:.1}s of audio for SSRC {} ({} samples)",
+                        // Log progress at meaningful intervals (every ~5 seconds of audio at 48kHz stereo)
+                        if buffer.samples.len() % 480000 < decoded.len() {
+                            log::debug!(
+                                "VoiceTick: collected {:.1}s of audio for SSRC {}",
                                 buffer.samples.len() as f32 / 96000.0,
-                                ssrc,
-                                buffer.samples.len()
+                                ssrc
                             );
                         }
                     } else {
@@ -436,11 +433,9 @@ impl VoiceEventHandler for VoiceReceiver {
 
                     // Now get mutable access to the buffer
                     if let Some(buffer) = state.user_audio_buffers.get_mut(&ssrc) {
-                        log::info!(
-                            "Silence timeout: sending {} audio samples from user {} (SSRC {})",
-                            buffer.samples.len(),
-                            user_id,
-                            ssrc
+                        log::debug!(
+                            "Silence timeout: sending audio from user {}",
+                            user_id
                         );
 
                         // Take the samples and reset the buffer
@@ -463,10 +458,9 @@ impl VoiceEventHandler for VoiceReceiver {
                         .collect();
                     let audio_base64 = BASE64.encode(&bytes);
 
-                    log::info!(
-                        "Sending UserAudio (timeout): {} mono samples, {} base64 bytes",
-                        mono_16k.len(),
-                        audio_base64.len()
+                    log::debug!(
+                        "Sending UserAudio: {} mono samples",
+                        mono_16k.len()
                     );
 
                     send_response(&Response::UserAudio {
@@ -654,7 +648,7 @@ async fn handle_discord_command(
                     buffer.is_speaking = false;
                 }
             }
-            log::info!("Bot started speaking - audio capture paused");
+            log::debug!("Bot started speaking - audio capture paused");
 
             // play_audio now waits for the track to actually finish playing
             let result = play_audio(call_holder, &audio_data, sample_rate).await;
@@ -672,7 +666,7 @@ async fn handle_discord_command(
                     buffer.is_speaking = false;
                 }
             }
-            log::info!("Bot finished speaking - audio capture resumed");
+            log::debug!("Bot finished speaking - audio capture resumed");
 
             let _ = respond.send(result);
         }
@@ -882,7 +876,7 @@ struct TrackEndNotifier {
 #[async_trait]
 impl VoiceEventHandler for TrackEndNotifier {
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
-        log::info!("Track playback finished (End event)");
+        log::debug!("Track playback finished");
         if let Some(sender) = self.sender.lock().await.take() {
             let _ = sender.send(());
         }
@@ -918,7 +912,7 @@ async fn play_audio(
 
     // Calculate expected duration for logging/fallback timeout
     let duration_secs = resampled.len() as f64 / sample_rate as f64;
-    log::info!("Playing {:.2}s of audio", duration_secs);
+    log::debug!("Playing {:.2}s of audio", duration_secs);
 
     // Convert mono to stereo (interleaved f32)
     let stereo: Vec<f32> = resampled
@@ -963,10 +957,10 @@ async fn play_audio(
     let timeout_duration = Duration::from_secs_f64(duration_secs + 2.0);
     match tokio::time::timeout(timeout_duration, rx).await {
         Ok(Ok(())) => {
-            log::info!("Audio playback completed successfully");
+            log::debug!("Audio playback completed");
         }
         Ok(Err(_)) => {
-            log::warn!("Track end channel was dropped");
+            log::debug!("Track end channel was dropped");
         }
         Err(_) => {
             log::warn!("Audio playback timed out after {:.2}s", timeout_duration.as_secs_f64());

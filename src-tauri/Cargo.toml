@@ -73,6 +73,7 @@ specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 base64 = "0.22"
+regex = "1"
 
 # Note: LLM and TTS support are provided via separate sidecar processes
 # to avoid library version conflicts:

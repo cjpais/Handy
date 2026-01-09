@@ -369,9 +369,23 @@ export const DiscordSettings: React.FC = () => {
 
   // Model management handlers
   const handleDownloadModel = useCallback(async (modelId: string) => {
+    console.log("Starting download for model:", modelId);
     setDownloadProgress((prev) => ({ ...prev, [modelId]: 0 }));
-    const result = await commands.downloadOnichanModel(modelId);
-    if (result.status === "error") {
+    try {
+      const result = await commands.downloadOnichanModel(modelId);
+      console.log("Download result:", result);
+      if (result.status === "error") {
+        console.error("Download error:", result.error);
+        setError(`Download failed: ${result.error}`);
+        setDownloadProgress((prev) => {
+          const next = { ...prev };
+          delete next[modelId];
+          return next;
+        });
+      }
+    } catch (e) {
+      console.error("Download exception:", e);
+      setError(`Download failed: ${e}`);
       setDownloadProgress((prev) => {
         const next = { ...prev };
         delete next[modelId];
@@ -452,7 +466,8 @@ export const DiscordSettings: React.FC = () => {
     onLoad: () => void,
     onUnload: () => void
   ) => {
-    const isDownloading = downloadProgress[model.id] !== undefined;
+    // Check both local state and backend state for downloading
+    const isDownloading = downloadProgress[model.id] !== undefined || model.is_downloading;
     const progress = downloadProgress[model.id] || 0;
     const isLoading = loadingModel === model.id;
 
@@ -492,6 +507,12 @@ export const DiscordSettings: React.FC = () => {
                   {t("onichan.models.notDownloaded")}
                 </span>
               )}
+              {isDownloading && (
+                <span className="px-2 py-0.5 text-xs font-medium text-logo-primary bg-logo-primary/20 border border-logo-primary/30 rounded-full flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {t("onichan.models.downloading")}
+                </span>
+              )}
               {isLoading && (
                 <span className="px-2 py-0.5 text-xs font-medium text-yellow-400 bg-yellow-500/20 border border-yellow-500/30 rounded-full flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -515,14 +536,15 @@ export const DiscordSettings: React.FC = () => {
           <div className="flex items-center gap-1">
             {isDownloading ? (
               <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-logo-primary" />
                 <div className="w-20 h-2 bg-background-dark rounded-full overflow-hidden">
                   <div
                     className="h-full bg-logo-primary transition-all"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <span className="text-xs text-text/60 w-10">
-                  {Math.round(progress)}%
+                <span className="text-xs text-text/60 w-12">
+                  {progress > 0 ? `${Math.round(progress)}%` : "..."}
                 </span>
               </div>
             ) : isActive ? (
