@@ -1,6 +1,7 @@
 pub mod audio;
 pub mod discord;
 pub mod history;
+pub mod memory;
 pub mod models;
 pub mod onichan;
 pub mod transcription;

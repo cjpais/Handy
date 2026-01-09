@@ -149,7 +149,21 @@ impl TtsSidecarProcess {
             .read_line(&mut line)
             .map_err(|e| format!("Failed to read TTS sidecar response: {}", e))?;
 
+        // Check for empty response (sidecar likely crashed)
+        if line.trim().is_empty() {
+            return Err("TTS sidecar returned empty response (may have crashed)".to_string());
+        }
+
         serde_json::from_str(&line).map_err(|e| format!("Invalid TTS sidecar response: {}", e))
+    }
+
+    /// Check if the sidecar process is still alive
+    fn is_alive(&mut self) -> bool {
+        match self.child.try_wait() {
+            Ok(Some(_)) => false, // Process has exited
+            Ok(None) => true,     // Process is still running
+            Err(_) => false,      // Error checking - assume dead
+        }
     }
 
     fn load_model(&mut self, model_path: &str) -> Result<(), String> {
@@ -246,6 +260,8 @@ pub struct LocalTtsManager {
     sidecar: Mutex<Option<TtsSidecarProcess>>,
     sidecar_path: PathBuf,
     output_device: Mutex<Option<String>>,
+    /// Track the loaded model path so we can reload after crash
+    loaded_model_path: Mutex<Option<PathBuf>>,
 }
 
 impl LocalTtsManager {
@@ -254,15 +270,43 @@ impl LocalTtsManager {
             sidecar: Mutex::new(None),
             sidecar_path,
             output_device: Mutex::new(None),
+            loaded_model_path: Mutex::new(None),
         }
     }
 
-    /// Get the sidecar, spawning it if necessary
+    /// Get the sidecar, spawning it if necessary or if it crashed
     fn ensure_sidecar(&self) -> Result<(), String> {
         let mut guard = self.sidecar.lock().unwrap();
-        if guard.is_none() {
+
+        // Check if existing sidecar is still alive
+        let needs_respawn = match guard.as_mut() {
+            Some(sidecar) => !sidecar.is_alive(),
+            None => true,
+        };
+
+        if needs_respawn {
+            // Clear the dead sidecar if any
+            let was_running = guard.is_some();
+            if was_running {
+                warn!("TTS sidecar crashed, respawning...");
+                *guard = None;
+            }
+
             info!("Starting TTS sidecar process...");
-            let sidecar = TtsSidecarProcess::spawn(&self.sidecar_path)?;
+            let mut sidecar = TtsSidecarProcess::spawn(&self.sidecar_path)?;
+
+            // If we had a model loaded before the crash, reload it
+            if was_running {
+                let model_path_guard = self.loaded_model_path.lock().unwrap();
+                if let Some(ref model_path) = *model_path_guard {
+                    info!("Reloading TTS model after crash: {:?}", model_path);
+                    if let Err(e) = sidecar.load_model(&model_path.to_string_lossy()) {
+                        error!("Failed to reload TTS model after crash: {}", e);
+                        // Don't fail - the sidecar is running, just without a model
+                    }
+                }
+            }
+
             *guard = Some(sidecar);
         }
         Ok(())
@@ -305,7 +349,15 @@ impl LocalTtsManager {
             .as_mut()
             .ok_or_else(|| "TTS sidecar not available".to_string())?;
 
-        sidecar.load_model(&model_path.to_string_lossy())
+        let result = sidecar.load_model(&model_path.to_string_lossy());
+
+        // Track the loaded model path for crash recovery
+        if result.is_ok() {
+            let mut model_path_guard = self.loaded_model_path.lock().unwrap();
+            *model_path_guard = Some(model_path.to_path_buf());
+        }
+
+        result
     }
 
     pub fn unload_model(&self) {
@@ -315,6 +367,9 @@ impl LocalTtsManager {
                 error!("Failed to unload TTS model: {}", e);
             }
         }
+        // Clear the tracked model path
+        let mut model_path_guard = self.loaded_model_path.lock().unwrap();
+        *model_path_guard = None;
     }
 
     pub fn is_loaded(&self) -> bool {
@@ -340,12 +395,39 @@ impl LocalTtsManager {
 
         let output_device = self.output_device.lock().unwrap().clone();
 
-        let mut guard = self.sidecar.lock().unwrap();
-        let sidecar = guard
-            .as_mut()
-            .ok_or_else(|| "TTS sidecar not available".to_string())?;
+        let result = {
+            let mut guard = self.sidecar.lock().unwrap();
+            let sidecar = guard
+                .as_mut()
+                .ok_or_else(|| "TTS sidecar not available".to_string())?;
+            sidecar.speak(text, output_device.as_deref(), volume)
+        };
 
-        sidecar.speak(text, output_device.as_deref(), volume)
+        // If we got a broken pipe or empty response, the sidecar crashed - try to recover once
+        if let Err(ref e) = result {
+            if e.contains("Broken pipe") || e.contains("empty response") || e.contains("crashed") {
+                warn!("TTS sidecar appears to have crashed during speak, attempting recovery...");
+
+                // Force respawn by clearing the sidecar
+                {
+                    let mut guard = self.sidecar.lock().unwrap();
+                    *guard = None;
+                }
+
+                // Try to respawn and retry
+                self.ensure_sidecar()?;
+
+                let output_device = self.output_device.lock().unwrap().clone();
+                let mut guard = self.sidecar.lock().unwrap();
+                let sidecar = guard
+                    .as_mut()
+                    .ok_or_else(|| "TTS sidecar not available after recovery".to_string())?;
+
+                return sidecar.speak(text, output_device.as_deref(), volume);
+            }
+        }
+
+        result
     }
 
     /// Synthesize audio and return as base64-encoded samples
@@ -353,12 +435,38 @@ impl LocalTtsManager {
     pub fn synthesize(&self, text: &str) -> Result<(String, u32), String> {
         self.ensure_sidecar()?;
 
-        let mut guard = self.sidecar.lock().unwrap();
-        let sidecar = guard
-            .as_mut()
-            .ok_or_else(|| "TTS sidecar not available".to_string())?;
+        let result = {
+            let mut guard = self.sidecar.lock().unwrap();
+            let sidecar = guard
+                .as_mut()
+                .ok_or_else(|| "TTS sidecar not available".to_string())?;
+            sidecar.synthesize(text)
+        };
 
-        sidecar.synthesize(text)
+        // If we got a broken pipe or empty response, the sidecar crashed - try to recover once
+        if let Err(ref e) = result {
+            if e.contains("Broken pipe") || e.contains("empty response") || e.contains("crashed") {
+                warn!("TTS sidecar appears to have crashed during synthesize, attempting recovery...");
+
+                // Force respawn by clearing the sidecar
+                {
+                    let mut guard = self.sidecar.lock().unwrap();
+                    *guard = None;
+                }
+
+                // Try to respawn and retry
+                self.ensure_sidecar()?;
+
+                let mut guard = self.sidecar.lock().unwrap();
+                let sidecar = guard
+                    .as_mut()
+                    .ok_or_else(|| "TTS sidecar not available after recovery".to_string())?;
+
+                return sidecar.synthesize(text);
+            }
+        }
+
+        result
     }
 
     /// List available output devices

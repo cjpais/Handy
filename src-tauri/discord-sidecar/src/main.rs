@@ -388,18 +388,25 @@ impl VoiceEventHandler for VoiceReceiver {
 
                 // Check for users who have been silent for too long (timeout-based speech end detection)
                 // This handles cases where SpeakingStateUpdate doesn't fire reliably
-                let silence_timeout = Duration::from_millis(1500); // 1.5 seconds of silence = end of speech
+                let silence_timeout = Duration::from_millis(800); // 0.8 seconds of silence = end of speech
                 let min_samples_to_send = 16000; // At least ~0.17s of audio at 48kHz stereo
+                let max_buffer_samples = 48000 * 2 * 15; // Max 15 seconds of audio at 48kHz stereo
 
                 // First, collect SSRCs that need to be processed (immutable borrow)
+                // Send audio when: (1) silence timeout reached, OR (2) buffer exceeds max size
                 let ssrcs_to_process: Vec<u32> = state
                     .user_audio_buffers
                     .iter()
                     .filter_map(|(ssrc, buffer)| {
-                        if buffer.is_speaking
+                        let silence_triggered = buffer.is_speaking
                             && buffer.last_packet_time.elapsed() > silence_timeout
-                            && buffer.samples.len() >= min_samples_to_send
-                        {
+                            && buffer.samples.len() >= min_samples_to_send;
+                        let max_size_triggered = buffer.samples.len() >= max_buffer_samples;
+
+                        if silence_triggered || max_size_triggered {
+                            if max_size_triggered {
+                                log::debug!("Buffer max size reached for SSRC {}, forcing send", ssrc);
+                            }
                             Some(*ssrc)
                         } else {
                             None

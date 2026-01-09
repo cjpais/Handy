@@ -40,7 +40,7 @@
     "createUpdaterArtifacts": true,
     "targets": "all",
     "resources": ["resources/**/*"],
-    "externalBin": ["llm-sidecar/llm-sidecar", "tts-sidecar/tts-sidecar", "discord-sidecar/discord-sidecar"],
+    "externalBin": ["llm-sidecar/llm-sidecar", "tts-sidecar/tts-sidecar", "discord-sidecar/discord-sidecar", "memory-sidecar/memory-sidecar"],
     "license": "MIT",
     "icon": [
       "icons/32x32.png",

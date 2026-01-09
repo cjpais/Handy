@@ -1,6 +1,7 @@
 use crate::llm_client::send_chat_completion;
 use crate::local_llm::LocalLlmManager;
 use crate::local_tts::LocalTtsManager;
+use crate::memory::{format_memory_context, MemoryManager};
 use crate::settings::get_settings;
 use log::{debug, error, info};
 use rodio::OutputStreamBuilder;
@@ -51,6 +52,9 @@ pub struct OnichanManager {
     mode: Arc<Mutex<OnichanMode>>,
     llm_manager: Arc<Mutex<Option<Arc<LocalLlmManager>>>>,
     tts_manager: Arc<Mutex<Option<Arc<LocalTtsManager>>>>,
+    memory_manager: Arc<Mutex<Option<Arc<MemoryManager>>>>,
+    /// Current user ID for memory association (set by Discord conversation)
+    current_user_id: Arc<Mutex<Option<String>>>,
 }
 
 impl OnichanManager {
@@ -62,6 +66,8 @@ impl OnichanManager {
             mode: Arc::new(Mutex::new(OnichanMode::Local)),
             llm_manager: Arc::new(Mutex::new(None)),
             tts_manager: Arc::new(Mutex::new(None)),
+            memory_manager: Arc::new(Mutex::new(None)),
+            current_user_id: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -73,6 +79,21 @@ impl OnichanManager {
     /// Set the TTS manager reference for local TTS
     pub fn set_tts_manager(&self, manager: Arc<LocalTtsManager>) {
         *self.tts_manager.lock().unwrap() = Some(manager);
+    }
+
+    /// Set the memory manager reference for long-term memory
+    pub fn set_memory_manager(&self, manager: Arc<MemoryManager>) {
+        *self.memory_manager.lock().unwrap() = Some(manager);
+    }
+
+    /// Set the current user ID for memory association
+    pub fn set_current_user(&self, user_id: Option<String>) {
+        *self.current_user_id.lock().unwrap() = user_id;
+    }
+
+    /// Get the current user ID
+    pub fn get_current_user(&self) -> Option<String> {
+        self.current_user_id.lock().unwrap().clone()
     }
 
     /// Check if local TTS is loaded
@@ -194,7 +215,33 @@ impl OnichanManager {
             return Err("No local LLM model loaded. Please download and load a model first.".to_string());
         }
 
-        let system_prompt = "You are Onichan, an unfiltered and charismatic AI hanging out in a Discord voice chat. \
+        // Query long-term memory for relevant context
+        let user_id = self.get_current_user();
+        let memory_context = if let Some(ref uid) = user_id {
+            if let Some(memory_mgr) = self.memory_manager.lock().unwrap().as_ref() {
+                match memory_mgr.query_context(uid, user_text, 3) {
+                    Ok(memories) => {
+                        if !memories.is_empty() {
+                            info!("Found {} relevant memories for user {}", memories.len(), uid);
+                            format_memory_context(&memories)
+                        } else {
+                            String::new()
+                        }
+                    }
+                    Err(e) => {
+                        debug!("Memory query failed (non-fatal): {}", e);
+                        String::new()
+                    }
+                }
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+
+        // Build system prompt with memory context
+        let base_prompt = "You are Onichan, an unfiltered and charismatic AI hanging out in a Discord voice chat. \
 You have a wild personality - you say whatever comes to mind and aren't afraid to be edgy or controversial.\n\
 \n\
 YOUR PERSONALITY:\n\
@@ -223,6 +270,12 @@ RESPONSE STYLE (vary these, don't copy exactly):\n\
 \n\
 Be that chaotic friend who makes every call entertaining - unpredictable, real, never boring!";
 
+        let system_prompt = if !memory_context.is_empty() {
+            format!("{}\n\nYou remember these past conversations with this user:\n{}", base_prompt, memory_context)
+        } else {
+            base_prompt.to_string()
+        };
+
         // Build context with recent history
         let history = self.conversation_history.lock().unwrap();
         let start_idx = if history.len() > 6 { history.len() - 6 } else { 0 };
@@ -238,8 +291,18 @@ Be that chaotic friend who makes every call entertaining - unpredictable, real, 
         info!("Processing with local LLM: {}", user_text);
         debug!("Full context being sent:\n{}", context);
 
+        // Store user message in long-term memory BEFORE calling LLM
+        // This ensures user input is saved even if LLM fails
+        if let Some(ref uid) = user_id {
+            if let Some(memory_mgr) = self.memory_manager.lock().unwrap().as_ref() {
+                if let Err(e) = memory_mgr.store_message(uid, user_text, false) {
+                    debug!("Failed to store user message in memory (non-fatal): {}", e);
+                }
+            }
+        }
+
         // Call local LLM - 150 tokens to allow for fuller responses
-        let result = llm_manager.chat(system_prompt, &context, 150);
+        let result = llm_manager.chat(&system_prompt, &context, 150);
 
         match result {
             Ok(response) => {
@@ -262,6 +325,15 @@ Be that chaotic friend who makes every call entertaining - unpredictable, real, 
                 } else {
                     cleaned
                 };
+
+                // Store bot response in long-term memory
+                if let Some(ref uid) = user_id {
+                    if let Some(memory_mgr) = self.memory_manager.lock().unwrap().as_ref() {
+                        if let Err(e) = memory_mgr.store_message(uid, &final_response, true) {
+                            debug!("Failed to store bot response in memory (non-fatal): {}", e);
+                        }
+                    }
+                }
 
                 info!("Local LLM response: {}", final_response);
                 Ok(final_response)

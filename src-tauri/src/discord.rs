@@ -264,7 +264,16 @@ impl SidecarProcess {
         // Wait for response from the reader thread via channel
         self.response_rx
             .recv_timeout(std::time::Duration::from_secs(30))
-            .map_err(|e| format!("Failed to receive response: {}", e))
+            .map_err(|e| format!("Failed to receive response (sidecar may have crashed): {}", e))
+    }
+
+    /// Check if the sidecar process is still alive
+    fn is_alive(&mut self) -> bool {
+        match self.child.try_wait() {
+            Ok(Some(_)) => false, // Process has exited
+            Ok(None) => true,     // Process is still running
+            Err(_) => false,      // Error checking - assume dead
+        }
     }
 
     fn connect(&mut self, token: &str) -> Result<(), String> {
@@ -425,6 +434,15 @@ impl Drop for SidecarProcess {
     }
 }
 
+/// Connection state for crash recovery
+#[derive(Debug, Clone, Default)]
+struct DiscordConnectionState {
+    was_connected: bool,
+    guild_id: Option<String>,
+    channel_id: Option<String>,
+    was_listening: bool,
+}
+
 /// Thread-safe manager for the Discord sidecar
 pub struct DiscordManager {
     sidecar: Mutex<Option<SidecarProcess>>,
@@ -432,6 +450,8 @@ pub struct DiscordManager {
     bot_token: Mutex<Option<String>>,
     event_tx: Mutex<Option<mpsc::Sender<SidecarResponse>>>,
     event_rx: Mutex<Option<mpsc::Receiver<SidecarResponse>>>,
+    /// Track connection state for crash recovery
+    connection_state: Mutex<DiscordConnectionState>,
 }
 
 impl DiscordManager {
@@ -445,16 +465,71 @@ impl DiscordManager {
             bot_token: Mutex::new(None),
             event_tx: Mutex::new(Some(event_tx)),
             event_rx: Mutex::new(Some(event_rx)),
+            connection_state: Mutex::new(DiscordConnectionState::default()),
         }
     }
 
-    /// Get the sidecar, spawning it if necessary
+    /// Get the sidecar, spawning it if necessary or if it crashed
     fn ensure_sidecar(&self) -> Result<(), String> {
         let mut guard = self.sidecar.lock().unwrap();
-        if guard.is_none() {
+
+        // Check if existing sidecar is still alive
+        let needs_respawn = match guard.as_mut() {
+            Some(sidecar) => !sidecar.is_alive(),
+            None => true,
+        };
+
+        if needs_respawn {
+            // Clear the dead sidecar if any
+            let was_running = guard.is_some();
+            if was_running {
+                warn!("Discord sidecar crashed, respawning...");
+                *guard = None;
+            }
+
             info!("Starting Discord sidecar process...");
-            let event_tx = self.event_tx.lock().unwrap().clone();
-            let sidecar = SidecarProcess::spawn(&self.sidecar_path, event_tx)?;
+
+            // We need to recreate the event channel when respawning
+            let (new_event_tx, new_event_rx) = mpsc::channel();
+            {
+                let mut event_tx_guard = self.event_tx.lock().unwrap();
+                *event_tx_guard = Some(new_event_tx.clone());
+            }
+            {
+                let mut event_rx_guard = self.event_rx.lock().unwrap();
+                *event_rx_guard = Some(new_event_rx);
+            }
+
+            let mut sidecar = SidecarProcess::spawn(&self.sidecar_path, Some(new_event_tx))?;
+
+            // If we were connected before the crash, try to reconnect
+            if was_running {
+                let state = self.connection_state.lock().unwrap().clone();
+                let token = self.bot_token.lock().unwrap().clone();
+
+                if state.was_connected {
+                    if let Some(token) = token {
+                        info!("Reconnecting to Discord after crash...");
+                        if let Err(e) = sidecar.connect(&token) {
+                            error!("Failed to reconnect to Discord after crash: {}", e);
+                        } else {
+                            // Try to rejoin voice if we were in a channel
+                            if let (Some(guild_id), Some(channel_id)) = (state.guild_id, state.channel_id) {
+                                info!("Rejoining voice channel after crash...");
+                                if let Err(e) = sidecar.join_voice(&guild_id, &channel_id) {
+                                    error!("Failed to rejoin voice after crash: {}", e);
+                                } else if state.was_listening {
+                                    // Re-enable listening if it was enabled
+                                    if let Err(e) = sidecar.enable_listening() {
+                                        error!("Failed to re-enable listening after crash: {}", e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             *guard = Some(sidecar);
         }
         Ok(())
@@ -506,7 +581,15 @@ impl DiscordManager {
             .as_mut()
             .ok_or_else(|| "Sidecar not available".to_string())?;
 
-        sidecar.connect(&token)
+        let result = sidecar.connect(&token);
+
+        // Track connection state for crash recovery
+        if result.is_ok() {
+            let mut state = self.connection_state.lock().unwrap();
+            state.was_connected = true;
+        }
+
+        result
     }
 
     pub fn disconnect(&self) -> Result<(), String> {
@@ -514,6 +597,9 @@ impl DiscordManager {
         if let Some(ref mut sidecar) = *guard {
             sidecar.disconnect()?;
         }
+        // Clear connection state
+        let mut state = self.connection_state.lock().unwrap();
+        *state = DiscordConnectionState::default();
         Ok(())
     }
 
@@ -525,7 +611,16 @@ impl DiscordManager {
             .as_mut()
             .ok_or_else(|| "Sidecar not available".to_string())?;
 
-        sidecar.join_voice(guild_id, channel_id)
+        let result = sidecar.join_voice(guild_id, channel_id);
+
+        // Track voice state for crash recovery
+        if result.is_ok() {
+            let mut state = self.connection_state.lock().unwrap();
+            state.guild_id = Some(guild_id.to_string());
+            state.channel_id = Some(channel_id.to_string());
+        }
+
+        result
     }
 
     pub fn leave_voice(&self, guild_id: &str) -> Result<(), String> {
@@ -533,6 +628,11 @@ impl DiscordManager {
         if let Some(ref mut sidecar) = *guard {
             sidecar.leave_voice(guild_id)?;
         }
+        // Clear voice state
+        let mut state = self.connection_state.lock().unwrap();
+        state.guild_id = None;
+        state.channel_id = None;
+        state.was_listening = false;
         Ok(())
     }
 
@@ -575,7 +675,15 @@ impl DiscordManager {
             .as_mut()
             .ok_or_else(|| "Sidecar not available".to_string())?;
 
-        sidecar.enable_listening()
+        let result = sidecar.enable_listening();
+
+        // Track listening state for crash recovery
+        if result.is_ok() {
+            let mut state = self.connection_state.lock().unwrap();
+            state.was_listening = true;
+        }
+
+        result
     }
 
     pub fn disable_listening(&self) -> Result<(), String> {
@@ -583,6 +691,9 @@ impl DiscordManager {
         if let Some(ref mut sidecar) = *guard {
             sidecar.disable_listening()?;
         }
+        // Track listening state
+        let mut state = self.connection_state.lock().unwrap();
+        state.was_listening = false;
         Ok(())
     }
 

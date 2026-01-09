@@ -12,6 +12,7 @@
     "live": "Live",
     "onichan": "Onichan",
     "discord": "Discord",
+    "memory": "Memory",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -405,7 +406,16 @@
     "downloading": "Downloading... {{progress}}%",
     "installing": "Installing...",
     "preparing": "Preparing...",
-    "checkForUpdates": "Check for updates"
+    "checkForUpdates": "Check for updates",
+    "sidecar": {
+      "llm": "LLM",
+      "tts": "TTS",
+      "discord": "Discord",
+      "memory": "Memory",
+      "online": "{{name}}: Online",
+      "offline": "{{name}}: Offline",
+      "loading": "{{name}}: Loading..."
+    }
   },
   "common": {
     "loading": "Loading...",
@@ -662,6 +672,56 @@
         "thinking": "Generating response...",
         "speaking": "Speaking response..."
       }
+    }
+  },
+  "memory": {
+    "title": "Long-Term Memory",
+    "status": {
+      "title": "Status",
+      "refresh": "Refresh status",
+      "sidecarRunning": "Memory sidecar is running",
+      "sidecarStopped": "Memory sidecar is not running",
+      "modelLoaded": "Embedding model loaded",
+      "modelNotLoaded": "Embedding model not loaded",
+      "memoryCount": "{{count}} memories stored",
+      "info": "Memories are stored when you use Onichan or Discord voice chat. The embedding model downloads automatically on first use.",
+      "startButton": "Start Memory Service",
+      "starting": "Starting...",
+      "stopButton": "Stop Memory Service",
+      "stopping": "Stopping..."
+    },
+    "model": {
+      "title": "Embedding Model",
+      "description": "Select an embedding model for semantic memory search. Larger models are more accurate but use more resources.",
+      "active": "Active",
+      "available": "Available",
+      "notDownloaded": "Download",
+      "loading": "Loading...",
+      "clickToLoad": "Click to load this model",
+      "downloadAndLoad": "Download and load this model",
+      "downloadButton": "Download",
+      "loadFirst": "Start the memory sidecar to see available models",
+      "note": "Models are downloaded from HuggingFace on first use. Changing models doesn't affect stored memories."
+    },
+    "browser": {
+      "title": "Memory Browser",
+      "search": "Search memories semantically...",
+      "searchButton": "Search",
+      "searchHint": "Enter a search query to find relevant memories",
+      "noResults": "No memories found matching your query",
+      "clearAll": "Clear All Memories",
+      "userId": "User: {{id}}...",
+      "similarity": "{{percent}}% match"
+    },
+    "dangerZone": {
+      "title": "Danger Zone",
+      "clearDescription": "Permanently delete all stored memories. This cannot be undone.",
+      "cancel": "Cancel",
+      "confirm": "Yes, Delete All"
+    },
+    "empty": {
+      "title": "No Memories Yet",
+      "description": "Memories will be stored automatically when you use Onichan or Discord voice chat."
     }
   }
 }

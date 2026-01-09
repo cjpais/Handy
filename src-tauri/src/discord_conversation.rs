@@ -9,7 +9,7 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::onichan::OnichanManager;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use log::{debug, error, info};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -17,6 +17,10 @@ use tauri::{AppHandle, Emitter};
 
 /// Minimum audio samples to consider for transcription (~500ms at 16kHz)
 const MIN_AUDIO_SAMPLES: usize = 8000;
+
+/// Cooldown period after bot speaks to avoid self-triggering (in milliseconds)
+/// This prevents the bot from responding to its own speech picked up by other mics
+const POST_SPEECH_COOLDOWN_MS: u64 = 2000;
 
 /// Response types from the Discord sidecar (subset we care about)
 #[derive(Debug, serde::Deserialize)]
@@ -44,6 +48,8 @@ pub struct DiscordConversationManager {
     discord_manager: Arc<DiscordManager>,
     is_running: Arc<AtomicBool>,
     is_processing: Arc<AtomicBool>,
+    /// Timestamp (ms since epoch) when bot last finished speaking - used for cooldown
+    last_speech_time: Arc<AtomicU64>,
     worker_handle: Arc<std::sync::Mutex<Option<thread::JoinHandle<()>>>>,
 }
 
@@ -61,6 +67,7 @@ impl DiscordConversationManager {
             discord_manager,
             is_running: Arc::new(AtomicBool::new(false)),
             is_processing: Arc::new(AtomicBool::new(false)),
+            last_speech_time: Arc::new(AtomicU64::new(0)),
             worker_handle: Arc::new(std::sync::Mutex::new(None)),
         }
     }
@@ -91,6 +98,7 @@ impl DiscordConversationManager {
         let discord_manager = self.discord_manager.clone();
         let is_running = self.is_running.clone();
         let is_processing = self.is_processing.clone();
+        let last_speech_time = self.last_speech_time.clone();
 
         let handle = thread::spawn(move || {
             if let Err(e) = run_discord_conversation_loop(
@@ -100,6 +108,7 @@ impl DiscordConversationManager {
                 discord_manager,
                 is_running,
                 is_processing,
+                last_speech_time,
             ) {
                 error!("Discord conversation loop error: {}", e);
             }
@@ -161,6 +170,7 @@ fn run_discord_conversation_loop(
     discord_manager: Arc<DiscordManager>,
     is_running: Arc<AtomicBool>,
     is_processing: Arc<AtomicBool>,
+    last_speech_time: Arc<AtomicU64>,
 ) -> Result<(), String> {
     use crate::discord::SidecarResponse;
 
@@ -185,6 +195,19 @@ fn run_discord_conversation_loop(
                     audio_base64,
                     sample_rate,
                 } => {
+                    // Check cooldown - ignore audio if bot recently spoke (to prevent self-triggering)
+                    let last_spoke = last_speech_time.load(Ordering::Relaxed);
+                    let now_ms = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_millis() as u64;
+
+                    if last_spoke > 0 && now_ms < last_spoke + POST_SPEECH_COOLDOWN_MS {
+                        let remaining = (last_spoke + POST_SPEECH_COOLDOWN_MS) - now_ms;
+                        debug!("In cooldown period ({}ms remaining), ignoring audio", remaining);
+                        continue;
+                    }
+
                     // Only process if not already processing
                     if !is_processing.load(Ordering::Relaxed) {
                         is_processing.store(true, Ordering::Relaxed);
@@ -206,6 +229,7 @@ fn run_discord_conversation_loop(
                             &transcription_manager,
                             &onichan_manager,
                             &discord_manager,
+                            &last_speech_time,
                             &user_id,
                             &audio_base64,
                             sample_rate,
@@ -253,6 +277,7 @@ pub fn process_discord_audio(
     transcription_manager: &TranscriptionManager,
     onichan_manager: &OnichanManager,
     discord_manager: &DiscordManager,
+    last_speech_time: &Arc<AtomicU64>,
     user_id: &str,
     audio_base64: &str,
     sample_rate: u32,
@@ -299,6 +324,25 @@ pub fn process_discord_audio(
 
     info!("Discord transcription: {}", text);
 
+    // Check for wake words - only respond if addressed
+    const WAKE_WORDS: &[&str] = &["chan", "omni", "oni", "onichan", "amy"];
+    let text_lower = text.to_lowercase();
+    let has_wake_word = WAKE_WORDS.iter().any(|w| text_lower.contains(w));
+
+    if !has_wake_word {
+        info!("No wake word detected, skipping response");
+        // Still emit the transcription for UI visibility
+        let _ = app_handle.emit(
+            "discord-user-speech",
+            serde_json::json!({
+                "user_id": user_id,
+                "text": text.clone(),
+                "skipped": true
+            }),
+        );
+        return Ok(());
+    }
+
     // Emit the transcription for UI
     let _ = app_handle.emit(
         "discord-user-speech",
@@ -310,6 +354,9 @@ pub fn process_discord_audio(
 
     // Process with LLM
     let _ = app_handle.emit("discord-conversation-state", "thinking");
+
+    // Set the current user for memory association
+    onichan_manager.set_current_user(Some(user_id.to_string()));
 
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -328,9 +375,14 @@ pub fn process_discord_audio(
     // Play audio on Discord
     discord_manager.play_audio(&tts_base64, tts_sample_rate)?;
 
-    // Add a small cooldown after speaking to avoid picking up echo/reverb
-    // The discord sidecar also pauses listening during playback, but this adds extra safety
-    thread::sleep(Duration::from_millis(500));
+    // Record when we finished speaking to enable cooldown period
+    // This prevents the bot from responding to its own speech picked up by other mics
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+    last_speech_time.store(now_ms, Ordering::Relaxed);
+    info!("Bot finished speaking, cooldown active for {}ms", POST_SPEECH_COOLDOWN_MS);
 
     let _ = app_handle.emit("discord-conversation-state", "listening");
 

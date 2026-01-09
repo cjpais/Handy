@@ -14,6 +14,7 @@ pub mod live_coaching;
 mod llm_client;
 mod local_llm;
 mod local_tts;
+mod memory;
 pub mod onichan;
 pub mod onichan_conversation;
 pub mod onichan_models;
@@ -35,6 +36,7 @@ use env_filter::Builder as EnvFilterBuilder;
 use live_coaching::LiveCoachingManager;
 use local_llm::LocalLlmManager;
 use local_tts::LocalTtsManager;
+use memory::MemoryManager;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
@@ -224,9 +226,24 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     log::info!("Discord sidecar path: {:?}", discord_sidecar_path);
     let discord_manager = Arc::new(DiscordManager::new(discord_sidecar_path));
 
-    // Wire up the LLM and TTS managers to the Onichan manager for local processing
+    // Memory sidecar path for long-term conversation memory
+    let memory_sidecar_path = if cfg!(debug_assertions) {
+        let manifest_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        manifest_dir.join(format!("memory-sidecar/memory-sidecar-{}", target_triple))
+    } else {
+        app_handle
+            .path()
+            .resource_dir()
+            .expect("Failed to get resource dir")
+            .join(format!("memory-sidecar-{}", target_triple))
+    };
+    log::info!("Memory sidecar path: {:?}", memory_sidecar_path);
+    let memory_manager = Arc::new(MemoryManager::new(memory_sidecar_path));
+
+    // Wire up the LLM, TTS, and Memory managers to the Onichan manager for local processing
     onichan_manager.set_llm_manager(local_llm_manager.clone());
     onichan_manager.set_tts_manager(local_tts_manager.clone());
+    onichan_manager.set_memory_manager(memory_manager.clone());
 
     // Initialize Onichan conversation manager for continuous listening mode
     let onichan_conversation_manager = Arc::new(onichan_conversation::OnichanConversationManager::new(
@@ -256,6 +273,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(local_tts_manager.clone());
     app_handle.manage(discord_manager.clone());
     app_handle.manage(discord_conversation_manager.clone());
+    app_handle.manage(memory_manager.clone());
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
@@ -479,6 +497,15 @@ pub fn run() {
         commands::discord::discord_start_conversation,
         commands::discord::discord_stop_conversation,
         commands::discord::discord_is_conversation_running,
+        commands::memory::get_memory_status,
+        commands::memory::query_all_memories,
+        commands::memory::get_memory_count,
+        commands::memory::clear_all_memories,
+        commands::memory::cleanup_old_memories,
+        commands::memory::list_embedding_models,
+        commands::memory::load_embedding_model,
+        commands::memory::get_current_embedding_model,
+        commands::memory::stop_memory_sidecar,
         helpers::clamshell::is_laptop,
         vad_model::is_vad_model_ready,
         vad_model::download_vad_model_if_needed,

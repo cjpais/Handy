@@ -1,0 +1,32 @@
+[package]
+name = "memory-sidecar"
+version = "0.1.0"
+edition = "2021"
+description = "Memory sidecar for semantic search over conversation history"
+
+[dependencies]
+# Vector database - use arrow 53 to match lancedb 0.17
+lancedb = "0.17"
+arrow = { version = "53", default-features = false }
+arrow-schema = "53"
+arrow-array = "53"
+
+# Embeddings (ONNX Runtime)
+ort = { version = "2.0.0-rc.11", features = ["download-binaries", "ndarray"] }
+tokenizers = "0.21"
+hf-hub = "0.4"
+
+# IPC
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+
+# Utils
+uuid = { version = "1", features = ["v4"] }
+chrono = "0.4"
+log = "0.4"
+env_logger = "0.11"
+anyhow = "1"
+futures = "0.3"
+ndarray = "0.16"
+dirs = "5"

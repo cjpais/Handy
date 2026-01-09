@@ -913,6 +913,106 @@ async discordIsConversationRunning() : Promise<boolean> {
     return await TAURI_INVOKE("discord_is_conversation_running");
 },
 /**
+ * Get the current status of the memory system
+ */
+async getMemoryStatus() : Promise<Result<MemoryStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_memory_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Query memories semantically (for all users)
+ */
+async queryAllMemories(query: string, limit: number) : Promise<Result<MemoryMessage[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("query_all_memories", { query, limit }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Get total count of all memories
+ * Note: Returns 0 if sidecar is not running to avoid spawning it just to check count
+ */
+async getMemoryCount() : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_memory_count") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Clear all memories
+ */
+async clearAllMemories() : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_all_memories") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Cleanup old memories based on TTL
+ */
+async cleanupOldMemories(ttlDays: number) : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("cleanup_old_memories", { ttlDays }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * List available embedding models
+ */
+async listEmbeddingModels() : Promise<Result<EmbeddingModelInfo[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_embedding_models") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Load an embedding model by ID
+ */
+async loadEmbeddingModel(modelId: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("load_embedding_model", { modelId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Get the currently loaded embedding model
+ */
+async getCurrentEmbeddingModel() : Promise<Result<EmbeddingModelInfo | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_current_embedding_model") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Stop the memory sidecar
+ */
+async stopMemorySidecar() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_memory_sidecar") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Checks if the Mac is a laptop by detecting battery presence
  * 
  * This uses pmset to check for battery information.
@@ -969,6 +1069,10 @@ export type CustomSounds = { start: boolean; stop: boolean }
  * Discord state for frontend
  */
 export type DiscordState = { connected: boolean; in_voice: boolean; listening: boolean; guild_name: string | null; channel_name: string | null; error: string | null }
+/**
+ * Embedding model info returned from sidecar
+ */
+export type EmbeddingModelInfo = { id: string; name: string; description: string; dimension: number; size_mb: number; is_downloaded: boolean; is_loaded: boolean }
 export type EngineType = "Whisper" | "Parakeet"
 /**
  * Output mode for filler word detection
@@ -994,6 +1098,14 @@ export type GuildInfo = { id: string; name: string }
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null }
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
+/**
+ * A memory message from the sidecar
+ */
+export type MemoryMessage = { id: string; user_id: string; content: string; is_bot: boolean; timestamp: number; similarity: number | null }
+/**
+ * Status information about the memory system
+ */
+export type MemoryStatus = { is_running: boolean; model_loaded: boolean; total_memories: number }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"

@@ -39,3 +39,7 @@ src-tauri/tts-sidecar/tts-sidecar-*
 # Discord sidecar build artifacts
 src-tauri/discord-sidecar/target/
 src-tauri/discord-sidecar/discord-sidecar-*
+
+# Memory sidecar build artifacts
+src-tauri/memory-sidecar/target/
+src-tauri/memory-sidecar/memory-sidecar-*
