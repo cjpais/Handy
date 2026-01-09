@@ -14,6 +14,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
+use crate::ManagedToggleState;
 use tauri::AppHandle;
 use tauri::Manager;
 
@@ -407,6 +408,11 @@ impl ShortcutAction for TranscribeAction {
                 debug!("No samples retrieved from recording stop");
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
+            }
+
+            // Clear toggle state now that transcription is complete
+            if let Ok(mut states) = ah.state::<ManagedToggleState>().lock() {
+                states.active_toggles.insert(binding_id, false);
             }
         });
 
