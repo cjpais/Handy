@@ -4,6 +4,7 @@ use tauri_plugin_global_shortcut::GlobalShortcutExt;
 use tauri_plugin_global_shortcut::{Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
+use crate::input_source;
 use crate::settings::ShortcutBinding;
 use crate::settings::{self, get_settings, OverlayPosition};
 use crate::ManagedToggleState;
@@ -208,6 +209,11 @@ pub fn change_word_correction_threshold_setting(
     settings.word_correction_threshold = threshold;
     settings::write_settings(&app, settings);
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_language_from_os_input() -> Option<String> {
+    input_source::get_language_from_input_source()
 }
 
 /// Determine whether a shortcut string contains at least one non-modifier key.

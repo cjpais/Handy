@@ -3,6 +3,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod input_source;
 mod managers;
 mod overlay;
 mod settings;
@@ -213,6 +214,7 @@ pub fn run() {
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,
+            shortcut::get_language_from_os_input,
             trigger_update_check,
             commands::cancel_operation,
             commands::get_app_dir_path,

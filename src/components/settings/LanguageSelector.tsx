@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
@@ -19,6 +20,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const { currentModel, loadCurrentModel } = useModels();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [osInputLang, setOsInputLang] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,6 +62,15 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     }
   }, [isOpen]);
 
+  // Fetch OS input language when "os_input" is selected
+  useEffect(() => {
+    if (selectedLanguage !== "os_input") return;
+    const fetchOsLang = () => invoke<string | null>("get_language_from_os_input").then(setOsInputLang).catch(() => {});
+    fetchOsLang();
+    const interval = setInterval(fetchOsLang, 5000); // Poll every 5s
+    return () => clearInterval(interval);
+  }, [selectedLanguage]);
+
   const filteredLanguages = useMemo(
     () => LANGUAGES.filter((language) =>
       language.label.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -67,9 +78,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     [searchQuery]
   );
 
-  const selectedLanguageName = isParakeetModel 
-    ? "Auto" 
-    : LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label || "Auto";
+  const selectedLanguageName = useMemo(() => {
+    if (isParakeetModel) return "Auto";
+    if (selectedLanguage === "os_input") {
+      const resolved = LANGUAGES.find((l) => l.value === osInputLang)?.label;
+      return resolved ? `Follow OS (${resolved})` : "Follow OS Input Language";
+    }
+    return LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label || "Auto";
+  }, [isParakeetModel, selectedLanguage, osInputLang]);
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);

@@ -341,14 +341,12 @@ impl TranscriptionManager {
 
             match engine {
                 LoadedEngine::Whisper(whisper_engine) => {
-                    let params = WhisperInferenceParams {
-                        language: if settings.selected_language == "auto" {
-                            None
-                        } else {
-                            Some(settings.selected_language.clone())
-                        },
-                        ..Default::default()
+                    let language = match settings.selected_language.as_str() {
+                        "auto" => None,
+                        "os_input" => crate::input_source::get_language_from_input_source(),
+                        _ => Some(settings.selected_language.clone()),
                     };
+                    let params = WhisperInferenceParams { language, ..Default::default() };
 
                     whisper_engine
                         .transcribe_samples(audio, Some(params))
