@@ -192,6 +192,9 @@ export const useModelsStore = create<ModelsStore>()(
             };
           });
 
+          // Wait a bit for backend to fully update state before reloading
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
           // Reload models to update is_downloading flag
           await get().loadModels();
 

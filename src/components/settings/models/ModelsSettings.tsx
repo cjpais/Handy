@@ -38,6 +38,7 @@ export const ModelsSettings: React.FC = () => {
     extractingModels,
     loading,
     downloadModel,
+    cancelDownload,
     selectModel,
     deleteModel,
   } = useModels();
@@ -142,6 +143,14 @@ export const ModelsSettings: React.FC = () => {
       } catch (err) {
         console.error(`Failed to delete model ${modelId}:`, err);
       }
+    }
+  };
+
+  const handleModelCancel = async (modelId: string) => {
+    try {
+      await cancelDownload(modelId);
+    } catch (err) {
+      console.error(`Failed to cancel download for ${modelId}:`, err);
     }
   };
 
@@ -323,6 +332,7 @@ export const ModelsSettings: React.FC = () => {
               onSelect={handleModelSelect}
               onDownload={handleModelDownload}
               onDelete={handleModelDelete}
+              onCancel={handleModelCancel}
               downloadProgress={getDownloadProgress(model.id)}
               downloadSpeed={getDownloadSpeed(model.id)}
             />

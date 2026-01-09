@@ -33,6 +33,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const {
     models,
     currentModel,
+    downloadingModels,
     downloadProgress,
     downloadStats,
     extractingModels,
@@ -312,6 +313,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           <ModelDropdown
             models={models}
             currentModelId={currentModel}
+            downloadingModels={downloadingModels}
             downloadProgress={downloadProgress}
             onModelSelect={handleModelSelect}
             onModelDownload={handleModelDownload}

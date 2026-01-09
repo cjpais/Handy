@@ -19,6 +19,7 @@ interface DownloadProgress {
 interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
+  downloadingModels: Set<string>;
   downloadProgress: Map<string, DownloadProgress>;
   onModelSelect: (modelId: string) => void;
   onModelDownload: (modelId: string) => void;
@@ -30,6 +31,7 @@ interface ModelDropdownProps {
 const ModelDropdown: React.FC<ModelDropdownProps> = ({
   models,
   currentModelId,
+  downloadingModels,
   downloadProgress,
   onModelSelect,
   onModelDownload,
@@ -80,14 +82,14 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   };
 
   const handleModelClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (downloadingModels.has(modelId)) {
       return; // Don't allow interaction while downloading
     }
     onModelSelect(modelId);
   };
 
   const handleDownloadClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (downloadingModels.has(modelId)) {
       return; // Don't allow interaction while downloading
     }
     onModelDownload(modelId);
@@ -186,17 +188,23 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
               : t("modelSelector.downloadModels")}
           </div>
           {downloadableModels.map((model) => {
-            const isDownloading = downloadProgress.has(model.id);
+            const isDownloading = downloadingModels.has(model.id);
             const progress = downloadProgress.get(model.id);
 
             return (
               <div
                 key={model.id}
-                onClick={() => handleDownloadClick(model.id)}
+                onClick={() => {
+                  if (!isDownloading) {
+                    handleDownloadClick(model.id);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    handleDownloadClick(model.id);
+                    if (!isDownloading) {
+                      handleDownloadClick(model.id);
+                    }
                   }
                 }}
                 tabIndex={0}
@@ -226,7 +234,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                       {formatModelSize(Number(model.size_mb))}
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
                     {isDownloading && progress ? (
                       <>
                         <span className="text-xs text-logo-primary tabular-nums">
@@ -238,7 +246,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                         </span>
                         <button
                           onClick={(e) => handleCancelClick(e, model.id)}
-                          className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors"
+                          className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors whitespace-nowrap"
                           aria-label={t("modelSelector.cancelDownload")}
                         >
                           {t("modelSelector.cancel")}
