@@ -20,9 +20,10 @@ use serenity::cache::Settings as CacheSettings;
 use serenity::client::{Client, Context, EventHandler};
 use serenity::prelude::TypeMapKey;
 use songbird::driver::DecodeMode;
-use songbird::events::{Event, EventContext, EventHandler as VoiceEventHandler};
+use songbird::events::{Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent};
 use songbird::input::{Input, RawAdapter};
 use songbird::{Config, CoreEvent, SerenityInit};
+use songbird::tracks::TrackHandle;
 use std::collections::HashMap;
 use std::io::{self, BufRead, Cursor, Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
@@ -171,6 +172,8 @@ impl UserAudioBuffer {
 struct BotState {
     in_voice: bool,
     listening: bool,
+    is_speaking: bool, // True when bot is playing audio (to ignore own audio)
+    bot_user_id: Option<String>, // Bot's own user ID to filter out
     current_guild: Option<GuildId>,
     current_channel: Option<ChannelId>,
     guild_name: Option<String>,
@@ -185,6 +188,8 @@ impl BotState {
         Self {
             in_voice: false,
             listening: false,
+            is_speaking: false,
+            bot_user_id: None,
             current_guild: None,
             current_channel: None,
             guild_name: None,
@@ -315,7 +320,8 @@ impl VoiceEventHandler for VoiceReceiver {
             EventContext::VoiceTick(tick) => {
                 let mut state = self.state.write().await;
 
-                if !state.listening {
+                // Don't process audio if not listening or if bot is currently speaking
+                if !state.listening || state.is_speaking {
                     return None;
                 }
 
@@ -328,6 +334,9 @@ impl VoiceEventHandler for VoiceReceiver {
                     );
                 }
 
+                // Get bot's user ID to filter out
+                let bot_user_id = state.bot_user_id.clone();
+
                 // Collect audio from speaking users
                 for (ssrc, data) in &tick.speaking {
                     // Check if we have decoded audio
@@ -338,6 +347,14 @@ impl VoiceEventHandler for VoiceReceiver {
                             .get(ssrc)
                             .cloned()
                             .unwrap_or_else(|| ssrc.to_string());
+
+                        // Skip if this is the bot's own audio
+                        if let Some(ref bot_id) = bot_user_id {
+                            if &user_id_for_log == bot_id {
+                                log::debug!("Ignoring bot's own audio (SSRC {})", ssrc);
+                                continue;
+                            }
+                        }
 
                         let buffer = state
                             .user_audio_buffers
@@ -403,6 +420,19 @@ impl VoiceEventHandler for VoiceReceiver {
                         .get(&ssrc)
                         .cloned()
                         .unwrap_or_else(|| ssrc.to_string());
+
+                    // Skip if this is the bot's own audio
+                    if let Some(ref bot_id) = bot_user_id {
+                        if &user_id == bot_id {
+                            log::debug!("Ignoring bot's own audio in silence timeout (SSRC {})", ssrc);
+                            // Still clear the buffer
+                            if let Some(buffer) = state.user_audio_buffers.get_mut(&ssrc) {
+                                buffer.samples.clear();
+                                buffer.is_speaking = false;
+                            }
+                            continue;
+                        }
+                    }
 
                     // Now get mutable access to the buffer
                     if let Some(buffer) = state.user_audio_buffers.get_mut(&ssrc) {
@@ -497,7 +527,7 @@ impl TypeMapKey for GuildsReady {
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
-        log::info!("Bot connected as {}", ready.user.name);
+        log::info!("Bot connected as {} (ID: {})", ready.user.name, ready.user.id);
         log::info!("Guilds in ready payload: {} (these are UnavailableGuild - full data comes via GUILD_CREATE)", ready.guilds.len());
 
         // Log guild IDs from ready payload
@@ -516,8 +546,12 @@ impl EventHandler for Handler {
             let call_holder = data.get::<CallKey>().cloned();
             drop(data);
 
-            // Take the receiver out of the state
+            // Store bot's user ID so we can filter out our own audio
             let mut state_write = state.write().await;
+            state_write.bot_user_id = Some(ready.user.id.to_string());
+            log::info!("Stored bot user ID: {}", ready.user.id);
+
+            // Take the receiver out of the state
             if let Some(mut command_rx) = state_write.command_rx.take() {
                 drop(state_write);
 
@@ -610,7 +644,36 @@ async fn handle_discord_command(
             sample_rate,
             respond,
         } => {
+            // Mark bot as speaking to ignore incoming audio during playback
+            {
+                let mut state_guard = state.write().await;
+                state_guard.is_speaking = true;
+                // Also clear any buffered audio to prevent processing stale audio
+                for buffer in state_guard.user_audio_buffers.values_mut() {
+                    buffer.samples.clear();
+                    buffer.is_speaking = false;
+                }
+            }
+            log::info!("Bot started speaking - audio capture paused");
+
+            // play_audio now waits for the track to actually finish playing
             let result = play_audio(call_holder, &audio_data, sample_rate).await;
+
+            // Small cooldown after playback completes to avoid picking up echo/reverb
+            tokio::time::sleep(Duration::from_millis(300)).await;
+
+            // Clear any audio that might have been captured and resume listening
+            {
+                let mut state_guard = state.write().await;
+                state_guard.is_speaking = false;
+                // Clear buffers to discard any echo
+                for buffer in state_guard.user_audio_buffers.values_mut() {
+                    buffer.samples.clear();
+                    buffer.is_speaking = false;
+                }
+            }
+            log::info!("Bot finished speaking - audio capture resumed");
+
             let _ = respond.send(result);
         }
         DiscordCommand::Shutdown => {
@@ -811,6 +874,22 @@ impl MediaSource for MemoryAudioSource {
     }
 }
 
+/// Event handler to signal when a track finishes playing
+struct TrackEndNotifier {
+    sender: Arc<tokio::sync::Mutex<Option<oneshot::Sender<()>>>>,
+}
+
+#[async_trait]
+impl VoiceEventHandler for TrackEndNotifier {
+    async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
+        log::info!("Track playback finished (End event)");
+        if let Some(sender) = self.sender.lock().await.take() {
+            let _ = sender.send(());
+        }
+        None
+    }
+}
+
 async fn play_audio(
     call_holder: Option<&Arc<Mutex<Option<Arc<tokio::sync::Mutex<songbird::Call>>>>>>,
     audio_data: &[f32],
@@ -837,6 +916,10 @@ async fn play_audio(
         audio_data.to_vec()
     };
 
+    // Calculate expected duration for logging/fallback timeout
+    let duration_secs = resampled.len() as f64 / sample_rate as f64;
+    log::info!("Playing {:.2}s of audio", duration_secs);
+
     // Convert mono to stereo (interleaved f32)
     let stereo: Vec<f32> = resampled
         .iter()
@@ -858,9 +941,37 @@ async fn play_audio(
     // Convert to Input
     let input: Input = adapter.into();
 
-    // Play the audio
+    // Create a channel to wait for playback completion
+    let (tx, rx) = oneshot::channel::<()>();
+    let sender = Arc::new(tokio::sync::Mutex::new(Some(tx)));
+
+    // Play the audio and get track handle
     let mut call = call_lock.lock().await;
-    call.play_input(input);
+    let track_handle: TrackHandle = call.play_input(input);
+
+    // Register an event handler for when the track ends
+    let _ = track_handle.add_event(
+        Event::Track(TrackEvent::End),
+        TrackEndNotifier { sender },
+    );
+
+    // Drop the call lock so we don't hold it during playback
+    drop(call);
+    drop(holder_guard);
+
+    // Wait for playback to complete with a timeout (duration + 2 seconds buffer)
+    let timeout_duration = Duration::from_secs_f64(duration_secs + 2.0);
+    match tokio::time::timeout(timeout_duration, rx).await {
+        Ok(Ok(())) => {
+            log::info!("Audio playback completed successfully");
+        }
+        Ok(Err(_)) => {
+            log::warn!("Track end channel was dropped");
+        }
+        Err(_) => {
+            log::warn!("Audio playback timed out after {:.2}s", timeout_duration.as_secs_f64());
+        }
+    }
 
     Ok(())
 }

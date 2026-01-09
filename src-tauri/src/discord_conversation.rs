@@ -76,6 +76,9 @@ impl DiscordConversationManager {
         // Enable Onichan mode so process_input will work
         self.onichan_manager.enable();
 
+        // Clear conversation history to start fresh
+        self.onichan_manager.clear_history();
+
         // First, enable listening on the Discord sidecar
         self.discord_manager.enable_listening()?;
 
@@ -324,6 +327,10 @@ pub fn process_discord_audio(
 
     // Play audio on Discord
     discord_manager.play_audio(&tts_base64, tts_sample_rate)?;
+
+    // Add a small cooldown after speaking to avoid picking up echo/reverb
+    // The discord sidecar also pauses listening during playback, but this adds extra safety
+    thread::sleep(Duration::from_millis(500));
 
     let _ = app_handle.emit("discord-conversation-state", "listening");
 
