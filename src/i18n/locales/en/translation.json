@@ -49,7 +49,7 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "5x faster than Whisper, handles accents well."
+        "description": "Very fast, English only. Handles accents well."
       }
     },
     "errors": {
