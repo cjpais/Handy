@@ -130,7 +130,19 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
       if (updatedKeyPressed.length === 0 && recordedKeys.length > 0) {
         // Create the shortcut string from all recorded keys
         // Sort keys so modifiers come first, then the main key
-        const modifiers = ["ctrl", "control", "shift", "alt", "option", "meta", "command", "cmd", "super", "win", "windows"];
+        const modifiers = [
+          "ctrl",
+          "control",
+          "shift",
+          "alt",
+          "option",
+          "meta",
+          "command",
+          "cmd",
+          "super",
+          "win",
+          "windows",
+        ];
         const sortedKeys = recordedKeys.sort((a, b) => {
           const aIsModifier = modifiers.includes(a.toLowerCase());
           const bIsModifier = modifiers.includes(b.toLowerCase());
