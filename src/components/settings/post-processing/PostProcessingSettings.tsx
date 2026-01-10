@@ -19,6 +19,7 @@ import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
 import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
+import { PostProcessingHotkey } from "../PostProcessingHotkey";
 import { useSettings } from "../../../hooks/useSettings";
 
 const DisabledNotice: React.FC<{ children: React.ReactNode }> = ({
@@ -452,6 +453,10 @@ export const PostProcessingSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <SettingsGroup title={t("settings.postProcessing.hotkey.title")}>
+        <PostProcessingHotkey descriptionMode="tooltip" grouped={true} />
+      </SettingsGroup>
+
       <SettingsGroup title={t("settings.postProcessing.api.title")}>
         <PostProcessingSettingsApi />
       </SettingsGroup>

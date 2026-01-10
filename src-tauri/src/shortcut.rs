@@ -53,17 +53,30 @@ pub fn change_binding(
 ) -> Result<BindingResponse, String> {
     let mut settings = settings::get_settings(&app);
 
-    // Get the binding to modify
+    // Get the binding to modify, or create it from defaults if it doesn't exist
     let binding_to_modify = match settings.bindings.get(&id) {
         Some(binding) => binding.clone(),
         None => {
-            let error_msg = format!("Binding with id '{}' not found", id);
-            warn!("change_binding error: {}", error_msg);
-            return Ok(BindingResponse {
-                success: false,
-                binding: None,
-                error: Some(error_msg),
-            });
+            // Try to get the default binding for this id
+            let default_settings = settings::get_default_settings();
+            match default_settings.bindings.get(&id) {
+                Some(default_binding) => {
+                    warn!(
+                        "Binding '{}' not found in settings, creating from defaults",
+                        id
+                    );
+                    default_binding.clone()
+                }
+                None => {
+                    let error_msg = format!("Binding with id '{}' not found in defaults", id);
+                    warn!("change_binding error: {}", error_msg);
+                    return Ok(BindingResponse {
+                        success: false,
+                        binding: None,
+                        error: Some(error_msg),
+                    });
+                }
+            }
         }
     };
     // If this is the cancel binding, just update the settings and return
