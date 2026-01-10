@@ -1,33 +1,13 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useSidecarStore } from "@/stores/sidecarStore";
 import { commands } from "@/bindings";
 import { Brain, Volume2, MessageCircle, Database, X } from "lucide-react";
 
 type SidecarState = "online" | "offline" | "loading";
 
-interface SidecarDetails {
-  llm: {
-    loaded: boolean;
-    modelName?: string;
-  };
-  tts: {
-    loaded: boolean;
-  };
-  discord: {
-    connected: boolean;
-    inVoice: boolean;
-    guildName?: string;
-    channelName?: string;
-  };
-  memory: {
-    running: boolean;
-    modelLoaded: boolean;
-    memoryCount: number;
-  };
-}
-
 interface SidecarInfo {
-  id: keyof SidecarDetails;
+  id: string;
   labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   state: SidecarState;
@@ -48,101 +28,61 @@ const getStatusColor = (state: SidecarState): string => {
 
 export const SidecarStatus: React.FC = () => {
   const { t } = useTranslation();
-  const [llmState, setLlmState] = useState<SidecarState>("offline");
-  const [ttsState, setTtsState] = useState<SidecarState>("offline");
-  const [discordState, setDiscordState] = useState<SidecarState>("offline");
-  const [memoryState, setMemoryState] = useState<SidecarState>("offline");
   const [activePopover, setActivePopover] = useState<string | null>(null);
-  const [details, setDetails] = useState<SidecarDetails>({
-    llm: { loaded: false },
-    tts: { loaded: false },
-    discord: { connected: false, inVoice: false },
-    memory: { running: false, modelLoaded: false, memoryCount: 0 },
-  });
+  const [llmModelName, setLlmModelName] = useState<string | undefined>();
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  const checkStatus = useCallback(async () => {
-    try {
-      // Check LLM status
-      const llmLoaded = await commands.isLocalLlmLoaded();
-      setLlmState(llmLoaded ? "online" : "offline");
+  // Use global sidecar store instead of local state
+  const {
+    llmLoaded,
+    llmLoading,
+    ttsLoaded,
+    ttsLoading,
+    discordConnected,
+    discordInVoice,
+    discordGuild,
+    discordChannel,
+    memoryRunning,
+    memoryModelLoaded,
+    memoryCount,
+  } = useSidecarStore();
 
-      // Get current model name if loaded
-      let modelName: string | undefined;
-      if (llmLoaded) {
-        try {
-          modelName = await commands.getCurrentModel();
-        } catch {
-          // Ignore errors getting model name
+  // Derive states from store values
+  const llmState: SidecarState = llmLoading
+    ? "loading"
+    : llmLoaded
+      ? "online"
+      : "offline";
+  const ttsState: SidecarState = ttsLoading
+    ? "loading"
+    : ttsLoaded
+      ? "online"
+      : "offline";
+  const discordState: SidecarState =
+    discordConnected || discordInVoice ? "online" : "offline";
+  const memoryState: SidecarState = memoryRunning ? "online" : "offline";
+
+  // Fetch model name when LLM is loaded (this is display-only, not state)
+  const fetchModelName = useCallback(async () => {
+    if (llmLoaded) {
+      try {
+        const result = await commands.getCurrentModel();
+        if (result.status === "ok") {
+          setLlmModelName(result.data);
+        } else {
+          setLlmModelName(undefined);
         }
+      } catch {
+        setLlmModelName(undefined);
       }
-
-      setDetails((prev) => ({
-        ...prev,
-        llm: { loaded: llmLoaded, modelName },
-      }));
-
-      // Check TTS status
-      const ttsLoaded = await commands.isLocalTtsLoaded();
-      setTtsState(ttsLoaded ? "online" : "offline");
-      setDetails((prev) => ({
-        ...prev,
-        tts: { loaded: ttsLoaded },
-      }));
-
-      // Check Discord status - it's an object with connected/in_voice fields
-      const discordStatus = await commands.discordGetStatus();
-      setDiscordState(
-        discordStatus.connected || discordStatus.in_voice ? "online" : "offline"
-      );
-      setDetails((prev) => ({
-        ...prev,
-        discord: {
-          connected: discordStatus.connected,
-          inVoice: discordStatus.in_voice,
-          guildName: discordStatus.guild_name ?? undefined,
-          channelName: discordStatus.channel_name ?? undefined,
-        },
-      }));
-
-      // Check Memory status
-      const memoryStatus = await commands.getMemoryStatus();
-      if (memoryStatus.status === "ok") {
-        setMemoryState(memoryStatus.data.is_running ? "online" : "offline");
-
-        // Get memory count if running
-        let memoryCount = 0;
-        if (memoryStatus.data.is_running) {
-          try {
-            const countResult = await commands.getMemoryCount();
-            if (countResult.status === "ok") {
-              memoryCount = countResult.data;
-            }
-          } catch {
-            // Ignore errors getting count
-          }
-        }
-
-        setDetails((prev) => ({
-          ...prev,
-          memory: {
-            running: memoryStatus.data.is_running,
-            modelLoaded: memoryStatus.data.model_loaded,
-            memoryCount,
-          },
-        }));
-      }
-    } catch (e) {
-      console.error("Failed to check sidecar status:", e);
+    } else {
+      setLlmModelName(undefined);
     }
-  }, []);
+  }, [llmLoaded]);
 
-  // Initial check and periodic polling
   useEffect(() => {
-    checkStatus();
-    const interval = setInterval(checkStatus, 5000); // Check every 5 seconds
-    return () => clearInterval(interval);
-  }, [checkStatus]);
+    fetchModelName();
+  }, [fetchModelName]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -173,23 +113,19 @@ export const SidecarStatus: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-text/60">{t("footer.popover.status")}</span>
-              <span
-                className={
-                  details.llm.loaded ? "text-green-400" : "text-text/40"
-                }
-              >
-                {details.llm.loaded
+              <span className={llmLoaded ? "text-green-400" : "text-text/40"}>
+                {llmLoaded
                   ? t("footer.popover.loaded")
                   : t("footer.popover.notLoaded")}
               </span>
             </div>
-            {details.llm.modelName && (
+            {llmModelName && (
               <div className="flex items-center justify-between">
                 <span className="text-text/60">
                   {t("footer.popover.model")}
                 </span>
                 <span className="text-text/80 truncate max-w-32">
-                  {details.llm.modelName}
+                  {llmModelName}
                 </span>
               </div>
             )}
@@ -204,12 +140,8 @@ export const SidecarStatus: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-text/60">{t("footer.popover.status")}</span>
-              <span
-                className={
-                  details.tts.loaded ? "text-green-400" : "text-text/40"
-                }
-              >
-                {details.tts.loaded
+              <span className={ttsLoaded ? "text-green-400" : "text-text/40"}>
+                {ttsLoaded
                   ? t("footer.popover.loaded")
                   : t("footer.popover.notLoaded")}
               </span>
@@ -228,11 +160,9 @@ export const SidecarStatus: React.FC = () => {
                 {t("footer.popover.connected")}
               </span>
               <span
-                className={
-                  details.discord.connected ? "text-green-400" : "text-text/40"
-                }
+                className={discordConnected ? "text-green-400" : "text-text/40"}
               >
-                {details.discord.connected
+                {discordConnected
                   ? t("footer.popover.yes")
                   : t("footer.popover.no")}
               </span>
@@ -242,32 +172,30 @@ export const SidecarStatus: React.FC = () => {
                 {t("footer.popover.inVoice")}
               </span>
               <span
-                className={
-                  details.discord.inVoice ? "text-green-400" : "text-text/40"
-                }
+                className={discordInVoice ? "text-green-400" : "text-text/40"}
               >
-                {details.discord.inVoice
+                {discordInVoice
                   ? t("footer.popover.yes")
                   : t("footer.popover.no")}
               </span>
             </div>
-            {details.discord.guildName && (
+            {discordGuild && (
               <div className="flex items-center justify-between">
                 <span className="text-text/60">
                   {t("footer.popover.server")}
                 </span>
                 <span className="text-text/80 truncate max-w-32">
-                  {details.discord.guildName}
+                  {discordGuild}
                 </span>
               </div>
             )}
-            {details.discord.channelName && (
+            {discordChannel && (
               <div className="flex items-center justify-between">
                 <span className="text-text/60">
                   {t("footer.popover.channel")}
                 </span>
                 <span className="text-text/80 truncate max-w-32">
-                  {details.discord.channelName}
+                  {discordChannel}
                 </span>
               </div>
             )}
@@ -285,11 +213,9 @@ export const SidecarStatus: React.FC = () => {
                 {t("footer.popover.sidecar")}
               </span>
               <span
-                className={
-                  details.memory.running ? "text-green-400" : "text-text/40"
-                }
+                className={memoryRunning ? "text-green-400" : "text-text/40"}
               >
-                {details.memory.running
+                {memoryRunning
                   ? t("footer.popover.running")
                   : t("footer.popover.stopped")}
               </span>
@@ -299,21 +225,19 @@ export const SidecarStatus: React.FC = () => {
                 {t("footer.popover.embeddingModel")}
               </span>
               <span
-                className={
-                  details.memory.modelLoaded ? "text-green-400" : "text-text/40"
-                }
+                className={memoryModelLoaded ? "text-green-400" : "text-text/40"}
               >
-                {details.memory.modelLoaded
+                {memoryModelLoaded
                   ? t("footer.popover.loaded")
                   : t("footer.popover.notLoaded")}
               </span>
             </div>
-            {details.memory.running && (
+            {memoryRunning && (
               <div className="flex items-center justify-between">
                 <span className="text-text/60">
                   {t("footer.popover.memories")}
                 </span>
-                <span className="text-text/80">{details.memory.memoryCount}</span>
+                <span className="text-text/80">{memoryCount}</span>
               </div>
             )}
             <p className="text-xs text-text/40 pt-2 border-t border-mid-gray/20">

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { commands, MemoryMessage, MemoryStatus, EmbeddingModelInfo } from "@/bindings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
+import { useSidecarStore } from "@/stores/sidecarStore";
 import {
   Database,
   Search,
@@ -21,6 +22,15 @@ import {
 
 export const MemorySettings: React.FC = () => {
   const { t } = useTranslation();
+
+  // Use global sidecar store for memory state
+  const {
+    memoryRunning,
+    memoryModelLoaded,
+    memoryCount: globalMemoryCount,
+    refresh: refreshSidecarState,
+  } = useSidecarStore();
+
   const [status, setStatus] = useState<MemoryStatus | null>(null);
   const [memoryCount, setMemoryCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +46,17 @@ export const MemorySettings: React.FC = () => {
   const [isLoadingModel, setIsLoadingModel] = useState<string | null>(null);
   const [isStartingSidecar, setIsStartingSidecar] = useState(false);
   const [isStoppingSidecar, setIsStoppingSidecar] = useState(false);
+
+  // Sync local status with global store state
+  useEffect(() => {
+    if (status) {
+      setStatus((prev) =>
+        prev
+          ? { ...prev, is_running: memoryRunning, model_loaded: memoryModelLoaded }
+          : prev
+      );
+    }
+  }, [memoryRunning, memoryModelLoaded, status]);
 
   // Load initial status
   useEffect(() => {
@@ -162,12 +183,14 @@ export const MemorySettings: React.FC = () => {
       } else {
         console.error("Failed to get current model:", currentResult.error);
       }
+      // Refresh global sidecar state
+      refreshSidecarState();
     } catch (e) {
       console.error("Failed to start sidecar:", e);
     } finally {
       setIsStartingSidecar(false);
     }
-  }, []);
+  }, [refreshSidecarState]);
 
   // Stop the memory sidecar
   const handleStopSidecar = useCallback(async () => {
@@ -178,13 +201,14 @@ export const MemorySettings: React.FC = () => {
         setStatus({ is_running: false, model_loaded: false, total_memories: 0 });
         setEmbeddingModels([]);
         setCurrentModel(null);
+        refreshSidecarState();
       }
     } catch (e) {
       console.error("Failed to stop sidecar:", e);
     } finally {
       setIsStoppingSidecar(false);
     }
-  }, []);
+  }, [refreshSidecarState]);
 
   const handleLoadModel = useCallback(async (modelId: string) => {
     setIsLoadingModel(modelId);
@@ -193,6 +217,7 @@ export const MemorySettings: React.FC = () => {
       if (result.status === "ok") {
         // Refresh model list to update is_loaded status
         await loadEmbeddingModels();
+        refreshSidecarState();
       } else {
         console.error("Failed to load model:", result.error);
       }
@@ -201,7 +226,7 @@ export const MemorySettings: React.FC = () => {
     } finally {
       setIsLoadingModel(null);
     }
-  }, [loadEmbeddingModels]);
+  }, [loadEmbeddingModels, refreshSidecarState]);
 
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp * 1000);

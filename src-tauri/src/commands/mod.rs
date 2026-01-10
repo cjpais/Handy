@@ -1,9 +1,11 @@
 pub mod audio;
+pub mod auth;
 pub mod discord;
 pub mod history;
 pub mod memory;
 pub mod models;
 pub mod onichan;
+pub mod supabase;
 pub mod transcription;
 
 use crate::settings::{get_settings, write_settings, AppSettings, LogLevel, SETTINGS_STORE_PATH};

@@ -2,10 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import { Toaster } from "sonner";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
+import { AuthScreen, AuthMode } from "./components/auth";
 import Footer from "./components/footer";
 import Onboarding from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
+import { useSidecarStore } from "./stores/sidecarStore";
+import { useAuth } from "./hooks/useAuth";
 import { commands } from "@/bindings";
 
 const renderSettingsContent = (section: SidebarSection) => {
@@ -15,10 +18,14 @@ const renderSettingsContent = (section: SidebarSection) => {
 };
 
 function App() {
+  const [authMode, setAuthMode] = useState<AuthMode | "loading">("loading");
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
+  const initializeSidecar = useSidecarStore((state) => state.initialize);
+  const cleanupSidecar = useSidecarStore((state) => state.cleanup);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Notify backend of section changes for context-aware shortcuts
   const handleSectionChange = useCallback((section: SidebarSection) => {
@@ -29,8 +36,60 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Initialize sidecar store for global state management
+    initializeSidecar();
+    return () => {
+      cleanupSidecar();
+    };
+  }, [initializeSidecar, cleanupSidecar]);
+
+  // Check auth status when auth loading completes
+  useEffect(() => {
+    if (!authLoading) {
+      checkAuthStatus();
+    }
+  }, [authLoading, isAuthenticated]);
+
+  // Check for stored auth mode on startup
+  const checkAuthStatus = async () => {
+    try {
+      const storedAuthMode = localStorage.getItem("auth_mode") as AuthMode | null;
+
+      // If they previously chose "signed_in", verify they're still authenticated
+      if (storedAuthMode === "signed_in") {
+        // Wait for auth hook to finish loading
+        if (authLoading) return;
+
+        if (isAuthenticated) {
+          setAuthMode("signed_in");
+          checkOnboardingStatus();
+        } else {
+          // Session expired or logged out - show auth screen again
+          localStorage.removeItem("auth_mode");
+          setAuthMode(null);
+        }
+      } else if (storedAuthMode) {
+        // Ghost or Guest mode - just restore it
+        setAuthMode(storedAuthMode);
+        checkOnboardingStatus();
+      } else {
+        // No stored mode - show auth screen
+        setAuthMode(null);
+      }
+    } catch (error) {
+      console.error("Failed to check auth status:", error);
+      setAuthMode(null);
+    }
+  };
+
+  const handleAuthComplete = (mode: AuthMode) => {
+    setAuthMode(mode);
+    // Store auth mode for future sessions
+    if (mode) {
+      localStorage.setItem("auth_mode", mode);
+    }
     checkOnboardingStatus();
-  }, []);
+  };
 
   // Handle keyboard shortcuts for debug mode toggle
   useEffect(() => {
@@ -76,6 +135,20 @@ function App() {
     // Transition to main app - user has started a download
     setShowOnboarding(false);
   };
+
+  // Show loading state while checking auth status
+  if (authMode === "loading") {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-logo-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show auth screen if user hasn't authenticated yet
+  if (authMode === null) {
+    return <AuthScreen onAuthComplete={handleAuthComplete} />;
+  }
 
   // Show loading state while checking onboarding status
   if (showOnboarding === null) {

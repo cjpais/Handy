@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Radio, Bot, MessageCircle, Database } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Sparkles, Radio, Bot, MessageCircle, Database, Key } from "lucide-react";
 import KBVETextLogo from "./icons/KBVETextLogo";
 import KBVEHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -15,6 +15,7 @@ import {
   OnichanSettings,
   DiscordSettings,
   MemorySettings,
+  CredentialsSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -63,6 +64,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.memory",
     icon: Database,
     component: MemorySettings,
+    enabled: () => true,
+  },
+  credentials: {
+    labelKey: "sidebar.credentials",
+    icon: Key,
+    component: CredentialsSettings,
     enabled: () => true,
   },
   advanced: {

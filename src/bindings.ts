@@ -913,6 +913,122 @@ async discordIsConversationRunning() : Promise<boolean> {
     return await TAURI_INVOKE("discord_is_conversation_running");
 },
 /**
+ * Get the Supabase URL (returns default if not set)
+ */
+async getSupabaseUrl() : Promise<string> {
+    return await TAURI_INVOKE("get_supabase_url");
+},
+/**
+ * Set the Supabase URL
+ */
+async setSupabaseUrl(url: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_supabase_url", { url }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Get a masked version of the Supabase anon key for display (returns masked default if not set)
+ */
+async getSupabaseAnonKey() : Promise<string> {
+    return await TAURI_INVOKE("get_supabase_anon_key");
+},
+/**
+ * Get the actual Supabase anon key (for internal use by auth system)
+ * This returns the unmasked key - use with care
+ */
+async getSupabaseAnonKeyRaw() : Promise<string> {
+    return await TAURI_INVOKE("get_supabase_anon_key_raw");
+},
+/**
+ * Check if Supabase anon key is configured (always true since we have a default)
+ */
+async hasSupabaseAnonKey() : Promise<boolean> {
+    return await TAURI_INVOKE("has_supabase_anon_key");
+},
+/**
+ * Set the Supabase anon key (stored securely, only masked version returned)
+ */
+async setSupabaseAnonKey(key: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_supabase_anon_key", { key }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Clear Supabase credentials
+ */
+async clearSupabaseCredentials() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_supabase_credentials") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Start the OAuth callback server and return the callback URL
+ * Call this before opening the OAuth URL in the browser
+ */
+async authStartServer() : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("auth_start_server") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Stop the OAuth callback server (called after auth completes or on cancel)
+ */
+async authStopServer() : Promise<void> {
+    await TAURI_INVOKE("auth_stop_server");
+},
+/**
+ * Save Supabase session to secure credentials store
+ */
+async authSaveSession(session: SupabaseSession) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("auth_save_session", { session }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Load Supabase session from credentials store
+ */
+async authGetSession() : Promise<SupabaseSession | null> {
+    return await TAURI_INVOKE("auth_get_session");
+},
+/**
+ * Get current authenticated user info (safe to expose)
+ */
+async authGetUser() : Promise<AuthUser> {
+    return await TAURI_INVOKE("auth_get_user");
+},
+/**
+ * Clear auth session (logout)
+ */
+async authLogout() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("auth_logout") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Check if user is authenticated
+ */
+async authIsAuthenticated() : Promise<boolean> {
+    return await TAURI_INVOKE("auth_is_authenticated");
+},
+/**
  * Get the current status of the memory system
  */
 async getMemoryStatus() : Promise<Result<MemoryStatus, string>> {
@@ -1057,6 +1173,7 @@ async downloadVadModelIfNeeded() : Promise<Result<string, string>> {
 
 export type AppSettings = { bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: Partial<{ [key in string]: string }>; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; filler_detection_enabled?: boolean; filler_output_mode?: FillerOutputMode; custom_filler_words?: string[]; show_filler_overlay?: boolean; active_ui_section?: string; onichan_silence_threshold?: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
+export type AuthUser = { id: string; email: string | null; name: string | null; avatar_url: string | null; provider: string | null; is_authenticated: boolean }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 export type ChannelInfo = { id: string; name: string; kind: string }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
@@ -1139,6 +1256,19 @@ export type PostProcessProvider = { id: string; label: string; base_url: string;
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
+export type SupabaseSession = { access_token: string; refresh_token: string; expires_at: number; user_id: string; email: string | null; 
+/**
+ * User's display name from OAuth provider
+ */
+name: string | null; 
+/**
+ * User's avatar URL from OAuth provider
+ */
+avatar_url: string | null; 
+/**
+ * OAuth provider used (github, discord, twitch)
+ */
+provider: string | null }
 
 /** tauri-specta globals **/
 

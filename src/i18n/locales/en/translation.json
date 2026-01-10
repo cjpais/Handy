@@ -1,4 +1,47 @@
 {
+  "auth": {
+    "signIn": {
+      "title": "Welcome to Handy",
+      "description": "Sign in to sync your settings and access cloud features",
+      "github": "Sign in with GitHub",
+      "discord": "Sign in with Discord",
+      "twitch": "Sign in with Twitch",
+      "hint": "Your data is stored securely and never shared",
+      "cancel": "Cancel sign in"
+    },
+    "signOut": "Sign Out",
+    "ghost": {
+      "title": "Ghost Mode",
+      "subtitle": "Completely Offline",
+      "description": "Run entirely offline with no network connections. Perfect for privacy-focused users or air-gapped systems.",
+      "badge": {
+        "private": "100% Private",
+        "offline": "No Internet"
+      }
+    },
+    "guest": {
+      "title": "Guest Mode",
+      "subtitle": "Anonymous Access",
+      "description": "Use cloud features anonymously without creating an account. Some features may be limited.",
+      "badge": {
+        "anonymous": "Anonymous",
+        "cloud": "Cloud Enabled"
+      }
+    },
+    "or": "or",
+    "profile": {
+      "title": "Your Profile",
+      "avatar": "Profile picture",
+      "anonymous": "Anonymous User",
+      "via": "via",
+      "viewProfile": "View Profile",
+      "email": "Email",
+      "userId": "User ID",
+      "provider": "Sign-in Provider",
+      "unknown": "Unknown",
+      "syncInfo": "Your settings and preferences will sync across devices when you sign in on other computers."
+    }
+  },
   "tray": {
     "settings": "Settings...",
     "checkUpdates": "Check for Updates...",
@@ -13,6 +56,7 @@
     "onichan": "Onichan",
     "discord": "Discord",
     "memory": "Memory",
+    "credentials": "Credentials",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -395,6 +439,7 @@
     }
   },
   "footer": {
+    "signIn": "Sign In",
     "downloadingModel": "Downloading {{model}}...",
     "checkingUpdates": "Checking for updates...",
     "updateAvailable": "Update available: {{version}}",
@@ -743,6 +788,40 @@
     "empty": {
       "title": "No Memories Yet",
       "description": "Memories will be stored automatically when you use Onichan or Discord voice chat."
+    }
+  },
+  "credentials": {
+    "discord": {
+      "title": "Discord Bot Token",
+      "heading": "Discord Integration",
+      "description": "Your Discord bot token is stored securely. Configure or update it in the Discord settings tab.",
+      "configured": "Discord bot token is configured",
+      "notConfigured": "Discord bot token not configured",
+      "manageHint": "Go to the Discord tab to update or clear your token.",
+      "setupHint": "Go to the Discord tab to set up your bot token."
+    },
+    "supabase": {
+      "title": "Supabase Configuration",
+      "heading": "Supabase Backend",
+      "description": "Configure your Supabase project for user authentication and cloud sync features.",
+      "urlLabel": "Supabase URL",
+      "urlPlaceholder": "https://your-project.supabase.co",
+      "urlHint": "Find this in your Supabase project settings under API",
+      "keyLabel": "Supabase Anon Key",
+      "keyPlaceholder": "Enter your Supabase anon/public key",
+      "keyHint": "The public anonymous key from your Supabase project settings",
+      "save": "Save",
+      "clear": "Clear",
+      "keySaved": "Anon key saved securely",
+      "configured": "Supabase is configured",
+      "readyHint": "Your Supabase credentials are ready for authentication."
+    },
+    "errors": {
+      "keyRequired": "Anon key is required"
+    },
+    "info": {
+      "title": "Secure Credential Storage",
+      "description": "All credentials are stored securely on your device. API keys are never displayed in full after being saved."
     }
   }
 }

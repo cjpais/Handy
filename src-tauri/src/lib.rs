@@ -3,6 +3,7 @@ mod actions;
 mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
+mod auth_server;
 mod clipboard;
 mod commands;
 mod discord;
@@ -260,6 +261,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         discord_manager.clone(),
     ));
 
+    // Initialize auth manager for OAuth
+    let auth_manager = Arc::new(commands::auth::AuthManager::new());
+
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
@@ -274,6 +278,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(discord_manager.clone());
     app_handle.manage(discord_conversation_manager.clone());
     app_handle.manage(memory_manager.clone());
+    app_handle.manage(auth_manager.clone());
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
@@ -497,6 +502,20 @@ pub fn run() {
         commands::discord::discord_start_conversation,
         commands::discord::discord_stop_conversation,
         commands::discord::discord_is_conversation_running,
+        commands::supabase::get_supabase_url,
+        commands::supabase::set_supabase_url,
+        commands::supabase::get_supabase_anon_key,
+        commands::supabase::get_supabase_anon_key_raw,
+        commands::supabase::has_supabase_anon_key,
+        commands::supabase::set_supabase_anon_key,
+        commands::supabase::clear_supabase_credentials,
+        commands::auth::auth_start_server,
+        commands::auth::auth_stop_server,
+        commands::auth::auth_save_session,
+        commands::auth::auth_get_session,
+        commands::auth::auth_get_user,
+        commands::auth::auth_logout,
+        commands::auth::auth_is_authenticated,
         commands::memory::get_memory_status,
         commands::memory::query_all_memories,
         commands::memory::get_memory_count,
@@ -559,6 +578,7 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_macos_permissions::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(

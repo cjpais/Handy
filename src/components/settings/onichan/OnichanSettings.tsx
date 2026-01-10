@@ -5,6 +5,7 @@ import { commands, OnichanModelInfo, OnichanMode } from "@/bindings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { AudioVisualizer } from "../live/AudioVisualizer";
 import { useSettings } from "../../../hooks/useSettings";
+import { useSidecarStore } from "@/stores/sidecarStore";
 import {
   Bot,
   Mic,
@@ -68,13 +69,22 @@ export const OnichanSettings: React.FC = () => {
   const [isConversationMode, setIsConversationMode] = useState(false);
   const [conversationState, setConversationState] = useState<string>("idle");
 
-  // Model state
+  // Use global sidecar store for LLM/TTS loaded state
+  const {
+    llmLoaded: isLlmLoaded,
+    ttsLoaded: isTtsLoaded,
+    llmLoading,
+    ttsLoading,
+    onichanConversationRunning,
+    setOnichanConversationRunning,
+    refresh: refreshSidecarState,
+  } = useSidecarStore();
+
+  // Model state (local - for model selection UI)
   const [llmModels, setLlmModels] = useState<OnichanModelInfo[]>([]);
   const [ttsModels, setTtsModels] = useState<OnichanModelInfo[]>([]);
   const [selectedLlmId, setSelectedLlmId] = useState<string | null>(null);
   const [selectedTtsId, setSelectedTtsId] = useState<string | null>(null);
-  const [isLlmLoaded, setIsLlmLoaded] = useState(false);
-  const [isTtsLoaded, setIsTtsLoaded] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
   const [loadingModel, setLoadingModel] = useState<string | null>(null);
 
@@ -90,10 +100,7 @@ export const OnichanSettings: React.FC = () => {
       const tts = await commands.getOnichanTtsModels();
       setLlmModels(llm);
       setTtsModels(tts);
-
-      // Check load status
-      setIsLlmLoaded(await commands.isLocalLlmLoaded());
-      setIsTtsLoaded(await commands.isLocalTtsLoaded());
+      // LLM/TTS loaded status comes from global sidecar store
     };
     loadModels();
   }, []);
@@ -120,9 +127,7 @@ export const OnichanSettings: React.FC = () => {
       setStatus(event.payload.status);
       setStatusMessage(event.payload.message);
       setMode(event.payload.mode);
-      // Update LLM and TTS loaded state from event
-      setIsLlmLoaded(event.payload.local_llm_loaded);
-      setIsTtsLoaded(event.payload.local_tts_loaded);
+      // LLM/TTS loaded state is managed by global sidecar store
     });
 
     const unlistenResponse = listen<OnichanResponse>(
@@ -326,17 +331,17 @@ export const OnichanSettings: React.FC = () => {
         // Unload if this was the loaded model
         if (selectedLlmId === modelId) {
           await commands.unloadLocalLlm();
-          setIsLlmLoaded(false);
           setSelectedLlmId(null);
+          refreshSidecarState();
         }
         if (selectedTtsId === modelId) {
           await commands.unloadLocalTts();
-          setIsTtsLoaded(false);
           setSelectedTtsId(null);
+          refreshSidecarState();
         }
       }
     },
-    [selectedLlmId, selectedTtsId]
+    [selectedLlmId, selectedTtsId, refreshSidecarState]
   );
 
   const handleLoadLlm = useCallback(async (modelId: string) => {
@@ -346,8 +351,8 @@ export const OnichanSettings: React.FC = () => {
       const result = await commands.loadLocalLlm(modelId);
       console.log(`Load LLM result:`, result);
       if (result.status === "ok") {
-        setIsLlmLoaded(true);
         setSelectedLlmId(modelId);
+        refreshSidecarState();
       } else {
         console.error(`Failed to load LLM: ${result.error}`);
         alert(`Failed to load model: ${result.error}`);
@@ -358,29 +363,29 @@ export const OnichanSettings: React.FC = () => {
     } finally {
       setLoadingModel(null);
     }
-  }, []);
+  }, [refreshSidecarState]);
 
   const handleUnloadLlm = useCallback(async () => {
     await commands.unloadLocalLlm();
-    setIsLlmLoaded(false);
     setSelectedLlmId(null);
-  }, []);
+    refreshSidecarState();
+  }, [refreshSidecarState]);
 
   const handleLoadTts = useCallback(async (modelId: string) => {
     setLoadingModel(modelId);
     const result = await commands.loadLocalTts(modelId);
     setLoadingModel(null);
     if (result.status === "ok") {
-      setIsTtsLoaded(true);
       setSelectedTtsId(modelId);
+      refreshSidecarState();
     }
-  }, []);
+  }, [refreshSidecarState]);
 
   const handleUnloadTts = useCallback(async () => {
     await commands.unloadLocalTts();
-    setIsTtsLoaded(false);
     setSelectedTtsId(null);
-  }, []);
+    refreshSidecarState();
+  }, [refreshSidecarState]);
 
   const getStatusIcon = () => {
     switch (status) {

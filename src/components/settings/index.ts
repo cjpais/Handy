@@ -11,6 +11,7 @@ export { LiveSettings } from "./live/LiveSettings";
 export { OnichanSettings } from "./onichan/OnichanSettings";
 export { DiscordSettings } from "./discord/DiscordSettings";
 export { MemorySettings } from "./memory/MemorySettings";
+export { CredentialsSettings } from "./credentials/CredentialsSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";
