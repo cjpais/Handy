@@ -121,6 +121,10 @@ const settingUpdaters: {
     commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
+  audio_ducking_enabled: (value) =>
+    commands.changeAudioDuckingEnabledSetting(value as boolean),
+  audio_ducking_amount: (value) =>
+    commands.changeAudioDuckingAmountSetting(value as number),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
