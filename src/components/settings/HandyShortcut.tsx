@@ -86,13 +86,11 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         if (editingShortcutId && originalBinding) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
-            // Note: changeBinding already registers the shortcut, no need to call resumeBinding
           } catch (error) {
             console.error("Failed to restore original binding:", error);
             toast.error(t("settings.general.shortcut.errors.restore"));
           }
         } else if (editingShortcutId) {
-          // No original binding to restore, just resume the current binding
           await commands.resumeBinding(editingShortcutId).catch(console.error);
         }
         setEditingShortcutId(null);
@@ -145,7 +143,6 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         if (editingShortcutId && bindings[editingShortcutId]) {
           try {
             await updateBinding(editingShortcutId, newShortcut);
-            // Note: changeBinding already registers the shortcut, no need to call resumeBinding
           } catch (error) {
             console.error("Failed to change binding:", error);
             toast.error(
@@ -158,7 +155,6 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
             if (originalBinding) {
               try {
                 await updateBinding(editingShortcutId, originalBinding);
-                // Note: changeBinding already registers the shortcut, no need to call resumeBinding
               } catch (resetError) {
                 console.error("Failed to reset binding:", resetError);
                 toast.error(t("settings.general.shortcut.errors.reset"));
@@ -184,13 +180,11 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         if (editingShortcutId && originalBinding) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
-            // Note: changeBinding already registers the shortcut, no need to call resumeBinding
           } catch (error) {
             console.error("Failed to restore original binding:", error);
             toast.error(t("settings.general.shortcut.errors.restore"));
           }
         } else if (editingShortcutId) {
-          // No original binding to restore, just resume the current binding
           commands.resumeBinding(editingShortcutId).catch(console.error);
         }
         setEditingShortcutId(null);
