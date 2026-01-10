@@ -624,10 +624,13 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     Ok(())
 }
 
-/// Determine whether a shortcut string contains at least one non-modifier key.
-/// We allow single non-modifier keys (e.g. "f5" or "space") but disallow
-/// modifier-only combos (e.g. "ctrl" or "ctrl+shift").
+/// Validate that a shortcut contains at least one non-modifier key.
+/// The tauri-plugin-global-shortcut library requires at least one main key.
 fn validate_shortcut_string(raw: &str) -> Result<(), String> {
+    if raw.trim().is_empty() {
+        return Err("Shortcut cannot be empty".into());
+    }
+
     let modifiers = [
         "ctrl", "control", "shift", "alt", "option", "meta", "command", "cmd", "super", "win",
         "windows",
@@ -635,10 +638,11 @@ fn validate_shortcut_string(raw: &str) -> Result<(), String> {
     let has_non_modifier = raw
         .split('+')
         .any(|part| !modifiers.contains(&part.trim().to_lowercase().as_str()));
+
     if has_non_modifier {
         Ok(())
     } else {
-        Err("Shortcut must contain at least one non-modifier key".into())
+        Err("Shortcut must include a main key (letter, number, F-key, etc.) in addition to modifiers".into())
     }
 }
 

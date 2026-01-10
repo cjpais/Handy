@@ -75,7 +75,18 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col select-none cursor-default">
-      <Toaster />
+      <Toaster
+        theme="system"
+        toastOptions={{
+          unstyled: true,
+          classNames: {
+            toast:
+              "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
+            title: "font-medium",
+            description: "text-mid-gray",
+          },
+        }}
+      />
       {/* Main content area that takes remaining space */}
       <div className="flex-1 flex overflow-hidden">
         <Sidebar
