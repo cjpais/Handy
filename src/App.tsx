@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Toaster } from "sonner";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
-import Onboarding from "./components/onboarding";
+import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
+import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
+
+type OnboardingStep = "accessibility" | "model" | "done";
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -15,14 +18,35 @@ const renderSettingsContent = (section: SidebarSection) => {
 };
 
 function App() {
-  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
+    null
+  );
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
+  const refreshAudioDevices = useSettingsStore(
+    (state) => state.refreshAudioDevices
+  );
+  const refreshOutputDevices = useSettingsStore(
+    (state) => state.refreshOutputDevices
+  );
+  const hasCompletedPostOnboardingInit = useRef(false);
 
   useEffect(() => {
     checkOnboardingStatus();
   }, []);
+
+  // Initialize Enigo and refresh audio devices when main app loads
+  useEffect(() => {
+    if (onboardingStep === "done" && !hasCompletedPostOnboardingInit.current) {
+      hasCompletedPostOnboardingInit.current = true;
+      commands.initializeEnigo().catch((e) => {
+        console.warn("Failed to initialize Enigo:", e);
+      });
+      refreshAudioDevices();
+      refreshOutputDevices();
+    }
+  }, [onboardingStep, refreshAudioDevices, refreshOutputDevices]);
 
   // Handle keyboard shortcuts for debug mode toggle
   useEffect(() => {
@@ -51,25 +75,39 @@ function App() {
 
   const checkOnboardingStatus = async () => {
     try {
-      // Always check if they have any models available
+      // Check if they have any models available
       const result = await commands.hasAnyModelsAvailable();
       if (result.status === "ok") {
-        setShowOnboarding(!result.data);
+        // If they have models/downloads, they're done. Otherwise start permissions step.
+        setOnboardingStep(result.data ? "done" : "accessibility");
       } else {
-        setShowOnboarding(true);
+        setOnboardingStep("accessibility");
       }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);
-      setShowOnboarding(true);
+      setOnboardingStep("accessibility");
     }
+  };
+
+  const handleAccessibilityComplete = () => {
+    setOnboardingStep("model");
   };
 
   const handleModelSelected = () => {
     // Transition to main app - user has started a download
-    setShowOnboarding(false);
+    setOnboardingStep("done");
   };
 
-  if (showOnboarding) {
+  // Still checking onboarding status
+  if (onboardingStep === null) {
+    return null;
+  }
+
+  if (onboardingStep === "accessibility") {
+    return <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
+  }
+
+  if (onboardingStep === "model") {
     return <Onboarding onModelSelected={handleModelSelected} />;
   }
 

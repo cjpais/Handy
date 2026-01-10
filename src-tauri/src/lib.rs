@@ -110,9 +110,10 @@ fn show_main_window(app: &AppHandle) {
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
-    // Initialize the input state (Enigo singleton for keyboard/mouse simulation)
-    let enigo_state = input::EnigoState::new().expect("Failed to initialize input state (Enigo)");
-    app_handle.manage(enigo_state);
+    // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
+    // The frontend is responsible for calling the `initialize_enigo` command
+    // after onboarding completes. This avoids triggering permission dialogs
+    // on macOS before the user is ready.
 
     // Initialize the managers
     let recording_manager = Arc::new(
@@ -275,6 +276,7 @@ pub fn run() {
         commands::open_log_dir,
         commands::open_app_data_dir,
         commands::check_apple_intelligence_available,
+        commands::initialize_enigo,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,
