@@ -1,0 +1,424 @@
+{
+  "tray": {
+    "settings": "Configurações...",
+    "checkUpdates": "Verificar Atualizações...",
+    "quit": "Sair",
+    "cancel": "Cancelar"
+  },
+  "sidebar": {
+    "general": "Geral",
+    "advanced": "Avançado",
+    "postProcessing": "Pós-Processamento",
+    "history": "Histórico",
+    "debug": "Depuração",
+    "about": "Sobre"
+  },
+  "onboarding": {
+    "subtitle": "Para começar, escolha um modelo de transcrição",
+    "recommended": "Recomendado",
+    "download": "Baixar",
+    "downloading": "Baixando...",
+    "modelCard": {
+      "accuracy": "precisão",
+      "speed": "velocidade"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Rápido e razoavelmente preciso."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Boa precisão, velocidade média"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Precisão e velocidade balanceadas."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Boa precisão, mas lento."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Apenas inglês. O melhor modelo para falantes de inglês."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Rápido e preciso"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Very fast, English only. Handles accents well."
+      }
+    },
+    "errors": {
+      "loadModels": "Falha ao carregar modelos disponíveis",
+      "downloadModel": "Falha ao baixar modelo: {{error}}"
+    }
+  },
+  "modelSelector": {
+    "welcome": "Bem-vindo ao Handy!",
+    "downloadPrompt": "Baixe um modelo abaixo para começar a transcrever.",
+    "availableModels": "Modelos Disponíveis",
+    "downloadModels": "Baixar Modelos",
+    "chooseModel": "Escolher um Modelo",
+    "active": "Ativo",
+    "download": "Baixar",
+    "downloadSize": "Tamanho do download",
+    "noModelsAvailable": "Nenhum modelo disponível",
+    "extracting": "Extraindo {{modelName}}...",
+    "extractingMultiple": "Extraindo {{count}} modelos...",
+    "extractingGeneric": "Extraindo...",
+    "downloading": "Baixando {{percentage}}%",
+    "downloadingMultiple": "Baixando {{count}} modelos...",
+    "modelReady": "Modelo Pronto",
+    "loading": "Carregando {{modelName}}...",
+    "loadingGeneric": "Carregando...",
+    "modelError": "Erro no Modelo",
+    "modelUnloaded": "Modelo Descarregado",
+    "noModelDownloadRequired": "Sem Modelo - Download Necessário",
+    "deleteModel": "Excluir {{modelName}}"
+  },
+  "settings": {
+    "general": {
+      "title": "Geral",
+      "shortcut": {
+        "title": "Atalhos do Handy",
+        "description": "Configure atalhos de teclado para iniciar a gravação de voz para texto",
+        "loading": "Carregando atalhos...",
+        "none": "Nenhum atalho configurado",
+        "notFound": "Atalho não encontrado",
+        "pressKeys": "Pressione as teclas...",
+        "bindings": {
+          "transcribe": {
+            "name": "Transcrever",
+            "description": "Converte sua fala em texto."
+          },
+          "cancel": {
+            "name": "Cancelar",
+            "description": "Cancela a gravação atual."
+          }
+        },
+        "errors": {
+          "restore": "Falha ao restaurar atalho original",
+          "set": "Falha ao definir atalho: {{error}}",
+          "reset": "Falha ao redefinir atalho para o valor original"
+        }
+      },
+      "language": {
+        "title": "Idioma",
+        "description": "Selecione o idioma para reconhecimento de fala. Auto detectará automaticamente o idioma, enquanto selecionar um idioma específico pode melhorar a precisão para esse idioma.",
+        "descriptionUnsupported": "O modelo Parakeet detecta automaticamente o idioma. Não é necessária seleção manual.",
+        "searchPlaceholder": "Buscar idiomas...",
+        "noResults": "Nenhum idioma encontrado",
+        "auto": "Auto"
+      },
+      "pushToTalk": {
+        "label": "Pressionar para Falar",
+        "description": "Segure para gravar, solte para parar"
+      }
+    },
+    "sound": {
+      "title": "Som",
+      "microphone": {
+        "title": "Microfone",
+        "description": "Selecione seu dispositivo de microfone preferido",
+        "placeholder": "Selecionar microfone...",
+        "loading": "Carregando..."
+      },
+      "audioFeedback": {
+        "label": "Feedback de Áudio",
+        "description": "Reproduzir som quando a gravação iniciar e parar"
+      },
+      "outputDevice": {
+        "title": "Dispositivo de Saída",
+        "description": "Selecione seu dispositivo de saída de áudio preferido para sons de feedback",
+        "placeholder": "Selecionar dispositivo de saída...",
+        "loading": "Carregando..."
+      },
+      "volume": {
+        "title": "Volume",
+        "description": "Ajustar o volume dos sons de feedback de áudio"
+      }
+    },
+    "advanced": {
+      "title": "Avançado",
+      "startHidden": {
+        "label": "Iniciar Oculto",
+        "description": "Iniciar na bandeja do sistema sem abrir a janela."
+      },
+      "autostart": {
+        "label": "Iniciar na Inicialização",
+        "description": "Iniciar automaticamente o Handy quando você fizer login no seu computador."
+      },
+      "overlay": {
+        "title": "Posição da Sobreposição",
+        "description": "Exibir sobreposição de feedback visual durante gravação e transcrição. No Linux, 'Nenhum' é recomendado.",
+        "options": {
+          "none": "Nenhum",
+          "bottom": "Inferior",
+          "top": "Superior"
+        }
+      },
+      "pasteMethod": {
+        "title": "Método de Colar",
+        "description": "Escolha como o texto é inserido. Direto: simula digitação via entrada do sistema. Nenhum: ignora colar, apenas atualiza histórico/área de transferência.",
+        "options": {
+          "clipboard": "Área de Transferência ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Área de Transferência (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Área de Transferência (Shift+Insert)",
+          "direct": "Direto",
+          "none": "Nenhum"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Manipulação da Área de Transferência",
+        "description": "Não Modificar Área de Transferência preserva o conteúdo atual da área de transferência após a transcrição. Copiar para Área de Transferência deixa o resultado da transcrição na área de transferência após colar.",
+        "options": {
+          "dontModify": "Não Modificar Área de Transferência",
+          "copyToClipboard": "Copiar para Área de Transferência"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Traduzir para Inglês",
+        "description": "Traduzir automaticamente fala de outros idiomas para inglês durante a transcrição.",
+        "descriptionUnsupported": "Tradução não é suportada pelo modelo {{model}}."
+      },
+      "modelUnload": {
+        "title": "Descarregar Modelo",
+        "description": "Liberar automaticamente memória GPU/CPU quando o modelo não for usado pelo tempo especificado",
+        "options": {
+          "never": "Nunca",
+          "immediately": "Imediatamente",
+          "min2": "Após 2 minutos",
+          "min5": "Após 5 minutos",
+          "min10": "Após 10 minutos",
+          "min15": "Após 15 minutos",
+          "hour1": "Após 1 hora",
+          "sec5": "Após 5 segundos (Depuração)"
+        }
+      },
+      "customWords": {
+        "title": "Palavras Personalizadas",
+        "description": "Adicione palavras que são frequentemente mal ouvidas ou mal escritas durante a transcrição. O sistema irá automaticamente corrigir palavras semelhantes para corresponder à sua lista.",
+        "placeholder": "Adicionar uma palavra",
+        "add": "Adicionar",
+        "remove": "Remover {{word}}"
+      }
+    },
+    "postProcessing": {
+      "title": "Pós-Processamento",
+      "disabledNotice": "O pós-processamento está atualmente desabilitado. Habilite-o nas configurações de Depuração para configurar.",
+      "api": {
+        "title": "API (Compatível com OpenAI)",
+        "provider": {
+          "title": "Provedor",
+          "description": "Selecione um provedor compatível com OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Executa totalmente no dispositivo. Nenhuma chave de API ou acesso à rede é necessário.",
+          "requirements": "Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior. Apple Intelligence deve estar habilitado nas Configurações do Sistema.",
+          "unavailable": "Apple Intelligence não está disponível neste dispositivo. Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior com Apple Intelligence habilitado nas Configurações do Sistema."
+        },
+        "baseUrl": {
+          "title": "URL Base",
+          "description": "URL base da API para o provedor selecionado. Apenas o provedor personalizado pode ser editado.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Chave da API",
+          "description": "Chave da API para o provedor selecionado.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modelo",
+          "descriptionApple": "Forneça um limite numérico opcional de tokens ou mantenha a predefinição padrão no dispositivo.",
+          "descriptionCustom": "Forneça o identificador do modelo esperado pelo seu endpoint personalizado.",
+          "descriptionDefault": "Escolha um modelo exposto pelo provedor selecionado.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "Buscar ou selecionar um modelo",
+          "placeholderNoOptions": "Digite o nome de um modelo",
+          "refreshModels": "Atualizar modelos"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Prompt Selecionado",
+          "description": "Selecione um modelo para refinar transcrições ou crie um novo. Use ${output} dentro do texto do prompt para referenciar a transcrição capturada."
+        },
+        "noPrompts": "Nenhum prompt disponível",
+        "selectPrompt": "Selecionar um prompt",
+        "createNew": "Criar Novo Prompt",
+        "promptLabel": "Rótulo do Prompt",
+        "promptLabelPlaceholder": "Digite o nome do prompt",
+        "promptInstructions": "Instruções do Prompt",
+        "promptInstructionsPlaceholder": "Escreva as instruções para executar após a transcrição. Exemplo: Melhore a gramática e clareza do seguinte texto: ${output}",
+        "promptTip": "Dica: Use <code>${output}</code> para inserir o texto transcrito no seu prompt.",
+        "updatePrompt": "Atualizar Prompt",
+        "deletePrompt": "Excluir Prompt",
+        "createPrompt": "Criar Prompt",
+        "cancel": "Cancelar",
+        "selectToEdit": "Selecione um prompt acima para visualizar e editar seus detalhes.",
+        "createFirst": "Clique em 'Criar Novo Prompt' acima para criar seu primeiro prompt de pós-processamento."
+      }
+    },
+    "history": {
+      "title": "Histórico",
+      "openFolder": "Abrir Pasta de Gravações",
+      "loading": "Carregando histórico...",
+      "empty": "Nenhuma transcrição ainda. Comece a gravar para construir seu histórico!",
+      "copyToClipboard": "Copiar transcrição para área de transferência",
+      "save": "Salvar transcrição",
+      "unsave": "Remover dos salvos",
+      "delete": "Excluir entrada",
+      "deleteError": "Falha ao excluir entrada. Por favor, tente novamente."
+    },
+    "debug": {
+      "title": "Depuração",
+      "logDirectory": {
+        "title": "Diretório de Logs",
+        "description": "Local onde os arquivos de log são armazenados"
+      },
+      "logLevel": {
+        "title": "Nível de Log",
+        "description": "Definir a verbosidade do registro"
+      },
+      "updateChecks": {
+        "label": "Verificar Atualizações",
+        "description": "Verificar automaticamente novas versões do Handy"
+      },
+      "soundTheme": {
+        "label": "Tema de Som",
+        "description": "Escolha um tema de som para feedback de início e parada de gravação"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Limite de Correção de Palavras",
+        "description": "Sensibilidade para correções de palavras personalizadas"
+      },
+      "historyLimit": {
+        "title": "Limite de Histórico",
+        "description": "Número máximo de entradas de histórico a manter",
+        "entries": "entradas"
+      },
+      "recordingRetention": {
+        "title": "Excluir Gravações Automaticamente",
+        "description": "Excluir automaticamente gravações antigas para economizar espaço",
+        "never": "Nunca",
+        "preserveLimit": "Manter as últimas {{count}}",
+        "days3": "Após 3 dias",
+        "weeks2": "Após 2 semanas",
+        "months3": "Após 3 meses",
+        "placeholder": "Selecionar período de retenção..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Microfone Sempre Ativo",
+        "description": "Manter microfone ativo para resposta mais rápida"
+      },
+      "clamshellMicrophone": {
+        "title": "Microfone em Modo Fechado",
+        "description": "Microfone a usar quando a tampa do laptop está fechada"
+      },
+      "postProcessingToggle": {
+        "label": "Pós-Processamento",
+        "description": "Habilitar refinamento de texto com IA após a transcrição"
+      },
+      "muteWhileRecording": {
+        "label": "Silenciar Durante Gravação",
+        "description": "Silenciar áudio do sistema durante a gravação"
+      },
+      "appendTrailingSpace": {
+        "label": "Adicionar Espaço Final",
+        "description": "Adicionar um espaço após a transcrição colada"
+      },
+      "paths": {
+        "appData": "Dados do App:",
+        "models": "Modelos:",
+        "settings": "Configurações:"
+      }
+    },
+    "about": {
+      "title": "Sobre",
+      "version": {
+        "title": "Versão",
+        "description": "Versão atual do Handy"
+      },
+      "appDataDirectory": {
+        "title": "Diretório de Dados do App",
+        "description": "Local onde o Handy armazena seus dados"
+      },
+      "sourceCode": {
+        "title": "Código Fonte",
+        "description": "Visualizar código fonte e contribuir",
+        "button": "Ver no GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Apoiar o Desenvolvimento",
+        "description": "Ajude-nos a continuar construindo o Handy",
+        "button": "Doar"
+      },
+      "acknowledgments": {
+        "title": "Agradecimentos",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "Inferência de alto desempenho do modelo de reconhecimento automático de fala Whisper da OpenAI",
+          "details": "O Handy usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "Baixando {{model}}...",
+    "checkingUpdates": "Verificando atualizações...",
+    "updateAvailable": "Atualização disponível: {{version}}",
+    "updateAvailableShort": "Atualização disponível",
+    "upToDate": "Atualizado",
+    "downloadUpdate": "Baixar Atualização",
+    "restart": "Reiniciar",
+    "updateCheckingDisabled": "Verificação de Atualização Desabilitada",
+    "downloading": "Baixando... {{progress}}%",
+    "installing": "Instalando...",
+    "preparing": "Preparando...",
+    "checkForUpdates": "Verificar atualizações"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "reset": "Redefinir",
+    "add": "Adicionar",
+    "remove": "Remover",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "update": "Atualizar",
+    "close": "Fechar",
+    "open": "Abrir",
+    "default": "Padrão",
+    "enabled": "Habilitado",
+    "disabled": "Desabilitado",
+    "on": "Ligado",
+    "off": "Desligado",
+    "yes": "Sim",
+    "no": "Não",
+    "noOptionsFound": "Nenhuma opção encontrada"
+  },
+  "accessibility": {
+    "permissionsRequired": "Permissões de Acessibilidade Necessárias",
+    "permissionsDescription": "O Handy precisa de permissões de acessibilidade para digitar o texto transcrito.",
+    "openSettings": "Abrir Configurações do Sistema",
+    "dismiss": "Dispensar"
+  },
+  "errors": {
+    "loadDirectory": "Erro ao carregar diretório: {{error}}"
+  },
+  "appLanguage": {
+    "title": "Idioma da Aplicação",
+    "description": "Alterar o idioma da interface do Handy"
+  },
+  "overlay": {
+    "transcribing": "Transcrevendo..."
+  }
+}

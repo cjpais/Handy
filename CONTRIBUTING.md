@@ -222,6 +222,16 @@ Community feedback is essential to keeping Handy the best it can be for everyone
 
    **Remember:** PRs with community support are prioritized. If you haven't already, start a [discussion](https://github.com/cjpais/Handy/discussions) to gather feedback before or alongside your PR. It is not explicitly required to gather feedback, but it certainly helps your PR get merged faster.
 
+### AI Assistance Disclosure
+
+**AI-assisted PRs are welcome!** Use whatever tools help you contribute, just be upfront about it.
+
+In your PR description, please include:
+
+- Whether AI was used (yes/no)
+- Which tools were used (e.g., "Claude Code", "GitHub Copilot", "ChatGPT")
+- How extensively it was used (e.g., "generated boilerplate", "helped debug", "wrote most of the code")
+
 ### Code Style Guidelines
 
 **Rust:**

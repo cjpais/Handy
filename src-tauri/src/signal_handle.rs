@@ -47,7 +47,9 @@ pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
                                 .or_insert(false);
 
                             should_start = !*is_currently_active;
-                            *is_currently_active = should_start;
+                            if should_start {
+                                *is_currently_active = true;
+                            }
                         } // Lock released here
 
                         // Now call the action without holding the lock
