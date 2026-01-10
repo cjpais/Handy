@@ -3,7 +3,6 @@ use serde::Serialize;
 use specta::Type;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
-use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 use crate::actions::ACTION_MAP;
@@ -266,11 +265,26 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
     settings::write_settings(&app, settings);
 
     // Apply the autostart setting immediately
-    let autostart_manager = app.autolaunch();
-    if enabled {
-        let _ = autostart_manager.enable();
-    } else {
-        let _ = autostart_manager.disable();
+    // On Linux, use custom autostart that handles Flatpak correctly
+    #[cfg(target_os = "linux")]
+    {
+        if enabled {
+            crate::autostart::enable()?;
+        } else {
+            crate::autostart::disable()?;
+        }
+    }
+
+    // On other platforms, use the tauri plugin
+    #[cfg(not(target_os = "linux"))]
+    {
+        use tauri_plugin_autostart::ManagerExt;
+        let autostart_manager = app.autolaunch();
+        if enabled {
+            let _ = autostart_manager.enable();
+        } else {
+            let _ = autostart_manager.disable();
+        }
     }
 
     // Notify frontend

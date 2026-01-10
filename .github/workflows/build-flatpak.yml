@@ -1,0 +1,112 @@
+name: "Build Flatpak"
+
+on:
+  workflow_call:
+    inputs:
+      release-id:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+jobs:
+  build-flatpak:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Flatpak and flatpak-builder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+
+      - name: Add Flathub repository
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install GNOME SDK and Platform
+        run: |
+          flatpak install -y --user flathub org.gnome.Platform//48 org.gnome.Sdk//48
+
+      - name: Download .deb from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="v${{ inputs.version }}"
+          echo "Looking for .deb in release: $RELEASE_TAG"
+
+          # Retry download with exponential backoff (assets may take time to be available)
+          max_attempts=5
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Attempt $attempt of $max_attempts..."
+
+            if gh release download "$RELEASE_TAG" \
+              --pattern "*.deb" \
+              --dir ./downloads \
+              --repo ${{ github.repository }}; then
+              break
+            fi
+
+            if [ $attempt -eq $max_attempts ]; then
+              echo "Error: Failed to download .deb after $max_attempts attempts"
+              exit 1
+            fi
+
+            sleep_time=$((10 * attempt))
+            echo "Download failed, retrying in ${sleep_time}s..."
+            sleep $sleep_time
+            attempt=$((attempt + 1))
+          done
+
+          # Find the downloaded .deb
+          DEB_FILE=$(find ./downloads -name "*.deb" | head -1)
+          if [ -z "$DEB_FILE" ]; then
+            echo "Error: No .deb file found in release"
+            exit 1
+          fi
+
+          echo "Found .deb: $DEB_FILE"
+
+          # Copy to flatpak build directory
+          cp "$DEB_FILE" src-tauri/flatpak/handy.deb
+
+      - name: Build Flatpak
+        run: |
+          cd src-tauri/flatpak
+
+          # Build the Flatpak
+          flatpak-builder \
+            --force-clean \
+            --user \
+            --disable-cache \
+            --repo=flatpak-repo \
+            flatpak-build \
+            com.pais.handy.yaml
+
+      - name: Create Flatpak bundle
+        run: |
+          cd src-tauri/flatpak
+
+          # Create single-file bundle
+          flatpak build-bundle \
+            flatpak-repo \
+            handy_${{ inputs.version }}_x86_64.flatpak \
+            com.pais.handy
+
+          # Move to project root for upload
+          mv handy_${{ inputs.version }}_x86_64.flatpak ../../
+
+      - name: Upload Flatpak to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "v${{ inputs.version }}" \
+            "handy_${{ inputs.version }}_x86_64.flatpak" \
+            --repo ${{ github.repository }} \
+            --clobber

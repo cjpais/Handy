@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.pais.handy</id>
+
+  <name>Handy</name>
+  <summary>Fast, local speech-to-text transcription</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      Handy is a fast, local speech-to-text application. Press a key, speak,
+      and your words are transcribed and pasted instantly. All processing
+      happens on your device using Whisper AI - no internet required, no data
+      leaves your computer.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Local transcription using OpenAI Whisper models</li>
+      <li>GPU acceleration support (Vulkan)</li>
+      <li>Configurable keyboard shortcuts</li>
+      <li>Push-to-talk or toggle mode</li>
+      <li>Voice Activity Detection for automatic silence trimming</li>
+      <li>Multiple Whisper model sizes (Small, Medium, Turbo, Large)</li>
+      <li>Translation to English from other languages</li>
+      <li>Optional LLM post-processing for text cleanup</li>
+      <li>System tray integration</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">com.pais.handy.desktop</launchable>
+
+  <url type="homepage">https://github.com/cjpais/Handy</url>
+  <url type="bugtracker">https://github.com/cjpais/Handy/issues</url>
+
+  <developer id="com.pais">
+    <name>CJ Pais</name>
+  </developer>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#f5f5f5</color>
+    <color type="primary" scheme_preference="dark">#1a1a1a</color>
+  </branding>
+
+  <content_rating type="oars-1.1" />
+
+  <categories>
+    <category>Audio</category>
+    <category>Utility</category>
+    <category>Accessibility</category>
+  </categories>
+
+  <keywords>
+    <keyword>speech</keyword>
+    <keyword>transcription</keyword>
+    <keyword>whisper</keyword>
+    <keyword>voice</keyword>
+    <keyword>dictation</keyword>
+    <keyword>speech-to-text</keyword>
+    <keyword>stt</keyword>
+  </keywords>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+
+  <!-- Screenshots: Required for Flathub submission -->
+  <!-- TODO: Add screenshots before Flathub submission
+  <screenshots>
+    <screenshot type="default">
+      <caption>Main settings window</caption>
+      <image>https://raw.githubusercontent.com/cjpais/Handy/main/screenshots/main.png</image>
+    </screenshot>
+  </screenshots>
+  -->
+
+  <releases>
+    <release version="0.6.10" date="2025-01-07">
+      <description>
+        <p>Initial Flatpak release</p>
+      </description>
+    </release>
+  </releases>
+</component>
