@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { ask } from "@tauri-apps/plugin-dialog";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import {
@@ -18,9 +19,11 @@ interface DownloadProgress {
 interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
+  downloadingModels: Set<string>;
   downloadProgress: Map<string, DownloadProgress>;
   onModelSelect: (modelId: string) => void;
   onModelDownload: (modelId: string) => void;
+  onModelCancel: (modelId: string) => Promise<void>;
   onModelDelete: (modelId: string) => Promise<void>;
   onError?: (error: string) => void;
 }
@@ -28,9 +31,11 @@ interface ModelDropdownProps {
 const ModelDropdown: React.FC<ModelDropdownProps> = ({
   models,
   currentModelId,
+  downloadingModels,
   downloadProgress,
   onModelSelect,
   onModelDownload,
+  onModelCancel,
   onModelDelete,
   onError,
 }) => {
@@ -43,6 +48,19 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    const model = models.find((m) => m.id === modelId);
+    const modelName = model?.name || modelId;
+
+    const confirmed = await ask(
+      t("settings.models.deleteConfirm", { modelName }),
+      {
+        title: t("settings.models.deleteTitle"),
+        kind: "warning",
+      },
+    );
+
+    if (!confirmed) return;
+
     try {
       await onModelDelete(modelId);
     } catch (err) {
@@ -51,15 +69,27 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
     }
   };
 
+  const handleCancelClick = async (e: React.MouseEvent, modelId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await onModelCancel(modelId);
+    } catch (err) {
+      const errorMsg = `Failed to cancel download: ${err}`;
+      onError?.(errorMsg);
+    }
+  };
+
   const handleModelClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (downloadingModels.has(modelId)) {
       return; // Don't allow interaction while downloading
     }
     onModelSelect(modelId);
   };
 
   const handleDownloadClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (downloadingModels.has(modelId)) {
       return; // Don't allow interaction while downloading
     }
     onModelDownload(modelId);
@@ -158,17 +188,23 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
               : t("modelSelector.downloadModels")}
           </div>
           {downloadableModels.map((model) => {
-            const isDownloading = downloadProgress.has(model.id);
+            const isDownloading = downloadingModels.has(model.id);
             const progress = downloadProgress.get(model.id);
 
             return (
               <div
                 key={model.id}
-                onClick={() => handleDownloadClick(model.id)}
+                onClick={() => {
+                  if (!isDownloading) {
+                    handleDownloadClick(model.id);
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    handleDownloadClick(model.id);
+                    if (!isDownloading) {
+                      handleDownloadClick(model.id);
+                    }
                   }
                 }}
                 tabIndex={0}
@@ -184,7 +220,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                   <div>
                     <div className="text-sm">
                       {getTranslatedModelName(model, t)}
-                      {model.id === "parakeet-tdt-0.6b-v3" && isFirstRun && (
+                      {model.is_recommended && isFirstRun && (
                         <span className="ml-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
                           {t("onboarding.recommended")}
                         </span>
@@ -198,10 +234,29 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                       {formatModelSize(Number(model.size_mb))}
                     </div>
                   </div>
-                  <div className="text-xs text-logo-primary tabular-nums">
-                    {isDownloading && progress
-                      ? `${Math.max(0, Math.min(100, Math.round(progress.percentage)))}%`
-                      : t("modelSelector.download")}
+                  <div className="flex items-center gap-2">
+                    {isDownloading && progress ? (
+                      <>
+                        <span className="text-xs text-logo-primary tabular-nums">
+                          {Math.max(
+                            0,
+                            Math.min(100, Math.round(progress.percentage)),
+                          )}
+                          %
+                        </span>
+                        <button
+                          onClick={(e) => handleCancelClick(e, model.id)}
+                          className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors whitespace-nowrap"
+                          aria-label={t("modelSelector.cancelDownload")}
+                        >
+                          {t("modelSelector.cancel")}
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-text/60">
+                        {t("modelSelector.download")}
+                      </span>
+                    )}
                   </div>
                 </div>
 

@@ -10,7 +10,9 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -36,6 +38,9 @@ pub struct ModelInfo {
     pub engine_type: EngineType,
     pub accuracy_score: f32, // 0.0 to 1.0, higher is more accurate
     pub speed_score: f32,    // 0.0 to 1.0, higher is faster
+    pub supports_language_selection: bool, // Whether the model supports selecting input language
+    pub supports_translation: bool, // Whether the model supports translating to English
+    pub is_recommended: bool, // Whether this is the recommended model for new users
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -50,6 +55,7 @@ pub struct ModelManager {
     app_handle: AppHandle,
     models_dir: PathBuf,
     available_models: Mutex<HashMap<String, ModelInfo>>,
+    cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
 }
 
 impl ModelManager {
@@ -84,6 +90,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.60,
                 speed_score: 0.85,
+                supports_language_selection: true,
+                supports_translation: true,
+                is_recommended: false,
             },
         );
 
@@ -104,6 +113,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.75,
                 speed_score: 0.60,
+                supports_language_selection: true,
+                supports_translation: true,
+                is_recommended: false,
             },
         );
 
@@ -123,6 +135,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.80,
                 speed_score: 0.40,
+                supports_language_selection: true,
+                supports_translation: false, // Turbo doesn't support translation
+                is_recommended: false,
             },
         );
 
@@ -142,6 +157,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.85,
                 speed_score: 0.30,
+                supports_language_selection: true,
+                supports_translation: true,
+                is_recommended: false,
             },
         );
 
@@ -162,6 +180,9 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.85,
                 speed_score: 0.85,
+                supports_language_selection: false, // Parakeet is English-only
+                supports_translation: false,        // Parakeet doesn't support translation
+                is_recommended: false,
             },
         );
 
@@ -181,6 +202,9 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.80,
                 speed_score: 0.85,
+                supports_language_selection: false, // Parakeet is English-only
+                supports_translation: false,        // Parakeet doesn't support translation
+                is_recommended: true,               // Recommended for new users
             },
         );
 
@@ -207,6 +231,7 @@ impl ModelManager {
             app_handle: app_handle.clone(),
             models_dir,
             available_models: Mutex::new(available_models),
+            cancel_flags: Arc::new(Mutex::new(HashMap::new())),
         };
 
         // Migrate any bundled models to user directory
@@ -376,6 +401,13 @@ impl ModelManager {
             }
         }
 
+        // Create cancellation flag for this download
+        let cancel_flag = Arc::new(AtomicBool::new(false));
+        {
+            let mut flags = self.cancel_flags.lock().unwrap();
+            flags.insert(model_id.to_string(), cancel_flag.clone());
+        }
+
         // Create HTTP client with range request for resuming
         let client = reqwest::Client::new();
         let mut request = client.get(&url);
@@ -456,8 +488,36 @@ impl ModelManager {
             .app_handle
             .emit("model-download-progress", &initial_progress);
 
+        // Track last emission time for throttling
+        let mut last_emit = Instant::now();
+        let emit_interval = Duration::from_millis(100);
+
         // Download with progress
         while let Some(chunk) = stream.next().await {
+            // Check if download was cancelled
+            if cancel_flag.load(Ordering::Relaxed) {
+                // Close the file before returning
+                drop(file);
+                info!("Download cancelled for: {}", model_id);
+
+                // Update state to mark as not downloading
+                {
+                    let mut models = self.available_models.lock().unwrap();
+                    if let Some(model) = models.get_mut(model_id) {
+                        model.is_downloading = false;
+                    }
+                }
+
+                // Remove cancel flag
+                {
+                    let mut flags = self.cancel_flags.lock().unwrap();
+                    flags.remove(model_id);
+                }
+
+                // Keep partial file for resume functionality
+                return Ok(());
+            }
+
             let chunk = chunk.map_err(|e| {
                 // Mark as not downloading on error
                 {
@@ -478,19 +538,34 @@ impl ModelManager {
                 0.0
             };
 
-            // Emit progress event
-            let progress = DownloadProgress {
-                model_id: model_id.to_string(),
-                downloaded,
-                total: total_size,
-                percentage,
-            };
+            // Emit progress event (throttled to avoid overwhelming the UI)
+            let now = Instant::now();
+            if now.duration_since(last_emit) >= emit_interval {
+                let progress = DownloadProgress {
+                    model_id: model_id.to_string(),
+                    downloaded,
+                    total: total_size,
+                    percentage,
+                };
 
-            let _ = self.app_handle.emit("model-download-progress", &progress);
+                let _ = self.app_handle.emit("model-download-progress", &progress);
+                last_emit = now;
+            }
         }
 
         file.flush()?;
         drop(file); // Ensure file is closed before moving
+
+        // Emit final progress event to ensure UI shows 100%
+        let final_progress = DownloadProgress {
+            model_id: model_id.to_string(),
+            downloaded,
+            total: total_size,
+            percentage: 100.0,
+        };
+        let _ = self
+            .app_handle
+            .emit("model-download-progress", &final_progress);
 
         // Verify downloaded file size matches expected size
         if total_size > 0 {
@@ -604,6 +679,12 @@ impl ModelManager {
             model_id, model_path
         );
 
+        // Remove cancel flag on successful completion
+        {
+            let mut flags = self.cancel_flags.lock().unwrap();
+            flags.remove(model_id);
+        }
+
         Ok(())
     }
 
@@ -663,6 +744,9 @@ impl ModelManager {
         self.update_download_status()?;
         debug!("ModelManager: download status updated");
 
+        // Emit event to notify UI
+        let _ = self.app_handle.emit("model-deleted", model_id);
+
         Ok(())
     }
 
@@ -714,15 +798,18 @@ impl ModelManager {
     pub fn cancel_download(&self, model_id: &str) -> Result<()> {
         debug!("ModelManager: cancel_download called for: {}", model_id);
 
-        let _model_info = {
-            let models = self.available_models.lock().unwrap();
-            models.get(model_id).cloned()
-        };
+        // Set the cancellation flag to stop the download loop
+        {
+            let flags = self.cancel_flags.lock().unwrap();
+            if let Some(flag) = flags.get(model_id) {
+                flag.store(true, Ordering::Relaxed);
+                info!("Cancellation flag set for: {}", model_id);
+            } else {
+                warn!("No active download found for: {}", model_id);
+            }
+        }
 
-        let _model_info =
-            _model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
-
-        // Mark as not downloading
+        // Update state immediately for UI responsiveness
         {
             let mut models = self.available_models.lock().unwrap();
             if let Some(model) = models.get_mut(model_id) {
@@ -730,14 +817,10 @@ impl ModelManager {
             }
         }
 
-        // Note: The actual download cancellation would need to be handled
-        // by the download task itself. This just updates the state.
-        // The partial file is kept so the download can be resumed later.
-
         // Update download status to reflect current state
         self.update_download_status()?;
 
-        info!("Download cancelled for: {}", model_id);
+        info!("Download cancellation initiated for: {}", model_id);
         Ok(())
     }
 }

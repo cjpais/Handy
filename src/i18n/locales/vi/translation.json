@@ -1,5 +1,4 @@
 {
-  "_comment": "Vietnamese translation for Handy. Contribute at: https://github.com/cjpais/Handy",
   "tray": {
     "settings": "Cài đặt...",
     "checkUpdates": "Kiểm tra cập nhật...",
@@ -8,6 +7,7 @@
   },
   "sidebar": {
     "general": "Chung",
+    "models": "Mô hình",
     "advanced": "Nâng cao",
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
@@ -65,6 +65,7 @@
     "downloadModels": "Tải Xuống Mô Hình",
     "chooseModel": "Chọn Mô Hình",
     "active": "Đang hoạt động",
+    "switching": "Đang chuyển đổi...",
     "download": "Tải xuống",
     "downloadSize": "Kích thước tải xuống",
     "noModelsAvailable": "Không có mô hình nào",
@@ -79,9 +80,37 @@
     "modelError": "Lỗi Mô Hình",
     "modelUnloaded": "Mô Hình Đã Gỡ",
     "noModelDownloadRequired": "Chưa Có Mô Hình - Cần Tải Xuống",
-    "deleteModel": "Xóa {{modelName}}"
+    "deleteModel": "Xóa {{modelName}}",
+    "cancel": "Hủy",
+    "cancelDownload": "Hủy tải xuống",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Hỗ trợ nhiều ngôn ngữ đầu vào",
+      "multiLanguage": "Đa ngôn ngữ",
+      "translation": "Có thể dịch sang tiếng Anh",
+      "translate": "Dịch sang tiếng Anh"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Cài đặt {{model}}",
+      "noSettingsNeeded": "Mô hình này hoạt động tự động mà không cần cấu hình."
+    },
+    "models": {
+      "title": "Mô Hình Phiên Âm",
+      "description": "Chọn một mô hình phiên âm hoặc tải xuống các mô hình bổ sung. Các mô hình khác nhau cung cấp các mức độ chính xác và tốc độ khác nhau.",
+      "downloaded": "Đã tải xuống",
+      "available": "Có sẵn để tải xuống",
+      "deleteConfirm": "Bạn có chắc chắn muốn xóa {{modelName}} không? Bạn sẽ cần tải xuống lại để sử dụng nó.",
+      "deleteTitle": "Xóa mô hình",
+      "filters": {
+        "all": "Tất cả",
+        "multiLanguage": "Đa ngôn ngữ",
+        "translation": "Dịch",
+        "allLanguages": "Tất cả ngôn ngữ"
+      },
+      "noModelsMatch": "Không có mô hình nào phù hợp với bộ lọc này."
+    },
     "general": {
       "title": "Chung",
       "shortcut": {

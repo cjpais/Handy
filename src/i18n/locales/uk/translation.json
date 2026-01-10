@@ -7,6 +7,7 @@
   },
   "sidebar": {
     "general": "Загальні",
+    "models": "Моделі",
     "advanced": "Розширені",
     "postProcessing": "Постобробка",
     "history": "Історія",
@@ -64,6 +65,7 @@
     "downloadModels": "Завантажити моделі",
     "chooseModel": "Оберіть модель",
     "active": "Активна",
+    "switching": "Перемикання...",
     "download": "Завантажити",
     "downloadSize": "Розмір завантаження",
     "noModelsAvailable": "Немає доступних моделей",
@@ -78,9 +80,37 @@
     "modelError": "Помилка моделі",
     "modelUnloaded": "Модель вивантажена",
     "noModelDownloadRequired": "Немає моделі - потрібно завантажити",
-    "deleteModel": "Видалити {{modelName}}"
+    "deleteModel": "Видалити {{modelName}}",
+    "cancel": "Скасувати",
+    "cancelDownload": "Скасувати завантаження",
+    "downloadSpeed": "{{speed}} МБ/с",
+    "capabilities": {
+      "languageSelection": "Підтримує кілька мов введення",
+      "multiLanguage": "Багатомовний",
+      "translation": "Може перекладати на англійську",
+      "translate": "Перекласти на англійську"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Налаштування {{model}}",
+      "noSettingsNeeded": "Ця модель працює автоматично без потреби в налаштуванні."
+    },
+    "models": {
+      "title": "Моделі Транскрипції",
+      "description": "Виберіть модель транскрипції або завантажте додаткові моделі. Різні моделі пропонують різні рівні точності та швидкості.",
+      "downloaded": "Завантажено",
+      "available": "Доступно для завантаження",
+      "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
+      "deleteTitle": "Видалити модель",
+      "filters": {
+        "all": "Всі",
+        "multiLanguage": "Багатомовні",
+        "translation": "Переклад",
+        "allLanguages": "Всі мови"
+      },
+      "noModelsMatch": "Жодна модель не відповідає цьому фільтру."
+    },
     "general": {
       "title": "Загальні",
       "shortcut": {

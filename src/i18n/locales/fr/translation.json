@@ -1,5 +1,4 @@
 {
-  "_comment": "French translation for Handy. Contribute at: https://github.com/cjpais/Handy",
   "tray": {
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
@@ -8,6 +7,7 @@
   },
   "sidebar": {
     "general": "Général",
+    "models": "Modèles",
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "history": "Historique",
@@ -65,6 +65,7 @@
     "downloadModels": "Télécharger des Modèles",
     "chooseModel": "Choisir un Modèle",
     "active": "Actif",
+    "switching": "Changement...",
     "download": "Télécharger",
     "downloadSize": "Taille du téléchargement",
     "noModelsAvailable": "Aucun modèle disponible",
@@ -79,9 +80,37 @@
     "modelError": "Erreur du Modèle",
     "modelUnloaded": "Modèle Déchargé",
     "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
-    "deleteModel": "Supprimer {{modelName}}"
+    "deleteModel": "Supprimer {{modelName}}",
+    "cancel": "Annuler",
+    "cancelDownload": "Annuler le téléchargement",
+    "downloadSpeed": "{{speed}} Mo/s",
+    "capabilities": {
+      "languageSelection": "Prend en charge plusieurs langues d'entrée",
+      "multiLanguage": "Multilingue",
+      "translation": "Peut traduire en anglais",
+      "translate": "Traduire en anglais"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "Paramètres {{model}}",
+      "noSettingsNeeded": "Ce modèle fonctionne automatiquement sans configuration nécessaire."
+    },
+    "models": {
+      "title": "Modèles de Transcription",
+      "description": "Sélectionnez un modèle de transcription ou téléchargez des modèles supplémentaires. Différents modèles offrent différents niveaux de précision et de vitesse.",
+      "downloaded": "Téléchargés",
+      "available": "Disponibles au téléchargement",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}}? Vous devrez le télécharger à nouveau pour l'utiliser.",
+      "deleteTitle": "Supprimer le modèle",
+      "filters": {
+        "all": "Tous",
+        "multiLanguage": "Multi-langue",
+        "translation": "Traduction",
+        "allLanguages": "Toutes les langues"
+      },
+      "noModelsMatch": "Aucun modèle ne correspond à ce filtre."
+    },
     "general": {
       "title": "Général",
       "shortcut": {
