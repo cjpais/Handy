@@ -9,12 +9,14 @@
     self,
     nixpkgs,
   }: let
-    supportedSystems = ["x86_64-linux" "aarch64-linux"];
+    supportedSystems = ["x86_64-linux"];
     forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+    # Read version from Cargo.toml
+    cargoToml = builtins.fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
+    version = cargoToml.package.version;
   in {
     packages = forAllSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      version = "0.6.9";
     in {
       # AppImage-based package
       handy-appimage = let
