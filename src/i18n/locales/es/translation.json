@@ -51,6 +51,23 @@
     "errors": {
       "loadModels": "Error al cargar los modelos disponibles",
       "downloadModel": "Error al descargar el modelo: {{error}}"
+    },
+    "permissions": {
+      "title": "Permisos Requeridos",
+      "description": "Handy necesita algunos permisos para funcionar correctamente.",
+      "microphone": {
+        "title": "Acceso al Micrófono",
+        "description": "Necesario para escuchar tu voz para la transcripción."
+      },
+      "accessibility": {
+        "title": "Acceso de Accesibilidad",
+        "description": "Necesario para escribir el texto transcrito en tus aplicaciones."
+      },
+      "grant": "Conceder Permiso",
+      "granted": "Concedido",
+      "waiting": "Esperando...",
+      "instructions": "Concede los permisos anteriores, luego regresa aquí.",
+      "allGranted": "¡Todo listo!"
     }
   },
   "modelSelector": {

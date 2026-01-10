@@ -51,6 +51,23 @@
     "errors": {
       "loadModels": "Nie udało się wczytać dostępnych modeli",
       "downloadModel": "Nie udało się pobrać modelu: {{error}}"
+    },
+    "permissions": {
+      "title": "Wymagane uprawnienia",
+      "description": "Handy potrzebuje kilku uprawnień, aby działać poprawnie.",
+      "microphone": {
+        "title": "Dostęp do mikrofonu",
+        "description": "Wymagany do słyszenia Twojego głosu w celu transkrypcji."
+      },
+      "accessibility": {
+        "title": "Dostęp do dostępności",
+        "description": "Wymagany do wpisywania transkrybowanego tekstu w Twoich aplikacjach."
+      },
+      "grant": "Przyznaj uprawnienie",
+      "granted": "Przyznano",
+      "waiting": "Oczekiwanie...",
+      "instructions": "Przyznaj powyższe uprawnienia, a następnie wróć tutaj.",
+      "allGranted": "Wszystko gotowe!"
     }
   },
   "modelSelector": {

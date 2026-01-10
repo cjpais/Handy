@@ -52,6 +52,23 @@
     "errors": {
       "loadModels": "Không thể tải các mô hình có sẵn",
       "downloadModel": "Không thể tải mô hình: {{error}}"
+    },
+    "permissions": {
+      "title": "Cần cấp quyền",
+      "description": "Handy cần một số quyền để hoạt động bình thường.",
+      "microphone": {
+        "title": "Quyền truy cập Micrô",
+        "description": "Cần thiết để nghe giọng nói của bạn để chuyển đổi."
+      },
+      "accessibility": {
+        "title": "Quyền truy cập Trợ năng",
+        "description": "Cần thiết để nhập văn bản đã chuyển đổi vào các ứng dụng của bạn."
+      },
+      "grant": "Cấp quyền",
+      "granted": "Đã cấp",
+      "waiting": "Đang chờ...",
+      "instructions": "Cấp các quyền ở trên, sau đó quay lại đây.",
+      "allGranted": "Hoàn tất!"
     }
   },
   "modelSelector": {
