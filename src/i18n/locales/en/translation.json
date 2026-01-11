@@ -146,7 +146,8 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start Handy when you log in to your computer."
+        "description": "Automatically start Handy when you log in to your computer.",
+        "error": "Failed to update autostart setting. Your desktop environment may not support this feature."
       },
       "overlay": {
         "title": "Overlay Position",

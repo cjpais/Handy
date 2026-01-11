@@ -260,11 +260,6 @@ pub fn change_start_hidden_setting(app: AppHandle, enabled: bool) -> Result<(), 
 #[tauri::command]
 #[specta::specta]
 pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.autostart_enabled = enabled;
-    settings::write_settings(&app, settings);
-
-    // Apply the autostart setting immediately
     // On Linux, use custom autostart that handles Flatpak correctly
     #[cfg(target_os = "linux")]
     {
@@ -286,6 +281,11 @@ pub fn change_autostart_setting(app: AppHandle, enabled: bool) -> Result<(), Str
             let _ = autostart_manager.disable();
         }
     }
+
+    // Only save setting after autostart action succeeds
+    let mut settings = settings::get_settings(&app);
+    settings.autostart_enabled = enabled;
+    settings::write_settings(&app, settings);
 
     // Notify frontend
     let _ = app.emit(

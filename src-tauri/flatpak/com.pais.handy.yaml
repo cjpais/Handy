@@ -7,10 +7,9 @@ sdk: org.gnome.Sdk
 command: handy
 
 finish-args:
-  - --socket=x11
   - --socket=wayland
+  - --socket=fallback-x11
   - --share=ipc
-  - --env=GDK_BACKEND=x11
 
   # GPU access for Vulkan (Whisper acceleration)
   - --device=dri
@@ -31,22 +30,6 @@ finish-args:
 
   # Notifications
   - --talk-name=org.freedesktop.Notifications
-
-  # Filesystem access for custom sounds (optional)
-  - --filesystem=xdg-config/handy:ro
-
-  # Autostart - needs write access to create autostart desktop file
-  - --filesystem=xdg-config/autostart:create
-
-  # Access to XDG portals for clipboard and settings
-  - --talk-name=org.freedesktop.portal.Desktop
-  - --talk-name=org.freedesktop.portal.Flatpak
-  - --talk-name=org.freedesktop.portal.Settings
-
-  # Read GTK theme to allow dark mode detection
-  - --filesystem=xdg-config/gtk-3.0:ro
-  - --filesystem=xdg-config/gtk-4.0:ro
-  - --filesystem=~/.gtkrc-2.0:ro
 
   # WebKit rendering fix for sandboxed environments (fixes white screen when opening)
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
@@ -161,6 +144,9 @@ modules:
       - type: file
         path: com.pais.handy.metainfo.xml
 
+      - type: file
+        path: ../../LICENSE
+
       # The .deb file - for local builds, use a local path
       # For CI builds, this will be replaced with the actual URL and sha256
       - type: file
@@ -194,3 +180,6 @@ modules:
 
       # Install metainfo
       - install -Dm644 com.pais.handy.metainfo.xml /app/share/metainfo/com.pais.handy.metainfo.xml
+
+      # Install license file
+      - install -Dm644 LICENSE /app/share/licenses/com.pais.handy/LICENSE

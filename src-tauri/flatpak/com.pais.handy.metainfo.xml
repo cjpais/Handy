@@ -31,8 +31,9 @@
 
   <launchable type="desktop-id">com.pais.handy.desktop</launchable>
 
-  <url type="homepage">https://github.com/cjpais/Handy</url>
+  <url type="homepage">https://handy.computer</url>
   <url type="bugtracker">https://github.com/cjpais/Handy/issues</url>
+  <url type="vcs-browser">https://github.com/cjpais/Handy</url>
 
   <developer id="com.pais">
     <name>CJ Pais</name>
