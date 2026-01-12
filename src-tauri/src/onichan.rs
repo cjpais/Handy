@@ -212,7 +212,9 @@ impl OnichanManager {
             .ok_or_else(|| "Local LLM manager not available".to_string())?;
 
         if !llm_manager.is_loaded() {
-            return Err("No local LLM model loaded. Please download and load a model first.".to_string());
+            return Err(
+                "No local LLM model loaded. Please download and load a model first.".to_string(),
+            );
         }
 
         // Query long-term memory for relevant context
@@ -222,7 +224,11 @@ impl OnichanManager {
                 match memory_mgr.query_context(uid, user_text, 3) {
                     Ok(memories) => {
                         if !memories.is_empty() {
-                            info!("Found {} relevant memories for user {}", memories.len(), uid);
+                            info!(
+                                "Found {} relevant memories for user {}",
+                                memories.len(),
+                                uid
+                            );
                             format_memory_context(&memories)
                         } else {
                             String::new()
@@ -271,14 +277,21 @@ RESPONSE STYLE (vary these, don't copy exactly):\n\
 Be that chaotic friend who makes every call entertaining - unpredictable, real, never boring!";
 
         let system_prompt = if !memory_context.is_empty() {
-            format!("{}\n\nYou remember these past conversations with this user:\n{}", base_prompt, memory_context)
+            format!(
+                "{}\n\nYou remember these past conversations with this user:\n{}",
+                base_prompt, memory_context
+            )
         } else {
             base_prompt.to_string()
         };
 
         // Build context with recent history
         let history = self.conversation_history.lock().unwrap();
-        let start_idx = if history.len() > 6 { history.len() - 6 } else { 0 };
+        let start_idx = if history.len() > 6 {
+            history.len() - 6
+        } else {
+            0
+        };
 
         let mut context = String::new();
         for msg in history.iter().skip(start_idx) {
@@ -410,18 +423,24 @@ Be that chaotic friend who makes every call entertaining - unpredictable, real, 
 
         // Cut off at any role markers or conversation continuation patterns
         let cut_markers = [
-            "\nassistant:", "\nuser:", "\nsystem:", "\nUser:", "\nAssistant:", "\nSystem:",
-            "\n\n",         // Double newline usually means new paragraph/turn
-            " Or,",         // Model continuing with alternatives
-            " If you",      // Model starting to explain
-            " Maybe",       // Model hedging
-            " Need ",       // Model asking followup questions
+            "\nassistant:",
+            "\nuser:",
+            "\nsystem:",
+            "\nUser:",
+            "\nAssistant:",
+            "\nSystem:",
+            "\n\n",          // Double newline usually means new paragraph/turn
+            " Or,",          // Model continuing with alternatives
+            " If you",       // Model starting to explain
+            " Maybe",        // Model hedging
+            " Need ",        // Model asking followup questions
             "Need anything", // Common model pattern
         ];
 
         for marker in cut_markers {
             if let Some(idx) = cleaned.find(marker) {
-                if idx > 5 { // Only cut if we have some content
+                if idx > 5 {
+                    // Only cut if we have some content
                     cleaned = cleaned[..idx].trim().to_string();
                 }
             }
@@ -656,7 +675,8 @@ Be that chaotic friend who makes every call entertaining - unpredictable, real, 
         // Create a cursor to read the audio data
         let cursor = Cursor::new(audio_data.to_vec());
 
-        let sink = rodio::play(mixer, cursor).map_err(|e| format!("Failed to play audio: {}", e))?;
+        let sink =
+            rodio::play(mixer, cursor).map_err(|e| format!("Failed to play audio: {}", e))?;
 
         sink.set_volume(volume);
         sink.sleep_until_end();

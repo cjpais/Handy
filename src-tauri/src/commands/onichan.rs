@@ -77,13 +77,17 @@ pub fn get_onichan_models(manager: State<'_, Arc<OnichanModelManager>>) -> Vec<O
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_onichan_llm_models(manager: State<'_, Arc<OnichanModelManager>>) -> Vec<OnichanModelInfo> {
+pub fn get_onichan_llm_models(
+    manager: State<'_, Arc<OnichanModelManager>>,
+) -> Vec<OnichanModelInfo> {
     manager.get_llm_models()
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_onichan_tts_models(manager: State<'_, Arc<OnichanModelManager>>) -> Vec<OnichanModelInfo> {
+pub fn get_onichan_tts_models(
+    manager: State<'_, Arc<OnichanModelManager>>,
+) -> Vec<OnichanModelInfo> {
     manager.get_tts_models()
 }
 
@@ -117,12 +121,10 @@ pub fn load_local_llm(
 ) -> Result<(), String> {
     log::info!("load_local_llm command called with model_id: {}", model_id);
 
-    let model_path = model_manager
-        .get_model_path(&model_id)
-        .map_err(|e| {
-            log::error!("Failed to get model path: {}", e);
-            e.to_string()
-        })?;
+    let model_path = model_manager.get_model_path(&model_id).map_err(|e| {
+        log::error!("Failed to get model path: {}", e);
+        e.to_string()
+    })?;
 
     log::info!("Model path resolved to: {:?}", model_path);
 
@@ -218,9 +220,7 @@ pub fn onichan_start_conversation(
 
 #[tauri::command]
 #[specta::specta]
-pub fn onichan_stop_conversation(
-    conversation_manager: State<'_, Arc<OnichanConversationManager>>,
-) {
+pub fn onichan_stop_conversation(conversation_manager: State<'_, Arc<OnichanConversationManager>>) {
     conversation_manager.stop();
 }
 

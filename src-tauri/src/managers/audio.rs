@@ -248,8 +248,12 @@ impl AudioRecordingManager {
         *did_mute_guard = false;
 
         // Get VAD model path - checks both bundled resources and fallback location
-        let vad_path = vad_model::get_best_vad_model_path(&self.app_handle)
-            .map_err(|e| anyhow::anyhow!("VAD model not available: {}. Please ensure the model is downloaded.", e))?;
+        let vad_path = vad_model::get_best_vad_model_path(&self.app_handle).map_err(|e| {
+            anyhow::anyhow!(
+                "VAD model not available: {}. Please ensure the model is downloaded.",
+                e
+            )
+        })?;
         let mut recorder_opt = self.recorder.lock().unwrap();
 
         if recorder_opt.is_none() {

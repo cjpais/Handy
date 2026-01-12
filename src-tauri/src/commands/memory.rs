@@ -116,7 +116,9 @@ pub async fn load_embedding_model(app: AppHandle, model_id: String) -> Result<St
 /// Get the currently loaded embedding model
 #[tauri::command]
 #[specta::specta]
-pub async fn get_current_embedding_model(app: AppHandle) -> Result<Option<EmbeddingModelInfo>, String> {
+pub async fn get_current_embedding_model(
+    app: AppHandle,
+) -> Result<Option<EmbeddingModelInfo>, String> {
     let memory_manager = app.state::<Arc<MemoryManager>>().inner().clone();
 
     spawn_blocking(move || memory_manager.get_current_model())

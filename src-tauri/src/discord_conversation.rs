@@ -54,7 +54,6 @@ impl UserAudioBuffer {
     }
 }
 
-
 /// Manages Discord voice conversation mode
 pub struct DiscordConversationManager {
     app_handle: AppHandle,
@@ -150,7 +149,9 @@ impl DiscordConversationManager {
         *self.worker_handle.lock().unwrap() = Some(handle);
 
         // Emit state change
-        let _ = self.app_handle.emit("discord-conversation-state", "listening");
+        let _ = self
+            .app_handle
+            .emit("discord-conversation-state", "listening");
 
         Ok(())
     }
@@ -175,7 +176,9 @@ impl DiscordConversationManager {
             let _ = handle.join();
         }
 
-        let _ = self.app_handle.emit("discord-conversation-state", "stopped");
+        let _ = self
+            .app_handle
+            .emit("discord-conversation-state", "stopped");
     }
 
     /// Check if conversation mode is running
@@ -270,8 +273,7 @@ async fn run_discord_conversation_loop_async(
         Arc::new(Mutex::new(std::collections::HashSet::new()));
 
     // Unbounded channel for audio events - prevents drops when main loop is busy
-    let (audio_event_tx, mut audio_event_rx) =
-        mpsc::unbounded_channel::<(String, Vec<f32>, u32)>();
+    let (audio_event_tx, mut audio_event_rx) = mpsc::unbounded_channel::<(String, Vec<f32>, u32)>();
 
     // Spawn dedicated audio receiver task that continuously drains events from sidecar
     // This ensures we never miss audio even when the main loop is busy with transcription/LLM
@@ -292,7 +294,10 @@ async fn run_discord_conversation_loop_async(
                         // Decode and forward to main loop via channel
                         match decode_audio(&audio_base64, sample_rate) {
                             Ok(samples) => {
-                                if audio_event_tx.send((user_id, samples, sample_rate)).is_err() {
+                                if audio_event_tx
+                                    .send((user_id, samples, sample_rate))
+                                    .is_err()
+                                {
                                     // Channel closed, main loop stopped
                                     break;
                                 }
@@ -316,7 +321,7 @@ async fn run_discord_conversation_loop_async(
                             serde_json::json!({ "user_id": user_id, "speaking": false }),
                         );
                     }
-                    Some(_) => {} // Ignore other events
+                    Some(_) => {}  // Ignore other events
                     None => break, // No more events available
                 }
             }
@@ -463,10 +468,9 @@ async fn run_discord_conversation_loop_async(
                     let _ = app.emit("discord-conversation-state", "transcribing");
 
                     // Run transcription in blocking task (CPU-bound)
-                    let transcription_result = tokio::task::spawn_blocking(move || {
-                        tm.transcribe(samples_to_transcribe)
-                    })
-                    .await;
+                    let transcription_result =
+                        tokio::task::spawn_blocking(move || tm.transcribe(samples_to_transcribe))
+                            .await;
 
                     match transcription_result {
                         Ok(Ok(text)) => {
@@ -553,7 +557,10 @@ async fn process_transcription_result(
     );
 
     if !has_wake_word {
-        info!("No wake word detected from user {}, skipping response", user_id);
+        info!(
+            "No wake word detected from user {}, skipping response",
+            user_id
+        );
         return Ok(());
     }
 
@@ -634,7 +641,6 @@ fn decode_audio(audio_base64: &str, sample_rate: u32) -> Result<Vec<f32>, String
 
     Ok(samples_16k)
 }
-
 
 /// Simple linear resampling
 fn resample(samples: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {

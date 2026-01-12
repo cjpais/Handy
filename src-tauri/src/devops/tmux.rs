@@ -254,10 +254,7 @@ pub fn create_session(
 ) -> Result<(), String> {
     // Validate session name
     if !session_name.starts_with(SESSION_PREFIX) {
-        return Err(format!(
-            "Session name must start with '{}'",
-            SESSION_PREFIX
-        ));
+        return Err(format!("Session name must start with '{}'", SESSION_PREFIX));
     }
 
     // Check if session already exists

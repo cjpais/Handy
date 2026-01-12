@@ -70,15 +70,18 @@ impl SidecarProcess {
             .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;
 
         // Wait for the ready message
-        let stdout = child.stdout.as_mut()
+        let stdout = child
+            .stdout
+            .as_mut()
             .ok_or_else(|| "Failed to get sidecar stdout".to_string())?;
         let mut reader = BufReader::new(stdout);
         let mut line = String::new();
-        reader.read_line(&mut line)
+        reader
+            .read_line(&mut line)
             .map_err(|e| format!("Failed to read sidecar ready message: {}", e))?;
 
-        let response: SidecarResponse = serde_json::from_str(&line)
-            .map_err(|e| format!("Invalid sidecar response: {}", e))?;
+        let response: SidecarResponse =
+            serde_json::from_str(&line).map_err(|e| format!("Invalid sidecar response: {}", e))?;
 
         match response {
             SidecarResponse::Ok { message } => {
@@ -99,26 +102,33 @@ impl SidecarProcess {
     }
 
     fn send_request(&mut self, request: &SidecarRequest) -> Result<SidecarResponse, String> {
-        let stdin = self.child.stdin.as_mut()
+        let stdin = self
+            .child
+            .stdin
+            .as_mut()
             .ok_or_else(|| "Sidecar stdin not available".to_string())?;
 
         let json = serde_json::to_string(request)
             .map_err(|e| format!("Failed to serialize request: {}", e))?;
 
-        writeln!(stdin, "{}", json)
-            .map_err(|e| format!("Failed to write to sidecar: {}", e))?;
-        stdin.flush()
+        writeln!(stdin, "{}", json).map_err(|e| format!("Failed to write to sidecar: {}", e))?;
+        stdin
+            .flush()
             .map_err(|e| format!("Failed to flush sidecar stdin: {}", e))?;
 
         // Read response - skip any non-JSON lines (llama.cpp debug output)
-        let stdout = self.child.stdout.as_mut()
+        let stdout = self
+            .child
+            .stdout
+            .as_mut()
             .ok_or_else(|| "Sidecar stdout not available".to_string())?;
         let mut reader = BufReader::new(stdout);
 
         // Try up to 10 lines to find a valid JSON response
         for attempt in 0..10 {
             let mut line = String::new();
-            reader.read_line(&mut line)
+            reader
+                .read_line(&mut line)
                 .map_err(|e| format!("Failed to read sidecar response: {}", e))?;
 
             // Check for empty response (sidecar likely crashed)
@@ -133,7 +143,11 @@ impl SidecarProcess {
                     // Check if this looks like llama.cpp debug output (doesn't start with '{')
                     let trimmed = line.trim();
                     if !trimmed.starts_with('{') {
-                        warn!("Skipping non-JSON sidecar output (attempt {}): {}", attempt + 1, trimmed);
+                        warn!(
+                            "Skipping non-JSON sidecar output (attempt {}): {}",
+                            attempt + 1,
+                            trimmed
+                        );
                         continue;
                     }
                     // It started with '{' but failed to parse - real error
@@ -182,7 +196,12 @@ impl SidecarProcess {
         }
     }
 
-    fn chat(&mut self, system_prompt: &str, user_message: &str, max_tokens: u32) -> Result<String, String> {
+    fn chat(
+        &mut self,
+        system_prompt: &str,
+        user_message: &str,
+        max_tokens: u32,
+    ) -> Result<String, String> {
         let response = self.send_request(&SidecarRequest::Chat {
             system_prompt: system_prompt.to_string(),
             user_message: user_message.to_string(),
@@ -290,7 +309,10 @@ impl LocalLlmManager {
     }
 
     pub fn load_model(&self, model_path: &Path) -> Result<(), String> {
-        info!("LocalLlmManager::load_model() called with path: {:?}", model_path);
+        info!(
+            "LocalLlmManager::load_model() called with path: {:?}",
+            model_path
+        );
 
         // Verify the file exists first
         if !model_path.exists() {
@@ -302,7 +324,8 @@ impl LocalLlmManager {
         self.ensure_sidecar()?;
 
         let mut guard = self.sidecar.lock().unwrap();
-        let sidecar = guard.as_mut()
+        let sidecar = guard
+            .as_mut()
             .ok_or_else(|| "Sidecar not available".to_string())?;
 
         let result = sidecar.load_model(&model_path.to_string_lossy());
@@ -343,20 +366,30 @@ impl LocalLlmManager {
         })
     }
 
-    pub fn chat(&self, system_prompt: &str, user_message: &str, max_tokens: u32) -> Result<String, String> {
+    pub fn chat(
+        &self,
+        system_prompt: &str,
+        user_message: &str,
+        max_tokens: u32,
+    ) -> Result<String, String> {
         self.ensure_sidecar()?;
 
         let result = {
             let mut guard = self.sidecar.lock().unwrap();
-            let sidecar = guard.as_mut()
+            let sidecar = guard
+                .as_mut()
                 .ok_or_else(|| "Sidecar not available".to_string())?;
             sidecar.chat(system_prompt, user_message, max_tokens)
         };
 
         // If we got a broken pipe, empty response, or invalid JSON, the sidecar crashed - try to recover once
         if let Err(ref e) = result {
-            if e.contains("Broken pipe") || e.contains("empty response") || e.contains("crashed")
-                || e.contains("Invalid sidecar response") || e.contains("expected value") {
+            if e.contains("Broken pipe")
+                || e.contains("empty response")
+                || e.contains("crashed")
+                || e.contains("Invalid sidecar response")
+                || e.contains("expected value")
+            {
                 warn!("Sidecar appears to have crashed during chat, attempting recovery...");
 
                 // Force respawn by clearing the sidecar
@@ -391,7 +424,8 @@ impl LocalLlmManager {
 
                 // Retry the chat
                 let mut guard = self.sidecar.lock().unwrap();
-                let sidecar = guard.as_mut()
+                let sidecar = guard
+                    .as_mut()
                     .ok_or_else(|| "Sidecar not available after recovery".to_string())?;
 
                 return sidecar.chat(system_prompt, user_message, max_tokens);
@@ -406,15 +440,20 @@ impl LocalLlmManager {
 
         let result = {
             let mut guard = self.sidecar.lock().unwrap();
-            let sidecar = guard.as_mut()
+            let sidecar = guard
+                .as_mut()
                 .ok_or_else(|| "Sidecar not available".to_string())?;
             sidecar.generate(prompt, max_tokens)
         };
 
         // If we got a broken pipe, empty response, or invalid JSON, the sidecar crashed - try to recover once
         if let Err(ref e) = result {
-            if e.contains("Broken pipe") || e.contains("empty response") || e.contains("crashed")
-                || e.contains("Invalid sidecar response") || e.contains("expected value") {
+            if e.contains("Broken pipe")
+                || e.contains("empty response")
+                || e.contains("crashed")
+                || e.contains("Invalid sidecar response")
+                || e.contains("expected value")
+            {
                 warn!("Sidecar appears to have crashed during generate, attempting recovery...");
 
                 // Force respawn by clearing the sidecar
@@ -449,7 +488,8 @@ impl LocalLlmManager {
 
                 // Retry the generate
                 let mut guard = self.sidecar.lock().unwrap();
-                let sidecar = guard.as_mut()
+                let sidecar = guard
+                    .as_mut()
                     .ok_or_else(|| "Sidecar not available after recovery".to_string())?;
 
                 return sidecar.generate(prompt, max_tokens);

@@ -157,9 +157,7 @@ pub fn auth_logout(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Failed to access credentials store: {}", e))?;
 
     store.delete(SUPABASE_SESSION_KEY);
-    store
-        .save()
-        .map_err(|e| format!("Failed to save: {}", e))?;
+    store.save().map_err(|e| format!("Failed to save: {}", e))?;
 
     info!("User logged out, session cleared");
     Ok(())

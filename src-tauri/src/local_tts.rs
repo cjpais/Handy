@@ -101,8 +101,8 @@ impl TtsSidecarProcess {
             .read_line(&mut line)
             .map_err(|e| format!("Failed to read TTS sidecar ready message: {}", e))?;
 
-        let response: SidecarResponse =
-            serde_json::from_str(&line).map_err(|e| format!("Invalid TTS sidecar response: {}", e))?;
+        let response: SidecarResponse = serde_json::from_str(&line)
+            .map_err(|e| format!("Invalid TTS sidecar response: {}", e))?;
 
         match response {
             SidecarResponse::Ok { message } => {
@@ -129,10 +129,11 @@ impl TtsSidecarProcess {
             .as_mut()
             .ok_or_else(|| "TTS sidecar stdin not available".to_string())?;
 
-        let json =
-            serde_json::to_string(request).map_err(|e| format!("Failed to serialize request: {}", e))?;
+        let json = serde_json::to_string(request)
+            .map_err(|e| format!("Failed to serialize request: {}", e))?;
 
-        writeln!(stdin, "{}", json).map_err(|e| format!("Failed to write to TTS sidecar: {}", e))?;
+        writeln!(stdin, "{}", json)
+            .map_err(|e| format!("Failed to write to TTS sidecar: {}", e))?;
         stdin
             .flush()
             .map_err(|e| format!("Failed to flush TTS sidecar stdin: {}", e))?;
@@ -194,7 +195,12 @@ impl TtsSidecarProcess {
         }
     }
 
-    fn speak(&mut self, text: &str, output_device: Option<&str>, volume: f32) -> Result<(), String> {
+    fn speak(
+        &mut self,
+        text: &str,
+        output_device: Option<&str>,
+        volume: f32,
+    ) -> Result<(), String> {
         let response = self.send_request(&SidecarRequest::Speak {
             text: text.to_string(),
             output_device: output_device.map(|s| s.to_string()),
@@ -446,7 +452,9 @@ impl LocalTtsManager {
         // If we got a broken pipe or empty response, the sidecar crashed - try to recover once
         if let Err(ref e) = result {
             if e.contains("Broken pipe") || e.contains("empty response") || e.contains("crashed") {
-                warn!("TTS sidecar appears to have crashed during synthesize, attempting recovery...");
+                warn!(
+                    "TTS sidecar appears to have crashed during synthesize, attempting recovery..."
+                );
 
                 // Force respawn by clearing the sidecar
                 {

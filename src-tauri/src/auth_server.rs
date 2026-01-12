@@ -201,8 +201,13 @@ impl AuthServer {
     /// Start the auth server on the fixed port 4321
     pub fn start(app_handle: AppHandle) -> Result<Self, String> {
         // Bind to fixed port 4321 (whitelisted in Supabase)
-        let listener = TcpListener::bind(format!("127.0.0.1:{}", AUTH_SERVER_PORT))
-            .map_err(|e| format!("Failed to bind auth server on port {}: {}", AUTH_SERVER_PORT, e))?;
+        let listener =
+            TcpListener::bind(format!("127.0.0.1:{}", AUTH_SERVER_PORT)).map_err(|e| {
+                format!(
+                    "Failed to bind auth server on port {}: {}",
+                    AUTH_SERVER_PORT, e
+                )
+            })?;
 
         let port = AUTH_SERVER_PORT;
 
@@ -361,7 +366,9 @@ impl AuthServer {
     /// Handle POST /auth/token from the fragment handler JavaScript
     fn handle_token_post(request: &str, stream: &mut TcpStream, app_handle: &AppHandle) -> bool {
         // Find the JSON body (after the empty line)
-        let body_start = request.find("\r\n\r\n").map(|i| i + 4)
+        let body_start = request
+            .find("\r\n\r\n")
+            .map(|i| i + 4)
             .or_else(|| request.find("\n\n").map(|i| i + 2));
 
         if let Some(start) = body_start {

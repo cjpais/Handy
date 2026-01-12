@@ -147,8 +147,8 @@ impl SidecarProcess {
             .read_line(&mut line)
             .map_err(|e| format!("Failed to read sidecar ready message: {}", e))?;
 
-        let response: SidecarResponse = serde_json::from_str(&line)
-            .map_err(|e| format!("Invalid sidecar response: {}", e))?;
+        let response: SidecarResponse =
+            serde_json::from_str(&line).map_err(|e| format!("Invalid sidecar response: {}", e))?;
 
         match response {
             SidecarResponse::Ok { message } => {
@@ -223,7 +223,12 @@ impl SidecarProcess {
         }
     }
 
-    fn query(&mut self, user_id: &str, text: &str, limit: usize) -> Result<Vec<MemoryMessage>, String> {
+    fn query(
+        &mut self,
+        user_id: &str,
+        text: &str,
+        limit: usize,
+    ) -> Result<Vec<MemoryMessage>, String> {
         let response = self.send_request(&SidecarRequest::Query {
             user_id: user_id.to_string(),
             text: text.to_string(),
@@ -404,7 +409,12 @@ impl MemoryManager {
     }
 
     /// Store a message in memory
-    pub fn store_message(&self, user_id: &str, content: &str, is_bot: bool) -> Result<String, String> {
+    pub fn store_message(
+        &self,
+        user_id: &str,
+        content: &str,
+        is_bot: bool,
+    ) -> Result<String, String> {
         self.ensure_sidecar()?;
 
         let result = {
@@ -468,7 +478,9 @@ impl MemoryManager {
                 || e.contains("crashed")
                 || e.contains("Invalid sidecar response")
             {
-                warn!("Memory sidecar appears to have crashed during query, attempting recovery...");
+                warn!(
+                    "Memory sidecar appears to have crashed during query, attempting recovery..."
+                );
 
                 {
                     let mut guard = self.sidecar.lock().unwrap();
@@ -724,7 +736,10 @@ pub fn format_memory_context(memories: &[MemoryMessage]) -> String {
         let timestamp = chrono::DateTime::from_timestamp(memory.timestamp, 0)
             .map(|dt| dt.format("%Y-%m-%d").to_string())
             .unwrap_or_else(|| "unknown".to_string());
-        result.push_str(&format!("[{}] {}: {}\n", timestamp, speaker, memory.content));
+        result.push_str(&format!(
+            "[{}] {}: {}\n",
+            timestamp, speaker, memory.content
+        ));
     }
     result
 }

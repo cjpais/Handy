@@ -1,12 +1,14 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::filler_detector::detect_filler_words;
+use crate::live_coaching::LiveCoachingManager;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::filler_detector::detect_filler_words;
-use crate::live_coaching::LiveCoachingManager;
-use crate::settings::{get_settings, AppSettings, FillerOutputMode, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, FillerOutputMode, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
@@ -355,7 +357,8 @@ impl ShortcutAction for TranscribeAction {
                             } else {
                                 Some(settings.custom_filler_words.as_slice())
                             };
-                            let filler_analysis = detect_filler_words(&transcription, custom_fillers);
+                            let filler_analysis =
+                                detect_filler_words(&transcription, custom_fillers);
 
                             // Emit transcription result event for Live tab
                             if let Err(e) = ah.emit("transcription-result", transcription.clone()) {

@@ -141,16 +141,13 @@ fn run_conversation_loop(
 
     // Get selected microphone
     let settings = get_settings(&app_handle);
-    let selected_device = settings
-        .selected_microphone
-        .as_ref()
-        .and_then(|name| {
-            list_input_devices()
-                .ok()?
-                .into_iter()
-                .find(|d| &d.name == name)
-                .map(|d| d.device)
-        });
+    let selected_device = settings.selected_microphone.as_ref().and_then(|name| {
+        list_input_devices()
+            .ok()?
+            .into_iter()
+            .find(|d| &d.name == name)
+            .map(|d| d.device)
+    });
 
     // Open the recorder
     recorder
@@ -303,15 +300,11 @@ fn process_speech(
         .build()
         .map_err(|e| format!("Failed to create runtime: {}", e))?;
 
-    let response = rt.block_on(async {
-        onichan_manager.process_input(text).await
-    })?;
+    let response = rt.block_on(async { onichan_manager.process_input(text).await })?;
 
     // Speak the response
     let _ = app_handle.emit("onichan-conversation-state", "speaking");
-    rt.block_on(async {
-        onichan_manager.speak(&response).await
-    })?;
+    rt.block_on(async { onichan_manager.speak(&response).await })?;
 
     Ok(())
 }

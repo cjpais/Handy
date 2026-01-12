@@ -21,7 +21,10 @@ enum SidecarRequest {
     #[serde(rename = "disconnect")]
     Disconnect,
     #[serde(rename = "join_voice")]
-    JoinVoice { guild_id: String, channel_id: String },
+    JoinVoice {
+        guild_id: String,
+        channel_id: String,
+    },
     #[serde(rename = "leave_voice")]
     LeaveVoice { guild_id: String },
     #[serde(rename = "get_guilds")]
@@ -130,7 +133,10 @@ struct SidecarProcess {
 }
 
 impl SidecarProcess {
-    fn spawn(sidecar_path: &Path, event_tx: Option<mpsc::Sender<SidecarResponse>>) -> Result<Self, String> {
+    fn spawn(
+        sidecar_path: &Path,
+        event_tx: Option<mpsc::Sender<SidecarResponse>>,
+    ) -> Result<Self, String> {
         info!("Spawning Discord sidecar from: {:?}", sidecar_path);
 
         let mut child = Command::new(sidecar_path)
@@ -230,7 +236,11 @@ impl SidecarProcess {
                             }
                         }
                         Err(e) => {
-                            warn!("Failed to parse sidecar message: {} - line: {}", e, line.trim());
+                            warn!(
+                                "Failed to parse sidecar message: {} - line: {}",
+                                e,
+                                line.trim()
+                            );
                         }
                     }
                 }
@@ -255,8 +265,7 @@ impl SidecarProcess {
         let json = serde_json::to_string(request)
             .map_err(|e| format!("Failed to serialize request: {}", e))?;
 
-        writeln!(stdin, "{}", json)
-            .map_err(|e| format!("Failed to write to sidecar: {}", e))?;
+        writeln!(stdin, "{}", json).map_err(|e| format!("Failed to write to sidecar: {}", e))?;
         stdin
             .flush()
             .map_err(|e| format!("Failed to flush sidecar stdin: {}", e))?;
@@ -264,7 +273,12 @@ impl SidecarProcess {
         // Wait for response from the reader thread via channel
         self.response_rx
             .recv_timeout(std::time::Duration::from_secs(30))
-            .map_err(|e| format!("Failed to receive response (sidecar may have crashed): {}", e))
+            .map_err(|e| {
+                format!(
+                    "Failed to receive response (sidecar may have crashed): {}",
+                    e
+                )
+            })
     }
 
     /// Check if the sidecar process is still alive
@@ -514,7 +528,9 @@ impl DiscordManager {
                             error!("Failed to reconnect to Discord after crash: {}", e);
                         } else {
                             // Try to rejoin voice if we were in a channel
-                            if let (Some(guild_id), Some(channel_id)) = (state.guild_id, state.channel_id) {
+                            if let (Some(guild_id), Some(channel_id)) =
+                                (state.guild_id, state.channel_id)
+                            {
                                 info!("Rejoining voice channel after crash...");
                                 if let Err(e) = sidecar.join_voice(&guild_id, &channel_id) {
                                     error!("Failed to rejoin voice after crash: {}", e);

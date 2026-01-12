@@ -111,16 +111,18 @@ pub fn detect_filler_words(text: &str, custom_fillers: Option<&[String]>) -> Fil
             let end = start + pattern.len();
 
             // Check if this position overlaps with already matched ranges
-            let overlaps = matched_ranges
-                .iter()
-                .any(|(s, e)| start < *e && end > *s);
+            let overlaps = matched_ranges.iter().any(|(s, e)| start < *e && end > *s);
 
             if !overlaps {
                 // Check word boundaries - ensure we're matching whole words/phrases
-                let is_word_start =
-                    start == 0 || !text_lower.chars().nth(start - 1).unwrap_or(' ').is_alphabetic();
-                let is_word_end =
-                    end >= text_lower.len() || !text_lower.chars().nth(end).unwrap_or(' ').is_alphabetic();
+                let is_word_start = start == 0
+                    || !text_lower
+                        .chars()
+                        .nth(start - 1)
+                        .unwrap_or(' ')
+                        .is_alphabetic();
+                let is_word_end = end >= text_lower.len()
+                    || !text_lower.chars().nth(end).unwrap_or(' ').is_alphabetic();
 
                 if is_word_start && is_word_end {
                     matches.push(FillerWordMatch {
@@ -191,10 +193,7 @@ fn build_cleaned_text(original: &str, matches: &[FillerWordMatch]) -> String {
     }
 
     // Clean up extra whitespace
-    let cleaned: String = result
-        .split_whitespace()
-        .collect::<Vec<&str>>()
-        .join(" ");
+    let cleaned: String = result.split_whitespace().collect::<Vec<&str>>().join(" ");
 
     // Trim and ensure proper capitalization if needed
     cleaned.trim().to_string()
@@ -237,9 +236,18 @@ mod tests {
         let analysis = detect_filler_words(text, None);
 
         assert!(analysis.filler_count > 0);
-        assert!(analysis.matches.iter().any(|m| m.word.to_lowercase() == "um"));
-        assert!(analysis.matches.iter().any(|m| m.word.to_lowercase() == "like"));
-        assert!(analysis.matches.iter().any(|m| m.word.to_lowercase() == "you know"));
+        assert!(analysis
+            .matches
+            .iter()
+            .any(|m| m.word.to_lowercase() == "um"));
+        assert!(analysis
+            .matches
+            .iter()
+            .any(|m| m.word.to_lowercase() == "like"));
+        assert!(analysis
+            .matches
+            .iter()
+            .any(|m| m.word.to_lowercase() == "you know"));
     }
 
     #[test]
@@ -256,7 +264,10 @@ mod tests {
         let custom = vec!["dude".to_string()];
         let analysis = detect_filler_words(text, Some(&custom));
 
-        assert!(analysis.matches.iter().any(|m| m.word.to_lowercase() == "dude"));
+        assert!(analysis
+            .matches
+            .iter()
+            .any(|m| m.word.to_lowercase() == "dude"));
     }
 
     #[test]

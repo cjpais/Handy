@@ -154,11 +154,7 @@ pub fn discord_get_channels(app: AppHandle, guild_id: String) -> Result<Vec<Chan
 /// Connect to a Discord voice channel
 #[tauri::command]
 #[specta::specta]
-pub fn discord_connect(
-    app: AppHandle,
-    guild_id: String,
-    channel_id: String,
-) -> Result<(), String> {
+pub fn discord_connect(app: AppHandle, guild_id: String, channel_id: String) -> Result<(), String> {
     use tauri::Emitter;
     info!(
         "discord_connect command called: guild={}, channel={}",
