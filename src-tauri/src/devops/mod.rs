@@ -7,5 +7,6 @@
 //! - GitHub issue integration
 
 mod dependencies;
+pub mod tmux;
 
 pub use dependencies::*;

@@ -834,7 +834,20 @@
     "sessions": {
       "title": "Agent Sessions",
       "description": "Manage tmux sessions running coding agents",
-      "comingSoon": "Agent session management coming soon. This will allow you to spawn and monitor multiple coding agents working in parallel."
+      "comingSoon": "Agent session management coming soon. This will allow you to spawn and monitor multiple coding agents working in parallel.",
+      "tmuxNotRunning": "tmux is not currently running",
+      "tmuxNotRunningHint": "Start a tmux session to manage coding agents",
+      "noSessions": "No active sessions",
+      "noSessionsHint": "Sessions will appear here when you start coding agents",
+      "activeCount": "{{count}} active session(s)",
+      "attached": "Attached",
+      "kill": "Kill session",
+      "recoveryTitle": "Recovery Suggestions",
+      "action": {
+        "resume": "Session can be resumed",
+        "cleanup": "Session needs cleanup",
+        "recreate": "Session should be recreated"
+      }
     }
   },
   "credentials": {

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { commands, DevOpsDependencies } from "@/bindings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { DependencyStatus } from "./DependencyStatus";
+import { SessionManager } from "./SessionManager";
 import {
   Terminal,
   GitBranch,
@@ -115,16 +116,13 @@ export const DevOpsSettings: React.FC = () => {
         ) : null}
       </SettingsGroup>
 
-      {/* Coming Soon - Agent Sessions */}
+      {/* Agent Sessions */}
       {dependencies?.all_satisfied && (
         <SettingsGroup
           title={t("devops.sessions.title")}
           description={t("devops.sessions.description")}
         >
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Terminal className="w-12 h-12 text-mid-gray/50 mb-3" />
-            <p className="text-sm text-mid-gray">{t("devops.sessions.comingSoon")}</p>
-          </div>
+          <SessionManager onSessionsChange={checkDependencies} />
         </SettingsGroup>
       )}
     </div>
