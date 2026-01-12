@@ -6,9 +6,11 @@ import { DependencyStatus } from "./DependencyStatus";
 import { SessionManager } from "./SessionManager";
 import { WorktreeManager } from "./WorktreeManager";
 import { IssueQueue } from "./IssueQueue";
+import { PullRequestPanel } from "./PullRequestPanel";
 import {
   Terminal,
   GitBranch,
+  GitPullRequest,
   FolderGit2,
   CircleDot,
   RefreshCcw,
@@ -147,6 +149,16 @@ export const DevOpsSettings: React.FC = () => {
           description={t("devops.issues.description")}
         >
           <IssueQueue />
+        </SettingsGroup>
+      )}
+
+      {/* GitHub Pull Requests */}
+      {dependencies?.gh?.installed && (
+        <SettingsGroup
+          title={t("devops.prs.title")}
+          description={t("devops.prs.description")}
+        >
+          <PullRequestPanel />
         </SettingsGroup>
       )}
     </div>

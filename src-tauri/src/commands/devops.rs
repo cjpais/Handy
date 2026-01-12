@@ -2,7 +2,10 @@
 
 use crate::devops::{
     check_all_dependencies,
-    github::{self, GhAuthStatus, GitHubComment, GitHubIssue, IssueAgentMetadata, IssueWithAgent},
+    github::{
+        self, GhAuthStatus, GitHubComment, GitHubIssue, GitHubPullRequest, IssueAgentMetadata,
+        IssueWithAgent, PrStatus,
+    },
     tmux::{self, AgentMetadata, RecoveredSession, TmuxSession},
     worktree::{self, CollisionCheck, WorktreeConfig, WorktreeCreateResult, WorktreeInfo},
     DevOpsDependencies,
@@ -305,4 +308,71 @@ pub fn close_github_issue(repo: String, number: u64, comment: Option<String>) ->
 #[specta::specta]
 pub fn reopen_github_issue(repo: String, number: u64) -> Result<(), String> {
     github::reopen_issue(&repo, number)
+}
+
+// ============================================================================
+// GitHub Pull Request Commands
+// ============================================================================
+
+/// List pull requests from a GitHub repository.
+#[tauri::command]
+#[specta::specta]
+pub fn list_github_prs(
+    repo: String,
+    state: Option<String>,
+    base: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<GitHubPullRequest>, String> {
+    let state_ref = state.as_deref();
+    let base_ref = base.as_deref();
+    github::list_prs(&repo, state_ref, base_ref, limit)
+}
+
+/// Get details of a specific GitHub pull request.
+#[tauri::command]
+#[specta::specta]
+pub fn get_github_pr(repo: String, number: u64) -> Result<GitHubPullRequest, String> {
+    github::get_pr(&repo, number)
+}
+
+/// Get full status of a pull request (PR + checks + reviews).
+#[tauri::command]
+#[specta::specta]
+pub fn get_github_pr_status(repo: String, number: u64) -> Result<PrStatus, String> {
+    github::get_pr_status(&repo, number)
+}
+
+/// Create a new GitHub pull request.
+#[tauri::command]
+#[specta::specta]
+pub fn create_github_pr(
+    repo: String,
+    title: String,
+    body: Option<String>,
+    base: String,
+    head: Option<String>,
+    draft: bool,
+) -> Result<GitHubPullRequest, String> {
+    let body_ref = body.as_deref();
+    let head_ref = head.as_deref();
+    github::create_pr(&repo, &title, body_ref, &base, head_ref, draft)
+}
+
+/// Merge a GitHub pull request.
+#[tauri::command]
+#[specta::specta]
+pub fn merge_github_pr(
+    repo: String,
+    number: u64,
+    method: Option<String>,
+    delete_branch: bool,
+) -> Result<(), String> {
+    github::merge_pr(&repo, number, method.as_deref(), delete_branch)
+}
+
+/// Close a GitHub pull request without merging.
+#[tauri::command]
+#[specta::specta]
+pub fn close_github_pr(repo: String, number: u64, comment: Option<String>) -> Result<(), String> {
+    github::close_pr(&repo, number, comment.as_deref())
 }

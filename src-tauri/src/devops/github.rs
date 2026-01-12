@@ -614,6 +614,519 @@ pub fn reopen_issue(repo: &str, number: u64) -> Result<(), String> {
     Ok(())
 }
 
+// ============================================================================
+// Pull Request Functions
+// ============================================================================
+
+/// A GitHub Pull Request.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct GitHubPullRequest {
+    /// PR number
+    pub number: u64,
+    /// PR title
+    pub title: String,
+    /// PR body/description
+    pub body: Option<String>,
+    /// PR state (open, closed, merged)
+    pub state: String,
+    /// PR URL
+    pub url: String,
+    /// Source branch
+    pub head_branch: String,
+    /// Target branch
+    pub base_branch: String,
+    /// Is the PR a draft
+    pub is_draft: bool,
+    /// Is the PR mergeable
+    pub mergeable: Option<bool>,
+    /// Labels on the PR
+    pub labels: Vec<String>,
+    /// Author username
+    pub author: String,
+    /// Created timestamp
+    pub created_at: String,
+    /// Updated timestamp
+    pub updated_at: String,
+    /// Repository in owner/repo format
+    pub repo: String,
+}
+
+/// PR check status.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct PrCheckStatus {
+    /// Overall status (pending, success, failure)
+    pub state: String,
+    /// Number of passing checks
+    pub passing: u32,
+    /// Number of failing checks
+    pub failing: u32,
+    /// Number of pending checks
+    pub pending: u32,
+    /// Total number of checks
+    pub total: u32,
+}
+
+/// PR review status.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct PrReviewStatus {
+    /// Number of approvals
+    pub approved: u32,
+    /// Number of changes requested
+    pub changes_requested: u32,
+    /// Number of reviews pending
+    pub pending: u32,
+}
+
+/// Full PR status including checks and reviews.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct PrStatus {
+    /// The PR
+    pub pr: GitHubPullRequest,
+    /// Check status
+    pub checks: PrCheckStatus,
+    /// Review status
+    pub reviews: PrReviewStatus,
+}
+
+/// List pull requests from a repository.
+pub fn list_prs(
+    repo: &str,
+    state: Option<&str>,
+    base: Option<&str>,
+    limit: Option<u32>,
+) -> Result<Vec<GitHubPullRequest>, String> {
+    let mut args = vec![
+        "pr",
+        "list",
+        "--repo",
+        repo,
+        "--json",
+        "number,title,body,state,url,headRefName,baseRefName,isDraft,mergeable,labels,author,createdAt,updatedAt",
+    ];
+
+    let state_str;
+    if let Some(s) = state {
+        state_str = s.to_string();
+        args.push("--state");
+        args.push(&state_str);
+    }
+
+    let base_str;
+    if let Some(b) = base {
+        base_str = b.to_string();
+        args.push("--base");
+        args.push(&base_str);
+    }
+
+    let limit_str;
+    if let Some(l) = limit {
+        limit_str = l.to_string();
+        args.push("--limit");
+        args.push(&limit_str);
+    }
+
+    let output = Command::new("gh")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "gh pr list failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let json_str = String::from_utf8_lossy(&output.stdout);
+
+    #[derive(Deserialize)]
+    struct GhPr {
+        number: u64,
+        title: String,
+        body: Option<String>,
+        state: String,
+        url: String,
+        #[serde(rename = "headRefName")]
+        head_ref_name: String,
+        #[serde(rename = "baseRefName")]
+        base_ref_name: String,
+        #[serde(rename = "isDraft")]
+        is_draft: bool,
+        mergeable: Option<String>,
+        labels: Vec<GhLabel>,
+        author: GhUser,
+        #[serde(rename = "createdAt")]
+        created_at: String,
+        #[serde(rename = "updatedAt")]
+        updated_at: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GhLabel {
+        name: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GhUser {
+        login: String,
+    }
+
+    let gh_prs: Vec<GhPr> =
+        serde_json::from_str(&json_str).map_err(|e| format!("Failed to parse gh output: {}", e))?;
+
+    Ok(gh_prs
+        .into_iter()
+        .map(|p| GitHubPullRequest {
+            number: p.number,
+            title: p.title,
+            body: p.body,
+            state: p.state,
+            url: p.url,
+            head_branch: p.head_ref_name,
+            base_branch: p.base_ref_name,
+            is_draft: p.is_draft,
+            mergeable: p.mergeable.map(|m| m == "MERGEABLE"),
+            labels: p.labels.into_iter().map(|l| l.name).collect(),
+            author: p.author.login,
+            created_at: p.created_at,
+            updated_at: p.updated_at,
+            repo: repo.to_string(),
+        })
+        .collect())
+}
+
+/// Get details of a specific pull request.
+pub fn get_pr(repo: &str, number: u64) -> Result<GitHubPullRequest, String> {
+    let output = Command::new("gh")
+        .args([
+            "pr",
+            "view",
+            &number.to_string(),
+            "--repo",
+            repo,
+            "--json",
+            "number,title,body,state,url,headRefName,baseRefName,isDraft,mergeable,labels,author,createdAt,updatedAt",
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "gh pr view failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let json_str = String::from_utf8_lossy(&output.stdout);
+
+    #[derive(Deserialize)]
+    struct GhPr {
+        number: u64,
+        title: String,
+        body: Option<String>,
+        state: String,
+        url: String,
+        #[serde(rename = "headRefName")]
+        head_ref_name: String,
+        #[serde(rename = "baseRefName")]
+        base_ref_name: String,
+        #[serde(rename = "isDraft")]
+        is_draft: bool,
+        mergeable: Option<String>,
+        labels: Vec<GhLabel>,
+        author: GhUser,
+        #[serde(rename = "createdAt")]
+        created_at: String,
+        #[serde(rename = "updatedAt")]
+        updated_at: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GhLabel {
+        name: String,
+    }
+
+    #[derive(Deserialize)]
+    struct GhUser {
+        login: String,
+    }
+
+    let gh_pr: GhPr =
+        serde_json::from_str(&json_str).map_err(|e| format!("Failed to parse gh output: {}", e))?;
+
+    Ok(GitHubPullRequest {
+        number: gh_pr.number,
+        title: gh_pr.title,
+        body: gh_pr.body,
+        state: gh_pr.state,
+        url: gh_pr.url,
+        head_branch: gh_pr.head_ref_name,
+        base_branch: gh_pr.base_ref_name,
+        is_draft: gh_pr.is_draft,
+        mergeable: gh_pr.mergeable.map(|m| m == "MERGEABLE"),
+        labels: gh_pr.labels.into_iter().map(|l| l.name).collect(),
+        author: gh_pr.author.login,
+        created_at: gh_pr.created_at,
+        updated_at: gh_pr.updated_at,
+        repo: repo.to_string(),
+    })
+}
+
+/// Create a new pull request.
+pub fn create_pr(
+    repo: &str,
+    title: &str,
+    body: Option<&str>,
+    base: &str,
+    head: Option<&str>,
+    draft: bool,
+) -> Result<GitHubPullRequest, String> {
+    let mut args = vec!["pr", "create", "--repo", repo, "--title", title, "--base", base];
+
+    let body_str;
+    if let Some(b) = body {
+        body_str = b.to_string();
+        args.push("--body");
+        args.push(&body_str);
+    }
+
+    let head_str;
+    if let Some(h) = head {
+        head_str = h.to_string();
+        args.push("--head");
+        args.push(&head_str);
+    }
+
+    if draft {
+        args.push("--draft");
+    }
+
+    let output = Command::new("gh")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "gh pr create failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    // Output is the PR URL, parse the number from it
+    let url = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let number = url
+        .split('/')
+        .last()
+        .and_then(|s| s.parse::<u64>().ok())
+        .ok_or_else(|| "Failed to parse PR number from URL".to_string())?;
+
+    // Fetch the full PR details
+    get_pr(repo, number)
+}
+
+/// Get PR check status.
+pub fn get_pr_checks(repo: &str, number: u64) -> Result<PrCheckStatus, String> {
+    let output = Command::new("gh")
+        .args([
+            "pr",
+            "checks",
+            &number.to_string(),
+            "--repo",
+            repo,
+            "--json",
+            "name,state,conclusion",
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+    // gh pr checks returns non-zero if checks are failing, so we parse regardless
+    let json_str = String::from_utf8_lossy(&output.stdout);
+
+    #[derive(Deserialize)]
+    struct GhCheck {
+        #[allow(dead_code)]
+        name: String,
+        state: String,
+        conclusion: Option<String>,
+    }
+
+    let checks: Vec<GhCheck> = if json_str.trim().is_empty() {
+        vec![]
+    } else {
+        serde_json::from_str(&json_str).unwrap_or_default()
+    };
+
+    let mut passing = 0u32;
+    let mut failing = 0u32;
+    let mut pending = 0u32;
+
+    for check in &checks {
+        match check.state.as_str() {
+            "COMPLETED" => {
+                if check.conclusion.as_deref() == Some("SUCCESS") {
+                    passing += 1;
+                } else {
+                    failing += 1;
+                }
+            }
+            "IN_PROGRESS" | "QUEUED" | "PENDING" => pending += 1,
+            _ => {}
+        }
+    }
+
+    let total = checks.len() as u32;
+    let state = if failing > 0 {
+        "failure".to_string()
+    } else if pending > 0 {
+        "pending".to_string()
+    } else if passing > 0 {
+        "success".to_string()
+    } else {
+        "unknown".to_string()
+    };
+
+    Ok(PrCheckStatus {
+        state,
+        passing,
+        failing,
+        pending,
+        total,
+    })
+}
+
+/// Get PR review status.
+pub fn get_pr_reviews(repo: &str, number: u64) -> Result<PrReviewStatus, String> {
+    let output = Command::new("gh")
+        .args([
+            "pr",
+            "view",
+            &number.to_string(),
+            "--repo",
+            repo,
+            "--json",
+            "reviews",
+        ])
+        .output()
+        .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "gh pr view failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let json_str = String::from_utf8_lossy(&output.stdout);
+
+    #[derive(Deserialize)]
+    struct GhReviews {
+        reviews: Vec<GhReview>,
+    }
+
+    #[derive(Deserialize)]
+    struct GhReview {
+        state: String,
+    }
+
+    let reviews: GhReviews =
+        serde_json::from_str(&json_str).map_err(|e| format!("Failed to parse gh output: {}", e))?;
+
+    let mut approved = 0u32;
+    let mut changes_requested = 0u32;
+    let mut pending = 0u32;
+
+    for review in &reviews.reviews {
+        match review.state.as_str() {
+            "APPROVED" => approved += 1,
+            "CHANGES_REQUESTED" => changes_requested += 1,
+            "PENDING" => pending += 1,
+            _ => {}
+        }
+    }
+
+    Ok(PrReviewStatus {
+        approved,
+        changes_requested,
+        pending,
+    })
+}
+
+/// Get full PR status including checks and reviews.
+pub fn get_pr_status(repo: &str, number: u64) -> Result<PrStatus, String> {
+    let pr = get_pr(repo, number)?;
+    let checks = get_pr_checks(repo, number)?;
+    let reviews = get_pr_reviews(repo, number)?;
+
+    Ok(PrStatus { pr, checks, reviews })
+}
+
+/// Merge a pull request.
+pub fn merge_pr(
+    repo: &str,
+    number: u64,
+    method: Option<&str>,
+    delete_branch: bool,
+) -> Result<(), String> {
+    let mut args = vec!["pr", "merge", &number.to_string(), "--repo", repo];
+
+    match method {
+        Some("squash") => args.push("--squash"),
+        Some("rebase") => args.push("--rebase"),
+        _ => args.push("--merge"),
+    }
+
+    if delete_branch {
+        args.push("--delete-branch");
+    }
+
+    let output = Command::new("gh")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "gh pr merge failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    Ok(())
+}
+
+/// Close a pull request without merging.
+pub fn close_pr(repo: &str, number: u64, comment: Option<&str>) -> Result<(), String> {
+    if let Some(c) = comment {
+        // Add comment first
+        let comment_output = Command::new("gh")
+            .args(["pr", "comment", &number.to_string(), "--repo", repo, "--body", c])
+            .output()
+            .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+        if !comment_output.status.success() {
+            return Err(format!(
+                "gh pr comment failed: {}",
+                String::from_utf8_lossy(&comment_output.stderr)
+            ));
+        }
+    }
+
+    let output = Command::new("gh")
+        .args(["pr", "close", &number.to_string(), "--repo", repo])
+        .output()
+        .map_err(|e| format!("Failed to execute gh: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "gh pr close failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
