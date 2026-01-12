@@ -71,36 +71,71 @@ The DevOps tab requires the following CLI tools to be installed:
 - [ ] Working directory configuration per agent
 - [ ] Environment variable passthrough
 
-### Phase 3: GitHub Integration
+### Phase 3: Worktree Management
 
-#### 3.1 Authentication & Status
+The worktree system enables isolated development environments for each agent, preventing conflicts when multiple agents work in parallel.
+
+#### 3.1 Worktree Lifecycle
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Create     │────▶│   Spawn      │────▶│   Work       │────▶│   Merge &    │
+│   Worktree   │     │   Agent      │     │   Complete   │     │   Cleanup    │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
+      │                    │                    │                    │
+      ▼                    ▼                    ▼                    ▼
+ {project}-{name}    tmux session         Commits ready      git merge +
+ e.g. Handy-fix-1    in worktree          for review         worktree remove
+```
+
+#### 3.2 Worktree Commands
+- [ ] `list_worktrees()` - List all git worktrees with status
+- [ ] `create_worktree(name)` - Create worktree with collision checks:
+  - Validates not inside existing worktree
+  - Checks for existing directory with same name
+  - Checks for existing branch with same name
+  - Uses configurable prefix (default: `{project}-`)
+  - Creates new branch and worktree atomically
+- [ ] `remove_worktree(path)` - Clean up worktree and optionally delete branch
+- [ ] `merge_worktree(path, target)` - Merge worktree branch into target, then cleanup
+
+#### 3.3 Worktree Configuration
+```rust
+#[derive(Serialize, Deserialize, Type)]
+struct WorktreeConfig {
+    /// Prefix for worktree directories (e.g., "Handy-" -> "Handy-feature-1")
+    prefix: String,
+    /// Base directory for worktrees (default: parent of repo)
+    base_path: Option<String>,
+    /// Auto-delete branch after merge
+    delete_branch_on_merge: bool,
+}
+```
+
+### Phase 4: GitHub Integration
+
+#### 4.1 Authentication & Status
 - [ ] `gh_auth_status()` - Check GitHub authentication
 - [ ] `gh_auth_login()` - Trigger login flow if needed
 
-#### 3.2 Repository Operations
+#### 4.2 Repository Operations
 - [ ] `gh_repo_info()` - Get current repo info
 - [ ] `gh_list_prs()` - List open PRs
 - [ ] `gh_list_issues()` - List open issues
 - [ ] `gh_create_pr(title, body, base)` - Create PR from current branch
 
-#### 3.3 Worktree Management
-- [ ] `list_worktrees()` - List git worktrees
-- [ ] `create_worktree(branch, path)` - Create new worktree
-- [ ] `remove_worktree(path)` - Clean up worktree
+### Phase 5: Multi-Agent Orchestration
 
-### Phase 4: Multi-Agent Orchestration
-
-#### 4.1 Task Distribution
+#### 5.1 Task Distribution
 - [ ] Task queue system for distributing work to agents
 - [ ] Agent status monitoring (idle, working, blocked)
 - [ ] Real-time output streaming from agent sessions
 
-#### 4.2 Coordination
+#### 5.2 Coordination
 - [ ] Branch/worktree assignment per agent
 - [ ] Conflict detection when agents work on same files
 - [ ] Merge coordination between agent outputs
 
-#### 4.3 Templates
+#### 5.3 Templates
 - [ ] Pre-defined task templates (bug fix, feature, refactor)
 - [ ] Custom prompt templates for agents
 - [ ] Project-specific agent configurations
@@ -114,6 +149,7 @@ src-tauri/src/
 │   ├── dependencies.rs  # gh/tmux detection
 │   ├── tmux.rs          # tmux session management
 │   ├── github.rs        # gh CLI wrapper
+│   ├── worktree.rs      # Git worktree management
 │   └── agents.rs        # Agent spawning/management
 
 src/components/settings/devops/
@@ -122,7 +158,8 @@ src/components/settings/devops/
 ├── SessionManager.tsx   # tmux session list/controls
 ├── AgentPanel.tsx       # Individual agent view
 ├── TaskQueue.tsx        # Pending tasks display
-└── GitHubPanel.tsx      # PR/Issue integration
+├── GitHubPanel.tsx      # PR/Issue integration
+└── WorktreeManager.tsx  # Worktree list/create/merge UI
 
 src/i18n/locales/en/
 └── translation.json     # Add devops.* keys
@@ -176,6 +213,38 @@ struct DependencyStatus {
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
+```
+
+## Example Workflow: Multi-Agent Feature Development
+
+```
+User: "I need to implement user authentication and a dashboard"
+
+1. DevOps creates two worktrees:
+   - Handy-auth-feature (for authentication)
+   - Handy-dashboard-feature (for dashboard)
+
+2. DevOps spawns agents in parallel:
+   ┌─────────────────────────────────────────────────────────────┐
+   │ tmux: agent-auth                 │ tmux: agent-dashboard    │
+   │ cwd: ../Handy-auth-feature       │ cwd: ../Handy-dashboard  │
+   │ task: "Implement user auth..."   │ task: "Build dashboard..." │
+   │ status: Working                  │ status: Working          │
+   └─────────────────────────────────────────────────────────────┘
+
+3. Agents work independently (no conflicts - separate worktrees)
+
+4. Agent completes → DevOps shows notification:
+   "agent-auth completed: 3 commits ready for review"
+   [View Diff] [Merge to main] [Create PR]
+
+5. User clicks "Merge to main":
+   - git merge auth-feature (from main repo)
+   - git worktree remove ../Handy-auth-feature
+   - git branch -d auth-feature
+   - Notification: "auth-feature merged and cleaned up"
+
+6. Repeat for dashboard when ready
 ```
 
 ## Security Considerations
