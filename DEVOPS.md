@@ -59,17 +59,95 @@ The DevOps tab requires the following CLI tools to be installed:
 
 ### Phase 2: tmux Integration
 
-#### 2.1 Session Management
-- [ ] `list_tmux_sessions()` - List all tmux sessions
-- [ ] `create_tmux_session(name)` - Create named session
-- [ ] `kill_tmux_session(name)` - Terminate session
-- [ ] `attach_tmux_session(name)` - Get session output/status
+tmux sessions persist independently of Handy, enabling recovery after hot reloads, crashes, or app restarts.
 
-#### 2.2 Agent Spawning
+#### 2.1 Session Persistence Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         tmux server                              │
+│                    (runs independently)                          │
+├─────────────────────────────────────────────────────────────────┤
+│  handy-agent-42     │ handy-agent-43     │ handy-agent-15       │
+│  ├── issue: #42     │ ├── issue: #43     │ ├── issue: #15       │
+│  ├── repo: frontend │ ├── repo: frontend │ ├── repo: backend    │
+│  └── status: active │ └── status: active │ └── status: active   │
+└─────────────────────────────────────────────────────────────────┘
+                              ▲
+                              │ survives restart
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Handy App                                                       │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ On startup: recover_agent_sessions()                        ││
+│  │   1. List tmux sessions matching "handy-agent-*"            ││
+│  │   2. Parse session metadata from env vars                   ││
+│  │   3. Rebuild agent state from session info                  ││
+│  │   4. Resume monitoring output                               ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 2.2 Session Naming Convention
+```
+handy-agent-{issue_number}[-{suffix}]
+
+Examples:
+  handy-agent-42           # Working on issue #42
+  handy-agent-42-retry     # Retry attempt for #42
+  handy-agent-manual-1     # Manual session without issue
+```
+
+#### 2.3 Session Metadata
+Each tmux session stores metadata in environment variables for recovery:
+```bash
+# Set when spawning agent
+tmux set-environment -t handy-agent-42 HANDY_ISSUE_REF "org/repo#42"
+tmux set-environment -t handy-agent-42 HANDY_REPO "org/repo"
+tmux set-environment -t handy-agent-42 HANDY_WORKTREE "/path/to/worktree"
+tmux set-environment -t handy-agent-42 HANDY_AGENT_TYPE "claude"
+tmux set-environment -t handy-agent-42 HANDY_STARTED_AT "2024-01-15T10:30:00Z"
+
+# Read during recovery
+tmux show-environment -t handy-agent-42
+```
+
+#### 2.4 Session Commands
+- [ ] `list_tmux_sessions()` - List all tmux sessions (filter by handy-agent-* prefix)
+- [ ] `create_tmux_session(name)` - Create named session with metadata
+- [ ] `kill_tmux_session(name)` - Terminate session
+- [ ] `get_session_output(name, lines?)` - Get recent output from session
+- [ ] `recover_agent_sessions()` - Rebuild state from surviving sessions on startup
+- [ ] `get_session_metadata(name)` - Read HANDY_* env vars from session
+
+#### 2.5 Recovery Flow
+```rust
+#[derive(Serialize, Deserialize, Type)]
+struct RecoveredSession {
+    session_name: String,
+    issue_ref: Option<String>,
+    repo: Option<String>,
+    worktree_path: Option<String>,
+    agent_type: String,
+    started_at: Option<String>,
+    is_alive: bool,  // true if agent process still running
+}
+
+/// Called on app startup
+async fn recover_agent_sessions() -> Vec<RecoveredSession> {
+    // 1. tmux list-sessions -F "#{session_name}"
+    // 2. Filter sessions starting with "handy-agent-"
+    // 3. For each: read HANDY_* env vars
+    // 4. Check if pane has active process
+    // 5. Return recovered session info
+}
+```
+
+#### 2.6 Agent Spawning
 - [ ] `spawn_agent(session_name, agent_type, task)` - Launch agent in tmux
 - [ ] Support for different agent types (claude, aider, etc.)
 - [ ] Working directory configuration per agent
 - [ ] Environment variable passthrough
+- [ ] Store metadata for recovery
 
 ### Phase 3: Worktree Management
 
