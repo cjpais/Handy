@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { type } from "@tauri-apps/plugin-os";
+import { listen } from "@tauri-apps/api/event";
+import { checkAccessibilityPermission } from "tauri-plugin-macos-permissions-api";
 import {
   getKeyName,
   formatKeyCombination,
@@ -70,6 +72,34 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
     detectOsType();
   }, []);
+
+  useEffect(() => {
+    if (editingShortcutId !== shortcutId || shortcutId !== "transcribe") return;
+    if (osType !== "macos") return;
+
+    const unlistenPromise = listen("fn-key-pressed", async () => {
+      if (!bindings[shortcutId]) return;
+      try {
+        await updateBinding(shortcutId, "fn");
+      } catch (error) {
+        console.error("Failed to set fn binding:", error);
+        toast.error(t("settings.general.shortcut.errors.set", { error: String(error) }));
+        if (originalBinding) {
+          await updateBinding(shortcutId, originalBinding).catch(console.error);
+        } else {
+          await commands.resumeBinding(shortcutId).catch(console.error);
+        }
+      }
+      setEditingShortcutId(null);
+      setKeyPressed([]);
+      setRecordedKeys([]);
+      setOriginalBinding("");
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, [editingShortcutId, shortcutId, osType, bindings, originalBinding, updateBinding, t]);
 
   useEffect(() => {
     // Only add event listeners when we're in editing mode
@@ -232,6 +262,18 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
     // Suspend current binding to avoid firing while recording
     await commands.suspendBinding(id).catch(console.error);
+
+    // Initialize fn key listener for transcribe shortcut on macOS if permissions granted
+    if (id === "transcribe" && osType === "macos") {
+      try {
+        const hasPermissions = await checkAccessibilityPermission();
+        if (hasPermissions) {
+          await commands.initFnKeyListener();
+        }
+      } catch (e) {
+        console.error("Failed to init fn key listener:", e);
+      }
+    }
 
     // Store the original binding to restore if canceled
     setOriginalBinding(bindings[id]?.current_binding || "");

@@ -615,6 +615,17 @@ async isLaptop() : Promise<Result<boolean, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async initFnKeyListener() : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("init_fn_key_listener") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async isFnKeyListenerAvailable() : Promise<boolean> {
+    return await TAURI_INVOKE("is_fn_key_listener_available");
 }
 }
 

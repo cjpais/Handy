@@ -1,10 +1,15 @@
-use log::{error, warn};
+use log::{error, info, warn};
 use serde::Serialize;
 use specta::Type;
+#[cfg(target_os = "macos")]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
+
+#[cfg(target_os = "macos")]
+use rdev::{listen, EventType, Key};
 
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
@@ -15,6 +20,161 @@ use crate::settings::{
 };
 use crate::tray;
 use crate::ManagedToggleState;
+
+#[cfg(target_os = "macos")]
+static FN_TRANSCRIBE_SUSPENDED: AtomicBool = AtomicBool::new(false);
+
+#[cfg(target_os = "macos")]
+static FN_LISTENER_INITIALIZED: AtomicBool = AtomicBool::new(false);
+
+#[cfg(target_os = "macos")]
+static TRANSCRIBE_RECORDING_MODE: AtomicBool = AtomicBool::new(false);
+
+fn is_transcribe_fn_binding(binding: &ShortcutBinding) -> bool {
+    binding.id == "transcribe" && binding.current_binding.trim().eq_ignore_ascii_case("fn")
+}
+
+#[cfg(target_os = "macos")]
+fn start_fn_listener_thread(app: &AppHandle) {
+    if FN_LISTENER_INITIALIZED.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    
+    info!("Starting fn key listener thread");
+    let app_handle = app.clone();
+    
+    std::thread::spawn(move || {
+        let mut fn_down = false;
+        let result = listen(move |event| match event.event_type {
+            EventType::KeyPress(Key::Function) => {
+                if fn_down {
+                    return;
+                }
+                fn_down = true;
+
+                if TRANSCRIBE_RECORDING_MODE.load(Ordering::Relaxed) {
+                    let _ = app_handle.emit("fn-key-pressed", ());
+                    return;
+                }
+
+                if FN_TRANSCRIBE_SUSPENDED.load(Ordering::Relaxed) {
+                    return;
+                }
+                let settings = get_settings(&app_handle);
+                let binding_is_fn = settings
+                    .bindings
+                    .get("transcribe")
+                    .map(|b| b.current_binding.trim().eq_ignore_ascii_case("fn"))
+                    .unwrap_or(false);
+                if !binding_is_fn {
+                    return;
+                }
+                handle_transcribe_fn_event(&app_handle, true);
+            }
+            EventType::KeyRelease(Key::Function) => {
+                if !fn_down {
+                    return;
+                }
+                fn_down = false;
+
+                if TRANSCRIBE_RECORDING_MODE.load(Ordering::Relaxed) {
+                    return;
+                }
+
+                if FN_TRANSCRIBE_SUSPENDED.load(Ordering::Relaxed) {
+                    return;
+                }
+                let settings = get_settings(&app_handle);
+                let binding_is_fn = settings
+                    .bindings
+                    .get("transcribe")
+                    .map(|b| b.current_binding.trim().eq_ignore_ascii_case("fn"))
+                    .unwrap_or(false);
+                if !binding_is_fn {
+                    return;
+                }
+                handle_transcribe_fn_event(&app_handle, false);
+            }
+            _ => {}
+        });
+        
+        if let Err(e) = result {
+            warn!("Fn listener stopped: {:?}", e);
+            FN_LISTENER_INITIALIZED.store(false, Ordering::SeqCst);
+        }
+    });
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn init_fn_key_listener(app: AppHandle) -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        start_fn_listener_thread(&app);
+        Ok(true)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = app;
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn is_fn_key_listener_available() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        FN_LISTENER_INITIALIZED.load(Ordering::Relaxed)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        false
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn handle_transcribe_fn_event(app: &AppHandle, pressed: bool) {
+    let settings = get_settings(app);
+    let Some(action) = ACTION_MAP.get("transcribe") else {
+        return;
+    };
+
+    if settings.push_to_talk {
+        if pressed {
+            action.start(app, "transcribe", "fn");
+        } else {
+            action.stop(app, "transcribe", "fn");
+        }
+        return;
+    }
+
+    if !pressed {
+        return;
+    }
+
+    let should_start: bool;
+    {
+        let toggle_state_manager = app.state::<ManagedToggleState>();
+        let mut states = toggle_state_manager
+            .lock()
+            .expect("Failed to lock toggle state manager");
+
+        let is_currently_active = states
+            .active_toggles
+            .entry("transcribe".to_string())
+            .or_insert(false);
+
+        should_start = !*is_currently_active;
+        *is_currently_active = should_start;
+    }
+
+    if should_start {
+        action.start(app, "transcribe", "fn");
+    } else {
+        action.stop(app, "transcribe", "fn");
+    }
+}
 
 pub fn init_shortcuts(app: &AppHandle) {
     let default_bindings = settings::get_default_settings().bindings;
@@ -109,10 +269,15 @@ pub fn change_binding(
     }
 
     // Update the binding in the settings
-    settings.bindings.insert(id, updated_binding.clone());
+    settings.bindings.insert(id.clone(), updated_binding.clone());
 
     // Save the settings
     settings::write_settings(&app, settings);
+
+    #[cfg(target_os = "macos")]
+    if id == "transcribe" {
+        TRANSCRIBE_RECORDING_MODE.store(false, Ordering::Relaxed);
+    }
 
     // Return the updated binding
     Ok(BindingResponse {
@@ -651,6 +816,11 @@ fn validate_shortcut_string(raw: &str) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    if id == "transcribe" {
+        TRANSCRIBE_RECORDING_MODE.store(true, Ordering::Relaxed);
+    }
+
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = unregister_shortcut(&app, b) {
             error!("suspend_binding error for id '{}': {}", id, e);
@@ -664,6 +834,11 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    if id == "transcribe" {
+        TRANSCRIBE_RECORDING_MODE.store(false, Ordering::Relaxed);
+    }
+
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
         if let Err(e) = register_shortcut(&app, b) {
             error!("resume_binding error for id '{}': {}", id, e);
@@ -715,6 +890,19 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
 }
 
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if is_transcribe_fn_binding(&binding) {
+        #[cfg(target_os = "macos")]
+        {
+            FN_TRANSCRIBE_SUSPENDED.store(false, Ordering::Relaxed);
+            return Ok(());
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            return Err("Fn shortcut is only supported on macOS".into());
+        }
+    }
+
     // Validate human-level rules first
     if let Err(e) = validate_shortcut_string(&binding.current_binding) {
         warn!(
@@ -814,6 +1002,14 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
 }
 
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if is_transcribe_fn_binding(&binding) {
+        #[cfg(target_os = "macos")]
+        {
+            FN_TRANSCRIBE_SUSPENDED.store(true, Ordering::Relaxed);
+        }
+        return Ok(());
+    }
+
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {
