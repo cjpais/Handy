@@ -97,52 +97,152 @@ Examples:
   handy-agent-manual-1     # Manual session without issue
 ```
 
-#### 2.3 Session Metadata
-Each tmux session stores metadata in environment variables for recovery:
+#### 2.3 Dual-Layer Metadata (tmux + GitHub Issue)
+
+Metadata is stored in two places for redundancy:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Metadata Recovery Layers                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Layer 1: tmux environment (fast, local)                        │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ HANDY_ISSUE_REF="org/repo#42"                             │  │
+│  │ HANDY_WORKTREE="/path/to/worktree"                        │  │
+│  │ HANDY_AGENT_TYPE="claude"                                 │  │
+│  │ HANDY_STARTED_AT="2024-01-15T10:30:00Z"                   │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                         ▼ fallback                               │
+│  Layer 2: GitHub issue comment (persistent, cross-machine)      │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │ <!-- HANDY_AGENT_METADATA                                 │  │
+│  │ {                                                         │  │
+│  │   "session": "handy-agent-42",                            │  │
+│  │   "worktree": "/path/to/worktree",                        │  │
+│  │   "agent_type": "claude",                                 │  │
+│  │   "machine_id": "macbook-pro-1",                          │  │
+│  │   "started_at": "2024-01-15T10:30:00Z",                   │  │
+│  │   "status": "working"                                     │  │
+│  │ }                                                         │  │
+│  │ -->                                                       │  │
+│  │ 🤖 **Agent Assigned**                                     │  │
+│  │ - Session: `handy-agent-42`                               │  │
+│  │ - Type: claude                                            │  │
+│  │ - Started: Jan 15, 2024 10:30 AM                          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**tmux environment (Layer 1):**
 ```bash
 # Set when spawning agent
 tmux set-environment -t handy-agent-42 HANDY_ISSUE_REF "org/repo#42"
 tmux set-environment -t handy-agent-42 HANDY_REPO "org/repo"
 tmux set-environment -t handy-agent-42 HANDY_WORKTREE "/path/to/worktree"
 tmux set-environment -t handy-agent-42 HANDY_AGENT_TYPE "claude"
+tmux set-environment -t handy-agent-42 HANDY_MACHINE_ID "$(hostname)"
 tmux set-environment -t handy-agent-42 HANDY_STARTED_AT "2024-01-15T10:30:00Z"
 
 # Read during recovery
 tmux show-environment -t handy-agent-42
 ```
 
-#### 2.4 Session Commands
+**GitHub issue comment (Layer 2):**
+```bash
+# Posted when agent starts (hidden metadata + visible status)
+gh issue comment 42 --repo org/repo --body "$(cat <<'EOF'
+<!-- HANDY_AGENT_METADATA
+{"session":"handy-agent-42","worktree":"/path/to/worktree","agent_type":"claude","machine_id":"macbook-pro-1","started_at":"2024-01-15T10:30:00Z","status":"working"}
+-->
+🤖 **Agent Assigned**
+- Session: `handy-agent-42`
+- Type: claude
+- Machine: macbook-pro-1
+- Started: Jan 15, 2024 10:30 AM
+EOF
+)"
+
+# Updated periodically with progress
+gh issue comment 42 --repo org/repo --body "📊 **Progress Update**
+- Commits: 3
+- Files changed: 5
+- Last activity: 2 minutes ago"
+```
+
+#### 2.4 Recovery Priority
+
+```
+On Startup:
+1. Check tmux for handy-agent-* sessions (fast, local)
+   ├── Found? → Read HANDY_* env vars → Resume monitoring
+   └── Not found? → Check GitHub issues
+
+2. Query GitHub for issues with agent-assigned label
+   ├── Parse HANDY_AGENT_METADATA from comments
+   ├── Filter by machine_id (only recover our sessions)
+   └── Check if worktree still exists
+       ├── Exists + no tmux? → Session crashed, offer restart
+       └── Missing? → Agent completed or was cleaned up
+
+3. Reconcile state:
+   - tmux alive + issue open → Working normally
+   - tmux dead + issue open → Crashed, offer restart
+   - tmux alive + issue closed → Orphan session, offer cleanup
+   - tmux dead + issue closed → Completed, nothing to do
+```
+
+#### 2.5 Session Commands
 - [ ] `list_tmux_sessions()` - List all tmux sessions (filter by handy-agent-* prefix)
 - [ ] `create_tmux_session(name)` - Create named session with metadata
 - [ ] `kill_tmux_session(name)` - Terminate session
 - [ ] `get_session_output(name, lines?)` - Get recent output from session
-- [ ] `recover_agent_sessions()` - Rebuild state from surviving sessions on startup
+- [ ] `recover_agent_sessions()` - Rebuild state from tmux + GitHub fallback
 - [ ] `get_session_metadata(name)` - Read HANDY_* env vars from session
+- [ ] `sync_issue_metadata(issue_ref, metadata)` - Update hidden metadata in issue comment
+- [ ] `parse_issue_metadata(issue_ref)` - Extract HANDY_AGENT_METADATA from comments
 
-#### 2.5 Recovery Flow
+#### 2.6 Recovery Flow
 ```rust
 #[derive(Serialize, Deserialize, Type)]
-struct RecoveredSession {
-    session_name: String,
-    issue_ref: Option<String>,
-    repo: Option<String>,
-    worktree_path: Option<String>,
+struct AgentMetadata {
+    session: String,
+    issue_ref: String,
+    worktree: String,
     agent_type: String,
-    started_at: Option<String>,
-    is_alive: bool,  // true if agent process still running
+    machine_id: String,
+    started_at: String,
+    status: AgentStatus,  // working, completed, crashed, orphaned
 }
 
-/// Called on app startup
-async fn recover_agent_sessions() -> Vec<RecoveredSession> {
-    // 1. tmux list-sessions -F "#{session_name}"
-    // 2. Filter sessions starting with "handy-agent-"
-    // 3. For each: read HANDY_* env vars
-    // 4. Check if pane has active process
-    // 5. Return recovered session info
+#[derive(Serialize, Deserialize, Type)]
+enum RecoverySource {
+    Tmux,           // Found in tmux, normal operation
+    GitHubIssue,    // Recovered from issue comment
+    Both,           // Confirmed by both sources
+}
+
+#[derive(Serialize, Deserialize, Type)]
+struct RecoveredSession {
+    metadata: AgentMetadata,
+    source: RecoverySource,
+    tmux_alive: bool,
+    worktree_exists: bool,
+    issue_open: bool,
+    recommended_action: RecoveryAction,
+}
+
+#[derive(Serialize, Deserialize, Type)]
+enum RecoveryAction {
+    Resume,         // tmux alive, continue monitoring
+    Restart,        // tmux dead but work incomplete, offer restart
+    Cleanup,        // orphan session, offer to kill/remove
+    None,           // completed normally, nothing to do
 }
 ```
 
-#### 2.6 Agent Spawning
+#### 2.7 Agent Spawning
 - [ ] `spawn_agent(session_name, agent_type, task)` - Launch agent in tmux
 - [ ] Support for different agent types (claude, aider, etc.)
 - [ ] Working directory configuration per agent
