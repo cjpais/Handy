@@ -2,6 +2,7 @@
 
 use crate::devops::{
     check_all_dependencies,
+    github::{self, GhAuthStatus, GitHubComment, GitHubIssue, IssueAgentMetadata, IssueWithAgent},
     tmux::{self, AgentMetadata, RecoveredSession, TmuxSession},
     worktree::{self, CollisionCheck, WorktreeConfig, WorktreeCreateResult, WorktreeInfo},
     DevOpsDependencies,
@@ -186,4 +187,122 @@ pub fn get_git_repo_root(path: String) -> Result<String, String> {
 #[specta::specta]
 pub fn get_git_default_branch(repo_path: String) -> Result<String, String> {
     worktree::get_default_branch(&repo_path)
+}
+
+// ============================================================================
+// GitHub Issue Commands
+// ============================================================================
+
+/// Check GitHub CLI authentication status.
+#[tauri::command]
+#[specta::specta]
+pub fn check_gh_auth() -> GhAuthStatus {
+    github::check_auth_status()
+}
+
+/// List issues from a GitHub repository.
+#[tauri::command]
+#[specta::specta]
+pub fn list_github_issues(
+    repo: String,
+    state: Option<String>,
+    labels: Option<Vec<String>>,
+    limit: Option<u32>,
+) -> Result<Vec<GitHubIssue>, String> {
+    let state_ref = state.as_deref();
+    let labels_ref: Option<Vec<&str>> = labels.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect());
+    github::list_issues(&repo, state_ref, labels_ref, limit)
+}
+
+/// Get details of a specific GitHub issue.
+#[tauri::command]
+#[specta::specta]
+pub fn get_github_issue(repo: String, number: u64) -> Result<GitHubIssue, String> {
+    github::get_issue(&repo, number)
+}
+
+/// Get issue with agent metadata.
+#[tauri::command]
+#[specta::specta]
+pub fn get_github_issue_with_agent(repo: String, number: u64) -> Result<IssueWithAgent, String> {
+    github::get_issue_with_agent(&repo, number)
+}
+
+/// Create a new GitHub issue.
+#[tauri::command]
+#[specta::specta]
+pub fn create_github_issue(
+    repo: String,
+    title: String,
+    body: Option<String>,
+    labels: Option<Vec<String>>,
+) -> Result<GitHubIssue, String> {
+    let body_ref = body.as_deref();
+    let labels_ref: Option<Vec<&str>> = labels.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect());
+    github::create_issue(&repo, &title, body_ref, labels_ref)
+}
+
+/// Add a comment to a GitHub issue.
+#[tauri::command]
+#[specta::specta]
+pub fn comment_on_github_issue(repo: String, number: u64, body: String) -> Result<(), String> {
+    github::add_comment(&repo, number, &body)
+}
+
+/// Assign an agent to a GitHub issue (adds metadata comment).
+#[tauri::command]
+#[specta::specta]
+pub fn assign_agent_to_issue(
+    repo: String,
+    number: u64,
+    session: String,
+    agent_type: String,
+    worktree: Option<String>,
+) -> Result<(), String> {
+    let metadata = IssueAgentMetadata {
+        session,
+        machine_id: hostname::get()
+            .map(|h| h.to_string_lossy().to_string())
+            .unwrap_or_else(|_| "unknown".to_string()),
+        worktree,
+        agent_type,
+        started_at: chrono::Utc::now().to_rfc3339(),
+        status: "working".to_string(),
+    };
+    github::add_agent_metadata_comment(&repo, number, &metadata)
+}
+
+/// List comments on a GitHub issue.
+#[tauri::command]
+#[specta::specta]
+pub fn list_github_issue_comments(repo: String, number: u64) -> Result<Vec<GitHubComment>, String> {
+    github::list_comments(&repo, number)
+}
+
+/// Update labels on a GitHub issue.
+#[tauri::command]
+#[specta::specta]
+pub fn update_github_issue_labels(
+    repo: String,
+    number: u64,
+    add_labels: Vec<String>,
+    remove_labels: Vec<String>,
+) -> Result<(), String> {
+    let add_refs: Vec<&str> = add_labels.iter().map(|s| s.as_str()).collect();
+    let remove_refs: Vec<&str> = remove_labels.iter().map(|s| s.as_str()).collect();
+    github::update_labels(&repo, number, add_refs, remove_refs)
+}
+
+/// Close a GitHub issue.
+#[tauri::command]
+#[specta::specta]
+pub fn close_github_issue(repo: String, number: u64, comment: Option<String>) -> Result<(), String> {
+    github::close_issue(&repo, number, comment.as_deref())
+}
+
+/// Reopen a closed GitHub issue.
+#[tauri::command]
+#[specta::specta]
+pub fn reopen_github_issue(repo: String, number: u64) -> Result<(), String> {
+    github::reopen_issue(&repo, number)
 }

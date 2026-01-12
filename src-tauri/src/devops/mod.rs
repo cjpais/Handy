@@ -7,6 +7,7 @@
 //! - GitHub issue integration
 
 mod dependencies;
+pub mod github;
 pub mod tmux;
 pub mod worktree;
 

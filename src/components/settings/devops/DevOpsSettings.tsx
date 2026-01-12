@@ -5,10 +5,12 @@ import { SettingsGroup } from "../../ui/SettingsGroup";
 import { DependencyStatus } from "./DependencyStatus";
 import { SessionManager } from "./SessionManager";
 import { WorktreeManager } from "./WorktreeManager";
+import { IssueQueue } from "./IssueQueue";
 import {
   Terminal,
   GitBranch,
   FolderGit2,
+  CircleDot,
   RefreshCcw,
   Loader2,
   AlertCircle,
@@ -135,6 +137,16 @@ export const DevOpsSettings: React.FC = () => {
           description={t("devops.worktrees.description")}
         >
           <WorktreeManager />
+        </SettingsGroup>
+      )}
+
+      {/* GitHub Issues */}
+      {dependencies?.gh?.installed && (
+        <SettingsGroup
+          title={t("devops.issues.title")}
+          description={t("devops.issues.description")}
+        >
+          <IssueQueue />
         </SettingsGroup>
       )}
     </div>

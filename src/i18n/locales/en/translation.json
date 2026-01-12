@@ -865,6 +865,20 @@
       "notInRepoHint": "Open a git repository to manage worktrees",
       "noWorktrees": "No worktrees",
       "noWorktreesHint": "Create a worktree to start parallel development"
+    },
+    "issues": {
+      "title": "GitHub Issues",
+      "description": "Task queue from GitHub issues for agent assignment",
+      "count": "{{count}} issue(s)",
+      "configureRepo": "Configure a repository to load issues from",
+      "repoPlaceholder": "owner/repo (e.g., KBVE/kbve)",
+      "setRepo": "Set",
+      "notAuthenticated": "GitHub CLI not authenticated",
+      "notAuthenticatedHint": "Run the following command to authenticate:",
+      "authenticatedAs": "Authenticated as {{user}}",
+      "noIssues": "No open issues",
+      "noIssuesHint": "Create issues in the repository to see them here",
+      "openInGitHub": "Open in GitHub"
     }
   },
   "credentials": {
