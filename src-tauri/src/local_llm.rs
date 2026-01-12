@@ -110,21 +110,39 @@ impl SidecarProcess {
         stdin.flush()
             .map_err(|e| format!("Failed to flush sidecar stdin: {}", e))?;
 
-        // Read response
+        // Read response - skip any non-JSON lines (llama.cpp debug output)
         let stdout = self.child.stdout.as_mut()
             .ok_or_else(|| "Sidecar stdout not available".to_string())?;
         let mut reader = BufReader::new(stdout);
-        let mut line = String::new();
-        reader.read_line(&mut line)
-            .map_err(|e| format!("Failed to read sidecar response: {}", e))?;
 
-        // Check for empty response (sidecar likely crashed)
-        if line.trim().is_empty() {
-            return Err("Sidecar returned empty response (may have crashed)".to_string());
+        // Try up to 10 lines to find a valid JSON response
+        for attempt in 0..10 {
+            let mut line = String::new();
+            reader.read_line(&mut line)
+                .map_err(|e| format!("Failed to read sidecar response: {}", e))?;
+
+            // Check for empty response (sidecar likely crashed)
+            if line.trim().is_empty() {
+                return Err("Sidecar returned empty response (may have crashed)".to_string());
+            }
+
+            // Try to parse as JSON - if it fails and looks like debug output, skip it
+            match serde_json::from_str::<SidecarResponse>(&line) {
+                Ok(response) => return Ok(response),
+                Err(e) => {
+                    // Check if this looks like llama.cpp debug output (doesn't start with '{')
+                    let trimmed = line.trim();
+                    if !trimmed.starts_with('{') {
+                        warn!("Skipping non-JSON sidecar output (attempt {}): {}", attempt + 1, trimmed);
+                        continue;
+                    }
+                    // It started with '{' but failed to parse - real error
+                    return Err(format!("Invalid sidecar response: {}", e));
+                }
+            }
         }
 
-        serde_json::from_str(&line)
-            .map_err(|e| format!("Invalid sidecar response: {}", e))
+        Err("Too many non-JSON lines from sidecar, giving up".to_string())
     }
 
     /// Check if the sidecar process is still alive
@@ -315,6 +333,16 @@ impl LocalLlmManager {
         guard.as_ref().map(|s| s.is_loaded()).unwrap_or(false)
     }
 
+    /// Get the currently loaded model name (file stem without extension)
+    pub fn get_loaded_model_name(&self) -> Option<String> {
+        let guard = self.loaded_model_path.lock().unwrap();
+        guard.as_ref().and_then(|path| {
+            path.file_stem()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string())
+        })
+    }
+
     pub fn chat(&self, system_prompt: &str, user_message: &str, max_tokens: u32) -> Result<String, String> {
         self.ensure_sidecar()?;
 
@@ -331,38 +359,37 @@ impl LocalLlmManager {
                 || e.contains("Invalid sidecar response") || e.contains("expected value") {
                 warn!("Sidecar appears to have crashed during chat, attempting recovery...");
 
-                // Get the model path before clearing the sidecar
-                let model_path = {
-                    let model_path_guard = self.loaded_model_path.lock().unwrap();
-                    model_path_guard.clone()
-                };
-
                 // Force respawn by clearing the sidecar
                 {
                     let mut guard = self.sidecar.lock().unwrap();
                     *guard = None;
                 }
 
-                // Try to respawn
+                // Respawn sidecar
                 self.ensure_sidecar()?;
 
-                // Reload the model if we had one
-                if let Some(ref path) = model_path {
-                    info!("Reloading model after crash recovery: {:?}", path);
-                    let mut guard = self.sidecar.lock().unwrap();
-                    if let Some(ref mut sidecar) = *guard {
-                        if let Err(e) = sidecar.load_model(&path.to_string_lossy()) {
-                            error!("Failed to reload model after crash: {}", e);
-                            return Err(format!("Failed to reload model after crash: {}", e));
+                // Reload the model after crash recovery (ensure_sidecar won't do it since guard was None)
+                {
+                    let model_path = self.loaded_model_path.lock().unwrap().clone();
+                    if let Some(ref path) = model_path {
+                        info!("Reloading model after crash recovery: {:?}", path);
+                        let mut guard = self.sidecar.lock().unwrap();
+                        if let Some(ref mut sidecar) = *guard {
+                            if let Err(e) = sidecar.load_model(&path.to_string_lossy()) {
+                                error!("Failed to reload model after crash: {}", e);
+                                return Err(format!("Failed to reload model after crash: {}", e));
+                            }
                         }
-                        // Give the model time to stabilize
-                        thread::sleep(Duration::from_millis(500));
+                    } else {
+                        return Err("No model was loaded before crash".to_string());
                     }
                 }
 
-                // Small delay to let sidecar stabilize
-                thread::sleep(Duration::from_millis(100));
+                // Wait for the model to stabilize after reload
+                info!("Waiting for model to stabilize after crash recovery...");
+                thread::sleep(Duration::from_secs(1));
 
+                // Retry the chat
                 let mut guard = self.sidecar.lock().unwrap();
                 let sidecar = guard.as_mut()
                     .ok_or_else(|| "Sidecar not available after recovery".to_string())?;
@@ -390,38 +417,37 @@ impl LocalLlmManager {
                 || e.contains("Invalid sidecar response") || e.contains("expected value") {
                 warn!("Sidecar appears to have crashed during generate, attempting recovery...");
 
-                // Get the model path before clearing the sidecar
-                let model_path = {
-                    let model_path_guard = self.loaded_model_path.lock().unwrap();
-                    model_path_guard.clone()
-                };
-
                 // Force respawn by clearing the sidecar
                 {
                     let mut guard = self.sidecar.lock().unwrap();
                     *guard = None;
                 }
 
-                // Try to respawn
+                // Respawn sidecar
                 self.ensure_sidecar()?;
 
-                // Reload the model if we had one
-                if let Some(ref path) = model_path {
-                    info!("Reloading model after crash recovery: {:?}", path);
-                    let mut guard = self.sidecar.lock().unwrap();
-                    if let Some(ref mut sidecar) = *guard {
-                        if let Err(e) = sidecar.load_model(&path.to_string_lossy()) {
-                            error!("Failed to reload model after crash: {}", e);
-                            return Err(format!("Failed to reload model after crash: {}", e));
+                // Reload the model after crash recovery (ensure_sidecar won't do it since guard was None)
+                {
+                    let model_path = self.loaded_model_path.lock().unwrap().clone();
+                    if let Some(ref path) = model_path {
+                        info!("Reloading model after crash recovery: {:?}", path);
+                        let mut guard = self.sidecar.lock().unwrap();
+                        if let Some(ref mut sidecar) = *guard {
+                            if let Err(e) = sidecar.load_model(&path.to_string_lossy()) {
+                                error!("Failed to reload model after crash: {}", e);
+                                return Err(format!("Failed to reload model after crash: {}", e));
+                            }
                         }
-                        // Give the model time to stabilize
-                        thread::sleep(Duration::from_millis(500));
+                    } else {
+                        return Err("No model was loaded before crash".to_string());
                     }
                 }
 
-                // Small delay to let sidecar stabilize
-                thread::sleep(Duration::from_millis(100));
+                // Wait for the model to stabilize after reload
+                info!("Waiting for model to stabilize after crash recovery...");
+                thread::sleep(Duration::from_secs(1));
 
+                // Retry the generate
                 let mut guard = self.sidecar.lock().unwrap();
                 let sidecar = guard.as_mut()
                     .ok_or_else(|| "Sidecar not available after recovery".to_string())?;

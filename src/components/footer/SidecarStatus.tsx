@@ -62,16 +62,12 @@ export const SidecarStatus: React.FC = () => {
     discordConnected || discordInVoice ? "online" : "offline";
   const memoryState: SidecarState = memoryRunning ? "online" : "offline";
 
-  // Fetch model name when LLM is loaded (this is display-only, not state)
+  // Fetch LLM model name when LLM is loaded (this is display-only, not state)
   const fetchModelName = useCallback(async () => {
     if (llmLoaded) {
       try {
-        const result = await commands.getCurrentModel();
-        if (result.status === "ok") {
-          setLlmModelName(result.data);
-        } else {
-          setLlmModelName(undefined);
-        }
+        const modelName = await commands.getLocalLlmModelName();
+        setLlmModelName(modelName ?? undefined);
       } catch {
         setLlmModelName(undefined);
       }

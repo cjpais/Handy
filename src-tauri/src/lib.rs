@@ -260,6 +260,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         onichan_manager.clone(),
         discord_manager.clone(),
     ));
+    // Wire up memory manager for storing Discord transcripts with user IDs
+    discord_conversation_manager.set_memory_manager(memory_manager.clone());
 
     // Initialize auth manager for OAuth
     let auth_manager = Arc::new(commands::auth::AuthManager::new());
@@ -480,6 +482,7 @@ pub fn run() {
         commands::onichan::load_local_llm,
         commands::onichan::unload_local_llm,
         commands::onichan::is_local_llm_loaded,
+        commands::onichan::get_local_llm_model_name,
         commands::onichan::local_llm_chat,
         commands::onichan::load_local_tts,
         commands::onichan::unload_local_tts,
@@ -516,6 +519,7 @@ pub fn run() {
         commands::auth::auth_get_user,
         commands::auth::auth_logout,
         commands::auth::auth_is_authenticated,
+        commands::auth::auth_get_access_token,
         commands::memory::get_memory_status,
         commands::memory::query_all_memories,
         commands::memory::get_memory_count,

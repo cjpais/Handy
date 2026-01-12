@@ -1,91 +1,162 @@
-# Fix Plan: LLM Sidecar Crash Resilience & Wake Word Activation
+# Fix Plan: LLM Recovery & Parallel Audio Processing
 
 ## Problem Summary
 
-From the logs (logs/LOGS.md), I identified two issues:
+From the logs (logs/LOGS.md), I identified two critical issues:
 
-### 1. LLM Sidecar Crashes
-- **Line 183-184**: First crash - "Invalid sidecar response: expected value at line 1 column 1"
-- **Line 191-197**: Recovery works - sidecar respawns and reloads model
-- **Line 232-233**: Crashes again on next request after recovery
+### Issue 1: LLM Doesn't Recover Model After Crash
 
-**Root Cause**: The error "expected value at line 1 column 1" means the sidecar is outputting non-JSON content to stdout (likely llama.cpp debug/error output or crash dump) before the actual JSON response.
+**Evidence from logs (lines 805-815):**
+```
+[20:57:16] Sidecar appears to have crashed during chat, attempting recovery...
+[20:57:16] Dropping sidecar process
+[20:57:17] Error sending shutdown to sidecar: Invalid sidecar response...
+[20:57:17] Starting LLM sidecar process...
+[20:57:17] Sidecar ready: LLM sidecar ready
+[20:57:17] Waiting for model to stabilize after crash recovery...
+[20:57:19] Local LLM error: No model loaded    <-- MODEL NOT RELOADED!
+[20:57:19] Failed to process transcription from 2393: No model loaded
+```
 
-### 2. No Wake Word Filter
-Currently, the bot responds to ALL audio in the voice channel. User wants it to only respond when someone says "chan", "omni", or "oni".
+**Root Cause A**: When `chat()` detects a crash and clears the sidecar (`*guard = None`), the subsequent call to `ensure_sidecar()` spawns a NEW sidecar but the model reload logic in `ensure_sidecar()` doesn't run because `was_running` is `false` (the guard was already set to `None`).
+
+**Root Cause B** (discovered later): Even after model reloads successfully, llama.cpp outputs debug text to stdout during model loading. This pollutes the JSON response stream, causing subsequent chat requests to fail with "Invalid sidecar response: expected value at line 1 column 1".
+
+The bug is in `local_llm.rs` lines 343-351:
+```rust
+// Force respawn by clearing the sidecar
+{
+    let mut guard = self.sidecar.lock().unwrap();
+    *guard = None;  // <-- Sets guard to None
+}
+
+// Respawn sidecar - ensure_sidecar will also reload the model from loaded_model_path
+self.ensure_sidecar()?;  // <-- But ensure_sidecar sees was_running=false!
+```
+
+### Issue 2: Audio Chunks Dropped / Not Transcribed
+
+**Evidence from logs (lines 234-280):**
+```
+[INFO ] Sending audio chunk for user 2545: 4.76s (76160 mono samples)
+[INFO ] Sending audio chunk for user 2545: 0.76s (12160 mono samples)
+[INFO ] Sending audio chunk for user 2393: 1.08s (17280 mono samples)
+... (many more chunks sent, NO transcription logs)
+```
+
+Audio is being sent from Discord sidecar but NOT being processed for transcription. The main loop architecture has a flaw: it only processes ONE event per iteration from the sidecar (`recv_event_timeout`), then checks transcription queue. If audio chunks arrive faster than they're processed, they pile up and some get dropped.
+
+**Root Cause**: The conversation loop processes events sequentially:
+1. Receive ONE audio event
+2. Check transcription results
+3. Process ONE user's audio for transcription
+4. Sleep 10ms
+5. Repeat
+
+When multiple users are speaking simultaneously, audio events arrive faster than the loop can process them. The `recv_event_timeout(50ms)` only gets one event per call.
 
 ---
 
 ## Implementation Plan
 
-### Part 1: Improve LLM Crash Resilience
+### Part 1: Fix LLM Model Recovery After Crash
 
-**File**: src-tauri/src/local_llm.rs
+**File**: `src-tauri/src/local_llm.rs`
 
-**Changes**:
+**Problem**: When `chat()` crashes, it sets `*guard = None` before calling `ensure_sidecar()`, but `ensure_sidecar()` checks `was_running = guard.is_some()` which is now `false`.
 
-1. **Add retry delay after crash recovery** (lines 233-248)
-   - After respawning sidecar and reloading model, add a small delay to let it stabilize
-   - This prevents the "crash again immediately after recovery" pattern
+**Solution**: Pass a flag to `ensure_sidecar()` indicating crash recovery, or reload the model in `chat()` after `ensure_sidecar()` returns.
 
-2. **Improve error detection in `chat()` and `generate()`** (lines 277-297, 312-332)
-   - Current code only retries on "Broken pipe", "empty response", or "crashed"
-   - Add detection for "expected value" and "Invalid sidecar response" errors
-   - These indicate non-JSON output pollution
-
-3. **Add cooldown between retries**
-   - After a crash recovery, wait briefly before the retry request
-   - Prevents hammering the newly spawned sidecar
-
-**File**: src-tauri/llm-sidecar/src/main.rs
-
-**Changes**:
-
-4. **Flush stdout after model load** (around line 336-340)
-   - Ensure any llama.cpp initialization output doesn't leak into response stream
-   - Add explicit `stdout().flush()` after model load completes
-
-5. **Wrap token generation in panic handler** (around lines 175-198)
-   - If token generation panics, catch it and return JSON error instead of crashing
-
----
-
-### Part 2: Add Wake Word Activation
-
-**File**: src-tauri/src/discord_conversation.rs
-
-**Location**: After line 300 (after transcription, before LLM processing)
-
-**Changes**:
-
+**Option A (Recommended)**: Reload model explicitly in `chat()` after recovery:
 ```rust
-// After line 300: info!("Discord transcription: {}", text);
-
-// Check for wake words - only respond if addressed
-const WAKE_WORDS: &[&str] = &["chan", "omni", "oni", "onichan"];
-let text_lower = text.to_lowercase();
-let has_wake_word = WAKE_WORDS.iter().any(|w| text_lower.contains(w));
-
-if !has_wake_word {
-    info!("No wake word detected, skipping response");
-    // Still emit the transcription for UI visibility
-    let _ = app_handle.emit(
-        "discord-user-speech",
-        serde_json::json!({
-            "user_id": user_id,
-            "text": text.clone(),
-            "skipped": true
-        }),
-    );
-    return Ok(());
+// In chat() after ensure_sidecar() for crash recovery:
+{
+    let model_path_guard = self.loaded_model_path.lock().unwrap();
+    if let Some(ref model_path) = *model_path_guard {
+        info!("Reloading model after crash recovery: {:?}", model_path);
+        let mut guard = self.sidecar.lock().unwrap();
+        if let Some(ref mut sidecar) = *guard {
+            sidecar.load_model(&model_path.to_string_lossy())?;
+        }
+    }
 }
 ```
 
-**Behavior**:
-- Transcription still happens (shows in UI)
-- LLM is only called if wake word is detected
-- TTS is only triggered if LLM responds
-- Saves compute and prevents unwanted interruptions
+**Option B**: Add `force_reload: bool` parameter to `ensure_sidecar()`.
+
+### Part 1B: Fix llama.cpp stdout pollution
+
+**Problem**: After model reload, llama.cpp outputs debug text to stdout which gets read as the JSON response, causing parse failures.
+
+**Solution**: Modify `send_request()` to skip non-JSON lines:
+```rust
+// In send_request() - try up to 10 lines to find valid JSON
+for attempt in 0..10 {
+    let mut line = String::new();
+    reader.read_line(&mut line)?;
+
+    match serde_json::from_str::<SidecarResponse>(&line) {
+        Ok(response) => return Ok(response),
+        Err(e) => {
+            let trimmed = line.trim();
+            if !trimmed.starts_with('{') {
+                // Non-JSON debug output - skip it
+                warn!("Skipping non-JSON sidecar output: {}", trimmed);
+                continue;
+            }
+            return Err(format!("Invalid sidecar response: {}", e));
+        }
+    }
+}
+```
+
+### Part 2: Fix Audio Processing Architecture
+
+**File**: `src-tauri/src/discord_conversation.rs`
+
+**Problem**: Sequential event processing can't keep up with parallel audio streams.
+
+**Solution**: Use a dedicated audio receiver task that runs in parallel.
+
+**Architecture Change**:
+1. Spawn a dedicated tokio task for receiving audio events
+2. Use an unbounded channel to buffer incoming audio
+3. Main loop only processes from the channel, never directly from sidecar
+
+```rust
+// Spawn audio receiver task
+let (audio_tx, mut audio_rx) = mpsc::unbounded_channel::<(String, Vec<f32>, u32)>();
+let dm = discord_manager.clone();
+let running = is_running.clone();
+
+tokio::spawn(async move {
+    while running.load(Ordering::Relaxed) {
+        // Receive ALL available events, not just one
+        while let Some(event) = dm.recv_event_timeout(Duration::from_millis(10)) {
+            match event {
+                SidecarResponse::UserAudio { user_id, audio_base64, sample_rate } => {
+                    if let Ok(samples) = decode_audio(&audio_base64, sample_rate) {
+                        let _ = audio_tx.send((user_id, samples, sample_rate));
+                    }
+                }
+                _ => {}
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+});
+
+// Main loop now reads from audio_rx instead of discord_manager directly
+while let Ok((user_id, samples, sample_rate)) = audio_rx.try_recv() {
+    // Queue audio for transcription...
+}
+```
+
+**Benefits**:
+- Audio receiver runs independently, never blocked by transcription
+- Unbounded channel buffers all incoming audio
+- Main loop can process all buffered audio each iteration
+- No more dropped audio chunks
 
 ---
 
@@ -93,20 +164,40 @@ if !has_wake_word {
 
 | File | Changes |
 |------|---------|
-| src-tauri/src/local_llm.rs | Add retry delay, improve error detection |
-| src-tauri/llm-sidecar/src/main.rs | Flush stdout, optional panic handler |
-| src-tauri/src/discord_conversation.rs | Add wake word check at line 300 |
+| `src-tauri/src/local_llm.rs` | Fix model reload after crash in `chat()` and `generate()`, skip non-JSON stdout output |
+| `src-tauri/src/discord_conversation.rs` | Add dedicated audio receiver task |
+
+---
+
+## Critical Code Locations
+
+### local_llm.rs
+- **Lines 343-364**: `chat()` crash recovery - needs to reload model
+- **Lines 233-272**: `ensure_sidecar()` - currently doesn't reload if guard was cleared
+
+### discord_conversation.rs
+- **Lines 322-378**: Event receiving loop - needs to be moved to dedicated task
+- **Lines 380-398**: Audio queue processing - needs to drain unbounded channel
 
 ---
 
 ## Verification
 
 1. **Build and run**: `bun run tauri dev`
-2. **Test wake word**:
-   - Join Discord voice channel
-   - Say something without "chan/omni/oni" - should NOT get response
-   - Say "hey onichan what's up" - should get response
-3. **Test crash recovery**:
-   - Use the bot normally until a crash occurs
-   - Verify it respawns and continues working on next request
-4. **Check logs**: Look for "No wake word detected" messages confirming filter is working
+
+2. **Test LLM recovery**:
+   - Trigger LLM crash (send long/complex prompt)
+   - Next wake word should still work
+   - Check logs for: "Reloading model after crash recovery"
+
+3. **Test parallel audio**:
+   - Have 2+ people speaking in Discord simultaneously
+   - All speakers should be transcribed
+   - Check logs: Every "Sending audio chunk" should have matching "Starting parallel transcription"
+
+4. **Check no dropped audio**:
+   ```bash
+   grep "Sending audio chunk" LOGS.md | wc -l    # Count sent
+   grep "Starting parallel transcription" LOGS.md | wc -l  # Count processed
+   # These numbers should be close (some empty transcriptions filtered)
+   ```

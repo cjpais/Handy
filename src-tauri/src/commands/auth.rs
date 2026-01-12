@@ -171,3 +171,24 @@ pub fn auth_logout(app: AppHandle) -> Result<(), String> {
 pub fn auth_is_authenticated(app: AppHandle) -> bool {
     auth_get_session(app).is_some()
 }
+
+/// Get the access token for API requests
+/// Returns None if not authenticated or token is expired
+#[tauri::command]
+#[specta::specta]
+pub fn auth_get_access_token(app: AppHandle) -> Option<String> {
+    let session = auth_get_session(app)?;
+
+    // Check if token is expired (with 60 second buffer)
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+
+    if session.expires_at > 0 && session.expires_at < now + 60 {
+        info!("Access token expired");
+        return None;
+    }
+
+    Some(session.access_token)
+}

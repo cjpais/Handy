@@ -181,6 +181,8 @@ struct BotState {
     command_rx: Option<mpsc::Receiver<DiscordCommand>>,
     user_audio_buffers: HashMap<u32, UserAudioBuffer>, // ssrc -> buffer
     ssrc_to_user: HashMap<u32, String>,                // ssrc -> user_id string
+    /// Track SSRCs that have failed to decode (to avoid spamming logs)
+    failed_decode_ssrcs: HashMap<u32, u32>,            // ssrc -> failure count
 }
 
 impl BotState {
@@ -197,6 +199,7 @@ impl BotState {
             command_rx: Some(command_rx),
             user_audio_buffers: HashMap::new(),
             ssrc_to_user: HashMap::new(),
+            failed_decode_ssrcs: HashMap::new(),
         }
     }
 }
@@ -323,11 +326,25 @@ impl VoiceEventHandler for VoiceReceiver {
                     return None;
                 }
 
-                // Log speaking users count occasionally
-                if !tick.speaking.is_empty() {
-                    log::debug!(
-                        "VoiceTick: {} speaking, {} silent",
+                // Log speaking users with their SSRCs periodically (every ~5 seconds based on tick count)
+                // This helps debug which users are sending audio
+                static TICK_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+                let tick_num = TICK_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
+                if !tick.speaking.is_empty() && tick_num % 250 == 0 {
+                    let ssrcs: Vec<String> = tick.speaking.keys()
+                        .map(|ssrc| {
+                            let user = state.ssrc_to_user.get(ssrc)
+                                .cloned()
+                                .unwrap_or_else(|| "?".to_string());
+                            format!("{}({})", ssrc, user)
+                        })
+                        .collect();
+                    log::info!(
+                        "VoiceTick #{}: {} speaking SSRCs: [{}], {} silent",
+                        tick_num,
                         tick.speaking.len(),
+                        ssrcs.join(", "),
                         tick.silent.len()
                     );
                 }
@@ -354,6 +371,16 @@ impl VoiceEventHandler for VoiceReceiver {
                             }
                         }
 
+                        // If this SSRC was previously failing, log recovery
+                        if let Some(failure_count) = state.failed_decode_ssrcs.remove(ssrc) {
+                            log::info!(
+                                "SSRC {} decode recovered after {} failures (user: {})",
+                                ssrc,
+                                failure_count,
+                                user_id_for_log
+                            );
+                        }
+
                         let buffer = state
                             .user_audio_buffers
                             .entry(*ssrc)
@@ -377,12 +404,32 @@ impl VoiceEventHandler for VoiceReceiver {
                             );
                         }
                     } else {
-                        // No decoded audio - this could mean decode failed or decode mode is wrong
-                        log::debug!(
-                            "VoiceTick: SSRC {} speaking but no decoded audio (has packet: {})",
-                            ssrc,
-                            data.packet.is_some()
-                        );
+                        // No decoded audio - track failure count
+                        let user_id_for_log = state
+                            .ssrc_to_user
+                            .get(ssrc)
+                            .cloned()
+                            .unwrap_or_else(|| ssrc.to_string());
+
+                        let failure_count = state.failed_decode_ssrcs.entry(*ssrc).or_insert(0);
+                        *failure_count += 1;
+
+                        // Only log periodically to avoid spam (first failure, then every 50)
+                        if *failure_count == 1 {
+                            log::warn!(
+                                "Decode failed for SSRC {} (user: {}) - audio from this user may not be captured. \
+                                This can happen if the user started speaking before we joined.",
+                                ssrc,
+                                user_id_for_log
+                            );
+                        } else if *failure_count % 50 == 0 {
+                            log::warn!(
+                                "SSRC {} (user: {}) still failing to decode after {} attempts",
+                                ssrc,
+                                user_id_for_log,
+                                failure_count
+                            );
+                        }
                     }
                 }
 
@@ -390,7 +437,7 @@ impl VoiceEventHandler for VoiceReceiver {
                 // This handles cases where SpeakingStateUpdate doesn't fire reliably
                 let silence_timeout = Duration::from_millis(800); // 0.8 seconds of silence = end of speech
                 let min_samples_to_send = 16000; // At least ~0.17s of audio at 48kHz stereo
-                let max_buffer_samples = 48000 * 2 * 15; // Max 15 seconds of audio at 48kHz stereo
+                let max_buffer_samples = 48000 * 2 * 5; // Max 5 seconds of audio at 48kHz stereo (reduced from 15s for faster chunking)
 
                 // First, collect SSRCs that need to be processed (immutable borrow)
                 // Send audio when: (1) silence timeout reached, OR (2) buffer exceeds max size
@@ -405,7 +452,7 @@ impl VoiceEventHandler for VoiceReceiver {
 
                         if silence_triggered || max_size_triggered {
                             if max_size_triggered {
-                                log::debug!("Buffer max size reached for SSRC {}, forcing send", ssrc);
+                                log::debug!("Buffer max size reached for SSRC {} (~5s), forcing send for live processing", ssrc);
                             }
                             Some(*ssrc)
                         } else {
@@ -465,8 +512,10 @@ impl VoiceEventHandler for VoiceReceiver {
                         .collect();
                     let audio_base64 = BASE64.encode(&bytes);
 
-                    log::debug!(
-                        "Sending UserAudio: {} mono samples",
+                    log::info!(
+                        "Sending audio chunk for user {}: {:.2}s ({} mono samples)",
+                        user_id,
+                        mono_16k.len() as f32 / 16000.0,
                         mono_16k.len()
                     );
 
@@ -832,6 +881,7 @@ async fn leave_voice(
         state_guard.channel_name = None;
         state_guard.user_audio_buffers.clear();
         state_guard.ssrc_to_user.clear();
+        state_guard.failed_decode_ssrcs.clear();
     }
 
     Ok(())

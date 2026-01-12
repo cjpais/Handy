@@ -273,8 +273,9 @@ impl ShortcutAction for TranscribeAction {
             shortcut::register_cancel_shortcut(app);
 
             // Start live coaching for real-time filler word feedback
-            // But NOT when on the onichan tab (it has its own flow)
-            if settings.active_ui_section != "onichan" {
+            // But NOT when on the onichan or discord tabs (they have their own flow)
+            let section = &settings.active_ui_section;
+            if section != "onichan" && section != "discord" {
                 let lc = app.state::<Arc<LiveCoachingManager>>();
                 lc.start();
             }
@@ -292,7 +293,8 @@ impl ShortcutAction for TranscribeAction {
 
         // Stop live coaching (only if it was started - check active_ui_section)
         let settings = get_settings(app);
-        if settings.active_ui_section != "onichan" {
+        let section = &settings.active_ui_section;
+        if section != "onichan" && section != "discord" {
             let lc = app.state::<Arc<LiveCoachingManager>>();
             lc.stop();
         }

@@ -724,8 +724,8 @@ export const DiscordSettings: React.FC = () => {
             </div>
           )}
 
-          {/* Connection Status */}
-          {isConnected && (
+          {/* Voice Channel Connection Status - Show when in voice */}
+          {isInVoice && (
             <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <span className="relative flex h-3 w-3">
@@ -755,8 +755,8 @@ export const DiscordSettings: React.FC = () => {
         </div>
       </SettingsGroup>
 
-      {/* Server/Channel Selection */}
-      {hasToken && !isConnected && (
+      {/* Server/Channel Selection - Show when bot is online but not in a voice channel */}
+      {hasToken && isBotOnline && !isInVoice && (
         <SettingsGroup title={t("discord.connection.title")}>
           <div className="p-4">
             {/* Guild Selection */}
@@ -973,8 +973,8 @@ export const DiscordSettings: React.FC = () => {
         </SettingsGroup>
       )}
 
-      {/* Disconnect Button */}
-      {isConnected && (
+      {/* Disconnect Button - Show when in voice channel */}
+      {isInVoice && (
         <SettingsGroup title={t("discord.controls.title")}>
           <div className="p-4">
             <p className="text-sm text-text/60 mb-4">

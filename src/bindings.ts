@@ -738,6 +738,9 @@ async unloadLocalLlm() : Promise<void> {
 async isLocalLlmLoaded() : Promise<boolean> {
     return await TAURI_INVOKE("is_local_llm_loaded");
 },
+async getLocalLlmModelName() : Promise<string | null> {
+    return await TAURI_INVOKE("get_local_llm_model_name");
+},
 async localLlmChat(systemPrompt: string, userMessage: string, maxTokens: number) : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("local_llm_chat", { systemPrompt, userMessage, maxTokens }) };
@@ -1027,6 +1030,13 @@ async authLogout() : Promise<Result<null, string>> {
  */
 async authIsAuthenticated() : Promise<boolean> {
     return await TAURI_INVOKE("auth_is_authenticated");
+},
+/**
+ * Get the access token for API requests
+ * Returns None if not authenticated or token is expired
+ */
+async authGetAccessToken() : Promise<string | null> {
+    return await TAURI_INVOKE("auth_get_access_token");
 },
 /**
  * Get the current status of the memory system

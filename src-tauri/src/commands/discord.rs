@@ -160,8 +160,18 @@ pub fn discord_connect(
     channel_id: String,
 ) -> Result<(), String> {
     use tauri::Emitter;
+    info!(
+        "discord_connect command called: guild={}, channel={}",
+        guild_id, channel_id
+    );
+
     let manager = app.state::<Arc<DiscordManager>>();
     let result = manager.join_voice(&guild_id, &channel_id);
+
+    match &result {
+        Ok(_) => info!("Successfully joined voice channel"),
+        Err(e) => info!("Failed to join voice channel: {}", e),
+    }
 
     // Emit state update to frontend
     let state = manager.status();

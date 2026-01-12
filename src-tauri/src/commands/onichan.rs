@@ -152,6 +152,12 @@ pub fn is_local_llm_loaded(llm_manager: State<'_, Arc<LocalLlmManager>>) -> bool
 
 #[tauri::command]
 #[specta::specta]
+pub fn get_local_llm_model_name(llm_manager: State<'_, Arc<LocalLlmManager>>) -> Option<String> {
+    llm_manager.get_loaded_model_name()
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn local_llm_chat(
     llm_manager: State<'_, Arc<LocalLlmManager>>,
     system_prompt: String,
