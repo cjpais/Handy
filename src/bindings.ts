@@ -350,6 +350,37 @@ async openAppDataDir() : Promise<Result<null, string>> {
 async checkAppleIntelligenceAvailable() : Promise<boolean> {
     return await TAURI_INVOKE("check_apple_intelligence_available");
 },
+/**
+ * Check if running on Wayland (Linux only)
+ * Returns true if the system session is Wayland (regardless of GDK_BACKEND)
+ * This is used for UI decisions about global shortcuts which don't work on Wayland
+ */
+async isWaylandSession() : Promise<boolean> {
+    return await TAURI_INVOKE("is_wayland_session");
+},
+/**
+ * Configure a GNOME keyboard shortcut to trigger Handy via SIGUSR2
+ * This is needed on Wayland where global shortcuts don't work
+ */
+async configureGnomeShortcut(shortcut: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("configure_gnome_shortcut", { shortcut }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Get current GNOME shortcut for Handy if configured
+ */
+async getGnomeShortcut() : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_gnome_shortcut") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_models") };
@@ -603,10 +634,8 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
 }
 },
 /**
- * Checks if the Mac is a laptop by detecting battery presence
- * 
- * This uses pmset to check for battery information.
- * Returns true if a battery is detected (laptop), false otherwise (desktop)
+ * Stub implementation for non-macOS platforms
+ * Always returns false since laptop detection is macOS-specific
  */
 async isLaptop() : Promise<Result<boolean, string>> {
     try {

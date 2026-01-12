@@ -130,3 +130,131 @@ pub fn check_apple_intelligence_available() -> bool {
         false
     }
 }
+
+/// Check if running on Wayland (Linux only)
+/// Returns true if the system session is Wayland (regardless of GDK_BACKEND)
+/// This is used for UI decisions about global shortcuts which don't work on Wayland
+#[specta::specta]
+#[tauri::command]
+pub fn is_wayland_session() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        // Check the actual session type, ignoring GDK_BACKEND
+        // Global shortcuts don't work on Wayland even if we run the app with GDK_BACKEND=x11
+        std::env::var("XDG_SESSION_TYPE")
+            .map(|v| v.to_lowercase() == "wayland")
+            .unwrap_or(false)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        false
+    }
+}
+
+/// Configure a GNOME keyboard shortcut to trigger Handy via SIGUSR2
+/// This is needed on Wayland where global shortcuts don't work
+#[specta::specta]
+#[tauri::command]
+pub fn configure_gnome_shortcut(shortcut: String) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+
+        // Get existing custom keybindings
+        let existing = Command::new("gsettings")
+            .args([
+                "get",
+                "org.gnome.settings-daemon.plugins.media-keys",
+                "custom-keybindings",
+            ])
+            .output()
+            .map_err(|e| format!("Failed to get existing keybindings: {}", e))?;
+
+        let existing_str = String::from_utf8_lossy(&existing.stdout).trim().to_string();
+
+        // Check if handy keybinding already exists
+        let handy_path = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/handy/";
+        let new_bindings = if existing_str == "@as []" || existing_str.is_empty() {
+            format!("['{}']", handy_path)
+        } else if existing_str.contains(handy_path) {
+            existing_str
+        } else {
+            // Add handy to existing list
+            let trimmed = existing_str.trim_matches(|c| c == '[' || c == ']');
+            format!("[{}, '{}']", trimmed, handy_path)
+        };
+
+        // Set the custom keybindings list
+        Command::new("gsettings")
+            .args([
+                "set",
+                "org.gnome.settings-daemon.plugins.media-keys",
+                "custom-keybindings",
+                &new_bindings,
+            ])
+            .output()
+            .map_err(|e| format!("Failed to set keybindings list: {}", e))?;
+
+        // Configure the handy shortcut
+        let base_path =
+            "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/handy/";
+
+        Command::new("gsettings")
+            .args(["set", base_path, "name", "Handy Transcribe"])
+            .output()
+            .map_err(|e| format!("Failed to set shortcut name: {}", e))?;
+
+        Command::new("gsettings")
+            .args(["set", base_path, "command", "pkill -SIGUSR2 -f handy"])
+            .output()
+            .map_err(|e| format!("Failed to set shortcut command: {}", e))?;
+
+        Command::new("gsettings")
+            .args(["set", base_path, "binding", &shortcut])
+            .output()
+            .map_err(|e| format!("Failed to set shortcut binding: {}", e))?;
+
+        Ok(())
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = shortcut;
+        Err("GNOME shortcuts are only available on Linux".to_string())
+    }
+}
+
+/// Get current GNOME shortcut for Handy if configured
+#[specta::specta]
+#[tauri::command]
+pub fn get_gnome_shortcut() -> Result<Option<String>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+
+        let base_path =
+            "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/handy/";
+
+        let output = Command::new("gsettings")
+            .args(["get", base_path, "binding"])
+            .output()
+            .map_err(|e| format!("Failed to get shortcut: {}", e))?;
+
+        if output.status.success() {
+            let binding = String::from_utf8_lossy(&output.stdout)
+                .trim()
+                .trim_matches('\'')
+                .to_string();
+            if binding.is_empty() || binding == "" {
+                Ok(None)
+            } else {
+                Ok(Some(binding))
+            }
+        } else {
+            Ok(None)
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Ok(None)
+    }
+}
