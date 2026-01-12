@@ -8,5 +8,6 @@
 
 mod dependencies;
 pub mod tmux;
+pub mod worktree;
 
 pub use dependencies::*;

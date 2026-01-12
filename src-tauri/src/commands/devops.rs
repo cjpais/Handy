@@ -2,9 +2,8 @@
 
 use crate::devops::{
     check_all_dependencies,
-    tmux::{
-        self, AgentMetadata, RecoveredSession, TmuxSession,
-    },
+    tmux::{self, AgentMetadata, RecoveredSession, TmuxSession},
+    worktree::{self, CollisionCheck, WorktreeConfig, WorktreeCreateResult, WorktreeInfo},
     DevOpsDependencies,
 };
 
@@ -87,4 +86,104 @@ pub fn recover_tmux_sessions() -> Result<Vec<RecoveredSession>, String> {
 #[specta::specta]
 pub fn is_tmux_running() -> bool {
     tmux::is_tmux_running()
+}
+
+// ============================================================================
+// Git Worktree Commands
+// ============================================================================
+
+/// List all git worktrees in a repository.
+#[tauri::command]
+#[specta::specta]
+pub fn list_git_worktrees(repo_path: String) -> Result<Vec<WorktreeInfo>, String> {
+    worktree::list_worktrees(&repo_path)
+}
+
+/// Get information about a specific worktree.
+#[tauri::command]
+#[specta::specta]
+pub fn get_git_worktree_info(
+    repo_path: String,
+    worktree_path: String,
+) -> Result<WorktreeInfo, String> {
+    worktree::get_worktree_info(&repo_path, &worktree_path)
+}
+
+/// Check for collisions before creating a worktree.
+#[tauri::command]
+#[specta::specta]
+pub fn check_worktree_collision(
+    repo_path: String,
+    worktree_path: String,
+    branch_name: String,
+) -> Result<CollisionCheck, String> {
+    worktree::check_collision(&repo_path, &worktree_path, &branch_name)
+}
+
+/// Create a new git worktree with a new branch.
+#[tauri::command]
+#[specta::specta]
+pub fn create_git_worktree(
+    repo_path: String,
+    name: String,
+    prefix: Option<String>,
+    base_path: Option<String>,
+    base_branch: Option<String>,
+) -> Result<WorktreeCreateResult, String> {
+    let config = WorktreeConfig {
+        prefix: prefix.unwrap_or_default(),
+        base_path,
+        delete_branch_on_merge: true,
+    };
+    worktree::create_worktree(&repo_path, &name, &config, base_branch.as_deref())
+}
+
+/// Create a worktree using an existing branch.
+#[tauri::command]
+#[specta::specta]
+pub fn create_git_worktree_existing_branch(
+    repo_path: String,
+    branch_name: String,
+    prefix: Option<String>,
+    base_path: Option<String>,
+) -> Result<WorktreeCreateResult, String> {
+    let config = WorktreeConfig {
+        prefix: prefix.unwrap_or_default(),
+        base_path,
+        delete_branch_on_merge: true,
+    };
+    worktree::create_worktree_existing_branch(&repo_path, &branch_name, &config)
+}
+
+/// Remove a git worktree.
+#[tauri::command]
+#[specta::specta]
+pub fn remove_git_worktree(
+    repo_path: String,
+    worktree_path: String,
+    force: bool,
+    delete_branch: bool,
+) -> Result<(), String> {
+    worktree::remove_worktree(&repo_path, &worktree_path, force, delete_branch)
+}
+
+/// Prune stale worktree entries.
+#[tauri::command]
+#[specta::specta]
+pub fn prune_git_worktrees(repo_path: String) -> Result<(), String> {
+    worktree::prune_worktrees(&repo_path)
+}
+
+/// Get the root directory of a git repository.
+#[tauri::command]
+#[specta::specta]
+pub fn get_git_repo_root(path: String) -> Result<String, String> {
+    worktree::get_repo_root(&path)
+}
+
+/// Get the default branch of a repository.
+#[tauri::command]
+#[specta::specta]
+pub fn get_git_default_branch(repo_path: String) -> Result<String, String> {
+    worktree::get_default_branch(&repo_path)
 }

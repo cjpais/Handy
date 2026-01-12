@@ -848,6 +848,23 @@
         "cleanup": "Session needs cleanup",
         "recreate": "Session should be recreated"
       }
+    },
+    "worktrees": {
+      "title": "Git Worktrees",
+      "description": "Isolated development environments for parallel agent work",
+      "count": "{{count}} worktree(s)",
+      "create": "New",
+      "createTitle": "Create Worktree",
+      "createButton": "Create Worktree",
+      "namePlaceholder": "Enter worktree name (e.g., fix-bug-123)",
+      "remove": "Remove worktree",
+      "main": "Main",
+      "locked": "Locked",
+      "prunable": "Prunable",
+      "notInRepo": "Not in a git repository",
+      "notInRepoHint": "Open a git repository to manage worktrees",
+      "noWorktrees": "No worktrees",
+      "noWorktreesHint": "Create a worktree to start parallel development"
     }
   },
   "credentials": {

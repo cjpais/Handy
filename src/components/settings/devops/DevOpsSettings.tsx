@@ -4,9 +4,11 @@ import { commands, DevOpsDependencies } from "@/bindings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { DependencyStatus } from "./DependencyStatus";
 import { SessionManager } from "./SessionManager";
+import { WorktreeManager } from "./WorktreeManager";
 import {
   Terminal,
   GitBranch,
+  FolderGit2,
   RefreshCcw,
   Loader2,
   AlertCircle,
@@ -123,6 +125,16 @@ export const DevOpsSettings: React.FC = () => {
           description={t("devops.sessions.description")}
         >
           <SessionManager onSessionsChange={checkDependencies} />
+        </SettingsGroup>
+      )}
+
+      {/* Git Worktrees */}
+      {dependencies?.all_satisfied && (
+        <SettingsGroup
+          title={t("devops.worktrees.title")}
+          description={t("devops.worktrees.description")}
+        >
+          <WorktreeManager />
         </SettingsGroup>
       )}
     </div>

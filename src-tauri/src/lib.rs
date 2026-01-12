@@ -16,11 +16,11 @@ pub mod live_coaching;
 mod llm_client;
 mod local_llm;
 mod local_tts;
+mod managers;
 mod memory;
 pub mod onichan;
 pub mod onichan_conversation;
 pub mod onichan_models;
-mod managers;
 mod overlay;
 mod settings;
 mod shortcut;
@@ -38,11 +38,11 @@ use env_filter::Builder as EnvFilterBuilder;
 use live_coaching::LiveCoachingManager;
 use local_llm::LocalLlmManager;
 use local_tts::LocalTtsManager;
-use memory::MemoryManager;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+use memory::MemoryManager;
 use onichan::OnichanManager;
 use onichan_models::OnichanModelManager;
 #[cfg(unix)]
@@ -248,11 +248,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     onichan_manager.set_memory_manager(memory_manager.clone());
 
     // Initialize Onichan conversation manager for continuous listening mode
-    let onichan_conversation_manager = Arc::new(onichan_conversation::OnichanConversationManager::new(
-        app_handle,
-        transcription_manager.clone(),
-        onichan_manager.clone(),
-    ));
+    let onichan_conversation_manager =
+        Arc::new(onichan_conversation::OnichanConversationManager::new(
+            app_handle,
+            transcription_manager.clone(),
+            onichan_manager.clone(),
+        ));
 
     // Initialize Discord conversation manager for Discord voice integration
     let discord_conversation_manager = Arc::new(DiscordConversationManager::new(
@@ -541,6 +542,15 @@ pub fn run() {
         commands::devops::send_tmux_command,
         commands::devops::recover_tmux_sessions,
         commands::devops::is_tmux_running,
+        commands::devops::list_git_worktrees,
+        commands::devops::get_git_worktree_info,
+        commands::devops::check_worktree_collision,
+        commands::devops::create_git_worktree,
+        commands::devops::create_git_worktree_existing_branch,
+        commands::devops::remove_git_worktree,
+        commands::devops::prune_git_worktrees,
+        commands::devops::get_git_repo_root,
+        commands::devops::get_git_default_branch,
         helpers::clamshell::is_laptop,
         vad_model::is_vad_model_ready,
         vad_model::download_vad_model_if_needed,
