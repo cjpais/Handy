@@ -1227,19 +1227,19 @@ export type EngineType = "Whisper" | "Parakeet" | "Moonshine"
 /**
  * Output mode for filler word detection
  */
-export type FillerOutputMode =
+export type FillerOutputMode = 
 /**
  * Show coaching feedback only, don't paste anything
  */
-"coaching_only" |
+"coaching_only" | 
 /**
  * Remove filler words and paste cleaned text
  */
-"paste_cleaned" |
+"paste_cleaned" | 
 /**
  * Paste original text and show coaching feedback
  */
-"paste_original" |
+"paste_original" | 
 /**
  * Remove filler words, paste cleaned text, and show coaching feedback
  */
