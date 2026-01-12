@@ -104,6 +104,14 @@
           "restore": "Failed to restore original shortcut",
           "set": "Failed to set shortcut: {{error}}",
           "reset": "Failed to reset shortcut to original value"
+        },
+        "wayland": {
+          "description": "Configure a system shortcut to trigger transcription (Wayland mode)",
+          "notice": "On Wayland, global shortcuts require a system keyboard shortcut. Click below to configure it via GNOME Settings.",
+          "notConfigured": "Click to configure",
+          "configured": "Shortcut configured successfully",
+          "error": "Failed to configure system shortcut",
+          "hint": "The shortcut will toggle recording on/off. Push-to-talk is not available on Wayland."
         }
       },
       "language": {
@@ -116,7 +124,8 @@
       },
       "pushToTalk": {
         "label": "Push To Talk",
-        "description": "Hold to record, release to stop"
+        "description": "Hold to record, release to stop",
+        "waylandDisabled": "Not available on Wayland. Use toggle mode with system shortcut instead."
       }
     },
     "sound": {

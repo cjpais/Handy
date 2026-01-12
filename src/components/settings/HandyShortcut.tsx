@@ -12,6 +12,7 @@ import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
+import { AlertCircle } from "lucide-react";
 
 interface HandyShortcutProps {
   descriptionMode?: "inline" | "tooltip";
@@ -39,6 +40,32 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   const shortcutRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   const bindings = getSetting("bindings") || {};
+
+  // Wayland-specific state
+  const [isWayland, setIsWayland] = useState(false);
+  const [gnomeShortcut, setGnomeShortcut] = useState<string | null>(null);
+  const [isConfiguringGnome, setIsConfiguringGnome] = useState(false);
+  const [gnomeRecordedKeys, setGnomeRecordedKeys] = useState<string[]>([]);
+
+  // Detect Wayland session
+  useEffect(() => {
+    const checkWayland = async () => {
+      try {
+        const wayland = await commands.isWaylandSession();
+        setIsWayland(wayland);
+        if (wayland) {
+          // Get current GNOME shortcut
+          const result = await commands.getGnomeShortcut();
+          if (result.status === "ok" && result.data) {
+            setGnomeShortcut(result.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking Wayland session:", error);
+      }
+    };
+    checkWayland();
+  }, []);
 
   // Detect and store OS type
   useEffect(() => {
@@ -311,6 +338,133 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     `settings.general.shortcut.bindings.${shortcutId}.description`,
     binding.description,
   );
+
+  // Handle GNOME shortcut recording for Wayland
+  const startGnomeRecording = () => {
+    setIsConfiguringGnome(true);
+    setGnomeRecordedKeys([]);
+  };
+
+  const handleGnomeKeyDown = async (e: React.KeyboardEvent) => {
+    if (!isConfiguringGnome) return;
+    e.preventDefault();
+
+    if (e.key === "Escape") {
+      setIsConfiguringGnome(false);
+      setGnomeRecordedKeys([]);
+      return;
+    }
+
+    const rawKey = getKeyName(e.nativeEvent, osType);
+    const key = normalizeKey(rawKey);
+
+    if (!gnomeRecordedKeys.includes(key)) {
+      setGnomeRecordedKeys((prev) => [...prev, key]);
+    }
+  };
+
+  const handleGnomeKeyUp = async (e: React.KeyboardEvent) => {
+    if (!isConfiguringGnome) return;
+    e.preventDefault();
+
+    const rawKey = getKeyName(e.nativeEvent, osType);
+    const key = normalizeKey(rawKey);
+
+    // Remove from currently pressed keys check
+    const remainingKeys = gnomeRecordedKeys.filter((k) => k !== key);
+
+    // If all keys released, save the shortcut
+    if (gnomeRecordedKeys.length > 0) {
+      // Convert to GNOME format: <Control><Shift>space
+      const gnomeFormat = gnomeRecordedKeys
+        .map((k) => {
+          const lower = k.toLowerCase();
+          if (lower === "ctrl" || lower === "control") return "<Control>";
+          if (lower === "shift") return "<Shift>";
+          if (lower === "alt") return "<Alt>";
+          if (lower === "super" || lower === "meta") return "<Super>";
+          return k.toLowerCase();
+        })
+        .join("");
+
+      try {
+        const result = await commands.configureGnomeShortcut(gnomeFormat);
+        if (result.status === "ok") {
+          setGnomeShortcut(gnomeFormat);
+          toast.success(t("settings.general.shortcut.wayland.configured"));
+        } else {
+          toast.error(t("settings.general.shortcut.wayland.error"));
+        }
+      } catch (error) {
+        console.error("Failed to configure GNOME shortcut:", error);
+        toast.error(t("settings.general.shortcut.wayland.error"));
+      }
+
+      setIsConfiguringGnome(false);
+      setGnomeRecordedKeys([]);
+    }
+  };
+
+  // Format GNOME shortcut for display
+  const formatGnomeShortcut = (shortcut: string | null): string => {
+    if (!shortcut) return t("settings.general.shortcut.wayland.notConfigured");
+    return shortcut
+      .replace(/<Control>/g, "Ctrl+")
+      .replace(/<Shift>/g, "Shift+")
+      .replace(/<Alt>/g, "Alt+")
+      .replace(/<Super>/g, "Super+")
+      .replace(/\+$/, "");
+  };
+
+  // Wayland-specific UI
+  if (isWayland && shortcutId === "transcribe") {
+    return (
+      <SettingContainer
+        title={translatedName}
+        description={t("settings.general.shortcut.wayland.description")}
+        descriptionMode={descriptionMode}
+        grouped={grouped}
+        disabled={disabled}
+        layout="stacked"
+      >
+        <div className="space-y-3">
+          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-200">
+              {t("settings.general.shortcut.wayland.notice")}
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {isConfiguringGnome ? (
+              <div
+                tabIndex={0}
+                onKeyDown={handleGnomeKeyDown}
+                onKeyUp={handleGnomeKeyUp}
+                className="px-3 py-2 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[180px] text-center focus:outline-none"
+                autoFocus
+              >
+                {gnomeRecordedKeys.length === 0
+                  ? t("settings.general.shortcut.pressKeys")
+                  : gnomeRecordedKeys.join("+")}
+              </div>
+            ) : (
+              <div
+                className="px-3 py-2 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary min-w-[180px] text-center"
+                onClick={startGnomeRecording}
+              >
+                {formatGnomeShortcut(gnomeShortcut)}
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-mid-gray">
+            {t("settings.general.shortcut.wayland.hint")}
+          </p>
+        </div>
+      </SettingContainer>
+    );
+  }
 
   return (
     <SettingContainer
