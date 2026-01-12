@@ -111,31 +111,111 @@ struct WorktreeConfig {
 }
 ```
 
-### Phase 4: GitHub Integration
+### Phase 4: GitHub Issue-Driven Tasks
 
-#### 4.1 Authentication & Status
+Tasks are backed by GitHub issues, providing traceability, cross-repo coordination, and a single source of truth.
+
+#### 4.1 Issue Hub Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Parent Issue Repo                            │
+│                  (e.g., org/project-tasks)                       │
+├─────────────────────────────────────────────────────────────────┤
+│  #42 [Epic] User Authentication                                  │
+│   ├── #43 org/frontend: Login UI         → agent-1 (working)    │
+│   ├── #44 org/backend: Auth API          → agent-2 (working)    │
+│   └── #45 org/shared: Auth types         → agent-3 (idle)       │
+│                                                                  │
+│  #50 [Epic] Dashboard Redesign                                   │
+│   ├── #51 org/frontend: New layout       → unassigned           │
+│   └── #52 org/analytics: Metrics API     → unassigned           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### 4.2 Issue Configuration
+```rust
+#[derive(Serialize, Deserialize, Type)]
+struct IssueHubConfig {
+    /// Parent repo for coordinating issues (e.g., "org/project-tasks")
+    hub_repo: Option<String>,
+    /// Repos this DevOps instance manages
+    managed_repos: Vec<String>,
+    /// Label to identify agent-workable issues
+    agent_label: String,  // default: "agent-ready"
+    /// Auto-create issues when spawning agents
+    auto_create_issues: bool,
+}
+
+#[derive(Serialize, Deserialize, Type)]
+struct TaskIssue {
+    /// Full issue reference (e.g., "org/repo#123")
+    issue_ref: String,
+    /// Issue title
+    title: String,
+    /// Target repo for the work (may differ from issue repo)
+    target_repo: String,
+    /// Assigned agent session (if any)
+    agent_session: Option<String>,
+    /// Parent epic issue (if any)
+    parent_issue: Option<String>,
+    /// Issue state
+    state: IssueState,
+}
+```
+
+#### 4.3 Issue Commands
+- [ ] `configure_issue_hub(config)` - Set up parent repo for cross-repo coordination
+- [ ] `list_agent_issues(repo?)` - List issues with agent-ready label
+- [ ] `create_task_issue(repo, title, body, parent?)` - Create issue, optionally link to epic
+- [ ] `assign_issue_to_agent(issue_ref, agent_session)` - Link issue to running agent
+- [ ] `close_issue_with_pr(issue_ref, pr_url)` - Close issue when PR merges
+- [ ] `sync_issue_status(issue_ref)` - Update issue comments with agent progress
+
+#### 4.4 Cross-Repo Workflow
+```
+1. User creates epic in hub repo: org/tasks#42 "User Authentication"
+
+2. DevOps breaks down into sub-issues across repos:
+   - org/frontend#101 "Login UI component"        (links to #42)
+   - org/backend#55 "Auth API endpoints"          (links to #42)
+   - org/shared#12 "Shared auth types"            (links to #42)
+
+3. Each sub-issue gets:
+   - Its own worktree in the target repo
+   - Its own agent session
+   - Progress comments synced back to the issue
+
+4. When agent completes:
+   - PR created in target repo, references issue
+   - Issue closed automatically when PR merges
+   - Parent epic updated with completion status
+```
+
+### Phase 5: GitHub Integration
+
+#### 5.1 Authentication & Status
 - [ ] `gh_auth_status()` - Check GitHub authentication
 - [ ] `gh_auth_login()` - Trigger login flow if needed
 
-#### 4.2 Repository Operations
+#### 5.2 Repository Operations
 - [ ] `gh_repo_info()` - Get current repo info
 - [ ] `gh_list_prs()` - List open PRs
 - [ ] `gh_list_issues()` - List open issues
 - [ ] `gh_create_pr(title, body, base)` - Create PR from current branch
 
-### Phase 5: Multi-Agent Orchestration
+### Phase 6: Multi-Agent Orchestration
 
-#### 5.1 Task Distribution
-- [ ] Task queue system for distributing work to agents
+#### 6.1 Task Distribution
+- [ ] Issue queue populated from GitHub (agent-ready label)
 - [ ] Agent status monitoring (idle, working, blocked)
 - [ ] Real-time output streaming from agent sessions
 
-#### 5.2 Coordination
+#### 6.2 Coordination
 - [ ] Branch/worktree assignment per agent
 - [ ] Conflict detection when agents work on same files
 - [ ] Merge coordination between agent outputs
 
-#### 5.3 Templates
+#### 6.3 Templates
 - [ ] Pre-defined task templates (bug fix, feature, refactor)
 - [ ] Custom prompt templates for agents
 - [ ] Project-specific agent configurations
@@ -148,7 +228,8 @@ src-tauri/src/
 │   ├── mod.rs           # Module exports
 │   ├── dependencies.rs  # gh/tmux detection
 │   ├── tmux.rs          # tmux session management
-│   ├── github.rs        # gh CLI wrapper
+│   ├── github.rs        # gh CLI wrapper (auth, PRs)
+│   ├── issues.rs        # Issue hub & cross-repo task management
 │   ├── worktree.rs      # Git worktree management
 │   └── agents.rs        # Agent spawning/management
 
@@ -157,8 +238,9 @@ src/components/settings/devops/
 ├── DependencyStatus.tsx # Shows gh/tmux status
 ├── SessionManager.tsx   # tmux session list/controls
 ├── AgentPanel.tsx       # Individual agent view
-├── TaskQueue.tsx        # Pending tasks display
-├── GitHubPanel.tsx      # PR/Issue integration
+├── IssueQueue.tsx       # GitHub issues as task queue
+├── IssueHubConfig.tsx   # Configure parent repo & managed repos
+├── GitHubPanel.tsx      # PR integration
 └── WorktreeManager.tsx  # Worktree list/create/merge UI
 
 src/i18n/locales/en/
@@ -215,36 +297,59 @@ struct DependencyStatus {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Example Workflow: Multi-Agent Feature Development
+## Example Workflow: Issue-Driven Multi-Agent Development
 
 ```
 User: "I need to implement user authentication and a dashboard"
 
-1. DevOps creates two worktrees:
-   - Handy-auth-feature (for authentication)
-   - Handy-dashboard-feature (for dashboard)
+1. DevOps creates epic issue in hub repo:
+   → myorg/tasks#100 "[Epic] User Auth & Dashboard"
 
-2. DevOps spawns agents in parallel:
+2. DevOps creates linked sub-issues:
+   → myorg/frontend#42 "Login UI component"      (parent: tasks#100)
+   → myorg/frontend#43 "Dashboard layout"        (parent: tasks#100)
+   → myorg/backend#15 "Auth API endpoints"       (parent: tasks#100)
+
+3. For each issue, DevOps:
+   a. Clones/opens the target repo
+   b. Creates worktree: frontend-issue-42
+   c. Spawns agent in tmux with issue context
+   d. Updates issue: "🤖 Agent assigned, working..."
+
    ┌─────────────────────────────────────────────────────────────┐
-   │ tmux: agent-auth                 │ tmux: agent-dashboard    │
-   │ cwd: ../Handy-auth-feature       │ cwd: ../Handy-dashboard  │
-   │ task: "Implement user auth..."   │ task: "Build dashboard..." │
+   │ tmux: agent-42                   │ tmux: agent-43           │
+   │ repo: myorg/frontend             │ repo: myorg/frontend     │
+   │ cwd: ../frontend-issue-42        │ cwd: ../frontend-issue-43│
+   │ issue: #42 Login UI              │ issue: #43 Dashboard     │
    │ status: Working                  │ status: Working          │
    └─────────────────────────────────────────────────────────────┘
 
-3. Agents work independently (no conflicts - separate worktrees)
+   ┌─────────────────────────────────────────────────────────────┐
+   │ tmux: agent-15                                              │
+   │ repo: myorg/backend                                         │
+   │ cwd: ../backend-issue-15                                    │
+   │ issue: #15 Auth API                                         │
+   │ status: Working                                             │
+   └─────────────────────────────────────────────────────────────┘
 
-4. Agent completes → DevOps shows notification:
-   "agent-auth completed: 3 commits ready for review"
-   [View Diff] [Merge to main] [Create PR]
+4. Agents work independently (no conflicts - separate repos/worktrees)
 
-5. User clicks "Merge to main":
-   - git merge auth-feature (from main repo)
-   - git worktree remove ../Handy-auth-feature
-   - git branch -d auth-feature
-   - Notification: "auth-feature merged and cleaned up"
+5. Agent completes → DevOps:
+   a. Comments on issue: "✅ Implementation complete, 3 commits"
+   b. Creates PR: "Closes #42" with agent's changes
+   c. Updates epic: "1/3 sub-tasks complete"
+   d. Shows notification: [View PR] [View Issue]
 
-6. Repeat for dashboard when ready
+6. When PR merges:
+   - Issue #42 auto-closes (via "Closes #42" in PR)
+   - Worktree cleaned up
+   - Epic #100 progress updated
+
+7. Epic shows full status:
+   myorg/tasks#100:
+   ✅ frontend#42 Login UI - merged
+   🔄 frontend#43 Dashboard - PR open
+   🤖 backend#15 Auth API - agent working
 ```
 
 ## Security Considerations
