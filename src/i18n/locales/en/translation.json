@@ -57,6 +57,7 @@
     "discord": "Discord",
     "memory": "Memory",
     "credentials": "Credentials",
+    "devops": "DevOps",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -813,6 +814,27 @@
     "empty": {
       "title": "No Memories Yet",
       "description": "Memories will be stored automatically when you use Onichan or Discord voice chat."
+    }
+  },
+  "devops": {
+    "title": "DevOps",
+    "description": "Manage coding agents and multi-repo workflows. Requires debug mode enabled.",
+    "refresh": "Refresh",
+    "dependencies": {
+      "title": "Dependencies",
+      "description": "Required CLI tools for DevOps features",
+      "allSatisfied": "All dependencies installed",
+      "missing": "Some dependencies missing",
+      "version": "Version",
+      "path": "Path",
+      "unknown": "unknown",
+      "notInstalled": "Not installed. Run the command below to install:",
+      "copyCommand": "Copy install command"
+    },
+    "sessions": {
+      "title": "Agent Sessions",
+      "description": "Manage tmux sessions running coding agents",
+      "comingSoon": "Agent session management coming soon. This will allow you to spawn and monitor multiple coding agents working in parallel."
     }
   },
   "credentials": {

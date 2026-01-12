@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Radio, Bot, MessageCircle, Database, Key } from "lucide-react";
+import { Cog, FlaskConical, History, Info, Sparkles, Radio, Bot, MessageCircle, Database, Key, Terminal } from "lucide-react";
 import KBVETextLogo from "./icons/KBVETextLogo";
 import KBVEHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -16,6 +16,7 @@ import {
   DiscordSettings,
   MemorySettings,
   CredentialsSettings,
+  DevOpsSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -71,6 +72,12 @@ export const SECTIONS_CONFIG = {
     icon: Key,
     component: CredentialsSettings,
     enabled: () => true,
+  },
+  devops: {
+    labelKey: "sidebar.devops",
+    icon: Terminal,
+    component: DevOpsSettings,
+    enabled: (settings) => settings?.debug_mode ?? false,
   },
   advanced: {
     labelKey: "sidebar.advanced",

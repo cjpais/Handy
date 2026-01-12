@@ -12,6 +12,7 @@ export { OnichanSettings } from "./onichan/OnichanSettings";
 export { DiscordSettings } from "./discord/DiscordSettings";
 export { MemorySettings } from "./memory/MemorySettings";
 export { CredentialsSettings } from "./credentials/CredentialsSettings";
+export { DevOpsSettings } from "./devops/DevOpsSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";

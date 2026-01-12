@@ -6,6 +6,7 @@ pub mod audio_toolkit;
 mod auth_server;
 mod clipboard;
 mod commands;
+mod devops;
 mod discord;
 pub mod discord_conversation;
 pub mod filler_detector;
@@ -531,6 +532,7 @@ pub fn run() {
         commands::memory::stop_memory_sidecar,
         commands::memory::browse_recent_memories,
         commands::memory::list_memory_users,
+        commands::devops::check_devops_dependencies,
         helpers::clamshell::is_laptop,
         vad_model::is_vad_model_ready,
         vad_model::download_vad_model_if_needed,

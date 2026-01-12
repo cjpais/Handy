@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod auth;
+pub mod devops;
 pub mod discord;
 pub mod history;
 pub mod memory;
