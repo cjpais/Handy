@@ -10,6 +10,7 @@ use crate::settings::{get_settings, AppSettings, FillerOutputMode, APPLE_INTELLI
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
+use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
@@ -478,6 +479,11 @@ impl ShortcutAction for TranscribeAction {
                 debug!("No samples retrieved from recording stop");
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
+            }
+
+            // Clear toggle state now that transcription is complete
+            if let Ok(mut states) = ah.state::<ManagedToggleState>().lock() {
+                states.active_toggles.insert(binding_id, false);
             }
         });
 

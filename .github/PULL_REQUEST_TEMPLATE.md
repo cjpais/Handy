@@ -51,3 +51,15 @@ It is not explicitly required to gather feedback, but it certainly helps your PR
 ## Screenshots/Videos (if applicable)
 
 <!-- Add screenshots or videos demonstrating the change -->
+
+## AI Assistance
+
+<!-- AI-assisted PRs are welcome! Just let us know so we can review appropriately. -->
+
+- [ ] No AI was used in this PR
+- [ ] AI was used (please describe below)
+
+**If AI was used:**
+
+- Tools used:
+- How extensively:

@@ -1223,23 +1223,23 @@ export type DiscordState = { connected: boolean; in_voice: boolean; listening: b
  * Embedding model info returned from sidecar
  */
 export type EmbeddingModelInfo = { id: string; name: string; description: string; dimension: number; size_mb: number; is_downloaded: boolean; is_loaded: boolean }
-export type EngineType = "Whisper" | "Parakeet"
+export type EngineType = "Whisper" | "Parakeet" | "Moonshine"
 /**
  * Output mode for filler word detection
  */
-export type FillerOutputMode = 
+export type FillerOutputMode =
 /**
  * Show coaching feedback only, don't paste anything
  */
-"coaching_only" | 
+"coaching_only" |
 /**
  * Remove filler words and paste cleaned text
  */
-"paste_cleaned" | 
+"paste_cleaned" |
 /**
  * Paste original text and show coaching feedback
  */
-"paste_original" | 
+"paste_original" |
 /**
  * Remove filler words, paste cleaned text, and show coaching feedback
  */

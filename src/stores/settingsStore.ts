@@ -316,7 +316,17 @@ export const useSettingsStore = create<SettingsStore>()(
             : null,
         }));
 
-        await commands.changeBinding(id, binding);
+        const result = await commands.changeBinding(id, binding);
+
+        // Check if the command executed successfully
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+
+        // Check if the binding change was successful
+        if (!result.data.success) {
+          throw new Error(result.data.error || "Failed to update binding");
+        }
       } catch (error) {
         console.error(`Failed to update binding ${id}:`, error);
 
@@ -337,6 +347,9 @@ export const useSettingsStore = create<SettingsStore>()(
               : null,
           }));
         }
+
+        // Re-throw to let the caller know it failed
+        throw error;
       } finally {
         setUpdating(updateKey, false);
       }
