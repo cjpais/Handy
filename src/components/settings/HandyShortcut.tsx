@@ -417,11 +417,11 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
         disabled={disabled}
-        layout="vertical"
+        layout="stacked"
       >
         <div className="space-y-3">
           <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-200">
               {t("settings.general.shortcut.wayland.notice")}
             </p>
