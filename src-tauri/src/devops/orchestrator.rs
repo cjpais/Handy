@@ -61,6 +61,39 @@ pub struct AgentStatus {
     pub started_at: String,
     /// Whether session is attached
     pub is_attached: bool,
+    /// Whether this agent is on the current machine
+    pub is_local: bool,
+}
+
+/// Result of completing agent work.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct CompleteWorkResult {
+    /// The created pull request
+    pub pull_request: github::GitHubPullRequest,
+    /// Whether the issue was updated with PR link
+    pub issue_updated: bool,
+    /// Whether working labels were removed
+    pub labels_updated: bool,
+}
+
+/// Configuration for workflow automation.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct WorkflowConfig {
+    /// Labels to remove when work is complete
+    pub working_labels: Vec<String>,
+    /// Labels to add when PR is created
+    pub pr_labels: Vec<String>,
+    /// Whether to create PR as draft
+    pub draft_pr: bool,
+    /// Whether to auto-close issue when PR merges
+    pub close_on_merge: bool,
+}
+
+/// Get the current machine's identifier.
+pub fn get_current_machine_id() -> String {
+    hostname::get()
+        .map(|h| h.to_string_lossy().to_string())
+        .unwrap_or_else(|_| "unknown".to_string())
 }
 
 /// Spawn a new agent to work on an issue.
@@ -94,18 +127,18 @@ pub fn spawn_agent(config: &SpawnConfig, repo_path: &str) -> Result<SpawnResult,
         session: session_name.clone(),
         issue_ref: Some(format!("{}#{}", config.repo, config.issue_number)),
         repo: Some(config.repo.clone()),
-        worktree: Some(worktree.worktree_path.clone()),
+        worktree: Some(worktree.path.clone()),
         agent_type: config.agent_type.clone(),
         machine_id: machine_id.clone(),
         started_at: chrono::Utc::now().to_rfc3339(),
     };
-    tmux::create_session(&session_name, Some(&worktree.worktree_path), &metadata)?;
+    tmux::create_session(&session_name, Some(&worktree.path), &metadata)?;
 
     // 6. Add agent metadata comment to the issue
     let issue_metadata = IssueAgentMetadata {
         session: session_name.clone(),
         machine_id: machine_id.clone(),
-        worktree: Some(worktree.worktree_path.clone()),
+        worktree: Some(worktree.path.clone()),
         agent_type: config.agent_type.clone(),
         started_at: chrono::Utc::now().to_rfc3339(),
         status: "working".to_string(),
@@ -129,11 +162,17 @@ pub fn spawn_agent(config: &SpawnConfig, repo_path: &str) -> Result<SpawnResult,
 /// Get status of all active agents.
 pub fn list_agent_statuses() -> Result<Vec<AgentStatus>, String> {
     let sessions = tmux::list_sessions()?;
+    let current_machine = get_current_machine_id();
     let mut statuses = Vec::new();
 
     for session in sessions {
         // Try to get metadata for each session
         let metadata = tmux::get_session_metadata(&session.name).ok();
+
+        let agent_machine_id = metadata
+            .as_ref()
+            .map(|m| m.machine_id.clone())
+            .unwrap_or_else(|| "unknown".to_string());
 
         let status = AgentStatus {
             session: session.name.clone(),
@@ -145,16 +184,35 @@ pub fn list_agent_statuses() -> Result<Vec<AgentStatus>, String> {
                 })
             }),
             worktree: metadata.as_ref().and_then(|m| m.worktree.clone()),
-            agent_type: metadata.as_ref().map(|m| m.agent_type.clone()).unwrap_or_else(|| "unknown".to_string()),
-            machine_id: metadata.as_ref().map(|m| m.machine_id.clone()).unwrap_or_else(|| "unknown".to_string()),
-            started_at: metadata.as_ref().map(|m| m.started_at.clone()).unwrap_or_else(|| "unknown".to_string()),
+            agent_type: metadata
+                .as_ref()
+                .map(|m| m.agent_type.clone())
+                .unwrap_or_else(|| "unknown".to_string()),
+            machine_id: agent_machine_id.clone(),
+            started_at: metadata
+                .as_ref()
+                .map(|m| m.started_at.clone())
+                .unwrap_or_else(|| "unknown".to_string()),
             is_attached: session.attached,
+            is_local: agent_machine_id == current_machine,
         };
 
         statuses.push(status);
     }
 
     Ok(statuses)
+}
+
+/// Get status of agents on the current machine only.
+pub fn list_local_agent_statuses() -> Result<Vec<AgentStatus>, String> {
+    let all_statuses = list_agent_statuses()?;
+    Ok(all_statuses.into_iter().filter(|s| s.is_local).collect())
+}
+
+/// Get status of agents from other machines (potentially orphaned).
+pub fn list_remote_agent_statuses() -> Result<Vec<AgentStatus>, String> {
+    let all_statuses = list_agent_statuses()?;
+    Ok(all_statuses.into_iter().filter(|s| !s.is_local).collect())
 }
 
 /// Clean up an agent's resources after work is complete.
@@ -206,6 +264,153 @@ pub fn create_pr_from_agent(
 
     // Create PR
     github::create_pr(&repo, title, body, &default_branch, Some(&branch), draft)
+}
+
+/// Complete an agent's work by creating a PR and updating the issue.
+///
+/// This is the main workflow automation function that:
+/// 1. Creates a PR from the agent's branch
+/// 2. Updates the issue with a link to the PR
+/// 3. Updates labels (removes working labels, adds PR labels)
+/// 4. Adds a completion comment to the issue
+pub fn complete_agent_work(
+    session_name: &str,
+    pr_title: &str,
+    pr_body: Option<&str>,
+    workflow_config: &WorkflowConfig,
+) -> Result<CompleteWorkResult, String> {
+    // Get session metadata
+    let metadata = tmux::get_session_metadata(session_name)?;
+
+    let repo = metadata
+        .repo
+        .clone()
+        .ok_or("Session has no associated repository")?;
+    let worktree_path = metadata
+        .worktree
+        .clone()
+        .ok_or("Session has no associated worktree")?;
+    let issue_ref = metadata.issue_ref.clone();
+
+    // Extract issue number from issue_ref (format: owner/repo#number)
+    let issue_number = issue_ref
+        .as_ref()
+        .and_then(|r| r.split('#').last())
+        .and_then(|n| n.parse::<u64>().ok());
+
+    // Get worktree info to find the branch
+    let worktree_info = worktree::get_worktree_info(&worktree_path, &worktree_path)?;
+    let branch = worktree_info.branch.ok_or("Worktree has no branch")?;
+
+    // Get default branch for base
+    let default_branch = worktree::get_default_branch(&worktree_path)?;
+
+    // Build PR body with issue reference if available
+    let full_pr_body = if let Some(num) = issue_number {
+        let issue_link = format!("\n\nCloses #{}", num);
+        match pr_body {
+            Some(body) => format!("{}{}", body, issue_link),
+            None => format!("Automated PR for issue #{}{}", num, issue_link),
+        }
+    } else {
+        pr_body.map(|s| s.to_string()).unwrap_or_default()
+    };
+
+    // 1. Create PR
+    let pull_request = github::create_pr(
+        &repo,
+        pr_title,
+        Some(&full_pr_body),
+        &default_branch,
+        Some(&branch),
+        workflow_config.draft_pr,
+    )?;
+
+    let mut issue_updated = false;
+    let mut labels_updated = false;
+
+    // 2. Update issue with PR link and labels
+    if let Some(num) = issue_number {
+        // Add comment linking to the PR
+        let comment = format!(
+            "🤖 **Agent Work Complete**\n\n\
+            Pull request created: #{}\n\n\
+            **Session:** `{}`\n\
+            **Machine:** `{}`\n\
+            **Branch:** `{}`",
+            pull_request.number, session_name, metadata.machine_id, branch
+        );
+        if github::add_comment(&repo, num, &comment).is_ok() {
+            issue_updated = true;
+        }
+
+        // Update labels
+        let add_labels: Vec<&str> = workflow_config
+            .pr_labels
+            .iter()
+            .map(|s| s.as_str())
+            .collect();
+        let remove_labels: Vec<&str> = workflow_config
+            .working_labels
+            .iter()
+            .map(|s| s.as_str())
+            .collect();
+
+        if !add_labels.is_empty() || !remove_labels.is_empty() {
+            if github::update_labels(&repo, num, add_labels, remove_labels).is_ok() {
+                labels_updated = true;
+            }
+        }
+    }
+
+    Ok(CompleteWorkResult {
+        pull_request,
+        issue_updated,
+        labels_updated,
+    })
+}
+
+/// Check if a PR has been merged and cleanup if so.
+///
+/// Returns true if cleanup was performed.
+pub fn check_and_cleanup_merged_pr(
+    session_name: &str,
+    repo_path: &str,
+    pr_number: u64,
+) -> Result<bool, String> {
+    // Get session metadata
+    let metadata = tmux::get_session_metadata(session_name)?;
+    let repo = metadata
+        .repo
+        .clone()
+        .ok_or("Session has no associated repository")?;
+
+    // Check PR status
+    let pr_status = github::get_pr_status(&repo, pr_number)?;
+
+    // Check if PR state indicates it was merged
+    if pr_status.pr.state == "merged" {
+        // PR is merged, cleanup the agent
+        cleanup_agent(session_name, repo_path, true, true)?;
+
+        // Update issue if linked
+        if let Some(issue_ref) = &metadata.issue_ref {
+            if let Some(issue_num) = issue_ref.split('#').last().and_then(|n| n.parse::<u64>().ok())
+            {
+                let comment = format!(
+                    "✅ **PR Merged & Cleanup Complete**\n\n\
+                    The pull request #{} has been merged.\n\
+                    Agent session `{}` and worktree have been cleaned up.",
+                    pr_number, session_name
+                );
+                let _ = github::add_comment(&repo, issue_num, &comment);
+            }
+        }
+
+        Ok(true)
+    } else {
+        Ok(false)
+    }
 }
 
 #[cfg(test)]

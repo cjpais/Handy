@@ -14,20 +14,29 @@ import {
   Terminal,
   Monitor,
   Clock,
+  CheckCircle2,
+  Filter,
+  Laptop,
+  Globe,
 } from "lucide-react";
 
 interface AgentDashboardProps {
   onAgentSelect?: (agent: AgentStatus) => void;
+  repoPath?: string;
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onAgentSelect,
+  repoPath,
 }) => {
   const { t } = useTranslation();
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cleaningUp, setCleaningUp] = useState<string | null>(null);
+  const [completingWork, setCompletingWork] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<"all" | "local" | "remote">("all");
+  const [currentMachineId, setCurrentMachineId] = useState<string>("");
 
   const loadAgents = useCallback(async () => {
     setIsLoading(true);
@@ -44,10 +53,46 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
   useEffect(() => {
     loadAgents();
+    // Load current machine ID
+    commands.getCurrentMachineId().then(setCurrentMachineId).catch(() => {});
     // Refresh every 10 seconds
     const interval = setInterval(loadAgents, 10000);
     return () => clearInterval(interval);
   }, [loadAgents]);
+
+  const handleCompleteWork = async (agent: AgentStatus) => {
+    if (!agent.issue_ref) {
+      setError(t("devops.orchestrator.noIssueRef"));
+      return;
+    }
+
+    setCompletingWork(agent.session);
+    setError(null);
+
+    try {
+      const prTitle = `Fix for ${agent.issue_ref}`;
+      await commands.completeAgentWork(
+        agent.session,
+        prTitle,
+        null,
+        ["agent-working"], // Labels to remove
+        ["needs-review"], // Labels to add
+        false // Not draft
+      );
+      await loadAgents();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCompletingWork(null);
+    }
+  };
+
+  // Filter agents based on filter mode
+  const filteredAgents = agents.filter((agent) => {
+    if (filterMode === "local") return agent.is_local;
+    if (filterMode === "remote") return !agent.is_local;
+    return true;
+  });
 
   const handleCleanup = async (agent: AgentStatus, removeWorktree: boolean) => {
     if (!agent.worktree) {
@@ -109,25 +154,73 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm text-mid-gray">
-            {t("devops.orchestrator.agentCount", { count: agents.length })}
+            {t("devops.orchestrator.agentCount", { count: filteredAgents.length })}
           </span>
+          {currentMachineId && (
+            <span className="text-xs text-mid-gray/50 flex items-center gap-1">
+              <Laptop className="w-3 h-3" />
+              {currentMachineId.slice(0, 12)}
+            </span>
+          )}
         </div>
-        <button
-          onClick={loadAgents}
-          disabled={isLoading}
-          className="p-1 hover:bg-mid-gray/20 rounded transition-colors"
-          title={t("devops.refresh")}
-        >
-          <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Filter buttons */}
+          <div className="flex items-center rounded bg-mid-gray/10">
+            <button
+              onClick={() => setFilterMode("all")}
+              className={`px-2 py-1 text-xs rounded-l transition-colors ${
+                filterMode === "all"
+                  ? "bg-logo-primary text-white"
+                  : "text-mid-gray hover:text-white"
+              }`}
+              title={t("devops.orchestrator.filterAll")}
+            >
+              {t("devops.orchestrator.all")}
+            </button>
+            <button
+              onClick={() => setFilterMode("local")}
+              className={`px-2 py-1 text-xs transition-colors ${
+                filterMode === "local"
+                  ? "bg-logo-primary text-white"
+                  : "text-mid-gray hover:text-white"
+              }`}
+              title={t("devops.orchestrator.filterLocal")}
+            >
+              <Laptop className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setFilterMode("remote")}
+              className={`px-2 py-1 text-xs rounded-r transition-colors ${
+                filterMode === "remote"
+                  ? "bg-logo-primary text-white"
+                  : "text-mid-gray hover:text-white"
+              }`}
+              title={t("devops.orchestrator.filterRemote")}
+            >
+              <Globe className="w-3 h-3" />
+            </button>
+          </div>
+          <button
+            onClick={loadAgents}
+            disabled={isLoading}
+            className="p-1 hover:bg-mid-gray/20 rounded transition-colors"
+            title={t("devops.refresh")}
+          >
+            <RefreshCcw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Agent list */}
-      {agents.length === 0 ? (
+      {filteredAgents.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-center">
           <Bot className="w-12 h-12 text-mid-gray/50 mb-3" />
           <p className="text-sm text-mid-gray">
-            {t("devops.orchestrator.noAgents")}
+            {filterMode === "all"
+              ? t("devops.orchestrator.noAgents")
+              : filterMode === "local"
+                ? t("devops.orchestrator.noLocalAgents")
+                : t("devops.orchestrator.noRemoteAgents")}
           </p>
           <p className="text-xs text-mid-gray/70 mt-1">
             {t("devops.orchestrator.noAgentsHint")}
@@ -135,7 +228,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto">
-          {agents.map((agent) => (
+          {filteredAgents.map((agent) => (
             <div
               key={agent.session}
               className="flex flex-col rounded-lg bg-mid-gray/10 hover:bg-mid-gray/15 transition-colors"
@@ -159,6 +252,17 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                     {agent.is_attached && (
                       <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">
                         {t("devops.orchestrator.attached")}
+                      </span>
+                    )}
+                    {agent.is_local ? (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 flex items-center gap-1">
+                        <Laptop className="w-3 h-3" />
+                        {t("devops.orchestrator.local")}
+                      </span>
+                    ) : (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 flex items-center gap-1">
+                        <Globe className="w-3 h-3" />
+                        {t("devops.orchestrator.remote")}
                       </span>
                     )}
                   </div>
@@ -196,14 +300,32 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
                 {/* Actions */}
                 <div className="flex items-center gap-1">
+                  {/* Complete Work button - only for local agents with issue */}
+                  {agent.is_local && agent.issue_ref && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCompleteWork(agent);
+                      }}
+                      disabled={completingWork === agent.session}
+                      className="p-1.5 hover:bg-green-500/20 rounded transition-colors text-mid-gray hover:text-green-400"
+                      title={t("devops.orchestrator.completeWork")}
+                    >
+                      {completingWork === agent.session ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <GitPullRequest className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleCleanup(agent, true);
                     }}
-                    disabled={cleaningUp === agent.session}
-                    className="p-1.5 hover:bg-red-500/20 rounded transition-colors text-mid-gray hover:text-red-400"
-                    title={t("devops.orchestrator.cleanup")}
+                    disabled={cleaningUp === agent.session || !agent.is_local}
+                    className="p-1.5 hover:bg-red-500/20 rounded transition-colors text-mid-gray hover:text-red-400 disabled:opacity-50"
+                    title={agent.is_local ? t("devops.orchestrator.cleanup") : t("devops.orchestrator.remoteCannotCleanup")}
                   >
                     {cleaningUp === agent.session ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

@@ -1068,7 +1068,8 @@ pub fn merge_pr(
     method: Option<&str>,
     delete_branch: bool,
 ) -> Result<(), String> {
-    let mut args = vec!["pr", "merge", &number.to_string(), "--repo", repo];
+    let number_str = number.to_string();
+    let mut args = vec!["pr", "merge", &number_str, "--repo", repo];
 
     match method {
         Some("squash") => args.push("--squash"),

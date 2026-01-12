@@ -6,7 +6,7 @@ use crate::devops::{
         self, GhAuthStatus, GitHubComment, GitHubIssue, GitHubPullRequest, IssueAgentMetadata,
         IssueWithAgent, PrStatus,
     },
-    orchestrator::{self, AgentStatus, SpawnConfig, SpawnResult},
+    orchestrator::{self, AgentStatus, CompleteWorkResult, SpawnConfig, SpawnResult, WorkflowConfig},
     tmux::{self, AgentMetadata, RecoveredSession, TmuxSession},
     worktree::{self, CollisionCheck, WorktreeConfig, WorktreeCreateResult, WorktreeInfo},
     DevOpsDependencies,
@@ -436,4 +436,58 @@ pub fn create_pr_from_agent(
     draft: bool,
 ) -> Result<GitHubPullRequest, String> {
     orchestrator::create_pr_from_agent(&session_name, &title, body.as_deref(), draft)
+}
+
+/// Complete an agent's work with workflow automation.
+///
+/// Creates PR, updates issue with link, manages labels.
+#[tauri::command]
+#[specta::specta]
+pub fn complete_agent_work(
+    session_name: String,
+    pr_title: String,
+    pr_body: Option<String>,
+    working_labels: Vec<String>,
+    pr_labels: Vec<String>,
+    draft_pr: bool,
+) -> Result<CompleteWorkResult, String> {
+    let config = WorkflowConfig {
+        working_labels,
+        pr_labels,
+        draft_pr,
+        close_on_merge: true,
+    };
+    orchestrator::complete_agent_work(&session_name, &pr_title, pr_body.as_deref(), &config)
+}
+
+/// Check if a PR has been merged and cleanup resources if so.
+#[tauri::command]
+#[specta::specta]
+pub fn check_and_cleanup_merged_pr(
+    session_name: String,
+    repo_path: String,
+    pr_number: u64,
+) -> Result<bool, String> {
+    orchestrator::check_and_cleanup_merged_pr(&session_name, &repo_path, pr_number)
+}
+
+/// Get current machine identifier.
+#[tauri::command]
+#[specta::specta]
+pub fn get_current_machine_id() -> String {
+    orchestrator::get_current_machine_id()
+}
+
+/// List only agents running on this machine.
+#[tauri::command]
+#[specta::specta]
+pub fn list_local_agent_statuses() -> Result<Vec<AgentStatus>, String> {
+    orchestrator::list_local_agent_statuses()
+}
+
+/// List agents from other machines (potentially orphaned).
+#[tauri::command]
+#[specta::specta]
+pub fn list_remote_agent_statuses() -> Result<Vec<AgentStatus>, String> {
+    orchestrator::list_remote_agent_statuses()
 }
