@@ -81,6 +81,25 @@ pub fn change_binding(
         }
     }
 
+    // If the new binding is empty, unregister the existing one and save
+    if binding.trim().is_empty() {
+        if !binding_to_modify.current_binding.trim().is_empty() {
+            if let Err(e) = unregister_shortcut(&app, binding_to_modify.clone()) {
+                warn!("Failed to unregister shortcut when clearing: {}", e);
+            }
+        }
+        if let Some(mut b) = settings.bindings.get(&id).cloned() {
+            b.current_binding = binding;
+            settings.bindings.insert(id.clone(), b.clone());
+            settings::write_settings(&app, settings);
+            return Ok(BindingResponse {
+                success: true,
+                binding: Some(b.clone()),
+                error: None,
+            });
+        }
+    }
+
     // Unregister the existing binding
     if let Err(e) = unregister_shortcut(&app, binding_to_modify.clone()) {
         let error_msg = format!("Failed to unregister shortcut: {}", e);

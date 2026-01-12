@@ -544,6 +544,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "escape".to_string(),
         },
     );
+    bindings.insert(
+        "retype_last".to_string(),
+        ShortcutBinding {
+            id: "retype_last".to_string(),
+            name: "Retype Last".to_string(),
+            description: "Retypes the last transcription.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,

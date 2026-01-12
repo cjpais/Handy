@@ -89,6 +89,7 @@
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
         "notFound": "Shortcut not found",
+        "notSet": "Not set",
         "pressKeys": "Press keys...",
         "bindings": {
           "transcribe": {
@@ -98,6 +99,10 @@
           "cancel": {
             "name": "Cancel",
             "description": "Cancels the current recording."
+          },
+          "retype_last": {
+            "name": "Retype Last",
+            "description": "Retypes the last transcription."
           }
         },
         "errors": {

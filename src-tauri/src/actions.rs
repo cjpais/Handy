@@ -436,6 +436,56 @@ impl ShortcutAction for CancelAction {
     }
 }
 
+struct RetypeLastAction;
+
+impl ShortcutAction for RetypeLastAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        debug!("RetypeLastAction::start called");
+
+        let app_handle = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let hm = app_handle.state::<Arc<HistoryManager>>();
+
+            match hm.get_latest_entry().await {
+                Ok(Some(entry)) => {
+                    let text = entry
+                        .post_processed_text
+                        .filter(|t| !t.is_empty())
+                        .unwrap_or(entry.transcription_text);
+
+                    if text.is_empty() {
+                        debug!("RetypeLastAction: Latest entry has empty text");
+                        return;
+                    }
+
+                    debug!("RetypeLastAction: Retyping text: '{}'", text);
+
+                    let app_for_paste = app_handle.clone();
+                    app_handle
+                        .run_on_main_thread(move || {
+                            if let Err(e) = utils::paste(text, app_for_paste) {
+                                error!("RetypeLastAction: Failed to paste text: {}", e);
+                            }
+                        })
+                        .unwrap_or_else(|e| {
+                            error!("RetypeLastAction: Failed to run on main thread: {:?}", e);
+                        });
+                }
+                Ok(None) => {
+                    debug!("RetypeLastAction: No history entries found");
+                }
+                Err(e) => {
+                    error!("RetypeLastAction: Failed to get latest entry: {}", e);
+                }
+            }
+        });
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // Nothing to do on stop for retype
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -469,6 +519,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "cancel".to_string(),
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "retype_last".to_string(),
+        Arc::new(RetypeLastAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),
