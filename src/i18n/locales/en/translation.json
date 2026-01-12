@@ -904,6 +904,17 @@
       "changesRequested": "changes requested",
       "mergeable": "Ready to merge",
       "notMergeable": "Not mergeable"
+    },
+    "orchestrator": {
+      "title": "Active Agents",
+      "description": "Dashboard showing all running coding agents and their status",
+      "agentCount": "{{count}} active agent(s)",
+      "noAgents": "No active agents",
+      "noAgentsHint": "Spawn an agent from an issue to see it here",
+      "spawnAgent": "Spawn agent on this issue",
+      "attached": "Attached",
+      "cleanup": "Stop agent and cleanup resources",
+      "noRepoPath": "No repository path configured. Open a git repository first."
     }
   },
   "credentials": {

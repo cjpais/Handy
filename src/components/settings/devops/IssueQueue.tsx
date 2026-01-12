@@ -14,16 +14,22 @@ import {
   Plus,
   X,
   LogIn,
+  Play,
+  Bot,
 } from "lucide-react";
 
 interface IssueQueueProps {
   hubRepo?: string;
+  repoPath?: string;
   onIssueSelect?: (issue: GitHubIssue) => void;
+  onAgentSpawned?: () => void;
 }
 
 export const IssueQueue: React.FC<IssueQueueProps> = ({
   hubRepo,
+  repoPath,
   onIssueSelect,
+  onAgentSpawned,
 }) => {
   const { t } = useTranslation();
   const [authStatus, setAuthStatus] = useState<GhAuthStatus | null>(null);
@@ -33,6 +39,7 @@ export const IssueQueue: React.FC<IssueQueueProps> = ({
   const [repoInput, setRepoInput] = useState(hubRepo || "");
   const [activeRepo, setActiveRepo] = useState(hubRepo || "");
   const [showRepoInput, setShowRepoInput] = useState(!hubRepo);
+  const [spawningIssue, setSpawningIssue] = useState<number | null>(null);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -98,6 +105,34 @@ export const IssueQueue: React.FC<IssueQueueProps> = ({
       return date.toLocaleDateString();
     } catch {
       return dateStr;
+    }
+  };
+
+  const handleSpawnAgent = async (issue: GitHubIssue) => {
+    if (!repoPath) {
+      setError(t("devops.orchestrator.noRepoPath"));
+      return;
+    }
+
+    setSpawningIssue(issue.number);
+    setError(null);
+
+    try {
+      await commands.spawnAgent(
+        activeRepo,
+        issue.number,
+        "claude", // Default agent type
+        repoPath,
+        null, // Auto-generate session name
+        null, // Default prefix
+        ["agent-working"] // Add working label
+      );
+      onAgentSpawned?.();
+      await loadIssues(); // Refresh to show updated labels
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSpawningIssue(null);
     }
   };
 
@@ -277,16 +312,35 @@ export const IssueQueue: React.FC<IssueQueueProps> = ({
               </div>
 
               {/* Actions */}
-              <a
-                href={issue.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="p-1.5 hover:bg-mid-gray/20 rounded transition-colors text-mid-gray"
-                title={t("devops.issues.openInGitHub")}
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
+              <div className="flex items-center gap-1">
+                {repoPath && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSpawnAgent(issue);
+                    }}
+                    disabled={spawningIssue === issue.number}
+                    className="p-1.5 hover:bg-green-500/20 rounded transition-colors text-mid-gray hover:text-green-400"
+                    title={t("devops.orchestrator.spawnAgent")}
+                  >
+                    {spawningIssue === issue.number ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Bot className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+                <a
+                  href={issue.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1.5 hover:bg-mid-gray/20 rounded transition-colors text-mid-gray"
+                  title={t("devops.issues.openInGitHub")}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
             </div>
           ))}
         </div>

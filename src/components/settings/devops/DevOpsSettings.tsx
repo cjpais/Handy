@@ -7,6 +7,7 @@ import { SessionManager } from "./SessionManager";
 import { WorktreeManager } from "./WorktreeManager";
 import { IssueQueue } from "./IssueQueue";
 import { PullRequestPanel } from "./PullRequestPanel";
+import { AgentDashboard } from "./AgentDashboard";
 import {
   Terminal,
   GitBranch,
@@ -17,6 +18,7 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  Bot,
 } from "lucide-react";
 
 export const DevOpsSettings: React.FC = () => {
@@ -121,6 +123,16 @@ export const DevOpsSettings: React.FC = () => {
           </div>
         ) : null}
       </SettingsGroup>
+
+      {/* Active Agents Dashboard */}
+      {dependencies?.all_satisfied && (
+        <SettingsGroup
+          title={t("devops.orchestrator.title")}
+          description={t("devops.orchestrator.description")}
+        >
+          <AgentDashboard />
+        </SettingsGroup>
+      )}
 
       {/* Agent Sessions */}
       {dependencies?.all_satisfied && (

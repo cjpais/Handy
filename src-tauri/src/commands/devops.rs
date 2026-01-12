@@ -6,6 +6,7 @@ use crate::devops::{
         self, GhAuthStatus, GitHubComment, GitHubIssue, GitHubPullRequest, IssueAgentMetadata,
         IssueWithAgent, PrStatus,
     },
+    orchestrator::{self, AgentStatus, SpawnConfig, SpawnResult},
     tmux::{self, AgentMetadata, RecoveredSession, TmuxSession},
     worktree::{self, CollisionCheck, WorktreeConfig, WorktreeCreateResult, WorktreeInfo},
     DevOpsDependencies,
@@ -375,4 +376,64 @@ pub fn merge_github_pr(
 #[specta::specta]
 pub fn close_github_pr(repo: String, number: u64, comment: Option<String>) -> Result<(), String> {
     github::close_pr(&repo, number, comment.as_deref())
+}
+
+// ============================================================================
+// Agent Orchestration Commands
+// ============================================================================
+
+/// Spawn a new agent to work on an issue.
+///
+/// Creates a worktree, tmux session, and updates the issue with metadata.
+#[tauri::command]
+#[specta::specta]
+pub fn spawn_agent(
+    repo: String,
+    issue_number: u64,
+    agent_type: String,
+    repo_path: String,
+    session_name: Option<String>,
+    worktree_prefix: Option<String>,
+    working_labels: Option<Vec<String>>,
+) -> Result<SpawnResult, String> {
+    let config = SpawnConfig {
+        repo,
+        issue_number,
+        agent_type,
+        session_name,
+        worktree_prefix,
+        working_labels: working_labels.unwrap_or_default(),
+    };
+    orchestrator::spawn_agent(&config, &repo_path)
+}
+
+/// Get status of all active agents.
+#[tauri::command]
+#[specta::specta]
+pub fn list_agent_statuses() -> Result<Vec<AgentStatus>, String> {
+    orchestrator::list_agent_statuses()
+}
+
+/// Clean up an agent's resources after work is complete.
+#[tauri::command]
+#[specta::specta]
+pub fn cleanup_agent(
+    session_name: String,
+    repo_path: String,
+    remove_worktree: bool,
+    delete_branch: bool,
+) -> Result<(), String> {
+    orchestrator::cleanup_agent(&session_name, &repo_path, remove_worktree, delete_branch)
+}
+
+/// Create a PR from an agent's work.
+#[tauri::command]
+#[specta::specta]
+pub fn create_pr_from_agent(
+    session_name: String,
+    title: String,
+    body: Option<String>,
+    draft: bool,
+) -> Result<GitHubPullRequest, String> {
+    orchestrator::create_pr_from_agent(&session_name, &title, body.as_deref(), draft)
 }

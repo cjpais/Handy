@@ -5,9 +5,11 @@
 //! - tmux session management
 //! - Git worktree management
 //! - GitHub issue integration
+//! - Agent orchestration
 
 mod dependencies;
 pub mod github;
+pub mod orchestrator;
 pub mod tmux;
 pub mod worktree;
 
