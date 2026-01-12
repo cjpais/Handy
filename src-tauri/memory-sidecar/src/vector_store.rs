@@ -23,9 +23,16 @@ const EMBEDDING_DIM: i32 = 384;
 
 /// Minimum similarity threshold for query results (0.0 to 1.0)
 /// Results with similarity below this are filtered out
-/// 0.3 is a reasonable threshold - too low includes irrelevant results,
-/// too high excludes potentially useful context
-const MIN_SIMILARITY_THRESHOLD: f32 = 0.3;
+/// 0.5 ensures only meaningfully relevant results are returned
+/// Below this threshold, matches are often coincidental word overlaps
+const MIN_SIMILARITY_THRESHOLD: f32 = 0.5;
+
+/// Minimum content length (in characters) to return in search results
+/// Filters out very short transcription fragments that lack context
+const MIN_CONTENT_LENGTH: usize = 10;
+
+/// Minimum word count for meaningful results
+const MIN_WORD_COUNT: usize = 3;
 
 /// Recency decay factor - how much to weight recent memories over old ones
 /// Higher values = more recency bias. 0.0 = no recency weighting
@@ -91,6 +98,25 @@ fn text_similarity(a: &str, b: &str) -> f32 {
     } else {
         intersection as f32 / union as f32
     }
+}
+
+/// Check if content is meaningful enough to return in search results
+/// This filters out short garbage transcriptions at query time
+fn is_meaningful_content(content: &str) -> bool {
+    let trimmed = content.trim();
+
+    // Check minimum length
+    if trimmed.len() < MIN_CONTENT_LENGTH {
+        return false;
+    }
+
+    // Check minimum word count
+    let word_count = trimmed.split_whitespace().count();
+    if word_count < MIN_WORD_COUNT {
+        return false;
+    }
+
+    true
 }
 
 /// Deduplicate memory entries, keeping the highest-scored version of similar content
@@ -352,11 +378,14 @@ impl VectorStore {
             }
         }
 
-        // Filter by minimum similarity threshold
+        // Filter by minimum similarity threshold AND content quality
         let total_before_filter = entries.len();
         let mut filtered_entries: Vec<MemoryEntry> = entries
             .into_iter()
-            .filter(|e| e.similarity.unwrap_or(0.0) >= MIN_SIMILARITY_THRESHOLD)
+            .filter(|e| {
+                e.similarity.unwrap_or(0.0) >= MIN_SIMILARITY_THRESHOLD
+                    && is_meaningful_content(&e.content)
+            })
             .collect();
 
         // Apply recency weighting and re-sort by combined score
@@ -541,11 +570,14 @@ impl VectorStore {
             }
         }
 
-        // Filter by minimum similarity threshold
+        // Filter by minimum similarity threshold AND content quality
         let total_before_filter = entries.len();
         let mut filtered_entries: Vec<MemoryEntry> = entries
             .into_iter()
-            .filter(|e| e.similarity.unwrap_or(0.0) >= MIN_SIMILARITY_THRESHOLD)
+            .filter(|e| {
+                e.similarity.unwrap_or(0.0) >= MIN_SIMILARITY_THRESHOLD
+                    && is_meaningful_content(&e.content)
+            })
             .collect();
 
         // Apply recency weighting and re-sort by combined score
