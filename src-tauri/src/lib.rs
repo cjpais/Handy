@@ -529,6 +529,8 @@ pub fn run() {
         commands::memory::load_embedding_model,
         commands::memory::get_current_embedding_model,
         commands::memory::stop_memory_sidecar,
+        commands::memory::browse_recent_memories,
+        commands::memory::list_memory_users,
         helpers::clamshell::is_laptop,
         vad_model::is_vad_model_ready,
         vad_model::download_vad_model_if_needed,

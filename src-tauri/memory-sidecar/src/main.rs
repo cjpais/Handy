@@ -35,6 +35,14 @@ enum Request {
     },
     #[serde(rename = "query_all")]
     QueryAll { text: String, limit: usize },
+    #[serde(rename = "browse_recent")]
+    BrowseRecent {
+        limit: usize,
+        user_id: Option<String>,
+        is_bot: Option<bool>,
+    },
+    #[serde(rename = "list_users")]
+    ListUsers,
     #[serde(rename = "count")]
     Count,
     #[serde(rename = "clear_all")]
@@ -65,6 +73,13 @@ struct EmbeddingModelInfoResponse {
     is_loaded: bool,
 }
 
+/// User info with memory count
+#[derive(Debug, Serialize)]
+struct UserInfo {
+    user_id: String,
+    memory_count: usize,
+}
+
 /// Response types to the main app
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -75,6 +90,8 @@ enum Response {
     Stored { id: String },
     #[serde(rename = "results")]
     Results { messages: Vec<MemoryEntry> },
+    #[serde(rename = "users")]
+    Users { users: Vec<UserInfo> },
     #[serde(rename = "count")]
     Count { total: usize },
     #[serde(rename = "cleared")]
@@ -313,6 +330,39 @@ fn main() {
                     Err(e) => {
                         send_response(&Response::Error {
                             message: format!("Query failed: {}", e),
+                        });
+                    }
+                }
+            }
+
+            Request::BrowseRecent { limit, user_id, is_bot } => {
+                // Browse recent memories without semantic search
+                match rt.block_on(store.browse_recent(limit, user_id.as_deref(), is_bot)) {
+                    Ok(messages) => {
+                        info!("Browse recent returned {} results", messages.len());
+                        send_response(&Response::Results { messages });
+                    }
+                    Err(e) => {
+                        send_response(&Response::Error {
+                            message: format!("Browse failed: {}", e),
+                        });
+                    }
+                }
+            }
+
+            Request::ListUsers => {
+                match rt.block_on(store.list_users()) {
+                    Ok(user_data) => {
+                        let users: Vec<UserInfo> = user_data
+                            .into_iter()
+                            .map(|(user_id, memory_count)| UserInfo { user_id, memory_count })
+                            .collect();
+                        info!("Listed {} unique users", users.len());
+                        send_response(&Response::Users { users });
+                    }
+                    Err(e) => {
+                        send_response(&Response::Error {
+                            message: format!("List users failed: {}", e),
                         });
                     }
                 }

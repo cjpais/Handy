@@ -30,6 +30,14 @@ enum SidecarRequest {
     },
     #[serde(rename = "query_all")]
     QueryAll { text: String, limit: usize },
+    #[serde(rename = "browse_recent")]
+    BrowseRecent {
+        limit: usize,
+        user_id: Option<String>,
+        is_bot: Option<bool>,
+    },
+    #[serde(rename = "list_users")]
+    ListUsers,
     #[serde(rename = "count")]
     Count,
     #[serde(rename = "clear_all")]
@@ -60,6 +68,13 @@ pub struct EmbeddingModelInfo {
     pub is_loaded: bool,
 }
 
+/// User info with memory count
+#[derive(Debug, Clone, Deserialize, Serialize, specta::Type)]
+pub struct MemoryUserInfo {
+    pub user_id: String,
+    pub memory_count: usize,
+}
+
 /// Response types from the sidecar
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
@@ -70,6 +85,8 @@ enum SidecarResponse {
     Stored { id: String },
     #[serde(rename = "results")]
     Results { messages: Vec<MemoryMessage> },
+    #[serde(rename = "users")]
+    Users { users: Vec<MemoryUserInfo> },
     #[serde(rename = "count")]
     Count { total: usize },
     #[serde(rename = "cleared")]
@@ -238,6 +255,35 @@ impl SidecarProcess {
 
         match response {
             SidecarResponse::Results { messages } => Ok(messages),
+            SidecarResponse::Error { message } => Err(message),
+            _ => Err("Unexpected response from sidecar".to_string()),
+        }
+    }
+
+    fn browse_recent(
+        &mut self,
+        limit: usize,
+        user_id: Option<String>,
+        is_bot: Option<bool>,
+    ) -> Result<Vec<MemoryMessage>, String> {
+        let response = self.send_request(&SidecarRequest::BrowseRecent {
+            limit,
+            user_id,
+            is_bot,
+        })?;
+
+        match response {
+            SidecarResponse::Results { messages } => Ok(messages),
+            SidecarResponse::Error { message } => Err(message),
+            _ => Err("Unexpected response from sidecar".to_string()),
+        }
+    }
+
+    fn list_users(&mut self) -> Result<Vec<MemoryUserInfo>, String> {
+        let response = self.send_request(&SidecarRequest::ListUsers)?;
+
+        match response {
+            SidecarResponse::Users { users } => Ok(users),
             SidecarResponse::Error { message } => Err(message),
             _ => Err("Unexpected response from sidecar".to_string()),
         }
@@ -497,6 +543,33 @@ impl MemoryManager {
         sidecar.query_all(text, limit)
     }
 
+    /// Browse recent memories without semantic search (for UI browsing)
+    pub fn browse_recent(
+        &self,
+        limit: usize,
+        user_id: Option<String>,
+        is_bot: Option<bool>,
+    ) -> Result<Vec<MemoryMessage>, String> {
+        self.ensure_sidecar()?;
+
+        let mut guard = self.sidecar.lock().unwrap();
+        let sidecar = guard
+            .as_mut()
+            .ok_or_else(|| "Sidecar not available".to_string())?;
+        sidecar.browse_recent(limit, user_id, is_bot)
+    }
+
+    /// List unique users with memory counts
+    pub fn list_users(&self) -> Result<Vec<MemoryUserInfo>, String> {
+        self.ensure_sidecar()?;
+
+        let mut guard = self.sidecar.lock().unwrap();
+        let sidecar = guard
+            .as_mut()
+            .ok_or_else(|| "Sidecar not available".to_string())?;
+        sidecar.list_users()
+    }
+
     /// List available embedding models
     pub fn list_models(&self) -> Result<Vec<EmbeddingModelInfo>, String> {
         self.ensure_sidecar()?;
@@ -543,6 +616,100 @@ impl Drop for MemoryManager {
     fn drop(&mut self) {
         self.shutdown();
     }
+}
+
+/// Minimum word count for content to be worth storing in memory
+const MIN_WORDS_FOR_STORAGE: usize = 4;
+
+/// Minimum character count for content to be worth storing
+const MIN_CHARS_FOR_STORAGE: usize = 15;
+
+/// Common filler/acknowledgment phrases that shouldn't be stored
+const SKIP_PHRASES: &[&str] = &[
+    "yeah",
+    "yes",
+    "no",
+    "okay",
+    "ok",
+    "uh",
+    "um",
+    "hmm",
+    "hm",
+    "mhm",
+    "uh-huh",
+    "sure",
+    "right",
+    "alright",
+    "yep",
+    "nope",
+    "hey",
+    "hi",
+    "hello",
+    "bye",
+    "goodbye",
+    "thanks",
+    "thank you",
+    "cool",
+    "nice",
+    "great",
+    "good",
+    "fine",
+    "amen",
+    "what",
+    "huh",
+    "oh",
+    "ah",
+];
+
+/// Check if content is meaningful enough to store in long-term memory.
+/// Returns true if the content should be stored, false if it should be skipped.
+pub fn is_content_worth_storing(content: &str) -> bool {
+    let trimmed = content.trim();
+
+    // Skip empty content
+    if trimmed.is_empty() {
+        return false;
+    }
+
+    // Skip very short content
+    if trimmed.len() < MIN_CHARS_FOR_STORAGE {
+        return false;
+    }
+
+    // Count words (split on whitespace)
+    let word_count = trimmed.split_whitespace().count();
+    if word_count < MIN_WORDS_FOR_STORAGE {
+        return false;
+    }
+
+    // Check if it's just a common filler phrase
+    let lower = trimmed.to_lowercase();
+    for phrase in SKIP_PHRASES {
+        // Exact match or phrase with punctuation
+        if lower == *phrase
+            || lower == format!("{}.", phrase)
+            || lower == format!("{}!", phrase)
+            || lower == format!("{}?", phrase)
+        {
+            return false;
+        }
+    }
+
+    // Check if content is mostly filler words (> 75% filler)
+    let filler_count = trimmed
+        .split_whitespace()
+        .filter(|word| {
+            let w = word.to_lowercase();
+            let clean = w.trim_matches(|c: char| !c.is_alphabetic());
+            SKIP_PHRASES.contains(&clean)
+        })
+        .count();
+
+    if word_count > 0 && (filler_count as f32 / word_count as f32) > 0.75 {
+        return false;
+    }
+
+    true
 }
 
 /// Format memory context for inclusion in a prompt

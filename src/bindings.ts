@@ -1139,6 +1139,29 @@ async stopMemorySidecar() : Promise<Result<null, string>> {
 }
 },
 /**
+ * Browse recent memories without semantic search
+ * Supports filtering by user_id and is_bot
+ */
+async browseRecentMemories(limit: number, userId: string | null, isBot: boolean | null) : Promise<Result<MemoryMessage[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("browse_recent_memories", { limit, userId, isBot }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * List unique users with memory counts
+ */
+async listMemoryUsers() : Promise<Result<MemoryUserInfo[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_memory_users") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Checks if the Mac is a laptop by detecting battery presence
  * 
  * This uses pmset to check for battery information.
@@ -1233,6 +1256,10 @@ export type MemoryMessage = { id: string; user_id: string; content: string; is_b
  * Status information about the memory system
  */
 export type MemoryStatus = { is_running: boolean; model_loaded: boolean; total_memories: number }
+/**
+ * User info with memory count
+ */
+export type MemoryUserInfo = { user_id: string; memory_count: number }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_5"

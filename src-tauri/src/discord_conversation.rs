@@ -11,7 +11,7 @@
 
 use crate::discord::DiscordManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::memory::MemoryManager;
+use crate::memory::{is_content_worth_storing, MemoryManager};
 use crate::onichan::OnichanManager;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use log::{debug, error, info, warn};
@@ -521,12 +521,20 @@ async fn process_transcription_result(
     let user_id = &result.user_id;
 
     // Store the transcription to memory (regardless of wake word)
-    if let Some(mm) = memory_manager.lock().unwrap().as_ref() {
-        if let Err(e) = mm.store_message(user_id, text, false) {
-            warn!("Failed to store user message to memory: {}", e);
-        } else {
-            debug!("Stored transcript to memory for user {}", user_id);
+    // But only if the content is meaningful (not just "yeah", "ok", etc.)
+    if is_content_worth_storing(text) {
+        if let Some(mm) = memory_manager.lock().unwrap().as_ref() {
+            if let Err(e) = mm.store_message(user_id, text, false) {
+                warn!("Failed to store user message to memory: {}", e);
+            } else {
+                debug!("Stored transcript to memory for user {}", user_id);
+            }
         }
+    } else {
+        debug!(
+            "Skipping memory storage for short/filler content: '{}'",
+            text
+        );
     }
 
     // Check for wake words - only respond if addressed
@@ -559,10 +567,12 @@ async fn process_transcription_result(
 
     info!("LLM response for {}: {}", user_id, response);
 
-    // Store bot response to memory
-    if let Some(mm) = memory_manager.lock().unwrap().as_ref() {
-        if let Err(e) = mm.store_message(user_id, &response, true) {
-            warn!("Failed to store bot response to memory: {}", e);
+    // Store bot response to memory (if meaningful)
+    if is_content_worth_storing(&response) {
+        if let Some(mm) = memory_manager.lock().unwrap().as_ref() {
+            if let Err(e) = mm.store_message(user_id, &response, true) {
+                warn!("Failed to store bot response to memory: {}", e);
+            }
         }
     }
 

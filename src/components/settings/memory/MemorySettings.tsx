@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { commands, MemoryMessage, MemoryStatus, EmbeddingModelInfo } from "@/bindings";
+import { commands, MemoryMessage, MemoryStatus, EmbeddingModelInfo, MemoryUserInfo } from "@/bindings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { useSidecarStore } from "@/stores/sidecarStore";
 import {
@@ -18,7 +18,15 @@ import {
   Download,
   Play,
   Square,
+  Clock,
+  Filter,
+  ChevronDown,
+  List,
+  Sparkles,
 } from "lucide-react";
+
+type ViewMode = "semantic" | "chronological";
+type TypeFilter = "all" | "user" | "bot";
 
 export const MemorySettings: React.FC = () => {
   const { t } = useTranslation();
@@ -47,6 +55,15 @@ export const MemorySettings: React.FC = () => {
   const [isStartingSidecar, setIsStartingSidecar] = useState(false);
   const [isStoppingSidecar, setIsStoppingSidecar] = useState(false);
 
+  // New filter state
+  const [viewMode, setViewMode] = useState<ViewMode>("semantic");
+  const [users, setUsers] = useState<MemoryUserInfo[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [browseLimit, setBrowseLimit] = useState(20);
+  const [totalResults, setTotalResults] = useState(0);
+
   // Sync local status with global store state
   useEffect(() => {
     if (status) {
@@ -70,6 +87,7 @@ export const MemorySettings: React.FC = () => {
         const countResult = await commands.getMemoryCount();
         if (countResult.status === "ok") {
           setMemoryCount(countResult.data);
+          setTotalResults(countResult.data);
         }
       } catch (e) {
         console.error("Failed to load memory status:", e);
@@ -96,13 +114,27 @@ export const MemorySettings: React.FC = () => {
     }
   }, []);
 
-  // Load embedding models when status shows sidecar is running
+  // Load users for filter
+  const loadUsers = useCallback(async () => {
+    try {
+      const result = await commands.listMemoryUsers();
+      if (result.status === "ok") {
+        setUsers(result.data);
+      }
+    } catch (e) {
+      console.error("Failed to load users:", e);
+    }
+  }, []);
+
+  // Load embedding models and users when status shows sidecar is running
   useEffect(() => {
     if (status?.is_running) {
       loadEmbeddingModels();
+      loadUsers();
     }
-  }, [status?.is_running, loadEmbeddingModels]);
+  }, [status?.is_running, loadEmbeddingModels, loadUsers]);
 
+  // Semantic search handler
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -111,16 +143,45 @@ export const MemorySettings: React.FC = () => {
 
     setIsSearching(true);
     try {
-      const result = await commands.queryAllMemories(searchQuery, 20);
+      const result = await commands.queryAllMemories(searchQuery, browseLimit);
       if (result.status === "ok") {
         setSearchResults(result.data);
+        setTotalResults(result.data.length);
       }
     } catch (e) {
       console.error("Search failed:", e);
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, browseLimit]);
+
+  // Browse recent memories handler
+  const handleBrowseRecent = useCallback(async () => {
+    setIsSearching(true);
+    try {
+      const isBotFilter = typeFilter === "all" ? null : typeFilter === "bot";
+      const result = await commands.browseRecentMemories(
+        browseLimit,
+        selectedUser,
+        isBotFilter
+      );
+      if (result.status === "ok") {
+        setSearchResults(result.data);
+        setTotalResults(result.data.length);
+      }
+    } catch (e) {
+      console.error("Browse failed:", e);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [browseLimit, selectedUser, typeFilter]);
+
+  // Auto-load when switching to chronological mode or changing filters
+  useEffect(() => {
+    if (viewMode === "chronological" && status?.is_running) {
+      handleBrowseRecent();
+    }
+  }, [viewMode, selectedUser, typeFilter, status?.is_running]);
 
   const handleClearAll = useCallback(async () => {
     setIsClearing(true);
@@ -130,6 +191,7 @@ export const MemorySettings: React.FC = () => {
         setMemoryCount(0);
         setSearchResults([]);
         setShowClearConfirm(false);
+        setUsers([]);
       }
     } catch (e) {
       console.error("Clear failed:", e);
@@ -143,19 +205,21 @@ export const MemorySettings: React.FC = () => {
       const countResult = await commands.getMemoryCount();
       if (countResult.status === "ok") {
         setMemoryCount(countResult.data);
+        setTotalResults(countResult.data);
       }
       const statusResult = await commands.getMemoryStatus();
       if (statusResult.status === "ok") {
         setStatus(statusResult.data);
-        // If sidecar is now running, also load the embedding models
+        // If sidecar is now running, also load the embedding models and users
         if (statusResult.data.is_running) {
           await loadEmbeddingModels();
+          await loadUsers();
         }
       }
     } catch (e) {
       console.error("Refresh failed:", e);
     }
-  }, [loadEmbeddingModels]);
+  }, [loadEmbeddingModels, loadUsers]);
 
   // Start the memory sidecar
   const handleStartSidecar = useCallback(async () => {
@@ -183,6 +247,8 @@ export const MemorySettings: React.FC = () => {
       } else {
         console.error("Failed to get current model:", currentResult.error);
       }
+      // Load users
+      await loadUsers();
       // Refresh global sidecar state
       refreshSidecarState();
     } catch (e) {
@@ -190,7 +256,7 @@ export const MemorySettings: React.FC = () => {
     } finally {
       setIsStartingSidecar(false);
     }
-  }, [refreshSidecarState]);
+  }, [refreshSidecarState, loadUsers]);
 
   // Stop the memory sidecar
   const handleStopSidecar = useCallback(async () => {
@@ -201,6 +267,7 @@ export const MemorySettings: React.FC = () => {
         setStatus({ is_running: false, model_loaded: false, total_memories: 0 });
         setEmbeddingModels([]);
         setCurrentModel(null);
+        setUsers([]);
         refreshSidecarState();
       }
     } catch (e) {
@@ -228,9 +295,36 @@ export const MemorySettings: React.FC = () => {
     }
   }, [loadEmbeddingModels, refreshSidecarState]);
 
+  const handleLoadMore = useCallback(async () => {
+    setBrowseLimit((prev) => prev + 20);
+    if (viewMode === "chronological") {
+      // Will trigger useEffect to reload
+    } else if (searchQuery.trim()) {
+      handleSearch();
+    }
+  }, [viewMode, searchQuery, handleSearch]);
+
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp * 1000);
-    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      return "Yesterday " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  // Check if a memory is recent (within 24 hours)
+  const isRecent = (timestamp: number) => {
+    const now = Date.now() / 1000;
+    return now - timestamp < 24 * 60 * 60;
   };
 
   if (isLoading) {
@@ -402,7 +496,7 @@ export const MemorySettings: React.FC = () => {
                       </div>
                       <p className="text-xs text-text/60 mt-1">{model.description}</p>
                       <p className="text-xs text-text/40 mt-1">
-                        {model.size_mb} MB • {model.dimension} dim
+                        {t("memory.model.sizeAndDim", { size: model.size_mb, dim: model.dimension })}
                       </p>
                       {/* Hint for available models */}
                       {isAvailable && !isLoading && (
@@ -444,32 +538,127 @@ export const MemorySettings: React.FC = () => {
       {/* Search/Browse Section */}
       <SettingsGroup title={t("memory.browser.title")}>
         <div className="p-4">
-          {/* Search bar */}
-          <div className="flex gap-2 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text/40" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder={t("memory.browser.search")}
-                className="w-full pl-10 pr-4 py-2 bg-background-dark/50 border border-background-dark rounded-lg text-sm focus:outline-none focus:border-logo-primary/50"
-              />
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex bg-background-dark/50 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("semantic")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "semantic"
+                    ? "bg-logo-primary/20 text-logo-primary"
+                    : "text-text/60 hover:text-text"
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                {t("memory.browser.semanticSearch")}
+              </button>
+              <button
+                onClick={() => setViewMode("chronological")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "chronological"
+                    ? "bg-logo-primary/20 text-logo-primary"
+                    : "text-text/60 hover:text-text"
+                }`}
+              >
+                <List className="w-4 h-4" />
+                {t("memory.browser.chronological")}
+              </button>
             </div>
+
+            {/* Filter toggle button */}
             <button
-              onClick={handleSearch}
-              disabled={isSearching || !searchQuery.trim()}
-              className="px-4 py-2 bg-logo-primary/20 text-logo-primary rounded-lg hover:bg-logo-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                showFilters || selectedUser || typeFilter !== "all"
+                  ? "bg-logo-primary/20 text-logo-primary"
+                  : "text-text/60 hover:text-text hover:bg-background-dark/50"
+              }`}
             >
-              {isSearching ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
+              <Filter className="w-4 h-4" />
+              {t("memory.browser.filters")}
+              {(selectedUser || typeFilter !== "all") && (
+                <span className="ml-1 w-2 h-2 rounded-full bg-logo-primary" />
               )}
-              {t("memory.browser.searchButton")}
             </button>
           </div>
+
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="flex flex-wrap gap-3 mb-4 p-3 bg-background-dark/30 rounded-lg">
+              {/* User filter */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-text/50">{t("memory.browser.filterByUser")}</label>
+                <div className="relative">
+                  <select
+                    value={selectedUser || ""}
+                    onChange={(e) => setSelectedUser(e.target.value || null)}
+                    className="appearance-none bg-background-dark/50 border border-background-dark rounded-lg px-3 py-1.5 pr-8 text-sm text-text focus:outline-none focus:border-logo-primary/50"
+                  >
+                    <option value="">{t("memory.browser.allUsers")}</option>
+                    {users.map((user) => (
+                      <option key={user.user_id} value={user.user_id}>
+                        {t("memory.browser.userOption", { id: user.user_id.slice(0, 8), count: user.memory_count })}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Type filter */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-text/50">{t("memory.browser.filterByType")}</label>
+                <div className="relative">
+                  <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
+                    className="appearance-none bg-background-dark/50 border border-background-dark rounded-lg px-3 py-1.5 pr-8 text-sm text-text focus:outline-none focus:border-logo-primary/50"
+                  >
+                    <option value="all">{t("memory.browser.allTypes")}</option>
+                    <option value="user">{t("memory.browser.userMessages")}</option>
+                    <option value="bot">{t("memory.browser.botResponses")}</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Search bar (only in semantic mode) */}
+          {viewMode === "semantic" && (
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text/40" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  placeholder={t("memory.browser.search")}
+                  className="w-full pl-10 pr-4 py-2 bg-background-dark/50 border border-background-dark rounded-lg text-sm focus:outline-none focus:border-logo-primary/50"
+                />
+              </div>
+              <button
+                onClick={handleSearch}
+                disabled={isSearching || !searchQuery.trim()}
+                className="px-4 py-2 bg-logo-primary/20 text-logo-primary rounded-lg hover:bg-logo-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isSearching ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+                {t("memory.browser.searchButton")}
+              </button>
+            </div>
+          )}
+
+          {/* Results count */}
+          {searchResults.length > 0 && (
+            <div className="text-xs text-text/50 mb-2">
+              {t("memory.browser.showingCount", { count: searchResults.length, total: totalResults })}
+            </div>
+          )}
 
           {/* Search results */}
           {searchResults.length > 0 ? (
@@ -487,8 +676,16 @@ export const MemorySettings: React.FC = () => {
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-text">{memory.content}</p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-text/40">
-                        <span>{formatTimestamp(memory.timestamp)}</span>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-text/40 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatTimestamp(memory.timestamp)}
+                        </span>
+                        {isRecent(memory.timestamp) && (
+                          <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">
+                            {t("memory.browser.recencyBadge")}
+                          </span>
+                        )}
                         <span className="select-none">|</span>
                         <span>
                           {t("memory.browser.userId", {
@@ -498,7 +695,7 @@ export const MemorySettings: React.FC = () => {
                         {memory.similarity && (
                           <>
                             <span className="select-none">|</span>
-                            <span>
+                            <span className={`${memory.similarity > 0.7 ? 'text-green-400' : memory.similarity > 0.5 ? 'text-yellow-400' : 'text-text/40'}`}>
                               {t("memory.browser.similarity", {
                                 percent: (memory.similarity * 100).toFixed(0),
                               })}
@@ -510,15 +707,36 @@ export const MemorySettings: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Load more button */}
+              {searchResults.length >= browseLimit && (
+                <button
+                  onClick={handleLoadMore}
+                  className="w-full py-2 text-sm text-logo-primary hover:bg-logo-primary/10 rounded-lg transition-colors"
+                >
+                  {t("memory.browser.loadMore")}
+                </button>
+              )}
             </div>
-          ) : searchQuery && !isSearching ? (
+          ) : viewMode === "semantic" && searchQuery && !isSearching ? (
             <p className="text-center text-text/50 py-8">
               {t("memory.browser.noResults")}
             </p>
-          ) : (
+          ) : viewMode === "semantic" ? (
             <p className="text-center text-text/40 py-8">
               {t("memory.browser.searchHint")}
             </p>
+          ) : viewMode === "chronological" && !isSearching && searchResults.length === 0 ? (
+            <p className="text-center text-text/40 py-8">
+              {t("memory.browser.browseRecentHint")}
+            </p>
+          ) : null}
+
+          {/* Loading indicator for browse mode */}
+          {isSearching && viewMode === "chronological" && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-text/60" />
+            </div>
           )}
         </div>
       </SettingsGroup>

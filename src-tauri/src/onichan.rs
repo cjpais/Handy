@@ -1,7 +1,7 @@
 use crate::llm_client::send_chat_completion;
 use crate::local_llm::LocalLlmManager;
 use crate::local_tts::LocalTtsManager;
-use crate::memory::{format_memory_context, MemoryManager};
+use crate::memory::{format_memory_context, is_content_worth_storing, MemoryManager};
 use crate::settings::get_settings;
 use log::{debug, error, info};
 use rodio::OutputStreamBuilder;
@@ -293,10 +293,13 @@ Be that chaotic friend who makes every call entertaining - unpredictable, real, 
 
         // Store user message in long-term memory BEFORE calling LLM
         // This ensures user input is saved even if LLM fails
-        if let Some(ref uid) = user_id {
-            if let Some(memory_mgr) = self.memory_manager.lock().unwrap().as_ref() {
-                if let Err(e) = memory_mgr.store_message(uid, user_text, false) {
-                    debug!("Failed to store user message in memory (non-fatal): {}", e);
+        // Only store if content is meaningful (not just filler words)
+        if is_content_worth_storing(user_text) {
+            if let Some(ref uid) = user_id {
+                if let Some(memory_mgr) = self.memory_manager.lock().unwrap().as_ref() {
+                    if let Err(e) = memory_mgr.store_message(uid, user_text, false) {
+                        debug!("Failed to store user message in memory (non-fatal): {}", e);
+                    }
                 }
             }
         }
@@ -326,11 +329,13 @@ Be that chaotic friend who makes every call entertaining - unpredictable, real, 
                     cleaned
                 };
 
-                // Store bot response in long-term memory
-                if let Some(ref uid) = user_id {
-                    if let Some(memory_mgr) = self.memory_manager.lock().unwrap().as_ref() {
-                        if let Err(e) = memory_mgr.store_message(uid, &final_response, true) {
-                            debug!("Failed to store bot response in memory (non-fatal): {}", e);
+                // Store bot response in long-term memory (if meaningful)
+                if is_content_worth_storing(&final_response) {
+                    if let Some(ref uid) = user_id {
+                        if let Some(memory_mgr) = self.memory_manager.lock().unwrap().as_ref() {
+                            if let Err(e) = memory_mgr.store_message(uid, &final_response, true) {
+                                debug!("Failed to store bot response in memory (non-fatal): {}", e);
+                            }
                         }
                     }
                 }

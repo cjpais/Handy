@@ -1,6 +1,6 @@
 //! Memory management commands for the frontend
 
-use crate::memory::{EmbeddingModelInfo, MemoryManager, MemoryMessage};
+use crate::memory::{EmbeddingModelInfo, MemoryManager, MemoryMessage, MemoryUserInfo};
 use log::info;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -137,4 +137,39 @@ pub async fn stop_memory_sidecar(app: AppHandle) -> Result<(), String> {
     .await
     .map_err(|e| format!("Task join error: {}", e))?;
     Ok(())
+}
+
+/// Browse recent memories without semantic search
+/// Supports filtering by user_id and is_bot
+#[tauri::command]
+#[specta::specta]
+pub async fn browse_recent_memories(
+    app: AppHandle,
+    limit: usize,
+    user_id: Option<String>,
+    is_bot: Option<bool>,
+) -> Result<Vec<MemoryMessage>, String> {
+    let memory_manager = app.state::<Arc<MemoryManager>>().inner().clone();
+
+    info!(
+        "Browsing recent memories: limit={}, user={:?}, is_bot={:?}",
+        limit, user_id, is_bot
+    );
+
+    spawn_blocking(move || memory_manager.browse_recent(limit, user_id, is_bot))
+        .await
+        .map_err(|e| format!("Task join error: {}", e))?
+}
+
+/// List unique users with memory counts
+#[tauri::command]
+#[specta::specta]
+pub async fn list_memory_users(app: AppHandle) -> Result<Vec<MemoryUserInfo>, String> {
+    let memory_manager = app.state::<Arc<MemoryManager>>().inner().clone();
+
+    info!("Listing memory users");
+
+    spawn_blocking(move || memory_manager.list_users())
+        .await
+        .map_err(|e| format!("Task join error: {}", e))?
 }

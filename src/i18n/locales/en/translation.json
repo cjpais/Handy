@@ -767,7 +767,8 @@
       "downloadAndLoad": "Download and load this model",
       "downloadButton": "Download",
       "loadFirst": "Start the memory sidecar to see available models",
-      "note": "Models are downloaded from HuggingFace on first use. Changing models doesn't affect stored memories."
+      "note": "Models are downloaded from HuggingFace on first use. Changing models doesn't affect stored memories.",
+      "sizeAndDim": "{{size}} MB • {{dim}} dim"
     },
     "browser": {
       "title": "Memory Browser",
@@ -777,7 +778,27 @@
       "noResults": "No memories found matching your query",
       "clearAll": "Clear All Memories",
       "userId": "User: {{id}}...",
-      "similarity": "{{percent}}% match"
+      "similarity": "{{percent}}% match",
+      "browseRecent": "Browse Recent",
+      "browseRecentHint": "Browse recent memories without search",
+      "filters": "Filters",
+      "filterByUser": "Filter by User",
+      "filterByType": "Filter by Type",
+      "allUsers": "All Users",
+      "allTypes": "All Types",
+      "userMessages": "User Messages",
+      "botResponses": "Bot Responses",
+      "recentFirst": "Recent First",
+      "relevanceFirst": "Relevance First",
+      "sortBy": "Sort",
+      "userCount": "{{count}} memories",
+      "userOption": "{{id}}... ({{count}} memories)",
+      "loadMore": "Load More",
+      "showingCount": "Showing {{count}} of {{total}} memories",
+      "recencyBadge": "Recent",
+      "semanticSearch": "Semantic Search",
+      "chronological": "Chronological",
+      "viewMode": "View"
     },
     "dangerZone": {
       "title": "Danger Zone",
