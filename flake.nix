@@ -69,7 +69,8 @@
 
         shellHook = ''
           echo "Handy development environment"
-          echo "Run 'bun install' then 'bun run tauri dev' to start"
+          bun install
+          echo "Run 'bun run tauri dev' to start"
         '';
       };
     });
