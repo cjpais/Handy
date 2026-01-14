@@ -16,6 +16,9 @@ mod signal_handle;
 mod tray;
 mod tray_i18n;
 mod utils;
+
+#[cfg(feature = "saytype")]
+mod saytype;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
@@ -212,6 +215,21 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    // SayType API Server（條件編譯）
+    #[cfg(feature = "saytype")]
+    {
+        let app_handle_clone = app_handle.clone();
+        let settings = settings::get_settings(app_handle);
+        let api_enabled = settings.saytype_api_enabled.unwrap_or(false);
+        let api_port = settings.saytype_api_port.unwrap_or(8765);
+
+        if api_enabled {
+            tauri::async_runtime::spawn(async move {
+                saytype::api_server::start_api_server(app_handle_clone, api_port).await;
+            });
+        }
+    }
 }
 
 #[tauri::command]

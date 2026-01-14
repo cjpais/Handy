@@ -73,6 +73,11 @@ specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 
+# SayType 擴充模組依賴（optional）
+axum = { version = "0.8", optional = true }
+tower-http = { version = "0.6", features = ["cors"], optional = true }
+base64 = { version = "0.22", optional = true }
+
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 
@@ -99,3 +104,8 @@ lto = true
 codegen-units = 1
 strip = true
 panic = "abort"
+
+# SayType Feature Flags
+[features]
+default = []
+saytype = ["dep:axum", "dep:tower-http", "dep:base64"]

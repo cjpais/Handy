@@ -293,6 +293,12 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+
+    // SayType 擴充設定（使用 Option 保持向後相容）
+    #[serde(default)]
+    pub saytype_api_enabled: Option<bool>,
+    #[serde(default)]
+    pub saytype_api_port: Option<u16>,
 }
 
 fn default_model() -> String {
@@ -581,6 +587,9 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        // SayType 預設值
+        saytype_api_enabled: Some(false),
+        saytype_api_port: Some(8765),
     }
 }
 
