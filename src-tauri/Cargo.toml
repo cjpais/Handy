@@ -77,6 +77,7 @@ tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 axum = { version = "0.8", optional = true }
 tower-http = { version = "0.6", features = ["cors"], optional = true }
 base64 = { version = "0.22", optional = true }
+rand = { version = "0.8", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
@@ -108,4 +109,4 @@ panic = "abort"
 # SayType Feature Flags
 [features]
 default = []
-saytype = ["dep:axum", "dep:tower-http", "dep:base64"]
+saytype = ["dep:axum", "dep:tower-http", "dep:base64", "dep:rand"]
