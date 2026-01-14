@@ -330,6 +330,14 @@ pub fn run() {
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
         helpers::clamshell::is_laptop,
+        #[cfg(feature = "saytype")]
+        commands::saytype::saytype_get_config,
+        #[cfg(feature = "saytype")]
+        commands::saytype::saytype_set_config,
+        #[cfg(feature = "saytype")]
+        commands::saytype::saytype_regenerate_token,
+        #[cfg(feature = "saytype")]
+        commands::saytype::saytype_get_local_ip,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
