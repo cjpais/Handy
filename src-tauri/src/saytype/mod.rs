@@ -4,10 +4,10 @@
 //! 存取 Desktop 端的語音轉文字功能。
 
 pub mod api_server;
+pub mod config;
 pub mod handlers;
 pub mod types;
 
 // TODO: 後續實作
 // pub mod audio_convert;
 // pub mod llm_polish;
-// pub mod config;
