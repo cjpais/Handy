@@ -1,6 +1,8 @@
 pub mod audio;
 pub mod history;
 pub mod models;
+#[cfg(feature = "saytype")]
+pub mod saytype;
 pub mod transcription;
 
 use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
