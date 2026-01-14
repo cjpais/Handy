@@ -219,14 +219,14 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // SayType API Server（條件編譯）
     #[cfg(feature = "saytype")]
     {
-        let app_handle_clone = app_handle.clone();
-        let settings = settings::get_settings(app_handle);
-        let api_enabled = settings.saytype_api_enabled.unwrap_or(false);
-        let api_port = settings.saytype_api_port.unwrap_or(8765);
+        use crate::saytype::config::get_saytype_config;
 
-        if api_enabled {
+        let app_handle_clone = app_handle.clone();
+        let config = get_saytype_config(app_handle);
+
+        if config.enabled {
             tauri::async_runtime::spawn(async move {
-                saytype::api_server::start_api_server(app_handle_clone, api_port).await;
+                saytype::api_server::start_api_server(app_handle_clone, config.port).await;
             });
         }
     }
