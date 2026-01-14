@@ -66,7 +66,6 @@
       "grant": "授予权限",
       "granted": "已授予",
       "waiting": "等待中...",
-      "instructions": "授予以上权限，然后返回此处。",
       "allGranted": "全部完成！"
     }
   },

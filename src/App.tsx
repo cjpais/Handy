@@ -19,16 +19,16 @@ const renderSettingsContent = (section: SidebarSection) => {
 
 function App() {
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
-    null
+    null,
   );
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
   const refreshAudioDevices = useSettingsStore(
-    (state) => state.refreshAudioDevices
+    (state) => state.refreshAudioDevices,
   );
   const refreshOutputDevices = useSettingsStore(
-    (state) => state.refreshOutputDevices
+    (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
 

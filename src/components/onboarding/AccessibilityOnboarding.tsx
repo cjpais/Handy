@@ -28,10 +28,10 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
 }) => {
   const { t } = useTranslation();
   const refreshAudioDevices = useSettingsStore(
-    (state) => state.refreshAudioDevices
+    (state) => state.refreshAudioDevices,
   );
   const refreshOutputDevices = useSettingsStore(
-    (state) => state.refreshOutputDevices
+    (state) => state.refreshOutputDevices,
   );
   const [isMacOS, setIsMacOS] = useState<boolean | null>(null);
   const [permissions, setPermissions] = useState<PermissionsState>({
@@ -292,12 +292,6 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
             </div>
           </div>
         </div>
-
-        {anyNeeded && (
-          <p className="text-xs text-text/40 text-center mt-2">
-            {t("onboarding.permissions.instructions")}
-          </p>
-        )}
       </div>
     </div>
   );

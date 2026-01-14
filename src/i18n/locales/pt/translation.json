@@ -66,7 +66,6 @@
       "grant": "Conceder Permissão",
       "granted": "Concedido",
       "waiting": "Aguardando...",
-      "instructions": "Conceda as permissões acima e retorne aqui.",
       "allGranted": "Tudo pronto!"
     }
   },

@@ -66,8 +66,11 @@
       "grant": "Grant Permission",
       "granted": "Granted",
       "waiting": "Waiting...",
-      "instructions": "Grant the permissions above, then return here.",
-      "allGranted": "All set!"
+      "allGranted": "All set!",
+      "errors": {
+        "checkFailed": "Failed to check permissions. Please try again.",
+        "requestFailed": "Failed to request permission. Please try again."
+      }
     }
   },
   "modelSelector": {

@@ -67,7 +67,6 @@
       "grant": "Accorder l'autorisation",
       "granted": "Accordé",
       "waiting": "En attente...",
-      "instructions": "Accordez les autorisations ci-dessus, puis revenez ici.",
       "allGranted": "Tout est prêt !"
     }
   },

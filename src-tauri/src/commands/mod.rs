@@ -140,7 +140,7 @@ pub fn initialize_enigo(app: AppHandle) -> Result<(), String> {
 
     // Check if already initialized
     if app.try_state::<EnigoState>().is_some() {
-        log::info!("Enigo already initialized");
+        log::debug!("Enigo already initialized");
         return Ok(());
     }
 
@@ -153,7 +153,10 @@ pub fn initialize_enigo(app: AppHandle) -> Result<(), String> {
         }
         Err(e) => {
             if cfg!(target_os = "macos") {
-                log::warn!("Failed to initialize Enigo: {} (accessibility permissions may not be granted)", e);
+                log::warn!(
+                    "Failed to initialize Enigo: {} (accessibility permissions may not be granted)",
+                    e
+                );
             } else {
                 log::warn!("Failed to initialize Enigo: {}", e);
             }
