@@ -40,16 +40,13 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
     microphone: "checking",
   });
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorCountRef = useRef<number>(0);
+  const MAX_POLLING_ERRORS = 3;
 
   const allGranted =
     permissions.accessibility === "granted" &&
     permissions.microphone === "granted";
-
-  const anyNeeded =
-    permissions.accessibility === "needed" ||
-    permissions.microphone === "needed" ||
-    permissions.accessibility === "waiting" ||
-    permissions.microphone === "waiting";
 
   // Check platform and permission status on mount
   useEffect(() => {
@@ -90,7 +87,7 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
         // If both already granted, refresh audio devices and skip ahead
         if (accessibilityGranted && microphoneGranted) {
           await Promise.all([refreshAudioDevices(), refreshOutputDevices()]);
-          setTimeout(() => onComplete(), 300);
+          timeoutRef.current = setTimeout(() => onComplete(), 300);
         }
       } catch (error) {
         console.error("Failed to check permissions:", error);
@@ -142,20 +139,35 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
           }
           // Now that we have mic permission, refresh audio devices
           await Promise.all([refreshAudioDevices(), refreshOutputDevices()]);
-          setTimeout(() => onComplete(), 500);
+          timeoutRef.current = setTimeout(() => onComplete(), 500);
         }
+
+        // Reset error count on success
+        errorCountRef.current = 0;
       } catch (error) {
         console.error("Error checking permissions:", error);
-        toast.error(t("onboarding.permissions.errors.checkFailed"));
+        errorCountRef.current += 1;
+
+        if (errorCountRef.current >= MAX_POLLING_ERRORS) {
+          // Stop polling after too many consecutive errors
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          toast.error(t("onboarding.permissions.errors.checkFailed"));
+        }
       }
     }, 1000);
   }, [onComplete, refreshAudioDevices, refreshOutputDevices, t]);
 
-  // Cleanup polling on unmount
+  // Cleanup polling and timeouts on unmount
   useEffect(() => {
     return () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
   }, []);
