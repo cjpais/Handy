@@ -2361,6 +2361,7 @@ dependencies = [
  "log",
  "natural",
  "once_cell",
+ "rand 0.8.5",
  "rdev",
  "reqwest",
  "rodio",
