@@ -440,5 +440,25 @@
   },
   "overlay": {
     "transcribing": "Transcribing..."
+  },
+  "saytype": {
+    "title": "SayType Remote Input",
+    "enable_api": "Enable API Server",
+    "connection_info": "Connection Info",
+    "server_address": "Server Address",
+    "auth_token": "Authentication Token",
+    "regenerate_token": "Regenerate Token",
+    "port": "Port",
+    "port_change_note": "Restart API after changing port",
+    "copy": "Copy",
+    "show": "Show",
+    "hide": "Hide",
+    "onboarding": {
+      "title": "Enable SayType Remote Input?",
+      "description": "SayType allows your phone to use this computer's speech-to-text feature over the local network.",
+      "note": "After enabling, devices on the same network can connect via API (requires authentication token).",
+      "enable": "Enable SayType",
+      "skip": "Not Now"
+    }
   }
 }
