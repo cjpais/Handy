@@ -9,6 +9,7 @@ import { StartHidden } from "../StartHidden";
 import { AutostartToggle } from "../AutostartToggle";
 import { PasteMethodSetting } from "../PasteMethod";
 import { ClipboardHandlingSetting } from "../ClipboardHandling";
+import { SayTypeSettings } from "../SayTypeSettings";
 import { useModelStore } from "../../../stores/modelStore";
 
 export const AdvancedSettings: React.FC = () => {
@@ -30,6 +31,9 @@ export const AdvancedSettings: React.FC = () => {
         )}
         <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
+      </SettingsGroup>
+      <SettingsGroup title={t("saytype.title")}>
+        <SayTypeSettings descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>
   );
