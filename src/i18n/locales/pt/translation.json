@@ -55,6 +55,22 @@
     "errors": {
       "loadModels": "Falha ao carregar modelos disponíveis",
       "downloadModel": "Falha ao baixar modelo: {{error}}"
+    },
+    "permissions": {
+      "title": "Permissões Necessárias",
+      "description": "O Handy precisa de algumas permissões para funcionar corretamente.",
+      "microphone": {
+        "title": "Acesso ao Microfone",
+        "description": "Necessário para ouvir sua voz para transcrição."
+      },
+      "accessibility": {
+        "title": "Acesso à Acessibilidade",
+        "description": "Necessário para digitar o texto transcrito em seus aplicativos."
+      },
+      "grant": "Conceder Permissão",
+      "granted": "Concedido",
+      "waiting": "Aguardando...",
+      "allGranted": "Tudo pronto!"
     }
   },
   "modelSelector": {

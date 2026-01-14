@@ -55,6 +55,22 @@
     "errors": {
       "loadModels": "无法加载可用模型",
       "downloadModel": "模型下载失败: {{error}}"
+    },
+    "permissions": {
+      "title": "需要权限",
+      "description": "Handy 需要一些权限才能正常工作。",
+      "microphone": {
+        "title": "麦克风访问",
+        "description": "需要听取您的语音进行转录。"
+      },
+      "accessibility": {
+        "title": "辅助功能访问",
+        "description": "需要将转录文本输入到您的应用程序中。"
+      },
+      "grant": "授予权限",
+      "granted": "已授予",
+      "waiting": "等待中...",
+      "allGranted": "全部完成！"
     }
   },
   "modelSelector": {

@@ -55,6 +55,22 @@
     "errors": {
       "loadModels": "利用可能なモデルの読み込みに失敗しました",
       "downloadModel": "モデルのダウンロードに失敗しました: {{error}}"
+    },
+    "permissions": {
+      "title": "権限が必要です",
+      "description": "Handyが正常に動作するにはいくつかの権限が必要です。",
+      "microphone": {
+        "title": "マイクへのアクセス",
+        "description": "文字起こしのためにあなたの声を聞くために必要です。"
+      },
+      "accessibility": {
+        "title": "アクセシビリティへのアクセス",
+        "description": "アプリケーションに文字起こしテキストを入力するために必要です。"
+      },
+      "grant": "権限を許可",
+      "granted": "許可済み",
+      "waiting": "待機中...",
+      "allGranted": "準備完了！"
     }
   },
   "modelSelector": {

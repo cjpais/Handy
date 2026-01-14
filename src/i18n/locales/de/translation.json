@@ -55,6 +55,22 @@
     "errors": {
       "loadModels": "Verfügbare Modelle konnten nicht geladen werden",
       "downloadModel": "Modell konnte nicht heruntergeladen werden: {{error}}"
+    },
+    "permissions": {
+      "title": "Berechtigungen erforderlich",
+      "description": "Handy benötigt einige Berechtigungen, um richtig zu funktionieren.",
+      "microphone": {
+        "title": "Mikrofonzugriff",
+        "description": "Erforderlich, um Ihre Stimme für die Transkription zu hören."
+      },
+      "accessibility": {
+        "title": "Bedienungshilfen-Zugriff",
+        "description": "Erforderlich, um transkribierten Text in Ihre Anwendungen einzugeben."
+      },
+      "grant": "Berechtigung erteilen",
+      "granted": "Erteilt",
+      "waiting": "Warten...",
+      "allGranted": "Alles bereit!"
     }
   },
   "modelSelector": {

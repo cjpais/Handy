@@ -493,18 +493,15 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
-      const {
-        refreshSettings,
-        refreshAudioDevices,
-        refreshOutputDevices,
-        checkCustomSounds,
-        loadDefaultSettings,
-      } = get();
+      const { refreshSettings, checkCustomSounds, loadDefaultSettings } = get();
+
+      // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
+      // is responsible for calling refreshAudioDevices/refreshOutputDevices
+      // after onboarding completes. This avoids triggering permission dialogs
+      // on macOS before the user is ready.
       await Promise.all([
         loadDefaultSettings(),
         refreshSettings(),
-        refreshAudioDevices(),
-        refreshOutputDevices(),
         checkCustomSounds(),
       ]);
     },
