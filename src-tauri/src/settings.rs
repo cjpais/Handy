@@ -151,6 +151,24 @@ pub enum RecordingRetentionPeriod {
     Months3,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyboardImplementation {
+    Tauri,
+    HandyKeys,
+}
+
+impl Default for KeyboardImplementation {
+    fn default() -> Self {
+        // Default to HandyKeys on macOS/Windows, Tauri on Linux
+        // (handy-keys has limitations on Linux: Wayland blocking issues, thread cleanup)
+        #[cfg(target_os = "linux")]
+        return KeyboardImplementation::Tauri;
+        #[cfg(not(target_os = "linux"))]
+        return KeyboardImplementation::HandyKeys;
+    }
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -293,6 +311,8 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default)]
+    pub keyboard_implementation: KeyboardImplementation,
 }
 
 fn default_model() -> String {
@@ -581,6 +601,7 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        keyboard_implementation: KeyboardImplementation::default(),
     }
 }
 

@@ -13,7 +13,8 @@ import { MuteWhileRecording } from "../MuteWhileRecording";
 import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
-import { HandyShortcut } from "../HandyShortcut";
+import { ShortcutInput } from "../ShortcutInput";
+import { KeyboardImplementationSelector } from "./KeyboardImplementationSelector";
 import { UpdateChecksToggle } from "../UpdateChecksToggle";
 import { useSettings } from "../../../hooks/useSettings";
 
@@ -46,12 +47,13 @@ export const DebugSettings: React.FC = () => {
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
         {/* Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration */}
         {!isLinux && (
-          <HandyShortcut
+          <ShortcutInput
             shortcutId="cancel"
             grouped={true}
             disabled={pushToTalk}
           />
         )}
+        <KeyboardImplementationSelector descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>
   );

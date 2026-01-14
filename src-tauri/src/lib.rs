@@ -12,6 +12,7 @@ mod managers;
 mod overlay;
 mod settings;
 mod shortcut;
+mod shortcut_handy;
 mod signal_handle;
 mod tray;
 mod tray_i18n;
@@ -265,6 +266,10 @@ pub fn run() {
         shortcut::change_append_trailing_space_setting,
         shortcut::change_app_language_setting,
         shortcut::change_update_checks_setting,
+        shortcut::change_keyboard_implementation_setting,
+        shortcut::get_keyboard_implementation,
+        shortcut_handy::start_handy_keys_recording,
+        shortcut_handy::stop_handy_keys_recording,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,
