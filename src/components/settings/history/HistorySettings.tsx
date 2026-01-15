@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import { Input } from "../../ui/Input";
+import { Copy, Star, Check, Trash2, FolderOpen, Search, X } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type HistoryEntry } from "@/bindings";
@@ -33,6 +34,29 @@ export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter entries based on search query
+  const filteredEntries = searchQuery
+    ? historyEntries.filter((entry) =>
+        entry.transcription_text
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()),
+      )
+    : historyEntries;
+
+  // Cmd+F keyboard shortcut to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -178,24 +202,52 @@ export const HistorySettings: React.FC = () => {
               {t("settings.history.title")}
             </h2>
           </div>
-          <OpenRecordingsButton
-            onClick={openRecordingsFolder}
-            label={t("settings.history.openFolder")}
-          />
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-mid-gray" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("settings.history.searchPlaceholder")}
+                className="pl-7 pr-7 w-48 text-xs"
+                variant="compact"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-mid-gray hover:text-text transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <OpenRecordingsButton
+              onClick={openRecordingsFolder}
+              label={t("settings.history.openFolder")}
+            />
+          </div>
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-          <div className="divide-y divide-mid-gray/20">
-            {historyEntries.map((entry) => (
-              <HistoryEntryComponent
-                key={entry.id}
-                entry={entry}
-                onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
-                getAudioUrl={getAudioUrl}
-                deleteAudio={deleteAudioEntry}
-              />
-            ))}
-          </div>
+          {filteredEntries.length === 0 ? (
+            <div className="px-4 py-3 text-center text-text/60">
+              {t("settings.history.noResults")}
+            </div>
+          ) : (
+            <div className="divide-y divide-mid-gray/20">
+              {filteredEntries.map((entry) => (
+                <HistoryEntryComponent
+                  key={entry.id}
+                  entry={entry}
+                  onToggleSaved={() => toggleSaved(entry.id)}
+                  onCopyText={() => copyToClipboard(entry.transcription_text)}
+                  getAudioUrl={getAudioUrl}
+                  deleteAudio={deleteAudioEntry}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
