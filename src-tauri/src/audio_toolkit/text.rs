@@ -150,6 +150,48 @@ static PAREN_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\([^)]*\)").unwrap
 static BRACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{[^}]*\}").unwrap());
 static MULTI_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
 
+/// Collapses repeated 1-2 letter words (3+ repetitions) to a single instance.
+/// E.g., "wh wh wh wh" -> "wh", "I I I I" -> "I"
+fn collapse_stutters(text: &str) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.is_empty() {
+        return text.to_string();
+    }
+
+    let mut result: Vec<&str> = Vec::new();
+    let mut i = 0;
+
+    while i < words.len() {
+        let word = words[i];
+        let word_lower = word.to_lowercase();
+
+        // Only process 1-2 letter words
+        if word_lower.len() <= 2 && word_lower.chars().all(|c| c.is_alphabetic()) {
+            // Count consecutive repetitions (case-insensitive)
+            let mut count = 1;
+            while i + count < words.len()
+                && words[i + count].to_lowercase() == word_lower
+            {
+                count += 1;
+            }
+
+            // If 3+ repetitions, collapse to single instance
+            if count >= 3 {
+                result.push(word);
+                i += count;
+            } else {
+                result.push(word);
+                i += 1;
+            }
+        } else {
+            result.push(word);
+            i += 1;
+        }
+    }
+
+    result.join(" ")
+}
+
 /// Pre-compiled filler word patterns (built lazily)
 static FILLER_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
     FILLER_WORDS
@@ -189,6 +231,9 @@ pub fn filter_transcription_output(text: &str) -> String {
     for pattern in FILLER_PATTERNS.iter() {
         filtered = pattern.replace_all(&filtered, "").to_string();
     }
+
+    // Collapse repeated 1-2 letter words (stutter artifacts like "wh wh wh wh")
+    filtered = collapse_stutters(&filtered);
 
     // Clean up multiple spaces to single space
     filtered = MULTI_SPACE_PATTERN.replace_all(&filtered, " ").to_string();
@@ -300,5 +345,33 @@ mod tests {
         let text = "This is a completely normal sentence.";
         let result = filter_transcription_output(text);
         assert_eq!(result, "This is a completely normal sentence.");
+    }
+
+    #[test]
+    fn test_filter_stutter_collapse() {
+        let text = "w wh wh wh wh wh wh wh wh wh why";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "w wh why");
+    }
+
+    #[test]
+    fn test_filter_stutter_short_words() {
+        let text = "I I I I think so so so so";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "I think so");
+    }
+
+    #[test]
+    fn test_filter_stutter_mixed_case() {
+        let text = "No NO no NO no";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "No");
+    }
+
+    #[test]
+    fn test_filter_stutter_preserves_two_repetitions() {
+        let text = "no no is fine";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "no no is fine");
     }
 }
