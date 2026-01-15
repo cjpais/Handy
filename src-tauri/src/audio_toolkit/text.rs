@@ -1,4 +1,6 @@
 use natural::phonetics::soundex;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use strsim::levenshtein;
 
 /// Applies custom word corrections to transcribed text using fuzzy matching
@@ -132,6 +134,69 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
     (prefix, suffix)
 }
 
+/// Filler words to remove from transcriptions
+const FILLER_WORDS: &[&str] = &[
+    "uh", "um", "uhm", "umm", "uhh", "uhhh", "ah", "eh", "hmm", "hm", "mmm", "mm", "mh", "ha",
+    "ehh",
+];
+
+/// Pre-compiled regex patterns for filtering transcription output
+/// Note: Matches simple XML-like tags (Rust regex doesn't support backreferences)
+static TAG_BLOCK_PATTERN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"<[A-Za-z][A-Za-z0-9:_-]*[^>]*>.*?</[A-Za-z][A-Za-z0-9:_-]*>").unwrap());
+
+static BRACKET_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\[[^\]]*\]").unwrap());
+static PAREN_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\([^)]*\)").unwrap());
+static BRACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{[^}]*\}").unwrap());
+static MULTI_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
+
+/// Pre-compiled filler word patterns (built lazily)
+static FILLER_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
+    FILLER_WORDS
+        .iter()
+        .map(|word| {
+            // Match filler word with word boundaries, optionally followed by comma or period
+            Regex::new(&format!(r"(?i)\b{}\b[,.]?", regex::escape(word))).unwrap()
+        })
+        .collect()
+});
+
+/// Filters transcription output by removing filler words and hallucination patterns.
+///
+/// This function cleans up raw transcription text by:
+/// 1. Removing XML-style `<TAG>...</TAG>` blocks
+/// 2. Removing bracketed content like `[AUDIO]`, `(pause)`, `{noise}`
+/// 3. Removing filler words (uh, um, hmm, etc.)
+/// 4. Cleaning up excess whitespace
+///
+/// # Arguments
+/// * `text` - The raw transcription text to filter
+///
+/// # Returns
+/// The filtered text with filler words and hallucinations removed
+pub fn filter_transcription_output(text: &str) -> String {
+    let mut filtered = text.to_string();
+
+    // Remove <TAG>...</TAG> blocks (hallucinations from some models)
+    filtered = TAG_BLOCK_PATTERN.replace_all(&filtered, "").to_string();
+
+    // Remove bracketed hallucinations: [...], (...), {...}
+    filtered = BRACKET_PATTERN.replace_all(&filtered, "").to_string();
+    filtered = PAREN_PATTERN.replace_all(&filtered, "").to_string();
+    filtered = BRACE_PATTERN.replace_all(&filtered, "").to_string();
+
+    // Remove filler words
+    for pattern in FILLER_PATTERNS.iter() {
+        filtered = pattern.replace_all(&filtered, "").to_string();
+    }
+
+    // Clean up multiple spaces to single space
+    filtered = MULTI_SPACE_PATTERN.replace_all(&filtered, " ").to_string();
+
+    // Trim leading/trailing whitespace
+    filtered.trim().to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -172,5 +237,68 @@ mod tests {
         let custom_words = vec![];
         let result = apply_custom_words(text, &custom_words, 0.5);
         assert_eq!(result, "hello world");
+    }
+
+    #[test]
+    fn test_filter_filler_words() {
+        let text = "So um I was thinking uh about this";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "So I was thinking about this");
+    }
+
+    #[test]
+    fn test_filter_filler_words_case_insensitive() {
+        let text = "UM this is UH a test";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "this is a test");
+    }
+
+    #[test]
+    fn test_filter_filler_words_with_punctuation() {
+        let text = "Well, um, I think, uh. that's right";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "Well, I think, that's right");
+    }
+
+    #[test]
+    fn test_filter_bracketed_hallucinations() {
+        let text = "Hello [AUDIO] world (pause) test {noise}";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "Hello world test");
+    }
+
+    #[test]
+    fn test_filter_tag_blocks() {
+        let text = "Hello <speaker>John</speaker> world";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "Hello world");
+    }
+
+    #[test]
+    fn test_filter_cleans_whitespace() {
+        let text = "Hello    world   test";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "Hello world test");
+    }
+
+    #[test]
+    fn test_filter_trims() {
+        let text = "  Hello world  ";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "Hello world");
+    }
+
+    #[test]
+    fn test_filter_combined() {
+        let text = "  Um, so [AUDIO] I was, uh, thinking (pause) about this  ";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "so I was, thinking about this");
+    }
+
+    #[test]
+    fn test_filter_preserves_valid_text() {
+        let text = "This is a completely normal sentence.";
+        let result = filter_transcription_output(text);
+        assert_eq!(result, "This is a completely normal sentence.");
     }
 }
