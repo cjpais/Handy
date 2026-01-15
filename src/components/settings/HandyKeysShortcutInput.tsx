@@ -101,7 +101,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
               toast.error(
                 t("settings.general.shortcut.errors.set", {
                   error: String(error),
-                })
+                }),
               );
 
               // Reset to original binding on error
@@ -126,7 +126,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
             currentKeysRef.current = "";
             setOriginalBinding("");
           }
-        }
+        },
       );
 
       unlistenRef.current = unlisten;
@@ -166,7 +166,10 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     if (!isRecording) return;
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (shortcutRef.current && !shortcutRef.current.contains(e.target as Node)) {
+      if (
+        shortcutRef.current &&
+        !shortcutRef.current.contains(e.target as Node)
+      ) {
         cancelRecording();
       }
     };
@@ -190,7 +193,9 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
       currentKeysRef.current = "";
     } catch (error) {
       console.error("Failed to start recording:", error);
-      toast.error(t("settings.general.shortcut.errors.set", { error: String(error) }));
+      toast.error(
+        t("settings.general.shortcut.errors.set", { error: String(error) }),
+      );
     }
   };
 
@@ -251,11 +256,11 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
   // Get translated name and description for the binding
   const translatedName = t(
     `settings.general.shortcut.bindings.${shortcutId}.name`,
-    binding.name
+    binding.name,
   );
   const translatedDescription = t(
     `settings.general.shortcut.bindings.${shortcutId}.description`,
-    binding.description
+    binding.description,
   );
 
   return (

@@ -53,7 +53,10 @@ export const DebugSettings: React.FC = () => {
             disabled={pushToTalk}
           />
         )}
-        <KeyboardImplementationSelector descriptionMode="tooltip" grouped={true} />
+        <KeyboardImplementationSelector
+          descriptionMode="tooltip"
+          grouped={true}
+        />
       </SettingsGroup>
     </div>
   );

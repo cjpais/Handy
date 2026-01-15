@@ -117,7 +117,8 @@ pub fn change_binding(
     }
 
     // Validate the new shortcut for the current keyboard implementation
-    if let Err(e) = validate_shortcut_for_implementation(&binding, settings.keyboard_implementation) {
+    if let Err(e) = validate_shortcut_for_implementation(&binding, settings.keyboard_implementation)
+    {
         warn!("change_binding validation error: {}", e);
         return Err(e);
     }
@@ -674,9 +675,7 @@ fn validate_shortcut_for_tauri(raw: &str) -> Result<(), String> {
     }
 
     // Check for at least one non-modifier key
-    let has_non_modifier = parts
-        .iter()
-        .any(|part| !modifiers.contains(&part.as_str()));
+    let has_non_modifier = parts.iter().any(|part| !modifiers.contains(&part.as_str()));
 
     if has_non_modifier {
         Ok(())
@@ -725,7 +724,10 @@ fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementat
         };
 
         if let Err(e) = result {
-            warn!("Failed to unregister shortcut '{}' during switch: {}", id, e);
+            warn!(
+                "Failed to unregister shortcut '{}' during switch: {}",
+                id, e
+            );
         }
     }
 }
@@ -752,7 +754,8 @@ fn register_all_shortcuts_for_implementation(
             .unwrap_or_else(|| default_binding.clone());
 
         // Validate the shortcut for the target implementation
-        if let Err(e) = validate_shortcut_for_implementation(&binding.current_binding, implementation)
+        if let Err(e) =
+            validate_shortcut_for_implementation(&binding.current_binding, implementation)
         {
             info!(
                 "Shortcut '{}' ({}) is invalid for {:?}: {}. Resetting to default.",
@@ -761,7 +764,9 @@ fn register_all_shortcuts_for_implementation(
 
             // Reset to default
             binding.current_binding = default_binding.current_binding.clone();
-            current_settings.bindings.insert(id.clone(), binding.clone());
+            current_settings
+                .bindings
+                .insert(id.clone(), binding.clone());
             reset_bindings.push(id.clone());
         }
 
@@ -815,7 +820,10 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
         settings.keyboard_implementation = KeyboardImplementation::Tauri;
         settings::write_settings(app, settings);
         init_tauri_shortcuts(app);
-        return Err(format!("Failed to initialize HandyKeys: {}. Reverted to Tauri.", e));
+        return Err(format!(
+            "Failed to initialize HandyKeys: {}. Reverted to Tauri.",
+            e
+        ));
     }
 
     // init_shortcuts already registered shortcuts

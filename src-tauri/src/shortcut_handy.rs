@@ -140,16 +140,25 @@ impl HandyKeysState {
                         hotkey_string,
                         response,
                     } => {
-                        let result =
-                            Self::do_register(&manager, &mut binding_to_hotkey, &mut hotkey_to_binding, &binding_id, &hotkey_string);
+                        let result = Self::do_register(
+                            &manager,
+                            &mut binding_to_hotkey,
+                            &mut hotkey_to_binding,
+                            &binding_id,
+                            &hotkey_string,
+                        );
                         let _ = response.send(result);
                     }
                     ManagerCommand::Unregister {
                         binding_id,
                         response,
                     } => {
-                        let result =
-                            Self::do_unregister(&manager, &mut binding_to_hotkey, &mut hotkey_to_binding, &binding_id);
+                        let result = Self::do_unregister(
+                            &manager,
+                            &mut binding_to_hotkey,
+                            &mut hotkey_to_binding,
+                            &binding_id,
+                        );
                         let _ = response.send(result);
                     }
                     ManagerCommand::Shutdown => {
@@ -189,7 +198,10 @@ impl HandyKeysState {
         binding_to_hotkey.insert(binding_id.to_string(), id);
         hotkey_to_binding.insert(id, (binding_id.to_string(), hotkey_string.to_string()));
 
-        debug!("Registered handy-keys shortcut: {} -> {:?}", binding_id, hotkey);
+        debug!(
+            "Registered handy-keys shortcut: {} -> {:?}",
+            binding_id, hotkey
+        );
         Ok(())
     }
 
@@ -217,7 +229,10 @@ impl HandyKeysState {
         hotkey_string: &str,
         state: HotkeyState,
     ) {
-        debug!("handy-keys event: binding={}, hotkey={}, state={:?}", binding_id, hotkey_string, state);
+        debug!(
+            "handy-keys event: binding={}, hotkey={}, state={:?}",
+            binding_id, hotkey_string, state
+        );
 
         let settings = get_settings(app);
 
