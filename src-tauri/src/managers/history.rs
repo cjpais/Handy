@@ -379,6 +379,37 @@ impl HistoryManager {
         Ok(entries)
     }
 
+    pub fn get_latest_entry(&self) -> Result<Option<HistoryEntry>> {
+        let conn = self.get_connection()?;
+        Self::get_latest_entry_with_conn(&conn)
+    }
+
+    fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
+        let mut stmt = conn.prepare(
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+             FROM transcription_history
+             ORDER BY timestamp DESC
+             LIMIT 1",
+        )?;
+
+        let entry = stmt
+            .query_row([], |row| {
+                Ok(HistoryEntry {
+                    id: row.get("id")?,
+                    file_name: row.get("file_name")?,
+                    timestamp: row.get("timestamp")?,
+                    saved: row.get("saved")?,
+                    title: row.get("title")?,
+                    transcription_text: row.get("transcription_text")?,
+                    post_processed_text: row.get("post_processed_text")?,
+                    post_process_prompt: row.get("post_process_prompt")?,
+                })
+            })
+            .optional()?;
+
+        Ok(entry)
+    }
+
     pub async fn toggle_saved_status(&self, id: i64) -> Result<()> {
         let conn = self.get_connection()?;
 
@@ -474,5 +505,68 @@ impl HistoryManager {
         } else {
             format!("Recording {}", timestamp)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::{params, Connection};
+
+    fn setup_conn() -> Connection {
+        let conn = Connection::open_in_memory().expect("open in-memory db");
+        conn.execute_batch(
+            "CREATE TABLE transcription_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_name TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                saved BOOLEAN NOT NULL DEFAULT 0,
+                title TEXT NOT NULL,
+                transcription_text TEXT NOT NULL,
+                post_processed_text TEXT,
+                post_process_prompt TEXT
+            );",
+        )
+        .expect("create transcription_history table");
+        conn
+    }
+
+    fn insert_entry(conn: &Connection, timestamp: i64, text: &str, post_processed: Option<&str>) {
+        conn.execute(
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                format!("handy-{}.wav", timestamp),
+                timestamp,
+                false,
+                format!("Recording {}", timestamp),
+                text,
+                post_processed,
+                Option::<String>::None
+            ],
+        )
+        .expect("insert history entry");
+    }
+
+    #[test]
+    fn get_latest_entry_returns_none_when_empty() {
+        let conn = setup_conn();
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn).expect("fetch latest entry");
+        assert!(entry.is_none());
+    }
+
+    #[test]
+    fn get_latest_entry_returns_newest_entry() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "first", None);
+        insert_entry(&conn, 200, "second", Some("processed"));
+
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch latest entry")
+            .expect("entry exists");
+
+        assert_eq!(entry.timestamp, 200);
+        assert_eq!(entry.transcription_text, "second");
+        assert_eq!(entry.post_processed_text.as_deref(), Some("processed"));
     }
 }
