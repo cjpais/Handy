@@ -47,11 +47,31 @@
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
         "description": "Rapide et précis"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Very fast, English only. Handles accents well."
       }
     },
     "errors": {
       "loadModels": "Échec du chargement des modèles disponibles",
       "downloadModel": "Échec du téléchargement du modèle : {{error}}"
+    },
+    "permissions": {
+      "title": "Autorisations requises",
+      "description": "Handy a besoin de quelques autorisations pour fonctionner correctement.",
+      "microphone": {
+        "title": "Accès au microphone",
+        "description": "Nécessaire pour entendre votre voix pour la transcription."
+      },
+      "accessibility": {
+        "title": "Accès à l'accessibilité",
+        "description": "Nécessaire pour taper le texte transcrit dans vos applications."
+      },
+      "grant": "Accorder l'autorisation",
+      "granted": "Accordé",
+      "waiting": "En attente...",
+      "allGranted": "Tout est prêt !"
     }
   },
   "modelSelector": {

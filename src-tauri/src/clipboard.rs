@@ -63,7 +63,7 @@ fn paste_via_clipboard(
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype, then dotool
+        // Wayland: prefer wtype, then dotool, then ydotool
         if is_wtype_available() {
             info!("Using wtype for key combo");
             send_key_combo_via_wtype(paste_method)?;
@@ -74,11 +74,21 @@ fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> 
             send_key_combo_via_dotool(paste_method)?;
             return Ok(true);
         }
+        if is_ydotool_available() {
+            info!("Using ydotool for key combo");
+            send_key_combo_via_ydotool(paste_method)?;
+            return Ok(true);
+        }
     } else {
-        // X11: prefer xdotool
+        // X11: prefer xdotool, then ydotool
         if is_xdotool_available() {
             info!("Using xdotool for key combo");
             send_key_combo_via_xdotool(paste_method)?;
+            return Ok(true);
+        }
+        if is_ydotool_available() {
+            info!("Using ydotool for key combo");
+            send_key_combo_via_ydotool(paste_method)?;
             return Ok(true);
         }
     }
@@ -91,7 +101,7 @@ fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> 
 #[cfg(target_os = "linux")]
 fn try_direct_typing_linux(text: &str) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype, then dotool
+        // Wayland: prefer wtype, then dotool, then ydotool
         if is_wtype_available() {
             info!("Using wtype for direct text input");
             type_text_via_wtype(text)?;
@@ -102,11 +112,21 @@ fn try_direct_typing_linux(text: &str) -> Result<bool, String> {
             type_text_via_dotool(text)?;
             return Ok(true);
         }
+        if is_ydotool_available() {
+            info!("Using ydotool for direct text input");
+            type_text_via_ydotool(text)?;
+            return Ok(true);
+        }
     } else {
-        // X11: prefer xdotool
+        // X11: prefer xdotool, then ydotool
         if is_xdotool_available() {
             info!("Using xdotool for direct text input");
             type_text_via_xdotool(text)?;
+            return Ok(true);
+        }
+        if is_ydotool_available() {
+            info!("Using ydotool for direct text input");
+            type_text_via_ydotool(text)?;
             return Ok(true);
         }
     }
@@ -129,6 +149,16 @@ fn is_wtype_available() -> bool {
 fn is_dotool_available() -> bool {
     Command::new("which")
         .arg("dotool")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Check if ydotool is available (uinput-based, works on both Wayland and X11)
+#[cfg(target_os = "linux")]
+fn is_ydotool_available() -> bool {
+    Command::new("which")
+        .arg("ydotool")
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false)
@@ -208,6 +238,24 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Type text directly via ydotool (uinput-based, requires ydotoold daemon).
+#[cfg(target_os = "linux")]
+fn type_text_via_ydotool(text: &str) -> Result<(), String> {
+    let output = Command::new("ydotool")
+        .arg("type")
+        .arg("--")
+        .arg(text)
+        .output()
+        .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("ydotool failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
 /// Send a key combination (e.g., Ctrl+V) via wtype on Wayland.
 #[cfg(target_os = "linux")]
 fn send_key_combo_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
@@ -249,6 +297,31 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("dotool failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+/// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
+#[cfg(target_os = "linux")]
+fn send_key_combo_via_ydotool(paste_method: &PasteMethod) -> Result<(), String> {
+    // ydotool uses Linux input event keycodes with format <keycode>:<pressed>
+    // where pressed is 1 for down, 0 for up. Keycodes: ctrl=29, shift=42, v=47, insert=110
+    let args: Vec<&str> = match paste_method {
+        PasteMethod::CtrlV => vec!["key", "29:1", "47:1", "47:0", "29:0"],
+        PasteMethod::ShiftInsert => vec!["key", "42:1", "110:1", "110:0", "42:0"],
+        PasteMethod::CtrlShiftV => vec!["key", "29:1", "42:1", "47:1", "47:0", "42:0", "29:0"],
+        _ => return Err("Unsupported paste method".into()),
+    };
+
+    let output = Command::new("ydotool")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute ydotool: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("ydotool failed: {}", stderr));
     }
 
     Ok(())

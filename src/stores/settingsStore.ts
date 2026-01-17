@@ -305,7 +305,17 @@ export const useSettingsStore = create<SettingsStore>()(
             : null,
         }));
 
-        await commands.changeBinding(id, binding);
+        const result = await commands.changeBinding(id, binding);
+
+        // Check if the command executed successfully
+        if (result.status === "error") {
+          throw new Error(result.error);
+        }
+
+        // Check if the binding change was successful
+        if (!result.data.success) {
+          throw new Error(result.data.error || "Failed to update binding");
+        }
       } catch (error) {
         console.error(`Failed to update binding ${id}:`, error);
 
@@ -326,6 +336,9 @@ export const useSettingsStore = create<SettingsStore>()(
               : null,
           }));
         }
+
+        // Re-throw to let the caller know it failed
+        throw error;
       } finally {
         setUpdating(updateKey, false);
       }
@@ -478,18 +491,15 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
-      const {
-        refreshSettings,
-        refreshAudioDevices,
-        refreshOutputDevices,
-        checkCustomSounds,
-        loadDefaultSettings,
-      } = get();
+      const { refreshSettings, checkCustomSounds, loadDefaultSettings } = get();
+
+      // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
+      // is responsible for calling refreshAudioDevices/refreshOutputDevices
+      // after onboarding completes. This avoids triggering permission dialogs
+      // on macOS before the user is ready.
       await Promise.all([
         loadDefaultSettings(),
         refreshSettings(),
-        refreshAudioDevices(),
-        refreshOutputDevices(),
         checkCustomSounds(),
       ]);
     },

@@ -46,11 +46,31 @@
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
         "description": "高速で正確"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Very fast, English only. Handles accents well."
       }
     },
     "errors": {
       "loadModels": "利用可能なモデルの読み込みに失敗しました",
       "downloadModel": "モデルのダウンロードに失敗しました: {{error}}"
+    },
+    "permissions": {
+      "title": "権限が必要です",
+      "description": "Handyが正常に動作するにはいくつかの権限が必要です。",
+      "microphone": {
+        "title": "マイクへのアクセス",
+        "description": "文字起こしのためにあなたの声を聞くために必要です。"
+      },
+      "accessibility": {
+        "title": "アクセシビリティへのアクセス",
+        "description": "アプリケーションに文字起こしテキストを入力するために必要です。"
+      },
+      "grant": "権限を許可",
+      "granted": "許可済み",
+      "waiting": "待機中...",
+      "allGranted": "準備完了！"
     }
   },
   "modelSelector": {

@@ -46,11 +46,31 @@
       "parakeet-tdt-0.6b-v3": {
         "name": "Parakeet V3",
         "description": "Быстро и точно"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Very fast, English only. Handles accents well."
       }
     },
     "errors": {
       "loadModels": "Не удалось загрузить доступные модели.",
       "downloadModel": "Не удалось загрузить модель: {{error}}."
+    },
+    "permissions": {
+      "title": "Требуются разрешения",
+      "description": "Handy требуются некоторые разрешения для корректной работы.",
+      "microphone": {
+        "title": "Доступ к микрофону",
+        "description": "Необходим для прослушивания вашего голоса для транскрипции."
+      },
+      "accessibility": {
+        "title": "Доступ к универсальному доступу",
+        "description": "Необходим для ввода расшифрованного текста в ваши приложения."
+      },
+      "grant": "Предоставить разрешение",
+      "granted": "Предоставлено",
+      "waiting": "Ожидание...",
+      "allGranted": "Всё готово!"
     }
   },
   "modelSelector": {

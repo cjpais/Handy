@@ -18,6 +18,7 @@ use tauri::{AppHandle, Emitter, Manager};
 pub enum EngineType {
     Whisper,
     Parakeet,
+    Moonshine,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -180,6 +181,25 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.80,
                 speed_score: 0.85,
+            },
+        );
+
+        available_models.insert(
+            "moonshine-base".to_string(),
+            ModelInfo {
+                id: "moonshine-base".to_string(),
+                name: "Moonshine Base".to_string(),
+                description: "Very fast, English only. Handles accents well.".to_string(),
+                filename: "moonshine-base".to_string(),
+                url: Some("https://blob.handy.computer/moonshine-base.tar.gz".to_string()),
+                size_mb: 58,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Moonshine,
+                accuracy_score: 0.70,
+                speed_score: 0.90,
             },
         );
 

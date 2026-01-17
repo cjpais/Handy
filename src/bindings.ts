@@ -350,6 +350,18 @@ async openAppDataDir() : Promise<Result<null, string>> {
 async checkAppleIntelligenceAvailable() : Promise<boolean> {
     return await TAURI_INVOKE("check_apple_intelligence_available");
 },
+/**
+ * Try to initialize Enigo (keyboard/mouse simulation).
+ * On macOS, this will return an error if accessibility permissions are not granted.
+ */
+async initializeEnigo() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("initialize_enigo") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_models") };
@@ -633,7 +645,7 @@ export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
-export type EngineType = "Whisper" | "Parakeet"
+export type EngineType = "Whisper" | "Parakeet" | "Moonshine"
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null }
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
