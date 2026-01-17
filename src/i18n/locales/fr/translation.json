@@ -73,7 +73,11 @@
       "grant": "Accorder l'autorisation",
       "granted": "Accordé",
       "waiting": "En attente...",
-      "allGranted": "Tout est prêt !"
+      "allGranted": "Tout est prêt !",
+      "errors": {
+        "checkFailed": "Échec de la vérification des autorisations. Veuillez réessayer.",
+        "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."
+      }
     }
   },
   "modelSelector": {

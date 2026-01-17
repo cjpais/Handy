@@ -73,7 +73,11 @@
       "grant": "Cấp quyền",
       "granted": "Đã cấp",
       "waiting": "Đang chờ...",
-      "allGranted": "Hoàn tất!"
+      "allGranted": "Hoàn tất!",
+      "errors": {
+        "checkFailed": "Không thể kiểm tra quyền. Vui lòng thử lại.",
+        "requestFailed": "Không thể yêu cầu quyền. Vui lòng thử lại."
+      }
     }
   },
   "modelSelector": {

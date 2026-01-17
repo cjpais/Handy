@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { ModelInfo } from "@/bindings";
 import ModelCard from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
-import { useModels } from "../../hooks/useModels";
+import { useModelStore } from "../../stores/modelStore";
 
 interface OnboardingProps {
   onModelSelected: () => void;
@@ -11,12 +11,12 @@ interface OnboardingProps {
 
 const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   const { t } = useTranslation();
-  const { models, downloadModel, error: modelError } = useModels();
+  const { models, downloadModel, error: modelError } = useModelStore();
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Only show downloadable models for onboarding
-  const availableModels = models.filter((m) => !m.is_downloaded);
+  const availableModels = models.filter((m: ModelInfo) => !m.is_downloaded);
 
   const handleDownloadModel = async (modelId: string) => {
     setDownloading(true);
@@ -31,7 +31,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     // Note: We don't await or handle the result here since the component
     // will unmount. The Zustand store handles download state, and any errors
     // will be visible in the main app's ModelSelector.
-    downloadPromise.catch((err) => {
+    downloadPromise.catch((err: Error) => {
       console.error("Download failed:", err);
     });
   };
@@ -58,8 +58,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
         <div className="flex flex-col gap-4 pb-6">
           {availableModels
-            .filter((model) => isRecommendedModel(model))
-            .map((model) => (
+            .filter((model: ModelInfo) => isRecommendedModel(model))
+            .map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
                 model={model}
@@ -70,9 +70,12 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
             ))}
 
           {availableModels
-            .filter((model) => !isRecommendedModel(model))
-            .sort((a, b) => Number(a.size_mb) - Number(b.size_mb))
-            .map((model) => (
+            .filter((model: ModelInfo) => !isRecommendedModel(model))
+            .sort(
+              (a: ModelInfo, b: ModelInfo) =>
+                Number(a.size_mb) - Number(b.size_mb),
+            )
+            .map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
                 model={model}

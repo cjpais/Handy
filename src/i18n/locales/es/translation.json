@@ -72,7 +72,11 @@
       "grant": "Conceder Permiso",
       "granted": "Concedido",
       "waiting": "Esperando...",
-      "allGranted": "¡Todo listo!"
+      "allGranted": "¡Todo listo!",
+      "errors": {
+        "checkFailed": "Error al verificar permisos. Por favor, inténtalo de nuevo.",
+        "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
+      }
     }
   },
   "modelSelector": {

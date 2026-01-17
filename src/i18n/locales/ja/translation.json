@@ -72,7 +72,11 @@
       "grant": "権限を許可",
       "granted": "許可済み",
       "waiting": "待機中...",
-      "allGranted": "準備完了！"
+      "allGranted": "準備完了！",
+      "errors": {
+        "checkFailed": "権限の確認に失敗しました。もう一度お試しください。",
+        "requestFailed": "権限のリクエストに失敗しました。もう一度お試しください。"
+      }
     }
   },
   "modelSelector": {

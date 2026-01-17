@@ -72,7 +72,11 @@
       "grant": "授予权限",
       "granted": "已授予",
       "waiting": "等待中...",
-      "allGranted": "全部完成！"
+      "allGranted": "全部完成！",
+      "errors": {
+        "checkFailed": "检查权限失败。请重试。",
+        "requestFailed": "请求权限失败。请重试。"
+      }
     }
   },
   "modelSelector": {

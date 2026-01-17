@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Genel",
+    "models": "Models",
     "advanced": "Gelişmiş",
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
@@ -99,9 +100,38 @@
     "modelError": "Model Hatası",
     "modelUnloaded": "Model Boşaltıldı",
     "noModelDownloadRequired": "Model Yok – İndirme Gerekli",
-    "deleteModel": "{{modelName}} Sil"
+    "deleteModel": "{{modelName}} Sil",
+    "switching": "Switching...",
+    "cancel": "Cancel",
+    "cancelDownload": "Cancel download",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Supports multiple input languages",
+      "multiLanguage": "Multi-language",
+      "translation": "Can translate to English",
+      "translate": "Translate to English"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Settings",
+      "noSettingsNeeded": "This model works automatically with no configuration needed."
+    },
+    "models": {
+      "title": "Transcription Models",
+      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "downloaded": "Downloaded",
+      "available": "Available to Download",
+      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
+      "deleteTitle": "Delete Model",
+      "filters": {
+        "all": "All",
+        "multiLanguage": "Multi-language",
+        "translation": "Translation",
+        "allLanguages": "All Languages"
+      },
+      "noModelsMatch": "No models match this filter."
+    },
     "general": {
       "title": "Genel",
       "shortcut": {

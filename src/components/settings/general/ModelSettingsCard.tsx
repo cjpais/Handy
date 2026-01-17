@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { LanguageSelector } from "../LanguageSelector";
 import { TranslateToEnglish } from "../TranslateToEnglish";
-import { useModels } from "../../../hooks/useModels";
+import { useModelStore } from "../../../stores/modelStore";
+import type { ModelInfo } from "@/bindings";
 
 export const ModelSettingsCard: React.FC = () => {
   const { t } = useTranslation();
-  const { currentModel, models } = useModels();
+  const { currentModel, models } = useModelStore();
 
-  const currentModelInfo = models.find((m) => m.id === currentModel);
+  const currentModelInfo = models.find((m: ModelInfo) => m.id === currentModel);
 
   const supportsLanguage =
     currentModelInfo?.supports_language_selection ?? false;
