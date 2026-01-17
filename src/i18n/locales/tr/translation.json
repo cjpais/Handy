@@ -8,7 +8,7 @@
   },
   "sidebar": {
     "general": "Genel",
-    "models": "Models",
+    "models": "Modeller",
     "advanced": "Gelişmiş",
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
@@ -101,36 +101,36 @@
     "modelUnloaded": "Model Boşaltıldı",
     "noModelDownloadRequired": "Model Yok – İndirme Gerekli",
     "deleteModel": "{{modelName}} Sil",
-    "switching": "Switching...",
-    "cancel": "Cancel",
-    "cancelDownload": "Cancel download",
+    "switching": "Değiştiriliyor...",
+    "cancel": "İptal",
+    "cancelDownload": "İndirmeyi iptal et",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
-      "languageSelection": "Supports multiple input languages",
-      "multiLanguage": "Multi-language",
-      "translation": "Can translate to English",
-      "translate": "Translate to English"
+      "languageSelection": "Birden fazla giriş dilini destekler",
+      "multiLanguage": "Çok dilli",
+      "translation": "İngilizce'ye çevirebilir",
+      "translate": "İngilizce'ye çevir"
     }
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} Settings",
-      "noSettingsNeeded": "This model works automatically with no configuration needed."
+      "title": "{{model}} Ayarları",
+      "noSettingsNeeded": "Bu model yapılandırma gerektirmeden otomatik olarak çalışır."
     },
     "models": {
-      "title": "Transcription Models",
-      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
-      "downloaded": "Downloaded",
-      "available": "Available to Download",
-      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
-      "deleteTitle": "Delete Model",
+      "title": "Transkripsiyon Modelleri",
+      "description": "Bir transkripsiyon modeli seçin veya ek modeller indirin. Farklı modeller değişen doğruluk ve hız seviyeleri sunar.",
+      "downloaded": "İndirildi",
+      "available": "İndirilebilir",
+      "deleteConfirm": "{{modelName}} modelini silmek istediğinizden emin misiniz? Kullanmak için tekrar indirmeniz gerekecek.",
+      "deleteTitle": "Modeli Sil",
       "filters": {
-        "all": "All",
-        "multiLanguage": "Multi-language",
-        "translation": "Translation",
-        "allLanguages": "All Languages"
+        "all": "Tümü",
+        "multiLanguage": "Çok dilli",
+        "translation": "Çeviri",
+        "allLanguages": "Tüm Diller"
       },
-      "noModelsMatch": "No models match this filter."
+      "noModelsMatch": "Bu filtreyle eşleşen model yok."
     },
     "general": {
       "title": "Genel",
