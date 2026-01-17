@@ -72,7 +72,11 @@
       "grant": "Przyznaj uprawnienie",
       "granted": "Przyznano",
       "waiting": "Oczekiwanie...",
-      "allGranted": "Wszystko gotowe!"
+      "allGranted": "Wszystko gotowe!",
+      "errors": {
+        "checkFailed": "Nie udało się sprawdzić uprawnień. Spróbuj ponownie.",
+        "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."
+      }
     }
   },
   "modelSelector": {

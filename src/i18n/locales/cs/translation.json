@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Obecné",
+    "models": "Models",
     "advanced": "Pokročilé",
     "postProcessing": "Následné zpracování",
     "history": "Historie",
@@ -56,6 +57,26 @@
     "errors": {
       "loadModels": "Nepodařilo se načíst dostupné modely",
       "downloadModel": "Nepodařilo se stáhnout model: {{error}}"
+    },
+    "permissions": {
+      "title": "Permissions Required",
+      "description": "Handy needs a couple of permissions to work properly.",
+      "microphone": {
+        "title": "Microphone Access",
+        "description": "Required to hear your voice for transcription."
+      },
+      "accessibility": {
+        "title": "Accessibility Access",
+        "description": "Required to type transcribed text into your applications."
+      },
+      "grant": "Grant Permission",
+      "granted": "Granted",
+      "waiting": "Waiting...",
+      "allGranted": "All set!",
+      "errors": {
+        "checkFailed": "Failed to check permissions. Please try again.",
+        "requestFailed": "Failed to request permission. Please try again."
+      }
     }
   },
   "modelSelector": {
@@ -79,9 +100,38 @@
     "modelError": "Chyba modelu",
     "modelUnloaded": "Model uvolněn",
     "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
-    "deleteModel": "Smazat {{modelName}}"
+    "deleteModel": "Smazat {{modelName}}",
+    "switching": "Switching...",
+    "cancel": "Cancel",
+    "cancelDownload": "Cancel download",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Supports multiple input languages",
+      "multiLanguage": "Multi-language",
+      "translation": "Can translate to English",
+      "translate": "Translate to English"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Settings",
+      "noSettingsNeeded": "This model works automatically with no configuration needed."
+    },
+    "models": {
+      "title": "Transcription Models",
+      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "downloaded": "Downloaded",
+      "available": "Available to Download",
+      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
+      "deleteTitle": "Delete Model",
+      "filters": {
+        "all": "All",
+        "multiLanguage": "Multi-language",
+        "translation": "Translation",
+        "allLanguages": "All Languages"
+      },
+      "noModelsMatch": "No models match this filter."
+    },
     "general": {
       "title": "Obecné",
       "shortcut": {

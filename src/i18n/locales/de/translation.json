@@ -72,7 +72,11 @@
       "grant": "Berechtigung erteilen",
       "granted": "Erteilt",
       "waiting": "Warten...",
-      "allGranted": "Alles bereit!"
+      "allGranted": "Alles bereit!",
+      "errors": {
+        "checkFailed": "Berechtigungsprüfung fehlgeschlagen. Bitte erneut versuchen.",
+        "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."
+      }
     }
   },
   "modelSelector": {

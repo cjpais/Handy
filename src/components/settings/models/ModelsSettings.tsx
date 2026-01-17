@@ -4,7 +4,7 @@ import { ask } from "@tauri-apps/plugin-dialog";
 import { ChevronDown, Globe, Languages } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
-import { useModels } from "@/hooks/useModels.ts";
+import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
 
@@ -40,7 +40,7 @@ export const ModelsSettings: React.FC = () => {
     downloadModel,
     selectModel,
     deleteModel,
-  } = useModels();
+  } = useModelStore();
 
   // click outside handler for language dropdown
   useEffect(() => {
@@ -94,7 +94,7 @@ export const ModelsSettings: React.FC = () => {
     if (modelId === currentModel) {
       return "active";
     }
-    const model = models.find((m) => m.id === modelId);
+    const model = models.find((m: ModelInfo) => m.id === modelId);
     if (model?.is_downloaded) {
       return "available";
     }
@@ -125,7 +125,7 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const handleModelDelete = async (modelId: string) => {
-    const model = models.find((m) => m.id === modelId);
+    const model = models.find((m: ModelInfo) => m.id === modelId);
     const modelName = model?.name || modelId;
 
     const confirmed = await ask(
@@ -147,7 +147,7 @@ export const ModelsSettings: React.FC = () => {
 
   // Filter models based on active filter and language filter
   const filteredModels = useMemo(() => {
-    return models.filter((model) => {
+    return models.filter((model: ModelInfo) => {
       // Capability filters
       switch (activeFilter) {
         case "multiLanguage":
@@ -314,7 +314,7 @@ export const ModelsSettings: React.FC = () => {
       </div>
       {filteredModels.length > 0 ? (
         <div className="space-y-3">
-          {filteredModels.map((model) => (
+          {filteredModels.map((model: ModelInfo) => (
             <ModelCard
               key={model.id}
               model={model}
