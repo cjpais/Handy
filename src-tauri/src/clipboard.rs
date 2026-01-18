@@ -382,7 +382,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     info!("Using paste method: {:?}", paste_method);
 
-    // Get the managed Enigo instance (not be available in Flatpak where native tools are used)
+    // Get the managed Enigo instance (not available in Flatpak where native tools are used)
     let enigo_state = app_handle.try_state::<EnigoState>();
     let mut enigo_guard = enigo_state
         .as_ref()
