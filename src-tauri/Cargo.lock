@@ -2307,6 +2307,7 @@ dependencies = [
  "log",
  "natural",
  "once_cell",
+ "ort",
  "rdev",
  "regex",
  "reqwest",

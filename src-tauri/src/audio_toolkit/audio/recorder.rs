@@ -1,7 +1,6 @@
 use std::{
     io::Error,
     sync::{mpsc, Arc, Mutex},
-    time::Duration,
 };
 
 use cpal::{
@@ -28,6 +27,8 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    // Speech frame tap: invoked for each VAD-gated 30ms speech frame
+    speech_frame_cb: Option<Arc<dyn Fn(&[f32]) + Send + Sync + 'static>>,
 }
 
 impl AudioRecorder {
@@ -38,11 +39,20 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            speech_frame_cb: None,
         })
     }
 
     pub fn with_vad(mut self, vad: Box<dyn VoiceActivityDetector>) -> Self {
         self.vad = Some(Arc::new(Mutex::new(vad)));
+        self
+    }
+
+    pub fn with_speech_frame_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(&[f32]) + Send + Sync + 'static,
+    {
+        self.speech_frame_cb = Some(Arc::new(cb));
         self
     }
 
@@ -74,6 +84,12 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let speech_cb = self.speech_frame_cb.clone();
+        if speech_cb.is_some() {
+            log::info!("Recorder: speech callback is present before spawn");
+        } else {
+            log::info!("Recorder: speech callback is NOT present before spawn");
+        }
 
         let worker = std::thread::spawn(move || {
             let config = AudioRecorder::get_preferred_config(&thread_device)
@@ -117,7 +133,7 @@ impl AudioRecorder {
             stream.play().expect("failed to start stream");
 
             // keep the stream alive while we process samples
-            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb);
+            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, speech_cb);
             // stream is dropped here, after run_consumer returns
         });
 
@@ -245,11 +261,17 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<Vec<f32>>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    speech_cb: Option<Arc<dyn Fn(&[f32]) + Send + Sync + 'static>>,
 ) {
+    if speech_cb.is_some() {
+        log::info!("Recorder consumer: speech_cb present");
+    } else {
+        log::info!("Recorder consumer: speech_cb absent");
+    }
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
         constants::WHISPER_SAMPLE_RATE as usize,
-        Duration::from_millis(30),
+        std::time::Duration::from_millis(30),
     );
 
     let mut processed_samples = Vec::<f32>::new();
@@ -271,19 +293,35 @@ fn run_consumer(
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
+        speech_cb: &Option<Arc<dyn Fn(&[f32]) + Send + Sync + 'static>>,
     ) {
-        if !recording {
-            return;
-        }
-
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    log::info!("VAD: Speech frame len={}", buf.len());
+                    // Only run wake-word callbacks when NOT recording to avoid
+                    // heavy inference during recording/stop flush.
+                    if !recording {
+                        if let Some(cb) = speech_cb {
+                            log::info!("Recorder: invoking speech_cb");
+                            cb(buf);
+                        }
+                    }
+                    if recording {
+                        out_buf.extend_from_slice(buf)
+                    }
+                }
+                VadFrame::Noise => {
+                    // log::info!("No speech");
+                }
             }
         } else {
-            out_buf.extend_from_slice(samples);
+            // No VAD: do NOT forward to wake-word callback to avoid false triggers.
+            // We still buffer if recording.
+            if recording {
+                out_buf.extend_from_slice(samples);
+            }
         }
     }
 
@@ -302,7 +340,7 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            handle_frame(frame, recording, &vad, &mut processed_samples, &speech_cb)
         });
 
         // non-blocking check for a command
@@ -321,7 +359,7 @@ fn run_consumer(
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
                         // we still want to process the last few frames
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        handle_frame(frame, true, &vad, &mut processed_samples, &speech_cb)
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));

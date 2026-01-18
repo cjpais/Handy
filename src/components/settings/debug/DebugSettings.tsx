@@ -7,6 +7,7 @@ import { LogLevelSelector } from "./LogLevelSelector";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { HistoryLimit } from "../HistoryLimit";
 import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
+import { WakeWordToggle } from "./WakeWordToggle";
 import { SoundPicker } from "../SoundPicker";
 import { PostProcessingToggle } from "../PostProcessingToggle";
 import { MuteWhileRecording } from "../MuteWhileRecording";
@@ -40,6 +41,7 @@ export const DebugSettings: React.FC = () => {
           grouped={true}
         />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
+        <WakeWordToggle descriptionMode="tooltip" grouped={true} />
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />

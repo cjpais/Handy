@@ -182,6 +182,20 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             }
             "copy_last_transcript" => {
                 tray::copy_last_transcript(app);
+            "wakeword_start" => {
+                if let Some(rm) = app.try_state::<Arc<AudioRecordingManager>>() {
+                    if let Err(e) = rm.enable_wakeword(false, 0.5) {
+                        log::error!("Failed to set wake-word flag: {}", e);
+                    } else {
+                        tray::update_tray_menu(app, &tray::TrayIconState::Idle, None);
+                    }
+                }
+            }
+            "wakeword_stop" => {
+                if let Some(rm) = app.try_state::<Arc<AudioRecordingManager>>() {
+                    rm.disable_wakeword();
+                    tray::update_tray_menu(app, &tray::TrayIconState::Idle, None);
+                }
             }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
@@ -305,6 +319,9 @@ pub fn run() {
         commands::audio::set_clamshell_microphone,
         commands::audio::get_clamshell_microphone,
         commands::audio::is_recording,
+        commands::audio::start_wakeword,
+        commands::audio::stop_wakeword,
+        commands::audio::is_wakeword_running,
         commands::transcription::set_model_unload_timeout,
         commands::transcription::get_model_load_status,
         commands::transcription::unload_model_manually,
@@ -381,6 +398,14 @@ pub fn run() {
             let app_handle = app.handle().clone();
 
             initialize_core_logic(&app_handle);
+
+            // Initialize wake-word models at startup; crash on failure
+            if let Some(rm) = app.try_state::<Arc<AudioRecordingManager>>() {
+                if let Err(e) = rm.init_wakeword_models(false, 0.5) {
+                    // Propagate fatal initialization error
+                    return Err(Box::<dyn std::error::Error>::from(e));
+                }
+            }
 
             // Show main window only if not starting hidden
             if !settings.start_hidden {
