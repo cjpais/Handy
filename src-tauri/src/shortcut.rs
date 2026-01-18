@@ -626,6 +626,7 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 
 /// Validate that a shortcut contains at least one non-modifier key.
 /// The tauri-plugin-global-shortcut library requires at least one main key.
+/// On macOS, Fn/Globe can be used as a standalone key or as a modifier.
 fn validate_shortcut_string(raw: &str) -> Result<(), String> {
     if raw.trim().is_empty() {
         return Err("Shortcut cannot be empty".into());
@@ -633,11 +634,21 @@ fn validate_shortcut_string(raw: &str) -> Result<(), String> {
 
     let modifiers = [
         "ctrl", "control", "shift", "alt", "option", "meta", "command", "cmd", "super", "win",
-        "windows",
+        "windows", "fn", "globe", "function",
     ];
-    let has_non_modifier = raw
-        .split('+')
-        .any(|part| !modifiers.contains(&part.trim().to_lowercase().as_str()));
+    let parts: Vec<&str> = raw.split('+').map(|p| p.trim().to_lowercase()).collect();
+
+    // Check if we have at least one non-modifier key
+    let has_non_modifier = parts.iter().any(|part| !modifiers.contains(part.as_str()));
+
+    // On macOS, Fn/Globe can be used as a standalone key
+    #[cfg(target_os = "macos")]
+    {
+        let is_fn_only = parts.len() == 1 && (parts[0] == "fn" || parts[0] == "globe" || parts[0] == "function");
+        if is_fn_only {
+            return Ok(());
+        }
+    }
 
     if has_non_modifier {
         Ok(())
