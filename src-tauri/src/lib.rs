@@ -200,6 +200,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     let _ = app.emit("check-for-updates", ());
                 }
             }
+            "copy_last_transcript" => {
+                tray::copy_last_transcript(app);
+            }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
 
