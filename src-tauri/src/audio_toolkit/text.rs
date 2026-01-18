@@ -140,14 +140,6 @@ const FILLER_WORDS: &[&str] = &[
     "ehh",
 ];
 
-/// Pre-compiled regex patterns for filtering transcription output
-/// Note: Matches simple XML-like tags (Rust regex doesn't support backreferences)
-static TAG_BLOCK_PATTERN: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"<[A-Za-z][A-Za-z0-9:_-]*[^>]*>.*?</[A-Za-z][A-Za-z0-9:_-]*>").unwrap());
-
-static BRACKET_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\[[^\]]*\]").unwrap());
-static PAREN_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\([^)]*\)").unwrap());
-static BRACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\{[^}]*\}").unwrap());
 static MULTI_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
 
 /// Collapses repeated 1-2 letter words (3+ repetitions) to a single instance.
@@ -203,29 +195,20 @@ static FILLER_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
         .collect()
 });
 
-/// Filters transcription output by removing filler words and hallucination patterns.
+/// Filters transcription output by removing filler words and stutter artifacts.
 ///
 /// This function cleans up raw transcription text by:
-/// 1. Removing XML-style `<TAG>...</TAG>` blocks
-/// 2. Removing bracketed content like `[AUDIO]`, `(pause)`, `{noise}`
-/// 3. Removing filler words (uh, um, hmm, etc.)
-/// 4. Cleaning up excess whitespace
+/// 1. Removing filler words (uh, um, hmm, etc.)
+/// 2. Collapsing repeated 1-2 letter stutters (e.g., "wh wh wh" -> "wh")
+/// 3. Cleaning up excess whitespace
 ///
 /// # Arguments
 /// * `text` - The raw transcription text to filter
 ///
 /// # Returns
-/// The filtered text with filler words and hallucinations removed
+/// The filtered text with filler words and stutters removed
 pub fn filter_transcription_output(text: &str) -> String {
     let mut filtered = text.to_string();
-
-    // Remove <TAG>...</TAG> blocks (hallucinations from some models)
-    filtered = TAG_BLOCK_PATTERN.replace_all(&filtered, "").to_string();
-
-    // Remove bracketed hallucinations: [...], (...), {...}
-    filtered = BRACKET_PATTERN.replace_all(&filtered, "").to_string();
-    filtered = PAREN_PATTERN.replace_all(&filtered, "").to_string();
-    filtered = BRACE_PATTERN.replace_all(&filtered, "").to_string();
 
     // Remove filler words
     for pattern in FILLER_PATTERNS.iter() {
@@ -306,20 +289,6 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_bracketed_hallucinations() {
-        let text = "Hello [AUDIO] world (pause) test {noise}";
-        let result = filter_transcription_output(text);
-        assert_eq!(result, "Hello world test");
-    }
-
-    #[test]
-    fn test_filter_tag_blocks() {
-        let text = "Hello <speaker>John</speaker> world";
-        let result = filter_transcription_output(text);
-        assert_eq!(result, "Hello world");
-    }
-
-    #[test]
     fn test_filter_cleans_whitespace() {
         let text = "Hello    world   test";
         let result = filter_transcription_output(text);
@@ -335,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_filter_combined() {
-        let text = "  Um, so [AUDIO] I was, uh, thinking (pause) about this  ";
+        let text = "  Um, so I was, uh, thinking about this  ";
         let result = filter_transcription_output(text);
         assert_eq!(result, "so I was, thinking about this");
     }
