@@ -1,4 +1,4 @@
-use crate::audio_toolkit::apply_custom_words;
+use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
@@ -440,6 +440,9 @@ impl TranscriptionManager {
             result.text
         };
 
+        // Filter out filler words and hallucinations
+        let filtered_result = filter_transcription_output(&corrected_result);
+
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
             " (translated)"
@@ -452,7 +455,7 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = corrected_result.trim().to_string();
+        let final_result = filtered_result;
 
         if final_result.is_empty() {
             info!("Transcription result is empty");
