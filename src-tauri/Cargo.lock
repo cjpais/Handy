@@ -2308,6 +2308,7 @@ dependencies = [
  "natural",
  "once_cell",
  "rdev",
+ "regex",
  "reqwest",
  "rodio",
  "rubato",
