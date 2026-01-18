@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
 
@@ -93,7 +93,9 @@ export const HistorySettings: React.FC = () => {
     try {
       const result = await commands.getAudioFilePath(fileName);
       if (result.status === "ok") {
-        return convertFileSrc(`${result.data}`, "asset");
+        const fileData = await readFile(result.data);
+        const blob = new Blob([fileData], { type: "audio/wav" });
+        return URL.createObjectURL(blob);
       }
       return null;
     } catch (error) {
