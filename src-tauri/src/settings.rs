@@ -160,12 +160,12 @@ pub enum KeyboardImplementation {
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
-        // Default to HandyKeys on macOS/Windows, Tauri on Linux
-        // (handy-keys has limitations on Linux: Wayland blocking issues, thread cleanup)
-        #[cfg(target_os = "linux")]
-        return KeyboardImplementation::Tauri;
-        #[cfg(not(target_os = "linux"))]
+        // Default to HandyKeys only on macOS where it's well-tested.
+        // Windows and Linux use Tauri by default (handy-keys not sufficiently tested yet).
+        #[cfg(target_os = "macos")]
         return KeyboardImplementation::HandyKeys;
+        #[cfg(not(target_os = "macos"))]
+        return KeyboardImplementation::Tauri;
     }
 }
 

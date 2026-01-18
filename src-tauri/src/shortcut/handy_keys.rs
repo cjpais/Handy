@@ -28,7 +28,7 @@
 //! via Tauri's event system.
 
 use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener};
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use serde::Serialize;
 use specta::Type;
 use std::collections::HashMap;
@@ -38,10 +38,9 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::actions::ACTION_MAP;
-use crate::managers::audio::AudioRecordingManager;
 use crate::settings::{self, get_settings, ShortcutBinding};
-use crate::ManagedToggleState;
+
+use super::handler::handle_shortcut_event;
 
 /// Commands that can be sent to the hotkey manager thread
 enum ManagerCommand {
@@ -128,7 +127,12 @@ impl HandyKeysState {
             // Check for hotkey events (non-blocking)
             while let Some(event) = manager.try_recv() {
                 if let Some((binding_id, hotkey_string)) = hotkey_to_binding.get(&event.id) {
-                    Self::handle_hotkey_event(&app, binding_id, hotkey_string, event.state);
+                    debug!(
+                        "handy-keys event: binding={}, hotkey={}, state={:?}",
+                        binding_id, hotkey_string, event.state
+                    );
+                    let is_pressed = event.state == HotkeyState::Pressed;
+                    handle_shortcut_event(&app, binding_id, hotkey_string, is_pressed);
                 }
             }
 
@@ -220,69 +224,6 @@ impl HandyKeysState {
             debug!("Unregistered handy-keys shortcut: {}", binding_id);
         }
         Ok(())
-    }
-
-    /// Handle a hotkey event
-    fn handle_hotkey_event(
-        app: &AppHandle,
-        binding_id: &str,
-        hotkey_string: &str,
-        state: HotkeyState,
-    ) {
-        debug!(
-            "handy-keys event: binding={}, hotkey={}, state={:?}",
-            binding_id, hotkey_string, state
-        );
-
-        let settings = get_settings(app);
-
-        if let Some(action) = ACTION_MAP.get(binding_id) {
-            if binding_id == "cancel" {
-                let audio_manager = app.state::<Arc<AudioRecordingManager>>();
-                if audio_manager.is_recording() && state == HotkeyState::Pressed {
-                    action.start(app, binding_id, hotkey_string);
-                }
-            } else if settings.push_to_talk {
-                match state {
-                    HotkeyState::Pressed => {
-                        action.start(app, binding_id, hotkey_string);
-                    }
-                    HotkeyState::Released => {
-                        action.stop(app, binding_id, hotkey_string);
-                    }
-                }
-            } else {
-                // Toggle mode
-                if state == HotkeyState::Pressed {
-                    let should_start: bool;
-                    {
-                        let toggle_state_manager = app.state::<ManagedToggleState>();
-                        let mut states = toggle_state_manager
-                            .lock()
-                            .expect("Failed to lock toggle state manager");
-
-                        let is_currently_active = states
-                            .active_toggles
-                            .entry(binding_id.to_string())
-                            .or_insert(false);
-
-                        should_start = !*is_currently_active;
-                        *is_currently_active = should_start;
-                    }
-
-                    if should_start {
-                        action.start(app, binding_id, hotkey_string);
-                    } else {
-                        action.stop(app, binding_id, hotkey_string);
-                    }
-                }
-            }
-        } else {
-            warn!(
-                "No action defined for binding '{}' in handy-keys mode",
-                binding_id
-            );
-        }
     }
 
     /// Register a shortcut binding
@@ -465,6 +406,19 @@ fn modifiers_to_strings(modifiers: handy_keys::Modifiers) -> Vec<String> {
     }
 
     result
+}
+
+/// Validate a shortcut string for the HandyKeys implementation.
+/// HandyKeys is more permissive: allows modifier-only combos and the fn key.
+pub fn validate_shortcut(raw: &str) -> Result<(), String> {
+    if raw.trim().is_empty() {
+        return Err("Shortcut cannot be empty".into());
+    }
+    // HandyKeys accepts modifier-only, key-only, and modifier+key combos
+    // Just verify the string is parseable
+    raw.parse::<Hotkey>()
+        .map(|_| ())
+        .map_err(|e| format!("Invalid shortcut for HandyKeys: {}", e))
 }
 
 /// Initialize handy-keys shortcuts

@@ -151,6 +151,8 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         unlistenRef.current();
         unlistenRef.current = null;
       }
+      // Stop backend recording on unmount to prevent orphaned recording loops
+      commands.stopHandyKeysRecording().catch(console.error);
     };
   }, [
     isRecording,
