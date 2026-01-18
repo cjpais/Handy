@@ -161,9 +161,7 @@ fn collapse_stutters(text: &str) -> String {
         if word_lower.len() <= 2 && word_lower.chars().all(|c| c.is_alphabetic()) {
             // Count consecutive repetitions (case-insensitive)
             let mut count = 1;
-            while i + count < words.len()
-                && words[i + count].to_lowercase() == word_lower
-            {
+            while i + count < words.len() && words[i + count].to_lowercase() == word_lower {
                 count += 1;
             }
 
