@@ -364,6 +364,21 @@ impl AudioRecordingManager {
         Ok(())
     }
 
+    /// Reactivate the wake-word manager after a detection window ends.
+    /// Only starts if the manager exists and the wake-word flag is enabled.
+    pub fn restart_wakeword_manager(&self) {
+        let enabled = self.wakeword_enabled.load(Ordering::Relaxed);
+        if !enabled {
+            return;
+        }
+        if let Some(ref ww_handle) = *self.wakeword.lock().unwrap() {
+            if let Ok(mut det) = ww_handle.lock() {
+                det.start();
+                log::debug!("Wake-word: manager restarted after transcription window");
+            }
+        }
+    }
+
     /* ---------- mode switching --------------------------------------------- */
 
     pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {

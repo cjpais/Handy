@@ -486,4 +486,8 @@ pub fn start_transcription_via_wakeword(app: &AppHandle) {
 pub fn stop_transcription_via_wakeword(app: &AppHandle) {
     let action = TranscribeAction;
     action.stop(app, "wakeword", "wakeword");
+    // After the short transcription window, re-activate wake-word if enabled
+    if let Some(rm) = app.try_state::<Arc<AudioRecordingManager>>() {
+        rm.restart_wakeword_manager();
+    }
 }

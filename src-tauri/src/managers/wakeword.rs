@@ -3,7 +3,7 @@ use ort::{inputs, session::Session, value::Tensor};
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
-use tauri::{Emitter, Manager};
+use tauri::Manager;
 
 const FRAME_SAMPLES: usize = 1280; // target chunk size for inference
 const MEL_ROWS: usize = 76;
@@ -162,25 +162,30 @@ impl WakeWordManager {
 
     pub fn start(&mut self) {
         self.running = true;
+        // Reset counters and streaming buffers so early frames are ignored and
+        // previous context doesn't leak into a new detection window.
         self.frames_seen = 0;
         self.i16_buf.clear();
+        // Reinitialize mel buffer with zeros
+        self.mel_buf.clear();
+        for _ in 0..MEL_ROWS {
+            self.mel_buf.push_back([0.0; MEL_COLS]);
+        }
+        // Re-seed features buffer with zeros to dampen initial activations
+        self.feat_buf.clear();
+        for _ in 0..41 {
+            self.feat_buf.push_back([0.0f32; EMBED_DIMS]);
+        }
+        // Clear audio tail
+        self.audio_tail.clear();
+        self.audio_tail.extend_from_slice(&[0i16; 480]);
         log::info!("Wake-word: started (threshold={})", self.threshold);
-        let _ = self
-            .app_handle
-            .emit("wakeword-log", "started (running=true)");
     }
 
     pub fn stop(&mut self) {
         self.running = false;
         self.i16_buf.clear();
         log::info!("Wake-word: stopped");
-        let _ = self
-            .app_handle
-            .emit("wakeword-log", "stopped (running=false)");
-    }
-
-    pub fn is_running(&self) -> bool {
-        self.running
     }
 
     /// Accept 30ms speech frames (f32, -1..1), aggregate to 1280-sample chunks and run inference.
@@ -206,27 +211,17 @@ impl WakeWordManager {
                 Ok(val) => val,
                 Err(e) => {
                     log::error!("Wake-word: predict error: {}", e);
-                    let _ = self
-                        .app_handle
-                        .emit("wakeword-log", format!("predict error: {}", e));
                     0.0
                 }
             };
             if self.verbose {
                 log::debug!("wake p={:.6}", p);
             }
-            log::info!("Wake-word: p={:.4} (frame={})", p, self.frames_seen);
-            let _ = self.app_handle.emit("wakeword-prob", p);
+            log::debug!("Wake-word: p={:.4} (frame={})", p, self.frames_seen);
             if self.frames_seen >= 5 && p > self.threshold {
                 // Immediately inactivate wake-word before any recording to avoid interference
                 self.stop();
                 log::debug!("Ordering: wake-word stopped; scheduling start/stop actions");
-
-                // Optional: also emit an event for frontend listeners
-                let _ = self.app_handle.emit("wakeword-detected", p);
-                let _ = self
-                    .app_handle
-                    .emit("wakeword-log", format!("detected p={:.4}", p));
 
                 // Start a short recording window (5 seconds) via transcription action
                 // Run actions asynchronously to avoid blocking the UI thread.

@@ -6,7 +6,6 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
-use tauri::Emitter;
 use tauri::{AppHandle, Manager};
 
 #[derive(Serialize, Type)]
