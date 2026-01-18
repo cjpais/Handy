@@ -185,7 +185,7 @@ If you're behind a proxy, firewall, or in a restricted network environment where
 The typical paths are:
 
 - **macOS**: `~/Library/Application Support/com.pais.handy/`
-- **Windows**: `C:\Users\{username}\AppData\Roaming\com.pais.handy\`
+- **Windows**: `C:\Users\{username}\AppData\Local\Handy\`
 - **Linux**: `~/.config/com.pais.handy/`
 
 #### Step 2: Create Models Directory
@@ -197,7 +197,7 @@ Inside your app data directory, create a `models` folder if it doesn't already e
 mkdir -p ~/Library/Application\ Support/com.pais.handy/models
 
 # Windows (PowerShell)
-New-Item -ItemType Directory -Force -Path "$env:APPDATA\com.pais.handy\models"
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\Local\Handy\models"
 ```
 
 #### Step 3: Download Model Files
