@@ -133,7 +133,6 @@ pub fn check_apple_intelligence_available() -> bool {
 
 /// Try to initialize Enigo (keyboard/mouse simulation).
 /// On macOS, this will return an error if accessibility permissions are not granted.
-/// On Wayland/Linux, Enigo may not be available as we use native tools (wtype) instead.
 #[specta::specta]
 #[tauri::command]
 pub fn initialize_enigo(app: AppHandle) -> Result<(), String> {
@@ -145,10 +144,23 @@ pub fn initialize_enigo(app: AppHandle) -> Result<(), String> {
         return Ok(());
     }
 
-    // Initialize EnigoState - this always succeeds but may contain None on Wayland
-    // or if initialization fails (e.g., no accessibility permissions on macOS)
-    let enigo_state = EnigoState::new();
-    app.manage(enigo_state);
-    log::info!("Enigo state initialized");
-    Ok(())
+    // Try to initialize
+    match EnigoState::new() {
+        Ok(enigo_state) => {
+            app.manage(enigo_state);
+            log::info!("Enigo initialized successfully after permission grant");
+            Ok(())
+        }
+        Err(e) => {
+            if cfg!(target_os = "macos") {
+                log::warn!(
+                    "Failed to initialize Enigo: {} (accessibility permissions may not be granted)",
+                    e
+                );
+            } else {
+                log::warn!("Failed to initialize Enigo: {}", e);
+            }
+            Err(format!("Failed to initialize input system: {}", e))
+        }
+    }
 }

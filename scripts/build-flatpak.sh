@@ -105,6 +105,12 @@ main() {
     # Check runtime
     check_runtime
 
+    # Initialize submodules (shared-modules for libayatana-appindicator)
+    if [ ! -f "$FLATPAK_DIR/shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json" ]; then
+        log_info "Initializing git submodules..."
+        git -C "$PROJECT_ROOT" submodule update --init --recursive
+    fi
+
     # Find .deb file
     log_info "Looking for .deb file..."
     local deb_path

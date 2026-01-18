@@ -2,42 +2,23 @@ use enigo::{Enigo, Key, Keyboard, Mouse, Settings};
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
 
-#[cfg(target_os = "linux")]
-use crate::utils::is_wayland;
-
 /// Wrapper for Enigo to store in Tauri's managed state.
-/// On Linux/Wayland, Enigo may not be available since we use native tools instead.
-pub struct EnigoState(pub Mutex<Option<Enigo>>);
+/// Enigo is wrapped in a Mutex since it requires mutable access.
+pub struct EnigoState(pub Mutex<Enigo>);
 
 impl EnigoState {
-    pub fn new() -> Self {
-        #[cfg(target_os = "linux")]
-        {
-            if is_wayland() {
-                log::info!("Wayland detected - skipping Enigo initialization (using native tools)");
-                return Self(Mutex::new(None));
-            }
-        }
-
-        match Enigo::new(&Settings::default()) {
-            Ok(enigo) => Self(Mutex::new(Some(enigo))),
-            Err(e) => {
-                log::warn!(
-                    "Failed to initialize Enigo: {} - keyboard simulation may be limited",
-                    e
-                );
-                Self(Mutex::new(None))
-            }
-        }
+    pub fn new() -> Result<Self, String> {
+        let enigo = Enigo::new(&Settings::default())
+            .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
+        Ok(Self(Mutex::new(enigo)))
     }
 }
 
 /// Get the current mouse cursor position using the managed Enigo instance.
-/// Returns None if Enigo is not available (e.g., on Wayland) or if getting the location fails.
+/// Returns None if the state is not available or if getting the location fails.
 pub fn get_cursor_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
     let enigo_state = app_handle.try_state::<EnigoState>()?;
-    let guard = enigo_state.0.lock().ok()?;
-    let enigo = guard.as_ref()?;
+    let enigo = enigo_state.0.lock().ok()?;
     enigo.location().ok()
 }
 

@@ -118,7 +118,6 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
-    // On Wayland/Linux, the EnigoState may be empty as we use native tools (wtype) instead.
 
     // Initialize the managers
     let recording_manager = Arc::new(
