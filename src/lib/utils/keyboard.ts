@@ -66,6 +66,8 @@ export const getKeyName = (
       MetaRight: getModifierName("meta"),
       OSLeft: getModifierName("meta"),
       OSRight: getModifierName("meta"),
+      Fn: "fn",
+      Globe: "globe",
       CapsLock: "caps lock",
       Tab: "tab",
       Enter: "enter",
@@ -134,6 +136,8 @@ export const getKeyName = (
         osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
       OS:
         osType === "macos" ? "command" : osType === "windows" ? "win" : "super",
+      Fn: "fn",
+      Globe: "globe",
       CapsLock: "caps lock",
       ArrowUp: "up",
       ArrowDown: "down",

@@ -142,6 +142,8 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
           "super",
           "win",
           "windows",
+          "fn",
+          "globe",
         ];
         const sortedKeys = recordedKeys.sort((a, b) => {
           const aIsModifier = modifiers.includes(a.toLowerCase());
