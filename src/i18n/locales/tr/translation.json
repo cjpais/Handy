@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Ayarlar...",
     "checkUpdates": "Güncellemeleri Kontrol Et...",
+    "copyLastTranscript": "Son transkripti kopyala",
     "quit": "Çıkış",
     "cancel": "İptal"
   },
