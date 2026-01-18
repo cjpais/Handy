@@ -12,7 +12,7 @@ use std::process::Command;
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
-    enigo: &mut Enigo,
+    enigo: Option<&mut Enigo>,
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
@@ -36,6 +36,7 @@ fn paste_via_clipboard(
 
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
+        let enigo = enigo.ok_or("Enigo not available for keyboard simulation")?;
         match paste_method {
             PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
             PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
@@ -138,6 +139,12 @@ fn is_wtype_available() -> bool {
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false)
+}
+
+/// Check if a native input tool is available on Linux.
+#[cfg(target_os = "linux")]
+pub fn has_native_input_tool() -> bool {
+    is_wtype_available() || is_dotool_available() || is_ydotool_available() || is_xdotool_available()
 }
 
 /// Check if dotool is available (another Wayland text input tool)
@@ -349,7 +356,7 @@ fn send_key_combo_via_xdotool(paste_method: &PasteMethod) -> Result<(), String> 
 }
 
 /// Types text directly by simulating individual key presses.
-fn paste_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
+fn paste_direct(enigo: Option<&mut Enigo>, text: &str) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
         if try_direct_typing_linux(text)? {
@@ -358,6 +365,7 @@ fn paste_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
         info!("Falling back to enigo for direct text input");
     }
 
+    let enigo = enigo.ok_or("Enigo not available and native tools failed")?;
     input::paste_text_direct(enigo, text)
 }
 
@@ -374,14 +382,11 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     info!("Using paste method: {:?}", paste_method);
 
-    // Get the managed Enigo instance
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+    // Get the managed Enigo instance (not be available in Flatpak where native tools are used)
+    let enigo_state = app_handle.try_state::<EnigoState>();
+    let mut enigo_guard = enigo_state
+        .as_ref()
+        .and_then(|state| state.0.lock().ok());
 
     // Perform the paste operation
     match paste_method {
@@ -389,10 +394,10 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             info!("PasteMethod::None selected - skipping paste action");
         }
         PasteMethod::Direct => {
-            paste_direct(&mut enigo, &text)?;
+            paste_direct(enigo_guard.as_deref_mut(), &text)?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            paste_via_clipboard(&mut enigo, &text, &app_handle, &paste_method)?
+            paste_via_clipboard(enigo_guard.as_deref_mut(), &text, &app_handle, &paste_method)?
         }
     }
 
