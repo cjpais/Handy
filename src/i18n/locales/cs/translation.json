@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Nastavení...",
     "checkUpdates": "Zkontrolovat aktualizace...",
+    "copyLastTranscript": "Zkopírovat poslední přepis",
     "quit": "Ukončit",
     "cancel": "Zrušit"
   },

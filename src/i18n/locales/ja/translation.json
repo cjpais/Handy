@@ -2,6 +2,7 @@
   "tray": {
     "settings": "設定...",
     "checkUpdates": "アップデートを確認...",
+    "copyLastTranscript": "最新の文字起こしをコピー",
     "quit": "終了",
     "cancel": "キャンセル"
   },
