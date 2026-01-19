@@ -2,16 +2,10 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { type } from "@tauri-apps/plugin-os";
 import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
-import { LogDirectory } from "./LogDirectory";
 import { LogLevelSelector } from "./LogLevelSelector";
 import { SettingsGroup } from "../../ui/SettingsGroup";
-import { HistoryLimit } from "../HistoryLimit";
 import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
 import { SoundPicker } from "../SoundPicker";
-import { PostProcessingToggle } from "../PostProcessingToggle";
-import { MuteWhileRecording } from "../MuteWhileRecording";
-import { AppendTrailingSpace } from "../AppendTrailingSpace";
-import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
 import { ShortcutInput } from "../ShortcutInput";
 import { KeyboardImplementationSelector } from "./KeyboardImplementationSelector";
@@ -27,7 +21,6 @@ export const DebugSettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.debug.title")}>
-        <LogDirectory grouped={true} />
         <LogLevelSelector grouped={true} />
         <UpdateChecksToggle descriptionMode="tooltip" grouped={true} />
         <SoundPicker
@@ -35,16 +28,8 @@ export const DebugSettings: React.FC = () => {
           description={t("settings.debug.soundTheme.description")}
         />
         <WordCorrectionThreshold descriptionMode="tooltip" grouped={true} />
-        <HistoryLimit descriptionMode="tooltip" grouped={true} />
-        <RecordingRetentionPeriodSelector
-          descriptionMode="tooltip"
-          grouped={true}
-        />
         <AlwaysOnMicrophone descriptionMode="tooltip" grouped={true} />
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
-        <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
-        <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
-        <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
         {/* Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration */}
         {!isLinux && (
           <ShortcutInput

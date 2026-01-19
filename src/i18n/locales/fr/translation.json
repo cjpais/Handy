@@ -110,12 +110,12 @@
         "pressKeys": "Appuyez sur les touches...",
         "bindings": {
           "transcribe": {
-            "name": "Démarrer la transcription",
-            "description": "Convertir votre voix en texte."
+            "name": "Raccourci de Transcription",
+            "description": "Le raccourci clavier pour enregistrer et transcrire votre voix."
           },
           "cancel": {
-            "name": "Annuler",
-            "description": "Annule l'enregistrement en cours."
+            "name": "Raccourci d'Annulation",
+            "description": "Le raccourci clavier pour annuler l'enregistrement en cours."
           }
         },
         "errors": {
@@ -162,6 +162,17 @@
     },
     "advanced": {
       "title": "Avancé",
+      "groups": {
+        "app": "Application",
+        "output": "Sortie",
+        "transcription": "Transcription",
+        "history": "Historique",
+        "experimental": "Expérimental"
+      },
+      "experimentalToggle": {
+        "label": "Fonctionnalités Expérimentales",
+        "description": "Activer les fonctionnalités expérimentales encore en développement."
+      },
       "startHidden": {
         "label": "Démarrer masqué",
         "description": "Lancer dans la barre système sans ouvrir la fenêtre."

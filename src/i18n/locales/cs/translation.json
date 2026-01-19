@@ -93,12 +93,12 @@
         "pressKeys": "Stiskněte klávesy...",
         "bindings": {
           "transcribe": {
-            "name": "Přepsat",
-            "description": "Převádí vaši řeč na text."
+            "name": "Zkratka přepisu",
+            "description": "Klávesová zkratka pro nahrávání a přepis vašeho hlasu."
           },
           "cancel": {
-            "name": "Zrušit",
-            "description": "Zruší aktuální nahrávání."
+            "name": "Zkratka zrušení",
+            "description": "Klávesová zkratka pro zrušení aktuálního nahrávání."
           }
         },
         "errors": {
@@ -145,6 +145,17 @@
     },
     "advanced": {
       "title": "Pokročilé",
+      "groups": {
+        "app": "Aplikace",
+        "output": "Výstup",
+        "transcription": "Přepis",
+        "history": "Historie",
+        "experimental": "Experimentální"
+      },
+      "experimentalToggle": {
+        "label": "Experimentální funkce",
+        "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
+      },
       "startHidden": {
         "label": "Spouštět skrytě",
         "description": "Spustit do systémové lišty bez otevření okna."

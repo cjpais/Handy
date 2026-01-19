@@ -113,12 +113,12 @@
         "pressKeys": "Press keys...",
         "bindings": {
           "transcribe": {
-            "name": "Transcribe",
-            "description": "Converts your speech into text."
+            "name": "Transcribe Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice."
           },
           "cancel": {
-            "name": "Cancel",
-            "description": "Cancels the current recording."
+            "name": "Cancel Shortcut",
+            "description": "The keyboard shortcut to cancel the current recording."
           }
         },
         "errors": {
@@ -165,6 +165,17 @@
     },
     "advanced": {
       "title": "Advanced",
+      "groups": {
+        "app": "App",
+        "output": "Output",
+        "transcription": "Transcription",
+        "history": "History",
+        "experimental": "Experimental"
+      },
+      "experimentalToggle": {
+        "label": "Experimental Features",
+        "description": "Enable experimental features that are still in development."
+      },
       "startHidden": {
         "label": "Start Hidden",
         "description": "Launch to system tray without opening the window."

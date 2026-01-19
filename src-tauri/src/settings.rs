@@ -312,6 +312,8 @@ pub struct AppSettings {
     #[serde(default = "default_app_language")]
     pub app_language: String,
     #[serde(default)]
+    pub experimental_enabled: bool,
+    #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
 }
 
@@ -601,6 +603,7 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        experimental_enabled: false,
         keyboard_implementation: KeyboardImplementation::default(),
     }
 }
