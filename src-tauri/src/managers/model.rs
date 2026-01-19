@@ -203,9 +203,13 @@ impl ModelManager {
             },
         );
 
-        // Auto-discover custom Whisper models (.bin files) in the models directory
-        if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
-            warn!("Failed to discover custom models: {}", e);
+        // Auto-discover custom Whisper models if enabled in settings
+        let settings = get_settings(app_handle);
+        if settings.custom_models_enabled {
+            if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models)
+            {
+                warn!("Failed to discover custom models: {}", e);
+            }
         }
 
         let manager = Self {
@@ -433,7 +437,7 @@ impl ModelManager {
                 ModelInfo {
                     id: model_id,
                     name: display_name,
-                    description: "Custom Whisper model".to_string(),
+                    description: "Not officially supported".to_string(),
                     filename,
                     url: None, // Custom models have no download URL
                     size_mb,

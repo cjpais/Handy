@@ -941,3 +941,13 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_custom_models_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.custom_models_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}

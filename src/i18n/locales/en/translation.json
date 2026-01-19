@@ -19,6 +19,7 @@
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",
+    "customModelDescription": "Not officially supported",
     "modelCard": {
       "accuracy": "accuracy",
       "speed": "speed"
@@ -372,6 +373,10 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "customModels": {
+        "label": "Custom Models",
+        "description": "Allow loading custom Whisper models from the models folder. Restart required. Community models are not officially supported."
       },
       "paths": {
         "appData": "App Data:",
