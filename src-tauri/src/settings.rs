@@ -293,6 +293,14 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default)]
+    pub audio_ducking_enabled: bool,
+    #[serde(default = "default_audio_ducking_amount")]
+    pub audio_ducking_amount: f32,
+}
+
+fn default_audio_ducking_amount() -> f32 {
+    1.0 // Full mute by default (0.0 = no change, 1.0 = full mute)
 }
 
 fn default_model() -> String {
@@ -581,6 +589,8 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        audio_ducking_enabled: false,
+        audio_ducking_amount: default_audio_ducking_amount(),
     }
 }
 
@@ -655,7 +665,26 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
+    // Migrate old mute_while_recording to new audio_ducking system
+    if migrate_mute_to_ducking(&mut settings) {
+        store.set("settings", serde_json::to_value(&settings).unwrap());
+    }
+
     settings
+}
+
+/// Migrate legacy mute_while_recording to new audio_ducking settings
+fn migrate_mute_to_ducking(settings: &mut AppSettings) -> bool {
+    // If mute_while_recording was enabled but audio_ducking is not,
+    // migrate to the new system
+    if settings.mute_while_recording && !settings.audio_ducking_enabled {
+        debug!("Migrating mute_while_recording to audio_ducking");
+        settings.audio_ducking_enabled = true;
+        settings.audio_ducking_amount = 1.0; // Full mute
+        settings.mute_while_recording = false; // Clear the old setting
+        return true;
+    }
+    false
 }
 
 pub fn get_settings(app: &AppHandle) -> AppSettings {
