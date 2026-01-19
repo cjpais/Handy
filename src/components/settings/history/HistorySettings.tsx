@@ -5,8 +5,12 @@ import { Button } from "../../ui/Button";
 import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { platform } from "@tauri-apps/plugin-os";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
+
+const IS_LINUX = platform() === "linux";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -93,7 +97,14 @@ export const HistorySettings: React.FC = () => {
     try {
       const result = await commands.getAudioFilePath(fileName);
       if (result.status === "ok") {
-        return convertFileSrc(`${result.data}`, "asset");
+        if (IS_LINUX) {
+          const fileData = await readFile(result.data);
+          const blob = new Blob([fileData], { type: "audio/wav" });
+
+          return URL.createObjectURL(blob);
+        }
+
+        return convertFileSrc(result.data, "asset");
       }
       return null;
     } catch (error) {
@@ -222,12 +233,30 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const [showCopied, setShowCopied] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    let urlToRevoke: string | null = null;
+
     const loadAudio = async () => {
       const url = await getAudioUrl(entry.file_name);
-      setAudioUrl(url);
+
+      if (!cancelled) {
+        urlToRevoke = url;
+        setAudioUrl(url);
+      } else if (url?.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
     };
+
     loadAudio();
-  }, [entry.file_name, getAudioUrl]);
+
+    return () => {
+      cancelled = true;
+
+      if (urlToRevoke?.startsWith("blob:")) {
+        URL.revokeObjectURL(urlToRevoke);
+      }
+    };
+  }, [entry.file_name]);
 
   const handleCopyText = () => {
     onCopyText();
