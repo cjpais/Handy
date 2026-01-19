@@ -476,3 +476,18 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+// Helpers to trigger transcription flow from wake-word
+pub fn start_transcription_via_wakeword(app: &AppHandle) {
+    let action = TranscribeAction;
+    action.start(app, "wakeword", "wakeword");
+}
+
+pub fn stop_transcription_via_wakeword(app: &AppHandle) {
+    let action = TranscribeAction;
+    action.stop(app, "wakeword", "wakeword");
+    // After the short transcription window, re-activate wake-word if enabled
+    if let Some(rm) = app.try_state::<Arc<AudioRecordingManager>>() {
+        rm.restart_wakeword_manager();
+    }
+}

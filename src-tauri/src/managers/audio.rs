@@ -3,6 +3,7 @@ use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
@@ -149,6 +150,8 @@ pub struct AudioRecordingManager {
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
+    wakeword: Arc<Mutex<Option<crate::managers::wakeword::WakeWordManagerHandle>>>,
+    wakeword_enabled: Arc<AtomicBool>,
 }
 
 impl AudioRecordingManager {
@@ -171,6 +174,8 @@ impl AudioRecordingManager {
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
+            wakeword: Arc::new(Mutex::new(None)),
+            wakeword_enabled: Arc::new(AtomicBool::new(false)),
         };
 
         // Always-on?  Open immediately.
@@ -258,10 +263,22 @@ impl AudioRecordingManager {
         let mut recorder_opt = self.recorder.lock().unwrap();
 
         if recorder_opt.is_none() {
-            *recorder_opt = Some(create_audio_recorder(
-                vad_path.to_str().unwrap(),
-                &self.app_handle,
-            )?);
+            log::info!("Audio: creating recorder with VAD at {:?}", vad_path);
+            let mut recorder = create_audio_recorder(vad_path.to_str().unwrap(), &self.app_handle)?;
+            // Attach speech-frame callback unconditionally; gate on wakeword manager existence/running.
+            let ww_arc = self.wakeword.clone();
+            let enabled_flag = self.wakeword_enabled.clone();
+            recorder = recorder.with_speech_frame_callback(move |frame: &[f32]| {
+                if enabled_flag.load(Ordering::Relaxed) {
+                    if let Some(ref ww_handle) = *ww_arc.lock().unwrap() {
+                        if let Ok(mut det) = ww_handle.lock() {
+                            let _ = det.on_speech_frame(frame);
+                        }
+                    }
+                }
+            });
+            log::info!("Audio: speech-frame callback attached (gated by flag)");
+            *recorder_opt = Some(recorder);
         }
 
         // Get the selected device from settings, considering clamshell mode
@@ -269,6 +286,12 @@ impl AudioRecordingManager {
         let selected_device = self.get_effective_microphone_device(&settings);
 
         if let Some(rec) = recorder_opt.as_mut() {
+            let dev_state = if selected_device.is_some() {
+                "Some(device)"
+            } else {
+                "None"
+            };
+            log::info!("Audio: opening recorder device: {}", dev_state);
             rec.open(selected_device)
                 .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
         }
@@ -300,10 +323,60 @@ impl AudioRecordingManager {
                 *self.is_recording.lock().unwrap() = false;
             }
             let _ = rec.close();
+            log::info!("Audio: recorder closed");
         }
 
         *open_flag = false;
         debug!("Microphone stream stopped");
+    }
+
+    pub fn enable_wakeword(&self, _verbose: bool, _threshold: f32) -> Result<(), anyhow::Error> {
+        debug!("Wakeword flag enabled");
+        self.wakeword_enabled.store(true, Ordering::Relaxed);
+        Ok(())
+    }
+
+    pub fn disable_wakeword(&self) {
+        debug!("Wakeword flag disabled");
+        self.wakeword_enabled.store(false, Ordering::Relaxed);
+    }
+
+    pub fn is_wakeword_running(&self) -> bool {
+        self.wakeword_enabled.load(Ordering::Relaxed)
+    }
+
+    pub fn init_wakeword_models(&self, verbose: bool, threshold: f32) -> Result<(), anyhow::Error> {
+        if self.wakeword.lock().unwrap().is_none() {
+            let ww = crate::managers::wakeword::WakeWordManager::new(
+                &self.app_handle,
+                verbose,
+                threshold,
+            )?;
+            // Start running; gating handled by flag
+            let mut ww_instance = ww;
+            ww_instance.start();
+            *self.wakeword.lock().unwrap() = Some(Arc::new(Mutex::new(ww_instance)));
+            log::info!(
+                "Wake-word: models initialized at startup (threshold={})",
+                threshold
+            );
+        }
+        Ok(())
+    }
+
+    /// Reactivate the wake-word manager after a detection window ends.
+    /// Only starts if the manager exists and the wake-word flag is enabled.
+    pub fn restart_wakeword_manager(&self) {
+        let enabled = self.wakeword_enabled.load(Ordering::Relaxed);
+        if !enabled {
+            return;
+        }
+        if let Some(ref ww_handle) = *self.wakeword.lock().unwrap() {
+            if let Ok(mut det) = ww_handle.lock() {
+                det.start();
+                log::debug!("Wake-word: manager restarted after transcription window");
+            }
+        }
     }
 
     /* ---------- mode switching --------------------------------------------- */

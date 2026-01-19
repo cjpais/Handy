@@ -200,3 +200,28 @@ pub fn is_recording(app: AppHandle) -> bool {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.is_recording()
 }
+
+// Wake-word control commands
+#[tauri::command]
+#[specta::specta]
+pub fn start_wakeword(app: AppHandle, threshold: Option<f32>) -> Result<(), String> {
+    let thr = threshold.unwrap_or(0.5);
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.enable_wakeword(false, thr)
+        .map_err(|e| format!("Failed to set wake-word flag: {}", e))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn stop_wakeword(app: AppHandle) -> Result<(), String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.disable_wakeword();
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn is_wakeword_running(app: AppHandle) -> Result<bool, String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    Ok(rm.is_wakeword_running())
+}
