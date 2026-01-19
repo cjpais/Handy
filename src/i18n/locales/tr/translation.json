@@ -113,12 +113,12 @@
         "pressKeys": "Tuşlara basın...",
         "bindings": {
           "transcribe": {
-            "name": "Transkribe Et",
-            "description": "Konuşmanızı metne dönüştürür."
+            "name": "Transkripsiyon Kısayolu",
+            "description": "Sesinizi kaydetmek ve metne dönüştürmek için klavye kısayolu."
           },
           "cancel": {
-            "name": "İptal",
-            "description": "Mevcut kaydı iptal eder."
+            "name": "İptal Kısayolu",
+            "description": "Mevcut kaydı iptal etmek için klavye kısayolu."
           }
         },
         "errors": {
@@ -165,6 +165,17 @@
     },
     "advanced": {
       "title": "Gelişmiş",
+      "groups": {
+        "app": "Uygulama",
+        "output": "Çıktı",
+        "transcription": "Transkripsiyon",
+        "history": "Geçmiş",
+        "experimental": "Deneysel"
+      },
+      "experimentalToggle": {
+        "label": "Deneysel Özellikler",
+        "description": "Hala geliştirme aşamasında olan deneysel özellikleri etkinleştir."
+      },
       "startHidden": {
         "label": "Gizli Başlat",
         "description": "Pencereyi açmadan sistem tepsisinde başlatır."

@@ -109,12 +109,12 @@
         "pressKeys": "Naciśnij klawisze...",
         "bindings": {
           "transcribe": {
-            "name": "Transkrybuj",
-            "description": "Konwertuje Twoją mowę na tekst."
+            "name": "Skrót transkrypcji",
+            "description": "Skrót klawiaturowy do nagrywania i transkrypcji głosu."
           },
           "cancel": {
-            "name": "Anuluj",
-            "description": "Anuluje bieżące nagrywanie."
+            "name": "Skrót anulowania",
+            "description": "Skrót klawiaturowy do anulowania bieżącego nagrywania."
           }
         },
         "errors": {
@@ -161,6 +161,17 @@
     },
     "advanced": {
       "title": "Zaawansowane",
+      "groups": {
+        "app": "Aplikacja",
+        "output": "Wyjście",
+        "transcription": "Transkrypcja",
+        "history": "Historia",
+        "experimental": "Eksperymentalne"
+      },
+      "experimentalToggle": {
+        "label": "Funkcje Eksperymentalne",
+        "description": "Włącz funkcje eksperymentalne, które są jeszcze w fazie rozwoju."
+      },
       "startHidden": {
         "label": "Uruchom ukryty",
         "description": "Uruchom w zasobniku systemowym bez otwierania okna."

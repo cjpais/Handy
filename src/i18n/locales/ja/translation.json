@@ -109,12 +109,12 @@
         "pressKeys": "キーを押してください...",
         "bindings": {
           "transcribe": {
-            "name": "文字起こし",
-            "description": "音声をテキストに変換します。"
+            "name": "文字起こしショートカット",
+            "description": "音声を録音して文字起こしするためのキーボードショートカット。"
           },
           "cancel": {
-            "name": "キャンセル",
-            "description": "現在の録音をキャンセルします。"
+            "name": "キャンセルショートカット",
+            "description": "現在の録音をキャンセルするためのキーボードショートカット。"
           }
         },
         "errors": {
@@ -161,6 +161,17 @@
     },
     "advanced": {
       "title": "詳細設定",
+      "groups": {
+        "app": "アプリ",
+        "output": "出力",
+        "transcription": "文字起こし",
+        "history": "履歴",
+        "experimental": "実験的"
+      },
+      "experimentalToggle": {
+        "label": "実験的機能",
+        "description": "まだ開発中の実験的機能を有効にします。"
+      },
       "startHidden": {
         "label": "非表示で起動",
         "description": "ウィンドウを開かずにシステムトレイに起動。"

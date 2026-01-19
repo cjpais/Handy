@@ -293,6 +293,8 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default)]
+    pub experimental_enabled: bool,
 }
 
 fn default_model() -> String {
@@ -581,6 +583,7 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        experimental_enabled: false,
     }
 }
 

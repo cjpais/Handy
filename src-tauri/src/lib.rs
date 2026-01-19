@@ -252,6 +252,7 @@ pub fn run() {
         shortcut::change_paste_method_setting,
         shortcut::change_clipboard_handling_setting,
         shortcut::change_post_process_enabled_setting,
+        shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,
         shortcut::change_post_process_api_key_setting,
         shortcut::change_post_process_model_setting,

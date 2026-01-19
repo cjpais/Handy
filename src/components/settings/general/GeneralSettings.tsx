@@ -10,6 +10,7 @@ import { AudioFeedback } from "../AudioFeedback";
 import { useSettings } from "../../../hooks/useSettings";
 import { useModelStore } from "../../../stores/modelStore";
 import { VolumeSlider } from "../VolumeSlider";
+import { MuteWhileRecording } from "../MuteWhileRecording";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -28,6 +29,7 @@ export const GeneralSettings: React.FC = () => {
       </SettingsGroup>
       <SettingsGroup title={t("settings.sound.title")}>
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
+        <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
         <AudioFeedback descriptionMode="tooltip" grouped={true} />
         <OutputDeviceSelector
           descriptionMode="tooltip"
