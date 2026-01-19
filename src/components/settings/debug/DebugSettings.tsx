@@ -8,7 +8,6 @@ import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
 import { SoundPicker } from "../SoundPicker";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
 import { ShortcutInput } from "../ShortcutInput";
-import { KeyboardImplementationSelector } from "./KeyboardImplementationSelector";
 import { UpdateChecksToggle } from "../UpdateChecksToggle";
 import { useSettings } from "../../../hooks/useSettings";
 
@@ -38,10 +37,6 @@ export const DebugSettings: React.FC = () => {
             disabled={pushToTalk}
           />
         )}
-        <KeyboardImplementationSelector
-          descriptionMode="tooltip"
-          grouped={true}
-        />
       </SettingsGroup>
     </div>
   );
