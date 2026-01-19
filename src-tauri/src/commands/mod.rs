@@ -133,6 +133,7 @@ pub fn check_apple_intelligence_available() -> bool {
 
 /// Try to initialize Enigo (keyboard/mouse simulation).
 /// On macOS, this will return an error if accessibility permissions are not granted.
+/// On Linux, Enigo is skipped if native tools are available.
 #[specta::specta]
 #[tauri::command]
 pub fn initialize_enigo(app: AppHandle) -> Result<(), String> {
@@ -142,6 +143,15 @@ pub fn initialize_enigo(app: AppHandle) -> Result<(), String> {
     if app.try_state::<EnigoState>().is_some() {
         log::debug!("Enigo already initialized");
         return Ok(());
+    }
+
+    // On Linux, skip Enigo if native input tools are available
+    #[cfg(target_os = "linux")]
+    {
+        if crate::clipboard::has_native_input_tool() {
+            log::info!("Native input tools available, skipping Enigo initialization");
+            return Ok(());
+        }
     }
 
     // Try to initialize
