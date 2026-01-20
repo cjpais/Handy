@@ -449,10 +449,15 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
     }
 
     // Custom provider always comes last
+    let custom_base_url = std::env::var("HANDY_CUSTOM_LLM_BASE_URL")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "http://localhost:11434/v1".to_string());
+
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
         label: "Custom".to_string(),
-        base_url: "http://localhost:11434/v1".to_string(),
+        base_url: custom_base_url,
         allow_base_url_edit: true,
         models_endpoint: Some("/models".to_string()),
     });

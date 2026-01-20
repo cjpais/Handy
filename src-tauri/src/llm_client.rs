@@ -2,6 +2,30 @@ use crate::settings::PostProcessProvider;
 use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
+use std::env;
+
+// Environment variable name for custom LLM base URL override
+const CUSTOM_LLM_BASE_URL_ENV: &str = "HANDY_CUSTOM_LLM_BASE_URL";
+
+/// Get the effective base URL for a provider.
+/// For the "custom" provider, checks the environment variable first.
+/// This is called fresh on each invocation to pick up runtime changes.
+pub fn get_effective_base_url(provider: &PostProcessProvider) -> String {
+    if provider.id == "custom" {
+        // Check environment variable for custom provider override
+        if let Ok(env_url) = env::var(CUSTOM_LLM_BASE_URL_ENV) {
+            let trimmed = env_url.trim();
+            if !trimmed.is_empty() {
+                debug!(
+                    "Using base URL from environment variable {}: {}",
+                    CUSTOM_LLM_BASE_URL_ENV, trimmed
+                );
+                return trimmed.trim_end_matches('/').to_string();
+            }
+        }
+    }
+    provider.base_url.trim_end_matches('/').to_string()
+}
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -85,7 +109,8 @@ pub async fn send_chat_completion(
     model: &str,
     prompt: String,
 ) -> Result<Option<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
+    // Get effective base URL (checks env var for custom provider on each call)
+    let base_url = get_effective_base_url(provider);
     let url = format!("{}/chat/completions", base_url);
 
     debug!("Sending chat completion request to: {}", url);
@@ -136,7 +161,8 @@ pub async fn fetch_models(
     provider: &PostProcessProvider,
     api_key: String,
 ) -> Result<Vec<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
+    // Get effective base URL (checks env var for custom provider on each call)
+    let base_url = get_effective_base_url(provider);
     let url = format!("{}/models", base_url);
 
     debug!("Fetching models from: {}", url);
