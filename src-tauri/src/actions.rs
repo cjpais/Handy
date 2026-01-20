@@ -141,6 +141,12 @@ async fn maybe_post_process_transcription(
         .await
     {
         Ok(Some(content)) => {
+            // Strip invisible Unicode characters that some LLMs (e.g., Qwen) may insert
+            let content = content
+                .replace('\u{200B}', "") // Zero-Width Space
+                .replace('\u{200C}', "") // Zero-Width Non-Joiner
+                .replace('\u{200D}', "") // Zero-Width Joiner
+                .replace('\u{FEFF}', ""); // Byte Order Mark / Zero-Width No-Break Space
             debug!(
                 "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
                 provider.id,
