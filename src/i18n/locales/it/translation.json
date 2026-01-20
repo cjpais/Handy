@@ -145,12 +145,12 @@
         "loading": "Caricamento..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "Attenuazione audio",
+        "description": "Abbassa l'audio di sistema durante la registrazione"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "Livello di attenuazione",
+        "description": "Volume di sistema desiderato durante la registrazione"
       },
       "audioFeedback": {
         "label": "Feedback Audio",

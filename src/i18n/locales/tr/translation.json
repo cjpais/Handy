@@ -149,12 +149,12 @@
         "loading": "Yükleniyor..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "Ses Kısma (Ducking)",
+        "description": "Kayıt sırasında sistem sesini kıs"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "Kısma Seviyesi",
+        "description": "Kayıt sırasında hedef sistem ses seviyesi"
       },
       "audioFeedback": {
         "label": "Sesli Geri Bildirim",

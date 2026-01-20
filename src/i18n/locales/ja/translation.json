@@ -145,12 +145,12 @@
         "loading": "読み込み中..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "オーディオダッキング",
+        "description": "録音中にシステムオーディオを下げる"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "ダッキングレベル",
+        "description": "録音中のターゲットシステム音量"
       },
       "audioFeedback": {
         "label": "音声フィードバック",

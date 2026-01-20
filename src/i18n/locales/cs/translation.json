@@ -129,12 +129,12 @@
         "loading": "Načítání..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "Ztlumení zvuku (Ducking)",
+        "description": "Snížit hlasitost systémového zvuku během nahrávání"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "Úroveň ztlumení",
+        "description": "Cílová hlasitost systému během nahrávání"
       },
       "audioFeedback": {
         "label": "Zvuková odezva",

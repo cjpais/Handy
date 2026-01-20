@@ -145,12 +145,12 @@
         "loading": "加载中..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "音频闪避",
+        "description": "录音时降低系统音量"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "闪避幅度",
+        "description": "录音时的目标系统音量"
       },
       "audioFeedback": {
         "label": "音频反馈",

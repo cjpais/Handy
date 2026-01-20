@@ -145,12 +145,12 @@
         "loading": "Завантаження..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "Приглушення звуку",
+        "description": "Зменшувати гучність системи під час запису"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "Рівень приглушення",
+        "description": "Цільова гучність системи під час запису"
       },
       "audioFeedback": {
         "label": "Звукове сповіщення",

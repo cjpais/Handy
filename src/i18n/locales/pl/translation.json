@@ -145,12 +145,12 @@
         "loading": "Wczytywanie..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "Wyciszanie dźwięku (Ducking)",
+        "description": "Zmniejsz głośność dźwięku systemowego podczas nagrywania"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "Poziom wyciszenia",
+        "description": "Docelowa głośność systemowa podczas nagrywania"
       },
       "audioFeedback": {
         "label": "Informacja dźwiękowa",

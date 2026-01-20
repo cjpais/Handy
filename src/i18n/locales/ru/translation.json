@@ -145,12 +145,12 @@
         "loading": "Загрузка..."
       },
       "audioDucking": {
-        "label": "Audio Ducking",
-        "description": "Lower system audio while recording"
+        "label": "Приглушение звука",
+        "description": "Снижать громкость системы во время записи"
       },
       "duckingLevel": {
-        "title": "Ducking Level",
-        "description": "Target system volume while recording"
+        "title": "Уровень приглушения",
+        "description": "Целевая громкость системы во время записи"
       },
       "audioFeedback": {
         "label": "Аудио обратная связь",
