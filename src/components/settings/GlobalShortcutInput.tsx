@@ -1,26 +1,25 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { type } from "@tauri-apps/plugin-os";
 import {
   getKeyName,
   formatKeyCombination,
   normalizeKey,
-  type OSType,
 } from "../../lib/utils/keyboard";
 import { ResetButton } from "../ui/ResetButton";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
+import { useOsType } from "../../hooks/useOsType";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
 
-interface HandyShortcutProps {
+interface GlobalShortcutInputProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
   shortcutId: string;
   disabled?: boolean;
 }
 
-export const HandyShortcut: React.FC<HandyShortcutProps> = ({
+export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
   shortcutId,
@@ -35,41 +34,10 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     null,
   );
   const [originalBinding, setOriginalBinding] = useState<string>("");
-  const [osType, setOsType] = useState<OSType>("unknown");
   const shortcutRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const osType = useOsType();
 
   const bindings = getSetting("bindings") || {};
-
-  // Detect and store OS type
-  useEffect(() => {
-    const detectOsType = async () => {
-      try {
-        const detectedType = type();
-        let normalizedType: OSType;
-
-        switch (detectedType) {
-          case "macos":
-            normalizedType = "macos";
-            break;
-          case "windows":
-            normalizedType = "windows";
-            break;
-          case "linux":
-            normalizedType = "linux";
-            break;
-          default:
-            normalizedType = "unknown";
-        }
-
-        setOsType(normalizedType);
-      } catch (error) {
-        console.error("Error detecting OS type:", error);
-        setOsType("unknown");
-      }
-    };
-
-    detectOsType();
-  }, []);
 
   useEffect(() => {
     // Only add event listeners when we're in editing mode

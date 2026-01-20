@@ -7,7 +7,7 @@ import { SettingsGroup } from "../../ui/SettingsGroup";
 import { AlwaysOnMicrophone } from "../AlwaysOnMicrophone";
 import { SoundPicker } from "../SoundPicker";
 import { ClamshellMicrophoneSelector } from "../ClamshellMicrophoneSelector";
-import { HandyShortcut } from "../HandyShortcut";
+import { ShortcutInput } from "../ShortcutInput";
 import { UpdateChecksToggle } from "../UpdateChecksToggle";
 import { useSettings } from "../../../hooks/useSettings";
 
@@ -31,7 +31,7 @@ export const DebugSettings: React.FC = () => {
         <ClamshellMicrophoneSelector descriptionMode="tooltip" grouped={true} />
         {/* Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration */}
         {!isLinux && (
-          <HandyShortcut
+          <ShortcutInput
             shortcutId="cancel"
             grouped={true}
             disabled={pushToTalk}

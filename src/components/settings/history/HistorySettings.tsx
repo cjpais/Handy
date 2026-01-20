@@ -5,12 +5,10 @@ import { Button } from "../../ui/Button";
 import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { platform } from "@tauri-apps/plugin-os";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
-
-const IS_LINUX = platform() === "linux";
+import { useOsType } from "@/hooks/useOsType";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -35,6 +33,7 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
 
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
+  const osType = useOsType();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,7 +96,7 @@ export const HistorySettings: React.FC = () => {
     try {
       const result = await commands.getAudioFilePath(fileName);
       if (result.status === "ok") {
-        if (IS_LINUX) {
+        if (osType === "linux") {
           const fileData = await readFile(result.data);
           const blob = new Blob([fileData], { type: "audio/wav" });
 

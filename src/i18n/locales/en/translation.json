@@ -365,6 +365,11 @@
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "App Data:",
         "models": "Models:",
