@@ -132,6 +132,7 @@ pub enum PasteMethod {
     None,
     ShiftInsert,
     CtrlShiftV,
+    ExternalScript,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -315,6 +316,7 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
+    pub external_script_path: Option<String>,
 }
 
 fn default_model() -> String {
@@ -605,6 +607,7 @@ pub fn get_default_settings() -> AppSettings {
         app_language: default_app_language(),
         experimental_enabled: false,
         keyboard_implementation: KeyboardImplementation::default(),
+        external_script_path: None,
     }
 }
 
