@@ -1,16 +1,13 @@
-use crate::settings::PostProcessProvider;
+use crate::settings::{PostProcessProvider, CUSTOM_LLM_BASE_URL_ENV};
 use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use std::env;
 
-// Environment variable name for custom LLM base URL override
-const CUSTOM_LLM_BASE_URL_ENV: &str = "HANDY_CUSTOM_LLM_BASE_URL";
-
 /// Get the effective base URL for a provider.
 /// For the "custom" provider, checks the environment variable first.
 /// This is called fresh on each invocation to pick up runtime changes.
-pub fn get_effective_base_url(provider: &PostProcessProvider) -> String {
+fn get_effective_base_url(provider: &PostProcessProvider) -> String {
     if provider.id == "custom" {
         // Check environment variable for custom provider override
         if let Ok(env_url) = env::var(CUSTOM_LLM_BASE_URL_ENV) {
@@ -224,7 +221,7 @@ mod tests {
     #[test]
     fn test_get_effective_base_url_custom_provider_with_env() {
         // Set environment variable
-        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "http://custom-server:8080/v1");
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "http://custom-server:8080/v1");
 
         let provider = PostProcessProvider {
             id: "custom".to_string(),
@@ -238,13 +235,13 @@ mod tests {
         assert_eq!(result, "http://custom-server:8080/v1");
 
         // Clean up
-        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
     }
 
     #[test]
     fn test_get_effective_base_url_custom_provider_without_env() {
         // Ensure env var is not set
-        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
 
         let provider = PostProcessProvider {
             id: "custom".to_string(),
@@ -261,7 +258,7 @@ mod tests {
     #[test]
     fn test_get_effective_base_url_custom_provider_with_empty_env() {
         // Set empty environment variable
-        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "  ");
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "  ");
 
         let provider = PostProcessProvider {
             id: "custom".to_string(),
@@ -275,13 +272,13 @@ mod tests {
         assert_eq!(result, "http://localhost:11434/v1");
 
         // Clean up
-        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
     }
 
     #[test]
     fn test_get_effective_base_url_non_custom_provider() {
         // Set environment variable (should be ignored for non-custom provider)
-        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "http://custom-server:8080/v1");
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "http://custom-server:8080/v1");
 
         let provider = PostProcessProvider {
             id: "openai".to_string(),
@@ -295,13 +292,13 @@ mod tests {
         assert_eq!(result, "https://api.openai.com/v1");
 
         // Clean up
-        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
     }
 
     #[test]
     fn test_get_effective_base_url_strips_trailing_slash() {
         // Set environment variable with trailing slash
-        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "http://custom-server:8080/v1/");
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "http://custom-server:8080/v1/");
 
         let provider = PostProcessProvider {
             id: "custom".to_string(),
@@ -315,6 +312,6 @@ mod tests {
         assert_eq!(result, "http://custom-server:8080/v1");
 
         // Clean up
-        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
     }
 }
