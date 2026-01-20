@@ -193,6 +193,12 @@ jobs:
           vulkan_version: 1.4.335.0
           cache: true
 
+      - name: Install Vulkan runtime libraries (Ubuntu ARM64)
+        if: contains(inputs.platform, 'ubuntu') && contains(inputs.platform, 'arm')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan-dev mesa-vulkan-drivers
+
       - name: Prepare Vulkan SDK for Ubuntu 22.04
         if: contains(inputs.platform, 'ubuntu-22.04') && !contains(inputs.platform, 'arm')
         run: |
