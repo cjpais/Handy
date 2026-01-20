@@ -190,7 +190,7 @@ jobs:
         if: contains(inputs.platform, 'ubuntu') && contains(inputs.platform, 'arm')
         uses: jakoch/install-vulkan-sdk-action@v1
         with:
-          vulkan_version: 1.3.290.0
+          vulkan_version: 1.4.335.0
           cache: true
 
       - name: Prepare Vulkan SDK for Ubuntu 22.04
