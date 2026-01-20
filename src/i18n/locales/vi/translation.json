@@ -145,6 +145,14 @@
         "placeholder": "Chọn micrô...",
         "loading": "Đang tải..."
       },
+      "audioDucking": {
+        "label": "Audio Ducking",
+        "description": "Lower system audio while recording"
+      },
+      "duckingLevel": {
+        "title": "Ducking Level",
+        "description": "Target system volume while recording"
+      },
       "audioFeedback": {
         "label": "Phản hồi âm thanh",
         "description": "Phát âm thanh khi bắt đầu và kết thúc ghi âm"

@@ -128,6 +128,14 @@
         "placeholder": "Vyberte mikrofon...",
         "loading": "Načítání..."
       },
+      "audioDucking": {
+        "label": "Audio Ducking",
+        "description": "Lower system audio while recording"
+      },
+      "duckingLevel": {
+        "title": "Ducking Level",
+        "description": "Target system volume while recording"
+      },
       "audioFeedback": {
         "label": "Zvuková odezva",
         "description": "Přehrát zvuk při zahájení a ukončení nahrávání"

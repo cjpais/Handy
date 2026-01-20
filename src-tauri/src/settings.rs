@@ -1,6 +1,7 @@
 use log::{debug, warn};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 use specta::Type;
 use std::collections::HashMap;
 use tauri::AppHandle;
@@ -249,6 +250,10 @@ pub struct AppSettings {
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
     pub audio_feedback_volume: f32,
+    #[serde(default)]
+    pub audio_ducking_enabled: bool,
+    #[serde(default = "default_audio_ducking_level")]
+    pub audio_ducking_level: f32,
     #[serde(default = "default_sound_theme")]
     pub sound_theme: SoundTheme,
     #[serde(default = "default_start_hidden")]
@@ -305,8 +310,6 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
-    #[serde(default)]
-    pub mute_while_recording: bool,
     #[serde(default)]
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
@@ -374,6 +377,10 @@ fn default_recording_retention_period() -> RecordingRetentionPeriod {
 
 fn default_audio_feedback_volume() -> f32 {
     1.0
+}
+
+fn default_audio_ducking_level() -> f32 {
+    0.2
 }
 
 fn default_sound_theme() -> SoundTheme {
@@ -533,6 +540,36 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+fn migrate_audio_ducking(settings: &mut AppSettings, settings_value: Option<&Value>) -> bool {
+    let Some(settings_value) = settings_value else {
+        return false;
+    };
+
+    let mute_value = settings_value
+        .get("mute_while_recording")
+        .and_then(|value| value.as_bool());
+
+    if mute_value.is_none() {
+        return false;
+    }
+
+    let mut updated = false;
+
+    if settings_value.get("audio_ducking_enabled").is_none() {
+        if let Some(mute_value) = mute_value {
+            settings.audio_ducking_enabled = mute_value;
+            updated = true;
+        }
+    }
+
+    if mute_value.unwrap_or(false) && settings_value.get("audio_ducking_level").is_none() {
+        settings.audio_ducking_level = 0.0;
+        updated = true;
+    }
+
+    updated
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -572,6 +609,8 @@ pub fn get_default_settings() -> AppSettings {
         push_to_talk: true,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
+        audio_ducking_enabled: false,
+        audio_ducking_level: default_audio_ducking_level(),
         sound_theme: default_sound_theme(),
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
@@ -600,7 +639,6 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
-        mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
         experimental_enabled: false,
@@ -637,13 +675,16 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
+    let mut updated = false;
+    let mut raw_settings: Option<Value> = None;
+
     let mut settings = if let Some(settings_value) = store.get("settings") {
+        raw_settings = Some(settings_value.clone());
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(mut settings) => {
                 debug!("Found existing settings: {:?}", settings);
                 let default_settings = get_default_settings();
-                let mut updated = false;
 
                 // Merge default bindings into existing settings
                 for (key, value) in default_settings.bindings {
@@ -654,28 +695,31 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
                     }
                 }
 
-                if updated {
-                    debug!("Settings updated with new bindings");
-                    store.set("settings", serde_json::to_value(&settings).unwrap());
-                }
-
                 settings
             }
             Err(e) => {
                 warn!("Failed to parse settings: {}", e);
+                raw_settings = None;
+                updated = true;
                 // Fall back to default settings if parsing fails
-                let default_settings = get_default_settings();
-                store.set("settings", serde_json::to_value(&default_settings).unwrap());
-                default_settings
+                get_default_settings()
             }
         }
     } else {
-        let default_settings = get_default_settings();
-        store.set("settings", serde_json::to_value(&default_settings).unwrap());
-        default_settings
+        updated = true;
+        get_default_settings()
     };
 
     if ensure_post_process_defaults(&mut settings) {
+        updated = true;
+    }
+
+    if migrate_audio_ducking(&mut settings, raw_settings.as_ref()) {
+        updated = true;
+    }
+
+    if updated {
+        debug!("Settings updated with new defaults");
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -687,19 +731,33 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         .store(SETTINGS_STORE_PATH)
         .expect("Failed to initialize store");
 
+    let mut updated = false;
+    let mut raw_settings: Option<Value> = None;
+
     let mut settings = if let Some(settings_value) = store.get("settings") {
-        serde_json::from_value::<AppSettings>(settings_value).unwrap_or_else(|_| {
-            let default_settings = get_default_settings();
-            store.set("settings", serde_json::to_value(&default_settings).unwrap());
-            default_settings
-        })
+        raw_settings = Some(settings_value.clone());
+        match serde_json::from_value::<AppSettings>(settings_value) {
+            Ok(settings) => settings,
+            Err(_) => {
+                raw_settings = None;
+                updated = true;
+                get_default_settings()
+            }
+        }
     } else {
-        let default_settings = get_default_settings();
-        store.set("settings", serde_json::to_value(&default_settings).unwrap());
-        default_settings
+        updated = true;
+        get_default_settings()
     };
 
     if ensure_post_process_defaults(&mut settings) {
+        updated = true;
+    }
+
+    if migrate_audio_ducking(&mut settings, raw_settings.as_ref()) {
+        updated = true;
+    }
+
+    if updated {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

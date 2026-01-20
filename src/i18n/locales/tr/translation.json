@@ -148,6 +148,14 @@
         "placeholder": "Mikrofon seçin...",
         "loading": "Yükleniyor..."
       },
+      "audioDucking": {
+        "label": "Audio Ducking",
+        "description": "Lower system audio while recording"
+      },
+      "duckingLevel": {
+        "title": "Ducking Level",
+        "description": "Target system volume while recording"
+      },
       "audioFeedback": {
         "label": "Sesli Geri Bildirim",
         "description": "Kayıt başladığında ve bittiğinde ses çalar"

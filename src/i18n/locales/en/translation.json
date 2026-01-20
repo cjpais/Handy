@@ -148,6 +148,14 @@
         "placeholder": "Select microphone...",
         "loading": "Loading..."
       },
+      "audioDucking": {
+        "label": "Audio Ducking",
+        "description": "Lower system audio while recording"
+      },
+      "duckingLevel": {
+        "title": "Ducking Level",
+        "description": "Target system volume while recording"
+      },
       "audioFeedback": {
         "label": "Audio Feedback",
         "description": "Play sound when recording starts and stops"

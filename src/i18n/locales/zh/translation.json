@@ -144,6 +144,14 @@
         "placeholder": "选择麦克风...",
         "loading": "加载中..."
       },
+      "audioDucking": {
+        "label": "Audio Ducking",
+        "description": "Lower system audio while recording"
+      },
+      "duckingLevel": {
+        "title": "Ducking Level",
+        "description": "Target system volume while recording"
+      },
       "audioFeedback": {
         "label": "音频反馈",
         "description": "录制开始和停止时播放声音"

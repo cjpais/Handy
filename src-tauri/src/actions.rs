@@ -229,21 +229,21 @@ impl ShortcutAction for TranscribeAction {
 
         let mut recording_started = false;
         if is_always_on {
-            // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
+            // Always-on mode: Play audio feedback immediately, then apply ducking after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
             let rm_clone = Arc::clone(&rm);
             let app_clone = app.clone();
             // The blocking helper exits immediately if audio feedback is disabled,
-            // so we can always reuse this thread to ensure mute happens right after playback.
+            // so we can always reuse this thread to ensure ducking happens right after playback.
             std::thread::spawn(move || {
                 play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                rm_clone.apply_mute();
+                rm_clone.apply_ducking();
             });
 
             recording_started = rm.try_start_recording(&binding_id);
             debug!("Recording started: {}", recording_started);
         } else {
-            // On-demand mode: Start recording first, then play audio feedback, then apply mute
+            // On-demand mode: Start recording first, then play audio feedback, then apply ducking
             // This allows the microphone to be activated before playing the sound
             debug!("On-demand mode: Starting recording first, then audio feedback");
             let recording_start_time = Instant::now();
@@ -255,11 +255,11 @@ impl ShortcutAction for TranscribeAction {
                 let rm_clone = Arc::clone(&rm);
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_millis(100));
-                    debug!("Handling delayed audio feedback/mute sequence");
+                    debug!("Handling delayed audio feedback/ducking sequence");
                     // Helper handles disabled audio feedback by returning early, so we reuse it
-                    // to keep mute sequencing consistent in every mode.
+                    // to keep ducking sequencing consistent in every mode.
                     play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                    rm_clone.apply_mute();
+                    rm_clone.apply_ducking();
                 });
             } else {
                 debug!("Failed to start recording");
@@ -292,8 +292,8 @@ impl ShortcutAction for TranscribeAction {
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
 
-        // Unmute before playing audio feedback so the stop sound is audible
-        rm.remove_mute();
+        // Restore volume before playing audio feedback so the stop sound is audible
+        rm.remove_ducking();
 
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);

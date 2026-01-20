@@ -7,6 +7,281 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
 
+#[derive(Clone, Copy, Debug)]
+struct VolumeSnapshot {
+    level: f32,
+    muted: bool,
+}
+
+fn clamp_volume(level: f32) -> f32 {
+    level.clamp(0.0, 1.0)
+}
+
+fn get_volume_snapshot() -> Option<VolumeSnapshot> {
+    #[cfg(target_os = "windows")]
+    {
+        unsafe {
+            use windows::Win32::{
+                Foundation::BOOL,
+                Media::Audio::{
+                    eMultimedia, eRender, Endpoints::IAudioEndpointVolume, IMMDeviceEnumerator,
+                    MMDeviceEnumerator,
+                },
+                System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED},
+            };
+
+            macro_rules! unwrap_or_none {
+                ($expr:expr) => {
+                    match $expr {
+                        Ok(val) => val,
+                        Err(_) => return None,
+                    }
+                };
+            }
+
+            // Initialize the COM library for this thread.
+            // If already initialized (e.g., by another library like Tauri), this does nothing.
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+            let all_devices: IMMDeviceEnumerator =
+                unwrap_or_none!(CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL));
+            let default_device =
+                unwrap_or_none!(all_devices.GetDefaultAudioEndpoint(eRender, eMultimedia));
+            let volume_interface =
+                unwrap_or_none!(default_device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None));
+
+            let mut level = 0.0f32;
+            if volume_interface
+                .GetMasterVolumeLevelScalar(&mut level)
+                .is_err()
+            {
+                return None;
+            }
+
+            let mut muted = BOOL(0);
+            if volume_interface.GetMute(&mut muted).is_err() {
+                return None;
+            }
+
+            return Some(VolumeSnapshot {
+                level: clamp_volume(level),
+                muted: muted.as_bool(),
+            });
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+
+        if let Ok(output) = Command::new("wpctl")
+            .args(["get-volume", "@DEFAULT_AUDIO_SINK@"])
+            .output()
+        {
+            if output.status.success() {
+                let text = String::from_utf8_lossy(&output.stdout);
+                let muted = text.contains("[MUTED]");
+                let tokens: Vec<&str> = text.split_whitespace().collect();
+                let mut level = None;
+
+                for (index, token) in tokens.iter().enumerate() {
+                    if token.starts_with("Volume:") {
+                        let value = token.trim_start_matches("Volume:");
+                        let candidate = if value.is_empty() {
+                            tokens.get(index + 1).copied()
+                        } else {
+                            Some(*token)
+                        };
+
+                        if let Some(candidate) = candidate {
+                            if let Ok(parsed) =
+                                candidate.trim_start_matches("Volume:").parse::<f32>()
+                            {
+                                level = Some(parsed);
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                if let Some(level) = level {
+                    return Some(VolumeSnapshot {
+                        level: clamp_volume(level),
+                        muted,
+                    });
+                }
+            }
+        }
+
+        if let Ok(output) = Command::new("pactl")
+            .args(["get-sink-volume", "@DEFAULT_SINK@"])
+            .output()
+        {
+            if output.status.success() {
+                let text = String::from_utf8_lossy(&output.stdout);
+                let percent = text
+                    .split_whitespace()
+                    .find(|token| token.ends_with('%'))
+                    .and_then(|token| token.trim_end_matches('%').parse::<f32>().ok());
+
+                if let Some(percent) = percent {
+                    let muted = Command::new("pactl")
+                        .args(["get-sink-mute", "@DEFAULT_SINK@"])
+                        .output()
+                        .ok()
+                        .and_then(|output| String::from_utf8(output.stdout).ok())
+                        .map(|output| output.to_lowercase().contains("yes"))
+                        .unwrap_or(false);
+
+                    return Some(VolumeSnapshot {
+                        level: clamp_volume(percent / 100.0),
+                        muted,
+                    });
+                }
+            }
+        }
+
+        if let Ok(output) = Command::new("amixer").args(["get", "Master"]).output() {
+            if output.status.success() {
+                let text = String::from_utf8_lossy(&output.stdout);
+                let percent = text
+                    .split_whitespace()
+                    .find(|token| token.starts_with('[') && token.ends_with("%]"))
+                    .and_then(|token| {
+                        token
+                            .trim_start_matches('[')
+                            .trim_end_matches("]")
+                            .trim_end_matches('%')
+                            .parse::<f32>()
+                            .ok()
+                    });
+
+                if let Some(percent) = percent {
+                    let muted = text.contains("[off]");
+                    return Some(VolumeSnapshot {
+                        level: clamp_volume(percent / 100.0),
+                        muted,
+                    });
+                }
+            }
+        }
+
+        return None;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let script =
+            "output volume of (get volume settings) & \",\" & output muted of (get volume settings)";
+        let output = Command::new("osascript")
+            .args(["-e", script])
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+
+        let text = String::from_utf8_lossy(&output.stdout);
+        let mut parts = text.trim().split(',');
+        let volume = parts.next()?.trim().parse::<f32>().ok()?;
+        let muted = parts
+            .next()
+            .map(|value| value.trim().eq_ignore_ascii_case("true"))
+            .unwrap_or(false);
+
+        return Some(VolumeSnapshot {
+            level: clamp_volume(volume / 100.0),
+            muted,
+        });
+    }
+
+    #[allow(unreachable_code)]
+    None
+}
+
+fn set_volume(level: f32) {
+    // Expected behavior:
+    // - Windows: works on most systems using standard audio drivers.
+    // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
+    //   but some distros may lack the tools used.
+    // - macOS: works on most standard setups via AppleScript.
+    // If unsupported, fails silently.
+    let level = clamp_volume(level);
+
+    #[cfg(target_os = "windows")]
+    {
+        unsafe {
+            use windows::Win32::{
+                Media::Audio::{
+                    eMultimedia, eRender, Endpoints::IAudioEndpointVolume, IMMDeviceEnumerator,
+                    MMDeviceEnumerator,
+                },
+                System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED},
+            };
+
+            macro_rules! unwrap_or_return {
+                ($expr:expr) => {
+                    match $expr {
+                        Ok(val) => val,
+                        Err(_) => return,
+                    }
+                };
+            }
+
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+            let all_devices: IMMDeviceEnumerator =
+                unwrap_or_return!(CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL));
+            let default_device =
+                unwrap_or_return!(all_devices.GetDefaultAudioEndpoint(eRender, eMultimedia));
+            let volume_interface = unwrap_or_return!(
+                default_device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None)
+            );
+
+            let _ = volume_interface.SetMasterVolumeLevelScalar(level, std::ptr::null());
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+
+        let level_str = format!("{level:.2}");
+        let percent = format!("{}%", (level * 100.0).round());
+
+        if Command::new("wpctl")
+            .args(["set-volume", "@DEFAULT_AUDIO_SINK@", &level_str])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return;
+        }
+
+        if Command::new("pactl")
+            .args(["set-sink-volume", "@DEFAULT_SINK@", &percent])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
+            return;
+        }
+
+        let _ = Command::new("amixer")
+            .args(["set", "Master", &percent])
+            .output();
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let volume = (level * 100.0).round() as i32;
+        let script = format!("set volume output volume {}", volume);
+        let _ = Command::new("osascript").args(["-e", &script]).output();
+    }
+}
+
 fn set_mute(mute: bool) {
     // Expected behavior:
     // - Windows: works on most systems using standard audio drivers.
@@ -148,7 +423,7 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
-    did_mute: Arc<Mutex<bool>>,
+    ducking_snapshot: Arc<Mutex<Option<VolumeSnapshot>>>,
 }
 
 impl AudioRecordingManager {
@@ -170,7 +445,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
-            did_mute: Arc::new(Mutex::new(false)),
+            ducking_snapshot: Arc::new(Mutex::new(None)),
         };
 
         // Always-on?  Open immediately.
@@ -212,25 +487,51 @@ impl AudioRecordingManager {
 
     /* ---------- microphone life-cycle -------------------------------------- */
 
-    /// Applies mute if mute_while_recording is enabled and stream is open
-    pub fn apply_mute(&self) {
+    /// Applies audio ducking if enabled and stream is open
+    pub fn apply_ducking(&self) {
         let settings = get_settings(&self.app_handle);
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-
-        if settings.mute_while_recording && *self.is_open.lock().unwrap() {
-            set_mute(true);
-            *did_mute_guard = true;
-            debug!("Mute applied");
+        if !settings.audio_ducking_enabled || !*self.is_open.lock().unwrap() {
+            return;
         }
+
+        let mut snapshot_guard = self.ducking_snapshot.lock().unwrap();
+        if snapshot_guard.is_some() {
+            return;
+        }
+
+        let Some(snapshot) = get_volume_snapshot() else {
+            debug!("Unable to read system volume for ducking");
+            return;
+        };
+
+        if snapshot.muted {
+            debug!("System output muted; skipping ducking");
+            return;
+        }
+
+        let target_level = clamp_volume(settings.audio_ducking_level);
+        if target_level >= snapshot.level {
+            debug!("Ducking target above current volume; skipping");
+            return;
+        }
+
+        set_volume(target_level);
+        *snapshot_guard = Some(snapshot);
+        debug!("Audio ducking applied");
     }
 
-    /// Removes mute if it was applied
-    pub fn remove_mute(&self) {
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
-            set_mute(false);
-            *did_mute_guard = false;
-            debug!("Mute removed");
+    /// Removes audio ducking if it was applied
+    pub fn remove_ducking(&self) {
+        let mut snapshot_guard = self.ducking_snapshot.lock().unwrap();
+        if let Some(snapshot) = snapshot_guard.take() {
+            let current_muted = get_volume_snapshot()
+                .map(|current| current.muted)
+                .unwrap_or(false);
+            set_volume(snapshot.level);
+            if snapshot.muted || current_muted {
+                set_mute(true);
+            }
+            debug!("Audio ducking removed");
         }
     }
 
@@ -243,9 +544,9 @@ impl AudioRecordingManager {
 
         let start_time = Instant::now();
 
-        // Don't mute immediately - caller will handle muting after audio feedback
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        *did_mute_guard = false;
+        // Don't duck immediately - caller will handle ducking after audio feedback
+        let mut ducking_guard = self.ducking_snapshot.lock().unwrap();
+        *ducking_guard = None;
 
         let vad_path = self
             .app_handle
@@ -287,11 +588,7 @@ impl AudioRecordingManager {
             return;
         }
 
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
-            set_mute(false);
-        }
-        *did_mute_guard = false;
+        self.remove_ducking();
 
         if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
             // If still recording, stop first.
@@ -426,6 +723,7 @@ impl AudioRecordingManager {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Recording { .. } = *state {
+            self.remove_ducking();
             *state = RecordingState::Idle;
             drop(state);
 
