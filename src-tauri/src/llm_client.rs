@@ -215,3 +215,106 @@ pub async fn fetch_models(
 
     Ok(models)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::settings::PostProcessProvider;
+
+    #[test]
+    fn test_get_effective_base_url_custom_provider_with_env() {
+        // Set environment variable
+        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "http://custom-server:8080/v1");
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://custom-server:8080/v1");
+
+        // Clean up
+        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+    }
+
+    #[test]
+    fn test_get_effective_base_url_custom_provider_without_env() {
+        // Ensure env var is not set
+        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://localhost:11434/v1");
+    }
+
+    #[test]
+    fn test_get_effective_base_url_custom_provider_with_empty_env() {
+        // Set empty environment variable
+        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "  ");
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://localhost:11434/v1");
+
+        // Clean up
+        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+    }
+
+    #[test]
+    fn test_get_effective_base_url_non_custom_provider() {
+        // Set environment variable (should be ignored for non-custom provider)
+        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "http://custom-server:8080/v1");
+
+        let provider = PostProcessProvider {
+            id: "openai".to_string(),
+            label: "OpenAI".to_string(),
+            base_url: "https://api.openai.com/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "https://api.openai.com/v1");
+
+        // Clean up
+        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+    }
+
+    #[test]
+    fn test_get_effective_base_url_strips_trailing_slash() {
+        // Set environment variable with trailing slash
+        std::env::set_var("HANDY_CUSTOM_LLM_BASE_URL", "http://custom-server:8080/v1/");
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1/".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://custom-server:8080/v1");
+
+        // Clean up
+        std::env::remove_var("HANDY_CUSTOM_LLM_BASE_URL");
+    }
+}
