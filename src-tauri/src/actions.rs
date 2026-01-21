@@ -223,9 +223,6 @@ impl ShortcutAction for TranscribeAction {
         tm.initiate_model_load();
 
         let binding_id = binding_id.to_string();
-        change_tray_icon(app, TrayIconState::Recording);
-        show_recording_overlay(app);
-
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
         // Get the microphone mode to determine audio feedback timing
@@ -237,17 +234,19 @@ impl ShortcutAction for TranscribeAction {
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
-            let rm_clone = Arc::clone(&rm);
-            let app_clone = app.clone();
-            // The blocking helper exits immediately if audio feedback is disabled,
-            // so we can always reuse this thread to ensure mute happens right after playback.
-            std::thread::spawn(move || {
-                play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                rm_clone.apply_mute();
-            });
-
             recording_started = rm.try_start_recording(&binding_id);
             debug!("Recording started: {}", recording_started);
+
+            if recording_started {
+                let rm_clone = Arc::clone(&rm);
+                let app_clone = app.clone();
+                // The blocking helper exits immediately if audio feedback is disabled,
+                // so we can always reuse this thread to ensure mute happens right after playback.
+                std::thread::spawn(move || {
+                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                    rm_clone.apply_mute();
+                });
+            }
         } else {
             // On-demand mode: Start recording first, then play audio feedback, then apply mute
             // This allows the microphone to be activated before playing the sound
@@ -273,8 +272,17 @@ impl ShortcutAction for TranscribeAction {
         }
 
         if recording_started {
+            change_tray_icon(app, TrayIconState::Recording);
+            show_recording_overlay(app);
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+        } else {
+            utils::hide_recording_overlay(app);
+            change_tray_icon(app, TrayIconState::Idle);
+
+            if let Ok(mut states) = app.state::<ManagedToggleState>().lock() {
+                states.active_toggles.insert(binding_id.clone(), false);
+            }
         }
 
         debug!(
@@ -292,6 +300,18 @@ impl ShortcutAction for TranscribeAction {
 
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
+
+        if !rm.is_recording() {
+            utils::hide_recording_overlay(app);
+            change_tray_icon(app, TrayIconState::Idle);
+
+            if let Ok(mut states) = app.state::<ManagedToggleState>().lock() {
+                states
+                    .active_toggles
+                    .insert(binding_id.to_string(), false);
+            }
+            return;
+        }
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 

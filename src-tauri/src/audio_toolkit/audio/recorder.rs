@@ -129,18 +129,32 @@ impl AudioRecorder {
     }
 
     pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Start)?;
-        }
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::new(std::io::ErrorKind::NotConnected, "AudioRecorder not open"))?;
+        tx.send(Cmd::Start)?;
         Ok(())
     }
 
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         let (resp_tx, resp_rx) = mpsc::channel();
-        if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Stop(resp_tx))?;
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::new(std::io::ErrorKind::NotConnected, "AudioRecorder not open"))?;
+        tx.send(Cmd::Stop(resp_tx))?;
+        match resp_rx.recv_timeout(Duration::from_secs(5)) {
+            Ok(samples) => Ok(samples),
+            Err(mpsc::RecvTimeoutError::Timeout) => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "Timed out waiting for AudioRecorder stop",
+            ))),
+            Err(mpsc::RecvTimeoutError::Disconnected) => Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::BrokenPipe,
+                "AudioRecorder worker disconnected while waiting for stop",
+            ))),
         }
-        Ok(resp_rx.recv()?) // wait for the samples
     }
 
     pub fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -287,31 +301,15 @@ fn run_consumer(
         }
     }
 
+    let mut samples_disconnected = false;
+
     loop {
-        let raw = match sample_rx.recv() {
-            Ok(s) => s,
-            Err(_) => break, // stream closed
-        };
-
-        // ---------- spectrum processing ---------------------------------- //
-        if let Some(buckets) = visualizer.feed(&raw) {
-            if let Some(cb) = &level_cb {
-                cb(buckets);
-            }
-        }
-
-        // ---------- existing pipeline ------------------------------------ //
-        frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
-        });
-
-        // non-blocking check for a command
         while let Ok(cmd) = cmd_rx.try_recv() {
             match cmd {
                 Cmd::Start => {
                     processed_samples.clear();
                     recording = true;
-                    visualizer.reset(); // Reset visualization buffer
+                    visualizer.reset();
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
                     }
@@ -320,13 +318,57 @@ fn run_consumer(
                     recording = false;
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        // we still want to process the last few frames
                         handle_frame(frame, true, &vad, &mut processed_samples)
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
                 }
                 Cmd::Shutdown => return,
+            }
+        }
+
+        if samples_disconnected {
+            match cmd_rx.recv() {
+                Ok(cmd) => {
+                    match cmd {
+                        Cmd::Start => {
+                            processed_samples.clear();
+                            recording = true;
+                            visualizer.reset();
+                            if let Some(v) = &vad {
+                                v.lock().unwrap().reset();
+                            }
+                        }
+                        Cmd::Stop(reply_tx) => {
+                            recording = false;
+                            frame_resampler.finish(&mut |frame: &[f32]| {
+                                handle_frame(frame, true, &vad, &mut processed_samples)
+                            });
+                            let _ = reply_tx.send(std::mem::take(&mut processed_samples));
+                        }
+                        Cmd::Shutdown => return,
+                    }
+                }
+                Err(_) => return,
+            }
+            continue;
+        }
+
+        match sample_rx.recv_timeout(Duration::from_millis(50)) {
+            Ok(raw) => {
+                if let Some(buckets) = visualizer.feed(&raw) {
+                    if let Some(cb) = &level_cb {
+                        cb(buckets);
+                    }
+                }
+
+                frame_resampler.push(&raw, &mut |frame: &[f32]| {
+                    handle_frame(frame, recording, &vad, &mut processed_samples)
+                });
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                samples_disconnected = true;
             }
         }
     }

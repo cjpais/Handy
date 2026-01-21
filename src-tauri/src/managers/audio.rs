@@ -215,9 +215,11 @@ impl AudioRecordingManager {
     /// Applies mute if mute_while_recording is enabled and stream is open
     pub fn apply_mute(&self) {
         let settings = get_settings(&self.app_handle);
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        let is_open = *self.is_open.lock().unwrap();
+        let is_recording = *self.is_recording.lock().unwrap();
 
-        if settings.mute_while_recording && *self.is_open.lock().unwrap() {
+        if settings.mute_while_recording && is_open && is_recording {
+            let mut did_mute_guard = self.did_mute.lock().unwrap();
             set_mute(true);
             *did_mute_guard = true;
             debug!("Mute applied");
@@ -287,20 +289,25 @@ impl AudioRecordingManager {
             return;
         }
 
+        let mut recorder_guard = self.recorder.lock().unwrap();
+        let mut is_recording_guard = self.is_recording.lock().unwrap();
+
+        if *is_recording_guard {
+            if let Some(rec) = recorder_guard.as_mut() {
+                let _ = rec.stop();
+            }
+            *is_recording_guard = false;
+        }
+
+        if let Some(rec) = recorder_guard.as_mut() {
+            let _ = rec.close();
+        }
+
         let mut did_mute_guard = self.did_mute.lock().unwrap();
         if *did_mute_guard {
             set_mute(false);
         }
         *did_mute_guard = false;
-
-        if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
-            // If still recording, stop first.
-            if *self.is_recording.lock().unwrap() {
-                let _ = rec.stop();
-                *self.is_recording.lock().unwrap() = false;
-            }
-            let _ = rec.close();
-        }
 
         *open_flag = false;
         debug!("Microphone stream stopped");
@@ -344,8 +351,16 @@ impl AudioRecordingManager {
                 }
             }
 
-            if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                if rec.start().is_ok() {
+            let start_result = {
+                let recorder_guard = self.recorder.lock().unwrap();
+                match recorder_guard.as_ref() {
+                    Some(rec) => rec.start().map_err(|e| anyhow::anyhow!("{e}")),
+                    None => Err(anyhow::anyhow!("Recorder not available")),
+                }
+            };
+
+            match start_result {
+                Ok(()) => {
                     *self.is_recording.lock().unwrap() = true;
                     *state = RecordingState::Recording {
                         binding_id: binding_id.to_string(),
@@ -353,9 +368,18 @@ impl AudioRecordingManager {
                     debug!("Recording started for binding {binding_id}");
                     return true;
                 }
+                Err(e) => {
+                    error!("Failed to start recorder: {e}");
+                    drop(state);
+                    self.stop_microphone_stream();
+                    if matches!(*self.mode.lock().unwrap(), MicrophoneMode::AlwaysOn) {
+                        if let Err(e) = self.start_microphone_stream() {
+                            error!("Failed to restart microphone stream after start failure: {e}");
+                        }
+                    }
+                    return false;
+                }
             }
-            error!("Recorder not available");
-            false
         } else {
             false
         }
@@ -380,17 +404,28 @@ impl AudioRecordingManager {
                 *state = RecordingState::Idle;
                 drop(state);
 
-                let samples = if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                    match rec.stop() {
-                        Ok(buf) => buf,
-                        Err(e) => {
-                            error!("stop() failed: {e}");
-                            Vec::new()
-                        }
+                let stop_result = {
+                    let recorder_guard = self.recorder.lock().unwrap();
+                    match recorder_guard.as_ref() {
+                        Some(rec) => rec.stop().map_err(|e| anyhow::anyhow!("{e}")),
+                        None => Err(anyhow::anyhow!("Recorder not available")),
                     }
-                } else {
-                    error!("Recorder not available");
-                    Vec::new()
+                };
+
+                let samples = match stop_result {
+                    Ok(buf) => buf,
+                    Err(e) => {
+                        error!("stop() failed: {e}");
+                        self.stop_microphone_stream();
+                        if matches!(*self.mode.lock().unwrap(), MicrophoneMode::AlwaysOn) {
+                            if let Err(e) = self.start_microphone_stream() {
+                                error!(
+                                    "Failed to restart microphone stream after stop failure: {e}"
+                                );
+                            }
+                        }
+                        Vec::new()
+                    }
                 };
 
                 *self.is_recording.lock().unwrap() = false;
@@ -429,8 +464,22 @@ impl AudioRecordingManager {
             *state = RecordingState::Idle;
             drop(state);
 
-            if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                let _ = rec.stop(); // Discard the result
+            let stop_result = {
+                let recorder_guard = self.recorder.lock().unwrap();
+                match recorder_guard.as_ref() {
+                    Some(rec) => rec.stop().map_err(|e| anyhow::anyhow!("{e}")),
+                    None => Err(anyhow::anyhow!("Recorder not available")),
+                }
+            };
+
+            if let Err(e) = stop_result {
+                error!("cancel_recording stop() failed: {e}");
+                self.stop_microphone_stream();
+                if matches!(*self.mode.lock().unwrap(), MicrophoneMode::AlwaysOn) {
+                    if let Err(e) = self.start_microphone_stream() {
+                        error!("Failed to restart microphone stream after cancel failure: {e}");
+                    }
+                }
             }
 
             *self.is_recording.lock().unwrap() = false;

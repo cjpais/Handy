@@ -5,6 +5,7 @@
 
 use log::warn;
 use std::sync::Arc;
+use std::time::SystemTime;
 use tauri::{AppHandle, Manager};
 
 use crate::actions::ACTION_MAP;
@@ -68,17 +69,47 @@ pub fn handle_shortcut_event(
         let should_start: bool;
         {
             let toggle_state_manager = app.state::<ManagedToggleState>();
-            let mut states = toggle_state_manager
-                .lock()
-                .expect("Failed to lock toggle state manager");
+            let mut states = match toggle_state_manager.lock() {
+                Ok(s) => s,
+                Err(e) => {
+                    warn!("Failed to lock toggle state manager: {e}");
+                    return;
+                }
+            };
 
             let is_currently_active = states
                 .active_toggles
-                .entry(binding_id.to_string())
-                .or_insert(false);
+                .get(binding_id)
+                .copied()
+                .unwrap_or(false);
 
-            should_start = !*is_currently_active;
-            *is_currently_active = should_start;
+            should_start = !is_currently_active;
+
+            if should_start {
+                let now_ms: u64 = SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+
+                const DEBOUNCE_MS: u64 = 250;
+                let last_ms = states
+                    .last_trigger_ms
+                    .get(binding_id)
+                    .copied()
+                    .unwrap_or(0);
+
+                if now_ms.saturating_sub(last_ms) < DEBOUNCE_MS {
+                    return;
+                }
+
+                states
+                    .last_trigger_ms
+                    .insert(binding_id.to_string(), now_ms);
+            }
+
+            states
+                .active_toggles
+                .insert(binding_id.to_string(), should_start);
         } // Lock released here
 
         // Now call the action without holding the lock
