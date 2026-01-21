@@ -56,10 +56,13 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
         );
       }
 
-      options.push({
-        value: "external_script",
-        label: t("settings.advanced.pasteMethod.options.externalScript"),
-      });
+      // External script is only available on Linux
+      if (osType === "linux") {
+        options.push({
+          value: "external_script",
+          label: t("settings.advanced.pasteMethod.options.externalScript"),
+        });
+      }
 
       return options;
     };
