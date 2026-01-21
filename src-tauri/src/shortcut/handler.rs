@@ -90,11 +90,19 @@ pub fn handle_shortcut_event(
                     .duration_since(SystemTime::UNIX_EPOCH)
                     .map_or(0, |d| d.as_millis() as u64);
                 let last_ms = states.last_trigger_ms.get(binding_id).copied().unwrap_or(0);
-                if now_ms.saturating_sub(last_ms) < 250 {
+                const DEBOUNCE_MS: u64 = 250;
+                if now_ms.saturating_sub(last_ms) < DEBOUNCE_MS {
                     return;
+                }
+                states
+                    .last_trigger_ms
+                    .insert(binding_id.to_string(), now_ms);
             }
-            states.last_trigger_ms.insert(binding_id.to_string(), now_ms);
-            } // Lock released here
+
+            states
+                .active_toggles
+                .insert(binding_id.to_string(), should_start);
+        } // Lock released here
 
         // Now call the action without holding the lock
         if should_start {
@@ -103,5 +111,4 @@ pub fn handle_shortcut_event(
             action.stop(app, binding_id, hotkey_string);
         }
     }
-} 
-} // if is pressed
+}
