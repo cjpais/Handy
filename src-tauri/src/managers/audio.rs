@@ -302,7 +302,6 @@ impl AudioRecordingManager {
         if let Some(rec) = recorder_guard.as_mut() {
             let _ = rec.close();
         }
-
         let mut did_mute_guard = self.did_mute.lock().unwrap();
         if *did_mute_guard {
             set_mute(false);

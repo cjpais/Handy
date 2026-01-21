@@ -1,5 +1,5 @@
 use std::{
-    io::Error,
+    io::{Error, ErrorKind},
     sync::{mpsc, Arc, Mutex},
     time::Duration,
 };
@@ -139,22 +139,18 @@ impl AudioRecorder {
 
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         let (resp_tx, resp_rx) = mpsc::channel();
-        let tx = self
-            .cmd_tx
+        self.cmd_tx
             .as_ref()
-            .ok_or_else(|| Error::new(std::io::ErrorKind::NotConnected, "AudioRecorder not open"))?;
-        tx.send(Cmd::Stop(resp_tx))?;
-        match resp_rx.recv_timeout(Duration::from_secs(5)) {
-            Ok(samples) => Ok(samples),
-            Err(mpsc::RecvTimeoutError::Timeout) => Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::TimedOut,
-                "Timed out waiting for AudioRecorder stop",
-            ))),
-            Err(mpsc::RecvTimeoutError::Disconnected) => Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::BrokenPipe,
-                "AudioRecorder worker disconnected while waiting for stop",
-            ))),
-        }
+            .ok_or_else(|| Error::new(ErrorKind::NotConnected, "AudioRecorder not open"))?
+            .send(Cmd::Stop(resp_tx))?;
+        
+        resp_rx.recv_timeout(Duration::from_secs(5)).map_err(|e| {
+            let (kind, msg) = match e {
+                mpsc::RecvTimeoutError::Timeout => (ErrorKind::TimedOut, "Stop timed out"),
+                mpsc::RecvTimeoutError::Disconnected => (ErrorKind::BrokenPipe, "Worker disconnected"),
+            };
+            Box::new(Error::new(kind, msg)) as _
+        })
     }
 
     pub fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
