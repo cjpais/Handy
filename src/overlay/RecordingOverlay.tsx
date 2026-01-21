@@ -11,7 +11,7 @@ import { commands } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "transcribing";
+type OverlayState = "recording" | "transcribing" | "processing";
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
@@ -95,6 +95,9 @@ const RecordingOverlay: React.FC = () => {
         )}
         {state === "transcribing" && (
           <div className="transcribing-text">{t("overlay.transcribing")}</div>
+        )}
+        {state === "processing" && (
+          <div className="transcribing-text">{t("overlay.processing")}</div>
         )}
       </div>
 

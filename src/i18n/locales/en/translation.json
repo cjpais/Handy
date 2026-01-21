@@ -499,6 +499,7 @@
     "description": "Change the language of the Handy interface"
   },
   "overlay": {
-    "transcribing": "Transcribing..."
+    "transcribing": "Transcribing...",
+    "processing": "Processing..."
   }
 }

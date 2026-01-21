@@ -495,6 +495,7 @@
     "description": "Cambia el idioma de la interfaz de Handy"
   },
   "overlay": {
-    "transcribing": "Transcribiendo..."
+    "transcribing": "Transcribiendo...",
+    "processing": "Procesando..."
   }
 }
