@@ -59,11 +59,21 @@
       "rpm": {
         "compression": {
           "type": "none"
+        },
+        "files": {
+          "/usr/lib64/gstreamer-1.0/libgsttauriasset.so": "../libgsttauriasset.so"
+        }
+      },
+      "deb": {
+        "files": {
+          "/usr/lib64/gstreamer-1.0/libgsttauriasset.so": "../libgsttauriasset.so"
         }
       },
       "appimage": {
         "bundleMediaFramework": true,
-        "files": {}
+        "files": {
+          "/usr/lib64/gstreamer-1.0/libgsttauriasset.so": "../libgsttauriasset.so"
+        }
       }
     },
     "windows": {
