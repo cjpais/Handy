@@ -127,6 +127,8 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  custom_models_enabled: (value) =>
+    commands.changeCustomModelsEnabledSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
