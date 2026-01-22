@@ -83,6 +83,7 @@ fn build_console_filter() -> env_filter::Filter {
 struct ShortcutToggleStates {
     // Map: shortcut_binding_id -> is_active
     active_toggles: HashMap<String, bool>,
+    last_trigger_ms: HashMap<String, u64>,
 }
 
 type ManagedToggleState = Mutex<ShortcutToggleStates>;
