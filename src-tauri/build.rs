@@ -2,6 +2,9 @@ fn main() {
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     build_apple_intelligence_bridge();
 
+    #[cfg(target_os = "macos")]
+    build_audio_feedback_bridge();
+
     generate_tray_translations();
 
     tauri_build::build()
@@ -234,6 +237,113 @@ fn build_apple_intelligence_bridge() {
         println!("cargo:rustc-link-arg=-weak_framework");
         println!("cargo:rustc-link-arg=FoundationModels");
     }
+
+    println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
+}
+
+#[cfg(target_os = "macos")]
+fn build_audio_feedback_bridge() {
+    use std::env;
+    use std::path::PathBuf;
+    use std::process::Command;
+
+    const SWIFT_FILE: &str = "swift/audio_feedback.swift";
+    const BRIDGE_HEADER: &str = "swift/audio_feedback_bridge.h";
+
+    println!("cargo:rerun-if-changed={SWIFT_FILE}");
+    println!("cargo:rerun-if-changed={BRIDGE_HEADER}");
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let object_path = out_dir.join("audio_feedback.o");
+    let static_lib_path = out_dir.join("libaudio_feedback.a");
+
+    let sdk_path = String::from_utf8(
+        Command::new("xcrun")
+            .args(["--sdk", "macosx", "--show-sdk-path"])
+            .output()
+            .expect("Failed to locate macOS SDK")
+            .stdout,
+    )
+    .expect("SDK path is not valid UTF-8")
+    .trim()
+    .to_string();
+
+    let swiftc_path = String::from_utf8(
+        Command::new("xcrun")
+            .args(["--find", "swiftc"])
+            .output()
+            .expect("Failed to locate swiftc")
+            .stdout,
+    )
+    .expect("swiftc path is not valid UTF-8")
+    .trim()
+    .to_string();
+
+    let toolchain_swift_lib = std::path::Path::new(&swiftc_path)
+        .parent()
+        .and_then(|p| p.parent())
+        .map(|root| root.join("lib/swift/macosx"))
+        .expect("Unable to determine Swift toolchain lib directory");
+    let sdk_swift_lib = std::path::Path::new(&sdk_path).join("usr/lib/swift");
+
+    // Compile the Swift file
+    let status = Command::new("xcrun")
+        .args([
+            "swiftc",
+            "-target",
+            #[cfg(target_arch = "aarch64")]
+            "arm64-apple-macosx11.0",
+            #[cfg(target_arch = "x86_64")]
+            "x86_64-apple-macosx11.0",
+            "-sdk",
+            &sdk_path,
+            "-O",
+            "-import-objc-header",
+            BRIDGE_HEADER,
+            "-c",
+            SWIFT_FILE,
+            "-o",
+            object_path
+                .to_str()
+                .expect("Failed to convert object path to string"),
+        ])
+        .status()
+        .expect("Failed to invoke swiftc for audio feedback bridge");
+
+    if !status.success() {
+        panic!("swiftc failed to compile {SWIFT_FILE}");
+    }
+
+    // Create static library
+    let status = Command::new("libtool")
+        .args([
+            "-static",
+            "-o",
+            static_lib_path
+                .to_str()
+                .expect("Failed to convert static lib path to string"),
+            object_path
+                .to_str()
+                .expect("Failed to convert object path to string"),
+        ])
+        .status()
+        .expect("Failed to create static library for audio feedback bridge");
+
+    if !status.success() {
+        panic!("libtool failed for audio feedback bridge");
+    }
+
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
+    println!("cargo:rustc-link-lib=static=audio_feedback");
+    println!(
+        "cargo:rustc-link-search=native={}",
+        toolchain_swift_lib.display()
+    );
+    println!("cargo:rustc-link-search=native={}", sdk_swift_lib.display());
+    println!("cargo:rustc-link-lib=framework=Foundation");
+    println!("cargo:rustc-link-lib=framework=AVFoundation");
+    println!("cargo:rustc-link-lib=framework=CoreAudio");
+    println!("cargo:rustc-link-lib=framework=AudioToolbox");
 
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
 }

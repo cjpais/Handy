@@ -94,6 +94,28 @@ fn play_audio_file(
     selected_device: Option<String>,
     volume: f32,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Check if we should use the system output device (macOS only)
+    // This avoids triggering AirPods Handoff when playing sound effects
+    #[cfg(target_os = "macos")]
+    {
+        let use_system_output = selected_device.is_none()
+            || selected_device.as_deref() == Some("Default");
+
+        if use_system_output {
+            debug!("Using macOS system output device (avoids Handoff)");
+            match crate::audio_feedback_macos::play_as_system_alert(path, volume) {
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    warn!(
+                        "Failed to play via system output device: {}. Falling back to Rodio.",
+                        e
+                    );
+                    // Fall through to Rodio implementation
+                }
+            }
+        }
+    }
+
     let stream_builder = if let Some(device_name) = selected_device {
         if device_name == "Default" {
             debug!("Using default device");
