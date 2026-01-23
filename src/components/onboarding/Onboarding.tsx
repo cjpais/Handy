@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { commands, type ModelInfo } from "@/bindings";
 import ModelCard from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 interface OnboardingProps {
   onModelSelected: () => void;
@@ -13,6 +14,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { setTranscriptionMode } = useSettingsStore();
+
+  const handleSkip = async () => {
+    // Set transcription mode to cloud since user is skipping local model download
+    await setTranscriptionMode("cloud");
+    onModelSelected();
+  };
 
   useEffect(() => {
     loadModels();
@@ -98,6 +106,19 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
                 onSelect={handleDownloadModel}
               />
             ))}
+        </div>
+
+        <div className="mt-auto pt-4 border-t border-white/10">
+          <button
+            onClick={handleSkip}
+            disabled={downloading}
+            className="text-text/50 hover:text-text/80 text-sm transition-colors disabled:opacity-50"
+          >
+            {t("onboarding.skip")}
+          </button>
+          <p className="text-text/30 text-xs mt-1">
+            {t("onboarding.skipDescription")}
+          </p>
         </div>
       </div>
     </div>

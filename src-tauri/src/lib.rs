@@ -4,6 +4,7 @@ mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
+mod cloud_transcription;
 mod commands;
 mod helpers;
 mod input;
@@ -271,6 +272,11 @@ pub fn run() {
         shortcut::change_update_checks_setting,
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
+        shortcut::set_transcription_mode,
+        shortcut::set_cloud_transcription_provider,
+        shortcut::set_cloud_transcription_api_key,
+        shortcut::set_cloud_transcription_model,
+        shortcut::get_cloud_transcription_models,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,

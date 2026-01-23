@@ -4,19 +4,21 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, TranscriptionMode, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error};
+use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::AppHandle;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -169,6 +171,116 @@ async fn maybe_post_process_transcription(
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum TranscriptionError {
+    Local(String),
+    MissingApiKey(String),
+    CloudApiError(String),
+    NetworkError(String),
+    NoProvider,
+}
+
+impl std::fmt::Display for TranscriptionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TranscriptionError::Local(msg) => write!(f, "{}", msg),
+            TranscriptionError::MissingApiKey(provider) => {
+                write!(f, "API key required for {} cloud transcription", provider)
+            }
+            TranscriptionError::CloudApiError(msg) => write!(f, "Cloud API error: {}", msg),
+            TranscriptionError::NetworkError(msg) => write!(f, "Network error: {}", msg),
+            TranscriptionError::NoProvider => {
+                write!(f, "No cloud transcription provider configured")
+            }
+        }
+    }
+}
+
+async fn perform_transcription(
+    settings: &AppSettings,
+    tm: &Arc<TranscriptionManager>,
+    samples: Vec<f32>,
+) -> Result<String, TranscriptionError> {
+    match settings.transcription_mode {
+        TranscriptionMode::Local => tm
+            .transcribe(samples)
+            .map_err(|e| TranscriptionError::Local(e.to_string())),
+        TranscriptionMode::Cloud => {
+            let provider = settings
+                .active_cloud_transcription_provider()
+                .cloned()
+                .ok_or(TranscriptionError::NoProvider)?;
+
+            let api_key = settings
+                .cloud_transcription_api_keys
+                .get(&provider.id)
+                .cloned()
+                .unwrap_or_default();
+
+            if api_key.trim().is_empty() {
+                return Err(TranscriptionError::MissingApiKey(provider.label.clone()));
+            }
+
+            let model = settings
+                .cloud_transcription_models
+                .get(&provider.id)
+                .cloned()
+                .unwrap_or_else(|| provider.default_model.clone());
+
+            let language = if settings.selected_language == "auto" {
+                None
+            } else {
+                Some(settings.selected_language.clone())
+            };
+
+            debug!(
+                "Using cloud transcription with provider '{}', model: {}",
+                provider.id, model
+            );
+
+            crate::cloud_transcription::transcribe_audio(
+                &provider, api_key, &model, samples, language,
+            )
+            .await
+            .map_err(|e| {
+                if e.contains("401") || e.contains("403") || e.contains("Unauthorized") {
+                    TranscriptionError::CloudApiError(format!(
+                        "Invalid API key for {}",
+                        provider.label
+                    ))
+                } else if e.contains("429") || e.contains("rate limit") {
+                    TranscriptionError::CloudApiError(format!(
+                        "{} rate limit exceeded. Please try again.",
+                        provider.label
+                    ))
+                } else if e.contains("timeout") || e.contains("connect") {
+                    TranscriptionError::NetworkError(e)
+                } else {
+                    TranscriptionError::CloudApiError(e)
+                }
+            })
+        }
+    }
+}
+
+fn emit_transcription_error(app: &AppHandle, error: &TranscriptionError) {
+    let error_type = match error {
+        TranscriptionError::Local(_) => "local",
+        TranscriptionError::MissingApiKey(_) => "missing_api_key",
+        TranscriptionError::CloudApiError(_) => "cloud_api",
+        TranscriptionError::NetworkError(_) => "network",
+        TranscriptionError::NoProvider => "no_provider",
+    };
+
+    let _ = app.emit(
+        "transcription-error",
+        serde_json::json!({
+            "type": error_type,
+            "message": error.to_string()
+        }),
+    );
+}
+
 async fn maybe_convert_chinese_variant(
     settings: &AppSettings,
     transcription: &str,
@@ -218,9 +330,12 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
-        // Load model in the background
-        let tm = app.state::<Arc<TranscriptionManager>>();
-        tm.initiate_model_load();
+        // Only load model in background for local transcription mode
+        let settings = get_settings(app);
+        if settings.transcription_mode == TranscriptionMode::Local {
+            let tm = app.state::<Arc<TranscriptionManager>>();
+            tm.initiate_model_load();
+        }
 
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
@@ -323,7 +438,8 @@ impl ShortcutAction for TranscribeAction {
 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
+                let settings = get_settings(&ah);
+                match perform_transcription(&settings, &tm, samples).await {
                     Ok(transcription) => {
                         debug!(
                             "Transcription completed in {:?}: '{}'",
@@ -331,7 +447,6 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
@@ -409,7 +524,8 @@ impl ShortcutAction for TranscribeAction {
                         }
                     }
                     Err(err) => {
-                        debug!("Global Shortcut Transcription error: {}", err);
+                        warn!("Transcription error: {}", err);
+                        emit_transcription_error(&ah, &err);
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                     }

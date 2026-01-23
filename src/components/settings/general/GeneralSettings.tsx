@@ -14,10 +14,13 @@ import { MuteWhileRecording } from "../MuteWhileRecording";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { audioFeedbackEnabled } = useSettings();
+  const { audioFeedbackEnabled, getSetting } = useSettings();
   const { currentModel, getModelInfo } = useModelStore();
   const currentModelInfo = getModelInfo(currentModel);
-  const showLanguageSelector = currentModelInfo?.engine_type === "Whisper";
+  const transcriptionMode = getSetting("transcription_mode") ?? "local";
+  const isCloudMode = transcriptionMode === "cloud";
+  const showLanguageSelector =
+    !isCloudMode && currentModelInfo?.engine_type === "Whisper";
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.general.title")}>

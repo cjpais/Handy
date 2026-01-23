@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -7,6 +7,7 @@ import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
+import { useTranscriptionErrors } from "./hooks/useTranscriptionErrors";
 import { commands } from "@/bindings";
 
 type OnboardingStep = "accessibility" | "model" | "done";
@@ -31,10 +32,19 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const { error: transcriptionError } = useTranscriptionErrors();
 
   useEffect(() => {
     checkOnboardingStatus();
   }, []);
+
+  useEffect(() => {
+    if (transcriptionError) {
+      toast.error(transcriptionError.message, {
+        duration: 8000,
+      });
+    }
+  }, [transcriptionError]);
 
   // Initialize Enigo and refresh audio devices when main app loads
   useEffect(() => {

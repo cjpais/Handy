@@ -21,8 +21,8 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
     self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
-    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    PasteMethod, ShortcutBinding, SoundTheme, TranscriptionMode,
+    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -940,4 +940,114 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
 
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_transcription_mode(app: AppHandle, mode: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match mode.as_str() {
+        "local" => TranscriptionMode::Local,
+        "cloud" => TranscriptionMode::Cloud,
+        other => {
+            warn!(
+                "Invalid transcription mode '{}', defaulting to local",
+                other
+            );
+            TranscriptionMode::Local
+        }
+    };
+    settings.transcription_mode = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_cloud_transcription_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Validate provider exists
+    if !settings
+        .cloud_transcription_providers
+        .iter()
+        .any(|p| p.id == provider_id)
+    {
+        return Err(format!(
+            "Cloud transcription provider '{}' not found",
+            provider_id
+        ));
+    }
+
+    settings.cloud_transcription_provider_id = provider_id;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_cloud_transcription_api_key(
+    app: AppHandle,
+    provider_id: String,
+    api_key: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Validate provider exists
+    if !settings
+        .cloud_transcription_providers
+        .iter()
+        .any(|p| p.id == provider_id)
+    {
+        return Err(format!(
+            "Cloud transcription provider '{}' not found",
+            provider_id
+        ));
+    }
+
+    settings
+        .cloud_transcription_api_keys
+        .insert(provider_id, api_key);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_cloud_transcription_model(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    // Validate provider exists
+    if !settings
+        .cloud_transcription_providers
+        .iter()
+        .any(|p| p.id == provider_id)
+    {
+        return Err(format!(
+            "Cloud transcription provider '{}' not found",
+            provider_id
+        ));
+    }
+
+    settings
+        .cloud_transcription_models
+        .insert(provider_id, model);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_cloud_transcription_models(app: AppHandle, provider_id: String) -> Vec<String> {
+    let settings = settings::get_settings(&app);
+    settings
+        .cloud_transcription_providers
+        .iter()
+        .find(|p| p.id == provider_id)
+        .map(|p| p.models.clone())
+        .unwrap_or_default()
 }

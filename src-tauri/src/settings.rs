@@ -8,6 +8,28 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const GROQ_PROVIDER_ID: &str = "groq";
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TranscriptionMode {
+    #[default]
+    Local,
+    Cloud,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct CloudTranscriptionProvider {
+    pub id: String,
+    pub label: String,
+    pub base_url: String,
+    #[serde(default)]
+    pub models: Vec<String>,
+    #[serde(default)]
+    pub default_model: String,
+    #[serde(default)]
+    pub api_key_placeholder: Option<String>,
+}
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -315,6 +337,16 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
+    #[serde(default)]
+    pub transcription_mode: TranscriptionMode,
+    #[serde(default = "default_cloud_transcription_provider_id")]
+    pub cloud_transcription_provider_id: String,
+    #[serde(default = "default_cloud_transcription_providers")]
+    pub cloud_transcription_providers: Vec<CloudTranscriptionProvider>,
+    #[serde(default = "default_cloud_transcription_api_keys")]
+    pub cloud_transcription_api_keys: HashMap<String, String>,
+    #[serde(default = "default_cloud_transcription_models")]
+    pub cloud_transcription_models: HashMap<String, String>,
 }
 
 fn default_model() -> String {
@@ -494,6 +526,62 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
+fn default_cloud_transcription_provider_id() -> String {
+    GROQ_PROVIDER_ID.to_string()
+}
+
+fn default_cloud_transcription_providers() -> Vec<CloudTranscriptionProvider> {
+    vec![
+        CloudTranscriptionProvider {
+            id: GROQ_PROVIDER_ID.to_string(),
+            label: "Groq".to_string(),
+            base_url: "https://api.groq.com/openai/v1".to_string(),
+            models: vec![
+                "whisper-large-v3-turbo".to_string(),
+                "whisper-large-v3".to_string(),
+            ],
+            default_model: "whisper-large-v3-turbo".to_string(),
+            api_key_placeholder: Some("gsk_...".to_string()),
+        },
+        // To add a new provider, simply add another entry here:
+        // CloudTranscriptionProvider {
+        //     id: "openai".to_string(),
+        //     label: "OpenAI".to_string(),
+        //     base_url: "https://api.openai.com/v1".to_string(),
+        //     models: vec!["whisper-1".to_string()],
+        //     default_model: "whisper-1".to_string(),
+        //     api_key_placeholder: Some("sk-...".to_string()),
+        // },
+    ]
+}
+
+fn default_cloud_transcription_api_keys() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_cloud_transcription_providers() {
+        map.insert(provider.id, String::new());
+    }
+    map
+}
+
+fn default_cloud_transcription_model_for_provider(provider_id: &str) -> String {
+    default_cloud_transcription_providers()
+        .into_iter()
+        .find(|p| p.id == provider_id)
+        .map(|p| p.default_model)
+        .unwrap_or_default()
+}
+
+fn default_cloud_transcription_models() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_cloud_transcription_providers() {
+        map.insert(
+            provider.id.clone(),
+            default_cloud_transcription_model_for_provider(&provider.id),
+        );
+    }
+    map
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
@@ -605,6 +693,11 @@ pub fn get_default_settings() -> AppSettings {
         app_language: default_app_language(),
         experimental_enabled: false,
         keyboard_implementation: KeyboardImplementation::default(),
+        transcription_mode: TranscriptionMode::default(),
+        cloud_transcription_provider_id: default_cloud_transcription_provider_id(),
+        cloud_transcription_providers: default_cloud_transcription_providers(),
+        cloud_transcription_api_keys: default_cloud_transcription_api_keys(),
+        cloud_transcription_models: default_cloud_transcription_models(),
     }
 }
 
@@ -629,6 +722,90 @@ impl AppSettings {
             .iter_mut()
             .find(|provider| provider.id == provider_id)
     }
+
+    pub fn active_cloud_transcription_provider(&self) -> Option<&CloudTranscriptionProvider> {
+        self.cloud_transcription_providers
+            .iter()
+            .find(|provider| provider.id == self.cloud_transcription_provider_id)
+    }
+
+    pub fn cloud_transcription_provider(
+        &self,
+        provider_id: &str,
+    ) -> Option<&CloudTranscriptionProvider> {
+        self.cloud_transcription_providers
+            .iter()
+            .find(|provider| provider.id == provider_id)
+    }
+}
+
+fn ensure_cloud_transcription_defaults(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+    let defaults = default_cloud_transcription_providers();
+
+    for default_provider in &defaults {
+        // Find or add provider
+        if let Some(existing) = settings
+            .cloud_transcription_providers
+            .iter_mut()
+            .find(|p| p.id == default_provider.id)
+        {
+            // Update missing fields from defaults (migration for existing users)
+            if existing.models.is_empty() && !default_provider.models.is_empty() {
+                existing.models = default_provider.models.clone();
+                changed = true;
+            }
+            if existing.default_model.is_empty() && !default_provider.default_model.is_empty() {
+                existing.default_model = default_provider.default_model.clone();
+                changed = true;
+            }
+            if existing.api_key_placeholder.is_none()
+                && default_provider.api_key_placeholder.is_some()
+            {
+                existing.api_key_placeholder = default_provider.api_key_placeholder.clone();
+                changed = true;
+            }
+        } else {
+            // Provider doesn't exist, add it
+            settings
+                .cloud_transcription_providers
+                .push(default_provider.clone());
+            changed = true;
+        }
+
+        // Ensure API key entry exists
+        if !settings
+            .cloud_transcription_api_keys
+            .contains_key(&default_provider.id)
+        {
+            settings
+                .cloud_transcription_api_keys
+                .insert(default_provider.id.clone(), String::new());
+            changed = true;
+        }
+
+        // Ensure model selection exists
+        let default_model = &default_provider.default_model;
+        match settings
+            .cloud_transcription_models
+            .get_mut(&default_provider.id)
+        {
+            Some(existing) => {
+                if existing.is_empty() && !default_model.is_empty() {
+                    *existing = default_model.clone();
+                    changed = true;
+                }
+            }
+            None => {
+                settings
+                    .cloud_transcription_models
+                    .insert(default_provider.id.clone(), default_model.clone());
+                changed = true;
+            }
+        }
+    }
+
+    changed
 }
 
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
@@ -675,7 +852,9 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut updated = ensure_post_process_defaults(&mut settings);
+    updated = ensure_cloud_transcription_defaults(&mut settings) || updated;
+    if updated {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -699,7 +878,9 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut updated = ensure_post_process_defaults(&mut settings);
+    updated = ensure_cloud_transcription_defaults(&mut settings) || updated;
+    if updated {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

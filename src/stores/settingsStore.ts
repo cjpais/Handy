@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import type {
+  AppSettings as Settings,
+  AudioDevice,
+  TranscriptionMode,
+} from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
@@ -47,6 +51,18 @@ interface SettingsStore {
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
+  // Cloud transcription
+  setTranscriptionMode: (mode: string) => Promise<void>;
+  setCloudTranscriptionProvider: (providerId: string) => Promise<void>;
+  updateCloudTranscriptionApiKey: (
+    providerId: string,
+    apiKey: string,
+  ) => Promise<void>;
+  updateCloudTranscriptionModel: (
+    providerId: string,
+    model: string,
+  ) => Promise<void>;
+  getCloudTranscriptionModels: (providerId: string) => Promise<string[]>;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -478,6 +494,117 @@ export const useSettingsStore = create<SettingsStore>()(
           [providerId]: models,
         },
       })),
+
+    setTranscriptionMode: async (mode) => {
+      const { settings, setUpdating, refreshSettings } = get();
+      const updateKey = "transcription_mode";
+      const previousMode = settings?.transcription_mode ?? "local";
+
+      setUpdating(updateKey, true);
+
+      if (settings) {
+        set((state) => ({
+          settings: state.settings
+            ? {
+                ...state.settings,
+                transcription_mode: mode as TranscriptionMode,
+              }
+            : null,
+        }));
+      }
+
+      try {
+        await commands.setTranscriptionMode(mode);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to set transcription mode:", error);
+        if (previousMode !== null) {
+          set((state) => ({
+            settings: state.settings
+              ? { ...state.settings, transcription_mode: previousMode }
+              : null,
+          }));
+        }
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    setCloudTranscriptionProvider: async (providerId) => {
+      const { settings, setUpdating, refreshSettings } = get();
+      const updateKey = "cloud_transcription_provider_id";
+      const previousId = settings?.cloud_transcription_provider_id ?? null;
+
+      setUpdating(updateKey, true);
+
+      if (settings) {
+        set((state) => ({
+          settings: state.settings
+            ? { ...state.settings, cloud_transcription_provider_id: providerId }
+            : null,
+        }));
+      }
+
+      try {
+        await commands.setCloudTranscriptionProvider(providerId);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to set cloud transcription provider:", error);
+        if (previousId !== null) {
+          set((state) => ({
+            settings: state.settings
+              ? {
+                  ...state.settings,
+                  cloud_transcription_provider_id: previousId,
+                }
+              : null,
+          }));
+        }
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateCloudTranscriptionApiKey: async (providerId, apiKey) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `cloud_transcription_api_key:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        await commands.setCloudTranscriptionApiKey(providerId, apiKey);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update cloud transcription API key:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateCloudTranscriptionModel: async (providerId, model) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `cloud_transcription_model:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        await commands.setCloudTranscriptionModel(providerId, model);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update cloud transcription model:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    getCloudTranscriptionModels: async (providerId) => {
+      // Models are now stored in the provider definition - read directly from settings
+      const { settings } = get();
+      const provider = settings?.cloud_transcription_providers?.find(
+        (p) => p.id === providerId,
+      );
+      return provider?.models ?? [];
+    },
 
     // Load default settings from Rust
     loadDefaultSettings: async () => {

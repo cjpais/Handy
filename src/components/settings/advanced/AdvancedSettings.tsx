@@ -17,23 +17,32 @@ import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
+import { CloudTranscriptionSettings } from "../CloudTranscriptionSettings";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
   const { currentModel, getModelInfo } = useModelStore();
   const { getSetting } = useSettings();
   const currentModelInfo = getModelInfo(currentModel);
+  const transcriptionMode = getSetting("transcription_mode") ?? "local";
+  const isCloudMode = transcriptionMode === "cloud";
   const showTranslateToEnglish =
-    currentModelInfo?.engine_type === "Whisper" && currentModel !== "turbo";
+    !isCloudMode &&
+    currentModelInfo?.engine_type === "Whisper" &&
+    currentModel !== "turbo";
   const experimentalEnabled = getSetting("experimental_enabled") || false;
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <CloudTranscriptionSettings descriptionMode="tooltip" grouped={true} />
+
       <SettingsGroup title={t("settings.advanced.groups.app")}>
         <StartHidden descriptionMode="tooltip" grouped={true} />
         <AutostartToggle descriptionMode="tooltip" grouped={true} />
         <ShowOverlay descriptionMode="tooltip" grouped={true} />
-        <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
+        {!isCloudMode && (
+          <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
+        )}
         <ExperimentalToggle descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
@@ -46,7 +55,7 @@ export const AdvancedSettings: React.FC = () => {
         {showTranslateToEnglish && (
           <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
         )}
-        <CustomWords descriptionMode="tooltip" grouped />
+        {!isCloudMode && <CustomWords descriptionMode="tooltip" grouped />}
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
