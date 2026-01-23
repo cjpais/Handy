@@ -169,8 +169,12 @@ public func playSoundViaSystemOutput(
 
     playerNode.play()
 
-    // Wait for playback to complete (with timeout to prevent hanging)
-    let timeout = DispatchTime.now() + .seconds(30)
+    // Calculate expected audio duration and use it as timeout.
+    // This prevents 30-second hangs if the completion handler never fires
+    // (e.g., if engine/player is stopped before playback completes).
+    let durationSeconds = Double(buffer.frameLength) / format.sampleRate
+    let timeoutSeconds = max(durationSeconds + 0.5, 1.0)  // At least 1 second, or duration + 0.5s buffer
+    let timeout = DispatchTime.now() + .milliseconds(Int(timeoutSeconds * 1000))
     _ = semaphore.wait(timeout: timeout)
 
     // Cleanup
