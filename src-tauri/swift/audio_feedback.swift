@@ -6,6 +6,11 @@ import Foundation
 // MARK: - Swift implementation for audio feedback via system output device
 // Uses AVAudioEngine routed to the system output device to avoid AirPods Handoff
 
+/// Serial queue to prevent concurrent audio playback operations.
+/// Multiple rapid calls (e.g., user pressing shortcut repeatedly) are serialized
+/// to avoid audio glitches from competing AVAudioEngine instances.
+private let playbackQueue = DispatchQueue(label: "com.handy.audio-feedback.playback")
+
 /// Gets the UID of the system output device (used for alerts, doesn't trigger Handoff)
 private func getSystemOutputDeviceUID() -> String? {
     var deviceID: AudioDeviceID = 0
@@ -107,81 +112,87 @@ public func playSoundViaSystemOutput(
     _ filePath: UnsafePointer<CChar>,
     _ volume: Float
 ) -> Int32 {
+    // Copy the path before entering the queue since the pointer may not be valid across threads
     let path = String(cString: filePath)
-    let url = URL(fileURLWithPath: path)
 
-    // Get the system output device UID
-    guard let systemDeviceUID = getSystemOutputDeviceUID() else {
-        return -1  // Failed to get system output device
-    }
+    // Serialize playback to prevent concurrent AVAudioEngine instances from
+    // competing for the system output device, which causes audio glitches.
+    return playbackQueue.sync {
+        let url = URL(fileURLWithPath: path)
 
-    // Load the audio file
-    guard let audioFile = try? AVAudioFile(forReading: url) else {
-        return -2  // Failed to load audio file
-    }
+        // Get the system output device UID
+        guard let systemDeviceUID = getSystemOutputDeviceUID() else {
+            return -1  // Failed to get system output device
+        }
 
-    let engine = AVAudioEngine()
-    let playerNode = AVAudioPlayerNode()
+        // Load the audio file
+        guard let audioFile = try? AVAudioFile(forReading: url) else {
+            return -2  // Failed to load audio file
+        }
 
-    engine.attach(playerNode)
+        let engine = AVAudioEngine()
+        let playerNode = AVAudioPlayerNode()
 
-    // Connect player to main mixer with the file's processing format
-    let format = audioFile.processingFormat
-    engine.connect(playerNode, to: engine.mainMixerNode, format: format)
+        engine.attach(playerNode)
 
-    // Set the output device to system output (before starting the engine)
-    guard setOutputDevice(engine: engine, deviceUID: systemDeviceUID) else {
-        return -3  // Failed to set output device
-    }
+        // Connect player to main mixer with the file's processing format
+        let format = audioFile.processingFormat
+        engine.connect(playerNode, to: engine.mainMixerNode, format: format)
 
-    // Set volume on the player node
-    playerNode.volume = max(0.0, min(1.0, volume))
+        // Set the output device to system output (before starting the engine)
+        guard setOutputDevice(engine: engine, deviceUID: systemDeviceUID) else {
+            return -3  // Failed to set output device
+        }
 
-    // Prepare and start the engine
-    engine.prepare()
+        // Set volume on the player node
+        playerNode.volume = max(0.0, min(1.0, volume))
 
-    do {
-        try engine.start()
-    } catch {
-        return -4  // Failed to start audio engine
-    }
+        // Prepare and start the engine
+        engine.prepare()
 
-    // Read the entire file into a buffer
-    let frameCount = AVAudioFrameCount(audioFile.length)
-    guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+        do {
+            try engine.start()
+        } catch {
+            return -4  // Failed to start audio engine
+        }
+
+        // Read the entire file into a buffer
+        let frameCount = AVAudioFrameCount(audioFile.length)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            engine.stop()
+            return -5  // Failed to create buffer
+        }
+
+        do {
+            try audioFile.read(into: buffer)
+        } catch {
+            engine.stop()
+            return -6  // Failed to read audio file
+        }
+
+        // Use a semaphore to wait for playback completion
+        let semaphore = DispatchSemaphore(value: 0)
+
+        playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts) {
+            semaphore.signal()
+        }
+
+        playerNode.play()
+
+        // Calculate expected audio duration and use it as timeout.
+        // This prevents 30-second hangs if the completion handler never fires
+        // (e.g., if engine/player is stopped before playback completes).
+        let durationSeconds = Double(buffer.frameLength) / format.sampleRate
+        let timeoutSeconds = max(durationSeconds + 0.5, 1.0)  // At least 1 second, or duration + 0.5s buffer
+        let timeout = DispatchTime.now() + .milliseconds(Int(timeoutSeconds * 1000))
+        _ = semaphore.wait(timeout: timeout)
+
+        // Cleanup
+        playerNode.stop()
         engine.stop()
-        return -5  // Failed to create buffer
+
+        return 0  // Success
     }
-
-    do {
-        try audioFile.read(into: buffer)
-    } catch {
-        engine.stop()
-        return -6  // Failed to read audio file
-    }
-
-    // Use a semaphore to wait for playback completion
-    let semaphore = DispatchSemaphore(value: 0)
-
-    playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts) {
-        semaphore.signal()
-    }
-
-    playerNode.play()
-
-    // Calculate expected audio duration and use it as timeout.
-    // This prevents 30-second hangs if the completion handler never fires
-    // (e.g., if engine/player is stopped before playback completes).
-    let durationSeconds = Double(buffer.frameLength) / format.sampleRate
-    let timeoutSeconds = max(durationSeconds + 0.5, 1.0)  // At least 1 second, or duration + 0.5s buffer
-    let timeout = DispatchTime.now() + .milliseconds(Int(timeoutSeconds * 1000))
-    _ = semaphore.wait(timeout: timeout)
-
-    // Cleanup
-    playerNode.stop()
-    engine.stop()
-
-    return 0  // Success
 }
 
 /// Checks if the system output device is available
