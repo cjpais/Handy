@@ -297,7 +297,7 @@ fn build_audio_feedback_bridge() {
     let sdk_swift_lib = std::path::Path::new(&sdk_path).join("usr/lib/swift");
 
     // Compile the Swift file
-    let status = Command::new("xcrun")
+    let swiftc_result = Command::new("xcrun")
         .args([
             "swiftc",
             "-target",
@@ -317,15 +317,19 @@ fn build_audio_feedback_bridge() {
                 .to_str()
                 .expect("Failed to convert object path to string"),
         ])
-        .status()
+        .output()
         .expect("Failed to invoke swiftc for audio feedback bridge");
 
-    if !status.success() {
-        panic!("swiftc failed to compile {SWIFT_FILE}");
+    if !swiftc_result.status.success() {
+        panic!(
+            "swiftc failed to compile {SWIFT_FILE}:\n{}{}",
+            String::from_utf8_lossy(&swiftc_result.stdout),
+            String::from_utf8_lossy(&swiftc_result.stderr)
+        );
     }
 
     // Create static library
-    let status = Command::new("libtool")
+    let libtool_result = Command::new("libtool")
         .args([
             "-static",
             "-o",
@@ -336,11 +340,15 @@ fn build_audio_feedback_bridge() {
                 .to_str()
                 .expect("Failed to convert object path to string"),
         ])
-        .status()
-        .expect("Failed to create static library for audio feedback bridge");
+        .output()
+        .expect("Failed to invoke libtool for audio feedback bridge");
 
-    if !status.success() {
-        panic!("libtool failed for audio feedback bridge");
+    if !libtool_result.status.success() {
+        panic!(
+            "libtool failed for audio feedback bridge:\n{}{}",
+            String::from_utf8_lossy(&libtool_result.stdout),
+            String::from_utf8_lossy(&libtool_result.stderr)
+        );
     }
 
     println!("cargo:rustc-link-search=native={}", out_dir.display());
