@@ -141,6 +141,7 @@ public func playSoundViaSystemOutput(
 
         // Set the output device to system output (before starting the engine)
         guard setOutputDevice(engine: engine, deviceUID: systemDeviceUID) else {
+            engine.detach(playerNode)
             return -3  // Failed to set output device
         }
 
@@ -153,12 +154,14 @@ public func playSoundViaSystemOutput(
         do {
             try engine.start()
         } catch {
+            engine.detach(playerNode)
             return -4  // Failed to start audio engine
         }
 
         // Read the entire file into a buffer
         let frameCount = AVAudioFrameCount(audioFile.length)
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+            engine.detach(playerNode)
             engine.stop()
             return -5  // Failed to create buffer
         }
@@ -166,6 +169,7 @@ public func playSoundViaSystemOutput(
         do {
             try audioFile.read(into: buffer)
         } catch {
+            engine.detach(playerNode)
             engine.stop()
             return -6  // Failed to read audio file
         }
@@ -189,6 +193,7 @@ public func playSoundViaSystemOutput(
 
         // Cleanup
         playerNode.stop()
+        engine.detach(playerNode)
         engine.stop()
 
         return 0  // Success
