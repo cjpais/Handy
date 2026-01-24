@@ -119,6 +119,10 @@
           "cancel": {
             "name": "Cancel Shortcut",
             "description": "The keyboard shortcut to cancel the current recording."
+          },
+          "paste_last": {
+            "name": "Paste Last Transcription",
+            "description": "Paste the most recent transcription from history without using the clipboard."
           }
         },
         "errors": {

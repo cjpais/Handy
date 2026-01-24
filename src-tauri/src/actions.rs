@@ -469,6 +469,62 @@ impl ShortcutAction for TestAction {
     }
 }
 
+// Paste Last Action
+struct PasteLastAction;
+
+impl ShortcutAction for PasteLastAction {
+    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        debug!("PasteLastAction::start called for binding: {}", binding_id);
+
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let hm = app_clone.state::<Arc<HistoryManager>>();
+
+            // Fetch history entries (already sorted by timestamp DESC, first is most recent)
+            match hm.get_history_entries().await {
+                Ok(entries) => {
+                    if let Some(entry) = entries.first() {
+                        // Prefer post_processed_text if available, otherwise use transcription_text
+                        let text_to_paste = entry
+                            .post_processed_text
+                            .as_ref()
+                            .filter(|s| !s.is_empty())
+                            .unwrap_or(&entry.transcription_text)
+                            .clone();
+
+                        if !text_to_paste.is_empty() {
+                            let ah = app_clone.clone();
+                            app_clone
+                                .run_on_main_thread(move || {
+                                    match utils::paste(text_to_paste, ah.clone()) {
+                                        Ok(()) => debug!("Paste last transcription succeeded"),
+                                        Err(e) => {
+                                            error!("Failed to paste last transcription: {}", e)
+                                        }
+                                    }
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                });
+                        } else {
+                            debug!("Last transcription is empty, nothing to paste");
+                        }
+                    } else {
+                        debug!("No history entries found, nothing to paste");
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to fetch history entries: {}", e);
+                }
+            }
+        });
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // Nothing to do on stop for paste last
+    }
+}
+
 // Static Action Map
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -483,6 +539,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "test".to_string(),
         Arc::new(TestAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "paste_last".to_string(),
+        Arc::new(PasteLastAction) as Arc<dyn ShortcutAction>,
     );
     map
 });
