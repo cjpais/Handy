@@ -99,7 +99,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       (event) => {
         const progress = event.payload;
         setModelDownloadProgress(
-          produce((downloadProgress) => {
+          produce((downloadProgress: Record<string, DownloadProgress>) => {
             downloadProgress[progress.model_id] = progress;
           }),
         );
@@ -108,7 +108,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         // Update download stats for speed calculation
         const now = Date.now();
         setDownloadStats(
-          produce((stats) => {
+          produce((stats: Record<string, DownloadStats>) => {
             const current = stats[progress.model_id];
 
             if (!current) {
@@ -153,12 +153,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       (event) => {
         const modelId = event.payload;
         setModelDownloadProgress(
-          produce((progress) => {
+          produce((progress: Record<string, DownloadProgress>) => {
             delete progress[modelId];
           }),
         );
         setDownloadStats(
-          produce((stats) => {
+          produce((stats: Record<string, DownloadStats>) => {
             delete stats[modelId];
           }),
         );
@@ -182,7 +182,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       (event) => {
         const modelId = event.payload;
         setExtractingModels(
-          produce((extracting) => {
+          produce((extracting: Record<string, true>) => {
             extracting[modelId] = true;
           }),
         );
@@ -195,7 +195,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       (event) => {
         const modelId = event.payload;
         setExtractingModels(
-          produce((extracting) => {
+          produce((extracting: Record<string, true>) => {
             delete extracting[modelId];
           }),
         );

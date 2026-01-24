@@ -567,6 +567,22 @@ pub fn get_default_settings() -> AppSettings {
         },
     );
 
+    #[cfg(target_os = "macos")]
+    let paste_last_shortcut = "ctrl+option+v";
+    #[cfg(not(target_os = "macos"))]
+    let paste_last_shortcut = "ctrl+alt+v";
+
+    bindings.insert(
+        "paste_last".to_string(),
+        ShortcutBinding {
+            id: "paste_last".to_string(),
+            name: "Paste Last Transcription".to_string(),
+            description: "Paste the most recent transcription from history.".to_string(),
+            default_binding: paste_last_shortcut.to_string(),
+            current_binding: paste_last_shortcut.to_string(),
+        },
+    );
+
     AppSettings {
         bindings,
         push_to_talk: true,
