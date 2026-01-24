@@ -244,7 +244,7 @@ fn build_apple_intelligence_bridge() {
 #[cfg(target_os = "macos")]
 fn build_audio_feedback_bridge() {
     use std::env;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::process::Command;
 
     const SWIFT_FILE: &str = "swift/audio_feedback.swift";
@@ -252,6 +252,13 @@ fn build_audio_feedback_bridge() {
 
     println!("cargo:rerun-if-changed={SWIFT_FILE}");
     println!("cargo:rerun-if-changed={BRIDGE_HEADER}");
+
+    if !Path::new(SWIFT_FILE).exists() {
+        panic!("Swift source file {} is missing!", SWIFT_FILE);
+    }
+    if !Path::new(BRIDGE_HEADER).exists() {
+        panic!("Bridge header file {} is missing!", BRIDGE_HEADER);
+    }
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
     let object_path = out_dir.join("audio_feedback.o");
