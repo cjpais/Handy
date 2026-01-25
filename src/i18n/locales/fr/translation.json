@@ -181,6 +181,10 @@
         "label": "Lancer au démarrage",
         "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
       },
+      "showTrayIcon": {
+        "label": "Afficher l'icône de la barre",
+        "description": "Afficher l'icône de Handy dans la barre système."
+      },
       "overlay": {
         "title": "Position de la fenêtre d'enregistrement",
         "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
