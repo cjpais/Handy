@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
 use crate::actions::ACTION_MAP;
-use crate::managers::audio::AudioRecordingManager;
+use crate::global_controller::GlobalController;
 use crate::settings::get_settings;
 use crate::ManagedToggleState;
 
@@ -41,10 +41,10 @@ pub fn handle_shortcut_event(
         return;
     };
 
-    // Cancel binding: only fires when recording and key is pressed
+    // Cancel binding: only fires when busy and key is pressed
     if binding_id == "cancel" {
-        let audio_manager = app.state::<Arc<AudioRecordingManager>>();
-        if audio_manager.is_recording() && is_pressed {
+        let controller = app.state::<Arc<GlobalController>>();
+        if controller.is_busy() && is_pressed {
             action.start(app, binding_id, hotkey_string);
         }
         return;

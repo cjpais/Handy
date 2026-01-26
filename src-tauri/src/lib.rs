@@ -5,6 +5,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
+mod global_controller;
 mod helpers;
 mod input;
 mod llm_client;
@@ -39,6 +40,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
+use crate::global_controller::GlobalController;
 use crate::settings::get_settings;
 
 // Global atomic to store the file log level filter
@@ -133,6 +135,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+
+    // Global lock - prevents concurrent operations
+    app_handle.manage(Arc::new(GlobalController::new(app_handle.clone())));
 
     // Initialize the shortcuts
     shortcut::init_shortcuts(app_handle);
@@ -413,8 +418,9 @@ pub fn run() {
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);
-                // Update tray icon to match new theme, maintaining idle state
-                utils::change_tray_icon(&window.app_handle(), utils::TrayIconState::Idle);
+                // Re-sync UI to current phase with new theme
+                let controller = window.app_handle().state::<Arc<GlobalController>>();
+                controller.refresh_ui();
             }
             _ => {}
         })

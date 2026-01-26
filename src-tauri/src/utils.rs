@@ -1,3 +1,4 @@
+use crate::global_controller::GlobalController;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
@@ -33,13 +34,13 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.cancel_recording();
 
-    // Update tray icon and hide overlay
-    change_tray_icon(app, crate::tray::TrayIconState::Idle);
-    hide_recording_overlay(app);
-
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.maybe_unload_immediately("cancellation");
+
+    // Release the global lock
+    let controller = app.state::<Arc<GlobalController>>();
+    controller.complete();
 
     info!("Operation cancellation completed - returned to idle state");
 }
