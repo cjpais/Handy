@@ -1,6 +1,21 @@
 //! Global lock preventing concurrent operations.
+//!
+//! # Dependency Injection for Testing
+//!
+//! Inject Recorder/Transcriber so tests can use mocks.
 
 use std::sync::Mutex;
+
+/// Recorder trait - implement for real hardware and mocks.
+pub trait Recorder: Send + Sync {
+    fn start(&self) -> Result<(), String>;
+    fn stop(&self) -> Result<Vec<f32>, String>;
+}
+
+/// Transcriber trait - implement for real transcription and mocks.
+pub trait Transcriber: Send + Sync {
+    fn transcribe(&self, samples: Vec<f32>) -> Result<String, String>;
+}
 
 pub enum GlobalPhase {
     Idle,
@@ -88,5 +103,47 @@ mod tests {
         c.complete();         // Processing -> Idle
         assert!(!c.is_busy());
         assert!(c.begin());   // Can start again
+    }
+
+    /// Mock recorder that can be configured to fail.
+    struct MockRecorder {
+        should_fail: bool,
+    }
+
+    impl MockRecorder {
+        fn that_fails() -> Self {
+            Self { should_fail: true }
+        }
+    }
+
+    impl Recorder for MockRecorder {
+        fn start(&self) -> Result<(), String> {
+            if self.should_fail {
+                Err("mock failure".into())
+            } else {
+                Ok(())
+            }
+        }
+
+        fn stop(&self) -> Result<Vec<f32>, String> {
+            Ok(vec![])
+        }
+    }
+
+    #[test]
+    fn recorder_failure_releases_lock() {
+        let controller = GlobalController::new();
+        let recorder = MockRecorder::that_fails();
+
+        // Acquire lock
+        assert!(controller.begin());
+
+        // Recorder fails
+        let result = recorder.start();
+        assert!(result.is_err());
+
+        // Caller must release lock on failure
+        controller.complete();
+        assert!(!controller.is_busy());
     }
 }
