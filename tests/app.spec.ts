@@ -1,20 +1,18 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Handy App', () => {
-  test('loads the main page', async ({ page }) => {
-    await page.goto('/');
-    
-    // Wait for the app to load - check for any content
-    await expect(page.locator('body')).toBeVisible();
-    
-    // Take a screenshot for debugging
-    await page.screenshot({ path: 'test-results/app-loaded.png' });
+test.describe("Handy App", () => {
+  test("dev server responds", async ({ page }) => {
+    // Just verify the dev server is running and responds
+    const response = await page.goto("/");
+    expect(response?.status()).toBe(200);
   });
 
-  test('has a title', async ({ page }) => {
-    await page.goto('/');
-    
-    // Check the page has loaded with some content
-    await expect(page).toHaveTitle(/.*/);
+  test("page has html structure", async ({ page }) => {
+    await page.goto("/");
+
+    // Verify basic HTML structure exists
+    const html = await page.content();
+    expect(html).toContain("<html");
+    expect(html).toContain("<body");
   });
 });

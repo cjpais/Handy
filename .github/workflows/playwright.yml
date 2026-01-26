@@ -1,8 +1,8 @@
-name: "E2E Tests"
+name: "Playwright"
 on: [pull_request]
 
 jobs:
-  e2e:
+  playwright:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,8 +17,8 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install chromium
 
-      - name: Run E2E tests
-        run: bun run test:e2e
+      - name: Run Playwright tests
+        run: bun run test:playwright
 
       - name: Upload test results
         if: failure()
