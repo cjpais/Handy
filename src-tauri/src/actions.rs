@@ -1,13 +1,13 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::global_controller::GlobalController;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
-use crate::tray::{change_tray_icon, TrayIconState};
-use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
+use crate::utils;
 use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
@@ -218,14 +218,18 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // Acquire global lock - block if already busy
+        let controller = app.state::<Arc<GlobalController>>();
+        if !controller.begin() {
+            debug!("TranscribeAction::start blocked - already busy");
+            return;
+        }
+
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
         tm.initiate_model_load();
 
         let binding_id = binding_id.to_string();
-        change_tray_icon(app, TrayIconState::Recording);
-        show_recording_overlay(app);
-
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
         // Get the microphone mode to determine audio feedback timing
@@ -275,6 +279,9 @@ impl ShortcutAction for TranscribeAction {
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+        } else {
+            // Recording failed - release the lock
+            controller.complete();
         }
 
         debug!(
@@ -284,19 +291,24 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
-        // Unregister the cancel shortcut when transcription stops
-        shortcut::unregister_cancel_shortcut(app);
-
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
+
+        // Transition to Processing phase - only proceed if we were Recording
+        let controller = app.state::<Arc<GlobalController>>();
+        if !controller.advance() {
+            debug!("TranscribeAction::stop ignored - not in Recording phase");
+            return;
+        }
+
+        // Unregister the cancel shortcut
+        shortcut::unregister_cancel_shortcut(app);
 
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
-
-        change_tray_icon(app, TrayIconState::Transcribing);
-        show_transcribing_overlay(app);
+        let ctrl = Arc::clone(&controller);
 
         // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
@@ -394,36 +406,27 @@ impl ShortcutAction for TranscribeAction {
                                     ),
                                     Err(e) => error!("Failed to paste transcription: {}", e),
                                 }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
                             })
                             .unwrap_or_else(|e| {
                                 error!("Failed to run paste on main thread: {:?}", e);
-                                utils::hide_recording_overlay(&ah);
-                                change_tray_icon(&ah, TrayIconState::Idle);
                             });
-                        } else {
-                            utils::hide_recording_overlay(&ah);
-                            change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
                     Err(err) => {
                         debug!("Global Shortcut Transcription error: {}", err);
-                        utils::hide_recording_overlay(&ah);
-                        change_tray_icon(&ah, TrayIconState::Idle);
                     }
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
-                utils::hide_recording_overlay(&ah);
-                change_tray_icon(&ah, TrayIconState::Idle);
             }
 
             // Clear toggle state now that transcription is complete
             if let Ok(mut states) = ah.state::<ManagedToggleState>().lock() {
                 states.active_toggles.insert(binding_id, false);
             }
+
+            // Release the global lock
+            ctrl.complete();
         });
 
         debug!(
