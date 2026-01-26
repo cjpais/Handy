@@ -4,6 +4,7 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
+use crate::global_controller::GlobalController;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
@@ -218,6 +219,13 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // Acquire global lock - block if already busy
+        let controller = app.state::<Arc<GlobalController>>();
+        if !controller.begin() {
+            debug!("TranscribeAction::start blocked - already busy");
+            return;
+        }
+
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
         tm.initiate_model_load();
@@ -275,6 +283,9 @@ impl ShortcutAction for TranscribeAction {
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+        } else {
+            // Recording failed - release the lock
+            controller.complete();
         }
 
         debug!(
@@ -290,10 +301,15 @@ impl ShortcutAction for TranscribeAction {
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
 
+        // Transition to Processing phase
+        let controller = app.state::<Arc<GlobalController>>();
+        controller.advance();
+
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        let ctrl = Arc::clone(&controller);
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
@@ -424,6 +440,9 @@ impl ShortcutAction for TranscribeAction {
             if let Ok(mut states) = ah.state::<ManagedToggleState>().lock() {
                 states.active_toggles.insert(binding_id, false);
             }
+
+            // Release the global lock
+            ctrl.complete();
         });
 
         debug!(
