@@ -52,3 +52,18 @@ pub fn is_wayland() -> bool {
             .map(|v| v.to_lowercase() == "wayland")
             .unwrap_or(false)
 }
+
+/// Check if running on KDE Plasma desktop environment
+#[cfg(target_os = "linux")]
+pub fn is_kde_plasma() -> bool {
+    std::env::var("XDG_CURRENT_DESKTOP")
+        .map(|v| v.to_uppercase().contains("KDE"))
+        .unwrap_or(false)
+        || std::env::var("KDE_SESSION_VERSION").is_ok()
+}
+
+/// Check if running on KDE Plasma with Wayland
+#[cfg(target_os = "linux")]
+pub fn is_kde_wayland() -> bool {
+    is_wayland() && is_kde_plasma()
+}
