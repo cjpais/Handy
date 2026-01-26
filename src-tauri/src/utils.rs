@@ -1,3 +1,4 @@
+use crate::global_controller::GlobalController;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
@@ -40,6 +41,10 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.maybe_unload_immediately("cancellation");
+
+    // Release the global lock
+    let controller = app.state::<Arc<GlobalController>>();
+    controller.complete();
 
     info!("Operation cancellation completed - returned to idle state");
 }
