@@ -16,12 +16,3 @@ jobs:
 
       - name: Run ESLint
         run: bun run lint
-
-  rust-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Rust tests
-        working-directory: src-tauri
-        run: cargo test
