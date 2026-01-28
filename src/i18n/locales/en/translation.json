@@ -80,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Welcome to Handy!",
-    "downloadPrompt": "Download a model below to get started with transcription.",
-    "availableModels": "Available Models",
-    "downloadModels": "Download Models",
-    "chooseModel": "Choose a Model",
     "active": "Active",
     "switching": "Switching...",
-    "download": "Download",
-    "downloadSize": "Download size",
     "noModelsAvailable": "No models available",
     "extracting": "Extracting {{modelName}}...",
     "extractingMultiple": "Extracting {{count}} models...",

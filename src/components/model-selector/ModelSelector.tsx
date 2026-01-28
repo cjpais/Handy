@@ -310,24 +310,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     }
   };
 
-  const handleModelDownload = async (modelId: string) => {
-    try {
-      setModelError(null);
-      const result = await commands.downloadModel(modelId);
-      if (result.status === "error") {
-        const errorMsg = result.error;
-        setModelError(errorMsg);
-        setModelStatus("error");
-        onError?.(errorMsg);
-      }
-    } catch (err) {
-      const errorMsg = `${err}`;
-      setModelError(errorMsg);
-      setModelStatus("error");
-      onError?.(errorMsg);
-    }
-  };
-
   const getCurrentModel = () => {
     return models.find((m) => m.id === currentModelId);
   };
@@ -399,14 +381,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     }
   };
 
-  const handleModelDelete = async (modelId: string) => {
-    const result = await commands.deleteModel(modelId);
-    if (result.status === "ok") {
-      await loadModels();
-      setModelError(null);
-    }
-  };
-
   return (
     <>
       {/* Model Status and Switcher */}
@@ -423,11 +397,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           <ModelDropdown
             models={models}
             currentModelId={currentModelId}
-            downloadProgress={modelDownloadProgress}
             onModelSelect={handleModelSelect}
-            onModelDownload={handleModelDownload}
-            onModelDelete={handleModelDelete}
-            onError={onError}
           />
         )}
       </div>

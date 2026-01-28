@@ -221,6 +221,9 @@ impl ModelManager {
                 engine_type: EngineType::Moonshine,
                 accuracy_score: 0.70,
                 speed_score: 0.90,
+                supports_language_selection: false, // Moonshine is English-only
+                supports_translation: false,        // Moonshine doesn't support translation
+                is_recommended: false,
             },
         );
 
