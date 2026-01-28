@@ -1,5 +1,4 @@
 {
-  "_comment": "French translation for Handy. Contribute at: https://github.com/cjpais/Handy",
   "tray": {
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
@@ -9,6 +8,7 @@
   },
   "sidebar": {
     "general": "Général",
+    "models": "Modèles",
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "history": "Historique",
@@ -72,18 +72,16 @@
       "grant": "Accorder l'autorisation",
       "granted": "Accordé",
       "waiting": "En attente...",
-      "allGranted": "Tout est prêt !"
+      "allGranted": "Tout est prêt !",
+      "errors": {
+        "checkFailed": "Échec de la vérification des autorisations. Veuillez réessayer.",
+        "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Bienvenue sur Handy !",
-    "downloadPrompt": "Téléchargez un modèle ci-dessous pour commencer la transcription.",
-    "availableModels": "Modèles Disponibles",
-    "downloadModels": "Télécharger des Modèles",
-    "chooseModel": "Choisir un Modèle",
     "active": "Actif",
-    "download": "Télécharger",
-    "downloadSize": "Taille du téléchargement",
+    "switching": "Changement...",
     "noModelsAvailable": "Aucun modèle disponible",
     "extracting": "Extraction de {{modelName}}...",
     "extractingMultiple": "Extraction de {{count}} modèles...",
@@ -96,9 +94,37 @@
     "modelError": "Erreur du Modèle",
     "modelUnloaded": "Modèle Déchargé",
     "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
-    "deleteModel": "Supprimer {{modelName}}"
+    "deleteModel": "Supprimer {{modelName}}",
+    "downloadSpeed": "{{speed}} Mo/s",
+    "capabilities": {
+      "languageSelection": "Prend en charge plusieurs langues d'entrée",
+      "multiLanguage": "Multilingue",
+      "translation": "Peut traduire en anglais",
+      "translate": "Traduire en anglais"
+    },
+    "cancel": "Annuler",
+    "cancelDownload": "Annuler le téléchargement"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Paramètres de {{model}}",
+      "noSettingsNeeded": "Ce modèle fonctionne automatiquement sans configuration nécessaire."
+    },
+    "models": {
+      "title": "Modèles de Transcription",
+      "description": "Sélectionnez un modèle de transcription ou téléchargez des modèles supplémentaires. Différents modèles offrent différents niveaux de précision et de vitesse.",
+      "downloaded": "Téléchargés",
+      "available": "Disponibles au Téléchargement",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
+      "deleteTitle": "Supprimer le modèle",
+      "filters": {
+        "all": "Tous",
+        "multiLanguage": "Multilingue",
+        "translation": "Traduction",
+        "allLanguages": "Toutes les langues"
+      },
+      "noModelsMatch": "Aucun modèle ne correspond à ce filtre."
+    },
     "general": {
       "title": "Général",
       "shortcut": {
@@ -361,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Ajouter un espace final",
         "description": "Ajouter un espace après la transcription collée"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Données de l'application :",

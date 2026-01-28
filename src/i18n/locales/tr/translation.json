@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Genel",
+    "models": "Modeller",
     "advanced": "Gelişmiş",
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
@@ -79,14 +80,7 @@
     }
   },
   "modelSelector": {
-    "welcome": "Handy'ye Hoş Geldiniz!",
-    "downloadPrompt": "Transkripsiyona başlamak için aşağıdan bir model indirin.",
-    "availableModels": "Mevcut Modeller",
-    "downloadModels": "Modelleri İndir",
-    "chooseModel": "Bir Model Seçin",
     "active": "Aktif",
-    "download": "İndir",
-    "downloadSize": "İndirme boyutu",
     "noModelsAvailable": "Kullanılabilir model yok",
     "extracting": "{{modelName}} çıkarılıyor...",
     "extractingMultiple": "{{count}} model çıkarılıyor...",
@@ -99,9 +93,38 @@
     "modelError": "Model Hatası",
     "modelUnloaded": "Model Boşaltıldı",
     "noModelDownloadRequired": "Model Yok – İndirme Gerekli",
-    "deleteModel": "{{modelName}} Sil"
+    "deleteModel": "{{modelName}} Sil",
+    "switching": "Değiştiriliyor...",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Birden fazla giriş dilini destekler",
+      "multiLanguage": "Çok dilli",
+      "translation": "İngilizce'ye çevirebilir",
+      "translate": "İngilizce'ye çevir"
+    },
+    "cancel": "İptal",
+    "cancelDownload": "İndirmeyi iptal et"
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Ayarları",
+      "noSettingsNeeded": "Bu model yapılandırma gerektirmeden otomatik olarak çalışır."
+    },
+    "models": {
+      "title": "Transkripsiyon Modelleri",
+      "description": "Bir transkripsiyon modeli seçin veya ek modeller indirin. Farklı modeller değişen doğruluk ve hız seviyeleri sunar.",
+      "downloaded": "İndirildi",
+      "available": "İndirilebilir",
+      "deleteConfirm": "{{modelName}} modelini silmek istediğinizden emin misiniz? Kullanmak için tekrar indirmeniz gerekecek.",
+      "deleteTitle": "Modeli Sil",
+      "filters": {
+        "all": "Tümü",
+        "multiLanguage": "Çok dilli",
+        "translation": "Çeviri",
+        "allLanguages": "Tüm Diller"
+      },
+      "noModelsMatch": "Bu filtreyle eşleşen model yok."
+    },
     "general": {
       "title": "Genel",
       "shortcut": {
@@ -364,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Uygulama Verileri:",

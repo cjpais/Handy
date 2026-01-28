@@ -227,6 +227,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       setModelStatus("error");
     });
 
+    // Listen for model deletion
+    const modelDeletedUnlisten = listen<string>("model-deleted", () => {
+      loadModels(); // Refresh models list
+      loadCurrentModel(); // Update current model in case deleted model was active
+    });
+
     // Click outside to close dropdown
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -247,6 +253,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       extractionStartedUnlisten.then((fn) => fn());
       extractionCompletedUnlisten.then((fn) => fn());
       extractionFailedUnlisten.then((fn) => fn());
+      modelDeletedUnlisten.then((fn) => fn());
     };
   }, []);
 
@@ -296,24 +303,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       setModelError(null);
       setShowModelDropdown(false);
       const result = await commands.setActiveModel(modelId);
-      if (result.status === "error") {
-        const errorMsg = result.error;
-        setModelError(errorMsg);
-        setModelStatus("error");
-        onError?.(errorMsg);
-      }
-    } catch (err) {
-      const errorMsg = `${err}`;
-      setModelError(errorMsg);
-      setModelStatus("error");
-      onError?.(errorMsg);
-    }
-  };
-
-  const handleModelDownload = async (modelId: string) => {
-    try {
-      setModelError(null);
-      const result = await commands.downloadModel(modelId);
       if (result.status === "error") {
         const errorMsg = result.error;
         setModelError(errorMsg);
@@ -399,14 +388,6 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     }
   };
 
-  const handleModelDelete = async (modelId: string) => {
-    const result = await commands.deleteModel(modelId);
-    if (result.status === "ok") {
-      await loadModels();
-      setModelError(null);
-    }
-  };
-
   return (
     <>
       {/* Model Status and Switcher */}
@@ -423,11 +404,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           <ModelDropdown
             models={models}
             currentModelId={currentModelId}
-            downloadProgress={modelDownloadProgress}
             onModelSelect={handleModelSelect}
-            onModelDownload={handleModelDownload}
-            onModelDelete={handleModelDelete}
-            onError={onError}
           />
         )}
       </div>

@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Ogólne",
+    "models": "Modele",
     "advanced": "Zaawansowane",
     "postProcessing": "Postproces",
     "history": "Historia",
@@ -71,18 +72,16 @@
       "grant": "Przyznaj uprawnienie",
       "granted": "Przyznano",
       "waiting": "Oczekiwanie...",
-      "allGranted": "Wszystko gotowe!"
+      "allGranted": "Wszystko gotowe!",
+      "errors": {
+        "checkFailed": "Nie udało się sprawdzić uprawnień. Spróbuj ponownie.",
+        "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Witamy w Handy!",
-    "downloadPrompt": "Pobierz model poniżej, aby rozpocząć transkrypcję.",
-    "availableModels": "Dostępne modele",
-    "downloadModels": "Pobierz modele",
-    "chooseModel": "Wybierz model",
     "active": "Aktywny",
-    "download": "Pobierz",
-    "downloadSize": "Rozmiar pobierania",
+    "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
     "extracting": "Rozpakowywanie {{modelName}}...",
     "extractingMultiple": "Rozpakowywanie {{count}} modeli...",
@@ -95,9 +94,37 @@
     "modelError": "Błąd modelu",
     "modelUnloaded": "Model wyładowany",
     "noModelDownloadRequired": "Brak modelu – wymagane pobranie",
-    "deleteModel": "Usuń {{modelName}}"
+    "deleteModel": "Usuń {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Obsługuje wiele języków wejściowych",
+      "multiLanguage": "Wielojęzyczny",
+      "translation": "Może tłumaczyć na angielski",
+      "translate": "Tłumacz na angielski"
+    },
+    "cancel": "Anuluj",
+    "cancelDownload": "Anuluj pobieranie"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Ustawienia {{model}}",
+      "noSettingsNeeded": "Ten model działa automatycznie bez konieczności konfiguracji."
+    },
+    "models": {
+      "title": "Modele transkrypcji",
+      "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
+      "downloaded": "Pobrane",
+      "available": "Dostępne do pobrania",
+      "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
+      "deleteTitle": "Usuń model",
+      "filters": {
+        "all": "Wszystkie",
+        "multiLanguage": "Wielojęzyczne",
+        "translation": "Tłumaczenie",
+        "allLanguages": "Wszystkie języki"
+      },
+      "noModelsMatch": "Żadne modele nie pasują do tego filtra."
+    },
     "general": {
       "title": "Ogólne",
       "shortcut": {
@@ -360,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Dodaj spację na końcu",
         "description": "Dodaj spację po wklejonej transkrypcji"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Dane aplikacji:",

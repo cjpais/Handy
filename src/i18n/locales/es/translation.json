@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "General",
+    "models": "Modelos",
     "advanced": "Avanzado",
     "postProcessing": "Post Proceso",
     "history": "Historial",
@@ -71,18 +72,16 @@
       "grant": "Conceder Permiso",
       "granted": "Concedido",
       "waiting": "Esperando...",
-      "allGranted": "¡Todo listo!"
+      "allGranted": "¡Todo listo!",
+      "errors": {
+        "checkFailed": "Error al verificar permisos. Por favor, inténtalo de nuevo.",
+        "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "¡Bienvenido a Handy!",
-    "downloadPrompt": "Descarga un modelo a continuación para comenzar con la transcripción.",
-    "availableModels": "Modelos Disponibles",
-    "downloadModels": "Descargar Modelos",
-    "chooseModel": "Elegir un Modelo",
     "active": "Activo",
-    "download": "Descargar",
-    "downloadSize": "Tamaño de descarga",
+    "switching": "Cambiando...",
     "noModelsAvailable": "No hay modelos disponibles",
     "extracting": "Extrayendo {{modelName}}...",
     "extractingMultiple": "Extrayendo {{count}} modelos...",
@@ -95,9 +94,37 @@
     "modelError": "Error del Modelo",
     "modelUnloaded": "Modelo Descargado",
     "noModelDownloadRequired": "Sin Modelo - Descarga Requerida",
-    "deleteModel": "Eliminar {{modelName}}"
+    "deleteModel": "Eliminar {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Soporta múltiples idiomas de entrada",
+      "multiLanguage": "Multiidioma",
+      "translation": "Puede traducir al inglés",
+      "translate": "Traducir al inglés"
+    },
+    "cancel": "Cancelar",
+    "cancelDownload": "Cancelar descarga"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Configuración de {{model}}",
+      "noSettingsNeeded": "Este modelo funciona automáticamente sin necesidad de configuración."
+    },
+    "models": {
+      "title": "Modelos de Transcripción",
+      "description": "Selecciona un modelo de transcripción o descarga modelos adicionales. Diferentes modelos ofrecen distintos niveles de precisión y velocidad.",
+      "downloaded": "Descargados",
+      "available": "Disponibles para Descargar",
+      "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
+      "deleteTitle": "Eliminar modelo",
+      "filters": {
+        "all": "Todos",
+        "multiLanguage": "Multiidioma",
+        "translation": "Traducción",
+        "allLanguages": "Todos los idiomas"
+      },
+      "noModelsMatch": "Ningún modelo coincide con este filtro."
+    },
     "general": {
       "title": "General",
       "shortcut": {
@@ -360,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Datos de la Aplicación:",
