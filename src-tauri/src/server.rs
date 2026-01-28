@@ -13,6 +13,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
+use tower_http::cors::{Any, CorsLayer};
 
 pub struct ServerState {
     pub transcription_manager: Arc<TranscriptionManager>,
@@ -69,8 +70,14 @@ impl ApiServer {
             }),
         };
 
+        let cors = CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any);
+
         let app = Router::new()
             .route("/v1/audio/transcriptions", post(transcribe_audio))
+            .layer(cors)
             .with_state(state);
 
         tauri::async_runtime::spawn(async move {
