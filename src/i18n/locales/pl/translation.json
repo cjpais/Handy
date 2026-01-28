@@ -233,6 +233,14 @@
         "placeholder": "Dodaj słowo",
         "add": "Dodaj",
         "remove": "Usuń {{word}}"
+      },
+      "local_api": {
+        "label": "Lokalne API",
+        "description": "Udostępnij lokalne API mowy na tekst zgodne z OpenAI na porcie {{port}}.",
+        "port": {
+          "label": "Port lokalnego API",
+          "description": "Port, na którym nasłuchuje serwer. Zmiana portu spowoduje restart serwera."
+        }
       }
     },
     "postProcessing": {

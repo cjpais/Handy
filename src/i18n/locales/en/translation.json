@@ -237,6 +237,14 @@
         "placeholder": "Add a word",
         "add": "Add",
         "remove": "Remove {{word}}"
+      },
+      "local_api": {
+        "label": "Local API",
+        "description": "Expose a local OpenAI-compatible Speech-to-Text API on port {{port}}.",
+        "port": {
+          "label": "Local API Port",
+          "description": "Port to listen on. Changing the port will restart the server."
+        }
       }
     },
     "postProcessing": {

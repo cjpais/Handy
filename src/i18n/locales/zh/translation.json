@@ -233,6 +233,14 @@
         "placeholder": "添加词汇",
         "add": "添加",
         "remove": "删除 {{word}}"
+      },
+      "local_api": {
+        "label": "本地API",
+        "description": "在端口{{port}}上暴露本地OpenAI兼容的语音转文字API。",
+        "port": {
+          "label": "本地API端口",
+          "description": "本地API服务器监听的端口。更改端口将重启服务器。"
+        }
       }
     },
     "postProcessing": {

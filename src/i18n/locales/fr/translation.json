@@ -234,6 +234,14 @@
         "placeholder": "Ajouter un mot",
         "add": "Ajouter",
         "remove": "Supprimer {{word}}"
+      },
+      "local_api": {
+        "label": "API locale",
+        "description": "Expose une API locale de reconnaissance vocale compatible OpenAI sur le port {{port}}.",
+        "port": {
+          "label": "Port de l'API locale",
+          "description": "Port d'écoute. Changer le port redémarrera le serveur."
+        }
       }
     },
     "postProcessing": {

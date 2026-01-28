@@ -74,6 +74,10 @@ ferrous-opencc = "0.2.3"
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
+axum = { version = "0.7", features = ["multipart"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "limit"] }
+tokio-util = { version = "0.7", features = ["io"] }
+hyper = "1.0"
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
