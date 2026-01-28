@@ -227,6 +227,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       setModelStatus("error");
     });
 
+    // Listen for model deletion
+    const modelDeletedUnlisten = listen<string>("model-deleted", () => {
+      loadModels(); // Refresh models list
+      loadCurrentModel(); // Update current model in case deleted model was active
+    });
+
     // Click outside to close dropdown
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -247,6 +253,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       extractionStartedUnlisten.then((fn) => fn());
       extractionCompletedUnlisten.then((fn) => fn());
       extractionFailedUnlisten.then((fn) => fn());
+      modelDeletedUnlisten.then((fn) => fn());
     };
   }, []);
 

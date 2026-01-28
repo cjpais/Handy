@@ -101,7 +101,9 @@
       "multiLanguage": "多语言",
       "translation": "可翻译为英语",
       "translate": "翻译为英语"
-    }
+    },
+    "cancel": "取消",
+    "cancelDownload": "取消下载"
   },
   "settings": {
     "modelSettings": {
