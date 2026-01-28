@@ -101,7 +101,9 @@
       "multiLanguage": "Mehrsprachig",
       "translation": "Kann ins Englische übersetzen",
       "translate": "Ins Englische übersetzen"
-    }
+    },
+    "cancel": "Abbrechen",
+    "cancelDownload": "Download abbrechen"
   },
   "settings": {
     "modelSettings": {

@@ -101,7 +101,9 @@
       "multiLanguage": "Đa ngôn ngữ",
       "translation": "Có thể dịch sang tiếng Anh",
       "translate": "Dịch sang tiếng Anh"
-    }
+    },
+    "cancel": "Hủy",
+    "cancelDownload": "Hủy tải xuống"
   },
   "settings": {
     "modelSettings": {

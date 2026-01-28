@@ -101,7 +101,9 @@
       "multiLanguage": "Wielojęzyczny",
       "translation": "Może tłumaczyć na angielski",
       "translate": "Tłumacz na angielski"
-    }
+    },
+    "cancel": "Anuluj",
+    "cancelDownload": "Anuluj pobieranie"
   },
   "settings": {
     "modelSettings": {

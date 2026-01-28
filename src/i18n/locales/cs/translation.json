@@ -101,7 +101,9 @@
       "multiLanguage": "Vícejazyčný",
       "translation": "Umí překládat do angličtiny",
       "translate": "Přeložit do angličtiny"
-    }
+    },
+    "cancel": "Zrušit",
+    "cancelDownload": "Zrušit stahování"
   },
   "settings": {
     "modelSettings": {

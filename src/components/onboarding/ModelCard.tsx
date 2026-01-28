@@ -33,6 +33,7 @@ interface ModelCardProps {
   onSelect: (modelId: string) => void;
   onDownload?: (modelId: string) => void;
   onDelete?: (modelId: string) => void;
+  onCancel?: (modelId: string) => void;
   downloadProgress?: number;
   downloadSpeed?: number; // MB/s
 }
@@ -46,6 +47,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   onSelect,
   onDownload,
   onDelete,
+  onCancel,
   downloadProgress,
   downloadSpeed,
 }) => {
@@ -167,19 +169,35 @@ const ModelCard: React.FC<ModelCardProps> = ({
                 style={{ width: `${downloadProgress}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-xs text-text/50 mt-1">
-              <span>
+            <div className="flex items-center justify-between text-xs mt-1">
+              <span className="text-text/50">
                 {t("modelSelector.downloading", {
                   percentage: Math.round(downloadProgress),
                 })}
               </span>
-              {downloadSpeed !== undefined && downloadSpeed > 0 && (
-                <span className="tabular-nums">
-                  {t("modelSelector.downloadSpeed", {
-                    speed: downloadSpeed.toFixed(1),
-                  })}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {downloadSpeed !== undefined && downloadSpeed > 0 && (
+                  <span className="tabular-nums text-text/50">
+                    {t("modelSelector.downloadSpeed", {
+                      speed: downloadSpeed.toFixed(1),
+                    })}
+                  </span>
+                )}
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onCancel(model.id);
+                    }}
+                    className="text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors"
+                    aria-label={t("modelSelector.cancelDownload")}
+                  >
+                    {t("modelSelector.cancel")}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

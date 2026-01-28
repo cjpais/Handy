@@ -101,7 +101,9 @@
       "multiLanguage": "多言語",
       "translation": "英語への翻訳が可能",
       "translate": "英語に翻訳"
-    }
+    },
+    "cancel": "キャンセル",
+    "cancelDownload": "ダウンロードをキャンセル"
   },
   "settings": {
     "modelSettings": {

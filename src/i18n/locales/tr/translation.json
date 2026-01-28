@@ -101,7 +101,9 @@
       "multiLanguage": "Çok dilli",
       "translation": "İngilizce'ye çevirebilir",
       "translate": "İngilizce'ye çevir"
-    }
+    },
+    "cancel": "İptal",
+    "cancelDownload": "İndirmeyi iptal et"
   },
   "settings": {
     "modelSettings": {

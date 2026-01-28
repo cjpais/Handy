@@ -96,6 +96,8 @@
     "noModelDownloadRequired": "No Model - Download Required",
     "deleteModel": "Delete {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "Cancel",
+    "cancelDownload": "Cancel download",
     "capabilities": {
       "languageSelection": "Supports multiple input languages",
       "multiLanguage": "Multi-language",

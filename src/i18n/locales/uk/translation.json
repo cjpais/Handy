@@ -101,7 +101,9 @@
       "multiLanguage": "Multi-language",
       "translation": "Can translate to English",
       "translate": "Translate to English"
-    }
+    },
+    "cancel": "Скасувати",
+    "cancelDownload": "Скасувати завантаження"
   },
   "settings": {
     "modelSettings": {

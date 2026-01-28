@@ -101,7 +101,9 @@
       "multiLanguage": "Multi-language",
       "translation": "Can translate to English",
       "translate": "Translate to English"
-    }
+    },
+    "cancel": "Cancelar",
+    "cancelDownload": "Cancelar download"
   },
   "settings": {
     "modelSettings": {
