@@ -80,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "欢迎使用 Handy！",
-    "downloadPrompt": "请下载以下模型以开始转录。",
-    "availableModels": "可用模型",
-    "downloadModels": "下载模型",
-    "chooseModel": "选择模型",
     "active": "活跃",
     "switching": "切换中...",
-    "download": "下载",
-    "downloadSize": "下载大小",
     "noModelsAvailable": "没有可用的模型",
     "extracting": "正在解压 {{modelName}}...",
     "extractingMultiple": "正在解压 {{count}} 个模型...",
@@ -394,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "追加尾部空格",
         "description": "在粘贴的转录后添加空格"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "应用数据:",

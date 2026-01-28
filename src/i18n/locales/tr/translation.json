@@ -80,14 +80,7 @@
     }
   },
   "modelSelector": {
-    "welcome": "Handy'ye Hoş Geldiniz!",
-    "downloadPrompt": "Transkripsiyona başlamak için aşağıdan bir model indirin.",
-    "availableModels": "Mevcut Modeller",
-    "downloadModels": "Modelleri İndir",
-    "chooseModel": "Bir Model Seçin",
     "active": "Aktif",
-    "download": "İndir",
-    "downloadSize": "İndirme boyutu",
     "noModelsAvailable": "Kullanılabilir model yok",
     "extracting": "{{modelName}} çıkarılıyor...",
     "extractingMultiple": "{{count}} model çıkarılıyor...",
@@ -102,8 +95,6 @@
     "noModelDownloadRequired": "Model Yok – İndirme Gerekli",
     "deleteModel": "{{modelName}} Sil",
     "switching": "Değiştiriliyor...",
-    "cancel": "İptal",
-    "cancelDownload": "İndirmeyi iptal et",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Birden fazla giriş dilini destekler",
@@ -393,6 +384,11 @@
       "appendTrailingSpace": {
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Uygulama Verileri:",

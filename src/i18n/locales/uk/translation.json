@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Загальні",
+    "models": "Models",
     "advanced": "Розширені",
     "postProcessing": "Постобробка",
     "history": "Історія",
@@ -79,14 +80,7 @@
     }
   },
   "modelSelector": {
-    "welcome": "Ласкаво просимо до Handy!",
-    "downloadPrompt": "Завантажте модель нижче, щоб почати транскрипцію.",
-    "availableModels": "Доступні моделі",
-    "downloadModels": "Завантажити моделі",
-    "chooseModel": "Оберіть модель",
     "active": "Активна",
-    "download": "Завантажити",
-    "downloadSize": "Розмір завантаження",
     "noModelsAvailable": "Немає доступних моделей",
     "extracting": "Розпакування {{modelName}}...",
     "extractingMultiple": "Розпакування {{count}} моделей...",
@@ -99,9 +93,21 @@
     "modelError": "Помилка моделі",
     "modelUnloaded": "Модель вивантажена",
     "noModelDownloadRequired": "Немає моделі - потрібно завантажити",
-    "deleteModel": "Видалити {{modelName}}"
+    "deleteModel": "Видалити {{modelName}}",
+    "switching": "Switching...",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Supports multiple input languages",
+      "multiLanguage": "Multi-language",
+      "translation": "Can translate to English",
+      "translate": "Translate to English"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Settings",
+      "noSettingsNeeded": "This model works automatically with no configuration needed."
+    },
     "general": {
       "title": "Загальні",
       "shortcut": {
@@ -139,6 +145,21 @@
         "label": "Утримувати для запису (Push To Talk)",
         "description": "Утримуйте для запису, відпустіть для зупинки"
       }
+    },
+    "models": {
+      "title": "Transcription Models",
+      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "downloaded": "Downloaded",
+      "available": "Available to Download",
+      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
+      "deleteTitle": "Delete Model",
+      "filters": {
+        "all": "All",
+        "multiLanguage": "Multi-language",
+        "translation": "Translation",
+        "allLanguages": "All Languages"
+      },
+      "noModelsMatch": "No models match this filter."
     },
     "sound": {
       "title": "Звук",
@@ -366,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Додавати пробіл в кінці",
         "description": "Додавати пробіл після вставленої транскрипції"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Дані програми:",

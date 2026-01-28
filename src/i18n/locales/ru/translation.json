@@ -80,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Добро пожаловать в Handy!",
-    "downloadPrompt": "Загрузите модель ниже, чтобы начать транскрипцию.",
-    "availableModels": "Доступные модели",
-    "downloadModels": "Скачать модели",
-    "chooseModel": "Выберите модель",
     "active": "Активный",
     "switching": "Переключение...",
-    "download": "Скачать",
-    "downloadSize": "Размер загрузки",
     "noModelsAvailable": "Нет доступных моделей",
     "extracting": "Извлечение {{modelName}}...",
     "extractingMultiple": "Извлечение моделей {{count}}...",
@@ -394,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Добавить конечный пробел",
         "description": "Добавить пробел после вставленной транскрипции"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Данные приложения:",

@@ -1,5 +1,4 @@
 {
-  "_comment": "Vietnamese translation for Handy. Contribute at: https://github.com/cjpais/Handy",
   "tray": {
     "settings": "Cài đặt...",
     "checkUpdates": "Kiểm tra cập nhật...",
@@ -81,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Chào mừng đến với Handy!",
-    "downloadPrompt": "Tải xuống mô hình bên dưới để bắt đầu chuyển đổi.",
-    "availableModels": "Các Mô Hình Có Sẵn",
-    "downloadModels": "Tải Xuống Mô Hình",
-    "chooseModel": "Chọn Mô Hình",
     "active": "Đang hoạt động",
     "switching": "Đang chuyển...",
-    "download": "Tải xuống",
-    "downloadSize": "Kích thước tải xuống",
     "noModelsAvailable": "Không có mô hình nào",
     "extracting": "Đang giải nén {{modelName}}...",
     "extractingMultiple": "Đang giải nén {{count}} mô hình...",
@@ -395,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Dữ liệu ứng dụng:",

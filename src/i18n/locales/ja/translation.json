@@ -80,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Handyへようこそ！",
-    "downloadPrompt": "文字起こしを開始するには、下からモデルをダウンロードしてください。",
-    "availableModels": "利用可能なモデル",
-    "downloadModels": "モデルをダウンロード",
-    "chooseModel": "モデルを選択",
     "active": "アクティブ",
     "switching": "切替中...",
-    "download": "ダウンロード",
-    "downloadSize": "ダウンロードサイズ",
     "noModelsAvailable": "利用可能なモデルがありません",
     "extracting": "{{modelName}}を展開中...",
     "extractingMultiple": "{{count}}個のモデルを展開中...",
@@ -394,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "アプリデータ:",

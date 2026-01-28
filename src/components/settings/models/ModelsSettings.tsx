@@ -82,10 +82,10 @@ export const ModelsSettings: React.FC = () => {
   }, [languageFilter, t]);
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
-    if (extractingModels.has(modelId)) {
+    if (modelId in extractingModels) {
       return "extracting";
     }
-    if (downloadingModels.has(modelId)) {
+    if (modelId in downloadingModels) {
       return "downloading";
     }
     if (switchingModelId === modelId) {
@@ -102,12 +102,12 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const getDownloadProgress = (modelId: string): number | undefined => {
-    const progress = downloadProgress.get(modelId);
+    const progress = downloadProgress[modelId];
     return progress?.percentage;
   };
 
   const getDownloadSpeed = (modelId: string): number | undefined => {
-    const stats = downloadStats.get(modelId);
+    const stats = downloadStats[modelId];
     return stats?.speed;
   };
 

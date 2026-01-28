@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
+import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
 
@@ -17,13 +18,14 @@ interface DownloadStats {
   speed: number; // MB/s
 }
 
+// Using Record instead of Set/Map for Immer compatibility
 interface ModelsStore {
   models: ModelInfo[];
   currentModel: string;
-  downloadingModels: Set<string>;
-  extractingModels: Set<string>;
-  downloadProgress: Map<string, DownloadProgress>;
-  downloadStats: Map<string, DownloadStats>;
+  downloadingModels: Record<string, true>;
+  extractingModels: Record<string, true>;
+  downloadProgress: Record<string, DownloadProgress>;
+  downloadStats: Record<string, DownloadStats>;
   loading: boolean;
   error: string | null;
   hasAnyModels: boolean;
@@ -37,6 +39,7 @@ interface ModelsStore {
   checkFirstRun: () => Promise<boolean>;
   selectModel: (modelId: string) => Promise<boolean>;
   downloadModel: (modelId: string) => Promise<boolean>;
+  cancelDownload: (modelId: string) => Promise<boolean>;
   deleteModel: (modelId: string) => Promise<boolean>;
   getModelInfo: (modelId: string) => ModelInfo | undefined;
   isModelDownloading: (modelId: string) => boolean;
@@ -54,10 +57,10 @@ export const useModelStore = create<ModelsStore>()(
   subscribeWithSelector((set, get) => ({
     models: [],
     currentModel: "",
-    downloadingModels: new Set(),
-    extractingModels: new Set(),
-    downloadProgress: new Map(),
-    downloadStats: new Map(),
+    downloadingModels: {},
+    extractingModels: {},
+    downloadProgress: {},
+    downloadStats: {},
     loading: true,
     error: null,
     hasAnyModels: false,
@@ -77,10 +80,29 @@ export const useModelStore = create<ModelsStore>()(
           set({ models: result.data, error: null });
 
           // Sync downloading state from backend
-          const currentlyDownloading = new Set(
-            result.data.filter((m) => m.is_downloading).map((m) => m.id),
+          set(
+            produce((state) => {
+              const backendDownloading: Record<string, true> = {};
+              result.data
+                .filter((m) => m.is_downloading)
+                .forEach((m) => {
+                  backendDownloading[m.id] = true;
+                });
+
+              // Merge: keep frontend state if downloading, add backend state
+              Object.keys(backendDownloading).forEach((id) => {
+                state.downloadingModels[id] = true;
+              });
+
+              // Remove models that backend says are NOT downloading AND
+              // frontend doesn't have progress for (completed/cancelled)
+              Object.keys(state.downloadingModels).forEach((id) => {
+                if (!backendDownloading[id] && !state.downloadProgress[id]) {
+                  delete state.downloadingModels[id];
+                }
+              });
+            }),
           );
-          set({ downloadingModels: currentlyDownloading });
         } else {
           set({ error: `Failed to load models: ${result.error}` });
         }
@@ -141,28 +163,56 @@ export const useModelStore = create<ModelsStore>()(
     downloadModel: async (modelId: string) => {
       try {
         set({ error: null });
-        set((state) => ({
-          downloadingModels: new Set(state.downloadingModels).add(modelId),
-        }));
+        set(
+          produce((state) => {
+            state.downloadingModels[modelId] = true;
+          }),
+        );
         const result = await commands.downloadModel(modelId);
         if (result.status === "ok") {
           return true;
         } else {
           set({ error: `Failed to download model: ${result.error}` });
-          set((state) => {
-            const next = new Set(state.downloadingModels);
-            next.delete(modelId);
-            return { downloadingModels: next };
-          });
+          set(
+            produce((state) => {
+              delete state.downloadingModels[modelId];
+            }),
+          );
           return false;
         }
       } catch (err) {
         set({ error: `Failed to download model: ${err}` });
-        set((state) => {
-          const next = new Set(state.downloadingModels);
-          next.delete(modelId);
-          return { downloadingModels: next };
-        });
+        set(
+          produce((state) => {
+            delete state.downloadingModels[modelId];
+          }),
+        );
+        return false;
+      }
+    },
+
+    cancelDownload: async (modelId: string) => {
+      try {
+        set({ error: null });
+        const result = await commands.cancelDownload(modelId);
+        if (result.status === "ok") {
+          set(
+            produce((state) => {
+              delete state.downloadingModels[modelId];
+              delete state.downloadProgress[modelId];
+              delete state.downloadStats[modelId];
+            }),
+          );
+
+          // Reload models to sync with backend state
+          await get().loadModels();
+          return true;
+        } else {
+          set({ error: `Failed to cancel download: ${result.error}` });
+          return false;
+        }
+      } catch (err) {
+        set({ error: `Failed to cancel download: ${err}` });
         return false;
       }
     },
@@ -189,15 +239,15 @@ export const useModelStore = create<ModelsStore>()(
     },
 
     isModelDownloading: (modelId: string) => {
-      return get().downloadingModels.has(modelId);
+      return modelId in get().downloadingModels;
     },
 
     isModelExtracting: (modelId: string) => {
-      return get().extractingModels.has(modelId);
+      return modelId in get().extractingModels;
     },
 
     getDownloadProgress: (modelId: string) => {
-      return get().downloadProgress.get(modelId);
+      return get().downloadProgress[modelId];
     },
 
     initialize: async () => {
@@ -211,83 +261,77 @@ export const useModelStore = create<ModelsStore>()(
       // Set up event listeners
       listen<DownloadProgress>("model-download-progress", (event) => {
         const progress = event.payload;
-        set((state) => ({
-          downloadProgress: new Map(state.downloadProgress).set(
-            progress.model_id,
-            progress,
-          ),
-        }));
+        set(
+          produce((state) => {
+            state.downloadProgress[progress.model_id] = progress;
+          }),
+        );
 
         // Update download stats for speed calculation
         const now = Date.now();
-        set((state) => {
-          const current = state.downloadStats.get(progress.model_id);
-          const newStats = new Map(state.downloadStats);
+        set(
+          produce((state) => {
+            const current = state.downloadStats[progress.model_id];
 
-          if (!current) {
-            newStats.set(progress.model_id, {
-              startTime: now,
-              lastUpdate: now,
-              totalDownloaded: progress.downloaded,
-              speed: 0,
-            });
-          } else {
-            const timeDiff = (now - current.lastUpdate) / 1000;
-            const bytesDiff = progress.downloaded - current.totalDownloaded;
-
-            if (timeDiff > 0.5) {
-              const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff;
-              const validCurrentSpeed = Math.max(0, currentSpeed);
-              const smoothedSpeed =
-                current.speed > 0
-                  ? current.speed * 0.8 + validCurrentSpeed * 0.2
-                  : validCurrentSpeed;
-
-              newStats.set(progress.model_id, {
-                startTime: current.startTime,
+            if (!current) {
+              state.downloadStats[progress.model_id] = {
+                startTime: now,
                 lastUpdate: now,
                 totalDownloaded: progress.downloaded,
-                speed: Math.max(0, smoothedSpeed),
-              });
-            }
-          }
+                speed: 0,
+              };
+            } else {
+              const timeDiff = (now - current.lastUpdate) / 1000;
+              const bytesDiff = progress.downloaded - current.totalDownloaded;
 
-          return { downloadStats: newStats };
-        });
+              if (timeDiff > 0.5) {
+                const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff;
+                const validCurrentSpeed = Math.max(0, currentSpeed);
+                const smoothedSpeed =
+                  current.speed > 0
+                    ? current.speed * 0.8 + validCurrentSpeed * 0.2
+                    : validCurrentSpeed;
+
+                state.downloadStats[progress.model_id] = {
+                  startTime: current.startTime,
+                  lastUpdate: now,
+                  totalDownloaded: progress.downloaded,
+                  speed: Math.max(0, smoothedSpeed),
+                };
+              }
+            }
+          }),
+        );
       });
 
       listen<string>("model-download-complete", (event) => {
         const modelId = event.payload;
-        set((state) => {
-          const nextDownloading = new Set(state.downloadingModels);
-          nextDownloading.delete(modelId);
-          const nextProgress = new Map(state.downloadProgress);
-          nextProgress.delete(modelId);
-          const nextStats = new Map(state.downloadStats);
-          nextStats.delete(modelId);
-          return {
-            downloadingModels: nextDownloading,
-            downloadProgress: nextProgress,
-            downloadStats: nextStats,
-          };
-        });
+        set(
+          produce((state) => {
+            delete state.downloadingModels[modelId];
+            delete state.downloadProgress[modelId];
+            delete state.downloadStats[modelId];
+          }),
+        );
         get().loadModels();
       });
 
       listen<string>("model-extraction-started", (event) => {
         const modelId = event.payload;
-        set((state) => ({
-          extractingModels: new Set(state.extractingModels).add(modelId),
-        }));
+        set(
+          produce((state) => {
+            state.extractingModels[modelId] = true;
+          }),
+        );
       });
 
       listen<string>("model-extraction-completed", (event) => {
         const modelId = event.payload;
-        set((state) => {
-          const next = new Set(state.extractingModels);
-          next.delete(modelId);
-          return { extractingModels: next };
-        });
+        set(
+          produce((state) => {
+            delete state.extractingModels[modelId];
+          }),
+        );
         get().loadModels();
       });
 
@@ -295,14 +339,12 @@ export const useModelStore = create<ModelsStore>()(
         "model-extraction-failed",
         (event) => {
           const modelId = event.payload.model_id;
-          set((state) => {
-            const next = new Set(state.extractingModels);
-            next.delete(modelId);
-            return {
-              extractingModels: next,
-              error: `Failed to extract model: ${event.payload.error}`,
-            };
-          });
+          set(
+            produce((state) => {
+              delete state.extractingModels[modelId];
+              state.error = `Failed to extract model: ${event.payload.error}`;
+            }),
+          );
         },
       );
 

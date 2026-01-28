@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Geral",
+    "models": "Models",
     "advanced": "Avançado",
     "postProcessing": "Pós-Processamento",
     "history": "Histórico",
@@ -79,14 +80,7 @@
     }
   },
   "modelSelector": {
-    "welcome": "Bem-vindo ao Handy!",
-    "downloadPrompt": "Baixe um modelo abaixo para começar a transcrever.",
-    "availableModels": "Modelos Disponíveis",
-    "downloadModels": "Baixar Modelos",
-    "chooseModel": "Escolher um Modelo",
     "active": "Ativo",
-    "download": "Baixar",
-    "downloadSize": "Tamanho do download",
     "noModelsAvailable": "Nenhum modelo disponível",
     "extracting": "Extraindo {{modelName}}...",
     "extractingMultiple": "Extraindo {{count}} modelos...",
@@ -99,9 +93,21 @@
     "modelError": "Erro no Modelo",
     "modelUnloaded": "Modelo Descarregado",
     "noModelDownloadRequired": "Sem Modelo - Download Necessário",
-    "deleteModel": "Excluir {{modelName}}"
+    "deleteModel": "Excluir {{modelName}}",
+    "switching": "Switching...",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Supports multiple input languages",
+      "multiLanguage": "Multi-language",
+      "translation": "Can translate to English",
+      "translate": "Translate to English"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Settings",
+      "noSettingsNeeded": "This model works automatically with no configuration needed."
+    },
     "general": {
       "title": "Geral",
       "shortcut": {
@@ -139,6 +145,21 @@
         "label": "Pressionar para Falar",
         "description": "Segure para gravar, solte para parar"
       }
+    },
+    "models": {
+      "title": "Transcription Models",
+      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "downloaded": "Downloaded",
+      "available": "Available to Download",
+      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
+      "deleteTitle": "Delete Model",
+      "filters": {
+        "all": "All",
+        "multiLanguage": "Multi-language",
+        "translation": "Translation",
+        "allLanguages": "All Languages"
+      },
+      "noModelsMatch": "No models match this filter."
     },
     "sound": {
       "title": "Som",
@@ -366,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Adicionar Espaço Final",
         "description": "Adicionar um espaço após a transcrição colada"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Dados do App:",

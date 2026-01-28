@@ -80,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Willkommen bei Handy!",
-    "downloadPrompt": "Lade ein Modell herunter, um mit der Transkription zu beginnen.",
-    "availableModels": "Verfügbare Modelle",
-    "downloadModels": "Modelle herunterladen",
-    "chooseModel": "Modell auswählen",
     "active": "Aktiv",
     "switching": "Wechseln...",
-    "download": "Herunterladen",
-    "downloadSize": "Downloadgröße",
     "noModelsAvailable": "Keine Modelle verfügbar",
     "extracting": "Entpacke {{modelName}}...",
     "extractingMultiple": "Entpacke {{count}} Modelle...",
@@ -394,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Leerzeichen anhängen",
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "App-Daten:",

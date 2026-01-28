@@ -80,14 +80,7 @@
     }
   },
   "modelSelector": {
-    "welcome": "Vítejte v Handy!",
-    "downloadPrompt": "Pro zahájení přepisu si níže stáhněte model.",
-    "availableModels": "Dostupné modely",
-    "downloadModels": "Stáhnout modely",
-    "chooseModel": "Vybrat model",
     "active": "Aktivní",
-    "download": "Stáhnout",
-    "downloadSize": "Velikost stažení",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "extracting": "Rozbaluji {{modelName}}...",
     "extractingMultiple": "Rozbaluji {{count}} modelů...",
@@ -102,8 +95,6 @@
     "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
     "deleteModel": "Smazat {{modelName}}",
     "switching": "Přepínání...",
-    "cancel": "Zrušit",
-    "cancelDownload": "Zrušit stahování",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
       "languageSelection": "Podporuje více vstupních jazyků",
@@ -393,6 +384,11 @@
       "appendTrailingSpace": {
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Data aplikace:",

@@ -80,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "¡Bienvenido a Handy!",
-    "downloadPrompt": "Descarga un modelo a continuación para comenzar con la transcripción.",
-    "availableModels": "Modelos Disponibles",
-    "downloadModels": "Descargar Modelos",
-    "chooseModel": "Elegir un Modelo",
     "active": "Activo",
     "switching": "Cambiando...",
-    "download": "Descargar",
-    "downloadSize": "Tamaño de descarga",
     "noModelsAvailable": "No hay modelos disponibles",
     "extracting": "Extrayendo {{modelName}}...",
     "extractingMultiple": "Extrayendo {{count}} modelos...",
@@ -394,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Datos de la Aplicación:",

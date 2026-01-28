@@ -80,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Benvenuto in Handy!",
-    "downloadPrompt": "Scarica un modello per cominciare a trascrivere.",
-    "availableModels": "Modelli Disponibili",
-    "downloadModels": "Scarica Modelli",
-    "chooseModel": "Scegli un Modello",
     "active": "Attivo",
     "switching": "Cambio...",
-    "download": "Scarica",
-    "downloadSize": "Dimensione download",
     "noModelsAvailable": "Nessun modello disponibile",
     "extracting": "Estrazione di {{modelName}}...",
     "extractingMultiple": "Estrazione di {{count}} modelli...",
@@ -394,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Dati App:",

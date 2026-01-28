@@ -1,5 +1,4 @@
 {
-  "_comment": "French translation for Handy. Contribute at: https://github.com/cjpais/Handy",
   "tray": {
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
@@ -81,15 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Bienvenue sur Handy !",
-    "downloadPrompt": "Téléchargez un modèle ci-dessous pour commencer la transcription.",
-    "availableModels": "Modèles Disponibles",
-    "downloadModels": "Télécharger des Modèles",
-    "chooseModel": "Choisir un Modèle",
     "active": "Actif",
     "switching": "Changement...",
-    "download": "Télécharger",
-    "downloadSize": "Taille du téléchargement",
     "noModelsAvailable": "Aucun modèle disponible",
     "extracting": "Extraction de {{modelName}}...",
     "extractingMultiple": "Extraction de {{count}} modèles...",
@@ -395,6 +387,11 @@
       "appendTrailingSpace": {
         "label": "Ajouter un espace final",
         "description": "Ajouter un espace après la transcription collée"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {
         "appData": "Données de l'application :",
