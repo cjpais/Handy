@@ -8,7 +8,6 @@ import { StartHidden } from "../StartHidden";
 import { AutostartToggle } from "../AutostartToggle";
 import { PasteMethodSetting } from "../PasteMethod";
 import { ClipboardHandlingSetting } from "../ClipboardHandling";
-import { useModelStore } from "../../../stores/modelStore";
 import { PostProcessingToggle } from "../PostProcessingToggle";
 import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { HistoryLimit } from "../HistoryLimit";
@@ -16,15 +15,10 @@ import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
-import { TranslateToEnglish } from "../TranslateToEnglish";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { currentModel, getModelInfo } = useModelStore();
   const { getSetting } = useSettings();
-  const currentModelInfo = getModelInfo(currentModel);
-  const showTranslateToEnglish =
-    currentModelInfo?.engine_type === "Whisper" && currentModel !== "turbo";
   const experimentalEnabled = getSetting("experimental_enabled") || false;
 
   return (
@@ -43,9 +37,6 @@ export const AdvancedSettings: React.FC = () => {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>
-        {showTranslateToEnglish && (
-          <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
-        )}
         <CustomWords descriptionMode="tooltip" grouped />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
