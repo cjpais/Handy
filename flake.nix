@@ -25,7 +25,7 @@
           inherit version;
           src = pkgs.fetchurl {
             url = "https://github.com/cjpais/Handy/releases/download/v${version}/Handy_${version}_amd64.AppImage";
-            hash = "sha256-+uS2xU1cf50b/zGKIX2fKw/4vEi6Sq7N9/8KDO4P2Mo=";
+            hash = "sha256-tTswFYLCPGtMbHAb2bQMsklRiRCVXLrtu4pQC8IHdqQ=";
           };
           extraPkgs = p:
             with p; [
