@@ -51,6 +51,10 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "Very fast, English only. Handles accents well."
+      },
+      "qwen3-asr": {
+        "name": "Qwen3 ASR (MLX)",
+        "description": "基于MLX框架的Apple Silicon优化ASR。支持中文和多语言。"
       }
     },
     "errors": {

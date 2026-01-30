@@ -285,7 +285,10 @@ impl ModelManager {
 
         for model in models.values_mut() {
             // Skip download status check for models managed externally (e.g., Qwen3 via mlx-audio)
-            if model.url.is_none() {
+            // Check for None or empty string
+            let is_externally_managed = model.url.is_none()
+                || model.url.as_ref().map(|s| s.is_empty()).unwrap_or(false);
+            if is_externally_managed {
                 model.is_downloaded = true;
                 model.is_downloading = false;
                 continue;
