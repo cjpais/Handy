@@ -1,9 +1,11 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::model::{EngineType, ModelManager};
+use crate::managers::qwen3_engine::{Qwen3Engine, Qwen3InferenceParams};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
@@ -32,6 +34,7 @@ enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetEngine),
     Moonshine(MoonshineEngine),
+    Qwen3(Qwen3Engine),
 }
 
 #[derive(Clone)]
@@ -145,6 +148,7 @@ impl TranscriptionManager {
                     LoadedEngine::Whisper(ref mut e) => e.unload_model(),
                     LoadedEngine::Parakeet(ref mut e) => e.unload_model(),
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
+                    LoadedEngine::Qwen3(ref mut e) => e.unload_model(),
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -283,6 +287,24 @@ impl TranscriptionManager {
                         anyhow::anyhow!(error_msg)
                     })?;
                 LoadedEngine::Moonshine(engine)
+            }
+            EngineType::Qwen3 => {
+                let mut engine = Qwen3Engine::new();
+                let path = Path::new(&model_path);
+                engine.load_model(path).map_err(|e| {
+                    let error_msg = format!("Failed to load Qwen3 model {}: {}", model_id, e);
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.clone()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::Qwen3(engine)
             }
         };
 
@@ -426,6 +448,28 @@ impl TranscriptionManager {
                 LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
                     .transcribe_samples(audio, None)
                     .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e))?,
+                LoadedEngine::Qwen3(qwen3_engine) => {
+                    let params = Qwen3InferenceParams {
+                        language: if settings.selected_language == "auto" {
+                            None
+                        } else {
+                            Some(settings.selected_language.clone())
+                        },
+                        task: if settings.translate_to_english {
+                            "translate".to_string()
+                        } else {
+                            "transcribe".to_string()
+                        },
+                    };
+                    let result = qwen3_engine
+                        .transcribe_samples(audio, Some(params))
+                        .map_err(|e| anyhow::anyhow!("Qwen3 transcription failed: {}", e))?;
+                    // Convert Qwen3 result to TranscriptionResult format
+                    transcribe_rs::TranscriptionResult {
+                        text: result.text,
+                        segments: None,
+                    }
+                }
             }
         };
 

@@ -19,6 +19,7 @@ pub enum EngineType {
     Whisper,
     Parakeet,
     Moonshine,
+    Qwen3,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -200,6 +201,26 @@ impl ModelManager {
                 engine_type: EngineType::Moonshine,
                 accuracy_score: 0.70,
                 speed_score: 0.90,
+            },
+        );
+
+        // Qwen3 ASR model (macOS only, MLX-based)
+        available_models.insert(
+            "qwen3-asr".to_string(),
+            ModelInfo {
+                id: "qwen3-asr".to_string(),
+                name: "Qwen3 ASR (MLX)".to_string(),
+                description: "Apple Silicon optimized ASR using MLX framework. Supports Chinese and multilingual.".to_string(),
+                filename: "qwen3-asr".to_string(),
+                url: Some("https://huggingface.co/Qwen/Qwen3-ASR/resolve/main/model.safetensors".to_string()),
+                size_mb: 1500, // Approximate size, adjust as needed
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Qwen3,
+                accuracy_score: 0.90,
+                speed_score: 0.85,
             },
         );
 
