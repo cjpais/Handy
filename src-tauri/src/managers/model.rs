@@ -205,6 +205,7 @@ impl ModelManager {
         );
 
         // Qwen3 ASR model (macOS only, MLX-based)
+        // Note: Model is automatically downloaded by mlx-audio on first use
         available_models.insert(
             "qwen3-asr".to_string(),
             ModelInfo {
@@ -212,12 +213,12 @@ impl ModelManager {
                 name: "Qwen3 ASR (MLX)".to_string(),
                 description: "Apple Silicon optimized ASR using MLX framework. Supports Chinese and multilingual.".to_string(),
                 filename: "qwen3-asr".to_string(),
-                url: Some("https://huggingface.co/Qwen/Qwen3-ASR/resolve/main/model.safetensors".to_string()),
-                size_mb: 1500, // Approximate size, adjust as needed
-                is_downloaded: false,
+                url: None, // Model downloaded automatically by mlx-audio
+                size_mb: 0, // Size varies based on MLX cache
+                is_downloaded: true, // Always available on macOS with mlx-audio installed
                 is_downloading: false,
                 partial_size: 0,
-                is_directory: true,
+                is_directory: false,
                 engine_type: EngineType::Qwen3,
                 accuracy_score: 0.90,
                 speed_score: 0.85,
