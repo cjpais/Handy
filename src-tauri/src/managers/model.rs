@@ -284,6 +284,13 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            // Skip download status check for models managed externally (e.g., Qwen3 via mlx-audio)
+            if model.url.is_none() {
+                model.is_downloaded = true;
+                model.is_downloading = false;
+                continue;
+            }
+
             if model.is_directory {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);
