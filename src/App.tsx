@@ -1,5 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { Toaster } from "sonner";
+import { platform } from "@tauri-apps/plugin-os";
+import {
+  checkAccessibilityPermission,
+  checkMicrophonePermission,
+} from "tauri-plugin-macos-permissions-api";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -21,6 +26,9 @@ function App() {
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
+  // Track if this is a returning user who just needs to grant permissions
+  // (vs a new user who needs full onboarding including model selection)
+  const [isReturningUser, setIsReturningUser] = useState(false);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
@@ -36,12 +44,15 @@ function App() {
     checkOnboardingStatus();
   }, []);
 
-  // Initialize Enigo and refresh audio devices when main app loads
+  // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
     if (onboardingStep === "done" && !hasCompletedPostOnboardingInit.current) {
       hasCompletedPostOnboardingInit.current = true;
-      commands.initializeEnigo().catch((e) => {
-        console.warn("Failed to initialize Enigo:", e);
+      Promise.all([
+        commands.initializeEnigo(),
+        commands.initializeShortcuts(),
+      ]).catch((e) => {
+        console.warn("Failed to initialize:", e);
       });
       refreshAudioDevices();
       refreshOutputDevices();
@@ -77,10 +88,31 @@ function App() {
     try {
       // Check if they have any models available
       const result = await commands.hasAnyModelsAvailable();
-      if (result.status === "ok") {
-        // If they have models/downloads, they're done. Otherwise start permissions step.
-        setOnboardingStep(result.data ? "done" : "accessibility");
+      const hasModels = result.status === "ok" && result.data;
+
+      if (hasModels) {
+        // Returning user - but check if they need to grant permissions on macOS
+        setIsReturningUser(true);
+        if (platform() === "macos") {
+          try {
+            const [hasAccessibility, hasMicrophone] = await Promise.all([
+              checkAccessibilityPermission(),
+              checkMicrophonePermission(),
+            ]);
+            if (!hasAccessibility || !hasMicrophone) {
+              // Missing permissions - show accessibility onboarding
+              setOnboardingStep("accessibility");
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed to check permissions:", e);
+            // If we can't check, proceed to main app and let them fix it there
+          }
+        }
+        setOnboardingStep("done");
       } else {
+        // New user - start full onboarding
+        setIsReturningUser(false);
         setOnboardingStep("accessibility");
       }
     } catch (error) {
@@ -90,7 +122,9 @@ function App() {
   };
 
   const handleAccessibilityComplete = () => {
-    setOnboardingStep("model");
+    // Returning users already have models, skip to main app
+    // New users need to select a model
+    setOnboardingStep(isReturningUser ? "done" : "model");
   };
 
   const handleModelSelected = () => {

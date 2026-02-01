@@ -134,8 +134,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
 
-    // Initialize the shortcuts
-    shortcut::init_shortcuts(app_handle);
+    // Note: Shortcuts are NOT initialized here.
+    // The frontend is responsible for calling the `initialize_shortcuts` command
+    // after permissions are confirmed (on macOS) or after onboarding completes.
+    // This matches the pattern used for Enigo initialization.
 
     #[cfg(unix)]
     let signals = Signals::new(&[SIGUSR2]).unwrap();
@@ -285,6 +287,7 @@ pub fn run() {
         commands::open_app_data_dir,
         commands::check_apple_intelligence_available,
         commands::initialize_enigo,
+        commands::initialize_shortcuts,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,
