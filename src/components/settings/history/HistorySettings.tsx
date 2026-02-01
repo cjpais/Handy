@@ -112,7 +112,7 @@ export const HistorySettings: React.FC = () => {
         return null;
       }
     },
-    [osType]
+    [osType],
   );
 
   const deleteAudioEntry = async (id: number) => {
@@ -328,7 +328,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         {entry.transcription_text}
       </p>
       {audioUrl ? (
-        <AudioPlayer src={audioUrl} autoPlay={shouldAutoPlay} className="w-full" />
+        <AudioPlayer
+          src={audioUrl}
+          autoPlay={shouldAutoPlay}
+          className="w-full"
+        />
       ) : (
         <div className="flex items-center gap-3">
           <button
