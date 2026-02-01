@@ -79,7 +79,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const displayDescription = getTranslatedModelDescription(model, t);
 
   const baseClasses =
-    "flex justify-between items-center rounded-xl p-4 text-left transition-all duration-200";
+    "flex justify-between items-start rounded-xl p-4 text-left transition-all duration-200";
 
   const getVariantClasses = () => {
     if (status === "active") {
@@ -230,6 +230,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         )}
       </div>
 
+      {/* Right side: accuracy/speed bars + action buttons */}
       <div className="flex items-center gap-3 ml-4">
         <div className="space-y-1 hidden sm:block">
           <div className="flex items-center gap-2">
