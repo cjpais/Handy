@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen, Play } from "lucide-react";
+import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -232,36 +232,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
 
-  // Cleanup blob URLs on unmount
-  useEffect(() => {
-    return () => {
-      if (audioUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(audioUrl);
-      }
-    };
-  }, [audioUrl]);
-
-  const handleLoadAndPlay = async () => {
-    if (audioUrl) return; // Already loaded
-    if (isLoadingAudio) return; // Already loading
-
-    setIsLoadingAudio(true);
-    try {
-      const url = await getAudioUrl(entry.file_name);
-      if (url) {
-        setAudioUrl(url);
-        setShouldAutoPlay(true);
-      }
-    } catch (error) {
-      console.error("Failed to load audio:", error);
-    } finally {
-      setIsLoadingAudio(false);
-    }
-  };
+  const handleLoadAudio = useCallback(
+    () => getAudioUrl(entry.file_name),
+    [getAudioUrl, entry.file_name],
+  );
 
   const handleCopyText = () => {
     onCopyText();
@@ -327,42 +302,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
         {entry.transcription_text}
       </p>
-      {audioUrl ? (
-        <AudioPlayer
-          src={audioUrl}
-          autoPlay={shouldAutoPlay}
-          className="w-full"
-        />
-      ) : (
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleLoadAndPlay}
-            disabled={isLoadingAudio}
-            className="transition-colors cursor-pointer text-text hover:text-logo-primary disabled:opacity-50"
-            aria-label="Load and play audio"
-          >
-            {isLoadingAudio ? (
-              <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Play width={20} height={20} fill="currentColor" />
-            )}
-          </button>
-          <div className="flex-1 flex items-center gap-2">
-            <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
-              0:00
-            </span>
-            <div
-              className="flex-1 h-1 rounded-lg"
-              style={{
-                background: "rgba(128, 128, 128, 0.2)",
-              }}
-            />
-            <span className="text-xs text-text/60 min-w-[30px] tabular-nums">
-              0:00
-            </span>
-          </div>
-        </div>
-      )}
+      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );
 };
