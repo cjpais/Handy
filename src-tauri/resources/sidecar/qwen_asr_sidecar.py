@@ -62,9 +62,9 @@ def handle_transcribe(request: dict):
         return
 
     language = request.get("language")
-    # "auto" or empty means let the model auto-detect
+    # Qwen3-ASR requires an explicit language — no auto-detect support
     if language in (None, "", "auto"):
-        language = None
+        language = "English"
 
     try:
         result = model.generate(audio_path, language=language)

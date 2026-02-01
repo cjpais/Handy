@@ -246,7 +246,7 @@ impl TranscriptionManager {
         match backend.as_deref() {
             Some("qwen-asr") => {
                 let language = match settings.selected_language.as_str() {
-                    "auto" | "auto-zh-TW" | "auto-zh-CN" => None,
+                    "auto" | "auto-zh-TW" | "auto-zh-CN" => Some("English"),
                     "zh-TW" | "zh-CN" | "zh" => Some("Chinese"),
                     "en" => Some("English"),
                     "ja" => Some("Japanese"),

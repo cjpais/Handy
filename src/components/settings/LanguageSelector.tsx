@@ -10,7 +10,6 @@ interface LanguageSelectorProps {
 
 const LANGUAGES = [
   { code: "auto", name: "Auto" },
-  { code: "auto-zh-TW", name: "Auto (Prefer Trad. Chinese)" },
   { code: "en", name: "English" },
   { code: "zh", name: "Chinese (Auto)" },
   { code: "zh-TW", name: "Chinese Traditional" },
