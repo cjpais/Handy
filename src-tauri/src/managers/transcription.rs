@@ -28,6 +28,26 @@ pub struct ModelStateEvent {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct TranscriptionSegment {
+    pub id: u32,
+    pub seek: u32,
+    pub start: f64,
+    pub end: f64,
+    pub text: String,
+    pub tokens: Vec<u32>,
+    pub temperature: f32,
+    pub avg_logprob: f32,
+    pub compression_ratio: f32,
+    pub no_speech_prob: f32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TranscriptionResult {
+    pub text: String,
+    pub segments: Vec<TranscriptionSegment>,
+}
+
 enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetEngine),
@@ -342,6 +362,16 @@ impl TranscriptionManager {
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        let result = self.transcribe_internal(audio, false, false)?;
+        Ok(result.text)
+    }
+
+    pub fn transcribe_internal(
+        &self,
+        audio: Vec<f32>,
+        verbose: bool,
+        enable_segments: bool,
+    ) -> Result<TranscriptionResult> {
         // Update last activity timestamp
         self.last_activity.store(
             SystemTime::now()
@@ -358,7 +388,10 @@ impl TranscriptionManager {
         if audio.is_empty() {
             debug!("Empty audio vector");
             self.maybe_unload_immediately("empty audio");
-            return Ok(String::new());
+            return Ok(TranscriptionResult {
+                text: String::new(),
+                segments: Vec::new(),
+            });
         }
 
         // Check if model is loaded, if not try to load it
@@ -430,7 +463,7 @@ impl TranscriptionManager {
         };
 
         // Apply word correction if custom words are configured
-        let corrected_result = if !settings.custom_words.is_empty() {
+        let corrected_text = if !settings.custom_words.is_empty() {
             apply_custom_words(
                 &result.text,
                 &settings.custom_words,
@@ -441,7 +474,7 @@ impl TranscriptionManager {
         };
 
         // Filter out filler words and hallucinations
-        let filtered_result = filter_transcription_output(&corrected_result);
+        let filtered_result = filter_transcription_output(&corrected_text);
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
@@ -455,17 +488,44 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = filtered_result;
+        let final_text = filtered_result.trim().to_string();
 
-        if final_result.is_empty() {
+        if final_text.is_empty() {
             info!("Transcription result is empty");
         } else {
-            info!("Transcription result: {}", final_result);
+            info!("Transcription result: {}", final_text);
         }
 
         self.maybe_unload_immediately("transcription");
 
-        Ok(final_result)
+        // Convert segments only if requested
+        let segments = if verbose || enable_segments {
+            result
+                .segments
+                .unwrap_or_default()
+                .into_iter()
+                .enumerate()
+                .map(|(i, s)| TranscriptionSegment {
+                    id: i as u32,
+                    seek: 0,
+                    start: (s.start as f64 * 100.0).round() / 100.0,
+                    end: (s.end as f64 * 100.0).round() / 100.0,
+                    text: s.text,
+                    tokens: vec![],
+                    temperature: 0.0,
+                    avg_logprob: 0.0,
+                    compression_ratio: 0.0,
+                    no_speech_prob: 0.0,
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+
+        Ok(TranscriptionResult {
+            text: final_text,
+            segments,
+        })
     }
 }
 

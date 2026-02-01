@@ -10,6 +10,7 @@ mod input;
 mod llm_client;
 mod managers;
 mod overlay;
+mod server;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -217,6 +218,13 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    // Initialize Local API Server
+    let mut api_server = server::ApiServer::new(settings.local_api_port);
+    if settings.local_api_enabled {
+        api_server.start(transcription_manager.clone());
+    }
+    app_handle.manage(Mutex::new(api_server));
 }
 
 #[tauri::command]
@@ -267,6 +275,8 @@ pub fn run() {
         shortcut::update_custom_words,
         shortcut::suspend_binding,
         shortcut::resume_binding,
+        shortcut::change_local_api_setting,
+        shortcut::change_local_api_port_setting,
         shortcut::change_mute_while_recording_setting,
         shortcut::change_append_trailing_space_setting,
         shortcut::change_app_language_setting,

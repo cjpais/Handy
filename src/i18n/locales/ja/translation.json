@@ -233,6 +233,14 @@
         "placeholder": "単語を追加",
         "add": "追加",
         "remove": "{{word}}を削除"
+      },
+      "local_api": {
+        "label": "ローカルAPI",
+        "description": "ポート{{port}}でローカルのOpenAI互換音声文字起こしAPIを公開します。",
+        "port": {
+          "label": "ローカルAPIポート",
+          "description": "リスンするポート。ポートを変更するとサーバーが再起動します。"
+        }
       }
     },
     "postProcessing": {
