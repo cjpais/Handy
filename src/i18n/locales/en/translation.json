@@ -157,6 +157,8 @@
     "models": {
       "title": "Transcription Models",
       "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "yourModels": "Your Models",
+      "availableModels": "Available to Download",
       "downloaded": "Downloaded",
       "available": "Available to Download",
       "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
@@ -409,6 +411,10 @@
         "appData": "App Data:",
         "models": "Models:",
         "settings": "Settings:"
+      },
+      "pasteDelay": {
+        "title": "Paste Delay",
+        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
       }
     },
     "about": {

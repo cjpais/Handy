@@ -100,7 +100,9 @@
       "languageSelection": "Supports multiple input languages",
       "multiLanguage": "Multi-language",
       "translation": "Can translate to English",
-      "translate": "Translate to English"
+      "translate": "Translate to English",
+      "singleLanguage": "Suporta apenas este idioma",
+      "languageOnly": "Apenas {{language}}"
     },
     "cancel": "Cancelar",
     "cancelDownload": "Cancelar download"
@@ -149,19 +151,21 @@
       }
     },
     "models": {
-      "title": "Transcription Models",
-      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
-      "downloaded": "Downloaded",
-      "available": "Available to Download",
-      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
-      "deleteTitle": "Delete Model",
+      "title": "Modelos de Transcrição",
+      "description": "Selecione um modelo de transcrição ou baixe modelos adicionais. Diferentes modelos oferecem diferentes níveis de precisão e velocidade.",
+      "downloaded": "Baixados",
+      "available": "Disponíveis para Download",
+      "deleteConfirm": "Tem certeza de que deseja excluir {{modelName}}? Você precisará baixá-lo novamente para usá-lo.",
+      "deleteTitle": "Excluir Modelo",
       "filters": {
-        "all": "All",
-        "multiLanguage": "Multi-language",
-        "translation": "Translation",
-        "allLanguages": "All Languages"
+        "all": "Todos",
+        "multiLanguage": "Multi-idioma",
+        "translation": "Tradução",
+        "allLanguages": "Todos os Idiomas"
       },
-      "noModelsMatch": "No models match this filter."
+      "noModelsMatch": "Nenhum modelo corresponde a este filtro.",
+      "yourModels": "Seus modelos",
+      "availableModels": "Disponíveis para download"
     },
     "sound": {
       "title": "Som",
@@ -399,6 +403,10 @@
         "appData": "Dados do App:",
         "models": "Modelos:",
         "settings": "Configurações:"
+      },
+      "pasteDelay": {
+        "title": "Atraso de colagem",
+        "description": "Atraso antes de enviar a tecla de colar (em milissegundos). Aumente se o texto errado estiver sendo colado."
       }
     },
     "about": {

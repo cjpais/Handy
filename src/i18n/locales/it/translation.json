@@ -100,7 +100,9 @@
       "languageSelection": "Supporta più lingue di input",
       "multiLanguage": "Multilingua",
       "translation": "Può tradurre in inglese",
-      "translate": "Traduci in inglese"
+      "translate": "Traduci in inglese",
+      "singleLanguage": "Supporta solo questa lingua",
+      "languageOnly": "Solo {{language}}"
     },
     "cancel": "Annulla",
     "cancelDownload": "Annulla download"
@@ -123,7 +125,9 @@
         "translation": "Traduzione",
         "allLanguages": "Tutte le lingue"
       },
-      "noModelsMatch": "Nessun modello corrisponde a questo filtro."
+      "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
+      "yourModels": "I tuoi modelli",
+      "availableModels": "Disponibili per il download"
     },
     "general": {
       "title": "Generale",
@@ -399,6 +403,10 @@
         "appData": "Dati App:",
         "models": "Modelli:",
         "settings": "Impostazioni:"
+      },
+      "pasteDelay": {
+        "title": "Ritardo incolla",
+        "description": "Ritardo prima dell'invio del tasto incolla (in millisecondi). Aumentare se viene incollato il testo sbagliato."
       }
     },
     "about": {

@@ -100,7 +100,9 @@
       "languageSelection": "Unterstützt mehrere Eingabesprachen",
       "multiLanguage": "Mehrsprachig",
       "translation": "Kann ins Englische übersetzen",
-      "translate": "Ins Englische übersetzen"
+      "translate": "Ins Englische übersetzen",
+      "singleLanguage": "Unterstützt nur diese Sprache",
+      "languageOnly": "Nur {{language}}"
     },
     "cancel": "Abbrechen",
     "cancelDownload": "Download abbrechen"
@@ -123,7 +125,9 @@
         "translation": "Übersetzung",
         "allLanguages": "Alle Sprachen"
       },
-      "noModelsMatch": "Keine Modelle entsprechen diesem Filter."
+      "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
+      "yourModels": "Ihre Modelle",
+      "availableModels": "Zum Download verfügbar"
     },
     "general": {
       "title": "Allgemein",
@@ -399,6 +403,10 @@
         "appData": "App-Daten:",
         "models": "Modelle:",
         "settings": "Einstellungen:"
+      },
+      "pasteDelay": {
+        "title": "Einfügeverzögerung",
+        "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhen Sie den Wert, wenn falscher Text eingefügt wird."
       }
     },
     "about": {

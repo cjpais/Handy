@@ -100,7 +100,9 @@
       "languageSelection": "Supports multiple input languages",
       "multiLanguage": "Multi-language",
       "translation": "Can translate to English",
-      "translate": "Translate to English"
+      "translate": "Translate to English",
+      "singleLanguage": "Підтримує лише цю мову",
+      "languageOnly": "Лише {{language}}"
     },
     "cancel": "Скасувати",
     "cancelDownload": "Скасувати завантаження"
@@ -149,19 +151,21 @@
       }
     },
     "models": {
-      "title": "Transcription Models",
-      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
-      "downloaded": "Downloaded",
-      "available": "Available to Download",
-      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
-      "deleteTitle": "Delete Model",
+      "title": "Моделі транскрипції",
+      "description": "Виберіть модель транскрипції або завантажте додаткові моделі. Різні моделі пропонують різні рівні точності та швидкості.",
+      "downloaded": "Завантажено",
+      "available": "Доступні для завантаження",
+      "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
+      "deleteTitle": "Видалити модель",
       "filters": {
-        "all": "All",
-        "multiLanguage": "Multi-language",
-        "translation": "Translation",
-        "allLanguages": "All Languages"
+        "all": "Усі",
+        "multiLanguage": "Багатомовні",
+        "translation": "Переклад",
+        "allLanguages": "Усі мови"
       },
-      "noModelsMatch": "No models match this filter."
+      "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
+      "yourModels": "Ваші моделі",
+      "availableModels": "Доступні для завантаження"
     },
     "sound": {
       "title": "Звук",
@@ -399,6 +403,10 @@
         "appData": "Дані програми:",
         "models": "Моделі:",
         "settings": "Налаштування:"
+      },
+      "pasteDelay": {
+        "title": "Затримка вставки",
+        "description": "Затримка перед надсиланням натискання клавіші вставки (у мілісекундах). Збільшіть, якщо вставляється неправильний текст."
       }
     },
     "about": {

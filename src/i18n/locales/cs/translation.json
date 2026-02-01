@@ -100,7 +100,9 @@
       "languageSelection": "Podporuje více vstupních jazyků",
       "multiLanguage": "Vícejazyčný",
       "translation": "Umí překládat do angličtiny",
-      "translate": "Přeložit do angličtiny"
+      "translate": "Přeložit do angličtiny",
+      "singleLanguage": "Podporuje pouze tento jazyk",
+      "languageOnly": "Pouze {{language}}"
     },
     "cancel": "Zrušit",
     "cancelDownload": "Zrušit stahování"
@@ -123,7 +125,9 @@
         "translation": "Překlad",
         "allLanguages": "Všechny jazyky"
       },
-      "noModelsMatch": "Tomuto filtru neodpovídají žádné modely."
+      "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
+      "yourModels": "Vaše modely",
+      "availableModels": "Dostupné ke stažení"
     },
     "general": {
       "title": "Obecné",
@@ -396,6 +400,10 @@
         "appData": "Data aplikace:",
         "models": "Modely:",
         "settings": "Nastavení:"
+      },
+      "pasteDelay": {
+        "title": "Zpoždění vložení",
+        "description": "Zpoždění před odesláním klávesy pro vložení (v milisekundách). Zvyšte, pokud se vkládá špatný text."
       }
     },
     "about": {

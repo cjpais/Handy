@@ -100,7 +100,9 @@
       "languageSelection": "Obsługuje wiele języków wejściowych",
       "multiLanguage": "Wielojęzyczny",
       "translation": "Może tłumaczyć na angielski",
-      "translate": "Tłumacz na angielski"
+      "translate": "Tłumacz na angielski",
+      "singleLanguage": "Obsługuje tylko ten język",
+      "languageOnly": "Tylko {{language}}"
     },
     "cancel": "Anuluj",
     "cancelDownload": "Anuluj pobieranie"
@@ -123,7 +125,9 @@
         "translation": "Tłumaczenie",
         "allLanguages": "Wszystkie języki"
       },
-      "noModelsMatch": "Żadne modele nie pasują do tego filtra."
+      "noModelsMatch": "Żadne modele nie pasują do tego filtra.",
+      "yourModels": "Twoje modele",
+      "availableModels": "Dostępne do pobrania"
     },
     "general": {
       "title": "Ogólne",
@@ -399,6 +403,10 @@
         "appData": "Dane aplikacji:",
         "models": "Modele:",
         "settings": "Ustawienia:"
+      },
+      "pasteDelay": {
+        "title": "Opóźnienie wklejania",
+        "description": "Opóźnienie przed wysłaniem klawisza wklejania (w milisekundach). Zwiększ, jeśli wklejany jest nieprawidłowy tekst."
       }
     },
     "about": {

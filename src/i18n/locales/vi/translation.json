@@ -100,7 +100,9 @@
       "languageSelection": "Hỗ trợ nhiều ngôn ngữ đầu vào",
       "multiLanguage": "Đa ngôn ngữ",
       "translation": "Có thể dịch sang tiếng Anh",
-      "translate": "Dịch sang tiếng Anh"
+      "translate": "Dịch sang tiếng Anh",
+      "singleLanguage": "Chỉ hỗ trợ ngôn ngữ này",
+      "languageOnly": "Chỉ {{language}}"
     },
     "cancel": "Hủy",
     "cancelDownload": "Hủy tải xuống"
@@ -123,7 +125,9 @@
         "translation": "Dịch thuật",
         "allLanguages": "Tất cả ngôn ngữ"
       },
-      "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này."
+      "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này.",
+      "yourModels": "Mô hình của bạn",
+      "availableModels": "Có sẵn để tải xuống"
     },
     "general": {
       "title": "Chung",
@@ -399,6 +403,10 @@
         "appData": "Dữ liệu ứng dụng:",
         "models": "Mô hình:",
         "settings": "Cài đặt:"
+      },
+      "pasteDelay": {
+        "title": "Độ trễ dán",
+        "description": "Độ trễ trước khi gửi phím dán (tính bằng mili giây). Tăng nếu văn bản sai đang được dán."
       }
     },
     "about": {

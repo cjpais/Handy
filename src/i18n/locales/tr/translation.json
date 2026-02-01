@@ -100,7 +100,9 @@
       "languageSelection": "Birden fazla giriş dilini destekler",
       "multiLanguage": "Çok dilli",
       "translation": "İngilizce'ye çevirebilir",
-      "translate": "İngilizce'ye çevir"
+      "translate": "İngilizce'ye çevir",
+      "singleLanguage": "Yalnızca bu dili destekler",
+      "languageOnly": "Yalnızca {{language}}"
     },
     "cancel": "İptal",
     "cancelDownload": "İndirmeyi iptal et"
@@ -123,7 +125,9 @@
         "translation": "Çeviri",
         "allLanguages": "Tüm Diller"
       },
-      "noModelsMatch": "Bu filtreyle eşleşen model yok."
+      "noModelsMatch": "Bu filtreyle eşleşen model yok.",
+      "yourModels": "Modelleriniz",
+      "availableModels": "İndirilebilir"
     },
     "general": {
       "title": "Genel",
@@ -396,6 +400,10 @@
         "appData": "Uygulama Verileri:",
         "models": "Modeller:",
         "settings": "Ayarlar:"
+      },
+      "pasteDelay": {
+        "title": "Yapıştırma gecikmesi",
+        "description": "Yapıştırma tuşu göndermeden önce gecikme (milisaniye cinsinden). Yanlış metin yapıştırılıyorsa artırın."
       }
     },
     "about": {

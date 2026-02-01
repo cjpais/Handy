@@ -100,7 +100,9 @@
       "languageSelection": "Soporta múltiples idiomas de entrada",
       "multiLanguage": "Multiidioma",
       "translation": "Puede traducir al inglés",
-      "translate": "Traducir al inglés"
+      "translate": "Traducir al inglés",
+      "singleLanguage": "Solo admite este idioma",
+      "languageOnly": "Solo {{language}}"
     },
     "cancel": "Cancelar",
     "cancelDownload": "Cancelar descarga"
@@ -123,7 +125,9 @@
         "translation": "Traducción",
         "allLanguages": "Todos los idiomas"
       },
-      "noModelsMatch": "Ningún modelo coincide con este filtro."
+      "noModelsMatch": "Ningún modelo coincide con este filtro.",
+      "yourModels": "Tus modelos",
+      "availableModels": "Disponibles para descargar"
     },
     "general": {
       "title": "General",
@@ -399,6 +403,10 @@
         "appData": "Datos de la Aplicación:",
         "models": "Modelos:",
         "settings": "Configuración:"
+      },
+      "pasteDelay": {
+        "title": "Retraso de pegado",
+        "description": "Retraso antes de enviar la pulsación de tecla de pegar (en milisegundos). Aumente si se está pegando texto incorrecto."
       }
     },
     "about": {

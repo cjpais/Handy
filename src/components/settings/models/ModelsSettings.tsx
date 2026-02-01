@@ -156,6 +156,26 @@ export const ModelsSettings: React.FC = () => {
     });
   }, [models, languageFilter]);
 
+  // Split filtered models into downloaded and available sections
+  const { downloadedModels, availableModels } = useMemo(() => {
+    const downloaded: ModelInfo[] = [];
+    const available: ModelInfo[] = [];
+
+    for (const model of filteredModels) {
+      const isDownloaded =
+        model.is_downloaded ||
+        model.id in downloadingModels ||
+        model.id in extractingModels;
+      if (isDownloaded) {
+        downloaded.push(model);
+      } else {
+        available.push(model);
+      }
+    }
+
+    return { downloadedModels: downloaded, availableModels: available };
+  }, [filteredModels, downloadingModels, extractingModels]);
+
   if (loading) {
     return (
       <div className="max-w-3xl w-full mx-auto">
@@ -266,20 +286,50 @@ export const ModelsSettings: React.FC = () => {
         </div>
       </div>
       {filteredModels.length > 0 ? (
-        <div className="space-y-3">
-          {filteredModels.map((model: ModelInfo) => (
-            <ModelCard
-              key={model.id}
-              model={model}
-              status={getModelStatus(model.id)}
-              onSelect={handleModelSelect}
-              onDownload={handleModelDownload}
-              onDelete={handleModelDelete}
-              onCancel={handleModelCancel}
-              downloadProgress={getDownloadProgress(model.id)}
-              downloadSpeed={getDownloadSpeed(model.id)}
-            />
-          ))}
+        <div className="space-y-6">
+          {/* Downloaded Models Section */}
+          {downloadedModels.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium text-text/60">
+                {t("settings.models.yourModels")}
+              </h2>
+              {downloadedModels.map((model: ModelInfo) => (
+                <ModelCard
+                  key={model.id}
+                  model={model}
+                  status={getModelStatus(model.id)}
+                  onSelect={handleModelSelect}
+                  onDownload={handleModelDownload}
+                  onDelete={handleModelDelete}
+                  onCancel={handleModelCancel}
+                  downloadProgress={getDownloadProgress(model.id)}
+                  downloadSpeed={getDownloadSpeed(model.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Available Models Section */}
+          {availableModels.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium text-text/60">
+                {t("settings.models.availableModels")}
+              </h2>
+              {availableModels.map((model: ModelInfo) => (
+                <ModelCard
+                  key={model.id}
+                  model={model}
+                  status={getModelStatus(model.id)}
+                  onSelect={handleModelSelect}
+                  onDownload={handleModelDownload}
+                  onDelete={handleModelDelete}
+                  onCancel={handleModelCancel}
+                  downloadProgress={getDownloadProgress(model.id)}
+                  downloadSpeed={getDownloadSpeed(model.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-8 text-text/50">

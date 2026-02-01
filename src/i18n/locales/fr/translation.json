@@ -100,7 +100,9 @@
       "languageSelection": "Prend en charge plusieurs langues d'entrée",
       "multiLanguage": "Multilingue",
       "translation": "Peut traduire en anglais",
-      "translate": "Traduire en anglais"
+      "translate": "Traduire en anglais",
+      "singleLanguage": "Prend en charge uniquement cette langue",
+      "languageOnly": "{{language}} uniquement"
     },
     "cancel": "Annuler",
     "cancelDownload": "Annuler le téléchargement"
@@ -123,7 +125,9 @@
         "translation": "Traduction",
         "allLanguages": "Toutes les langues"
       },
-      "noModelsMatch": "Aucun modèle ne correspond à ce filtre."
+      "noModelsMatch": "Aucun modèle ne correspond à ce filtre.",
+      "yourModels": "Vos modèles",
+      "availableModels": "Disponibles au téléchargement"
     },
     "general": {
       "title": "Général",
@@ -399,6 +403,10 @@
         "appData": "Données de l'application :",
         "models": "Modèles :",
         "settings": "Paramètres :"
+      },
+      "pasteDelay": {
+        "title": "Délai de collage",
+        "description": "Délai avant l'envoi de la touche de collage (en millisecondes). Augmentez si le mauvais texte est collé."
       }
     },
     "about": {
