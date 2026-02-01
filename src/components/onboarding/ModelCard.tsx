@@ -16,6 +16,7 @@ import {
 } from "../../lib/utils/modelTranslation";
 import { LANGUAGES } from "../../lib/constants/languages";
 import Badge from "../ui/Badge";
+import { Button } from "../ui/Button";
 
 // Get display text for model's language support
 const getLanguageDisplayText = (
@@ -201,18 +202,18 @@ const ModelCard: React.FC<ModelCardProps> = ({
                   </span>
                 )}
                 {onCancel && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="danger-ghost"
+                    size="sm"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       onCancel(model.id);
                     }}
-                    className="text-red-400 hover:text-red-300 px-2 py-0.5 rounded hover:bg-red-500/10 transition-colors"
                     aria-label={t("modelSelector.cancelDownload")}
                   >
                     {t("modelSelector.cancel")}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -257,25 +258,27 @@ const ModelCard: React.FC<ModelCardProps> = ({
           </div>
         </div>
         {status === "downloadable" && onDownload && (
-          <button
-            type="button"
+          <Button
+            variant="primary-soft"
+            size="sm"
             onClick={handleDownload}
             disabled={disabled}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text bg-logo-primary/20 hover:bg-logo-primary/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
             <span>{formatModelSize(Number(model.size_mb))}</span>
-          </button>
+          </Button>
         )}
         {onDelete && status === "available" && (
-          <button
-            type="button"
+          <Button
+            variant="danger-ghost"
+            size="sm"
             onClick={handleDelete}
-            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
             title={t("modelSelector.deleteModel", { modelName: displayName })}
+            className="p-2"
           >
             <Trash2 className="w-4 h-4" />
-          </button>
+          </Button>
         )}
       </div>
     </div>
