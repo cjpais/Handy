@@ -36,11 +36,11 @@ pub struct ModelInfo {
     pub partial_size: u64,
     pub is_directory: bool,
     pub engine_type: EngineType,
-    pub accuracy_score: f32, // 0.0 to 1.0, higher is more accurate
-    pub speed_score: f32,    // 0.0 to 1.0, higher is faster
-    pub supports_language_selection: bool, // Whether the model supports selecting input language
+    pub accuracy_score: f32,        // 0.0 to 1.0, higher is more accurate
+    pub speed_score: f32,           // 0.0 to 1.0, higher is faster
     pub supports_translation: bool, // Whether the model supports translating to English
-    pub is_recommended: bool, // Whether this is the recommended model for new users
+    pub is_recommended: bool,       // Whether this is the recommended model for new users
+    pub supported_languages: Vec<String>, // Languages this model can transcribe
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -73,6 +73,22 @@ impl ModelManager {
 
         let mut available_models = HashMap::new();
 
+        // Whisper supported languages (99 languages from tokenizer)
+        // Including zh-Hans and zh-Hant variants to match frontend language codes
+        let whisper_languages: Vec<String> = vec![
+            "en", "zh", "zh-Hans", "zh-Hant", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl",
+            "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs",
+            "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy",
+            "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is",
+            "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo",
+            "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht",
+            "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln",
+            "ha", "ba", "jw", "su", "yue",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
         // TODO this should be read from a JSON file or something..
         available_models.insert(
             "small".to_string(),
@@ -90,9 +106,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.60,
                 speed_score: 0.85,
-                supports_language_selection: true,
                 supports_translation: true,
                 is_recommended: false,
+                supported_languages: whisper_languages.clone(),
             },
         );
 
@@ -113,9 +129,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.75,
                 speed_score: 0.60,
-                supports_language_selection: true,
                 supports_translation: true,
                 is_recommended: false,
+                supported_languages: whisper_languages.clone(),
             },
         );
 
@@ -135,9 +151,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.80,
                 speed_score: 0.40,
-                supports_language_selection: true,
                 supports_translation: false, // Turbo doesn't support translation
                 is_recommended: false,
+                supported_languages: whisper_languages.clone(),
             },
         );
 
@@ -157,9 +173,9 @@ impl ModelManager {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.85,
                 speed_score: 0.30,
-                supports_language_selection: true,
                 supports_translation: true,
                 is_recommended: false,
+                supported_languages: whisper_languages,
             },
         );
 
@@ -180,18 +196,28 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.85,
                 speed_score: 0.85,
-                supports_language_selection: false, // Parakeet is English-only
-                supports_translation: false,        // Parakeet doesn't support translation
+                supports_translation: false,
                 is_recommended: false,
+                supported_languages: vec!["en".to_string()],
             },
         );
+
+        // Parakeet V3 supported languages (25 EU languages + Russian/Ukrainian):
+        // bg, hr, cs, da, nl, en, et, fi, fr, de, el, hu, it, lv, lt, mt, pl, pt, ro, sk, sl, es, sv, ru, uk
+        let parakeet_v3_languages: Vec<String> = vec![
+            "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv",
+            "lt", "mt", "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
 
         available_models.insert(
             "parakeet-tdt-0.6b-v3".to_string(),
             ModelInfo {
                 id: "parakeet-tdt-0.6b-v3".to_string(),
                 name: "Parakeet V3".to_string(),
-                description: "Fast and accurate".to_string(),
+                description: "Fast and accurate. Supports 25 European languages.".to_string(),
                 filename: "parakeet-tdt-0.6b-v3-int8".to_string(), // Directory name
                 url: Some("https://blob.handy.computer/parakeet-v3-int8.tar.gz".to_string()),
                 size_mb: 478, // Approximate size for int8 quantized model
@@ -202,9 +228,9 @@ impl ModelManager {
                 engine_type: EngineType::Parakeet,
                 accuracy_score: 0.80,
                 speed_score: 0.85,
-                supports_language_selection: false, // Parakeet is English-only
-                supports_translation: false,        // Parakeet doesn't support translation
-                is_recommended: true,               // Recommended for new users
+                supports_translation: false,
+                is_recommended: true,
+                supported_languages: parakeet_v3_languages,
             },
         );
 
@@ -224,9 +250,9 @@ impl ModelManager {
                 engine_type: EngineType::Moonshine,
                 accuracy_score: 0.70,
                 speed_score: 0.90,
-                supports_language_selection: false, // Moonshine is English-only
-                supports_translation: false,        // Moonshine doesn't support translation
+                supports_translation: false,
                 is_recommended: false,
+                supported_languages: vec!["en".to_string()],
             },
         );
 

@@ -14,7 +14,22 @@ import {
   getTranslatedModelDescription,
   getTranslatedModelName,
 } from "../../lib/utils/modelTranslation";
+import { LANGUAGES } from "../../lib/constants/languages";
 import Badge from "../ui/Badge";
+
+// Get display text for model's language support
+const getLanguageDisplayText = (
+  supportedLanguages: string[],
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string => {
+  if (supportedLanguages.length === 1) {
+    const langCode = supportedLanguages[0];
+    const langName =
+      LANGUAGES.find((l) => l.value === langCode)?.label || langCode;
+    return t("modelSelector.capabilities.languageOnly", { language: langName });
+  }
+  return t("modelSelector.capabilities.multiLanguage");
+};
 
 export type ModelCardStatus =
   | "downloadable"
@@ -142,15 +157,17 @@ const ModelCard: React.FC<ModelCardProps> = ({
           {displayDescription}
         </p>
         <div className="flex items-center gap-3 mt-2">
-          {model.supports_language_selection && (
-            <div
-              className="flex items-center gap-1 text-xs text-text/50"
-              title={t("modelSelector.capabilities.languageSelection")}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>{t("modelSelector.capabilities.multiLanguage")}</span>
-            </div>
-          )}
+          <div
+            className="flex items-center gap-1 text-xs text-text/50"
+            title={
+              model.supported_languages.length === 1
+                ? t("modelSelector.capabilities.singleLanguage")
+                : t("modelSelector.capabilities.languageSelection")
+            }
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
+          </div>
           {model.supports_translation && (
             <div
               className="flex items-center gap-1 text-xs text-text/50"

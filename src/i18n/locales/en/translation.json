@@ -100,7 +100,9 @@
     "cancelDownload": "Cancel download",
     "capabilities": {
       "languageSelection": "Supports multiple input languages",
+      "singleLanguage": "Supports this language only",
       "multiLanguage": "Multi-language",
+      "languageOnly": "{{language}} Only",
       "translation": "Can translate to English",
       "translate": "Translate to English"
     }

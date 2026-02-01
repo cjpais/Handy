@@ -1,28 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { ChevronDown, Globe, Languages } from "lucide-react";
+import { ChevronDown, Globe } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
 
-type ModelFilter = "all" | "multiLanguage" | "translation";
-
-// check if model supports a language based on its capabilities
+// check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
-  // models with language selection support all languages in the LANGUAGES list, like Whisper
-  if (model.supports_language_selection) {
-    return true;
-  }
-  // models without language selection only support English, like Parakeet
-  return langCode === "en";
+  return model.supported_languages.includes(langCode);
 };
 
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
-  const [activeFilter, setActiveFilter] = useState<ModelFilter>("all");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
@@ -154,27 +146,15 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
-  // Filter models based on active filter and language filter
+  // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
-      // Capability filters
-      switch (activeFilter) {
-        case "multiLanguage":
-          if (!model.supports_language_selection) return false;
-          break;
-        case "translation":
-          if (!model.supports_translation) return false;
-          break;
-      }
-
-      // Language filter
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }
-
       return true;
     });
-  }, [models, activeFilter, languageFilter]);
+  }, [models, languageFilter]);
 
   if (loading) {
     return (
@@ -196,45 +176,9 @@ export const ModelsSettings: React.FC = () => {
           {t("settings.models.description")}
         </p>
       </div>
-      <div className="flex gap-2 mb-4">
-        <button
-          type="button"
-          onClick={() => setActiveFilter("all")}
-          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-            activeFilter === "all"
-              ? "bg-logo-primary/20 text-logo-primary"
-              : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-          }`}
-        >
-          {t("settings.models.filters.all")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveFilter("multiLanguage")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-            activeFilter === "multiLanguage"
-              ? "bg-logo-primary/20 text-logo-primary"
-              : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-          }`}
-        >
-          <Globe className="w-3.5 h-3.5" />
-          {t("settings.models.filters.multiLanguage")}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveFilter("translation")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-            activeFilter === "translation"
-              ? "bg-logo-primary/20 text-logo-primary"
-              : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-          }`}
-        >
-          <Languages className="w-3.5 h-3.5" />
-          {t("settings.models.filters.translation")}
-        </button>
-
+      <div className="flex justify-end mb-4">
         {/* Language filter dropdown */}
-        <div className="relative ml-auto" ref={languageDropdownRef}>
+        <div className="relative" ref={languageDropdownRef}>
           <button
             type="button"
             onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
