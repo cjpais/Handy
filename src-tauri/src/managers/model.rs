@@ -851,6 +851,9 @@ impl ModelManager {
         // Update download status to reflect current state
         self.update_download_status()?;
 
+        // Emit cancellation event so all UI components can clear their state
+        let _ = self.app_handle.emit("model-download-cancelled", model_id);
+
         info!("Download cancellation initiated for: {}", model_id);
         Ok(())
     }

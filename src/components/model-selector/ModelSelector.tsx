@@ -176,6 +176,31 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       },
     );
 
+    // Listen for model download cancellation
+    const downloadCancelledUnlisten = listen<string>(
+      "model-download-cancelled",
+      (event) => {
+        const modelId = event.payload;
+        setModelDownloadProgress(
+          produce((progress) => {
+            delete progress[modelId];
+          }),
+        );
+        setDownloadStats(
+          produce((stats) => {
+            delete stats[modelId];
+          }),
+        );
+        // Reset status if no other downloads in progress
+        setModelDownloadProgress((currentProgress) => {
+          if (Object.keys(currentProgress).length === 0) {
+            loadCurrentModel(); // Restore normal status display
+          }
+          return currentProgress;
+        });
+      },
+    );
+
     // Listen for extraction events
     const extractionStartedUnlisten = listen<string>(
       "model-extraction-started",
@@ -250,6 +275,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       modelStateUnlisten.then((fn) => fn());
       downloadProgressUnlisten.then((fn) => fn());
       downloadCompleteUnlisten.then((fn) => fn());
+      downloadCancelledUnlisten.then((fn) => fn());
       extractionStartedUnlisten.then((fn) => fn());
       extractionCompletedUnlisten.then((fn) => fn());
       extractionFailedUnlisten.then((fn) => fn());
