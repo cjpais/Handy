@@ -20,6 +20,13 @@ pub struct ModelInfo {
     pub is_downloaded: bool,
     pub is_downloading: bool,
     pub partial_size: u64,
+    /// Backend engine: "whisper" or "qwen-asr"
+    #[serde(default = "default_backend")]
+    pub backend: String,
+}
+
+fn default_backend() -> String {
+    "whisper".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +72,7 @@ impl ModelManager {
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
+                backend: "whisper".to_string(),
             },
         );
 
@@ -81,6 +89,7 @@ impl ModelManager {
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
+                backend: "whisper".to_string(),
             },
         );
 
@@ -96,6 +105,7 @@ impl ModelManager {
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
+                backend: "whisper".to_string(),
             },
         );
 
@@ -111,6 +121,23 @@ impl ModelManager {
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
+                backend: "whisper".to_string(),
+            },
+        );
+
+        available_models.insert(
+            "qwen3-asr".to_string(),
+            ModelInfo {
+                id: "qwen3-asr".to_string(),
+                name: "Qwen3 ASR 0.6B".to_string(),
+                description: "Multilingual ASR via mlx-audio (Apple Silicon only)".to_string(),
+                filename: String::new(), // No local GGML file
+                url: None,              // Managed by mlx-audio / HuggingFace
+                size_mb: 600,           // Approximate model size
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                backend: "qwen-asr".to_string(),
             },
         );
 
@@ -173,6 +200,12 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            // Qwen-ASR models are managed externally (mlx-audio / HuggingFace cache)
+            if model.backend == "qwen-asr" {
+                // is_downloaded is managed by set_qwen_asr_ready / check at runtime
+                continue;
+            }
+
             let model_path = self.models_dir.join(&model.filename);
             let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
 
@@ -188,6 +221,15 @@ impl ModelManager {
         }
 
         Ok(())
+    }
+
+    /// Mark the qwen-asr model as downloaded/ready (called after successful sidecar setup).
+    pub fn set_qwen_asr_ready(&self, ready: bool) {
+        let mut models = self.available_models.lock().unwrap();
+        if let Some(model) = models.get_mut("qwen3-asr") {
+            model.is_downloaded = ready;
+            model.is_downloading = false;
+        }
     }
 
     fn auto_select_model_if_needed(&self) -> Result<()> {

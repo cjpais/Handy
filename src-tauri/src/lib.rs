@@ -12,6 +12,7 @@ mod utils;
 
 use managers::audio::AudioRecordingManager;
 use managers::model::ModelManager;
+use managers::qwen_asr::QwenAsrManager;
 use managers::transcription::TranscriptionManager;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -140,14 +141,18 @@ pub fn run() {
             );
             let model_manager =
                 Arc::new(ModelManager::new(&app).expect("Failed to initialize model manager"));
+            let qwen_asr_manager = Arc::new(
+                QwenAsrManager::new(&app).expect("Failed to initialize Qwen ASR manager"),
+            );
             let transcription_manager = Arc::new(
-                TranscriptionManager::new(&app, model_manager.clone())
+                TranscriptionManager::new(&app, model_manager.clone(), qwen_asr_manager.clone())
                     .expect("Failed to initialize transcription manager"),
             );
 
             // Add managers to Tauri's managed state
             app.manage(recording_manager.clone());
             app.manage(model_manager.clone());
+            app.manage(qwen_asr_manager.clone());
             app.manage(transcription_manager.clone());
 
             // Create the recording overlay window (hidden by default)
@@ -211,7 +216,10 @@ pub fn run() {
             commands::audio::get_selected_microphone,
             commands::audio::get_available_output_devices,
             commands::audio::set_selected_output_device,
-            commands::audio::get_selected_output_device
+            commands::audio::get_selected_output_device,
+            commands::qwen_asr::check_qwen_asr_prerequisites,
+            commands::qwen_asr::install_qwen_asr_dependencies,
+            commands::qwen_asr::setup_qwen_asr
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

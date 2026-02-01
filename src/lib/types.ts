@@ -56,6 +56,7 @@ export const ModelInfoSchema = z.object({
   is_downloaded: z.boolean(),
   is_downloading: z.boolean(),
   partial_size: z.number(),
+  backend: z.string().default("whisper"),
 });
 
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;

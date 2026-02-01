@@ -1,4 +1,5 @@
 use crate::managers::model::ModelManager;
+use crate::managers::qwen_asr::QwenAsrManager;
 use crate::settings::get_settings;
 use anyhow::Result;
 use serde::Serialize;
@@ -21,20 +22,29 @@ pub struct TranscriptionManager {
     state: Mutex<Option<WhisperState>>,
     context: Mutex<Option<WhisperContext>>,
     model_manager: Arc<ModelManager>,
+    qwen_asr_manager: Arc<QwenAsrManager>,
     app_handle: AppHandle,
     current_model_id: Mutex<Option<String>>,
+    /// The backend of the currently loaded model: "whisper" or "qwen-asr"
+    current_backend: Mutex<Option<String>>,
 }
 
 impl TranscriptionManager {
-    pub fn new(app: &App, model_manager: Arc<ModelManager>) -> Result<Self> {
+    pub fn new(
+        app: &App,
+        model_manager: Arc<ModelManager>,
+        qwen_asr_manager: Arc<QwenAsrManager>,
+    ) -> Result<Self> {
         let app_handle = app.app_handle().clone();
 
         let manager = Self {
             state: Mutex::new(None),
             context: Mutex::new(None),
             model_manager,
+            qwen_asr_manager,
             app_handle: app_handle.clone(),
             current_model_id: Mutex::new(None),
+            current_backend: Mutex::new(None),
         };
 
         // Try to load the default model from settings, but don't fail if no models are available
@@ -75,6 +85,11 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
+        if model_info.backend == "qwen-asr" {
+            return self.load_qwen_asr_model(model_id, &model_info.name);
+        }
+
+        // Whisper backend
         let model_path = self.model_manager.get_model_path(model_id)?;
 
         let path_str = model_path
@@ -134,6 +149,10 @@ impl TranscriptionManager {
             let mut current_model = self.current_model_id.lock().unwrap();
             *current_model = Some(model_id.to_string());
         }
+        {
+            let mut backend = self.current_backend.lock().unwrap();
+            *backend = Some("whisper".to_string());
+        }
 
         // Emit loading completed event
         let _ = self.app_handle.emit(
@@ -150,6 +169,58 @@ impl TranscriptionManager {
         Ok(())
     }
 
+    fn load_qwen_asr_model(&self, model_id: &str, model_name: &str) -> Result<()> {
+        println!("Loading Qwen3-ASR model via sidecar...");
+
+        match self.qwen_asr_manager.load_model() {
+            Ok(()) => {
+                // Clear whisper state since we're using a different backend
+                {
+                    let mut current_context = self.context.lock().unwrap();
+                    *current_context = None;
+                }
+                {
+                    let mut current_state = self.state.lock().unwrap();
+                    *current_state = None;
+                }
+                {
+                    let mut current_model = self.current_model_id.lock().unwrap();
+                    *current_model = Some(model_id.to_string());
+                }
+                {
+                    let mut backend = self.current_backend.lock().unwrap();
+                    *backend = Some("qwen-asr".to_string());
+                }
+
+                let _ = self.app_handle.emit(
+                    "model-state-changed",
+                    ModelStateEvent {
+                        event_type: "loading_completed".to_string(),
+                        model_id: Some(model_id.to_string()),
+                        model_name: Some(model_name.to_string()),
+                        error: None,
+                    },
+                );
+
+                println!("Successfully loaded Qwen3-ASR model");
+                Ok(())
+            }
+            Err(e) => {
+                let error_msg = format!("Failed to load Qwen3-ASR: {}", e);
+                let _ = self.app_handle.emit(
+                    "model-state-changed",
+                    ModelStateEvent {
+                        event_type: "loading_failed".to_string(),
+                        model_id: Some(model_id.to_string()),
+                        model_name: Some(model_name.to_string()),
+                        error: Some(error_msg.clone()),
+                    },
+                );
+                Err(anyhow::anyhow!(error_msg))
+            }
+        }
+    }
+
     pub fn get_current_model(&self) -> Option<String> {
         let current_model = self.current_model_id.lock().unwrap();
         current_model.clone()
@@ -158,13 +229,58 @@ impl TranscriptionManager {
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
         let st = std::time::Instant::now();
 
-        let mut result = String::new();
+        if audio.is_empty() {
+            println!("Empty audio vector");
+            return Ok(String::new());
+        }
+
         println!("Audio vector length: {}", audio.len());
 
-        if audio.len() == 0 {
-            println!("Empty audio vector");
-            return Ok(result);
+        let backend = {
+            let b = self.current_backend.lock().unwrap();
+            b.clone()
+        };
+
+        let settings = get_settings(&self.app_handle);
+
+        match backend.as_deref() {
+            Some("qwen-asr") => {
+                let language = match settings.selected_language.as_str() {
+                    "auto" | "auto-zh-TW" | "auto-zh-CN" => None,
+                    "zh-TW" | "zh-CN" | "zh" => Some("Chinese"),
+                    "en" => Some("English"),
+                    "ja" => Some("Japanese"),
+                    "ko" => Some("Korean"),
+                    "fr" => Some("French"),
+                    "de" => Some("German"),
+                    "es" => Some("Spanish"),
+                    "pt" => Some("Portuguese"),
+                    "ru" => Some("Russian"),
+                    "it" => Some("Italian"),
+                    other => Some(other),
+                };
+
+                let result = self.qwen_asr_manager.transcribe(&audio, language)?;
+
+                let et = std::time::Instant::now();
+                println!("\nQwen3-ASR took {}ms", (et - st).as_millis());
+
+                Ok(result)
+            }
+            _ => {
+                // Whisper backend (default)
+                self.transcribe_whisper(audio, &settings, st)
+            }
         }
+    }
+
+    fn transcribe_whisper(
+        &self,
+        audio: Vec<f32>,
+        settings: &crate::settings::AppSettings,
+        st: std::time::Instant,
+    ) -> Result<String> {
+        let mut result = String::new();
 
         let mut state_guard = self.state.lock().unwrap();
         let state = state_guard.as_mut().ok_or_else(|| {
@@ -173,37 +289,29 @@ impl TranscriptionManager {
             )
         })?;
 
-        // Get current settings to check translation preference
-        let settings = get_settings(&self.app_handle);
-
         // Initialize parameters
         let mut params = FullParams::new(SamplingStrategy::default());
-        
+
         // Handle Chinese language variants
         let (language, initial_prompt) = match settings.selected_language.as_str() {
             "auto-zh-TW" => {
-                // Auto-detect but with Traditional Chinese preference
-                // This helps ensure Chinese is output as Traditional, not Simplified
                 (None, Some("English. 繁體中文。"))
-            },
+            }
             "zh-TW" => {
-                // Use zh as language code but with Traditional Chinese prompt
                 (Some("zh"), Some("繁體中文。"))
-            },
+            }
             "zh-CN" => {
-                // Use zh as language code but with Simplified Chinese prompt
                 (Some("zh"), Some("简体中文。"))
-            },
-            lang => (Some(lang), None)
+            }
+            lang => (Some(lang), None),
         };
-        
+
         params.set_language(language);
-        
-        // Set initial prompt if specified (influences Chinese variant output)
+
         if let Some(prompt) = initial_prompt {
             params.set_initial_prompt(prompt);
         }
-        
+
         params.set_print_special(false);
         params.set_print_progress(false);
         params.set_print_realtime(false);
@@ -211,7 +319,6 @@ impl TranscriptionManager {
         params.set_suppress_blank(true);
         params.set_suppress_non_speech_tokens(true);
 
-        // Enable translation to English if requested
         if settings.translate_to_english {
             params.set_translate(true);
         }

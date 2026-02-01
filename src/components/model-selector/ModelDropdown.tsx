@@ -16,6 +16,7 @@ interface ModelDropdownProps {
   onModelSelect: (modelId: string) => void;
   onModelDownload: (modelId: string) => void;
   onModelDelete: (modelId: string) => Promise<void>;
+  onQwenSetup?: (modelId: string) => void;
   onError?: (error: string) => void;
 }
 
@@ -26,6 +27,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   onModelSelect,
   onModelDownload,
   onModelDelete,
+  onQwenSetup,
   onError,
 }) => {
   const availableModels = models.filter((m) => m.is_downloaded);
@@ -51,11 +53,15 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
     onModelSelect(modelId);
   };
 
-  const handleDownloadClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+  const handleDownloadClick = (model: ModelInfo) => {
+    if (downloadProgress.has(model.id)) {
       return; // Don't allow interaction while downloading
     }
-    onModelDownload(modelId);
+    if (model.backend === "qwen-asr") {
+      onQwenSetup?.(model.id);
+    } else {
+      onModelDownload(model.id);
+    }
   };
 
   return (
@@ -149,11 +155,11 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
             return (
               <div
                 key={model.id}
-                onClick={() => handleDownloadClick(model.id)}
+                onClick={() => handleDownloadClick(model)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    handleDownloadClick(model.id);
+                    handleDownloadClick(model);
                   }
                 }}
                 tabIndex={0}
@@ -182,6 +188,8 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                   <div className="text-xs text-logo-primary tabular-nums">
                     {isDownloading && progress ? (
                       `${Math.max(0, Math.min(100, Math.round(progress.percentage)))}%`
+                    ) : model.backend === "qwen-asr" ? (
+                      "Setup"
                     ) : (
                       "Download"
                     )}
