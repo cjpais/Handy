@@ -1,5 +1,6 @@
 use crate::input::{self, EnigoState};
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
+use std::time::Duration;
 use enigo::Enigo;
 use log::info;
 use tauri::{AppHandle, Manager};
@@ -16,6 +17,7 @@ fn paste_via_clipboard(
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
+    paste_delay_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let clipboard_content = clipboard.read_text().unwrap_or_default();
@@ -25,7 +27,7 @@ fn paste_via_clipboard(
         .write_text(text)
         .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
     // Send paste key combo
     #[cfg(target_os = "linux")]
@@ -364,6 +366,7 @@ fn paste_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
+    let paste_delay_ms = settings.paste_delay_ms;
 
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
@@ -372,7 +375,10 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         text
     };
 
-    info!("Using paste method: {:?}", paste_method);
+    info!(
+        "Using paste method: {:?}, delay: {}ms",
+        paste_method, paste_delay_ms
+    );
 
     // Get the managed Enigo instance
     let enigo_state = app_handle
@@ -392,7 +398,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             paste_direct(&mut enigo, &text)?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            paste_via_clipboard(&mut enigo, &text, &app_handle, &paste_method)?
+            paste_via_clipboard(&mut enigo, &text, &app_handle, &paste_method, paste_delay_ms)?
         }
     }
 
