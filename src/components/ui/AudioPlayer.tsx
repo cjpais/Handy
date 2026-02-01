@@ -4,11 +4,13 @@ import { Play, Pause } from "lucide-react";
 interface AudioPlayerProps {
   src: string;
   className?: string;
+  autoPlay?: boolean;
 }
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   src,
   className = "",
+  autoPlay = false,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -97,6 +99,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       audio.removeEventListener("pause", handlePause);
     };
   }, []);
+
+  // Auto-play when requested
+  useEffect(() => {
+    if (autoPlay && audioRef.current) {
+      audioRef.current.play().catch((error) => {
+        console.error("Auto-play failed:", error);
+      });
+    }
+  }, [autoPlay]);
 
   // Global drag handlers
   const handleMouseUp = useCallback(() => {
