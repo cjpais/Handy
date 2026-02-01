@@ -24,4 +24,5 @@ export const LANGUAGE_METADATA: Record<
   pt: { name: "Portuguese", nativeName: "Português", priority: 12 },
   cs: { name: "Czech", nativeName: "Čeština", priority: 13 },
   tr: { name: "Turkish", nativeName: "Türkçe", priority: 14 },
+  ar: { name: "Arabic", nativeName: "العربية", priority: 15 },
 };
