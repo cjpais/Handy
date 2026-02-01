@@ -198,7 +198,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         if (transcriptionStatus === current) {
           setModelStatus("ready");
         } else {
-          setModelStatus("loading");
+          setModelStatus("none");
         }
       } else {
         setModelStatus("none");

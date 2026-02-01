@@ -1,3 +1,4 @@
+use crate::managers::qwen_asr::QwenAsrManager;
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use futures_util::StreamExt;
@@ -152,6 +153,13 @@ impl ModelManager {
 
         // Check which models are already downloaded
         manager.update_download_status()?;
+
+        // Check if Qwen-ASR venv with mlx-audio is ready
+        if let Ok(status) = QwenAsrManager::check_prerequisites() {
+            if status.available {
+                manager.set_qwen_asr_ready(true);
+            }
+        }
 
         // Auto-select a model if none is currently selected
         manager.auto_select_model_if_needed()?;

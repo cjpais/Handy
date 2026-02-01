@@ -245,22 +245,24 @@ impl TranscriptionManager {
 
         match backend.as_deref() {
             Some("qwen-asr") => {
-                let language = match settings.selected_language.as_str() {
-                    "auto" | "auto-zh-TW" | "auto-zh-CN" => Some("English"),
-                    "zh-TW" | "zh-CN" | "zh" => Some("Chinese"),
-                    "en" => Some("English"),
-                    "ja" => Some("Japanese"),
-                    "ko" => Some("Korean"),
-                    "fr" => Some("French"),
-                    "de" => Some("German"),
-                    "es" => Some("Spanish"),
-                    "pt" => Some("Portuguese"),
-                    "ru" => Some("Russian"),
-                    "it" => Some("Italian"),
-                    other => Some(other),
+                let (language, system_prompt) = match settings.selected_language.as_str() {
+                    "auto" | "auto-zh-TW" | "auto-zh-CN" => (Some("English"), None),
+                    "zh-TW" => (Some("Chinese"), Some("請使用繁體中文輸出")),
+                    "zh" => (Some("Chinese"), Some("請使用繁體中文輸出")),
+                    "zh-CN" => (Some("Chinese"), None),
+                    "en" => (Some("English"), None),
+                    "ja" => (Some("Japanese"), None),
+                    "ko" => (Some("Korean"), None),
+                    "fr" => (Some("French"), None),
+                    "de" => (Some("German"), None),
+                    "es" => (Some("Spanish"), None),
+                    "pt" => (Some("Portuguese"), None),
+                    "ru" => (Some("Russian"), None),
+                    "it" => (Some("Italian"), None),
+                    other => (Some(other), None),
                 };
 
-                let result = self.qwen_asr_manager.transcribe(&audio, language)?;
+                let result = self.qwen_asr_manager.transcribe(&audio, language, system_prompt)?;
 
                 let et = std::time::Instant::now();
                 println!("\nQwen3-ASR took {}ms", (et - st).as_millis());

@@ -13,6 +13,8 @@ struct SidecarRequest {
     audio_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     language: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system_prompt: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -284,6 +286,7 @@ impl QwenAsrManager {
             command: "load_model".to_string(),
             audio_path: None,
             language: None,
+            system_prompt: None,
         })?;
 
         if response.ok {
@@ -300,11 +303,12 @@ impl QwenAsrManager {
     }
 
     /// Transcribe audio from a WAV file path.
-    pub fn transcribe_file(&self, audio_path: &str, language: Option<&str>) -> Result<String> {
+    pub fn transcribe_file(&self, audio_path: &str, language: Option<&str>, system_prompt: Option<&str>) -> Result<String> {
         let response = self.send_command(&SidecarRequest {
             command: "transcribe".to_string(),
             audio_path: Some(audio_path.to_string()),
             language: language.map(|s| s.to_string()),
+            system_prompt: system_prompt.map(|s| s.to_string()),
         })?;
 
         if response.ok {
@@ -319,7 +323,7 @@ impl QwenAsrManager {
 
     /// Transcribe audio from f32 samples (16kHz mono).
     /// Writes a temporary WAV file, transcribes, then cleans up.
-    pub fn transcribe(&self, audio: &[f32], language: Option<&str>) -> Result<String> {
+    pub fn transcribe(&self, audio: &[f32], language: Option<&str>, system_prompt: Option<&str>) -> Result<String> {
         if audio.is_empty() {
             return Ok(String::new());
         }
@@ -332,7 +336,7 @@ impl QwenAsrManager {
 
         write_wav(tmp_path_str, audio, 16000)?;
 
-        let result = self.transcribe_file(tmp_path_str, language);
+        let result = self.transcribe_file(tmp_path_str, language, system_prompt);
 
         // Clean up temp file
         let _ = std::fs::remove_file(&tmp_path);

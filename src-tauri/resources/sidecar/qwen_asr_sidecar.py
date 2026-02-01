@@ -6,7 +6,7 @@ Communicates with the Rust backend via stdin/stdout JSON protocol.
 Uses mlx-audio for inference on Apple Silicon.
 
 Protocol:
-  Request:  {"command": "transcribe", "audio_path": "/tmp/audio.wav", "language": "auto"}
+  Request:  {"command": "transcribe", "audio_path": "/tmp/audio.wav", "language": "Chinese", "system_prompt": "請使用繁體中文輸出"}
   Response: {"ok": true, "text": "Hello world"}
 
   Request:  {"command": "load_model"}
@@ -23,10 +23,12 @@ import json
 import sys
 import os
 import traceback
+import types
 
 MODEL_ID = "mlx-community/Qwen3-ASR-0.6B-8bit"
 
 model = None
+_original_build_prompt = None
 
 
 def send_response(data: dict):
@@ -41,17 +43,40 @@ def send_error(message: str):
 
 
 def load_model():
-    global model
+    global model, _original_build_prompt
     try:
         from mlx_audio.stt import load
         model = load(MODEL_ID)
+        # Save the original _build_prompt for monkey-patching later
+        _original_build_prompt = model._model._build_prompt
         send_response({"ok": True})
     except Exception as e:
         send_error(f"Failed to load model: {e}")
 
 
+def _make_build_prompt_with_system(system_prompt: str):
+    """Create a patched _build_prompt that injects a system prompt."""
+    import mlx.core as mx
+
+    def _build_prompt_with_system(self, num_audio_tokens, language="English"):
+        supported = self.config.support_languages or []
+        supported_lower = {lang.lower(): lang for lang in supported}
+        lang_name = supported_lower.get(language.lower(), language)
+
+        prompt = (
+            f"<|im_start|>system\n{system_prompt}<|im_end|>\n"
+            f"<|im_start|>user\n<|audio_start|>{'<|audio_pad|>' * num_audio_tokens}<|audio_end|><|im_end|>\n"
+            f"<|im_start|>assistant\nlanguage {lang_name}<asr_text>"
+        )
+
+        input_ids = self._tokenizer.encode(prompt, return_tensors="np")
+        return mx.array(input_ids)
+
+    return _build_prompt_with_system
+
+
 def handle_transcribe(request: dict):
-    global model
+    global model, _original_build_prompt
     if model is None:
         send_error("Model not loaded")
         return
@@ -66,7 +91,19 @@ def handle_transcribe(request: dict):
     if language in (None, "", "auto"):
         language = "English"
 
+    system_prompt = request.get("system_prompt")
+
     try:
+        inner_model = model._model
+
+        # Monkey-patch _build_prompt if system_prompt is provided
+        if system_prompt:
+            patched = _make_build_prompt_with_system(system_prompt)
+            inner_model._build_prompt = types.MethodType(patched, inner_model)
+        else:
+            # Restore original
+            inner_model._build_prompt = types.MethodType(_original_build_prompt.__func__, inner_model)
+
         result = model.generate(audio_path, language=language)
         text = result.text if hasattr(result, "text") else str(result)
         detected_lang = result.language if hasattr(result, "language") else None
@@ -77,6 +114,10 @@ def handle_transcribe(request: dict):
         })
     except Exception as e:
         send_error(f"Transcription failed: {e}\n{traceback.format_exc()}")
+    finally:
+        # Always restore original to avoid leaking state
+        if _original_build_prompt is not None:
+            inner_model._build_prompt = types.MethodType(_original_build_prompt.__func__, inner_model)
 
 
 def handle_health():
