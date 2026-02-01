@@ -5,7 +5,7 @@ use futures_util::StreamExt;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -56,6 +56,7 @@ pub struct ModelManager {
     models_dir: PathBuf,
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    extracting_models: Arc<Mutex<HashSet<String>>>,
 }
 
 impl ModelManager {
@@ -261,6 +262,7 @@ impl ModelManager {
             models_dir,
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
+            extracting_models: Arc::new(Mutex::new(HashSet::new())),
         };
 
         // Migrate any bundled models to user directory
@@ -325,7 +327,12 @@ impl ModelManager {
                     .join(format!("{}.extracting", &model.filename));
 
                 // Clean up any leftover .extracting directories from interrupted extractions
-                if extracting_path.exists() {
+                // But only if this model is NOT currently being extracted
+                let is_currently_extracting = {
+                    let extracting = self.extracting_models.lock().unwrap();
+                    extracting.contains(&model.id)
+                };
+                if extracting_path.exists() && !is_currently_extracting {
                     warn!("Cleaning up interrupted extraction for model: {}", model.id);
                     let _ = fs::remove_dir_all(&extracting_path);
                 }
@@ -620,6 +627,12 @@ impl ModelManager {
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
+            // Track that this model is being extracted
+            {
+                let mut extracting = self.extracting_models.lock().unwrap();
+                extracting.insert(model_id.to_string());
+            }
+
             // Emit extraction started event
             let _ = self.app_handle.emit("model-extraction-started", model_id);
             info!("Extracting archive for directory-based model: {}", model_id);
@@ -648,6 +661,11 @@ impl ModelManager {
                 let error_msg = format!("Failed to extract archive: {}", e);
                 // Clean up failed extraction
                 let _ = fs::remove_dir_all(&temp_extract_dir);
+                // Remove from extracting set
+                {
+                    let mut extracting = self.extracting_models.lock().unwrap();
+                    extracting.remove(model_id);
+                }
                 let _ = self.app_handle.emit(
                     "model-extraction-failed",
                     &serde_json::json!({
@@ -682,6 +700,11 @@ impl ModelManager {
             }
 
             info!("Successfully extracted archive for model: {}", model_id);
+            // Remove from extracting set
+            {
+                let mut extracting = self.extracting_models.lock().unwrap();
+                extracting.remove(model_id);
+            }
             // Emit extraction completed event
             let _ = self.app_handle.emit("model-extraction-completed", model_id);
 
