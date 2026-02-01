@@ -1,8 +1,8 @@
 use crate::input::{self, EnigoState};
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
-use std::time::Duration;
 use enigo::Enigo;
 use log::info;
+use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -398,7 +398,13 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             paste_direct(&mut enigo, &text)?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            paste_via_clipboard(&mut enigo, &text, &app_handle, &paste_method, paste_delay_ms)?
+            paste_via_clipboard(
+                &mut enigo,
+                &text,
+                &app_handle,
+                &paste_method,
+                paste_delay_ms,
+            )?
         }
     }
 
