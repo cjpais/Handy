@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::Manager;
 
 #[derive(Debug, Serialize)]
 struct SidecarRequest {
@@ -42,6 +42,53 @@ struct SidecarProcess {
     stdout: BufReader<std::process::ChildStdout>,
 }
 
+/// Path to the self-contained venv for Qwen ASR.
+fn venv_dir() -> PathBuf {
+    let base = dirs::data_dir().unwrap_or_else(|| PathBuf::from("."));
+    base.join("com.handy.app").join("qwen-asr-venv")
+}
+
+/// Python binary inside the venv.
+fn venv_python() -> PathBuf {
+    venv_dir().join("bin").join("python3")
+}
+
+/// Expanded PATH that includes common macOS binary locations (for finding uv/python).
+fn expanded_path() -> String {
+    let extra = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
+    if let Ok(existing) = std::env::var("PATH") {
+        format!("{}:{}", extra, existing)
+    } else {
+        extra.to_string()
+    }
+}
+
+/// Resolve the full path to `uv`, checking common locations.
+fn resolve_uv() -> Option<String> {
+    let candidates = [
+        "/opt/homebrew/bin/uv",
+        "/usr/local/bin/uv",
+    ];
+    for path in &candidates {
+        if std::path::Path::new(path).exists() {
+            return Some(path.to_string());
+        }
+    }
+    // Try via shell login to pick up cargo/brew paths
+    if let Ok(output) = Command::new("/bin/zsh")
+        .args(["-l", "-c", "which uv"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+    {
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if !path.is_empty() && std::path::Path::new(&path).exists() {
+            return Some(path);
+        }
+    }
+    None
+}
+
 impl QwenAsrManager {
     pub fn new(app: &tauri::App) -> Result<Self> {
         let sidecar_script_path = app
@@ -59,27 +106,28 @@ impl QwenAsrManager {
         })
     }
 
-    /// Check if python3 and mlx-audio are available on the system.
+    /// Check if the self-contained venv with mlx-audio is ready.
     pub fn check_prerequisites() -> Result<PrerequisiteStatus> {
-        // Check python3
-        let python_ok = Command::new("python3")
-            .arg("--version")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false);
+        let python = venv_python();
 
-        if !python_ok {
+        // Check if venv python exists
+        if !python.exists() {
+            // Check if uv is available for installation
+            if resolve_uv().is_none() {
+                return Ok(PrerequisiteStatus {
+                    available: false,
+                    message: "uv is not installed. Install it first: brew install uv".to_string(),
+                });
+            }
             return Ok(PrerequisiteStatus {
                 available: false,
-                message: "python3 is not installed. Install Python 3.10+ first.".to_string(),
+                message: "Qwen ASR environment not set up yet.".to_string(),
             });
         }
 
-        // Check mlx-audio
-        let mlx_audio_ok = Command::new("python3")
-            .args(["-c", "import mlx_audio; print(mlx_audio.__version__)"])
+        // Check mlx-audio is importable in the venv
+        let mlx_audio_ok = Command::new(&python)
+            .args(["-c", "import mlx_audio; print('ok')"])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .status()
@@ -89,7 +137,7 @@ impl QwenAsrManager {
         if !mlx_audio_ok {
             return Ok(PrerequisiteStatus {
                 available: false,
-                message: "mlx-audio is not installed. Run: pip install mlx-audio".to_string(),
+                message: "mlx-audio is not installed in the Qwen ASR environment.".to_string(),
             });
         }
 
@@ -99,10 +147,41 @@ impl QwenAsrManager {
         })
     }
 
-    /// Install mlx-audio via pip.
+    /// Create a self-contained venv and install mlx-audio into it using uv.
     pub fn install_mlx_audio() -> Result<String> {
-        let output = Command::new("python3")
-            .args(["-m", "pip", "install", "-U", "mlx-audio"])
+        println!("QwenASR: install_mlx_audio called");
+        let uv = resolve_uv()
+            .ok_or_else(|| anyhow::anyhow!("uv is not installed. Install it first: brew install uv"))?;
+        println!("QwenASR: resolved uv at: {}", uv);
+
+        let venv = venv_dir();
+        let path_env = expanded_path();
+
+        // Create venv if it doesn't exist
+        if !venv.join("bin").join("python3").exists() {
+            println!("QwenASR: creating venv at {:?}", venv);
+            let output = Command::new(&uv)
+                .args(["venv", "--python", "3.11"])
+                .arg(&venv)
+                .env("PATH", &path_env)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                println!("QwenASR: venv creation failed: {}", stderr);
+                return Err(anyhow::anyhow!("Failed to create venv: {}", stderr));
+            }
+            println!("QwenASR: venv created successfully");
+        }
+
+        // Install mlx-audio into the venv
+        let output = Command::new(&uv)
+            .args(["pip", "install", "-U", "mlx-audio @ git+https://github.com/Blaizzy/mlx-audio.git"])
+            .arg("--python")
+            .arg(venv.join("bin").join("python3"))
+            .env("PATH", &path_env)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .output()?;
@@ -111,10 +190,12 @@ impl QwenAsrManager {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
         if output.status.success() {
+            println!("QwenASR: mlx-audio installed successfully");
             Ok(format!("{}\n{}", stdout, stderr))
         } else {
+            println!("QwenASR: uv pip install failed: {}\n{}", stdout, stderr);
             Err(anyhow::anyhow!(
-                "pip install failed: {}\n{}",
+                "uv pip install failed: {}\n{}",
                 stdout,
                 stderr
             ))
@@ -133,7 +214,14 @@ impl QwenAsrManager {
             anyhow::anyhow!("Invalid sidecar script path")
         })?;
 
-        let mut child = Command::new("python3")
+        let python = venv_python();
+        if !python.exists() {
+            return Err(anyhow::anyhow!(
+                "Qwen ASR venv not found. Run setup first."
+            ));
+        }
+
+        let mut child = Command::new(&python)
             .arg(script_path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

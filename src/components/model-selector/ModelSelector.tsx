@@ -292,12 +292,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         try {
           await invoke<string>("install_qwen_asr_dependencies");
         } catch (installErr) {
+          const installErrMsg = `${installErr}`;
           setModelError(
-            `Qwen3-ASR requires python3 and mlx-audio. ${status.message}`,
+            `Qwen3-ASR setup failed: ${installErrMsg}`,
           );
           setModelStatus("error");
           onError?.(
-            `Qwen3-ASR setup failed: ${status.message}`,
+            `Qwen3-ASR setup failed: ${installErrMsg}`,
           );
           return;
         }

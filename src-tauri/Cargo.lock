@@ -1996,6 +1996,7 @@ version = "0.3.6"
 dependencies = [
  "anyhow",
  "cpal",
+ "dirs 6.0.0",
  "enigo",
  "env_logger",
  "futures-util",

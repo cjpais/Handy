@@ -95,6 +95,10 @@ The app now supports dynamic model downloading and switching:
 
 Users can download and switch between models directly from the app's settings interface. No models are bundled with the app, reducing the initial download size.
 
+**Qwen3-ASR (Apple Silicon only):**
+
+Handy also supports [Qwen3-ASR-0.6B](https://huggingface.co/mlx-community/Qwen3-ASR-0.6B-8bit) via mlx-audio for native Apple Silicon inference. This requires `uv` (`brew install uv`) and is set up automatically from the model selector. See the [Qwen3-ASR Setup Guide](docs/qwen3-asr-setup.md) for details and troubleshooting.
+
 **Language Support:**
 
 Handy supports multilingual transcription with special handling for Chinese users:
