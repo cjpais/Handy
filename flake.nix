@@ -1,5 +1,5 @@
 {
-  description = "Handy - Speech-to-text transcription app";
+  description = "Handy - A free, open source, and extensible speech-to-text application that works completely offline";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
