@@ -381,20 +381,34 @@ impl TranscriptionManager {
             let custom_words = settings.custom_words.clone();
             let word_correction_threshold = settings.word_correction_threshold;
 
-            // Use a channel to get the result from the async task
+            // Use a channel to get the result - spawn a thread with its own tokio runtime
+            // to avoid blocking the main thread or causing deadlocks
             let (tx, rx) = std::sync::mpsc::channel();
 
-            // Use tauri's async runtime instead of creating a new tokio runtime
-            // This is more efficient as it reuses the existing runtime
-            tauri::async_runtime::spawn(async move {
-                let client = SonioxClient::with_timeout(api_key, model, timeout_seconds);
-                let result = client.transcribe(audio, language.as_deref()).await;
+            std::thread::spawn(move || {
+                let rt = match tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                {
+                    Ok(rt) => rt,
+                    Err(e) => {
+                        error!("Failed to create tokio runtime: {}", e);
+                        let _ = tx.send(Err(anyhow::anyhow!("Failed to create runtime: {}", e)));
+                        return;
+                    }
+                };
+
+                let result = rt.block_on(async {
+                    let client = SonioxClient::with_timeout(api_key, model, timeout_seconds);
+                    client.transcribe(audio, language.as_deref()).await
+                });
+
                 let _ = tx.send(result);
             });
 
             let result = rx
                 .recv()
-                .map_err(|_| anyhow::anyhow!("Failed to receive result from Soniox task"))?;
+                .map_err(|_| anyhow::anyhow!("Failed to receive result from Soniox thread"))?;
 
             // Apply word correction and filtering
             let result = result.map(|text| {

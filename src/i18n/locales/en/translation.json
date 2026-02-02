@@ -124,11 +124,6 @@
       "options": {
         "stt-async-v4": "V4 (Latest)"
       }
-    },
-    "timeout": {
-      "label": "Timeout",
-      "description": "Maximum time to wait for transcription (30-300 seconds)",
-      "unit": "seconds"
     }
   },
   "settings": {

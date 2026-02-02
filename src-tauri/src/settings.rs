@@ -393,7 +393,7 @@ fn default_soniox_model() -> String {
 }
 
 fn default_soniox_timeout() -> u32 {
-    120 // 2 minutes default timeout
+    30 // 30 seconds default timeout
 }
 
 fn default_history_limit() -> usize {
