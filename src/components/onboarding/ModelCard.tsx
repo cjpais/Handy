@@ -64,7 +64,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
 
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <p className="text-xs text-text/70 w-16 text-right">
+          <p className="text-xs text-text/70 w-16 text-end">
             {t("onboarding.modelCard.accuracy")}
           </p>
           <div className="w-20 h-2 bg-mid-gray/20 rounded-full overflow-hidden">
@@ -75,7 +75,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <p className="text-xs text-text/70 w-16 text-right">
+          <p className="text-xs text-text/70 w-16 text-end">
             {t("onboarding.modelCard.speed")}
           </p>
           <div className="w-20 h-2 bg-mid-gray/20 rounded-full overflow-hidden">

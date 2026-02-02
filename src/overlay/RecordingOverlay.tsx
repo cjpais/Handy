@@ -8,7 +8,8 @@ import {
 } from "../components/icons";
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
-import { syncLanguageFromSettings } from "@/i18n";
+import i18n, { syncLanguageFromSettings } from "@/i18n";
+import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "transcribing";
 
@@ -18,6 +19,7 @@ const RecordingOverlay: React.FC = () => {
   const [state, setState] = useState<OverlayState>("recording");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
+  const direction = getLanguageDirection(i18n.language);
 
   useEffect(() => {
     const setupEventListeners = async () => {
@@ -69,7 +71,10 @@ const RecordingOverlay: React.FC = () => {
   };
 
   return (
-    <div className={`recording-overlay ${isVisible ? "fade-in" : ""}`}>
+    <div
+      dir={direction}
+      className={`recording-overlay ${isVisible ? "fade-in" : ""}`}
+    >
       <div className="overlay-left">{getIcon()}</div>
 
       <div className="overlay-middle">
