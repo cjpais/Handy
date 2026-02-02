@@ -13,6 +13,7 @@ mod overlay;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod soniox_client;
 mod tray;
 mod tray_i18n;
 mod utils;
@@ -275,6 +276,12 @@ pub fn run() {
         shortcut::get_keyboard_implementation,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
+        shortcut::set_transcription_mode,
+        shortcut::get_transcription_mode,
+        shortcut::set_soniox_api_key,
+        shortcut::set_soniox_model,
+        shortcut::set_soniox_timeout,
+        shortcut::get_soniox_timeout,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,

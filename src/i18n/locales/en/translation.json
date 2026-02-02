@@ -101,6 +101,36 @@
     "noModelDownloadRequired": "No Model - Download Required",
     "deleteModel": "Delete {{modelName}}"
   },
+  "transcription": {
+    "mode": {
+      "label": "Transcription Mode",
+      "description": "Choose between local AI models or cloud-based transcription",
+      "local": "Local",
+      "localDescription": "Use downloaded AI models on your device",
+      "cloud": "Cloud (Soniox)",
+      "cloudDescription": "Use Soniox cloud API for transcription"
+    }
+  },
+  "soniox": {
+    "title": "Soniox Settings",
+    "apiKey": {
+      "label": "API Key",
+      "description": "Your Soniox API key",
+      "placeholder": "Enter your Soniox API key"
+    },
+    "model": {
+      "label": "Model",
+      "description": "Select the Soniox model to use",
+      "options": {
+        "stt-async-v4": "V4 (Latest)"
+      }
+    },
+    "timeout": {
+      "label": "Timeout",
+      "description": "Maximum time to wait for transcription (30-300 seconds)",
+      "unit": "seconds"
+    }
+  },
   "settings": {
     "general": {
       "title": "General",

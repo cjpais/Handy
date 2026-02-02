@@ -98,6 +98,31 @@
     "noModelDownloadRequired": "Chưa Có Mô Hình - Cần Tải Xuống",
     "deleteModel": "Xóa {{modelName}}"
   },
+  "transcription": {
+    "mode": {
+      "label": "Chế độ phiên âm",
+      "description": "Chọn giữa mô hình AI cục bộ hoặc phiên âm đám mây",
+      "local": "Cục bộ",
+      "localDescription": "Sử dụng mô hình AI đã tải xuống trên thiết bị của bạn",
+      "cloud": "Đám mây (Soniox)",
+      "cloudDescription": "Sử dụng API đám mây Soniox để phiên âm"
+    }
+  },
+  "soniox": {
+    "title": "Cài đặt Soniox",
+    "apiKey": {
+      "label": "Khóa API",
+      "description": "Khóa API Soniox của bạn",
+      "placeholder": "Nhập khóa API Soniox của bạn"
+    },
+    "model": {
+      "label": "Mô hình",
+      "description": "Chọn mô hình Soniox để sử dụng",
+      "options": {
+        "stt-async-v4": "V4 (Mới nhất)"
+      }
+    }
+  },
   "settings": {
     "general": {
       "title": "Chung",

@@ -97,6 +97,31 @@
     "noModelDownloadRequired": "Sin Modelo - Descarga Requerida",
     "deleteModel": "Eliminar {{modelName}}"
   },
+  "transcription": {
+    "mode": {
+      "label": "Modo de transcripción",
+      "description": "Elige entre modelos de IA locales o transcripción en la nube",
+      "local": "Local",
+      "localDescription": "Usar modelos de IA descargados en tu dispositivo",
+      "cloud": "Nube (Soniox)",
+      "cloudDescription": "Usar la API de Soniox en la nube para transcripción"
+    }
+  },
+  "soniox": {
+    "title": "Configuración de Soniox",
+    "apiKey": {
+      "label": "Clave API",
+      "description": "Tu clave API de Soniox",
+      "placeholder": "Ingresa tu clave API de Soniox"
+    },
+    "model": {
+      "label": "Modelo",
+      "description": "Selecciona el modelo de Soniox a usar",
+      "options": {
+        "stt-async-v4": "V4 (Más reciente)"
+      }
+    }
+  },
   "settings": {
     "general": {
       "title": "General",

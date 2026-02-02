@@ -21,8 +21,8 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
     self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
-    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    PasteMethod, ShortcutBinding, SoundTheme, TranscriptionMode,
+    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID, SONIOX_DEFAULT_MODEL,
 };
 use crate::tray;
 
@@ -940,4 +940,94 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
 
     Ok(())
+}
+
+// Soniox / Cloud Transcription Settings Commands
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_transcription_mode(app: AppHandle, mode: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match mode.as_str() {
+        "local" => TranscriptionMode::Local,
+        "cloud" => TranscriptionMode::Cloud,
+        other => {
+            warn!(
+                "Invalid transcription mode '{}', defaulting to local",
+                other
+            );
+            TranscriptionMode::Local
+        }
+    };
+    settings.transcription_mode = parsed;
+    settings::write_settings(&app, settings);
+
+    // Emit event to notify frontend of mode change
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "transcription_mode",
+            "value": mode
+        }),
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_transcription_mode(app: AppHandle) -> String {
+    let settings = settings::get_settings(&app);
+    match settings.transcription_mode {
+        TranscriptionMode::Local => "local".to_string(),
+        TranscriptionMode::Cloud => "cloud".to_string(),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_soniox_api_key(app: AppHandle, api_key: String) -> Result<(), String> {
+    // Allow empty API key (for clearing)
+    if !api_key.is_empty() {
+        crate::soniox_client::SonioxClient::validate_api_key(&api_key)?;
+    }
+
+    let mut settings = settings::get_settings(&app);
+    settings.soniox_api_key = api_key;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_soniox_model(app: AppHandle, model: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.soniox_model = if model.is_empty() {
+        SONIOX_DEFAULT_MODEL.to_string()
+    } else {
+        model
+    };
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_soniox_timeout(app: AppHandle, timeout_seconds: u32) -> Result<(), String> {
+    // Validate timeout range: 30 to 300 seconds
+    if timeout_seconds < 30 || timeout_seconds > 300 {
+        return Err("Timeout must be between 30 and 300 seconds".to_string());
+    }
+
+    let mut settings = settings::get_settings(&app);
+    settings.soniox_timeout_seconds = timeout_seconds;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_soniox_timeout(app: AppHandle) -> u32 {
+    let settings = settings::get_settings(&app);
+    settings.soniox_timeout_seconds
 }

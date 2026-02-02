@@ -98,6 +98,31 @@
     "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
     "deleteModel": "Supprimer {{modelName}}"
   },
+  "transcription": {
+    "mode": {
+      "label": "Mode de transcription",
+      "description": "Choisir entre les modèles IA locaux ou la transcription cloud",
+      "local": "Local",
+      "localDescription": "Utiliser les modèles IA téléchargés sur votre appareil",
+      "cloud": "Cloud (Soniox)",
+      "cloudDescription": "Utiliser l'API cloud Soniox pour la transcription"
+    }
+  },
+  "soniox": {
+    "title": "Paramètres Soniox",
+    "apiKey": {
+      "label": "Clé API",
+      "description": "Votre clé API Soniox",
+      "placeholder": "Entrez votre clé API Soniox"
+    },
+    "model": {
+      "label": "Modèle",
+      "description": "Sélectionner le modèle Soniox à utiliser",
+      "options": {
+        "stt-async-v4": "V4 (Plus récent)"
+      }
+    }
+  },
   "settings": {
     "general": {
       "title": "Général",

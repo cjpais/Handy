@@ -1,6 +1,19 @@
 fn main() {
+    // Declare the custom config for conditional Apple Intelligence compilation
+    println!("cargo::rustc-check-cfg=cfg(skip_apple_intelligence)");
+
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
-    build_apple_intelligence_bridge();
+    {
+        // Allow skipping Apple Intelligence build for environments with Swift toolchain issues
+        if std::env::var("SKIP_APPLE_INTELLIGENCE").is_err() {
+            build_apple_intelligence_bridge();
+        } else {
+            println!(
+                "cargo:warning=Skipping Apple Intelligence bridge (SKIP_APPLE_INTELLIGENCE set)"
+            );
+            println!("cargo:rustc-cfg=skip_apple_intelligence");
+        }
+    }
 
     generate_tray_translations();
 

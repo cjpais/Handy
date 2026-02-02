@@ -127,6 +127,10 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  transcription_mode: (value) => commands.setTranscriptionMode(value as string),
+  soniox_api_key: (value) => commands.setSonioxApiKey(value as string),
+  soniox_model: (value) => commands.setSonioxModel(value as string),
+  soniox_timeout_seconds: (value) => commands.setSonioxTimeout(value as number),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

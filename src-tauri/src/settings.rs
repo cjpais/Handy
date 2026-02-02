@@ -9,6 +9,16 @@ use tauri_plugin_store::StoreExt;
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TranscriptionMode {
+    #[default]
+    Local,
+    Cloud,
+}
+
+pub const SONIOX_DEFAULT_MODEL: &str = "stt-async-v4";
+
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
@@ -317,6 +327,14 @@ pub struct AppSettings {
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
+    #[serde(default)]
+    pub transcription_mode: TranscriptionMode,
+    #[serde(default)]
+    pub soniox_api_key: String,
+    #[serde(default = "default_soniox_model")]
+    pub soniox_model: String,
+    #[serde(default = "default_soniox_timeout")]
+    pub soniox_timeout_seconds: u32,
 }
 
 fn default_model() -> String {
@@ -368,6 +386,14 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_soniox_model() -> String {
+    SONIOX_DEFAULT_MODEL.to_string()
+}
+
+fn default_soniox_timeout() -> u32 {
+    120 // 2 minutes default timeout
 }
 
 fn default_history_limit() -> usize {
@@ -612,6 +638,10 @@ pub fn get_default_settings() -> AppSettings {
         experimental_enabled: false,
         keyboard_implementation: KeyboardImplementation::default(),
         paste_delay_ms: default_paste_delay_ms(),
+        transcription_mode: TranscriptionMode::default(),
+        soniox_api_key: String::new(),
+        soniox_model: default_soniox_model(),
+        soniox_timeout_seconds: default_soniox_timeout(),
     }
 }
 

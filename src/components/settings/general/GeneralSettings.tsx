@@ -11,33 +11,41 @@ import { useSettings } from "../../../hooks/useSettings";
 import { useModelStore } from "../../../stores/modelStore";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
+import { TranscriptionModeSelector } from "../TranscriptionModeSelector";
+import { SonioxSettings } from "../SonioxSettings";
 
 export const GeneralSettings: React.FC = () => {
-  const { t } = useTranslation();
-  const { audioFeedbackEnabled } = useSettings();
-  const { currentModel, getModelInfo } = useModelStore();
-  const currentModelInfo = getModelInfo(currentModel);
-  const showLanguageSelector = currentModelInfo?.engine_type === "Whisper";
-  return (
-    <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.general.title")}>
-        <ShortcutInput shortcutId="transcribe" grouped={true} />
-        {showLanguageSelector && (
-          <LanguageSelector descriptionMode="tooltip" grouped={true} />
-        )}
-        <PushToTalk descriptionMode="tooltip" grouped={true} />
-      </SettingsGroup>
-      <SettingsGroup title={t("settings.sound.title")}>
-        <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
-        <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
-        <AudioFeedback descriptionMode="tooltip" grouped={true} />
-        <OutputDeviceSelector
-          descriptionMode="tooltip"
-          grouped={true}
-          disabled={!audioFeedbackEnabled}
-        />
-        <VolumeSlider disabled={!audioFeedbackEnabled} />
-      </SettingsGroup>
-    </div>
-  );
+	const { t } = useTranslation();
+	const { audioFeedbackEnabled, getSetting } = useSettings();
+	const { currentModel, getModelInfo } = useModelStore();
+	const currentModelInfo = getModelInfo(currentModel);
+	const transcriptionMode = getSetting("transcription_mode") || "local";
+	const isCloudMode = transcriptionMode === "cloud";
+	const showLanguageSelector =
+		currentModelInfo?.engine_type === "Whisper" || isCloudMode;
+
+	return (
+		<div className="max-w-3xl w-full mx-auto space-y-6">
+			<SettingsGroup title={t("settings.general.title")}>
+				<ShortcutInput shortcutId="transcribe" grouped={true} />
+				<TranscriptionModeSelector descriptionMode="tooltip" grouped={true} />
+				{isCloudMode && <SonioxSettings grouped={true} />}
+				{showLanguageSelector && (
+					<LanguageSelector descriptionMode="tooltip" grouped={true} />
+				)}
+				<PushToTalk descriptionMode="tooltip" grouped={true} />
+			</SettingsGroup>
+			<SettingsGroup title={t("settings.sound.title")}>
+				<MicrophoneSelector descriptionMode="tooltip" grouped={true} />
+				<MuteWhileRecording descriptionMode="tooltip" grouped={true} />
+				<AudioFeedback descriptionMode="tooltip" grouped={true} />
+				<OutputDeviceSelector
+					descriptionMode="tooltip"
+					grouped={true}
+					disabled={!audioFeedbackEnabled}
+				/>
+				<VolumeSlider disabled={!audioFeedbackEnabled} />
+			</SettingsGroup>
+		</div>
+	);
 };

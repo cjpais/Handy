@@ -4,7 +4,9 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, TranscriptionMode, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
@@ -31,6 +33,12 @@ async fn maybe_post_process_transcription(
     settings: &AppSettings,
     transcription: &str,
 ) -> Option<String> {
+    // Skip post-processing for cloud transcription (Soniox) - quality is already good
+    if settings.transcription_mode == TranscriptionMode::Cloud {
+        debug!("Post-processing skipped for cloud transcription (Soniox)");
+        return None;
+    }
+
     if !settings.post_process_enabled {
         return None;
     }
@@ -218,9 +226,14 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
-        // Load model in the background
-        let tm = app.state::<Arc<TranscriptionManager>>();
-        tm.initiate_model_load();
+        // Only load model if we're in local mode
+        let settings = get_settings(app);
+        if settings.transcription_mode == TranscriptionMode::Local {
+            let tm = app.state::<Arc<TranscriptionManager>>();
+            tm.initiate_model_load();
+        } else {
+            debug!("Skipping model load - using cloud transcription");
+        }
 
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);

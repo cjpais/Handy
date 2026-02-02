@@ -1,6 +1,7 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::model::{EngineType, ModelManager};
-use crate::settings::{get_settings, ModelUnloadTimeout};
+use crate::settings::{get_settings, ModelUnloadTimeout, TranscriptionMode};
+use crate::soniox_client::SonioxClient;
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -361,6 +362,65 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
+        // Get current settings for configuration
+        let settings = get_settings(&self.app_handle);
+
+        // Check if we're in cloud mode - if so, use Soniox
+        if settings.transcription_mode == TranscriptionMode::Cloud {
+            info!("Using cloud transcription (Soniox)");
+
+            // Extract needed values to avoid cloning the whole manager
+            let api_key = settings.soniox_api_key.clone();
+            let model = settings.soniox_model.clone();
+            let timeout_seconds = settings.soniox_timeout_seconds;
+            let language = if settings.selected_language == "auto" {
+                None
+            } else {
+                Some(settings.selected_language.clone())
+            };
+            let custom_words = settings.custom_words.clone();
+            let word_correction_threshold = settings.word_correction_threshold;
+
+            // Use a channel to get the result from the async task
+            let (tx, rx) = std::sync::mpsc::channel();
+
+            // Use tauri's async runtime instead of creating a new tokio runtime
+            // This is more efficient as it reuses the existing runtime
+            tauri::async_runtime::spawn(async move {
+                let client = SonioxClient::with_timeout(api_key, model, timeout_seconds);
+                let result = client.transcribe(audio, language.as_deref()).await;
+                let _ = tx.send(result);
+            });
+
+            let result = rx
+                .recv()
+                .map_err(|_| anyhow::anyhow!("Failed to receive result from Soniox task"))?;
+
+            // Apply word correction and filtering
+            let result = result.map(|text| {
+                let corrected = if !custom_words.is_empty() {
+                    crate::audio_toolkit::apply_custom_words(
+                        &text,
+                        &custom_words,
+                        word_correction_threshold,
+                    )
+                } else {
+                    text
+                };
+                crate::audio_toolkit::filter_transcription_output(&corrected)
+            });
+
+            if let Ok(ref text) = result {
+                if text.is_empty() {
+                    info!("Cloud transcription result is empty");
+                } else {
+                    info!("Cloud transcription result: {}", text);
+                }
+            }
+
+            return result;
+        }
+
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
@@ -374,9 +434,6 @@ impl TranscriptionManager {
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
         }
-
-        // Get current settings for configuration
-        let settings = get_settings(&self.app_handle);
 
         // Perform transcription with the appropriate engine
         let result = {
