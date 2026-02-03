@@ -8,15 +8,19 @@ use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID}
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
-use crate::ManagedToggleState;
+use crate::{active_app, transcript_context, ManagedToggleState};
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::AppHandle;
 use tauri::Manager;
+
+/// Tracks the frontmost application captured at recording start, keyed by binding_id
+static RECORDING_APP_CONTEXT: Lazy<Mutex<HashMap<String, String>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -27,9 +31,22 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction;
 
+/// Context information for LLM post-processing prompts.
+/// These fields are available as variables in the prompt template.
+#[derive(Clone, Debug, Default)]
+pub struct PostProcessContext {
+    /// The name of the frontmost application when transcription started
+    pub current_app: String,
+    /// Short excerpt from previous transcript in the same app (last 200 words, expires after 5 min)
+    pub short_prev_transcript: String,
+    /// Current local time formatted as "Tuesday, February 3, 2026 10:33:39 AM"
+    pub time_local: String,
+}
+
 async fn maybe_post_process_transcription(
     settings: &AppSettings,
     transcription: &str,
+    context: &PostProcessContext,
 ) -> Option<String> {
     if !settings.post_process_enabled {
         return None;
@@ -90,9 +107,18 @@ async fn maybe_post_process_transcription(
         provider.id, model
     );
 
-    // Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
-    debug!("Processed prompt length: {} chars", processed_prompt.len());
+    // Replace variables in the prompt with actual values
+    // Available variables:
+    //   ${output} - The transcription text
+    //   ${current_app} - Name of the frontmost application
+    //   ${short_prev_transcript} - Recent transcript from same app (last 200 words, 5 min expiry)
+    //   ${time_local} - Current local time (e.g., "Tuesday, February 3, 2026 10:33:39 AM")
+    let processed_prompt = prompt
+        .replace("${output}", transcription)
+        .replace("${current_app}", &context.current_app)
+        .replace("${short_prev_transcript}", &context.short_prev_transcript)
+        .replace("${time_local}", &context.time_local);
+    debug!("Processed prompt : {}", processed_prompt);
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -218,6 +244,16 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
+        // Capture the frontmost application name for LLM context
+        // This is done early before any UI changes that might affect focus
+        let frontmost_app = active_app::get_frontmost_app_name().unwrap_or_default();
+        debug!("Captured frontmost app: '{}'", frontmost_app);
+
+        // Store the captured app name for use when transcription completes
+        if let Ok(mut context) = RECORDING_APP_CONTEXT.lock() {
+            context.insert(binding_id.to_string(), frontmost_app);
+        }
+
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
         tm.initiate_model_load();
@@ -290,6 +326,17 @@ impl ShortcutAction for TranscribeAction {
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
 
+        // Retrieve the captured frontmost app name from recording start
+        let current_app = RECORDING_APP_CONTEXT
+            .lock()
+            .ok()
+            .and_then(|mut ctx| ctx.remove(binding_id))
+            .unwrap_or_default();
+        debug!(
+            "Retrieved frontmost app for binding '{}': '{}'",
+            binding_id, current_app
+        );
+
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
@@ -343,10 +390,36 @@ impl ShortcutAction for TranscribeAction {
                                 final_text = converted_text;
                             }
 
+                            // Build context for LLM post-processing
+                            // Get previous transcript from same app (last 200 words, 5 min expiry)
+                            let short_prev_transcript =
+                                transcript_context::get_short_prev_transcript(&current_app);
+
+                            // Generate formatted local time: "Tuesday, February 3, 2026 10:33:39 AM"
+                            let time_local = chrono::Local::now()
+                                .format("%A, %B %-d, %Y %-I:%M:%S %p")
+                                .to_string();
+
+                            let pp_context = PostProcessContext {
+                                current_app: current_app.clone(),
+                                short_prev_transcript,
+                                time_local,
+                            };
+                            debug!(
+                                "Post-process context: app='{}', prev_transcript_len={}, time='{}'",
+                                pp_context.current_app,
+                                pp_context.short_prev_transcript.len(),
+                                pp_context.time_local
+                            );
+
                             // Then apply regular post-processing if enabled
                             // Uses final_text which may already have Chinese conversion applied
-                            if let Some(processed_text) =
-                                maybe_post_process_transcription(&settings, &final_text).await
+                            if let Some(processed_text) = maybe_post_process_transcription(
+                                &settings,
+                                &final_text,
+                                &pp_context,
+                            )
+                            .await
                             {
                                 post_processed_text = Some(processed_text.clone());
                                 final_text = processed_text;
@@ -365,6 +438,13 @@ impl ShortcutAction for TranscribeAction {
                                 // Chinese conversion was applied but no LLM post-processing
                                 post_processed_text = Some(final_text.clone());
                             }
+
+                            // Update the transcript context for this app
+                            // Use the original transcription (before post-processing) for context
+                            transcript_context::update_transcript_context(
+                                &current_app,
+                                &transcription,
+                            );
 
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
