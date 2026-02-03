@@ -37,7 +37,7 @@ The process is entirely local:
 ### Installation
 
 1. Download the latest release from the [releases page](https://github.com/cjpais/Handy/releases) or the [website](https://handy.computer)
-   - **macOS**: Also available via [Homebrew cask](https://github.com/Homebrew/homebrew-cask/blob/main/Casks/h/handy.rb): `brew install --cask handy`
+   - **macOS**: Also available via [Homebrew cask](https://formulae.brew.sh/cask/handy): `brew install --cask handy`
 2. Install the application
 3. Launch Handy and grant necessary system permissions (microphone, accessibility)
 4. Configure your preferred keyboard shortcuts in Settings
