@@ -66,7 +66,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   };
 
   return (
-    <div className="absolute bottom-full left-0 mb-2 w-64 bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
+    <div className="absolute bottom-full start-0 mb-2 w-64 bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
       {/* First Run Welcome */}
       {isFirstRun && (
         <div className="px-3 py-2 bg-logo-primary/10 border-b border-logo-primary/20">
@@ -185,7 +185,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                     <div className="text-sm">
                       {getTranslatedModelName(model, t)}
                       {model.id === "parakeet-tdt-0.6b-v3" && isFirstRun && (
-                        <span className="me-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
+                        <span className="ms-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
                           {t("onboarding.recommended")}
                         </span>
                       )}

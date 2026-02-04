@@ -72,7 +72,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
       >
         <span className="truncate">{selectedOption?.label || placeholder}</span>
         <svg
-          className={`w-4 h-4 me-2 transition-transform duration-200 ${isOpen ? "transform rotate-180" : ""}`}
+          className={`w-4 h-4 ms-2 transition-transform duration-200 ${isOpen ? "transform rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

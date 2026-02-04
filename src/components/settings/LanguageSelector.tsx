@@ -108,7 +108,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           >
             <span className="truncate">{selectedLanguageName}</span>
             <svg
-              className={`w-4 h-4 me-2 transition-transform duration-200 ${
+              className={`w-4 h-4 ms-2 transition-transform duration-200 ${
                 isOpen ? "transform rotate-180" : ""
               }`}
               fill="none"
