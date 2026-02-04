@@ -3,6 +3,7 @@ use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::managers::model::{EngineType, ModelManager};
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
@@ -41,6 +42,8 @@ pub struct PostProcessContext {
     pub short_prev_transcript: String,
     /// Current local time formatted as "Tuesday, February 3, 2026 10:33:39 AM"
     pub time_local: String,
+    /// The selected language for transcription (e.g., "en", "zh-Hans"), or "auto" if not specified
+    pub language: String,
 }
 
 async fn maybe_post_process_transcription(
@@ -113,11 +116,13 @@ async fn maybe_post_process_transcription(
     //   ${current_app} - Name of the frontmost application
     //   ${short_prev_transcript} - Recent transcript from same app (last 200 words, 5 min expiry)
     //   ${time_local} - Current local time (e.g., "Tuesday, February 3, 2026 10:33:39 AM")
+    //   ${language} - Selected transcription language (e.g., "en", "zh-Hans") or "auto"
     let processed_prompt = prompt
         .replace("${output}", transcription)
         .replace("${current_app}", &context.current_app)
         .replace("${short_prev_transcript}", &context.short_prev_transcript)
-        .replace("${time_local}", &context.time_local);
+        .replace("${time_local}", &context.time_local)
+        .replace("${language}", &context.language);
     debug!("Processed prompt : {}", processed_prompt);
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
@@ -404,12 +409,27 @@ impl ShortcutAction for TranscribeAction {
                                 current_app: current_app.clone(),
                                 short_prev_transcript,
                                 time_local,
+                                language: {
+                                    // Only use selected_language for Whisper models, 'auto' for other models (Parakeet, Moonshine)
+                                    let mm = ah.state::<Arc<ModelManager>>();
+                                    let is_whisper = mm
+                                        .get_model_info(&settings.selected_model)
+                                        .map(|m| matches!(m.engine_type, EngineType::Whisper))
+                                        .unwrap_or(false);
+
+                                    if is_whisper && !settings.selected_language.is_empty() {
+                                        settings.selected_language.clone()
+                                    } else {
+                                        "auto".to_string()
+                                    }
+                                },
                             };
                             debug!(
-                                "Post-process context: app='{}', prev_transcript_len={}, time='{}'",
+                                "Post-process context: app='{}', prev_transcript_len={}, time='{}', language='{}'",
                                 pp_context.current_app,
                                 pp_context.short_prev_transcript.len(),
-                                pp_context.time_local
+                                pp_context.time_local,
+                                pp_context.language
                             );
 
                             // Then apply regular post-processing if enabled
