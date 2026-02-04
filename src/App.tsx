@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Toaster } from "sonner";
+import { useTranslation } from "react-i18next";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
@@ -13,6 +14,7 @@ import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
+import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
@@ -23,6 +25,7 @@ const renderSettingsContent = (section: SidebarSection) => {
 };
 
 function App() {
+  const { i18n } = useTranslation();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
@@ -32,6 +35,7 @@ function App() {
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const { settings, updateSetting } = useSettings();
+  const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
     (state) => state.refreshAudioDevices,
   );
@@ -43,6 +47,11 @@ function App() {
   useEffect(() => {
     checkOnboardingStatus();
   }, []);
+
+  // Initialize RTL direction when language changes
+  useEffect(() => {
+    initializeRTL(i18n.language);
+  }, [i18n.language]);
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
@@ -146,7 +155,10 @@ function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col select-none cursor-default">
+    <div
+      dir={direction}
+      className="h-screen flex flex-col select-none cursor-default"
+    >
       <Toaster
         theme="system"
         toastOptions={{
