@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.6.11"
+version = "0.7.1"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -69,6 +69,7 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = { version = "0.2.2", features = ["whisper", "parakeet", "moonshine"] }
+handy-keys = "0.1.4"
 ferrous-opencc = "0.2.3"
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
@@ -94,6 +95,10 @@ windows = { version = "0.61.3", features = [
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
+gtk = "0.18"
 
 [profile.release]
 lto = true

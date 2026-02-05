@@ -141,6 +141,12 @@ async fn maybe_post_process_transcription(
         .await
     {
         Ok(Some(content)) => {
+            // Strip invisible Unicode characters that some LLMs (e.g., Qwen) may insert
+            let content = content
+                .replace('\u{200B}', "") // Zero-Width Space
+                .replace('\u{200C}', "") // Zero-Width Non-Joiner
+                .replace('\u{200D}', "") // Zero-Width Joiner
+                .replace('\u{FEFF}', ""); // Byte Order Mark / Zero-Width No-Break Space
             debug!(
                 "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
                 provider.id,
@@ -334,15 +340,16 @@ impl ShortcutAction for TranscribeAction {
                             if let Some(converted_text) =
                                 maybe_convert_chinese_variant(&settings, &transcription).await
                             {
-                                final_text = converted_text.clone();
-                                post_processed_text = Some(converted_text);
+                                final_text = converted_text;
                             }
+
                             // Then apply regular post-processing if enabled
-                            else if let Some(processed_text) =
-                                maybe_post_process_transcription(&settings, &transcription).await
+                            // Uses final_text which may already have Chinese conversion applied
+                            if let Some(processed_text) =
+                                maybe_post_process_transcription(&settings, &final_text).await
                             {
-                                final_text = processed_text.clone();
-                                post_processed_text = Some(processed_text);
+                                post_processed_text = Some(processed_text.clone());
+                                final_text = processed_text;
 
                                 // Get the prompt that was used
                                 if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
@@ -354,6 +361,9 @@ impl ShortcutAction for TranscribeAction {
                                         post_process_prompt = Some(prompt.prompt.clone());
                                     }
                                 }
+                            } else if final_text != transcription {
+                                // Chinese conversion was applied but no LLM post-processing
+                                post_processed_text = Some(final_text.clone());
                             }
 
                             // Save to history with post-processed text and prompt

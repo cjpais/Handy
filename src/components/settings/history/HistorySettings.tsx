@@ -5,8 +5,10 @@ import { Button } from "../../ui/Button";
 import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
+import { useOsType } from "@/hooks/useOsType";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -31,6 +33,7 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
 
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
+  const osType = useOsType();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,18 +92,28 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
-  const getAudioUrl = async (fileName: string) => {
-    try {
-      const result = await commands.getAudioFilePath(fileName);
-      if (result.status === "ok") {
-        return convertFileSrc(`${result.data}`, "asset");
+  const getAudioUrl = useCallback(
+    async (fileName: string) => {
+      try {
+        const result = await commands.getAudioFilePath(fileName);
+        if (result.status === "ok") {
+          if (osType === "linux") {
+            const fileData = await readFile(result.data);
+            const blob = new Blob([fileData], { type: "audio/wav" });
+
+            return URL.createObjectURL(blob);
+          }
+
+          return convertFileSrc(result.data, "asset");
+        }
+        return null;
+      } catch (error) {
+        console.error("Failed to get audio file path:", error);
+        return null;
       }
-      return null;
-    } catch (error) {
-      console.error("Failed to get audio file path:", error);
-      return null;
-    }
-  };
+    },
+    [osType],
+  );
 
   const deleteAudioEntry = async (id: number) => {
     try {
@@ -218,16 +231,12 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   deleteAudio,
 }) => {
   const { t, i18n } = useTranslation();
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
 
-  useEffect(() => {
-    const loadAudio = async () => {
-      const url = await getAudioUrl(entry.file_name);
-      setAudioUrl(url);
-    };
-    loadAudio();
-  }, [entry.file_name, getAudioUrl]);
+  const handleLoadAudio = useCallback(
+    () => getAudioUrl(entry.file_name),
+    [getAudioUrl, entry.file_name],
+  );
 
   const handleCopyText = () => {
     onCopyText();
@@ -293,7 +302,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
         {entry.transcription_text}
       </p>
-      {audioUrl && <AudioPlayer src={audioUrl} className="w-full" />}
+      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );
 };

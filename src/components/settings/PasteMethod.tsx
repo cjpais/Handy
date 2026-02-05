@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useTranslation } from "react-i18next";
-import { type as getOsType } from "@tauri-apps/plugin-os";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
+import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
 
 interface PasteMethodProps {
@@ -15,7 +15,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
-    const [osType, setOsType] = useState<string>("unknown");
+    const osType = useOsType();
 
     const getPasteMethodOptions = (osType: string) => {
       const mod = osType === "macos" ? "Cmd" : "Ctrl";
@@ -57,10 +57,6 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
 
       return options;
     };
-
-    useEffect(() => {
-      setOsType(getOsType());
-    }, []);
 
     const selectedMethod = (getSetting("paste_method") ||
       "ctrl_v") as PasteMethod;

@@ -110,12 +110,12 @@
         "pressKeys": "Nhấn phím...",
         "bindings": {
           "transcribe": {
-            "name": "Chuyển đổi",
-            "description": "Chuyển đổi giọng nói của bạn thành văn bản."
+            "name": "Phím tắt chuyển đổi",
+            "description": "Phím tắt để ghi âm và chuyển đổi giọng nói của bạn."
           },
           "cancel": {
-            "name": "Hủy",
-            "description": "Hủy bản ghi hiện tại."
+            "name": "Phím tắt hủy",
+            "description": "Phím tắt để hủy bản ghi hiện tại."
           }
         },
         "errors": {
@@ -162,6 +162,17 @@
     },
     "advanced": {
       "title": "Nâng cao",
+      "groups": {
+        "app": "Ứng dụng",
+        "output": "Đầu ra",
+        "transcription": "Chuyển đổi",
+        "history": "Lịch sử",
+        "experimental": "Thử nghiệm"
+      },
+      "experimentalToggle": {
+        "label": "Tính năng thử nghiệm",
+        "description": "Bật các tính năng thử nghiệm đang trong quá trình phát triển."
+      },
       "startHidden": {
         "label": "Khởi động ẩn",
         "description": "Khởi động vào khay hệ thống mà không mở cửa sổ."

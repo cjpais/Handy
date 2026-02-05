@@ -109,12 +109,12 @@
         "pressKeys": "请按键...",
         "bindings": {
           "transcribe": {
-            "name": "转录",
-            "description": "将语音转换为文字。"
+            "name": "转录快捷键",
+            "description": "用于录制和转录语音的键盘快捷键。"
           },
           "cancel": {
-            "name": "取消",
-            "description": "取消当前录制。"
+            "name": "取消快捷键",
+            "description": "用于取消当前录制的键盘快捷键。"
           }
         },
         "errors": {
@@ -161,6 +161,17 @@
     },
     "advanced": {
       "title": "高级",
+      "groups": {
+        "app": "应用",
+        "output": "输出",
+        "transcription": "转录",
+        "history": "历史",
+        "experimental": "实验性"
+      },
+      "experimentalToggle": {
+        "label": "实验性功能",
+        "description": "启用仍在开发中的实验性功能。"
+      },
       "startHidden": {
         "label": "隐藏启动",
         "description": "启动到系统托盘而不打开窗口。"

@@ -109,12 +109,12 @@
         "pressKeys": "Premi i tasti...",
         "bindings": {
           "transcribe": {
-            "name": "Trascrivi",
-            "description": "Converti la tua voce in testo."
+            "name": "Scorciatoia Trascrizione",
+            "description": "La scorciatoia da tastiera per registrare e trascrivere la tua voce."
           },
           "cancel": {
-            "name": "Annulla",
-            "description": "Annulla la registrazione in corso."
+            "name": "Scorciatoia Annulla",
+            "description": "La scorciatoia da tastiera per annullare la registrazione in corso."
           }
         },
         "errors": {
@@ -161,6 +161,17 @@
     },
     "advanced": {
       "title": "Avanzate",
+      "groups": {
+        "app": "App",
+        "output": "Output",
+        "transcription": "Trascrizione",
+        "history": "Cronologia",
+        "experimental": "Sperimentale"
+      },
+      "experimentalToggle": {
+        "label": "Funzionalità Sperimentali",
+        "description": "Abilita le funzionalità sperimentali ancora in fase di sviluppo."
+      },
       "startHidden": {
         "label": "Avvia in Background",
         "description": "Avvia l'applicazione in background senza aprire la finestra."

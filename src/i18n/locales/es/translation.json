@@ -109,12 +109,12 @@
         "pressKeys": "Presiona teclas...",
         "bindings": {
           "transcribe": {
-            "name": "Transcribir",
-            "description": "Convierte tu voz en texto."
+            "name": "Atajo de Transcripción",
+            "description": "El atajo de teclado para grabar y transcribir tu voz."
           },
           "cancel": {
-            "name": "Cancelar",
-            "description": "Cancela la grabación actual."
+            "name": "Atajo de Cancelar",
+            "description": "El atajo de teclado para cancelar la grabación actual."
           }
         },
         "errors": {
@@ -161,6 +161,17 @@
     },
     "advanced": {
       "title": "Avanzado",
+      "groups": {
+        "app": "Aplicación",
+        "output": "Salida",
+        "transcription": "Transcripción",
+        "history": "Historial",
+        "experimental": "Experimental"
+      },
+      "experimentalToggle": {
+        "label": "Funciones Experimentales",
+        "description": "Habilitar funciones experimentales que aún están en desarrollo."
+      },
       "startHidden": {
         "label": "Iniciar Oculto",
         "description": "Lanzar en la bandeja del sistema sin abrir la ventana."

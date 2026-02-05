@@ -2,11 +2,12 @@ use crate::input::{self, EnigoState};
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
 use enigo::Enigo;
 use log::info;
+use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
-use crate::utils::is_wayland;
+use crate::utils::{is_kde_wayland, is_wayland};
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
@@ -16,16 +17,31 @@ fn paste_via_clipboard(
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
+    paste_delay_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let clipboard_content = clipboard.read_text().unwrap_or_default();
 
     // Write text to clipboard first
-    clipboard
-        .write_text(text)
-        .map_err(|e| format!("Failed to write to clipboard: {}", e))?;
+    // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
+    #[cfg(target_os = "linux")]
+    let write_result = if is_wayland() && is_wl_copy_available() {
+        info!("Using wl-copy for clipboard write on Wayland");
+        write_clipboard_via_wl_copy(text)
+    } else {
+        clipboard
+            .write_text(text)
+            .map_err(|e| format!("Failed to write to clipboard: {}", e))
+    };
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    #[cfg(not(target_os = "linux"))]
+    let write_result = clipboard
+        .write_text(text)
+        .map_err(|e| format!("Failed to write to clipboard: {}", e));
+
+    write_result?;
+
+    std::thread::sleep(Duration::from_millis(paste_delay_ms));
 
     // Send paste key combo
     #[cfg(target_os = "linux")]
@@ -48,9 +64,16 @@ fn paste_via_clipboard(
     std::thread::sleep(std::time::Duration::from_millis(50));
 
     // Restore original clipboard content
-    clipboard
-        .write_text(&clipboard_content)
-        .map_err(|e| format!("Failed to restore clipboard: {}", e))?;
+    // On Wayland, prefer wl-copy for better compatibility
+    #[cfg(target_os = "linux")]
+    if is_wayland() && is_wl_copy_available() {
+        let _ = write_clipboard_via_wl_copy(&clipboard_content);
+    } else {
+        let _ = clipboard.write_text(&clipboard_content);
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    let _ = clipboard.write_text(&clipboard_content);
 
     Ok(())
 }
@@ -60,8 +83,9 @@ fn paste_via_clipboard(
 #[cfg(target_os = "linux")]
 fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> {
     if is_wayland() {
-        // Wayland: prefer wtype, then dotool, then ydotool
-        if is_wtype_available() {
+        // Wayland: prefer wtype (but not on KDE), then dotool, then ydotool
+        // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
+        if !is_kde_wayland() && is_wtype_available() {
             info!("Using wtype for key combo");
             send_key_combo_via_wtype(paste_method)?;
             return Ok(true);
@@ -98,8 +122,15 @@ fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> 
 #[cfg(target_os = "linux")]
 fn try_direct_typing_linux(text: &str) -> Result<bool, String> {
     if is_wayland() {
+        // KDE Wayland: prefer kwtype (uses KDE Fake Input protocol, supports umlauts)
+        if is_kde_wayland() && is_kwtype_available() {
+            info!("Using kwtype for direct text input on KDE Wayland");
+            type_text_via_kwtype(text)?;
+            return Ok(true);
+        }
         // Wayland: prefer wtype, then dotool, then ydotool
-        if is_wtype_available() {
+        // Note: wtype doesn't work on KDE (no zwp_virtual_keyboard_manager_v1 support)
+        if !is_kde_wayland() && is_wtype_available() {
             info!("Using wtype for direct text input");
             type_text_via_wtype(text)?;
             return Ok(true);
@@ -144,7 +175,10 @@ fn is_wtype_available() -> bool {
 /// Check if a native input tool is available on Linux.
 #[cfg(target_os = "linux")]
 pub fn has_native_input_tool() -> bool {
-    is_wtype_available() || is_dotool_available() || is_ydotool_available() || is_xdotool_available()
+    is_wtype_available()
+        || is_dotool_available()
+        || is_ydotool_available()
+        || is_xdotool_available()
 }
 
 /// Check if dotool is available (another Wayland text input tool)
@@ -171,6 +205,26 @@ fn is_ydotool_available() -> bool {
 fn is_xdotool_available() -> bool {
     Command::new("which")
         .arg("xdotool")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Check if kwtype is available (KDE Wayland virtual keyboard input tool)
+#[cfg(target_os = "linux")]
+fn is_kwtype_available() -> bool {
+    Command::new("which")
+        .arg("kwtype")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Check if wl-copy is available (Wayland clipboard tool)
+#[cfg(target_os = "linux")]
+fn is_wl_copy_available() -> bool {
+    Command::new("which")
+        .arg("wl-copy")
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false)
@@ -254,6 +308,40 @@ fn type_text_via_ydotool(text: &str) -> Result<(), String> {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("ydotool failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+/// Type text directly via kwtype (KDE Wayland virtual keyboard, uses KDE Fake Input protocol).
+#[cfg(target_os = "linux")]
+fn type_text_via_kwtype(text: &str) -> Result<(), String> {
+    let output = Command::new("kwtype")
+        .arg("--")
+        .arg(text)
+        .output()
+        .map_err(|e| format!("Failed to execute kwtype: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("kwtype failed: {}", stderr));
+    }
+
+    Ok(())
+}
+
+/// Write text to clipboard via wl-copy (Wayland clipboard tool).
+#[cfg(target_os = "linux")]
+fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
+    let output = Command::new("wl-copy")
+        .arg("--")
+        .arg(text)
+        .output()
+        .map_err(|e| format!("Failed to execute wl-copy: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("wl-copy failed: {}", stderr));
     }
 
     Ok(())
@@ -372,6 +460,7 @@ fn paste_direct(enigo: Option<&mut Enigo>, text: &str) -> Result<(), String> {
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
+    let paste_delay_ms = settings.paste_delay_ms;
 
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
@@ -380,13 +469,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         text
     };
 
-    info!("Using paste method: {:?}", paste_method);
+    info!(
+        "Using paste method: {:?}, delay: {}ms",
+        paste_method, paste_delay_ms
+    );
 
     // Get the managed Enigo instance (not available in Flatpak where native tools are used)
     let enigo_state = app_handle.try_state::<EnigoState>();
-    let mut enigo_guard = enigo_state
-        .as_ref()
-        .and_then(|state| state.0.lock().ok());
+    let mut enigo_guard = enigo_state.as_ref().and_then(|state| state.0.lock().ok());
 
     // Perform the paste operation
     match paste_method {
@@ -397,7 +487,13 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             paste_direct(enigo_guard.as_deref_mut(), &text)?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            paste_via_clipboard(enigo_guard.as_deref_mut(), &text, &app_handle, &paste_method)?
+            paste_via_clipboard(
+                enigo_guard.as_deref_mut(),
+                &text,
+                &app_handle,
+                &paste_method,
+                paste_delay_ms,
+            )?
         }
     }
 
