@@ -10,7 +10,7 @@ use strsim::levenshtein;
 fn build_ngram(words: &[&str]) -> String {
     words
         .iter()
-        .map(|w| w.trim_matches(|c: char| !c.is_alphabetic()).to_lowercase())
+        .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase())
         .collect::<Vec<_>>()
         .concat()
 }
@@ -169,11 +169,11 @@ fn preserve_case_pattern(original: &str, replacement: &str) -> String {
 
 /// Extracts punctuation prefix and suffix from a word
 fn extract_punctuation(word: &str) -> (&str, &str) {
-    let prefix_end = word.chars().take_while(|c| !c.is_alphabetic()).count();
+    let prefix_end = word.chars().take_while(|c| !c.is_alphanumeric()).count();
     let suffix_start = word
         .char_indices()
         .rev()
-        .take_while(|(_, c)| !c.is_alphabetic())
+        .take_while(|(_, c)| !c.is_alphanumeric())
         .count();
 
     let prefix = if prefix_end > 0 {
@@ -439,5 +439,16 @@ mod tests {
         let custom_words = vec!["MacBook Pro".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
         assert!(result.contains("MacBook"));
+    }
+
+    #[test]
+    fn test_apply_custom_words_trailing_number_not_doubled() {
+        // Verify that trailing non-alpha chars (like numbers) aren't double-counted
+        // between build_ngram stripping them and extract_punctuation capturing them
+        let text = "use GPT4 for this";
+        let custom_words = vec!["GPT-4".to_string()];
+        let result = apply_custom_words(text, &custom_words, 0.5);
+        // Should NOT produce "GPT-44" (double-counting the trailing 4)
+        assert!(!result.contains("GPT-44"), "got double-counted result: {}", result);
     }
 }
