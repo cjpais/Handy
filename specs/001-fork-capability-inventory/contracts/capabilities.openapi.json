@@ -1,0 +1,140 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Handy Capability Inventory API",
+    "version": "0.1.0-draft",
+    "description": "Draft contract for capability inventory export."
+  },
+  "paths": {
+    "/capabilities": {
+      "get": {
+        "summary": "Get capability inventory",
+        "responses": {
+          "200": {
+            "description": "Capability object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/capabilities/items": {
+      "get": {
+        "summary": "List inventory items",
+        "responses": {
+          "200": {
+            "description": "Inventory items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/capabilities/guard-points": {
+      "get": {
+        "summary": "List guard points",
+        "responses": {
+          "200": {
+            "description": "Guard points",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuardPoint"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DependencySet": {
+        "type": "object",
+        "required": ["commands", "events", "settingsKeys"],
+        "properties": {
+          "commands": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "events": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "settingsKeys": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "InventoryItem": {
+        "type": "object",
+        "required": ["id", "name", "category", "decision", "rationale", "dependencies"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["route", "component", "menu", "settings", "overlay", "permission"]
+          },
+          "location": { "type": "string" },
+          "decision": {
+            "type": "string",
+            "enum": ["keep", "hide", "remove"]
+          },
+          "rationale": { "type": "string" },
+          "dependencies": { "$ref": "#/components/schemas/DependencySet" },
+          "guardPointId": { "type": "string", "nullable": true },
+          "notes": { "type": "string" }
+        }
+      },
+      "GuardPoint": {
+        "type": "object",
+        "required": ["id", "name", "description", "covers"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "covers": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "CapabilityObject": {
+        "type": "object",
+        "required": ["version", "generatedAt", "scope", "items", "guardPoints"],
+        "properties": {
+          "version": { "type": "string" },
+          "generatedAt": { "type": "string" },
+          "scope": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/InventoryItem" }
+          },
+          "guardPoints": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/GuardPoint" }
+          }
+        }
+      }
+    }
+  }
+}
