@@ -43,13 +43,26 @@ def transcribe_audio(audio: np.ndarray, sample_rate: int = 16000) -> dict:
         print(f"Transcribing audio: {len(audio)} samples at {sample_rate}Hz", file=sys.stderr)
 
         # Run transcription
-        result = stt_model.generate(temp_path)
+        result_generator = stt_model.generate(temp_path)
 
         # Clean up temp file
         Path(temp_path).unlink(missing_ok=True)
 
-        # Extract text from result
-        text = result.text if hasattr(result, 'text') else str(result)
+        # Extract text from result (handle generator)
+        text = ""
+        try:
+            # Try to iterate through the generator
+            for chunk in result_generator:
+                if hasattr(chunk, 'text'):
+                    text += chunk.text
+                elif isinstance(chunk, str):
+                    text += chunk
+        except Exception as e:
+            # If iteration fails, try to get text directly
+            if hasattr(result_generator, 'text'):
+                text = result_generator.text
+            else:
+                text = str(result_generator)
 
         return {
             "text": text,
@@ -106,10 +119,13 @@ def main():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(json.dumps({
+        error_response = {
             "error": str(e),
-            "text": f"[处理错误: {str(e)}]"
-        }), file=sys.stderr)
+            "text": f"[处理错误: {str(e)}]",
+            "language": "auto",
+            "confidence": 0.0
+        }
+        print(json.dumps(error_response))
         sys.exit(1)
 
 

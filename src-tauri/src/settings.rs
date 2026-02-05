@@ -160,7 +160,7 @@ pub enum KeyboardImplementation {
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
-        // Default to HandyKeys only on macOS where it's well-tested.
+        // Default to HandyKeys on macOS for better single-key shortcut support (e.g., right_command)
         // Windows and Linux use Tauri by default (handy-keys not sufficiently tested yet).
         #[cfg(target_os = "macos")]
         return KeyboardImplementation::HandyKeys;
@@ -536,14 +536,19 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
+    // Default shortcuts - single key shortcuts supported
+    // Windows: Ctrl key (single key shortcut)
     #[cfg(target_os = "windows")]
-    let default_shortcut = "ctrl+space";
+    let default_shortcut = "ctrl";
+    // macOS: Command key (single key shortcut - uses HandyKeys by default for better support)
     #[cfg(target_os = "macos")]
-    let default_shortcut = "option+space";
+    let default_shortcut = "command";
+    // Linux: Ctrl key (single key shortcut)
     #[cfg(target_os = "linux")]
-    let default_shortcut = "ctrl+space";
+    let default_shortcut = "ctrl";
+    // Fallback
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    let default_shortcut = "alt+space";
+    let default_shortcut = "ctrl";
 
     let mut bindings = HashMap::new();
     bindings.insert(

@@ -34,7 +34,7 @@ pub fn init_shortcuts(app: &AppHandle) {
 }
 
 /// Validate a shortcut string for the Tauri global-shortcut implementation.
-/// Tauri requires at least one non-modifier key and doesn't support the fn key.
+/// Supports single keys (including modifiers like "command", "right_command") and combinations.
 pub fn validate_shortcut(raw: &str) -> Result<(), String> {
     if raw.trim().is_empty() {
         return Err("Shortcut cannot be empty".into());
@@ -42,7 +42,7 @@ pub fn validate_shortcut(raw: &str) -> Result<(), String> {
 
     let modifiers = [
         "ctrl", "control", "shift", "alt", "option", "meta", "command", "cmd", "super", "win",
-        "windows",
+        "windows", "right_command", "right_cmd", "right_option", "right_alt",
     ];
 
     // Check for fn key which Tauri doesn't support
@@ -53,14 +53,76 @@ pub fn validate_shortcut(raw: &str) -> Result<(), String> {
         }
     }
 
-    // Check for at least one non-modifier key
+    // Single key shortcuts are allowed (e.g., "command", "right_command", "f1", "escape")
+    // This includes single modifier keys and special keys
+    if parts.len() == 1 {
+        let key = &parts[0];
+        // Allow single modifier keys (command, option, etc.) and any other single key
+        if modifiers.contains(&key.as_str()) || is_valid_single_key(key) {
+            return Ok(());
+        }
+    }
+
+    // For combinations, check for at least one non-modifier key
     let has_non_modifier = parts.iter().any(|part| !modifiers.contains(&part.as_str()));
 
     if has_non_modifier {
         Ok(())
     } else {
-        Err("Tauri shortcuts must include a main key (letter, number, F-key, etc.) in addition to modifiers".into())
+        Err("Key combinations must include a main key (letter, number, F-key, etc.) in addition to modifiers".into())
     }
+}
+
+/// Check if a key is valid as a single-key shortcut
+fn is_valid_single_key(key: &str) -> bool {
+    // Function keys
+    if key.starts_with('f') {
+        if let Ok(num) = key[1..].parse::<u8>() {
+            if (1..=24).contains(&num) {
+                return true;
+            }
+        }
+    }
+
+    // Special keys
+    let special_keys = [
+        "escape", "esc",
+        "tab",
+        "space", "spacebar",
+        "return", "enter",
+        "backspace", "delete", "del",
+        "home", "end",
+        "pageup", "pagedown",
+        "up", "down", "left", "right",
+        "capslock", "caps",
+        "numlock",
+        "scrolllock",
+        "printscreen", "print",
+        "pause", "break",
+        "insert", "ins",
+        "contextmenu", "menu",
+    ];
+
+    if special_keys.contains(&key) {
+        return true;
+    }
+
+    // Letters and numbers
+    if key.len() == 1 {
+        let c = key.chars().next().unwrap();
+        if c.is_ascii_alphanumeric() {
+            return true;
+        }
+    }
+
+    // Numpad keys
+    if key.starts_with("num") {
+        if let Ok(_) = key[3..].parse::<u8>() {
+            return true;
+        }
+    }
+
+    false
 }
 
 /// Register a shortcut using Tauri's global-shortcut plugin

@@ -5,7 +5,6 @@ use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
-use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
@@ -290,8 +289,8 @@ impl TranscriptionManager {
             }
             EngineType::Qwen3 => {
                 let mut engine = Qwen3Engine::new();
-                let path = Path::new(&model_path);
-                engine.load_model(path).map_err(|e| {
+                // Qwen3 is managed externally by mlx-audio, no local model path needed
+                engine.load_model().map_err(|e| {
                     let error_msg = format!("Failed to load Qwen3 model {}: {}", model_id, e);
                     let _ = self.app_handle.emit(
                         "model-state-changed",

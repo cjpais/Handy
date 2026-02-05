@@ -57,15 +57,15 @@ export const getKeyName = (
 
     const modifierMap: Record<string, string> = {
       ShiftLeft: getModifierName("shift"),
-      ShiftRight: getModifierName("shift"),
+      ShiftRight: osType === "macos" ? "right shift" : getModifierName("shift"),
       ControlLeft: getModifierName("ctrl"),
-      ControlRight: getModifierName("ctrl"),
+      ControlRight: osType === "macos" ? "right ctrl" : getModifierName("ctrl"),
       AltLeft: getModifierName("alt"),
-      AltRight: getModifierName("alt"),
+      AltRight: osType === "macos" ? "right option" : getModifierName("alt"),
       MetaLeft: getModifierName("meta"),
-      MetaRight: getModifierName("meta"),
+      MetaRight: osType === "macos" ? "right command" : getModifierName("meta"),
       OSLeft: getModifierName("meta"),
-      OSRight: getModifierName("meta"),
+      OSRight: osType === "macos" ? "right command" : getModifierName("meta"),
       CapsLock: "caps lock",
       Tab: "tab",
       Enter: "enter",
@@ -169,9 +169,38 @@ export const formatKeyCombination = (
 
 /**
  * Normalize modifier keys to handle left/right variants
+ * Preserves "right_" prefix for single-key shortcuts (e.g., "right_command")
  */
 export const normalizeKey = (key: string): string => {
-  // Handle left/right variants of modifier keys
+  const lowerKey = key.toLowerCase().trim();
+
+  // Map "right command" / "right cmd" to "right_command" for single-key shortcuts
+  if (lowerKey === "right command" || lowerKey === "right cmd") {
+    return "right_command";
+  }
+  if (lowerKey === "left command" || lowerKey === "left cmd") {
+    return "command";
+  }
+  if (lowerKey === "right option" || lowerKey === "right alt") {
+    return "right_option";
+  }
+  if (lowerKey === "left option" || lowerKey === "left alt") {
+    return "option";
+  }
+  if (lowerKey === "right ctrl" || lowerKey === "right control") {
+    return "right_control";
+  }
+  if (lowerKey === "left ctrl" || lowerKey === "left control") {
+    return "ctrl";
+  }
+  if (lowerKey === "right shift") {
+    return "right_shift";
+  }
+  if (lowerKey === "left shift") {
+    return "shift";
+  }
+
+  // Handle left/right variants of modifier keys (for backward compatibility)
   if (key.startsWith("left ") || key.startsWith("right ")) {
     const parts = key.split(" ");
     if (parts.length === 2) {

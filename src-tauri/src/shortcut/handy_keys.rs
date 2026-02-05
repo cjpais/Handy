@@ -409,11 +409,12 @@ fn modifiers_to_strings(modifiers: handy_keys::Modifiers) -> Vec<String> {
 }
 
 /// Validate a shortcut string for the HandyKeys implementation.
-/// HandyKeys is more permissive: allows modifier-only combos and the fn key.
+/// HandyKeys is more permissive: allows modifier-only combos, single keys, and the fn key.
 pub fn validate_shortcut(raw: &str) -> Result<(), String> {
     if raw.trim().is_empty() {
         return Err("Shortcut cannot be empty".into());
     }
+
     // HandyKeys accepts modifier-only, key-only, and modifier+key combos
     // Just verify the string is parseable
     raw.parse::<Hotkey>()
