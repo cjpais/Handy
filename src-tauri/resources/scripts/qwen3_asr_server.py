@@ -31,7 +31,7 @@ def load_model():
         print(f"Model loaded in {load_time:.2f}s", file=sys.stderr, flush=True)
     return _stt_model
 
-def transcribe_audio(audio: np.ndarray, sample_rate: int = 16000) -> dict:
+def transcribe_audio(audio: np.ndarray, sample_rate: int = 16000, language: str = "auto") -> dict:
     """
     Transcribe audio using Qwen3 ASR with mlx-audio
     """
@@ -49,8 +49,44 @@ def transcribe_audio(audio: np.ndarray, sample_rate: int = 16000) -> dict:
             # Write audio data to temp file
             audio_write(temp_path, audio, sample_rate)
 
-            # Run transcription
-            result_generator = stt_model.generate(temp_path)
+            # Determine language - Qwen3 supports multiple languages
+            # Default to Chinese for better Chinese ASR support
+            # Supported languages include: Chinese, English, Cantonese, Japanese, Korean, etc.
+            if language in ["auto", "", None]:
+                lang_param = "Chinese"  # Default to Chinese for better Chinese ASR
+            else:
+                # Map common language codes to Qwen3 language names
+                lang_map = {
+                    "zh": "Chinese",
+                    "en": "English",
+                    "ja": "Japanese",
+                    "ko": "Korean",
+                    "es": "Spanish",
+                    "fr": "French",
+                    "de": "German",
+                    "it": "Italian",
+                    "pt": "Portuguese",
+                    "ru": "Russian",
+                    "ar": "Arabic",
+                    "hi": "Hindi",
+                    "th": "Thai",
+                    "vi": "Vietnamese",
+                    "tr": "Turkish",
+                    "pl": "Polish",
+                    "nl": "Dutch",
+                    "sv": "Swedish",
+                    "da": "Danish",
+                    "fi": "Finnish",
+                    "cs": "Czech",
+                    "el": "Greek",
+                    "ro": "Romanian",
+                    "hu": "Hungarian",
+                }
+                lang_lower = language.lower()
+                lang_param = lang_map.get(lang_lower, language)
+
+            # Run transcription with language parameter
+            result_generator = stt_model.generate(temp_path, language=lang_param)
 
             # Extract text from result (handle generator)
             text = ""
@@ -121,9 +157,10 @@ def main():
                 params = json.loads(params)
 
             sample_rate = params.get('sample_rate', 16000)
+            language = params.get('language', 'auto')
 
-            # Run transcription
-            result = transcribe_audio(audio, sample_rate)
+            # Run transcription with language support
+            result = transcribe_audio(audio, sample_rate, language)
 
             # Output JSON result
             print(json.dumps(result), flush=True)

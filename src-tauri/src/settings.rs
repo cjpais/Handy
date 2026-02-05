@@ -541,6 +541,10 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "windows")]
     let default_shortcut = "ctrl";
     // macOS: Command key (single key shortcut - uses HandyKeys by default for better support)
+    // Note: HandyKeys currently doesn't distinguish between left and right modifier keys.
+    // Both left and right Command keys will trigger the shortcut.
+    // To use ONLY right Command, you can use Karabiner-Elements to map right Command to F19
+    // and set the shortcut to "f19" in Handy settings.
     #[cfg(target_os = "macos")]
     let default_shortcut = "command";
     // Linux: Ctrl key (single key shortcut)

@@ -206,6 +206,7 @@ impl ModelManager {
 
         // Qwen3 ASR model (macOS only, MLX-based)
         // Note: Model is downloaded via mlx-audio on demand
+        #[cfg(target_os = "macos")]
         available_models.insert(
             "qwen3-asr".to_string(),
             ModelInfo {
