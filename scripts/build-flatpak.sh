@@ -82,7 +82,7 @@ find_deb() {
     for search_path in "${search_paths[@]}"; do
         if [ -d "$search_path" ]; then
             local found_deb
-            found_deb=$(find "$search_path" -name "*.deb" -type f | head -1)
+            found_deb=$(find "$search_path" -name "*.deb" -type f -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
             if [ -n "$found_deb" ]; then
                 echo "$found_deb"
                 return 0
