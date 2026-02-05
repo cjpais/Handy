@@ -51,7 +51,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   // Fetch OS input language when "os_input" is selected
   useEffect(() => {
     if (selectedLanguage !== "os_input") return;
-    const fetchOsLang = () => invoke<string | null>("get_language_from_os_input").then(setOsInputLang).catch(() => {});
+    const fetchOsLang = () =>
+      invoke<string | null>("get_language_from_os_input")
+        .then(setOsInputLang)
+        .catch(() => {});
     fetchOsLang();
     const interval = setInterval(fetchOsLang, 5000); // Poll every 5s
     return () => clearInterval(interval);
@@ -65,7 +68,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     [searchQuery],
   );
 
-const selectedLanguageName = useMemo(() => {
+  const selectedLanguageName = useMemo(() => {
     if (selectedLanguage === "os_input") {
       const resolved = LANGUAGES.find((l) => l.value === osInputLang)?.label;
       return resolved

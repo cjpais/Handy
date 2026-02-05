@@ -423,7 +423,7 @@ pub fn run() {
             }
             _ => {}
         })
-.invoke_handler(specta_builder.invoke_handler())
+        .invoke_handler(specta_builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -82,7 +82,7 @@ static INPUT_SOURCE_MAP: LazyLock<HashMap<&'static str, &'static str>> = LazyLoc
     m.insert("00000439", "hi"); // Hindi
     m.insert("00000421", "id"); // Indonesian
     m.insert("0000043e", "ms"); // Malay
-    // Linux XKB layouts
+                                // Linux XKB layouts
     m.insert("us", "en");
     m.insert("gb", "en");
     m.insert("ru", "ru");
@@ -130,7 +130,9 @@ pub fn get_current_input_source() -> Option<String> {
     for line in stdout.lines() {
         if line.contains("\"KeyboardLayout Name\"") {
             if let Some(start) = line.find('=') {
-                let value = line[start + 1..].trim().trim_matches(|c| c == '"' || c == ';' || c == ' ');
+                let value = line[start + 1..]
+                    .trim()
+                    .trim_matches(|c| c == '"' || c == ';' || c == ' ');
                 if !value.is_empty() {
                     return Some(format!("com.apple.keylayout.{}", value.replace(" ", "")));
                 }
@@ -141,7 +143,9 @@ pub fn get_current_input_source() -> Option<String> {
     for line in stdout.lines() {
         if line.contains("\"Input Source ID\"") {
             if let Some(start) = line.find('=') {
-                let value = line[start + 1..].trim().trim_matches(|c| c == '"' || c == ';' || c == ' ');
+                let value = line[start + 1..]
+                    .trim()
+                    .trim_matches(|c| c == '"' || c == ';' || c == ' ');
                 if !value.is_empty() && value.starts_with("com.apple") {
                     return Some(value.to_string());
                 }
@@ -156,7 +160,10 @@ pub fn get_current_input_source() -> Option<String> {
     use std::process::Command;
     // Use PowerShell to get current keyboard layout
     let output = Command::new("powershell")
-        .args(["-Command", "(Get-WinUserLanguageList)[0].InputMethodTips[0]"])
+        .args([
+            "-Command",
+            "(Get-WinUserLanguageList)[0].InputMethodTips[0]",
+        ])
         .output()
         .ok()?;
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
