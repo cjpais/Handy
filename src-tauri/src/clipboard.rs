@@ -305,6 +305,7 @@ fn type_text_via_ydotool(text: &str) -> Result<(), String> {
 #[cfg(target_os = "linux")]
 fn type_text_via_kwtype(text: &str) -> Result<(), String> {
     let output = Command::new("kwtype")
+        .arg("--")
         .arg(text)
         .output()
         .map_err(|e| format!("Failed to execute kwtype: {}", e))?;
