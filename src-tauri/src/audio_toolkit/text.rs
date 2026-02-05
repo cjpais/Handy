@@ -10,7 +10,10 @@ use strsim::levenshtein;
 fn build_ngram(words: &[&str]) -> String {
     words
         .iter()
-        .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase())
+        .map(|w| {
+            w.trim_matches(|c: char| !c.is_alphanumeric())
+                .to_lowercase()
+        })
         .collect::<Vec<_>>()
         .concat()
 }
@@ -449,6 +452,10 @@ mod tests {
         let custom_words = vec!["GPT-4".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
         // Should NOT produce "GPT-44" (double-counting the trailing 4)
-        assert!(!result.contains("GPT-44"), "got double-counted result: {}", result);
+        assert!(
+            !result.contains("GPT-44"),
+            "got double-counted result: {}",
+            result
+        );
     }
 }
