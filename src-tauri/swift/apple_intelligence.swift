@@ -50,79 +50,6 @@ public func isAppleIntelligenceAvailable() -> Int32 {
     }
 }
 
-@_cdecl("process_text_with_apple_llm")
-public func processTextWithAppleLLM(
-    _ prompt: UnsafePointer<CChar>,
-    maxTokens: Int32
-) -> UnsafeMutablePointer<AppleLLMResponse> {
-    let swiftPrompt = String(cString: prompt)
-    let responsePtr = ResponsePointer.allocate(capacity: 1)
-    responsePtr.initialize(to: AppleLLMResponse(response: nil, success: 0, error_message: nil))
-
-    guard #available(macOS 26.0, *) else {
-        responsePtr.pointee.error_message = duplicateCString(
-            "Apple Intelligence requires macOS 26 or newer."
-        )
-        return responsePtr
-    }
-
-    let model = SystemLanguageModel.default
-    guard model.availability == .available else {
-        responsePtr.pointee.error_message = duplicateCString(
-            "Apple Intelligence is not currently available on this device."
-        )
-        return responsePtr
-    }
-
-    let tokenLimit = max(0, Int(maxTokens))
-    let semaphore = DispatchSemaphore(value: 0)
-
-    // Thread-safe container to pass results from async task back to calling thread
-    final class ResultBox: @unchecked Sendable {
-        var response: String?
-        var error: String?
-    }
-    let box = ResultBox()
-
-    Task.detached(priority: .userInitiated) {
-        defer { semaphore.signal() }
-        do {
-            let session = LanguageModelSession(model: model)
-            var output: String
-
-            do {
-                let structured = try await session.respond(
-                    to: swiftPrompt,
-                    generating: CleanedTranscript.self
-                )
-                output = structured.content.cleanedText
-            } catch {
-                let fallbackGeneration = try await session.respond(to: swiftPrompt)
-                output = fallbackGeneration.content
-            }
-
-            if tokenLimit > 0 {
-                output = truncatedText(output, limit: tokenLimit)
-            }
-            box.response = output
-        } catch {
-            box.error = error.localizedDescription
-        }
-    }
-
-    semaphore.wait()
-
-    // Write to responsePtr on the calling thread after task completes
-    if let response = box.response {
-        responsePtr.pointee.response = duplicateCString(response)
-        responsePtr.pointee.success = 1
-    } else {
-        responsePtr.pointee.error_message = duplicateCString(box.error ?? "Unknown error")
-    }
-
-    return responsePtr
-}
-
 @_cdecl("process_text_with_system_prompt_apple")
 public func processTextWithSystemPrompt(
     _ systemPrompt: UnsafePointer<CChar>,
@@ -162,11 +89,13 @@ public func processTextWithSystemPrompt(
     Task.detached(priority: .userInitiated) {
         defer { semaphore.signal() }
         do {
-            let session = LanguageModelSession(model: model)
+            let session = LanguageModelSession(
+                model: model,
+                instructions: swiftSystemPrompt
+            )
             var output: String
 
             do {
-                // Use system prompt as instructions and user content as the input
                 let structured = try await session.respond(
                     to: swiftUserContent,
                     generating: CleanedTranscript.self

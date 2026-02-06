@@ -12,7 +12,6 @@ use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
-use serde_json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -27,6 +26,21 @@ pub trait ShortcutAction: Send + Sync {
 
 // Transcribe Action
 struct TranscribeAction;
+
+/// Strip invisible Unicode characters that some LLMs may insert
+fn strip_invisible_chars(s: &str) -> String {
+    s.replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
+}
+
+/// Build a system prompt from the user's prompt template.
+/// Replaces `${output}` with a reference to the user message so the prompt
+/// still reads sensibly when the transcription is sent separately.
+fn build_system_prompt(prompt_template: &str) -> String {
+    prompt_template
+        .replace("${output}", "the user's message")
+        .trim()
+        .to_string()
+}
 
 async fn maybe_post_process_transcription(
     settings: &AppSettings,
@@ -91,24 +105,16 @@ async fn maybe_post_process_transcription(
         provider.id, model
     );
 
-    // Get API key early since both structured and legacy modes need it
     let api_key = settings
         .post_process_api_keys
         .get(&provider.id)
         .cloned()
         .unwrap_or_default();
 
-    // Check if provider supports structured outputs (Cerebras, OpenRouter, OpenAI, Apple Intelligence)
-    let use_structured_output = provider.id == "cerebras"
-        || provider.id == "openrouter"
-        || provider.id == "openai"
-        || provider.id == APPLE_INTELLIGENCE_PROVIDER_ID;
-
-    if use_structured_output {
+    if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
-        // For structured outputs, use the prompt as system prompt and transcription as user content
-        let system_prompt = prompt.replace("${output}", "").trim().to_string();
+        let system_prompt = build_system_prompt(&prompt);
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -133,11 +139,7 @@ async fn maybe_post_process_transcription(
                             debug!("Apple Intelligence returned an empty response");
                             None
                         } else {
-                            let result = result
-                                .replace('\u{200B}', "") // Zero-Width Space
-                                .replace('\u{200C}', "") // Zero-Width Non-Joiner
-                                .replace('\u{200D}', "") // Zero-Width Joiner
-                                .replace('\u{FEFF}', ""); // Byte Order Mark
+                            let result = strip_invisible_chars(&result);
                             debug!(
                                 "Apple Intelligence post-processing succeeded. Output length: {} chars",
                                 result.len()
@@ -189,11 +191,7 @@ async fn maybe_post_process_transcription(
                         if let Some(transcription_value) =
                             json.get("transcription").and_then(|t| t.as_str())
                         {
-                            let result = transcription_value
-                                .replace('\u{200B}', "") // Zero-Width Space
-                                .replace('\u{200C}', "") // Zero-Width Non-Joiner
-                                .replace('\u{200D}', "") // Zero-Width Joiner
-                                .replace('\u{FEFF}', ""); // Byte Order Mark
+                            let result = strip_invisible_chars(transcription_value);
                             debug!(
                                 "Structured output post-processing succeeded for provider '{}'. Output length: {} chars",
                                 provider.id,
@@ -202,13 +200,7 @@ async fn maybe_post_process_transcription(
                             return Some(result);
                         } else {
                             error!("Structured output response missing 'transcription' field");
-                            // Fall back to returning the raw content
-                            let result = content
-                                .replace('\u{200B}', "")
-                                .replace('\u{200C}', "")
-                                .replace('\u{200D}', "")
-                                .replace('\u{FEFF}', "");
-                            return Some(result);
+                            return Some(strip_invisible_chars(&content));
                         }
                     }
                     Err(e) => {
@@ -216,13 +208,7 @@ async fn maybe_post_process_transcription(
                             "Failed to parse structured output JSON: {}. Returning raw content.",
                             e
                         );
-                        // Fall back to returning the raw content
-                        let result = content
-                            .replace('\u{200B}', "")
-                            .replace('\u{200C}', "")
-                            .replace('\u{200D}', "")
-                            .replace('\u{FEFF}', "");
-                        return Some(result);
+                        return Some(strip_invisible_chars(&content));
                     }
                 }
             }
@@ -245,17 +231,11 @@ async fn maybe_post_process_transcription(
     let processed_prompt = prompt.replace("${output}", transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
-    // Send the chat completion request (api_key already retrieved earlier)
     match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
         .await
     {
         Ok(Some(content)) => {
-            // Strip invisible Unicode characters that some LLMs (e.g., Qwen) may insert
-            let content = content
-                .replace('\u{200B}', "") // Zero-Width Space
-                .replace('\u{200C}', "") // Zero-Width Non-Joiner
-                .replace('\u{200D}', "") // Zero-Width Joiner
-                .replace('\u{FEFF}', ""); // Byte Order Mark / Zero-Width No-Break Space
+            let content = strip_invisible_chars(&content);
             debug!(
                 "LLM post-processing succeeded for provider '{}'. Output length: {} chars",
                 provider.id,
