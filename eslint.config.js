@@ -3,6 +3,15 @@ import tsParser from "@typescript-eslint/parser";
 
 export default [
   {
+    ignores: [
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      "*.min.js",
+    ],
+  },
+  {
     files: ["src/**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,

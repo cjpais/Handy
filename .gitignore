@@ -12,14 +12,18 @@ package-lock.json
 node_modules
 dist
 dist-ssr
+build
+coverage
 *.local
 *.local.*
+.env*
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

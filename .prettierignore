@@ -5,8 +5,10 @@ package-lock.json
 
 # Build outputs
 dist
+build
 target
 *.bundle.*
+coverage
 
 # Tauri
 src-tauri/target
@@ -18,3 +20,4 @@ src/bindings.ts
 # Misc
 .DS_Store
 *.log
+.env*

@@ -1,0 +1,995 @@
+{
+  "version": "0.1.0-draft",
+  "generatedAt": "",
+  "scope": "Settings window, onboarding flow, recording overlay, tray menu, platform permission prompts",
+  "items": [
+    {
+      "id": "route.app_shell",
+      "name": "App Shell",
+      "category": "route",
+      "location": "src/App.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.navigation",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "component.sidebar",
+      "name": "Sidebar",
+      "category": "component",
+      "location": "src/components/Sidebar.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.navigation",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.about_settings",
+      "name": "AboutSettings",
+      "category": "settings",
+      "location": "src/components/settings/about/AboutSettings.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.advanced_settings",
+      "name": "AdvancedSettings",
+      "category": "settings",
+      "location": "src/components/settings/advanced/AdvancedSettings.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.always_on_microphone",
+      "name": "AlwaysOnMicrophone",
+      "category": "settings",
+      "location": "src/components/settings/AlwaysOnMicrophone.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.app_data_directory",
+      "name": "AppDataDirectory",
+      "category": "settings",
+      "location": "src/components/settings/AppDataDirectory.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.app_language_selector",
+      "name": "AppLanguageSelector",
+      "category": "settings",
+      "location": "src/components/settings/AppLanguageSelector.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.append_trailing_space",
+      "name": "AppendTrailingSpace",
+      "category": "settings",
+      "location": "src/components/settings/AppendTrailingSpace.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.audio_feedback",
+      "name": "AudioFeedback",
+      "category": "settings",
+      "location": "src/components/settings/AudioFeedback.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.autostart_toggle",
+      "name": "AutostartToggle",
+      "category": "settings",
+      "location": "src/components/settings/AutostartToggle.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_base_url",
+      "name": "BaseUrlField",
+      "category": "settings",
+      "location": "src/components/settings/PostProcessingSettingsApi/BaseUrlField.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.clipboard_handling",
+      "name": "ClipboardHandling",
+      "category": "settings",
+      "location": "src/components/settings/ClipboardHandling.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.clamshell_microphone_selector",
+      "name": "ClamshellMicrophoneSelector",
+      "category": "settings",
+      "location": "src/components/settings/ClamshellMicrophoneSelector.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.custom_words",
+      "name": "CustomWords",
+      "category": "settings",
+      "location": "src/components/settings/CustomWords.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.debug_paths",
+      "name": "DebugPaths",
+      "category": "settings",
+      "location": "src/components/settings/debug/DebugPaths.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.debug_settings",
+      "name": "DebugSettings",
+      "category": "settings",
+      "location": "src/components/settings/debug/DebugSettings.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.experimental_toggle",
+      "name": "ExperimentalToggle",
+      "category": "settings",
+      "location": "src/components/settings/ExperimentalToggle.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.general_settings",
+      "name": "GeneralSettings",
+      "category": "settings",
+      "location": "src/components/settings/general/GeneralSettings.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.global_shortcut_input",
+      "name": "GlobalShortcutInput",
+      "category": "settings",
+      "location": "src/components/settings/GlobalShortcutInput.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.handy_keys_shortcut_input",
+      "name": "HandyKeysShortcutInput",
+      "category": "settings",
+      "location": "src/components/settings/HandyKeysShortcutInput.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.history_limit",
+      "name": "HistoryLimit",
+      "category": "settings",
+      "location": "src/components/settings/HistoryLimit.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.history_settings",
+      "name": "HistorySettings",
+      "category": "settings",
+      "location": "src/components/settings/history/HistorySettings.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.keyboard_implementation_selector",
+      "name": "KeyboardImplementationSelector",
+      "category": "settings",
+      "location": "src/components/settings/debug/KeyboardImplementationSelector.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.language_selector",
+      "name": "LanguageSelector",
+      "category": "settings",
+      "location": "src/components/settings/LanguageSelector.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.log_directory",
+      "name": "LogDirectory",
+      "category": "settings",
+      "location": "src/components/settings/debug/LogDirectory.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.log_level_selector",
+      "name": "LogLevelSelector",
+      "category": "settings",
+      "location": "src/components/settings/debug/LogLevelSelector.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.microphone_selector",
+      "name": "MicrophoneSelector",
+      "category": "settings",
+      "location": "src/components/settings/MicrophoneSelector.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_model_select",
+      "name": "ModelSelect",
+      "category": "settings",
+      "location": "src/components/settings/PostProcessingSettingsApi/ModelSelect.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.model_unload_timeout",
+      "name": "ModelUnloadTimeout",
+      "category": "settings",
+      "location": "src/components/settings/ModelUnloadTimeout.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.mute_while_recording",
+      "name": "MuteWhileRecording",
+      "category": "settings",
+      "location": "src/components/settings/MuteWhileRecording.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.output_device_selector",
+      "name": "OutputDeviceSelector",
+      "category": "settings",
+      "location": "src/components/settings/OutputDeviceSelector.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.paste_delay",
+      "name": "PasteDelay",
+      "category": "settings",
+      "location": "src/components/settings/debug/PasteDelay.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.paste_method",
+      "name": "PasteMethod",
+      "category": "settings",
+      "location": "src/components/settings/PasteMethod.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_settings",
+      "name": "PostProcessingSettings",
+      "category": "settings",
+      "location": "src/components/settings/post-processing/PostProcessingSettings.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_api",
+      "name": "PostProcessingSettingsApi",
+      "category": "settings",
+      "location": "src/components/settings/PostProcessingSettingsApi/index.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_prompts",
+      "name": "PostProcessingSettingsPrompts",
+      "category": "settings",
+      "location": "src/components/settings/PostProcessingSettingsPrompts.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_toggle",
+      "name": "PostProcessingToggle",
+      "category": "settings",
+      "location": "src/components/settings/PostProcessingToggle.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_provider_select",
+      "name": "ProviderSelect",
+      "category": "settings",
+      "location": "src/components/settings/PostProcessingSettingsApi/ProviderSelect.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.push_to_talk",
+      "name": "PushToTalk",
+      "category": "settings",
+      "location": "src/components/settings/PushToTalk.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.recording_retention_period",
+      "name": "RecordingRetentionPeriod",
+      "category": "settings",
+      "location": "src/components/settings/RecordingRetentionPeriod.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.shortcut_input",
+      "name": "ShortcutInput",
+      "category": "settings",
+      "location": "src/components/settings/ShortcutInput.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.show_overlay",
+      "name": "ShowOverlay",
+      "category": "settings",
+      "location": "src/components/settings/ShowOverlay.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.sound_picker",
+      "name": "SoundPicker",
+      "category": "settings",
+      "location": "src/components/settings/SoundPicker.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.start_hidden",
+      "name": "StartHidden",
+      "category": "settings",
+      "location": "src/components/settings/StartHidden.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.translate_to_english",
+      "name": "TranslateToEnglish",
+      "category": "settings",
+      "location": "src/components/settings/TranslateToEnglish.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.update_checks_toggle",
+      "name": "UpdateChecksToggle",
+      "category": "settings",
+      "location": "src/components/settings/UpdateChecksToggle.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.volume_slider",
+      "name": "VolumeSlider",
+      "category": "settings",
+      "location": "src/components/settings/VolumeSlider.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.word_correction_threshold",
+      "name": "WordCorrectionThreshold",
+      "category": "settings",
+      "location": "src/components/settings/debug/WordCorrectionThreshold.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "settings.post_processing_api_key",
+      "name": "ApiKeyField",
+      "category": "settings",
+      "location": "src/components/settings/PostProcessingSettingsApi/ApiKeyField.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.settings",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "component.onboarding",
+      "name": "Onboarding",
+      "category": "component",
+      "location": "src/components/onboarding/Onboarding.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.onboarding",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "component.accessibility_onboarding",
+      "name": "AccessibilityOnboarding",
+      "category": "component",
+      "location": "src/components/onboarding/AccessibilityOnboarding.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.onboarding",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "component.model_card",
+      "name": "ModelCard",
+      "category": "component",
+      "location": "src/components/onboarding/ModelCard.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.onboarding",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "overlay.recording_overlay",
+      "name": "RecordingOverlay",
+      "category": "overlay",
+      "location": "src/overlay/RecordingOverlay.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.overlay",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "overlay.bootstrap",
+      "name": "OverlayBootstrap",
+      "category": "overlay",
+      "location": "src/overlay/main.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.overlay",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "overlay.shell",
+      "name": "OverlayShell",
+      "category": "overlay",
+      "location": "src/overlay/index.html",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.overlay",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "menu.tray_menu",
+      "name": "Tray Menu",
+      "category": "menu",
+      "location": "src-tauri/src/tray.rs",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.tray",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "menu.tray_labels",
+      "name": "Tray Labels",
+      "category": "menu",
+      "location": "src-tauri/src/tray_i18n.rs",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.tray",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "permission.accessibility_permissions",
+      "name": "AccessibilityPermissions",
+      "category": "permission",
+      "location": "src/components/AccessibilityPermissions.tsx",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.permissions",
+      "notes": "missing:commands;missing:events;missing:settings"
+    },
+    {
+      "id": "permission.permission_prompts_backend",
+      "name": "PermissionPromptsBackend",
+      "category": "permission",
+      "location": "src-tauri/src (permissions-related modules)",
+      "decision": "keep",
+      "rationale": "Default keep pending scope decision",
+      "dependencies": {
+        "commands": [],
+        "events": [],
+        "settingsKeys": []
+      },
+      "guardPointId": "guard.permissions",
+      "notes": "missing:commands;missing:events;missing:settings"
+    }
+  ],
+  "guardPoints": [
+    {
+      "id": "guard.settings",
+      "name": "Settings Guard",
+      "description": "Disable all settings panels",
+      "covers": [
+        "settings.about_settings",
+        "settings.advanced_settings",
+        "settings.always_on_microphone",
+        "settings.app_data_directory",
+        "settings.app_language_selector",
+        "settings.append_trailing_space",
+        "settings.audio_feedback",
+        "settings.autostart_toggle",
+        "settings.post_processing_base_url",
+        "settings.clipboard_handling",
+        "settings.clamshell_microphone_selector",
+        "settings.custom_words",
+        "settings.debug_paths",
+        "settings.debug_settings",
+        "settings.experimental_toggle",
+        "settings.general_settings",
+        "settings.global_shortcut_input",
+        "settings.handy_keys_shortcut_input",
+        "settings.history_limit",
+        "settings.history_settings",
+        "settings.keyboard_implementation_selector",
+        "settings.language_selector",
+        "settings.log_directory",
+        "settings.log_level_selector",
+        "settings.microphone_selector",
+        "settings.post_processing_model_select",
+        "settings.model_unload_timeout",
+        "settings.mute_while_recording",
+        "settings.output_device_selector",
+        "settings.paste_delay",
+        "settings.paste_method",
+        "settings.post_processing_settings",
+        "settings.post_processing_api",
+        "settings.post_processing_prompts",
+        "settings.post_processing_toggle",
+        "settings.post_processing_provider_select",
+        "settings.push_to_talk",
+        "settings.recording_retention_period",
+        "settings.shortcut_input",
+        "settings.show_overlay",
+        "settings.sound_picker",
+        "settings.start_hidden",
+        "settings.translate_to_english",
+        "settings.update_checks_toggle",
+        "settings.volume_slider",
+        "settings.word_correction_threshold",
+        "settings.post_processing_api_key"
+      ]
+    },
+    {
+      "id": "guard.onboarding",
+      "name": "Onboarding Guard",
+      "description": "Disable onboarding flow",
+      "covers": [
+        "component.onboarding",
+        "component.accessibility_onboarding",
+        "component.model_card"
+      ]
+    },
+    {
+      "id": "guard.navigation",
+      "name": "Navigation Guard",
+      "description": "Disable main navigation shell",
+      "covers": [
+        "route.app_shell",
+        "component.sidebar"
+      ]
+    },
+    {
+      "id": "guard.overlay",
+      "name": "Overlay Guard",
+      "description": "Disable recording overlay UI",
+      "covers": [
+        "overlay.recording_overlay",
+        "overlay.bootstrap",
+        "overlay.shell"
+      ]
+    },
+    {
+      "id": "guard.tray",
+      "name": "Tray Guard",
+      "description": "Disable tray menu items",
+      "covers": [
+        "menu.tray_menu",
+        "menu.tray_labels"
+      ]
+    },
+    {
+      "id": "guard.permissions",
+      "name": "Permissions Guard",
+      "description": "Disable permission prompts",
+      "covers": [
+        "permission.accessibility_permissions",
+        "permission.permission_prompts_backend"
+      ]
+    }
+  ]
+}
