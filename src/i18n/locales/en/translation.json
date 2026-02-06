@@ -119,6 +119,10 @@
           "cancel": {
             "name": "Cancel Shortcut",
             "description": "The keyboard shortcut to cancel the current recording."
+          },
+          "transcribe_with_post_process": {
+            "name": "Post-Processing Hotkey",
+            "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
           }
         },
         "errors": {
@@ -241,7 +245,9 @@
     },
     "postProcessing": {
       "title": "Post Process",
-      "disabledNotice": "Post processing is currently disabled. Enable it in Debug settings to configure.",
+      "hotkey": {
+        "title": "Hotkey"
+      },
       "api": {
         "title": "API (OpenAI Compatible)",
         "provider": {
@@ -369,6 +375,10 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "pasteDelay": {
+        "title": "Paste Delay",
+        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
       },
       "paths": {
         "appData": "App Data:",

@@ -237,7 +237,9 @@
     },
     "postProcessing": {
       "title": "后处理",
-      "disabledNotice": "后处理当前已禁用。请在调试设置中启用以进行配置。",
+      "hotkey": {
+        "title": "快捷键"
+      },
       "api": {
         "title": "API（兼容 OpenAI）",
         "provider": {

@@ -293,7 +293,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
         {editingShortcutId === shortcutId ? (
           <div
             ref={(ref) => setShortcutRef(shortcutId, ref)}
-            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
+            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded"
           >
             {formatCurrentKeys()}
           </div>

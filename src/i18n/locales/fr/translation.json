@@ -238,7 +238,9 @@
     },
     "postProcessing": {
       "title": "Post-traitement",
-      "disabledNotice": "Le post-traitement est actuellement désactivé. Activez-le dans les paramètres de débogage pour le configurer.",
+      "hotkey": {
+        "title": "Raccourci clavier"
+      },
       "api": {
         "title": "API (Compatible OpenAI)",
         "provider": {

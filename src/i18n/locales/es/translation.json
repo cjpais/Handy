@@ -237,7 +237,9 @@
     },
     "postProcessing": {
       "title": "Post Proceso",
-      "disabledNotice": "El post procesamiento está actualmente deshabilitado. Habilítalo en la configuración de Depuración para configurarlo.",
+      "hotkey": {
+        "title": "Tecla de acceso rápido"
+      },
       "api": {
         "title": "API (Compatible con OpenAI)",
         "provider": {

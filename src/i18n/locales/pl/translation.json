@@ -237,7 +237,9 @@
     },
     "postProcessing": {
       "title": "Postprocess",
-      "disabledNotice": "Postprocess jest obecnie wyłączony. Włącz go w ustawieniach Debug, aby skonfigurować.",
+      "hotkey": {
+        "title": "Skrót klawiszowy"
+      },
       "api": {
         "title": "API (zgodne z OpenAI)",
         "provider": {

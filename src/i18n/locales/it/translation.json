@@ -237,7 +237,9 @@
     },
     "postProcessing": {
       "title": "Post-Elaborazione",
-      "disabledNotice": "La post-elaborazione è attualmente disattivata. Abilitala nelle opzioni di debug per configurarla.",
+      "hotkey": {
+        "title": "Tasto di scelta rapida"
+      },
       "api": {
         "title": "API (Compatibile con OpenAI)",
         "provider": {
