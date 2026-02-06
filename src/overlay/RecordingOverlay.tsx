@@ -1,11 +1,8 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  MicrophoneIcon,
-  TranscriptionIcon,
-  CancelIcon,
-} from "../components/icons";
+import { Mic } from "lucide-react";
+import { CancelIcon } from "../components/icons";
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
@@ -63,11 +60,12 @@ const RecordingOverlay: React.FC = () => {
   }, []);
 
   const getIcon = () => {
+    const iconColor = "#2f6bff";
     if (state === "recording") {
-      return <MicrophoneIcon />;
-    } else {
-      return <TranscriptionIcon />;
+      return <Mic width={20} height={20} color={iconColor} />;
     }
+
+    return <Mic width={20} height={20} color={iconColor} />;
   };
 
   return (
@@ -106,7 +104,7 @@ const RecordingOverlay: React.FC = () => {
               commands.cancelOperation();
             }}
           >
-            <CancelIcon />
+            <CancelIcon color="#2f6bff" />
           </div>
         )}
       </div>

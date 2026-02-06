@@ -3,9 +3,9 @@
 @theme {
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
+  --color-background-ui: #2f6bff;
+  --color-logo-primary: #72a6ff;
+  --color-logo-stroke: #10233f;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
 }
@@ -49,8 +49,8 @@
     /* Colors - Dark Theme */
     --color-text: #fbfbfb;
     --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    --color-logo-primary: #4b8cff;
+    --color-logo-stroke: #d9e6ff;
   }
 }
 
