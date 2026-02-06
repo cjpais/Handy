@@ -108,6 +108,11 @@ pub fn change_binding(
     id: String,
     binding: String,
 ) -> Result<BindingResponse, String> {
+    // Reject empty bindings — every shortcut should have a value
+    if binding.trim().is_empty() {
+        return Err("Binding cannot be empty".to_string());
+    }
+
     let mut settings = settings::get_settings(&app);
 
     // Get the binding to modify, or create it from defaults if it doesn't exist
@@ -707,10 +712,7 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
         .cloned()
     {
         if enabled {
-            // Only register if the user has actually set a binding
-            if !binding.current_binding.is_empty() {
-                let _ = register_shortcut(&app, binding);
-            }
+            let _ = register_shortcut(&app, binding);
         } else {
             let _ = unregister_shortcut(&app, binding);
         }

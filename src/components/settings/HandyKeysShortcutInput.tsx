@@ -278,22 +278,16 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         {isRecording ? (
           <div
             ref={shortcutRef}
-            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
+            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded"
           >
             {formatCurrentKeys()}
           </div>
         ) : (
           <div
-            className={`px-2 py-1 text-sm font-semibold rounded cursor-pointer min-w-[120px] text-center ${
-              binding.current_binding
-                ? "bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 hover:border-logo-primary"
-                : "bg-mid-gray/5 border border-mid-gray/40 hover:bg-logo-primary/10 hover:border-logo-primary text-mid-gray/60"
-            }`}
+            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
             onClick={startRecording}
           >
-            {binding.current_binding
-              ? formatKeyCombination(binding.current_binding, osType)
-              : t("settings.general.shortcut.notSet")}
+            {formatKeyCombination(binding.current_binding, osType)}
           </div>
         )}
         <ResetButton
