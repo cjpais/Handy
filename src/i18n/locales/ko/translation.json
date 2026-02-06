@@ -241,7 +241,6 @@
     },
     "postProcessing": {
       "title": "후처리",
-      "disabledNotice": "후처리가 현재 비활성화되어 있습니다. 설정하려면 디버그 설정에서 활성화하세요.",
       "api": {
         "title": "API (OpenAI 호환)",
         "provider": {

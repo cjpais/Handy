@@ -110,6 +110,7 @@
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
         "notFound": "Shortcut not found",
+        "notSet": "Not set",
         "pressKeys": "Press keys...",
         "bindings": {
           "transcribe": {
@@ -119,6 +120,10 @@
           "cancel": {
             "name": "Cancel Shortcut",
             "description": "The keyboard shortcut to cancel the current recording."
+          },
+          "transcribe_with_post_process": {
+            "name": "Post-Processing Hotkey",
+            "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
           }
         },
         "errors": {
@@ -241,7 +246,9 @@
     },
     "postProcessing": {
       "title": "Post Process",
-      "disabledNotice": "Post processing is currently disabled. Enable it in Debug settings to configure.",
+      "hotkey": {
+        "title": "Hotkey"
+      },
       "api": {
         "title": "API (OpenAI Compatible)",
         "provider": {

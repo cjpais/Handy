@@ -237,7 +237,9 @@
     },
     "postProcessing": {
       "title": "Постобробка",
-      "disabledNotice": "Постобробка наразі вимкнена. Увімкніть її в розділі Дебаг.",
+      "hotkey": {
+        "title": "Гаряча клавіша"
+      },
       "api": {
         "title": "API (сумісний з OpenAI)",
         "provider": {

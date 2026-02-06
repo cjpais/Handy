@@ -237,7 +237,9 @@
     },
     "postProcessing": {
       "title": "後処理",
-      "disabledNotice": "後処理は現在無効です。設定するにはデバッグ設定で有効にしてください。",
+      "hotkey": {
+        "title": "ホットキー"
+      },
       "api": {
         "title": "API（OpenAI互換）",
         "provider": {

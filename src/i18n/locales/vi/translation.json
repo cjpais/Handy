@@ -238,7 +238,9 @@
     },
     "postProcessing": {
       "title": "Xử lý sau",
-      "disabledNotice": "Xử lý sau hiện đang bị tắt. Bật nó trong cài đặt Gỡ lỗi để cấu hình.",
+      "hotkey": {
+        "title": "Phím tắt"
+      },
       "api": {
         "title": "API (Tương thích OpenAI)",
         "provider": {
