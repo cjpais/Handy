@@ -10,7 +10,6 @@ import { AutostartToggle } from "../AutostartToggle";
 import { PasteMethodSetting } from "../PasteMethod";
 import { ClipboardHandlingSetting } from "../ClipboardHandling";
 import { useModelStore } from "../../../stores/modelStore";
-import { PostProcessingToggle } from "../PostProcessingToggle";
 import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { HistoryLimit } from "../HistoryLimit";
 import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
@@ -60,7 +59,6 @@ export const AdvancedSettings: React.FC = () => {
 
       {experimentalEnabled && (
         <SettingsGroup title={t("settings.advanced.groups.experimental")}>
-          <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
           <KeyboardImplementationSelector
             descriptionMode="tooltip"
             grouped={true}

@@ -5,7 +5,6 @@ import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
 type PostProcessProviderState = {
-  enabled: boolean;
   providerOptions: DropdownOption[];
   selectedProviderId: string;
   selectedProvider: PostProcessProvider | undefined;
@@ -42,8 +41,6 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     fetchPostProcessModels,
     postProcessModelOptions,
   } = useSettings();
-
-  const enabled = settings?.post_process_enabled || false;
 
   // Settings are guaranteed to have providers after migration
   const providers = settings?.post_process_providers || [];
@@ -191,7 +188,6 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   // No automatic fetching - user must click refresh button
 
   return {
-    enabled,
     providerOptions,
     selectedProviderId,
     selectedProvider,
