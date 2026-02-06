@@ -47,7 +47,7 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.postProcessing",
     icon: Sparkles,
     component: PostProcessingSettings,
-    enabled: () => true,
+    enabled: (settings) => settings?.post_process_enabled ?? false,
   },
   history: {
     labelKey: "sidebar.history",
