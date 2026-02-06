@@ -3,6 +3,7 @@
   "tray": {
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
+    "copyLastTranscript": "Copier la dernière transcription",
     "quit": "Quitter",
     "cancel": "Annuler"
   },
@@ -56,6 +57,22 @@
     "errors": {
       "loadModels": "Échec du chargement des modèles disponibles",
       "downloadModel": "Échec du téléchargement du modèle : {{error}}"
+    },
+    "permissions": {
+      "title": "Autorisations requises",
+      "description": "Handy a besoin de quelques autorisations pour fonctionner correctement.",
+      "microphone": {
+        "title": "Accès au microphone",
+        "description": "Nécessaire pour entendre votre voix pour la transcription."
+      },
+      "accessibility": {
+        "title": "Accès à l'accessibilité",
+        "description": "Nécessaire pour taper le texte transcrit dans vos applications."
+      },
+      "grant": "Accorder l'autorisation",
+      "granted": "Accordé",
+      "waiting": "En attente...",
+      "allGranted": "Tout est prêt !"
     }
   },
   "modelSelector": {
@@ -93,12 +110,12 @@
         "pressKeys": "Appuyez sur les touches...",
         "bindings": {
           "transcribe": {
-            "name": "Démarrer la transcription",
-            "description": "Convertir votre voix en texte."
+            "name": "Raccourci de Transcription",
+            "description": "Le raccourci clavier pour enregistrer et transcrire votre voix."
           },
           "cancel": {
-            "name": "Annuler",
-            "description": "Annule l'enregistrement en cours."
+            "name": "Raccourci d'Annulation",
+            "description": "Le raccourci clavier pour annuler l'enregistrement en cours."
           }
         },
         "errors": {
@@ -145,6 +162,17 @@
     },
     "advanced": {
       "title": "Avancé",
+      "groups": {
+        "app": "Application",
+        "output": "Sortie",
+        "transcription": "Transcription",
+        "history": "Historique",
+        "experimental": "Expérimental"
+      },
+      "experimentalToggle": {
+        "label": "Fonctionnalités Expérimentales",
+        "description": "Activer les fonctionnalités expérimentales encore en développement."
+      },
       "startHidden": {
         "label": "Démarrer masqué",
         "description": "Lancer dans la barre système sans ouvrir la fenêtre."

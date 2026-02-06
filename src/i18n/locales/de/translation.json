@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Einstellungen...",
     "checkUpdates": "Nach Updates suchen...",
+    "copyLastTranscript": "Letzte Transkription kopieren",
     "quit": "Beenden",
     "cancel": "Abbrechen"
   },
@@ -55,6 +56,22 @@
     "errors": {
       "loadModels": "Verfügbare Modelle konnten nicht geladen werden",
       "downloadModel": "Modell konnte nicht heruntergeladen werden: {{error}}"
+    },
+    "permissions": {
+      "title": "Berechtigungen erforderlich",
+      "description": "Handy benötigt einige Berechtigungen, um richtig zu funktionieren.",
+      "microphone": {
+        "title": "Mikrofonzugriff",
+        "description": "Erforderlich, um Ihre Stimme für die Transkription zu hören."
+      },
+      "accessibility": {
+        "title": "Bedienungshilfen-Zugriff",
+        "description": "Erforderlich, um transkribierten Text in Ihre Anwendungen einzugeben."
+      },
+      "grant": "Berechtigung erteilen",
+      "granted": "Erteilt",
+      "waiting": "Warten...",
+      "allGranted": "Alles bereit!"
     }
   },
   "modelSelector": {
@@ -92,12 +109,12 @@
         "pressKeys": "Tasten drücken...",
         "bindings": {
           "transcribe": {
-            "name": "Transkribieren",
-            "description": "Wandelt Sprache in Text um."
+            "name": "Transkriptions-Tastenkürzel",
+            "description": "Das Tastenkürzel zum Aufnehmen und Transkribieren Ihrer Stimme."
           },
           "cancel": {
-            "name": "Abbrechen",
-            "description": "Bricht die aktuelle Aufnahme ab."
+            "name": "Abbrechen-Tastenkürzel",
+            "description": "Das Tastenkürzel zum Abbrechen der aktuellen Aufnahme."
           }
         },
         "errors": {
@@ -144,6 +161,17 @@
     },
     "advanced": {
       "title": "Erweitert",
+      "groups": {
+        "app": "App",
+        "output": "Ausgabe",
+        "transcription": "Transkription",
+        "history": "Verlauf",
+        "experimental": "Experimentell"
+      },
+      "experimentalToggle": {
+        "label": "Experimentelle Funktionen",
+        "description": "Experimentelle Funktionen aktivieren, die sich noch in Entwicklung befinden."
+      },
       "startHidden": {
         "label": "Versteckt starten",
         "description": "In den Systembereich starten, ohne das Fenster zu öffnen."

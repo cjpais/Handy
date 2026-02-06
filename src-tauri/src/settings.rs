@@ -151,6 +151,24 @@ pub enum RecordingRetentionPeriod {
     Months3,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyboardImplementation {
+    Tauri,
+    HandyKeys,
+}
+
+impl Default for KeyboardImplementation {
+    fn default() -> Self {
+        // Default to HandyKeys only on macOS where it's well-tested.
+        // Windows and Linux use Tauri by default (handy-keys not sufficiently tested yet).
+        #[cfg(target_os = "macos")]
+        return KeyboardImplementation::HandyKeys;
+        #[cfg(not(target_os = "macos"))]
+        return KeyboardImplementation::Tauri;
+    }
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -293,6 +311,12 @@ pub struct AppSettings {
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
     pub app_language: String,
+    #[serde(default)]
+    pub experimental_enabled: bool,
+    #[serde(default)]
+    pub keyboard_implementation: KeyboardImplementation,
+    #[serde(default = "default_paste_delay_ms")]
+    pub paste_delay_ms: u64,
 }
 
 fn default_model() -> String {
@@ -340,6 +364,10 @@ fn default_log_level() -> LogLevel {
 
 fn default_word_correction_threshold() -> f64 {
     0.18
+}
+
+fn default_paste_delay_ms() -> u64 {
+    60
 }
 
 fn default_history_limit() -> usize {
@@ -592,6 +620,9 @@ pub fn get_default_settings() -> AppSettings {
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
+        experimental_enabled: false,
+        keyboard_implementation: KeyboardImplementation::default(),
+        paste_delay_ms: default_paste_delay_ms(),
     }
 }
 

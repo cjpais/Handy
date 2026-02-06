@@ -74,8 +74,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
           </div>
         )}
 
-        {/*<div className="flex flex-col gap-4 bg-background-dark p-4 py-5 w-full rounded-2xl flex-1 overflow-y-auto min-h-0">*/}
-        <div className="flex flex-col gap-4 ">
+        <div className="flex flex-col gap-4 pb-6">
           {availableModels
             .filter((model) => getRecommendedBadge(model.id))
             .map((model) => (

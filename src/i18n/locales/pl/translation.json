@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Ustawienia...",
     "checkUpdates": "Sprawdź aktualizacje...",
+    "copyLastTranscript": "Kopiuj ostatnią transkrypcję",
     "quit": "Zamknij",
     "cancel": "Anuluj"
   },
@@ -55,6 +56,22 @@
     "errors": {
       "loadModels": "Nie udało się wczytać dostępnych modeli",
       "downloadModel": "Nie udało się pobrać modelu: {{error}}"
+    },
+    "permissions": {
+      "title": "Wymagane uprawnienia",
+      "description": "Handy potrzebuje kilku uprawnień, aby działać poprawnie.",
+      "microphone": {
+        "title": "Dostęp do mikrofonu",
+        "description": "Wymagany do słyszenia Twojego głosu w celu transkrypcji."
+      },
+      "accessibility": {
+        "title": "Dostęp do dostępności",
+        "description": "Wymagany do wpisywania transkrybowanego tekstu w Twoich aplikacjach."
+      },
+      "grant": "Przyznaj uprawnienie",
+      "granted": "Przyznano",
+      "waiting": "Oczekiwanie...",
+      "allGranted": "Wszystko gotowe!"
     }
   },
   "modelSelector": {
@@ -92,12 +109,12 @@
         "pressKeys": "Naciśnij klawisze...",
         "bindings": {
           "transcribe": {
-            "name": "Transkrybuj",
-            "description": "Konwertuje Twoją mowę na tekst."
+            "name": "Skrót transkrypcji",
+            "description": "Skrót klawiaturowy do nagrywania i transkrypcji głosu."
           },
           "cancel": {
-            "name": "Anuluj",
-            "description": "Anuluje bieżące nagrywanie."
+            "name": "Skrót anulowania",
+            "description": "Skrót klawiaturowy do anulowania bieżącego nagrywania."
           }
         },
         "errors": {
@@ -144,6 +161,17 @@
     },
     "advanced": {
       "title": "Zaawansowane",
+      "groups": {
+        "app": "Aplikacja",
+        "output": "Wyjście",
+        "transcription": "Transkrypcja",
+        "history": "Historia",
+        "experimental": "Eksperymentalne"
+      },
+      "experimentalToggle": {
+        "label": "Funkcje Eksperymentalne",
+        "description": "Włącz funkcje eksperymentalne, które są jeszcze w fazie rozwoju."
+      },
       "startHidden": {
         "label": "Uruchom ukryty",
         "description": "Uruchom w zasobniku systemowym bez otwierania okna."

@@ -1,0 +1,436 @@
+{
+  "tray": {
+    "settings": "Nastavení...",
+    "checkUpdates": "Zkontrolovat aktualizace...",
+    "copyLastTranscript": "Zkopírovat poslední přepis",
+    "quit": "Ukončit",
+    "cancel": "Zrušit"
+  },
+  "sidebar": {
+    "general": "Obecné",
+    "advanced": "Pokročilé",
+    "postProcessing": "Následné zpracování",
+    "history": "Historie",
+    "debug": "Ladění",
+    "about": "O aplikaci"
+  },
+  "onboarding": {
+    "subtitle": "Pro začátek vyberte model pro přepis",
+    "recommended": "Doporučeno",
+    "download": "Stáhnout",
+    "downloading": "Stahování...",
+    "modelCard": {
+      "accuracy": "přesnost",
+      "speed": "rychlost"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Rychlý a poměrně přesný."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Dobrá přesnost, střední rychlost"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Vyvážená přesnost a rychlost."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Dobrá přesnost, ale pomalý."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "Pouze angličtina. Nejlepší model pro anglicky mluvící."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Rychlý a přesný"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Velmi rychlý, pouze angličtina. Dobře zvládá přízvuky."
+      }
+    },
+    "errors": {
+      "loadModels": "Nepodařilo se načíst dostupné modely",
+      "downloadModel": "Nepodařilo se stáhnout model: {{error}}"
+    }
+  },
+  "modelSelector": {
+    "welcome": "Vítejte v Handy!",
+    "downloadPrompt": "Pro zahájení přepisu si níže stáhněte model.",
+    "availableModels": "Dostupné modely",
+    "downloadModels": "Stáhnout modely",
+    "chooseModel": "Vybrat model",
+    "active": "Aktivní",
+    "download": "Stáhnout",
+    "downloadSize": "Velikost stažení",
+    "noModelsAvailable": "Nejsou dostupné žádné modely",
+    "extracting": "Rozbaluji {{modelName}}...",
+    "extractingMultiple": "Rozbaluji {{count}} modelů...",
+    "extractingGeneric": "Rozbalování...",
+    "downloading": "Stahování {{percentage}}%",
+    "downloadingMultiple": "Stahování {{count}} modelů...",
+    "modelReady": "Model připraven",
+    "loading": "Načítám {{modelName}}...",
+    "loadingGeneric": "Načítání...",
+    "modelError": "Chyba modelu",
+    "modelUnloaded": "Model uvolněn",
+    "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
+    "deleteModel": "Smazat {{modelName}}"
+  },
+  "settings": {
+    "general": {
+      "title": "Obecné",
+      "shortcut": {
+        "title": "Zkratky Handy",
+        "description": "Nastavte klávesové zkratky pro spuštění nahrávání řeči na text",
+        "loading": "Načítám zkratky...",
+        "none": "Žádné zkratky nejsou nastavené",
+        "notFound": "Zkratka nenalezena",
+        "pressKeys": "Stiskněte klávesy...",
+        "bindings": {
+          "transcribe": {
+            "name": "Zkratka přepisu",
+            "description": "Klávesová zkratka pro nahrávání a přepis vašeho hlasu."
+          },
+          "cancel": {
+            "name": "Zkratka zrušení",
+            "description": "Klávesová zkratka pro zrušení aktuálního nahrávání."
+          }
+        },
+        "errors": {
+          "restore": "Nepodařilo se obnovit původní zkratku",
+          "set": "Nepodařilo se nastavit zkratku: {{error}}",
+          "reset": "Nepodařilo se vrátit zkratku na původní hodnotu"
+        }
+      },
+      "language": {
+        "title": "Jazyk",
+        "description": "Vyberte jazyk rozpoznávání řeči. Auto jazyk určí automaticky, zatímco výběr konkrétního jazyka může zlepšit přesnost.",
+        "descriptionUnsupported": "Model Parakeet rozpozná jazyk automaticky. Ruční výběr není potřeba.",
+        "searchPlaceholder": "Hledat jazyky...",
+        "noResults": "Žádné jazyky nenalezeny",
+        "auto": "Auto"
+      },
+      "pushToTalk": {
+        "label": "Stisk a mluv",
+        "description": "Podržte pro nahrávání, uvolněte pro zastavení"
+      }
+    },
+    "sound": {
+      "title": "Zvuk",
+      "microphone": {
+        "title": "Mikrofon",
+        "description": "Vyberte preferované zařízení mikrofonu",
+        "placeholder": "Vyberte mikrofon...",
+        "loading": "Načítání..."
+      },
+      "audioFeedback": {
+        "label": "Zvuková odezva",
+        "description": "Přehrát zvuk při zahájení a ukončení nahrávání"
+      },
+      "outputDevice": {
+        "title": "Výstupní zařízení",
+        "description": "Vyberte preferované výstupní zařízení pro zvuky odezvy",
+        "placeholder": "Vyberte výstupní zařízení...",
+        "loading": "Načítání..."
+      },
+      "volume": {
+        "title": "Hlasitost",
+        "description": "Upravte hlasitost zvukové odezvy"
+      }
+    },
+    "advanced": {
+      "title": "Pokročilé",
+      "groups": {
+        "app": "Aplikace",
+        "output": "Výstup",
+        "transcription": "Přepis",
+        "history": "Historie",
+        "experimental": "Experimentální"
+      },
+      "experimentalToggle": {
+        "label": "Experimentální funkce",
+        "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
+      },
+      "startHidden": {
+        "label": "Spouštět skrytě",
+        "description": "Spustit do systémové lišty bez otevření okna."
+      },
+      "autostart": {
+        "label": "Spouštět při startu",
+        "description": "Automaticky spustit Handy po přihlášení do počítače."
+      },
+      "overlay": {
+        "title": "Pozice překryvu",
+        "description": "Zobrazovat vizuální překryv během nahrávání a přepisu. Na Linuxu je doporučeno 'Žádné'.",
+        "options": {
+          "none": "Žádné",
+          "bottom": "Dole",
+          "top": "Nahoře"
+        }
+      },
+      "pasteMethod": {
+        "title": "Způsob vložení",
+        "description": "Vyberte, jak se text vkládá. Přímé: simuluje psaní přes systémový vstup. Žádné: přeskočí vložení a aktualizuje pouze historii/schránku.",
+        "options": {
+          "clipboard": "Schránka ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Schránka (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Schránka (Shift+Insert)",
+          "direct": "Přímé",
+          "none": "Žádné"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Práce se schránkou",
+        "description": "'Neměnit schránku' zachová po přepisu aktuální obsah schránky. 'Kopírovat do schránky' ponechá po vložení výsledek přepisu ve schránce.",
+        "options": {
+          "dontModify": "Neměnit schránku",
+          "copyToClipboard": "Kopírovat do schránky"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Překládat do angličtiny",
+        "description": "Během přepisu automaticky překládat řeč z jiných jazyků do angličtiny.",
+        "descriptionUnsupported": "Překlad není podporován modelem {{model}}."
+      },
+      "modelUnload": {
+        "title": "Uvolnění modelu",
+        "description": "Automaticky uvolnit paměť GPU/CPU, když model nebyl použit po zadanou dobu",
+        "options": {
+          "never": "Nikdy",
+          "immediately": "Okamžitě",
+          "min2": "Po 2 minutách",
+          "min5": "Po 5 minutách",
+          "min10": "Po 10 minutách",
+          "min15": "Po 15 minutách",
+          "hour1": "Po 1 hodině",
+          "sec5": "Po 5 sekundách (Debug)"
+        }
+      },
+      "customWords": {
+        "title": "Vlastní slova",
+        "description": "Přidejte slova, která jsou při přepisu často špatně rozpoznána nebo napsána. Systém automaticky opraví podobně znějící slova podle vašeho seznamu.",
+        "placeholder": "Přidat slovo",
+        "add": "Přidat",
+        "remove": "Odebrat {{word}}"
+      }
+    },
+    "postProcessing": {
+      "title": "Následné zpracování",
+      "disabledNotice": "Následné zpracování je nyní vypnuto. Pro konfiguraci jej zapněte v nastavení Ladění.",
+      "api": {
+        "title": "API (kompatibilní s OpenAI)",
+        "provider": {
+          "title": "Poskytovatel",
+          "description": "Vyberte poskytovatele kompatibilního s OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Běží plně na zařízení. Není potřeba API klíč ani síťové připojení.",
+          "requirements": "Vyžaduje Mac s Apple Silicon a macOS Tahoe (26.0) nebo novější. Apple Intelligence musí být povoleno v Nastavení systému.",
+          "unavailable": "Apple Intelligence není na tomto zařízení k dispozici. Vyžaduje Mac s Apple Silicon a macOS Tahoe (26.0) nebo novější a povolené Apple Intelligence v Nastavení systému."
+        },
+        "baseUrl": {
+          "title": "Základní URL",
+          "description": "Základní URL API pro vybraného poskytovatele. Upravitelné je pouze u vlastního poskytovatele.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API klíč",
+          "description": "API klíč pro vybraného poskytovatele.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionApple": "Zadejte volitelný číselný limit tokenů nebo ponechte výchozí předvolbu na zařízení.",
+          "descriptionCustom": "Zadejte identifikátor modelu očekávaný vaším vlastním endpointem.",
+          "descriptionDefault": "Vyberte model dostupný u vybraného poskytovatele.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "Vyhledejte nebo vyberte model",
+          "placeholderNoOptions": "Zadejte název modelu",
+          "refreshModels": "Obnovit modely"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Vybraný prompt",
+          "description": "Vyberte šablonu pro zpřesnění přepisu nebo vytvořte novou. V textu promptu použijte ${output} pro vložení zachyceného přepisu."
+        },
+        "noPrompts": "Nejsou k dispozici žádné prompty",
+        "selectPrompt": "Vyberte prompt",
+        "createNew": "Vytvořit nový prompt",
+        "promptLabel": "Název promptu",
+        "promptLabelPlaceholder": "Zadejte název promptu",
+        "promptInstructions": "Instrukce promptu",
+        "promptInstructionsPlaceholder": "Napište instrukce, které se mají spustit po přepisu. Příklad: Zlepšete gramatiku a srozumitelnost následujícího textu: ${output}",
+        "promptTip": "Tip: Použijte <code>${output}</code> pro vložení přepsaného textu do promptu.",
+        "updatePrompt": "Aktualizovat prompt",
+        "deletePrompt": "Smazat prompt",
+        "createPrompt": "Vytvořit prompt",
+        "cancel": "Zrušit",
+        "selectToEdit": "Vyberte výše prompt, abyste zobrazili a upravili jeho podrobnosti.",
+        "createFirst": "Klikněte nahoře na 'Vytvořit nový prompt' a vytvořte svůj první prompt pro následné zpracování."
+      }
+    },
+    "history": {
+      "title": "Historie",
+      "openFolder": "Otevřít složku nahrávek",
+      "loading": "Načítám historii...",
+      "empty": "Zatím žádné přepisy. Začněte nahrávat a vytvořte si historii!",
+      "copyToClipboard": "Kopírovat přepis do schránky",
+      "save": "Uložit přepis",
+      "unsave": "Odebrat z uložených",
+      "delete": "Smazat záznam",
+      "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu."
+    },
+    "debug": {
+      "title": "Ladění",
+      "logDirectory": {
+        "title": "Složka protokolů",
+        "description": "Umístění, kde jsou uloženy soubory protokolu"
+      },
+      "logLevel": {
+        "title": "Úroveň logování",
+        "description": "Nastavte úroveň podrobnosti logování"
+      },
+      "updateChecks": {
+        "label": "Kontrolovat aktualizace",
+        "description": "Automaticky kontrolovat nové verze Handy"
+      },
+      "soundTheme": {
+        "label": "Zvukový motiv",
+        "description": "Vyberte zvukový motiv pro odezvu při startu a ukončení nahrávání"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Práh korekce slov",
+        "description": "Citlivost pro opravy vlastních slov"
+      },
+      "historyLimit": {
+        "title": "Limit historie",
+        "description": "Maximální počet záznamů historie k uchování",
+        "entries": "záznamů"
+      },
+      "recordingRetention": {
+        "title": "Automatické mazání nahrávek",
+        "description": "Automaticky mazat staré nahrávky pro úsporu místa",
+        "never": "Nikdy",
+        "preserveLimit": "Ponechat posledních {{count}}",
+        "days3": "Po 3 dnech",
+        "weeks2": "Po 2 týdnech",
+        "months3": "Po 3 měsících",
+        "placeholder": "Vyberte dobu uchování..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Vždy zapnutý mikrofon",
+        "description": "Udržovat mikrofon aktivní pro rychlejší odezvu"
+      },
+      "clamshellMicrophone": {
+        "title": "Mikrofon při zavřeném víku",
+        "description": "Mikrofon, který se použije při zavřeném víku notebooku"
+      },
+      "postProcessingToggle": {
+        "label": "Následné zpracování",
+        "description": "Povolit AI vylepšení textu po přepisu"
+      },
+      "muteWhileRecording": {
+        "label": "Ztlumit při nahrávání",
+        "description": "Ztlumit systémový zvuk během nahrávání"
+      },
+      "appendTrailingSpace": {
+        "label": "Přidat koncovou mezeru",
+        "description": "Přidat mezeru po vloženém přepisu"
+      },
+      "paths": {
+        "appData": "Data aplikace:",
+        "models": "Modely:",
+        "settings": "Nastavení:"
+      }
+    },
+    "about": {
+      "title": "O aplikaci",
+      "version": {
+        "title": "Verze",
+        "description": "Aktuální verze Handy"
+      },
+      "appDataDirectory": {
+        "title": "Adresář dat aplikace",
+        "description": "Umístění, kde Handy ukládá data"
+      },
+      "sourceCode": {
+        "title": "Zdrojový kód",
+        "description": "Zobrazit zdrojový kód a přispět",
+        "button": "Zobrazit na GitHubu"
+      },
+      "supportDevelopment": {
+        "title": "Podpořte vývoj",
+        "description": "Pomozte nám pokračovat ve vývoji Handy",
+        "button": "Přispět"
+      },
+      "acknowledgments": {
+        "title": "Poděkování",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "Vysoce výkonné inferenční zpracování modelu automatického rozpoznávání řeči Whisper od OpenAI",
+          "details": "Handy používá Whisper.cpp pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "Stahuji {{model}}...",
+    "checkingUpdates": "Kontroluji aktualizace...",
+    "updateAvailable": "Dostupná aktualizace: {{version}}",
+    "updateAvailableShort": "Dostupná aktualizace",
+    "upToDate": "Vše aktuální",
+    "downloadUpdate": "Stáhnout aktualizaci",
+    "restart": "Restartovat",
+    "updateCheckingDisabled": "Kontrola aktualizací vypnuta",
+    "downloading": "Stahování... {{progress}}%",
+    "installing": "Instalace...",
+    "preparing": "Příprava...",
+    "checkForUpdates": "Zkontrolovat aktualizace"
+  },
+  "common": {
+    "loading": "Načítání...",
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "reset": "Obnovit",
+    "add": "Přidat",
+    "remove": "Odebrat",
+    "delete": "Smazat",
+    "edit": "Upravit",
+    "create": "Vytvořit",
+    "update": "Aktualizovat",
+    "close": "Zavřít",
+    "open": "Otevřít",
+    "default": "Výchozí",
+    "enabled": "Zapnuto",
+    "disabled": "Vypnuto",
+    "on": "Zapnuto",
+    "off": "Vypnuto",
+    "yes": "Ano",
+    "no": "Ne",
+    "noOptionsFound": "Nenalezeny žádné možnosti"
+  },
+  "accessibility": {
+    "permissionsRequired": "Vyžadována oprávnění usnadnění přístupu",
+    "permissionsDescription": "Handy potřebuje oprávnění usnadnění přístupu, aby mohlo psát přepsaný text.",
+    "openSettings": "Otevřít Nastavení systému",
+    "dismiss": "Zavřít"
+  },
+  "errors": {
+    "loadDirectory": "Chyba při načítání adresáře: {{error}}"
+  },
+  "appLanguage": {
+    "title": "Jazyk aplikace",
+    "description": "Změňte jazyk rozhraní Handy"
+  },
+  "overlay": {
+    "transcribing": "Přepisuji..."
+  }
+}

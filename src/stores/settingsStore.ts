@@ -125,6 +125,8 @@ const settingUpdaters: {
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
+  experimental_enabled: (value) =>
+    commands.changeExperimentalEnabledSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -493,18 +495,15 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
-      const {
-        refreshSettings,
-        refreshAudioDevices,
-        refreshOutputDevices,
-        checkCustomSounds,
-        loadDefaultSettings,
-      } = get();
+      const { refreshSettings, checkCustomSounds, loadDefaultSettings } = get();
+
+      // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
+      // is responsible for calling refreshAudioDevices/refreshOutputDevices
+      // after onboarding completes. This avoids triggering permission dialogs
+      // on macOS before the user is ready.
       await Promise.all([
         loadDefaultSettings(),
         refreshSettings(),
-        refreshAudioDevices(),
-        refreshOutputDevices(),
         checkCustomSounds(),
       ]);
     },

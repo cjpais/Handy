@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Configuración...",
     "checkUpdates": "Buscar actualizaciones...",
+    "copyLastTranscript": "Copiar la última transcripción",
     "quit": "Salir",
     "cancel": "Cancelar"
   },
@@ -55,6 +56,22 @@
     "errors": {
       "loadModels": "Error al cargar los modelos disponibles",
       "downloadModel": "Error al descargar el modelo: {{error}}"
+    },
+    "permissions": {
+      "title": "Permisos Requeridos",
+      "description": "Handy necesita algunos permisos para funcionar correctamente.",
+      "microphone": {
+        "title": "Acceso al Micrófono",
+        "description": "Necesario para escuchar tu voz para la transcripción."
+      },
+      "accessibility": {
+        "title": "Acceso de Accesibilidad",
+        "description": "Necesario para escribir el texto transcrito en tus aplicaciones."
+      },
+      "grant": "Conceder Permiso",
+      "granted": "Concedido",
+      "waiting": "Esperando...",
+      "allGranted": "¡Todo listo!"
     }
   },
   "modelSelector": {
@@ -92,12 +109,12 @@
         "pressKeys": "Presiona teclas...",
         "bindings": {
           "transcribe": {
-            "name": "Transcribir",
-            "description": "Convierte tu voz en texto."
+            "name": "Atajo de Transcripción",
+            "description": "El atajo de teclado para grabar y transcribir tu voz."
           },
           "cancel": {
-            "name": "Cancelar",
-            "description": "Cancela la grabación actual."
+            "name": "Atajo de Cancelar",
+            "description": "El atajo de teclado para cancelar la grabación actual."
           }
         },
         "errors": {
@@ -144,6 +161,17 @@
     },
     "advanced": {
       "title": "Avanzado",
+      "groups": {
+        "app": "Aplicación",
+        "output": "Salida",
+        "transcription": "Transcripción",
+        "history": "Historial",
+        "experimental": "Experimental"
+      },
+      "experimentalToggle": {
+        "label": "Funciones Experimentales",
+        "description": "Habilitar funciones experimentales que aún están en desarrollo."
+      },
       "startHidden": {
         "label": "Iniciar Oculto",
         "description": "Lanzar en la bandeja del sistema sin abrir la ventana."

@@ -110,9 +110,10 @@ fn show_main_window(app: &AppHandle) {
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
-    // Initialize the input state (Enigo singleton for keyboard/mouse simulation)
-    let enigo_state = input::EnigoState::new().expect("Failed to initialize input state (Enigo)");
-    app_handle.manage(enigo_state);
+    // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
+    // The frontend is responsible for calling the `initialize_enigo` command
+    // after onboarding completes. This avoids triggering permission dialogs
+    // on macOS before the user is ready.
 
     // Initialize the managers
     let recording_manager = Arc::new(
@@ -133,8 +134,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
 
-    // Initialize the shortcuts
-    shortcut::init_shortcuts(app_handle);
+    // Note: Shortcuts are NOT initialized here.
+    // The frontend is responsible for calling the `initialize_shortcuts` command
+    // after permissions are confirmed (on macOS) or after onboarding completes.
+    // This matches the pattern used for Enigo initialization.
 
     #[cfg(unix)]
     let signals = Signals::new(&[SIGUSR2]).unwrap();
@@ -178,6 +181,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     show_main_window(app);
                     let _ = app.emit("check-for-updates", ());
                 }
+            }
+            "copy_last_transcript" => {
+                tray::copy_last_transcript(app);
             }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
@@ -248,6 +254,7 @@ pub fn run() {
         shortcut::change_paste_method_setting,
         shortcut::change_clipboard_handling_setting,
         shortcut::change_post_process_enabled_setting,
+        shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,
         shortcut::change_post_process_api_key_setting,
         shortcut::change_post_process_model_setting,
@@ -264,6 +271,10 @@ pub fn run() {
         shortcut::change_append_trailing_space_setting,
         shortcut::change_app_language_setting,
         shortcut::change_update_checks_setting,
+        shortcut::change_keyboard_implementation_setting,
+        shortcut::get_keyboard_implementation,
+        shortcut::handy_keys::start_handy_keys_recording,
+        shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
         commands::cancel_operation,
         commands::get_app_dir_path,
@@ -275,6 +286,8 @@ pub fn run() {
         commands::open_log_dir,
         commands::open_app_data_dir,
         commands::check_apple_intelligence_available,
+        commands::initialize_enigo,
+        commands::initialize_shortcuts,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,

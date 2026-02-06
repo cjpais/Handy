@@ -7,6 +7,7 @@ import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 import { AppDataDirectory } from "../AppDataDirectory";
 import { AppLanguageSelector } from "../AppLanguageSelector";
+import { LogDirectory } from "../debug";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -47,7 +48,15 @@ export const AboutSettings: React.FC = () => {
           <span className="text-sm font-mono">v{version}</span>
         </SettingContainer>
 
-        <AppDataDirectory descriptionMode="tooltip" grouped={true} />
+        <SettingContainer
+          title={t("settings.about.supportDevelopment.title")}
+          description={t("settings.about.supportDevelopment.description")}
+          grouped={true}
+        >
+          <Button variant="primary" size="md" onClick={handleDonateClick}>
+            {t("settings.about.supportDevelopment.button")}
+          </Button>
+        </SettingContainer>
 
         <SettingContainer
           title={t("settings.about.sourceCode.title")}
@@ -63,15 +72,8 @@ export const AboutSettings: React.FC = () => {
           </Button>
         </SettingContainer>
 
-        <SettingContainer
-          title={t("settings.about.supportDevelopment.title")}
-          description={t("settings.about.supportDevelopment.description")}
-          grouped={true}
-        >
-          <Button variant="primary" size="md" onClick={handleDonateClick}>
-            {t("settings.about.supportDevelopment.button")}
-          </Button>
-        </SettingContainer>
+        <AppDataDirectory descriptionMode="tooltip" grouped={true} />
+        <LogDirectory grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.about.acknowledgments.title")}>

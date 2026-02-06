@@ -3,6 +3,7 @@
   "tray": {
     "settings": "Cài đặt...",
     "checkUpdates": "Kiểm tra cập nhật...",
+    "copyLastTranscript": "Sao chép bản chép lời mới nhất",
     "quit": "Thoát",
     "cancel": "Hủy"
   },
@@ -56,6 +57,22 @@
     "errors": {
       "loadModels": "Không thể tải các mô hình có sẵn",
       "downloadModel": "Không thể tải mô hình: {{error}}"
+    },
+    "permissions": {
+      "title": "Cần cấp quyền",
+      "description": "Handy cần một số quyền để hoạt động bình thường.",
+      "microphone": {
+        "title": "Quyền truy cập Micrô",
+        "description": "Cần thiết để nghe giọng nói của bạn để chuyển đổi."
+      },
+      "accessibility": {
+        "title": "Quyền truy cập Trợ năng",
+        "description": "Cần thiết để nhập văn bản đã chuyển đổi vào các ứng dụng của bạn."
+      },
+      "grant": "Cấp quyền",
+      "granted": "Đã cấp",
+      "waiting": "Đang chờ...",
+      "allGranted": "Hoàn tất!"
     }
   },
   "modelSelector": {
@@ -93,12 +110,12 @@
         "pressKeys": "Nhấn phím...",
         "bindings": {
           "transcribe": {
-            "name": "Chuyển đổi",
-            "description": "Chuyển đổi giọng nói của bạn thành văn bản."
+            "name": "Phím tắt chuyển đổi",
+            "description": "Phím tắt để ghi âm và chuyển đổi giọng nói của bạn."
           },
           "cancel": {
-            "name": "Hủy",
-            "description": "Hủy bản ghi hiện tại."
+            "name": "Phím tắt hủy",
+            "description": "Phím tắt để hủy bản ghi hiện tại."
           }
         },
         "errors": {
@@ -145,6 +162,17 @@
     },
     "advanced": {
       "title": "Nâng cao",
+      "groups": {
+        "app": "Ứng dụng",
+        "output": "Đầu ra",
+        "transcription": "Chuyển đổi",
+        "history": "Lịch sử",
+        "experimental": "Thử nghiệm"
+      },
+      "experimentalToggle": {
+        "label": "Tính năng thử nghiệm",
+        "description": "Bật các tính năng thử nghiệm đang trong quá trình phát triển."
+      },
       "startHidden": {
         "label": "Khởi động ẩn",
         "description": "Khởi động vào khay hệ thống mà không mở cửa sổ."

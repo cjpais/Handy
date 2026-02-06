@@ -18,7 +18,7 @@ interface DownloadProgress {
 interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
-  downloadProgress: Map<string, DownloadProgress>;
+  downloadProgress: Record<string, DownloadProgress>;
   onModelSelect: (modelId: string) => void;
   onModelDownload: (modelId: string) => void;
   onModelDelete: (modelId: string) => Promise<void>;
@@ -52,21 +52,21 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   };
 
   const handleModelClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (modelId in downloadProgress) {
       return; // Don't allow interaction while downloading
     }
     onModelSelect(modelId);
   };
 
   const handleDownloadClick = (modelId: string) => {
-    if (downloadProgress.has(modelId)) {
+    if (modelId in downloadProgress) {
       return; // Don't allow interaction while downloading
     }
     onModelDownload(modelId);
   };
 
   return (
-    <div className="absolute bottom-full left-0 mb-2 w-64 bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
+    <div className="absolute bottom-full start-0 mb-2 w-64 bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
       {/* First Run Welcome */}
       {isFirstRun && (
         <div className="px-3 py-2 bg-logo-primary/10 border-b border-logo-primary/20">
@@ -97,7 +97,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
               }}
               tabIndex={0}
               role="button"
-              className={`w-full px-3 py-2 text-left hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
+              className={`w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
                 currentModelId === model.id
                   ? "bg-logo-primary/10 text-logo-primary"
                   : ""
@@ -108,7 +108,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                   <div className="text-sm">
                     {getTranslatedModelName(model, t)}
                   </div>
-                  <div className="text-xs text-text/40 italic pr-4">
+                  <div className="text-xs text-text/40 italic pe-4">
                     {getTranslatedModelDescription(model, t)}
                   </div>
                 </div>
@@ -158,8 +158,8 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
               : t("modelSelector.downloadModels")}
           </div>
           {downloadableModels.map((model) => {
-            const isDownloading = downloadProgress.has(model.id);
-            const progress = downloadProgress.get(model.id);
+            const isDownloading = model.id in downloadProgress;
+            const progress = downloadProgress[model.id];
 
             return (
               <div
@@ -174,7 +174,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                 tabIndex={0}
                 role="button"
                 aria-disabled={isDownloading}
-                className={`w-full px-3 py-2 text-left hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
+                className={`w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
                   isDownloading
                     ? "opacity-50 cursor-not-allowed hover:bg-transparent"
                     : ""
@@ -185,12 +185,12 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                     <div className="text-sm">
                       {getTranslatedModelName(model, t)}
                       {model.id === "parakeet-tdt-0.6b-v3" && isFirstRun && (
-                        <span className="ml-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
+                        <span className="ms-2 text-xs bg-logo-primary/20 text-logo-primary px-1.5 py-0.5 rounded">
                           {t("onboarding.recommended")}
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-text/40 italic pr-4">
+                    <div className="text-xs text-text/40 italic pe-4">
                       {getTranslatedModelDescription(model, t)}
                     </div>
                     <div className="mt-1 text-xs text-text/50 tabular-nums">

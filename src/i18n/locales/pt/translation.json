@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Configurações...",
     "checkUpdates": "Verificar Atualizações...",
+    "copyLastTranscript": "Copiar última transcrição",
     "quit": "Sair",
     "cancel": "Cancelar"
   },
@@ -55,6 +56,26 @@
     "errors": {
       "loadModels": "Falha ao carregar modelos disponíveis",
       "downloadModel": "Falha ao baixar modelo: {{error}}"
+    },
+    "permissions": {
+      "title": "Permissões Necessárias",
+      "description": "O Handy precisa de algumas permissões para funcionar corretamente.",
+      "microphone": {
+        "title": "Acesso ao Microfone",
+        "description": "Necessário para ouvir sua voz para transcrição."
+      },
+      "accessibility": {
+        "title": "Acesso à Acessibilidade",
+        "description": "Necessário para digitar o texto transcrito em seus aplicativos."
+      },
+      "grant": "Conceder Permissão",
+      "granted": "Concedido",
+      "waiting": "Aguardando...",
+      "allGranted": "Tudo pronto!",
+      "errors": {
+        "checkFailed": "Erro ao verificar permissões. Por favor, tente novamente.",
+        "requestFailed": "Erro ao solicitar permissão. Por favor, tente novamente."
+      }
     }
   },
   "modelSelector": {
@@ -92,12 +113,12 @@
         "pressKeys": "Pressione as teclas...",
         "bindings": {
           "transcribe": {
-            "name": "Transcrever",
-            "description": "Converte sua fala em texto."
+            "name": "Atalho de Transcrição",
+            "description": "O atalho de teclado para gravar e transcrever sua voz."
           },
           "cancel": {
-            "name": "Cancelar",
-            "description": "Cancela a gravação atual."
+            "name": "Atalho de Cancelar",
+            "description": "O atalho de teclado para cancelar a gravação atual."
           }
         },
         "errors": {
@@ -144,6 +165,17 @@
     },
     "advanced": {
       "title": "Avançado",
+      "groups": {
+        "app": "Aplicativo",
+        "output": "Saída",
+        "transcription": "Transcrição",
+        "history": "Histórico",
+        "experimental": "Experimental"
+      },
+      "experimentalToggle": {
+        "label": "Recursos Experimentais",
+        "description": "Ativar recursos experimentais que ainda estão em desenvolvimento."
+      },
       "startHidden": {
         "label": "Iniciar Oculto",
         "description": "Iniciar na bandeja do sistema sem abrir a janela."

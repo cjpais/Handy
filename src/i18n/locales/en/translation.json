@@ -2,6 +2,7 @@
   "tray": {
     "settings": "Settings...",
     "checkUpdates": "Check for Updates...",
+    "copyLastTranscript": "Copy Last Transcript",
     "quit": "Quit",
     "cancel": "Cancel"
   },
@@ -55,6 +56,26 @@
     "errors": {
       "loadModels": "Failed to load available models",
       "downloadModel": "Failed to download model: {{error}}"
+    },
+    "permissions": {
+      "title": "Permissions Required",
+      "description": "Handy needs a couple of permissions to work properly.",
+      "microphone": {
+        "title": "Microphone Access",
+        "description": "Required to hear your voice for transcription."
+      },
+      "accessibility": {
+        "title": "Accessibility Access",
+        "description": "Required to type transcribed text into your applications."
+      },
+      "grant": "Grant Permission",
+      "granted": "Granted",
+      "waiting": "Waiting...",
+      "allGranted": "All set!",
+      "errors": {
+        "checkFailed": "Failed to check permissions. Please try again.",
+        "requestFailed": "Failed to request permission. Please try again."
+      }
     }
   },
   "modelSelector": {
@@ -92,12 +113,12 @@
         "pressKeys": "Press keys...",
         "bindings": {
           "transcribe": {
-            "name": "Transcribe",
-            "description": "Converts your speech into text."
+            "name": "Transcribe Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice."
           },
           "cancel": {
-            "name": "Cancel",
-            "description": "Cancels the current recording."
+            "name": "Cancel Shortcut",
+            "description": "The keyboard shortcut to cancel the current recording."
           }
         },
         "errors": {
@@ -144,6 +165,17 @@
     },
     "advanced": {
       "title": "Advanced",
+      "groups": {
+        "app": "App",
+        "output": "Output",
+        "transcription": "Transcription",
+        "history": "History",
+        "experimental": "Experimental"
+      },
+      "experimentalToggle": {
+        "label": "Experimental Features",
+        "description": "Enable experimental features that are still in development."
+      },
       "startHidden": {
         "label": "Start Hidden",
         "description": "Launch to system tray without opening the window."
@@ -335,6 +367,15 @@
       "appendTrailingSpace": {
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "pasteDelay": {
+        "title": "Paste Delay",
+        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
       },
       "paths": {
         "appData": "App Data:",

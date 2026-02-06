@@ -2,6 +2,7 @@
   "tray": {
     "settings": "設定...",
     "checkUpdates": "アップデートを確認...",
+    "copyLastTranscript": "最新の文字起こしをコピー",
     "quit": "終了",
     "cancel": "キャンセル"
   },
@@ -55,6 +56,22 @@
     "errors": {
       "loadModels": "利用可能なモデルの読み込みに失敗しました",
       "downloadModel": "モデルのダウンロードに失敗しました: {{error}}"
+    },
+    "permissions": {
+      "title": "権限が必要です",
+      "description": "Handyが正常に動作するにはいくつかの権限が必要です。",
+      "microphone": {
+        "title": "マイクへのアクセス",
+        "description": "文字起こしのためにあなたの声を聞くために必要です。"
+      },
+      "accessibility": {
+        "title": "アクセシビリティへのアクセス",
+        "description": "アプリケーションに文字起こしテキストを入力するために必要です。"
+      },
+      "grant": "権限を許可",
+      "granted": "許可済み",
+      "waiting": "待機中...",
+      "allGranted": "準備完了！"
     }
   },
   "modelSelector": {
@@ -92,12 +109,12 @@
         "pressKeys": "キーを押してください...",
         "bindings": {
           "transcribe": {
-            "name": "文字起こし",
-            "description": "音声をテキストに変換します。"
+            "name": "文字起こしショートカット",
+            "description": "音声を録音して文字起こしするためのキーボードショートカット。"
           },
           "cancel": {
-            "name": "キャンセル",
-            "description": "現在の録音をキャンセルします。"
+            "name": "キャンセルショートカット",
+            "description": "現在の録音をキャンセルするためのキーボードショートカット。"
           }
         },
         "errors": {
@@ -144,6 +161,17 @@
     },
     "advanced": {
       "title": "詳細設定",
+      "groups": {
+        "app": "アプリ",
+        "output": "出力",
+        "transcription": "文字起こし",
+        "history": "履歴",
+        "experimental": "実験的"
+      },
+      "experimentalToggle": {
+        "label": "実験的機能",
+        "description": "まだ開発中の実験的機能を有効にします。"
+      },
       "startHidden": {
         "label": "非表示で起動",
         "description": "ウィンドウを開かずにシステムトレイに起動。"
