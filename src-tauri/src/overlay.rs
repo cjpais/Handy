@@ -15,6 +15,9 @@ use tauri::WebviewUrl;
 #[cfg(target_os = "macos")]
 use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
 
+#[cfg(target_os = "linux")]
+use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+
 #[cfg(target_os = "macos")]
 tauri_panel! {
     panel!(RecordingOverlayPanel {
@@ -38,6 +41,50 @@ const OVERLAY_BOTTOM_OFFSET: f64 = 15.0;
 
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 const OVERLAY_BOTTOM_OFFSET: f64 = 40.0;
+
+#[cfg(target_os = "linux")]
+fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow) {
+    let window_clone = overlay_window.clone();
+    let _ = overlay_window.run_on_main_thread(move || {
+        // Try to get the GTK window from the Tauri webview
+        if let Ok(gtk_window) = window_clone.gtk_window() {
+            let settings = settings::get_settings(window_clone.app_handle());
+            match settings.overlay_position {
+                OverlayPosition::Top => {
+                    gtk_window.set_anchor(Edge::Top, true);
+                    gtk_window.set_anchor(Edge::Bottom, false);
+                }
+                OverlayPosition::Bottom | OverlayPosition::None => {
+                    gtk_window.set_anchor(Edge::Bottom, true);
+                    gtk_window.set_anchor(Edge::Top, false);
+                }
+            }
+        }
+    });
+}
+
+/// Initializes GTK layer shell for Linux overlay window
+/// Returns true if layer shell was successfully initialized, false otherwise
+#[cfg(target_os = "linux")]
+fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
+    if !gtk_layer_shell::is_supported() {
+        return false;
+    }
+
+    // Try to get the GTK window from the Tauri webview
+    if let Ok(gtk_window) = overlay_window.gtk_window() {
+        // Initialize layer shell
+        gtk_window.init_layer_shell();
+        gtk_window.set_layer(Layer::Overlay);
+        gtk_window.set_keyboard_mode(KeyboardMode::None);
+        gtk_window.set_exclusive_zone(0);
+
+        update_gtk_layer_shell_anchors(overlay_window);
+
+        return true;
+    }
+    false
+}
 
 /// Forces a window to be topmost using Win32 API (Windows only)
 /// This is more reliable than Tauri's set_always_on_top which can be overridden
@@ -134,35 +181,56 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
-    if let Some((x, y)) = calculate_overlay_position(app_handle) {
-        match WebviewWindowBuilder::new(
-            app_handle,
-            "recording_overlay",
-            tauri::WebviewUrl::App("src/overlay/index.html".into()),
-        )
-        .title("Recording")
-        .position(x, y)
-        .resizable(false)
-        .inner_size(OVERLAY_WIDTH, OVERLAY_HEIGHT)
-        .shadow(false)
-        .maximizable(false)
-        .minimizable(false)
-        .closable(false)
-        .accept_first_mouse(true)
-        .decorations(false)
-        .always_on_top(true)
-        .skip_taskbar(true)
-        .transparent(true)
-        .focused(false)
-        .visible(false)
-        .build()
-        {
-            Ok(_window) => {
-                debug!("Recording overlay window created successfully (hidden)");
+    let position = calculate_overlay_position(app_handle);
+
+    // On Linux (Wayland), monitor detection often fails, but we don't need exact coordinates
+    // for Layer Shell as we use anchors. On other platforms, we require a position.
+    #[cfg(not(target_os = "linux"))]
+    if position.is_none() {
+        debug!("Failed to determine overlay position, not creating overlay window");
+        return;
+    }
+
+    let mut builder = WebviewWindowBuilder::new(
+        app_handle,
+        "recording_overlay",
+        tauri::WebviewUrl::App("src/overlay/index.html".into()),
+    )
+    .title("Recording")
+    .resizable(false)
+    .inner_size(OVERLAY_WIDTH, OVERLAY_HEIGHT)
+    .shadow(false)
+    .maximizable(false)
+    .minimizable(false)
+    .closable(false)
+    .accept_first_mouse(true)
+    .decorations(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .transparent(true)
+    .focused(false)
+    .visible(false);
+
+    if let Some((x, y)) = position {
+        builder = builder.position(x, y);
+    }
+
+    match builder.build() {
+        Ok(window) => {
+            #[cfg(target_os = "linux")]
+            {
+                // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
+                if init_gtk_layer_shell(&window) {
+                    debug!("GTK layer shell initialized for overlay window");
+                } else {
+                    debug!("GTK layer shell not available, falling back to regular window");
+                }
             }
-            Err(e) => {
-                debug!("Failed to create recording overlay window: {}", e);
-            }
+
+            debug!("Recording overlay window created successfully (hidden)");
+        }
+        Err(e) => {
+            debug!("Failed to create recording overlay window: {}", e);
         }
     }
 }
@@ -214,6 +282,11 @@ pub fn show_recording_overlay(app_handle: &AppHandle) {
 
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         // Update position before showing to prevent flicker from position changes
+        #[cfg(target_os = "linux")]
+        {
+            update_gtk_layer_shell_anchors(&overlay_window);
+        }
+
         if let Some((x, y)) = calculate_overlay_position(app_handle) {
             let _ = overlay_window
                 .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
@@ -255,6 +328,11 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        #[cfg(target_os = "linux")]
+        {
+            update_gtk_layer_shell_anchors(&overlay_window);
+        }
+
         if let Some((x, y)) = calculate_overlay_position(app_handle) {
             let _ = overlay_window
                 .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));

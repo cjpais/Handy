@@ -5,10 +5,16 @@
  * 1. Create a new folder: src/i18n/locales/{code}/translation.json
  * 2. Add an entry here with the language code, English name, and native name
  * 3. Optionally add a priority (lower = higher in dropdown, no priority = alphabetical at end)
+ * 4. For RTL languages, add direction: 'rtl'
  */
 export const LANGUAGE_METADATA: Record<
   string,
-  { name: string; nativeName: string; priority?: number }
+  {
+    name: string;
+    nativeName: string;
+    priority?: number;
+    direction?: "ltr" | "rtl";
+  }
 > = {
   en: { name: "English", nativeName: "English", priority: 1 },
   zh: { name: "Chinese", nativeName: "中文", priority: 2 },
@@ -16,13 +22,14 @@ export const LANGUAGE_METADATA: Record<
   fr: { name: "French", nativeName: "Français", priority: 4 },
   de: { name: "German", nativeName: "Deutsch", priority: 5 },
   ja: { name: "Japanese", nativeName: "日本語", priority: 6 },
-  vi: { name: "Vietnamese", nativeName: "Tiếng Việt", priority: 7 },
-  pl: { name: "Polish", nativeName: "Polski", priority: 8 },
-  it: { name: "Italian", nativeName: "Italiano", priority: 9 },
-  ru: { name: "Russian", nativeName: "Русский", priority: 10 },
-  uk: { name: "Ukrainian", nativeName: "Українська", priority: 11 },
-  pt: { name: "Portuguese", nativeName: "Português", priority: 12 },
-  cs: { name: "Czech", nativeName: "Čeština", priority: 13 },
-  tr: { name: "Turkish", nativeName: "Türkçe", priority: 14 },
-  ar: { name: "Arabic", nativeName: "العربية", priority: 15 },
+  ko: { name: "Korean", nativeName: "한국어", priority: 7 },
+  vi: { name: "Vietnamese", nativeName: "Tiếng Việt", priority: 8 },
+  pl: { name: "Polish", nativeName: "Polski", priority: 9 },
+  it: { name: "Italian", nativeName: "Italiano", priority: 10 },
+  ru: { name: "Russian", nativeName: "Русский", priority: 11 },
+  uk: { name: "Ukrainian", nativeName: "Українська", priority: 12 },
+  pt: { name: "Portuguese", nativeName: "Português", priority: 13 },
+  cs: { name: "Czech", nativeName: "Čeština", priority: 14 },
+  tr: { name: "Turkish", nativeName: "Türkçe", priority: 15 },
+  ar: { name: "Arabic", nativeName: "العربية", priority: 16, direction: "rtl" },
 };

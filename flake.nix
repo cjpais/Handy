@@ -55,6 +55,8 @@
           # Frontend
           nodejs
           bun
+          # Tauri CLI
+          cargo-tauri
           # Native deps
           pkg-config
           openssl
@@ -63,9 +65,18 @@
           webkitgtk_4_1
           gtk3
           glib
-          # Tauri CLI
-          cargo-tauri
+          libxtst
+          libevdev
+          llvmPackages.libclang
+          cmake
+          vulkan-headers
+          vulkan-loader
+          shaderc
+          libappindicator
         ];
+
+        LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+        LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libappindicator ]}";
 
         shellHook = ''
           echo "Handy development environment"
