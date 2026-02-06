@@ -341,11 +341,12 @@ impl ShortcutAction for TranscribeAction {
 
                             // Then apply LLM post-processing if this is the post-process hotkey
                             // Uses final_text which may already have Chinese conversion applied
-                            if let Some(processed_text) = if post_process {
+                            let processed = if post_process {
                                 post_process_transcription(&settings, &final_text).await
                             } else {
                                 None
-                            } {
+                            };
+                            if let Some(processed_text) = processed {
                                 post_processed_text = Some(processed_text.clone());
                                 final_text = processed_text;
 

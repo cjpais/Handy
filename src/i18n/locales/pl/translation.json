@@ -237,7 +237,6 @@
     },
     "postProcessing": {
       "title": "Postprocess",
-      "disabledNotice": "Postprocess jest obecnie wyłączony. Włącz go w ustawieniach Debug, aby skonfigurować.",
       "hotkey": {
         "title": "Skrót klawiszowy"
       },

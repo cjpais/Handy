@@ -241,7 +241,6 @@
     },
     "postProcessing": {
       "title": "Pós-Processamento",
-      "disabledNotice": "O pós-processamento está atualmente desabilitado. Habilite-o nas configurações de Depuração para configurar.",
       "hotkey": {
         "title": "Tecla de atalho"
       },

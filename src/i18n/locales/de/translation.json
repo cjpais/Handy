@@ -237,7 +237,6 @@
     },
     "postProcessing": {
       "title": "Nachbearbeitung",
-      "disabledNotice": "Die Nachbearbeitung ist derzeit deaktiviert. Aktiviere sie in den Debug-Einstellungen, um sie zu konfigurieren.",
       "hotkey": {
         "title": "Tastenkürzel"
       },
