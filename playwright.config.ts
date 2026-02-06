@@ -18,9 +18,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bun run dev",
+    command: "bunx vite dev",
     url: "http://localhost:1420",
     reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    timeout: 30000,
   },
 });
