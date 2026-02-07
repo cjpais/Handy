@@ -271,6 +271,8 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    #[serde(default = "default_translate_target_language")]
+    pub translate_target_language: String,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -329,6 +331,10 @@ fn default_always_on_microphone() -> bool {
 
 fn default_translate_to_english() -> bool {
     false
+}
+
+fn default_translate_target_language() -> String {
+    "en".to_string()
 }
 
 fn default_start_hidden() -> bool {
@@ -582,6 +588,28 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+
+    #[cfg(target_os = "windows")]
+    let default_translate_shortcut = "ctrl+alt+space";
+    #[cfg(target_os = "macos")]
+    let default_translate_shortcut = "option+cmd+space";
+    #[cfg(target_os = "linux")]
+    let default_translate_shortcut = "ctrl+alt+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_translate_shortcut = "alt+ctrl+space";
+
+    bindings.insert(
+        "transcribe_with_translation".to_string(),
+        ShortcutBinding {
+            id: "transcribe_with_translation".to_string(),
+            name: "Transcribe and Translate".to_string(),
+            description:
+                "Converts your speech into text and translates it to your selected language."
+                    .to_string(),
+            default_binding: default_translate_shortcut.to_string(),
+            current_binding: default_translate_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -609,6 +637,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: "auto".to_string(),
+        translate_target_language: default_translate_target_language(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),

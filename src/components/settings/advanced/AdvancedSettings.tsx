@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ShowOverlay } from "../ShowOverlay";
 import { TranslateToEnglish } from "../TranslateToEnglish";
+import { TranslateTargetLanguage } from "../TranslateTargetLanguage";
 import { ModelUnloadTimeoutSetting } from "../ModelUnloadTimeout";
 import { CustomWords } from "../CustomWords";
 import { SettingsGroup } from "../../ui/SettingsGroup";
@@ -46,6 +47,7 @@ export const AdvancedSettings: React.FC = () => {
         {showTranslateToEnglish && (
           <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
         )}
+        <TranslateTargetLanguage descriptionMode="tooltip" grouped={true} />
         <CustomWords descriptionMode="tooltip" grouped />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>

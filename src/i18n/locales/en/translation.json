@@ -123,6 +123,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "transcribe_with_translation": {
+            "name": "Translate Hotkey",
+            "description": "Optional: A dedicated hotkey that transcribes, then translates into your selected language."
           }
         },
         "errors": {
@@ -220,6 +224,10 @@
         "label": "Translate to English",
         "description": "Automatically translate speech from other languages to English during transcription.",
         "descriptionUnsupported": "Translation is not supported by the {{model}} model."
+      },
+      "translateTargetLanguage": {
+        "title": "Translate To",
+        "description": "Select the target language used by the Translate Hotkey."
       },
       "modelUnload": {
         "title": "Unload Model",

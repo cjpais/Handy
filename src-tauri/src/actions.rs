@@ -25,9 +25,19 @@ pub trait ShortcutAction: Send + Sync {
 }
 
 // Transcribe Action
-struct TranscribeAction {
-    post_process: bool,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TranscribePostAction {
+    None,
+    PostProcess,
+    Translate,
 }
+
+struct TranscribeAction {
+    post_action: TranscribePostAction,
+}
+
+const OPENROUTER_PROVIDER_ID: &str = "openrouter";
+const DEFAULT_OPENROUTER_TRANSLATION_MODEL: &str = "openai/gpt-4o-mini";
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
     let provider = match settings.active_post_process_provider().cloned() {
@@ -158,6 +168,82 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
                 "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
                 provider.id,
                 e
+            );
+            None
+        }
+    }
+}
+
+async fn translate_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+    let target_language = settings.translate_target_language.trim();
+    if target_language.is_empty() || target_language == "auto" {
+        debug!("Translation skipped because translate_target_language is empty or 'auto'");
+        return None;
+    }
+
+    let provider = match settings
+        .post_process_provider(OPENROUTER_PROVIDER_ID)
+        .cloned()
+    {
+        Some(provider) => provider,
+        None => {
+            debug!("Translation skipped because OpenRouter provider is missing");
+            return None;
+        }
+    };
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(OPENROUTER_PROVIDER_ID)
+        .cloned()
+        .unwrap_or_default();
+    if api_key.trim().is_empty() {
+        debug!("Translation skipped because OpenRouter API key is not configured");
+        return None;
+    }
+
+    let model = settings
+        .post_process_models
+        .get(OPENROUTER_PROVIDER_ID)
+        .cloned()
+        .unwrap_or_default();
+    let model = if model.trim().is_empty() {
+        DEFAULT_OPENROUTER_TRANSLATION_MODEL.to_string()
+    } else {
+        model
+    };
+
+    let prompt = format!(
+        "Translate the text below into the language identified by this BCP-47 code: {target_language}.\n\nRules:\n- Preserve meaning and formatting (including line breaks)\n- Return only the translated text\n- If the text is already in the target language, return it unchanged\n\nText:\n{transcription}"
+    );
+
+    debug!(
+        "Starting LLM translation via OpenRouter (model: {}, target: {})",
+        model, target_language
+    );
+
+    match crate::llm_client::send_chat_completion(&provider, api_key, &model, prompt).await {
+        Ok(Some(content)) => {
+            let content = content
+                .replace('\u{200B}', "")
+                .replace('\u{200C}', "")
+                .replace('\u{200D}', "")
+                .replace('\u{FEFF}', "");
+            if content.trim().is_empty() {
+                debug!("Translation returned empty response");
+                None
+            } else {
+                Some(content)
+            }
+        }
+        Ok(None) => {
+            error!("LLM API response has no content");
+            None
+        }
+        Err(e) => {
+            error!(
+                "LLM translation failed for provider '{}': {}. Falling back to original transcription.",
+                provider.id, e
             );
             None
         }
@@ -300,7 +386,7 @@ impl ShortcutAction for TranscribeAction {
         play_feedback_sound(app, SoundType::Stop);
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
-        let post_process = self.post_process;
+        let post_action = self.post_action;
 
         tauri::async_runtime::spawn(async move {
             let binding_id = binding_id.clone(); // Clone for the inner async task
@@ -341,23 +427,31 @@ impl ShortcutAction for TranscribeAction {
 
                             // Then apply LLM post-processing if this is the post-process hotkey
                             // Uses final_text which may already have Chinese conversion applied
-                            let processed = if post_process {
-                                post_process_transcription(&settings, &final_text).await
-                            } else {
-                                None
+                            let processed = match post_action {
+                                TranscribePostAction::PostProcess => {
+                                    post_process_transcription(&settings, &final_text).await
+                                }
+                                TranscribePostAction::Translate => {
+                                    translate_transcription(&settings, &final_text).await
+                                }
+                                TranscribePostAction::None => None,
                             };
                             if let Some(processed_text) = processed {
                                 post_processed_text = Some(processed_text.clone());
                                 final_text = processed_text;
 
-                                // Get the prompt that was used
-                                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                                    if let Some(prompt) = settings
-                                        .post_process_prompts
-                                        .iter()
-                                        .find(|p| &p.id == prompt_id)
+                                if post_action == TranscribePostAction::PostProcess {
+                                    // Get the prompt that was used
+                                    if let Some(prompt_id) =
+                                        &settings.post_process_selected_prompt_id
                                     {
-                                        post_process_prompt = Some(prompt.prompt.clone());
+                                        if let Some(prompt) = settings
+                                            .post_process_prompts
+                                            .iter()
+                                            .find(|p| &p.id == prompt_id)
+                                        {
+                                            post_process_prompt = Some(prompt.prompt.clone());
+                                        }
                                     }
                                 }
                             } else if final_text != transcription {
@@ -474,12 +568,20 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
-            post_process: false,
+            post_action: TranscribePostAction::None,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_action: TranscribePostAction::PostProcess,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_with_translation".to_string(),
+        Arc::new(TranscribeAction {
+            post_action: TranscribePostAction::Translate,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
