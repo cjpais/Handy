@@ -3,6 +3,7 @@
     "settings": "...الإعدادات",
     "checkUpdates": "...التحقق من وجود تحديثات",
     "copyLastTranscript": "نسخ آخر نص تم تفريغه",
+    "unloadModel": "تفريغ النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء"
   },

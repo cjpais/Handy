@@ -3,6 +3,7 @@
     "settings": "Configurações...",
     "checkUpdates": "Verificar Atualizações...",
     "copyLastTranscript": "Copiar última transcrição",
+    "unloadModel": "Descarregar modelo",
     "quit": "Sair",
     "cancel": "Cancelar"
   },

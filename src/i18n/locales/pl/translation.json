@@ -3,6 +3,7 @@
     "settings": "Ustawienia...",
     "checkUpdates": "Sprawdź aktualizacje...",
     "copyLastTranscript": "Kopiuj ostatnią transkrypcję",
+    "unloadModel": "Zwolnij model",
     "quit": "Zamknij",
     "cancel": "Anuluj"
   },

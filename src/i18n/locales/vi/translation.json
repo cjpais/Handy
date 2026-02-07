@@ -4,6 +4,7 @@
     "settings": "Cài đặt...",
     "checkUpdates": "Kiểm tra cập nhật...",
     "copyLastTranscript": "Sao chép bản chép lời mới nhất",
+    "unloadModel": "Dỡ mô hình",
     "quit": "Thoát",
     "cancel": "Hủy"
   },

@@ -123,6 +123,14 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         None::<&str>,
     )
     .expect("failed to create copy last transcript item");
+    let unload_model_i = MenuItem::with_id(
+        app,
+        "unload_model",
+        &strings.unload_model,
+        true,
+        None::<&str>,
+    )
+    .expect("failed to create unload model item");
     let quit_i = MenuItem::with_id(app, "quit", &strings.quit, true, quit_accelerator)
         .expect("failed to create quit item");
     let separator = || PredefinedMenuItem::separator(app).expect("failed to create separator");
@@ -154,6 +162,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                 &version_i,
                 &separator(),
                 &copy_last_transcript_i,
+                &unload_model_i,
                 &separator(),
                 &settings_i,
                 &check_updates_i,
