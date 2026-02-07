@@ -7,7 +7,9 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
-use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
+use crate::utils::{
+    self, show_recording_overlay, show_transcribing_overlay, show_translating_overlay,
+};
 use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
@@ -95,8 +97,11 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         provider.id, model
     );
 
-    // Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    // Replace template variables in the prompt
+    let processed_prompt = prompt.replace("${output}", transcription).replace(
+        "${translate_target_language}",
+        settings.translate_target_language.as_str(),
+    );
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
@@ -432,6 +437,7 @@ impl ShortcutAction for TranscribeAction {
                                     post_process_transcription(&settings, &final_text).await
                                 }
                                 TranscribePostAction::Translate => {
+                                    show_translating_overlay(&ah);
                                     translate_transcription(&settings, &final_text).await
                                 }
                                 TranscribePostAction::None => None,

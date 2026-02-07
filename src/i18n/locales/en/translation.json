@@ -293,7 +293,7 @@
         "title": "Prompt",
         "selectedPrompt": {
           "title": "Selected Prompt",
-          "description": "Select a template for refining transcriptions or create a new one. Use ${output} inside the prompt text to reference the captured transcript."
+          "description": "Select a template for refining transcriptions or create a new one. Use ${output} to reference the transcript, and ${translate_target_language} to reference your Translate To language."
         },
         "noPrompts": "No prompts available",
         "selectPrompt": "Select a prompt",
@@ -301,8 +301,8 @@
         "promptLabel": "Prompt Label",
         "promptLabelPlaceholder": "Enter prompt name",
         "promptInstructions": "Prompt Instructions",
-        "promptInstructionsPlaceholder": "Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}",
-        "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "promptInstructionsPlaceholder": "Write the instructions to run after transcription. Example: Translate this to ${translate_target_language}: ${output}",
+        "promptTip": "Tip: Use <code>${output}</code> to insert the transcript, and <code>${translate_target_language}</code> to insert your Translate To language.",
         "updatePrompt": "Update Prompt",
         "deletePrompt": "Delete Prompt",
         "createPrompt": "Create Prompt",
@@ -474,6 +474,7 @@
     "description": "Change the language of the Handy interface"
   },
   "overlay": {
-    "transcribing": "Transcribing..."
+    "transcribing": "Transcribing...",
+    "translating": "Translating..."
   }
 }
