@@ -1,13 +1,17 @@
-use crate::actions::ACTION_MAP;
+#[cfg(unix)]
 use crate::ManagedToggleState;
+#[cfg(unix)]
+use crate::actions::ACTION_MAP;
+#[cfg(unix)]
 use log::{debug, info, warn};
-use std::thread;
-use tauri::{AppHandle, Manager};
-
 #[cfg(unix)]
 use signal_hook::consts::SIGUSR2;
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
+#[cfg(unix)]
+use std::thread;
+#[cfg(unix)]
+use tauri::{AppHandle, Manager};
 
 #[cfg(unix)]
 pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {

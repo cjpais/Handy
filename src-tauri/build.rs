@@ -84,8 +84,8 @@ fn generate_tray_translations() {
 
     fs::write(Path::new(&out_dir).join("tray_translations.rs"), out).unwrap();
 
-    println!(
-        "cargo:warning=Generated tray translations: {} languages, {} fields",
+    eprintln!(
+        "Generated tray translations: {} languages, {} fields",
         translations.len(),
         fields.len()
     );
