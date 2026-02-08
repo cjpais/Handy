@@ -83,9 +83,7 @@ function loadTranslationFile(lang: string): TranslationData | null {
     const content = fs.readFileSync(filePath, "utf8");
     return JSON.parse(content) as TranslationData;
   } catch (error) {
-    console.error(
-      colorize(`✗ Error loading ${lang}/translation.json:`, "red"),
-    );
+    console.error(colorize(`✗ Error loading ${lang}/translation.json:`, "red"));
     console.error(`  ${(error as Error).message}`);
     return null;
   }
