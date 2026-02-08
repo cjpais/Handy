@@ -30,7 +30,8 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
     const handleLanguageChange = async (langCode: string) => {
       if (langCode === "auto") {
         const systemLocale = await locale();
-        const systemLang = systemLocale?.split("-")[0].toLowerCase() || "en";
+        const systemLang =
+          systemLocale?.split(/[-_]/)[0].toLowerCase() || "en";
         await i18n.changeLanguage(systemLang);
         await updateSetting("app_language", "auto");
         return;
