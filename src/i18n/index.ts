@@ -3,6 +3,11 @@ import { initReactI18next } from "react-i18next";
 import { locale } from "@tauri-apps/plugin-os";
 import { LANGUAGE_METADATA } from "./languages";
 import { commands } from "@/bindings";
+import {
+  getLanguageDirection,
+  updateDocumentDirection,
+  updateDocumentLanguage,
+} from "@/lib/utils/rtl";
 
 // Auto-discover translation files using Vite's glob import
 const localeModules = import.meta.glob<{ default: Record<string, unknown> }>(
@@ -94,5 +99,15 @@ export const syncLanguageFromSettings = async () => {
 
 // Run language sync on init
 syncLanguageFromSettings();
+
+// Listen for language changes to update HTML dir and lang attributes
+i18n.on("languageChanged", (lng) => {
+  const dir = getLanguageDirection(lng);
+  updateDocumentDirection(dir);
+  updateDocumentLanguage(lng);
+});
+
+// Re-export RTL utilities for convenience
+export { getLanguageDirection, isRTLLanguage } from "@/lib/utils/rtl";
 
 export default i18n;

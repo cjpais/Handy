@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.7.0"
+version = "0.7.2"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -74,6 +74,7 @@ ferrous-opencc = "0.2.3"
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
+tauri-plugin-dialog = "2"
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
@@ -95,6 +96,10 @@ windows = { version = "0.61.3", features = [
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
+gtk = "0.18"
 
 [dev-dependencies]
 tempfile = "3"

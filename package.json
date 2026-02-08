@@ -1,7 +1,7 @@
 {
   "name": "handy-app",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,13 +13,17 @@
     "format": "prettier --write . && cd src-tauri && cargo fmt",
     "format:check": "prettier --check . && cd src-tauri && cargo fmt -- --check",
     "format:frontend": "prettier --write .",
-    "format:backend": "cd src-tauri && cargo fmt"
+    "format:backend": "cd src-tauri && cargo fmt",
+    "test:playwright": "playwright test",
+    "test:playwright:ui": "playwright test --ui",
+    "check:translations": "bun scripts/check-translations.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",
     "@tauri-apps/api": "^2.9.0",
     "@tauri-apps/plugin-autostart": "~2.5.1",
     "@tauri-apps/plugin-clipboard-manager": "~2.3.2",
+    "@tauri-apps/plugin-dialog": "~2",
     "@tauri-apps/plugin-fs": "~2.4.4",
     "@tauri-apps/plugin-global-shortcut": "~2.3.1",
     "@tauri-apps/plugin-opener": "^2.5.2",
@@ -28,20 +32,21 @@
     "@tauri-apps/plugin-sql": "~2.3.1",
     "@tauri-apps/plugin-store": "~2.4.1",
     "@tauri-apps/plugin-updater": "~2.9.0",
-    "react-select": "^5.8.0",
-    "tauri-plugin-macos-permissions-api": "2.3.0",
     "i18next": "^25.7.2",
     "immer": "^11.1.3",
     "lucide-react": "^0.542.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.4.1",
+    "react-select": "^5.8.0",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.1.16",
+    "tauri-plugin-macos-permissions-api": "2.3.0",
     "zod": "^3.25.76",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.0",
     "@tauri-apps/cli": "^2.9.1",
     "@types/node": "^24.9.1",
     "@types/react": "^18.3.26",

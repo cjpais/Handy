@@ -57,4 +57,5 @@ export const LANGUAGES: Language[] = [
   { value: "et", label: "Estonian" },
   { value: "mk", label: "Macedonian" },
   { value: "br", label: "Breton" },
+  { value: "mt", label: "Maltese" },
 ];

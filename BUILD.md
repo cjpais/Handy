@@ -37,11 +37,13 @@ This guide covers how to set up the development environment and build Handy from
   # Fedora/RHEL
   sudo dnf groupinstall "Development Tools"
   sudo dnf install alsa-lib-devel pkgconf openssl-devel vulkan-devel \
-    gtk3-devel webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel
+    gtk3-devel webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel \
+    cmake
 
   # Arch Linux
   sudo pacman -S base-devel alsa-lib pkgconf openssl vulkan-devel \
-    gtk3 webkit2gtk-4.1 libappindicator-gtk3 librsvg
+    gtk3 webkit2gtk-4.1 libappindicator-gtk3 librsvg gtk-layer-shell \
+    cmake
   ```
 
 ## Setup Instructions

@@ -29,3 +29,8 @@ dist-ssr
 /target/
 recording_*
 .crush/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
