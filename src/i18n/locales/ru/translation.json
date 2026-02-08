@@ -20,6 +20,7 @@
     "recommended": "Рекомендуется",
     "download": "Скачать",
     "downloading": "Загрузка...",
+    "downloadFailed": "Загрузка не удалась. Пожалуйста, попробуйте снова.",
     "modelCard": {
       "accuracy": "точность",
       "speed": "скорость"

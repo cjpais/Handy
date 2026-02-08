@@ -20,6 +20,7 @@
     "recommended": "推荐",
     "download": "下载",
     "downloading": "下载中...",
+    "downloadFailed": "下载失败。请重试。",
     "modelCard": {
       "accuracy": "准确度",
       "speed": "速度"

@@ -20,6 +20,7 @@
     "recommended": "موصى به",
     "download": "تنزيل",
     "downloading": "...جاري التنزيل",
+    "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
     "modelCard": {
       "accuracy": "الدقة",
       "speed": "السرعة"

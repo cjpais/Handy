@@ -20,6 +20,7 @@
     "recommended": "Recomendado",
     "download": "Descargar",
     "downloading": "Descargando...",
+    "downloadFailed": "La descarga falló. Por favor, inténtalo de nuevo.",
     "modelCard": {
       "accuracy": "precisión",
       "speed": "velocidad"

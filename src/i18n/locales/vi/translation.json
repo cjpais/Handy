@@ -20,6 +20,7 @@
     "recommended": "Đề xuất",
     "download": "Tải xuống",
     "downloading": "Đang tải xuống...",
+    "downloadFailed": "Tải xuống thất bại. Vui lòng thử lại.",
     "modelCard": {
       "accuracy": "độ chính xác",
       "speed": "tốc độ"

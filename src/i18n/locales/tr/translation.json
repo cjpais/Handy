@@ -20,6 +20,7 @@
     "recommended": "Önerilen",
     "download": "İndir",
     "downloading": "İndiriliyor...",
+    "downloadFailed": "İndirme başarısız oldu. Lütfen tekrar deneyin.",
     "modelCard": {
       "accuracy": "doğruluk",
       "speed": "hız"
