@@ -117,6 +117,18 @@ const settingUpdaters: {
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),
+  command_filter_enabled: (value) =>
+    commands.changeCommandFilterEnabledSetting(value as boolean),
+  command_filter_scope: (value) =>
+    commands.changeCommandFilterScopeSetting(value as string),
+  command_filter_order: (value) =>
+    commands.changeCommandFilterOrderSetting(value as string),
+  command_filter_executable: (value) =>
+    commands.changeCommandFilterExecutableSetting(value as string),
+  command_filter_args: (value) =>
+    commands.changeCommandFilterArgsSetting(value as string[]),
+  command_filter_timeout_ms: (value) =>
+    commands.changeCommandFilterTimeoutSetting(value as number),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>

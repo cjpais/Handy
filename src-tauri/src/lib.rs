@@ -4,6 +4,7 @@ mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
+mod command_filter;
 mod commands;
 mod helpers;
 mod input;
@@ -254,6 +255,12 @@ pub fn run() {
         shortcut::change_paste_method_setting,
         shortcut::change_clipboard_handling_setting,
         shortcut::change_post_process_enabled_setting,
+        shortcut::change_command_filter_enabled_setting,
+        shortcut::change_command_filter_scope_setting,
+        shortcut::change_command_filter_order_setting,
+        shortcut::change_command_filter_executable_setting,
+        shortcut::change_command_filter_args_setting,
+        shortcut::change_command_filter_timeout_setting,
         shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,
         shortcut::change_post_process_api_key_setting,

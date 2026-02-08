@@ -20,9 +20,9 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
-    self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
-    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, ClipboardHandling, CommandFilterOrder, CommandFilterScope,
+    KeyboardImplementation, LLMPrompt, OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme,
+    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -392,8 +392,10 @@ fn register_all_shortcuts_for_implementation(
             continue;
         }
 
-        // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !current_settings.post_process_enabled {
+        // Skip secondary processing shortcut when no feature needs it
+        if id == "transcribe_with_post_process"
+            && !current_settings.should_register_secondary_shortcut()
+        {
             continue;
         }
 
@@ -463,6 +465,20 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 
     // init_shortcuts already registered shortcuts
     Ok(true)
+}
+
+fn sync_secondary_shortcut_registration(app: &AppHandle, settings: &settings::AppSettings) {
+    if let Some(binding) = settings
+        .bindings
+        .get("transcribe_with_post_process")
+        .cloned()
+    {
+        if settings.should_register_secondary_shortcut() {
+            let _ = register_shortcut(app, binding);
+        } else {
+            let _ = unregister_shortcut(app, binding);
+        }
+    }
 }
 
 // ============================================================================
@@ -705,19 +721,101 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
     settings.post_process_enabled = enabled;
     settings::write_settings(&app, settings.clone());
 
-    // Register or unregister the post-processing shortcut
-    if let Some(binding) = settings
-        .bindings
-        .get("transcribe_with_post_process")
-        .cloned()
-    {
-        if enabled {
-            let _ = register_shortcut(&app, binding);
-        } else {
-            let _ = unregister_shortcut(&app, binding);
-        }
+    sync_secondary_shortcut_registration(&app, &settings);
+
+    Ok(())
+}
+
+fn parse_command_filter_scope(scope: &str) -> Result<CommandFilterScope, String> {
+    match scope {
+        "transcribe" => Ok(CommandFilterScope::Transcribe),
+        "post_process" => Ok(CommandFilterScope::PostProcess),
+        "both" => Ok(CommandFilterScope::Both),
+        _ => Err(format!(
+            "Invalid command filter scope '{}'. Expected transcribe, post_process, or both.",
+            scope
+        )),
+    }
+}
+
+fn parse_command_filter_order(order: &str) -> Result<CommandFilterOrder, String> {
+    match order {
+        "before_llm" => Ok(CommandFilterOrder::BeforeLlm),
+        "after_llm" => Ok(CommandFilterOrder::AfterLlm),
+        _ => Err(format!(
+            "Invalid command filter order '{}'. Expected before_llm or after_llm.",
+            order
+        )),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_command_filter_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.command_filter_enabled = enabled;
+    settings::write_settings(&app, settings.clone());
+    sync_secondary_shortcut_registration(&app, &settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_command_filter_scope_setting(app: AppHandle, scope: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.command_filter_scope = parse_command_filter_scope(scope.trim())?;
+    settings::write_settings(&app, settings.clone());
+    sync_secondary_shortcut_registration(&app, &settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_command_filter_order_setting(app: AppHandle, order: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.command_filter_order = parse_command_filter_order(order.trim())?;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_command_filter_executable_setting(
+    app: AppHandle,
+    executable: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.command_filter_executable = executable.trim().to_string();
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_command_filter_args_setting(app: AppHandle, args: Vec<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.command_filter_args = args
+        .into_iter()
+        .map(|arg| arg.trim().to_string())
+        .filter(|arg| !arg.is_empty())
+        .collect();
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_command_filter_timeout_setting(
+    app: AppHandle,
+    timeout_ms: u64,
+) -> Result<(), String> {
+    if !(1_000..=120_000).contains(&timeout_ms) {
+        return Err("Command filter timeout must be between 1000ms and 120000ms".to_string());
     }
 
+    let mut settings = settings::get_settings(&app);
+    settings.command_filter_timeout_ms = timeout_ms;
+    settings::write_settings(&app, settings);
     Ok(())
 }
 

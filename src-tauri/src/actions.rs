@@ -1,16 +1,19 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::command_filter::{run_command_filter, CommandFilterResult};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, CommandFilterOrder, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error};
+use log::{debug, error, info};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -26,7 +29,7 @@ pub trait ShortcutAction: Send + Sync {
 
 // Transcribe Action
 struct TranscribeAction {
-    post_process: bool,
+    is_post_process_hotkey: bool,
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -208,6 +211,41 @@ async fn maybe_convert_chinese_variant(
     }
 }
 
+async fn maybe_apply_command_filter(
+    settings: &AppSettings,
+    text: &str,
+    is_post_process_hotkey: bool,
+) -> Option<CommandFilterResult> {
+    if !settings.command_filter_applies_to_hotkey(is_post_process_hotkey) {
+        return None;
+    }
+
+    let executable = settings.command_filter_executable.trim();
+    if executable.is_empty() {
+        debug!("Command filter skipped because executable is empty");
+        return Some(CommandFilterResult::Failed(
+            "command_filter executable is empty".to_string(),
+        ));
+    }
+
+    let args: Vec<String> = settings
+        .command_filter_args
+        .iter()
+        .map(|arg| arg.trim())
+        .filter(|arg| !arg.is_empty())
+        .map(|arg| arg.to_string())
+        .collect();
+
+    debug!(
+        "Running command filter: executable='{}', args_count={}, timeout={}ms",
+        executable,
+        args.len(),
+        settings.command_filter_timeout_ms
+    );
+
+    Some(run_command_filter(executable, &args, text, settings.command_filter_timeout_ms).await)
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -300,7 +338,7 @@ impl ShortcutAction for TranscribeAction {
         play_feedback_sound(app, SoundType::Stop);
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
-        let post_process = self.post_process;
+        let is_post_process_hotkey = self.is_post_process_hotkey;
 
         tauri::async_runtime::spawn(async move {
             let binding_id = binding_id.clone(); // Clone for the inner async task
@@ -329,8 +367,8 @@ impl ShortcutAction for TranscribeAction {
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
-                            let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
+                            let mut cancelled_by_filter_empty = false;
 
                             // First, check if Chinese variant conversion is needed
                             if let Some(converted_text) =
@@ -339,31 +377,97 @@ impl ShortcutAction for TranscribeAction {
                                 final_text = converted_text;
                             }
 
-                            // Then apply LLM post-processing if this is the post-process hotkey
-                            // Uses final_text which may already have Chinese conversion applied
-                            let processed = if post_process {
-                                post_process_transcription(&settings, &final_text).await
-                            } else {
-                                None
-                            };
-                            if let Some(processed_text) = processed {
-                                post_processed_text = Some(processed_text.clone());
-                                final_text = processed_text;
+                            let should_run_filter =
+                                settings.command_filter_applies_to_hotkey(is_post_process_hotkey);
+                            let run_filter_before_llm = should_run_filter
+                                && settings.command_filter_order == CommandFilterOrder::BeforeLlm;
+                            let run_filter_after_llm = should_run_filter
+                                && settings.command_filter_order == CommandFilterOrder::AfterLlm;
 
-                                // Get the prompt that was used
-                                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                                    if let Some(prompt) = settings
-                                        .post_process_prompts
-                                        .iter()
-                                        .find(|p| &p.id == prompt_id)
+                            if run_filter_before_llm {
+                                match maybe_apply_command_filter(
+                                    &settings,
+                                    &final_text,
+                                    is_post_process_hotkey,
+                                )
+                                .await
+                                {
+                                    Some(CommandFilterResult::Applied(filtered)) => {
+                                        final_text = filtered;
+                                    }
+                                    Some(CommandFilterResult::CancelledEmpty) => {
+                                        info!("Command filter returned empty output; cancelling paste");
+                                        cancelled_by_filter_empty = true;
+                                    }
+                                    Some(CommandFilterResult::Failed(reason)) => {
+                                        error!(
+                                            "Command filter failed before LLM stage: {}. Falling back to previous text.",
+                                            reason
+                                        );
+                                    }
+                                    None => {}
+                                }
+                            }
+
+                            if !cancelled_by_filter_empty
+                                && is_post_process_hotkey
+                                && settings.post_process_enabled
+                            {
+                                // Apply LLM post-processing when enabled and using the secondary hotkey.
+                                // Uses final_text which may already include Chinese conversion and pre-LLM filtering.
+                                if let Some(processed_text) =
+                                    post_process_transcription(&settings, &final_text).await
+                                {
+                                    final_text = processed_text;
+
+                                    // Get the prompt that was used
+                                    if let Some(prompt_id) =
+                                        &settings.post_process_selected_prompt_id
                                     {
-                                        post_process_prompt = Some(prompt.prompt.clone());
+                                        if let Some(prompt) = settings
+                                            .post_process_prompts
+                                            .iter()
+                                            .find(|p| &p.id == prompt_id)
+                                        {
+                                            post_process_prompt = Some(prompt.prompt.clone());
+                                        }
                                     }
                                 }
-                            } else if final_text != transcription {
-                                // Chinese conversion was applied but no LLM post-processing
-                                post_processed_text = Some(final_text.clone());
                             }
+
+                            if !cancelled_by_filter_empty && run_filter_after_llm {
+                                match maybe_apply_command_filter(
+                                    &settings,
+                                    &final_text,
+                                    is_post_process_hotkey,
+                                )
+                                .await
+                                {
+                                    Some(CommandFilterResult::Applied(filtered)) => {
+                                        final_text = filtered;
+                                    }
+                                    Some(CommandFilterResult::CancelledEmpty) => {
+                                        info!("Command filter returned empty output; cancelling paste");
+                                        cancelled_by_filter_empty = true;
+                                    }
+                                    Some(CommandFilterResult::Failed(reason)) => {
+                                        error!(
+                                            "Command filter failed after LLM stage: {}. Falling back to previous text.",
+                                            reason
+                                        );
+                                    }
+                                    None => {}
+                                }
+                            }
+
+                            let (post_processed_text, post_process_prompt) =
+                                if cancelled_by_filter_empty {
+                                    (None, None)
+                                } else if final_text != transcription {
+                                    (Some(final_text.clone()), post_process_prompt)
+                                } else {
+                                    (None, post_process_prompt)
+                                };
 
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
@@ -382,26 +486,31 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             });
 
-                            // Paste the final text (either processed or original)
-                            let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
-                                }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+                            if cancelled_by_filter_empty {
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
-                            });
+                            } else {
+                                // Paste the final text (either processed or original)
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+                                ah.run_on_main_thread(move || {
+                                    match utils::paste(final_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    }
+                                    // Hide the overlay after transcription is complete
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            }
                         } else {
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
@@ -474,12 +583,14 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
-            post_process: false,
+            is_post_process_hotkey: false,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            is_post_process_hotkey: true,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),

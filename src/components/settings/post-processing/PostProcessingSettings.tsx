@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCcw } from "lucide-react";
-import { commands } from "@/bindings";
+import {
+  commands,
+  type CommandFilterOrder,
+  type CommandFilterScope,
+} from "@/bindings";
 
 import { Alert } from "../../ui/Alert";
 import {
@@ -9,6 +13,7 @@ import {
   SettingContainer,
   SettingsGroup,
   Textarea,
+  ToggleSwitch,
 } from "@/components/ui";
 import { Button } from "../../ui/Button";
 import { ResetButton } from "../../ui/ResetButton";
@@ -139,6 +144,232 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
           </div>
         </SettingContainer>
       )}
+    </>
+  );
+};
+
+const PostProcessingModesComponent: React.FC = () => {
+  const { t } = useTranslation();
+  const { getSetting, updateSetting, isUpdating } = useSettings();
+
+  const postProcessEnabled = getSetting("post_process_enabled") || false;
+  const commandFilterEnabled = getSetting("command_filter_enabled") || false;
+
+  return (
+    <>
+      <ToggleSwitch
+        checked={postProcessEnabled}
+        onChange={(enabled) => updateSetting("post_process_enabled", enabled)}
+        isUpdating={isUpdating("post_process_enabled")}
+        label={t("settings.postProcessing.modes.aiToggle.label")}
+        description={t("settings.postProcessing.modes.aiToggle.description")}
+        descriptionMode="tooltip"
+        grouped={true}
+      />
+      <ToggleSwitch
+        checked={commandFilterEnabled}
+        onChange={(enabled) => updateSetting("command_filter_enabled", enabled)}
+        isUpdating={isUpdating("command_filter_enabled")}
+        label={t("settings.postProcessing.modes.commandFilterToggle.label")}
+        description={t(
+          "settings.postProcessing.modes.commandFilterToggle.description",
+        )}
+        descriptionMode="tooltip"
+        grouped={true}
+      />
+    </>
+  );
+};
+
+const parseArgsText = (value: string): string[] =>
+  value
+    .split(/\r?\n/g)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+const PostProcessingCommandFilterComponent: React.FC = () => {
+  const { t } = useTranslation();
+  const { getSetting, updateSetting, isUpdating } = useSettings();
+
+  const scope = getSetting("command_filter_scope") || "both";
+  const order = getSetting("command_filter_order") || "after_llm";
+  const executable = getSetting("command_filter_executable") || "";
+  const args = getSetting("command_filter_args") || [];
+  const timeoutMs = getSetting("command_filter_timeout_ms") || 10000;
+
+  const [localExecutable, setLocalExecutable] = useState(executable);
+  const [localArgs, setLocalArgs] = useState(args.join("\n"));
+  const [localTimeoutMs, setLocalTimeoutMs] = useState(String(timeoutMs));
+
+  useEffect(() => {
+    setLocalExecutable(executable);
+  }, [executable]);
+
+  useEffect(() => {
+    setLocalArgs(args.join("\n"));
+  }, [args]);
+
+  useEffect(() => {
+    setLocalTimeoutMs(String(timeoutMs));
+  }, [timeoutMs]);
+
+  const scopeOptions = [
+    {
+      value: "transcribe",
+      label: t(
+        "settings.postProcessing.commandFilter.scope.options.transcribe",
+      ),
+    },
+    {
+      value: "post_process",
+      label: t(
+        "settings.postProcessing.commandFilter.scope.options.postProcess",
+      ),
+    },
+    {
+      value: "both",
+      label: t("settings.postProcessing.commandFilter.scope.options.both"),
+    },
+  ];
+
+  const orderOptions = [
+    {
+      value: "before_llm",
+      label: t("settings.postProcessing.commandFilter.order.options.beforeLlm"),
+    },
+    {
+      value: "after_llm",
+      label: t("settings.postProcessing.commandFilter.order.options.afterLlm"),
+    },
+  ];
+
+  const handleExecutableBlur = () => {
+    const trimmed = localExecutable.trim();
+    if (trimmed !== executable) {
+      updateSetting("command_filter_executable", trimmed);
+    }
+  };
+
+  const handleArgsBlur = () => {
+    const parsedArgs = parseArgsText(localArgs);
+    if (JSON.stringify(parsedArgs) !== JSON.stringify(args)) {
+      updateSetting("command_filter_args", parsedArgs);
+    }
+  };
+
+  const handleTimeoutBlur = () => {
+    const parsed = Number.parseInt(localTimeoutMs, 10);
+    const safeValue = Number.isNaN(parsed)
+      ? timeoutMs
+      : Math.min(120000, Math.max(1000, parsed));
+
+    setLocalTimeoutMs(String(safeValue));
+    if (safeValue !== timeoutMs) {
+      updateSetting("command_filter_timeout_ms", safeValue);
+    }
+  };
+
+  return (
+    <>
+      <SettingContainer
+        title={t("settings.postProcessing.commandFilter.scope.title")}
+        description={t(
+          "settings.postProcessing.commandFilter.scope.description",
+        )}
+        descriptionMode="tooltip"
+        grouped={true}
+      >
+        <Dropdown
+          selectedValue={scope}
+          options={scopeOptions}
+          onSelect={(value) =>
+            updateSetting("command_filter_scope", value as CommandFilterScope)
+          }
+          disabled={isUpdating("command_filter_scope")}
+          className="min-w-[220px]"
+        />
+      </SettingContainer>
+
+      <SettingContainer
+        title={t("settings.postProcessing.commandFilter.order.title")}
+        description={t(
+          "settings.postProcessing.commandFilter.order.description",
+        )}
+        descriptionMode="tooltip"
+        grouped={true}
+      >
+        <Dropdown
+          selectedValue={order}
+          options={orderOptions}
+          onSelect={(value) =>
+            updateSetting("command_filter_order", value as CommandFilterOrder)
+          }
+          disabled={isUpdating("command_filter_order")}
+          className="min-w-[220px]"
+        />
+      </SettingContainer>
+
+      <SettingContainer
+        title={t("settings.postProcessing.commandFilter.executable.title")}
+        description={t(
+          "settings.postProcessing.commandFilter.executable.description",
+        )}
+        descriptionMode="tooltip"
+        grouped={true}
+      >
+        <Input
+          type="text"
+          value={localExecutable}
+          onChange={(event) => setLocalExecutable(event.target.value)}
+          onBlur={handleExecutableBlur}
+          placeholder={t(
+            "settings.postProcessing.commandFilter.executable.placeholder",
+          )}
+          disabled={isUpdating("command_filter_executable")}
+          className="min-w-[320px]"
+        />
+      </SettingContainer>
+
+      <SettingContainer
+        title={t("settings.postProcessing.commandFilter.timeout.title")}
+        description={t(
+          "settings.postProcessing.commandFilter.timeout.description",
+        )}
+        descriptionMode="tooltip"
+        grouped={true}
+      >
+        <Input
+          type="number"
+          min={1000}
+          max={120000}
+          step={1000}
+          value={localTimeoutMs}
+          onChange={(event) => setLocalTimeoutMs(event.target.value)}
+          onBlur={handleTimeoutBlur}
+          disabled={isUpdating("command_filter_timeout_ms")}
+          className="w-[140px]"
+        />
+      </SettingContainer>
+
+      <SettingContainer
+        title={t("settings.postProcessing.commandFilter.args.title")}
+        description={t(
+          "settings.postProcessing.commandFilter.args.description",
+        )}
+        descriptionMode="tooltip"
+        layout="stacked"
+        grouped={true}
+      >
+        <Textarea
+          value={localArgs}
+          onChange={(event) => setLocalArgs(event.target.value)}
+          onBlur={handleArgsBlur}
+          placeholder={t(
+            "settings.postProcessing.commandFilter.args.placeholder",
+          )}
+          className="min-h-[120px]"
+        />
+      </SettingContainer>
     </>
   );
 };
@@ -418,6 +649,14 @@ export const PostProcessingSettingsApi = React.memo(
 );
 PostProcessingSettingsApi.displayName = "PostProcessingSettingsApi";
 
+export const PostProcessingModes = React.memo(PostProcessingModesComponent);
+PostProcessingModes.displayName = "PostProcessingModes";
+
+export const PostProcessingCommandFilter = React.memo(
+  PostProcessingCommandFilterComponent,
+);
+PostProcessingCommandFilter.displayName = "PostProcessingCommandFilter";
+
 export const PostProcessingSettingsPrompts = React.memo(
   PostProcessingSettingsPromptsComponent,
 );
@@ -428,12 +667,20 @@ export const PostProcessingSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <SettingsGroup title={t("settings.postProcessing.modes.title")}>
+        <PostProcessingModes />
+      </SettingsGroup>
+
       <SettingsGroup title={t("settings.postProcessing.hotkey.title")}>
         <ShortcutInput
           shortcutId="transcribe_with_post_process"
           descriptionMode="tooltip"
           grouped={true}
         />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.postProcessing.commandFilter.title")}>
+        <PostProcessingCommandFilter />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.postProcessing.api.title")}>

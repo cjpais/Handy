@@ -330,6 +330,51 @@
         "cancel": "キャンセル",
         "selectToEdit": "上からプロンプトを選択して、詳細を表示・編集します。",
         "createFirst": "上の「新しいプロンプトを作成」をクリックして、最初の後処理プロンプトを作成してください。"
+      },
+      "modes": {
+        "title": "Modes",
+        "aiToggle": {
+          "label": "AI Post-Processing",
+          "description": "Enable AI-powered post-processing for the secondary hotkey."
+        },
+        "commandFilterToggle": {
+          "label": "Command Filter",
+          "description": "Run a local command that reads transcription text from stdin and writes transformed text to stdout."
+        }
+      },
+      "commandFilter": {
+        "title": "Command Filter",
+        "scope": {
+          "title": "Scope",
+          "description": "Choose which shortcut(s) should run the command filter.",
+          "options": {
+            "transcribe": "Transcribe shortcut",
+            "postProcess": "Post-processing hotkey",
+            "both": "Both shortcuts"
+          }
+        },
+        "order": {
+          "title": "Order",
+          "description": "Choose whether the command filter runs before or after AI post-processing.",
+          "options": {
+            "beforeLlm": "Before AI post-processing",
+            "afterLlm": "After AI post-processing"
+          }
+        },
+        "executable": {
+          "title": "Executable",
+          "description": "Program to execute (PATH lookup is supported).",
+          "placeholder": "python3"
+        },
+        "timeout": {
+          "title": "Timeout (ms)",
+          "description": "Maximum time to wait for command completion. Allowed range: 1000-120000 ms."
+        },
+        "args": {
+          "title": "Arguments",
+          "description": "One argument per line. Each line is passed as a separate argv item.",
+          "placeholder": "--flag\nvalue"
+        }
       }
     },
     "history": {

@@ -143,6 +143,57 @@ pub enum ClipboardHandling {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
+pub enum CommandFilterScope {
+    Transcribe,
+    PostProcess,
+    Both,
+}
+
+impl Default for CommandFilterScope {
+    fn default() -> Self {
+        CommandFilterScope::Both
+    }
+}
+
+impl CommandFilterScope {
+    pub fn includes_transcribe(self) -> bool {
+        matches!(
+            self,
+            CommandFilterScope::Transcribe | CommandFilterScope::Both
+        )
+    }
+
+    pub fn includes_post_process(self) -> bool {
+        matches!(
+            self,
+            CommandFilterScope::PostProcess | CommandFilterScope::Both
+        )
+    }
+
+    pub fn applies_to_hotkey(self, is_post_process_hotkey: bool) -> bool {
+        if is_post_process_hotkey {
+            self.includes_post_process()
+        } else {
+            self.includes_transcribe()
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum CommandFilterOrder {
+    BeforeLlm,
+    AfterLlm,
+}
+
+impl Default for CommandFilterOrder {
+    fn default() -> Self {
+        CommandFilterOrder::AfterLlm
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum RecordingRetentionPeriod {
     Never,
     PreserveLimit,
@@ -305,6 +356,18 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    #[serde(default = "default_command_filter_enabled")]
+    pub command_filter_enabled: bool,
+    #[serde(default)]
+    pub command_filter_scope: CommandFilterScope,
+    #[serde(default)]
+    pub command_filter_order: CommandFilterOrder,
+    #[serde(default)]
+    pub command_filter_executable: String,
+    #[serde(default)]
+    pub command_filter_args: Vec<String>,
+    #[serde(default = "default_command_filter_timeout_ms")]
+    pub command_filter_timeout_ms: u64,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -388,6 +451,14 @@ fn default_sound_theme() -> SoundTheme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_command_filter_enabled() -> bool {
+    false
+}
+
+fn default_command_filter_timeout_ms() -> u64 {
+    10_000
 }
 
 fn default_app_language() -> String {
@@ -626,6 +697,12 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        command_filter_enabled: default_command_filter_enabled(),
+        command_filter_scope: CommandFilterScope::default(),
+        command_filter_order: CommandFilterOrder::default(),
+        command_filter_executable: String::new(),
+        command_filter_args: Vec::new(),
+        command_filter_timeout_ms: default_command_filter_timeout_ms(),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -655,6 +732,18 @@ impl AppSettings {
         self.post_process_providers
             .iter_mut()
             .find(|provider| provider.id == provider_id)
+    }
+
+    pub fn should_register_secondary_shortcut(&self) -> bool {
+        self.post_process_enabled
+            || (self.command_filter_enabled && self.command_filter_scope.includes_post_process())
+    }
+
+    pub fn command_filter_applies_to_hotkey(&self, is_post_process_hotkey: bool) -> bool {
+        self.command_filter_enabled
+            && self
+                .command_filter_scope
+                .applies_to_hotkey(is_post_process_hotkey)
     }
 }
 
@@ -763,4 +852,56 @@ pub fn get_history_limit(app: &AppHandle) -> usize {
 pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeriod {
     let settings = get_settings(app);
     settings.recording_retention_period
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn command_filter_scope_applies_to_expected_hotkeys() {
+        assert!(CommandFilterScope::Transcribe.applies_to_hotkey(false));
+        assert!(!CommandFilterScope::Transcribe.applies_to_hotkey(true));
+
+        assert!(!CommandFilterScope::PostProcess.applies_to_hotkey(false));
+        assert!(CommandFilterScope::PostProcess.applies_to_hotkey(true));
+
+        assert!(CommandFilterScope::Both.applies_to_hotkey(false));
+        assert!(CommandFilterScope::Both.applies_to_hotkey(true));
+    }
+
+    #[test]
+    fn secondary_shortcut_is_enabled_for_ai_or_filter_post_process_scope() {
+        let mut settings = get_default_settings();
+
+        settings.post_process_enabled = false;
+        settings.command_filter_enabled = false;
+        settings.command_filter_scope = CommandFilterScope::Both;
+        assert!(!settings.should_register_secondary_shortcut());
+
+        settings.post_process_enabled = true;
+        assert!(settings.should_register_secondary_shortcut());
+
+        settings.post_process_enabled = false;
+        settings.command_filter_enabled = true;
+        settings.command_filter_scope = CommandFilterScope::Transcribe;
+        assert!(!settings.should_register_secondary_shortcut());
+
+        settings.command_filter_scope = CommandFilterScope::PostProcess;
+        assert!(settings.should_register_secondary_shortcut());
+    }
+
+    #[test]
+    fn command_filter_applies_only_when_enabled_and_scope_matches() {
+        let mut settings = get_default_settings();
+        settings.command_filter_enabled = false;
+        settings.command_filter_scope = CommandFilterScope::Both;
+        assert!(!settings.command_filter_applies_to_hotkey(false));
+        assert!(!settings.command_filter_applies_to_hotkey(true));
+
+        settings.command_filter_enabled = true;
+        settings.command_filter_scope = CommandFilterScope::Transcribe;
+        assert!(settings.command_filter_applies_to_hotkey(false));
+        assert!(!settings.command_filter_applies_to_hotkey(true));
+    }
 }
