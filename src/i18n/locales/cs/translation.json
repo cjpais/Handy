@@ -146,6 +146,10 @@
           "cancel": {
             "name": "Zkratka zrušení",
             "description": "Klávesová zkratka pro zrušení aktuálního nahrávání."
+          },
+          "transcribe_with_post_process": {
+            "name": "Klávesa pro následné zpracování",
+            "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
           }
         },
         "errors": {
@@ -268,6 +272,9 @@
     },
     "postProcessing": {
       "title": "Následné zpracování",
+      "hotkey": {
+        "title": "Klávesová zkratka"
+      },
       "api": {
         "title": "API (kompatibilní s OpenAI)",
         "provider": {

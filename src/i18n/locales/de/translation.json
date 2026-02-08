@@ -146,6 +146,10 @@
           "cancel": {
             "name": "Abbrechen-Tastenkürzel",
             "description": "Das Tastenkürzel zum Abbrechen der aktuellen Aufnahme."
+          },
+          "transcribe_with_post_process": {
+            "name": "Nachbearbeitungs-Tastenkürzel",
+            "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf Ihre Transkription anwendet."
           }
         },
         "errors": {

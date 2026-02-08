@@ -129,6 +129,10 @@
           "cancel": {
             "name": "Atalho de Cancelar",
             "description": "O atalho de teclado para cancelar a gravação atual."
+          },
+          "transcribe_with_post_process": {
+            "name": "Tecla de Pós-Processamento",
+            "description": "Opcional: Uma tecla de atalho dedicada que sempre aplica pós-processamento com IA à sua transcrição."
           }
         },
         "errors": {

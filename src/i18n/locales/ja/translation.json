@@ -146,6 +146,10 @@
           "cancel": {
             "name": "キャンセルショートカット",
             "description": "現在の録音をキャンセルするためのキーボードショートカット。"
+          },
+          "transcribe_with_post_process": {
+            "name": "後処理ホットキー",
+            "description": "オプション：文字起こしに常にAI後処理を適用する専用ホットキー。"
           }
         },
         "errors": {

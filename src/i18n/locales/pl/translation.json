@@ -146,6 +146,10 @@
           "cancel": {
             "name": "Skrót anulowania",
             "description": "Skrót klawiaturowy do anulowania bieżącego nagrywania."
+          },
+          "transcribe_with_post_process": {
+            "name": "Skrót postprocessingu",
+            "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
           }
         },
         "errors": {

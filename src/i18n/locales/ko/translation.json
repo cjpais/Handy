@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "일반",
+    "models": "모델",
     "advanced": "고급",
     "postProcessing": "후처리",
     "history": "히스토리",
@@ -79,14 +80,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Handy에 오신 것을 환영합니다!",
-    "downloadPrompt": "음성 인식을 시작하려면 아래에서 모델을 다운로드하세요.",
-    "availableModels": "사용 가능한 모델",
-    "downloadModels": "모델 다운로드",
-    "chooseModel": "모델 선택",
     "active": "활성",
-    "download": "다운로드",
-    "downloadSize": "다운로드 크기",
+    "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
     "extracting": "{{modelName}} 압축 해제 중...",
     "extractingMultiple": "{{count}}개 모델 압축 해제 중...",
@@ -99,9 +94,24 @@
     "modelError": "모델 오류",
     "modelUnloaded": "모델 언로드됨",
     "noModelDownloadRequired": "모델 없음 - 다운로드 필요",
-    "deleteModel": "{{modelName}} 삭제"
+    "deleteModel": "{{modelName}} 삭제",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "취소",
+    "cancelDownload": "다운로드 취소",
+    "capabilities": {
+      "languageSelection": "여러 입력 언어를 지원합니다",
+      "singleLanguage": "이 언어만 지원합니다",
+      "multiLanguage": "다국어",
+      "languageOnly": "{{language}} 전용",
+      "translation": "영어로 번역 가능",
+      "translate": "영어로 번역"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} 설정",
+      "noSettingsNeeded": "이 모델은 별도의 설정 없이 자동으로 작동합니다."
+    },
     "general": {
       "title": "일반",
       "shortcut": {
@@ -119,6 +129,10 @@
           "cancel": {
             "name": "취소 단축키",
             "description": "현재 녹음을 취소하는 키보드 단축키입니다."
+          },
+          "transcribe_with_post_process": {
+            "name": "후처리 단축키",
+            "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
           }
         },
         "errors": {
@@ -162,6 +176,23 @@
         "title": "볼륨",
         "description": "오디오 피드백 사운드의 볼륨 조절"
       }
+    },
+    "models": {
+      "title": "음성 인식 모델",
+      "description": "음성 인식 모델을 선택하거나 추가 모델을 다운로드하세요. 모델마다 정확도와 속도가 다릅니다.",
+      "yourModels": "내 모델",
+      "availableModels": "다운로드 가능",
+      "downloaded": "다운로드됨",
+      "available": "다운로드 가능",
+      "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
+      "deleteTitle": "모델 삭제",
+      "filters": {
+        "all": "전체",
+        "multiLanguage": "다국어",
+        "translation": "번역",
+        "allLanguages": "모든 언어"
+      },
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
     },
     "advanced": {
       "title": "고급",
@@ -241,6 +272,9 @@
     },
     "postProcessing": {
       "title": "후처리",
+      "hotkey": {
+        "title": "단축키"
+      },
       "api": {
         "title": "API (OpenAI 호환)",
         "provider": {

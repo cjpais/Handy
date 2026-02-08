@@ -146,6 +146,10 @@
           "cancel": {
             "name": "Phím tắt hủy",
             "description": "Phím tắt để hủy bản ghi hiện tại."
+          },
+          "transcribe_with_post_process": {
+            "name": "Phím tắt xử lý sau",
+            "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
           }
         },
         "errors": {

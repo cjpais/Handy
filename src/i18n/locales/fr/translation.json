@@ -146,6 +146,10 @@
           "cancel": {
             "name": "Raccourci d'Annulation",
             "description": "Le raccourci clavier pour annuler l'enregistrement en cours."
+          },
+          "transcribe_with_post_process": {
+            "name": "Raccourci de post-traitement",
+            "description": "Facultatif : Un raccourci dédié qui applique toujours le post-traitement IA à votre transcription."
           }
         },
         "errors": {
