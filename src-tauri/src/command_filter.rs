@@ -1,4 +1,5 @@
 use log::debug;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -11,6 +12,54 @@ pub enum CommandFilterResult {
     Failed(String),
 }
 
+fn resolve_home_dir() -> Option<PathBuf> {
+    if let Some(home) = std::env::var_os("HOME") {
+        if !home.is_empty() {
+            return Some(PathBuf::from(home));
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        if let Some(profile) = std::env::var_os("USERPROFILE") {
+            if !profile.is_empty() {
+                return Some(PathBuf::from(profile));
+            }
+        }
+
+        if let (Some(drive), Some(path)) =
+            (std::env::var_os("HOMEDRIVE"), std::env::var_os("HOMEPATH"))
+        {
+            let mut full = PathBuf::from(drive);
+            full.push(path);
+            return Some(full);
+        }
+    }
+
+    None
+}
+
+fn expand_tilde_path_arg_with_home(arg: &str, home_dir: Option<&Path>) -> String {
+    let Some(home_dir) = home_dir else {
+        return arg.to_string();
+    };
+
+    if arg == "~" {
+        return home_dir.to_string_lossy().to_string();
+    }
+
+    if let Some(stripped) = arg.strip_prefix("~/").or_else(|| arg.strip_prefix("~\\")) {
+        return home_dir.join(stripped).to_string_lossy().to_string();
+    }
+
+    arg.to_string()
+}
+
+fn expand_tilde_path_arg(arg: &str) -> String {
+    let home_dir = resolve_home_dir();
+    expand_tilde_path_arg_with_home(arg, home_dir.as_deref())
+}
+
 pub async fn run_command_filter(
     executable: &str,
     args: &[String],
@@ -21,10 +70,12 @@ pub async fn run_command_filter(
     if executable.is_empty() {
         return CommandFilterResult::Failed("command_filter executable is empty".to_string());
     }
+    let executable = expand_tilde_path_arg(executable);
+    let expanded_args: Vec<String> = args.iter().map(|arg| expand_tilde_path_arg(arg)).collect();
 
     let timeout_ms = timeout_ms.max(1);
-    let mut child = match Command::new(executable)
-        .args(args)
+    let mut child = match Command::new(&executable)
+        .args(&expanded_args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -160,6 +211,28 @@ pub async fn run_command_filter(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn expands_tilde_prefixed_args_with_home_dir() {
+        let home = PathBuf::from("home-dir");
+        let expanded = expand_tilde_path_arg_with_home("~/filters/rules.txt", Some(home.as_path()));
+        assert_eq!(PathBuf::from(expanded), home.join("filters/rules.txt"));
+    }
+
+    #[test]
+    fn expands_standalone_tilde_to_home_dir() {
+        let home = PathBuf::from("home-dir");
+        let expanded = expand_tilde_path_arg_with_home("~", Some(home.as_path()));
+        assert_eq!(expanded, home.to_string_lossy());
+    }
+
+    #[test]
+    fn keeps_tilde_arg_when_home_dir_unknown() {
+        let original = "~/filters/rules.txt";
+        let expanded = expand_tilde_path_arg_with_home(original, None);
+        assert_eq!(expanded, original);
+    }
 
     #[cfg(unix)]
     #[test]

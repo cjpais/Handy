@@ -33,6 +33,7 @@ Defaults:
 Added `src-tauri/src/command_filter.rs`.
 
 - Runs `executable + args` directly (no shell string execution).
+- Expands args/executable beginning with `~/` (or `~`) to the current user's home directory before execution.
 - Writes transcription text to child `stdin` exactly (no forced newline).
 - Reads `stdout`/`stderr`.
 - Enforces timeout.
