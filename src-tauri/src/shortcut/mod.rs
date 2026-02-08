@@ -21,12 +21,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
     self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
-<<<<<<< HEAD
-    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
-=======
-    PasteMethod, ShortcutBinding, SoundTheme, WhisperComputeMode,
->>>>>>> 481830e (fix: clean rust warnings in tauri backend)
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
@@ -980,7 +975,16 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     settings::write_settings(&app, settings);
 
     // Refresh the tray menu with the new language
-    tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
+    if language == "auto" {
+        let system_locale = tauri_plugin_os::locale();
+        tray::update_tray_menu(
+            &app,
+            &tray::TrayIconState::Idle,
+            system_locale.as_deref(),
+        );
+    } else {
+        tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
+    }
 
     Ok(())
 }

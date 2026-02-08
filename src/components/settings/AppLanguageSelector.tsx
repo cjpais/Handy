@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { locale } from "@tauri-apps/plugin-os";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { SUPPORTED_LANGUAGES, type SupportedLanguageCode } from "../../i18n";
@@ -18,14 +19,25 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
     const currentLanguage = (settings?.app_language ||
       i18n.language) as SupportedLanguageCode;
 
-    const languageOptions = SUPPORTED_LANGUAGES.map((lang) => ({
-      value: lang.code,
-      label: `${lang.nativeName} (${lang.name})`,
-    }));
+    const languageOptions = [
+      { value: "auto", label: t("settings.general.language.auto") },
+      ...SUPPORTED_LANGUAGES.map((lang) => ({
+        value: lang.code,
+        label: `${lang.nativeName} (${lang.name})`,
+      })),
+    ];
 
-    const handleLanguageChange = (langCode: string) => {
-      i18n.changeLanguage(langCode);
-      updateSetting("app_language", langCode);
+    const handleLanguageChange = async (langCode: string) => {
+      if (langCode === "auto") {
+        const systemLocale = await locale();
+        const systemLang = systemLocale?.split("-")[0].toLowerCase() || "en";
+        await i18n.changeLanguage(systemLang);
+        await updateSetting("app_language", "auto");
+        return;
+      }
+
+      await i18n.changeLanguage(langCode);
+      await updateSetting("app_language", langCode);
     };
 
     return (
