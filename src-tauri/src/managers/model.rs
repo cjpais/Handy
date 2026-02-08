@@ -185,7 +185,8 @@ impl ModelManager {
             ModelInfo {
                 id: "breeze-asr".to_string(),
                 name: "Breeze ASR".to_string(),
-                description: "Optimized for Chinese and Taiwanese Mandarin.".to_string(),
+                description: "Optimized for Taiwanese Mandarin. Code-switching support."
+                    .to_string(),
                 filename: "breeze-asr-q5_k.bin".to_string(),
                 url: Some("https://blob.handy.computer/breeze-asr-q5_k.bin".to_string()),
                 size_mb: 1080,
