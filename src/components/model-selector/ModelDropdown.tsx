@@ -48,7 +48,7 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm">
+                  <div className="text-sm text-text/80">
                     {getTranslatedModelName(model, t)}
                   </div>
                   <div className="text-xs text-text/40 italic pe-4">
