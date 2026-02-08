@@ -176,6 +176,29 @@ impl ModelManager {
                 speed_score: 0.30,
                 supports_translation: true,
                 is_recommended: false,
+                supported_languages: whisper_languages.clone(),
+            },
+        );
+
+        available_models.insert(
+            "breeze-asr".to_string(),
+            ModelInfo {
+                id: "breeze-asr".to_string(),
+                name: "Breeze ASR".to_string(),
+                description: "Optimized for Taiwanese Mandarin. Code-switching support."
+                    .to_string(),
+                filename: "breeze-asr-q5_k.bin".to_string(),
+                url: Some("https://blob.handy.computer/breeze-asr-q5_k.bin".to_string()),
+                size_mb: 1080,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Whisper,
+                accuracy_score: 0.85,
+                speed_score: 0.35,
+                supports_translation: false,
+                is_recommended: false,
                 supported_languages: whisper_languages,
             },
         );
