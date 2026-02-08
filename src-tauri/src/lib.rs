@@ -1,4 +1,5 @@
 mod actions;
+mod api;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod apple_intelligence;
 mod audio_feedback;
@@ -133,6 +134,22 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+
+    // Start the REST API server if HANDY_API_PORT is set
+    if let Ok(port_str) = std::env::var("HANDY_API_PORT") {
+        if let Ok(port) = port_str.parse::<u16>() {
+            api::start_api_server(
+                transcription_manager.clone(),
+                model_manager.clone(),
+                port,
+            );
+        } else {
+            log::warn!(
+                "Invalid HANDY_API_PORT value '{}', API server not started",
+                port_str
+            );
+        }
+    }
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command

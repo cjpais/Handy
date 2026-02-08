@@ -54,7 +54,7 @@ rubato = "0.16.2"
 hound = "3.5.1"
 log = "0.4.25"
 env_filter = "0.1.0"
-tokio = "1.43.0"
+tokio = { version = "1.43.0", features = ["net", "rt"] }
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 enigo = "0.6.1"
 rodio = { git = "https://github.com/cjpais/rodio.git" }
@@ -71,6 +71,8 @@ flate2 = "1.0"
 transcribe-rs = { version = "0.2.2", features = ["whisper", "parakeet", "moonshine"] }
 handy-keys = "0.1.4"
 ferrous-opencc = "0.2.3"
+axum = { version = "0.7", features = ["multipart"] }
+symphonia = { version = "0.5", features = ["mp3", "flac", "ogg", "wav", "pcm", "vorbis", "aac"] }
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
