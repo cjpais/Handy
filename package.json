@@ -16,7 +16,7 @@
     "format:backend": "cd src-tauri && cargo fmt",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
-    "check:translations": "node scripts/check-translations.cjs"
+    "check:translations": "bun scripts/check-translations.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",

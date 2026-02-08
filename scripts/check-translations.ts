@@ -1,32 +1,22 @@
-#!/usr/bin/env node
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-/**
- * Translation Consistency Checker
- *
- * This script validates that all language translation files have the same
- * structure and keys as the English (en) reference file.
- *
- * It checks:
- * - All translation files can be parsed as valid JSON
- * - All languages have the same keys as English
- * - No keys are missing in any language
- *
- * Usage: node scripts/check-translations.js
- * Exit code: 0 if all checks pass, 1 if any checks fail
- */
-
-const fs = require("fs");
-const path = require("path");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const LOCALES_DIR = path.join(__dirname, "..", "src", "i18n", "locales");
 const REFERENCE_LANG = "en";
 
-/**
- * Get all language codes from the locales directory
- * @returns {Array<string>} Array of language codes (excluding reference lang)
- */
-function getLanguages() {
+type TranslationData = Record<string, unknown>;
+
+interface ValidationResult {
+  valid: boolean;
+  missing: string[][];
+  extra: string[][];
+}
+
+function getLanguages(): string[] {
   const entries = fs.readdirSync(LOCALES_DIR, { withFileTypes: true });
   return entries
     .filter((entry) => entry.isDirectory() && entry.name !== REFERENCE_LANG)
@@ -37,7 +27,7 @@ function getLanguages() {
 const LANGUAGES = getLanguages();
 
 // Colors for terminal output
-const colors = {
+const colors: Record<string, string> = {
   reset: "\x1b[0m",
   red: "\x1b[31m",
   green: "\x1b[32m",
@@ -45,74 +35,63 @@ const colors = {
   blue: "\x1b[34m",
 };
 
-function colorize(text, color) {
+function colorize(text: string, color: string): string {
   return `${colors[color]}${text}${colors.reset}`;
 }
 
-/**
- * Get all key paths from a nested object
- * @param {Object} obj - The object to extract keys from
- * @param {Array<string>} prefix - Current path prefix
- * @returns {Array<Array<string>>} Array of key paths
- */
-function getAllKeyPaths(obj, prefix = []) {
-  let paths = [];
+function getAllKeyPaths(
+  obj: TranslationData,
+  prefix: string[] = [],
+): string[][] {
+  let paths: string[][] = [];
   for (const key in obj) {
-    if (!obj.hasOwnProperty(key)) continue;
+    if (!Object.hasOwn(obj, key)) continue;
 
     const currentPath = prefix.concat([key]);
     const value = obj[key];
 
     if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-      // Recurse into nested objects
-      paths = paths.concat(getAllKeyPaths(value, currentPath));
+      paths = paths.concat(
+        getAllKeyPaths(value as TranslationData, currentPath),
+      );
     } else {
-      // Leaf node - add the path
       paths.push(currentPath);
     }
   }
   return paths;
 }
 
-/**
- * Check if a key path exists in an object
- * @param {Object} obj - The object to check
- * @param {Array<string>} keyPath - The path to check
- * @returns {boolean} True if the path exists
- */
-function hasKeyPath(obj, keyPath) {
-  let current = obj;
+function hasKeyPath(obj: TranslationData, keyPath: string[]): boolean {
+  let current: unknown = obj;
   for (const key of keyPath) {
-    if (current[key] === undefined) {
+    if (
+      typeof current !== "object" ||
+      current === null ||
+      (current as Record<string, unknown>)[key] === undefined
+    ) {
       return false;
     }
-    current = current[key];
+    current = (current as Record<string, unknown>)[key];
   }
   return true;
 }
 
-/**
- * Load and parse a translation file
- * @param {string} lang - Language code
- * @returns {Object|null} Parsed JSON or null if error
- */
-function loadTranslationFile(lang) {
+function loadTranslationFile(lang: string): TranslationData | null {
   const filePath = path.join(LOCALES_DIR, lang, "translation.json");
 
   try {
     const content = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(content);
+    return JSON.parse(content) as TranslationData;
   } catch (error) {
-    console.error(colorize(`✗ Error loading ${lang}/translation.json:`, "red"));
-    console.error(`  ${error.message}`);
+    console.error(
+      colorize(`✗ Error loading ${lang}/translation.json:`, "red"),
+    );
+    console.error(`  ${(error as Error).message}`);
     return null;
   }
 }
 
-/**
- * Main validation function
- */
-function validateTranslations() {
+function validateTranslations(): void {
   console.log(colorize("\n🌍 Translation Consistency Check\n", "blue"));
 
   // Load reference file
@@ -132,7 +111,7 @@ function validateTranslations() {
 
   // Track validation results
   let hasErrors = false;
-  const results = {};
+  const results: Record<string, ValidationResult> = {};
 
   // Validate each language
   for (const lang of LANGUAGES) {
