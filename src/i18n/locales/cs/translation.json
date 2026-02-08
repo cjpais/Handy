@@ -20,6 +20,7 @@
     "recommended": "Doporučeno",
     "download": "Stáhnout",
     "downloading": "Stahování...",
+    "customModelDescription": "Oficiálně nepodporováno",
     "downloadFailed": "Stahování se nezdařilo. Zkuste to prosím znovu.",
     "modelCard": {
       "accuracy": "přesnost",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Vlastní",
     "active": "Aktivní",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "extracting": "Rozbaluji {{modelName}}...",
@@ -129,7 +131,8 @@
       },
       "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
       "yourModels": "Stažené modely",
-      "availableModels": "Dostupné ke stažení"
+      "availableModels": "Dostupné ke stažení",
+      "customModels": "Vlastní modely"
     },
     "general": {
       "title": "Obecné",
@@ -404,6 +407,10 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "customModels": {
+        "label": "Vlastní modely",
+        "description": "Povolit načítání vlastních modelů Whisper ze složky modelů. Vyžaduje restart. Komunitní modely nejsou oficiálně podporovány."
       },
       "paths": {
         "appData": "Data aplikace:",

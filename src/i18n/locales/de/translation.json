@@ -20,6 +20,7 @@
     "recommended": "Empfohlen",
     "download": "Herunterladen",
     "downloading": "Wird heruntergeladen...",
+    "customModelDescription": "Nicht offiziell unterstützt",
     "downloadFailed": "Download fehlgeschlagen. Bitte erneut versuchen.",
     "modelCard": {
       "accuracy": "Genauigkeit",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Benutzerdefiniert",
     "active": "Aktiv",
     "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",
@@ -129,7 +131,8 @@
       },
       "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
       "yourModels": "Heruntergeladene Modelle",
-      "availableModels": "Zum Download verfügbar"
+      "availableModels": "Zum Download verfügbar",
+      "customModels": "Benutzerdefinierte Modelle"
     },
     "general": {
       "title": "Allgemein",
@@ -404,6 +407,10 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "customModels": {
+        "label": "Benutzerdefinierte Modelle",
+        "description": "Laden von benutzerdefinierten Whisper-Modellen aus dem Modellordner erlauben. Neustart erforderlich. Community-Modelle werden nicht offiziell unterstützt."
       },
       "paths": {
         "appData": "App-Daten:",

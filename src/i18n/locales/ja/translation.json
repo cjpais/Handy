@@ -20,6 +20,7 @@
     "recommended": "おすすめ",
     "download": "ダウンロード",
     "downloading": "ダウンロード中...",
+    "customModelDescription": "公式サポート対象外",
     "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
     "modelCard": {
       "accuracy": "精度",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "カスタム",
     "active": "アクティブ",
     "switching": "切替中...",
     "noModelsAvailable": "利用可能なモデルがありません",
@@ -129,7 +131,8 @@
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
       "yourModels": "ダウンロード済みモデル",
-      "availableModels": "ダウンロード可能"
+      "availableModels": "ダウンロード可能",
+      "customModels": "カスタムモデル"
     },
     "general": {
       "title": "一般",
@@ -404,6 +407,10 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "customModels": {
+        "label": "カスタムモデル",
+        "description": "モデルフォルダからカスタムWhisperモデルの読み込みを許可します。再起動が必要です。コミュニティモデルは公式にはサポートされていません。"
       },
       "paths": {
         "appData": "アプリデータ:",

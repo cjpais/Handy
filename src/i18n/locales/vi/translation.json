@@ -20,6 +20,7 @@
     "recommended": "Đề xuất",
     "download": "Tải xuống",
     "downloading": "Đang tải xuống...",
+    "customModelDescription": "Không được hỗ trợ chính thức",
     "downloadFailed": "Tải xuống thất bại. Vui lòng thử lại.",
     "modelCard": {
       "accuracy": "độ chính xác",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Tùy chỉnh",
     "active": "Đang hoạt động",
     "switching": "Đang chuyển...",
     "noModelsAvailable": "Không có mô hình nào",
@@ -129,7 +131,8 @@
       },
       "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này.",
       "yourModels": "Mô hình đã tải",
-      "availableModels": "Có sẵn để tải xuống"
+      "availableModels": "Có sẵn để tải xuống",
+      "customModels": "Mô hình tùy chỉnh"
     },
     "general": {
       "title": "Chung",
@@ -399,6 +402,10 @@
       "appendTrailingSpace": {
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
+      },
+      "customModels": {
+        "label": "Mô hình tùy chỉnh",
+        "description": "Cho phép tải các mô hình Whisper tùy chỉnh từ thư mục mô hình. Cần khởi động lại. Các mô hình cộng đồng không được hỗ trợ chính thức."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

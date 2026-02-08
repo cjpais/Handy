@@ -20,6 +20,7 @@
     "recommended": "Önerilen",
     "download": "İndir",
     "downloading": "İndiriliyor...",
+    "customModelDescription": "Resmi olarak desteklenmiyor",
     "downloadFailed": "İndirme başarısız oldu. Lütfen tekrar deneyin.",
     "modelCard": {
       "accuracy": "doğruluk",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Özel",
     "active": "Aktif",
     "noModelsAvailable": "Kullanılabilir model yok",
     "extracting": "{{modelName}} çıkarılıyor...",
@@ -129,7 +131,8 @@
       },
       "noModelsMatch": "Bu filtreyle eşleşen model yok.",
       "yourModels": "İndirilen modeller",
-      "availableModels": "İndirilebilir"
+      "availableModels": "İndirilebilir",
+      "customModels": "Özel Modeller"
     },
     "general": {
       "title": "Genel",
@@ -399,6 +402,10 @@
       "appendTrailingSpace": {
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
+      },
+      "customModels": {
+        "label": "Özel Modeller",
+        "description": "Model klasöründen özel Whisper modellerinin yüklenmesine izin ver. Yeniden başlatma gerekli. Topluluk modelleri resmi olarak desteklenmemektedir."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

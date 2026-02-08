@@ -20,6 +20,7 @@
     "recommended": "Рекомендовано",
     "download": "Завантажити",
     "downloading": "Завантаження...",
+    "customModelDescription": "Офіційно не підтримується",
     "downloadFailed": "Завантаження не вдалося. Будь ласка, спробуйте ще раз.",
     "modelCard": {
       "accuracy": "точність",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Користувацька",
     "active": "Активна",
     "noModelsAvailable": "Немає доступних моделей",
     "extracting": "Розпакування {{modelName}}...",
@@ -171,7 +173,8 @@
       },
       "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
       "yourModels": "Завантажені моделі",
-      "availableModels": "Доступні для завантаження"
+      "availableModels": "Доступні для завантаження",
+      "customModels": "Користувацькі моделі"
     },
     "sound": {
       "title": "Звук",
@@ -399,6 +402,10 @@
       "appendTrailingSpace": {
         "label": "Додавати пробіл в кінці",
         "description": "Додавати пробіл після вставленої транскрипції"
+      },
+      "customModels": {
+        "label": "Користувацькі моделі",
+        "description": "Дозволити завантаження користувацьких моделей Whisper з папки моделей. Потрібен перезапуск. Моделі спільноти офіційно не підтримуються."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

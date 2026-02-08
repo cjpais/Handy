@@ -20,6 +20,7 @@
     "recommended": "Recomendado",
     "download": "Baixar",
     "downloading": "Baixando...",
+    "customModelDescription": "Não suportado oficialmente",
     "downloadFailed": "Falha no download. Por favor, tente novamente.",
     "modelCard": {
       "accuracy": "precisão",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Personalizado",
     "active": "Ativo",
     "noModelsAvailable": "Nenhum modelo disponível",
     "extracting": "Extraindo {{modelName}}...",
@@ -171,7 +173,8 @@
       },
       "noModelsMatch": "Nenhum modelo corresponde a este filtro.",
       "yourModels": "Modelos baixados",
-      "availableModels": "Disponíveis para download"
+      "availableModels": "Disponíveis para download",
+      "customModels": "Modelos personalizados"
     },
     "sound": {
       "title": "Som",
@@ -404,6 +407,10 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "customModels": {
+        "label": "Modelos personalizados",
+        "description": "Permitir o carregamento de modelos Whisper personalizados a partir da pasta de modelos. Reinicialização necessária. Os modelos da comunidade não são oficialmente suportados."
       },
       "paths": {
         "appData": "Dados do App:",

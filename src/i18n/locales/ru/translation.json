@@ -20,6 +20,7 @@
     "recommended": "Рекомендуется",
     "download": "Скачать",
     "downloading": "Загрузка...",
+    "customModelDescription": "Официально не поддерживается",
     "downloadFailed": "Загрузка не удалась. Пожалуйста, попробуйте снова.",
     "modelCard": {
       "accuracy": "точность",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Пользовательская",
     "active": "Активный",
     "switching": "Переключение...",
     "noModelsAvailable": "Нет доступных моделей",
@@ -129,7 +131,8 @@
       },
       "noModelsMatch": "Нет моделей, соответствующих этому фильтру.",
       "yourModels": "Загруженные модели",
-      "availableModels": "Доступны для загрузки"
+      "availableModels": "Доступны для загрузки",
+      "customModels": "Пользовательские модели"
     },
     "general": {
       "title": "Общие",
@@ -404,6 +407,10 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "customModels": {
+        "label": "Пользовательские модели",
+        "description": "Разрешить загрузку пользовательских моделей Whisper из папки моделей. Требуется перезапуск. Модели сообщества официально не поддерживаются."
       },
       "paths": {
         "appData": "Данные приложения:",

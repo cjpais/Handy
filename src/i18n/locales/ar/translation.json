@@ -20,6 +20,7 @@
     "recommended": "موصى به",
     "download": "تنزيل",
     "downloading": "...جاري التنزيل",
+    "customModelDescription": "غير مدعوم رسميًا",
     "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
     "modelCard": {
       "accuracy": "الدقة",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "مخصص",
     "active": "نشط",
     "noModelsAvailable": "لا توجد نماذج متاحة",
     "extracting": "...جاري استخراج {{modelName}}",
@@ -383,6 +385,10 @@
         "description": ".اختر الواجهة الخلفية لاختصارات لوحة المفاتيح",
         "bindingsReset": "كانت اختصارات لوحة المفاتيح غير متوافقة وتمت إعادة تعيينها إلى القيم الافتراضية"
       },
+      "customModels": {
+        "label": "نماذج مخصصة",
+        "description": "السماح بتحميل نماذج Whisper المخصصة من مجلد النماذج. يتطلب إعادة التشغيل. النماذج المجتمعية غير مدعومة رسميًا."
+      },
       "paths": {
         "appData": "بيانات التطبيق:",
         "models": "النماذج:",
@@ -442,7 +448,8 @@
         "translation": "ترجمة",
         "allLanguages": "جميع اللغات"
       },
-      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
+      "customModels": "نماذج مخصصة"
     }
   },
   "footer": {
