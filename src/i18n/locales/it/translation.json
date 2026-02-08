@@ -410,7 +410,7 @@
       },
       "customModels": {
         "label": "Modelli personalizzati",
-        "description": "Consenti il caricamento di modelli Whisper personalizzati dalla cartella dei modelli. Riavvio richiesto. I modelli della comunità non sono ufficialmente supportati."
+        "description": "Consenti il caricamento di modelli Whisper personalizzati dalla cartella dei modelli. I modelli della comunità non sono ufficialmente supportati."
       },
       "paths": {
         "appData": "Dati App:",

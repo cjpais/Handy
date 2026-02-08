@@ -410,7 +410,7 @@
       },
       "customModels": {
         "label": "Benutzerdefinierte Modelle",
-        "description": "Laden von benutzerdefinierten Whisper-Modellen aus dem Modellordner erlauben. Neustart erforderlich. Community-Modelle werden nicht offiziell unterstützt."
+        "description": "Laden von benutzerdefinierten Whisper-Modellen aus dem Modellordner erlauben. Community-Modelle werden nicht offiziell unterstützt."
       },
       "paths": {
         "appData": "App-Daten:",

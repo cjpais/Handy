@@ -405,7 +405,7 @@
       },
       "customModels": {
         "label": "自定义模型",
-        "description": "允许从模型文件夹加载自定义 Whisper 模型。需要重启。社区模型未获官方支持。"
+        "description": "允许从模型文件夹加载自定义 Whisper 模型。社区模型未获官方支持。"
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

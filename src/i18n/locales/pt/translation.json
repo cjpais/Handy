@@ -410,7 +410,7 @@
       },
       "customModels": {
         "label": "Modelos personalizados",
-        "description": "Permitir o carregamento de modelos Whisper personalizados a partir da pasta de modelos. Reinicialização necessária. Os modelos da comunidade não são oficialmente suportados."
+        "description": "Permitir o carregamento de modelos Whisper personalizados a partir da pasta de modelos. Os modelos da comunidade não são oficialmente suportados."
       },
       "paths": {
         "appData": "Dados do App:",

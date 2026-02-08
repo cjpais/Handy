@@ -405,7 +405,7 @@
       },
       "customModels": {
         "label": "Özel Modeller",
-        "description": "Model klasöründen özel Whisper modellerinin yüklenmesine izin ver. Yeniden başlatma gerekli. Topluluk modelleri resmi olarak desteklenmemektedir."
+        "description": "Model klasöründen özel Whisper modellerinin yüklenmesine izin ver. Topluluk modelleri resmi olarak desteklenmemektedir."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

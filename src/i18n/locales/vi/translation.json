@@ -405,7 +405,7 @@
       },
       "customModels": {
         "label": "Mô hình tùy chỉnh",
-        "description": "Cho phép tải các mô hình Whisper tùy chỉnh từ thư mục mô hình. Cần khởi động lại. Các mô hình cộng đồng không được hỗ trợ chính thức."
+        "description": "Cho phép tải các mô hình Whisper tùy chỉnh từ thư mục mô hình. Các mô hình cộng đồng không được hỗ trợ chính thức."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

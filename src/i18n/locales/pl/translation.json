@@ -410,7 +410,7 @@
       },
       "customModels": {
         "label": "Niestandardowe modele",
-        "description": "Zezwól na ładowanie niestandardowych modeli Whisper z folderu modeli. Wymagany restart. Modele społeczności nie są oficjalnie wspierane."
+        "description": "Zezwól na ładowanie niestandardowych modeli Whisper z folderu modeli. Modele społeczności nie są oficjalnie wspierane."
       },
       "paths": {
         "appData": "Dane aplikacji:",
