@@ -127,7 +127,7 @@
         "allLanguages": "すべての言語"
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
-      "yourModels": "あなたのモデル",
+      "yourModels": "ダウンロード済みモデル",
       "availableModels": "ダウンロード可能"
     },
     "general": {
