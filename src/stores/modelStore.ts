@@ -166,6 +166,12 @@ export const useModelStore = create<ModelsStore>()(
         set(
           produce((state) => {
             state.downloadingModels[modelId] = true;
+            state.downloadProgress[modelId] = {
+              model_id: modelId,
+              downloaded: 0,
+              total: 0,
+              percentage: 0,
+            };
           }),
         );
         const result = await commands.downloadModel(modelId);

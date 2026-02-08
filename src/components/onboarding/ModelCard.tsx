@@ -71,11 +71,8 @@ const ModelCard: React.FC<ModelCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const isFeatured = variant === "featured";
-  // Card is clickable if model is available/active, OR if downloadable without explicit download button
-  const canSelect =
-    status === "available" ||
-    status === "active" ||
-    (status === "downloadable" && !onDownload);
+  const isClickable =
+    status === "available" || status === "active" || status === "downloadable";
 
   // Get translated model name and description
   const displayName = getTranslatedModelName(model, t);
@@ -95,20 +92,18 @@ const ModelCard: React.FC<ModelCardProps> = ({
   };
 
   const getInteractiveClasses = () => {
-    if (!canSelect) return "";
+    if (!isClickable) return "";
     if (disabled) return "opacity-50 cursor-not-allowed";
     return "cursor-pointer hover:border-logo-primary/50 hover:bg-logo-primary/5 hover:shadow-lg hover:scale-[1.01] active:scale-[0.99] group";
   };
 
   const handleClick = () => {
-    if (canSelect && !disabled) {
+    if (!isClickable || disabled) return;
+    if (status === "downloadable" && onDownload) {
+      onDownload(model.id);
+    } else {
       onSelect(model.id);
     }
-  };
-
-  const handleDownload = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDownload?.(model.id);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -120,10 +115,10 @@ const ModelCard: React.FC<ModelCardProps> = ({
     <div
       onClick={handleClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" && canSelect) handleClick();
+        if (e.key === "Enter" && isClickable) handleClick();
       }}
-      role={canSelect ? "button" : undefined}
-      tabIndex={canSelect ? 0 : undefined}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
       className={[
         baseClasses,
         getVariantClasses(),
@@ -138,7 +133,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
         <div className="flex flex-col items-start flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <h3
-              className={`text-base font-semibold text-text ${canSelect ? "group-hover:text-logo-primary" : ""} transition-colors`}
+              className={`text-base font-semibold text-text ${isClickable ? "group-hover:text-logo-primary" : ""} transition-colors`}
             >
               {displayName}
             </h3>
@@ -193,7 +188,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
       <hr className="w-full border-mid-gray/20" />
 
       {/* Bottom row: tags + action buttons (full width) */}
-      <div className="flex items-center gap-3 w-full -mb-0.5">
+      <div className="flex items-center gap-3 w-full -mb-0.5 mt-0.5 h-5">
         <div
           className="flex items-center gap-1 text-xs text-text/50"
           title={
@@ -214,17 +209,11 @@ const ModelCard: React.FC<ModelCardProps> = ({
             <span>{t("modelSelector.capabilities.translate")}</span>
           </div>
         )}
-        {status === "downloadable" && onDownload && (
-          <Button
-            variant="primary-soft"
-            size="sm"
-            onClick={handleDownload}
-            disabled={disabled}
-            className="flex items-center gap-2 ml-auto"
-          >
-            <Download className="w-4 h-4" />
+        {status === "downloadable" && (
+          <span className="flex items-center gap-1.5 ml-auto text-xs text-text/50">
+            <Download className="w-3.5 h-3.5" />
             <span>{formatModelSize(Number(model.size_mb))}</span>
-          </Button>
+          </span>
         )}
         {onDelete && (status === "available" || status === "active") && (
           <Button
