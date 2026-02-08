@@ -275,7 +275,7 @@ Handy can auto-discover custom Whisper GGML models placed in the `models` direct
 3. Obtain a Whisper model in GGML `.bin` format (e.g., from [Hugging Face](https://huggingface.co/models?search=whisper%20ggml))
 4. Place the `.bin` file in your `models` directory (see paths above)
 5. Restart Handy
-6. The model will appear in the "Custom Models" section of the model selector
+6. The model will appear in the "Custom Models" section of the Models settings page
 
 **Important:**
 
