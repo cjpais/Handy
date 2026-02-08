@@ -328,6 +328,18 @@ impl ModelManager {
         models.get(model_id).cloned()
     }
 
+    /// Remove all custom models from the in-memory available models list.
+    pub fn remove_custom_models(&self) {
+        let mut models = self.available_models.lock().unwrap();
+        models.retain(|_, m| !m.is_custom);
+    }
+
+    /// Discover custom models and add them to the in-memory available models list.
+    pub fn add_custom_models(&self) -> Result<()> {
+        let mut models = self.available_models.lock().unwrap();
+        Self::discover_custom_whisper_models(&self.models_dir, &mut models)
+    }
+
     fn migrate_bundled_models(&self) -> Result<()> {
         // Check for bundled models and copy them to user directory
         let bundled_models = ["ggml-small.bin"]; // Add other bundled models here if any
