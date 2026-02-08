@@ -8,7 +8,7 @@
   },
   "sidebar": {
     "general": "Geral",
-    "models": "Models",
+    "models": "Modelos",
     "advanced": "Avançado",
     "postProcessing": "Pós-Processamento",
     "history": "Histórico",
@@ -94,13 +94,13 @@
     "modelUnloaded": "Modelo Descarregado",
     "noModelDownloadRequired": "Sem Modelo - Download Necessário",
     "deleteModel": "Excluir {{modelName}}",
-    "switching": "Switching...",
+    "switching": "Alternando...",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
-      "languageSelection": "Supports multiple input languages",
-      "multiLanguage": "Multi-language",
-      "translation": "Can translate to English",
-      "translate": "Translate to English",
+      "languageSelection": "Suporta vários idiomas de entrada",
+      "multiLanguage": "Multi-idioma",
+      "translation": "Pode traduzir para inglês",
+      "translate": "Traduzir para inglês",
       "singleLanguage": "Suporta apenas este idioma",
       "languageOnly": "Apenas {{language}}"
     },
@@ -109,8 +109,8 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} Settings",
-      "noSettingsNeeded": "This model works automatically with no configuration needed."
+      "title": "Configurações de {{model}}",
+      "noSettingsNeeded": "Este modelo funciona automaticamente sem necessidade de configuração."
     },
     "general": {
       "title": "Geral",

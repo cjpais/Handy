@@ -8,7 +8,7 @@
   },
   "sidebar": {
     "general": "Загальні",
-    "models": "Models",
+    "models": "Моделі",
     "advanced": "Розширені",
     "postProcessing": "Постобробка",
     "history": "Історія",
@@ -94,13 +94,13 @@
     "modelUnloaded": "Модель вивантажена",
     "noModelDownloadRequired": "Немає моделі - потрібно завантажити",
     "deleteModel": "Видалити {{modelName}}",
-    "switching": "Switching...",
+    "switching": "Перемикання...",
     "downloadSpeed": "{{speed}} MB/s",
     "capabilities": {
-      "languageSelection": "Supports multiple input languages",
-      "multiLanguage": "Multi-language",
-      "translation": "Can translate to English",
-      "translate": "Translate to English",
+      "languageSelection": "Підтримує кілька мов введення",
+      "multiLanguage": "Багатомовна",
+      "translation": "Може перекладати на англійську",
+      "translate": "Перекласти на англійську",
       "singleLanguage": "Підтримує лише цю мову",
       "languageOnly": "Лише {{language}}"
     },
@@ -109,8 +109,8 @@
   },
   "settings": {
     "modelSettings": {
-      "title": "{{model}} Settings",
-      "noSettingsNeeded": "This model works automatically with no configuration needed."
+      "title": "Налаштування {{model}}",
+      "noSettingsNeeded": "Ця модель працює автоматично без потреби в налаштуванні."
     },
     "general": {
       "title": "Загальні",

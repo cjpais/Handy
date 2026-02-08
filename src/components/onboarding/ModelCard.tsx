@@ -275,9 +275,10 @@ const ModelCard: React.FC<ModelCardProps> = ({
             size="sm"
             onClick={handleDelete}
             title={t("modelSelector.deleteModel", { modelName: displayName })}
-            className="p-2"
+            className="flex items-center gap-1.5"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>{t("common.delete")}</span>
           </Button>
         )}
       </div>
