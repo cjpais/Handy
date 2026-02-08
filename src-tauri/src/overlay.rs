@@ -216,7 +216,10 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 
     match builder.build() {
-        Ok(_window) => {
+        Ok(window) => {
+            #[cfg(not(target_os = "linux"))]
+            let _ = &window;
+
             #[cfg(target_os = "linux")]
             {
                 // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
