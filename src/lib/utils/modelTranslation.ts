@@ -23,8 +23,8 @@ export function getTranslatedModelDescription(
   model: ModelInfo,
   t: TFunction,
 ): string {
-  // Custom models (no download URL) use a generic translation key
-  if (model.url === null) {
+  // Custom models use a generic translation key
+  if (model.is_custom) {
     return t("onboarding.customModelDescription");
   }
   const translationKey = `onboarding.models.${model.id}.description`;

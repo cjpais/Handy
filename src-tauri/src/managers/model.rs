@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -41,6 +41,7 @@ pub struct ModelInfo {
     pub supports_translation: bool, // Whether the model supports translating to English
     pub is_recommended: bool,       // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
+    pub is_custom: bool,            // Whether this is a user-provided custom model
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -110,6 +111,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -133,6 +135,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -155,6 +158,7 @@ impl ModelManager {
                 supports_translation: false, // Turbo doesn't support translation
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -177,6 +181,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -200,6 +205,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: whisper_languages,
+                is_custom: false,
             },
         );
 
@@ -223,6 +229,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                is_custom: false,
             },
         );
 
@@ -255,6 +262,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages,
+                is_custom: false,
             },
         );
 
@@ -277,6 +285,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                is_custom: false,
             },
         );
 
@@ -427,7 +436,7 @@ impl ModelManager {
     /// Discover custom Whisper models (.bin files) in the models directory.
     /// Skips files that match predefined model filenames.
     fn discover_custom_whisper_models(
-        models_dir: &PathBuf,
+        models_dir: &Path,
         available_models: &mut HashMap<String, ModelInfo>,
     ) -> Result<()> {
         if !models_dir.exists() {
@@ -530,8 +539,12 @@ impl ModelManager {
                     partial_size: 0,
                     is_directory: false,
                     engine_type: EngineType::Whisper,
-                    accuracy_score: 0.75,
-                    speed_score: 0.75,
+                    accuracy_score: 0.0, // Sentinel: UI hides score bars when both are 0
+                    speed_score: 0.0,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: vec![],
+                    is_custom: true,
                 },
             );
         }
@@ -941,9 +954,17 @@ impl ModelManager {
             return Err(anyhow::anyhow!("No model files found to delete"));
         }
 
-        // Update download status
-        self.update_download_status()?;
-        debug!("ModelManager: download status updated");
+        // Custom models should be removed from the list entirely since they
+        // have no download URL and can't be re-downloaded
+        if model_info.is_custom {
+            let mut models = self.available_models.lock().unwrap();
+            models.remove(model_id);
+            debug!("ModelManager: removed custom model from available models");
+        } else {
+            // Update download status (marks predefined models as not downloaded)
+            self.update_download_status()?;
+            debug!("ModelManager: download status updated");
+        }
 
         // Emit event to notify UI
         let _ = self.app_handle.emit("model-deleted", model_id);
@@ -1071,6 +1092,10 @@ mod tests {
                 engine_type: EngineType::Whisper,
                 accuracy_score: 0.5,
                 speed_score: 0.5,
+                supports_translation: true,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
             },
         );
 
@@ -1087,6 +1112,10 @@ mod tests {
         assert_eq!(custom.filename, "my-custom-model.bin");
         assert!(custom.url.is_none()); // Custom models have no URL
         assert!(custom.is_downloaded);
+        assert!(custom.is_custom);
+        assert_eq!(custom.accuracy_score, 0.0);
+        assert_eq!(custom.speed_score, 0.0);
+        assert!(custom.supported_languages.is_empty());
 
         // Verify underscore handling
         let medical = models.get("whisper_medical_v2").unwrap();

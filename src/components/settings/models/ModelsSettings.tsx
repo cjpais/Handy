@@ -159,31 +159,43 @@ export const ModelsSettings: React.FC = () => {
     });
   }, [models, languageFilter]);
 
-  // Split filtered models into downloaded and available sections
-  const { downloadedModels, availableModels } = useMemo(() => {
+  // Split filtered models into downloaded, custom, and available sections
+  const { downloadedModels, customModels, availableModels } = useMemo(() => {
     const downloaded: ModelInfo[] = [];
+    const custom: ModelInfo[] = [];
     const available: ModelInfo[] = [];
 
     for (const model of filteredModels) {
-      const isDownloaded =
+      if (model.is_custom) {
+        custom.push(model);
+      } else if (
         model.is_downloaded ||
         model.id in downloadingModels ||
-        model.id in extractingModels;
-      if (isDownloaded) {
+        model.id in extractingModels
+      ) {
         downloaded.push(model);
       } else {
         available.push(model);
       }
     }
 
-    // Sort downloaded models so the active model is always first
+    // Sort active model first in each section
     downloaded.sort((a, b) => {
       if (a.id === currentModel) return -1;
       if (b.id === currentModel) return 1;
       return 0;
     });
+    custom.sort((a, b) => {
+      if (a.id === currentModel) return -1;
+      if (b.id === currentModel) return 1;
+      return 0;
+    });
 
-    return { downloadedModels: downloaded, availableModels: available };
+    return {
+      downloadedModels: downloaded,
+      customModels: custom,
+      availableModels: available,
+    };
   }, [filteredModels, downloadingModels, extractingModels, currentModel]);
 
   if (loading) {
@@ -321,6 +333,25 @@ export const ModelsSettings: React.FC = () => {
                   onCancel={handleModelCancel}
                   downloadProgress={getDownloadProgress(model.id)}
                   downloadSpeed={getDownloadSpeed(model.id)}
+                  showRecommended={false}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Custom Models Section */}
+          {customModels.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium text-text/60">
+                {t("settings.models.customModels")}
+              </h2>
+              {customModels.map((model: ModelInfo) => (
+                <ModelCard
+                  key={model.id}
+                  model={model}
+                  status={getModelStatus(model.id)}
+                  onSelect={handleModelSelect}
+                  onDelete={handleModelDelete}
                   showRecommended={false}
                 />
               ))}
