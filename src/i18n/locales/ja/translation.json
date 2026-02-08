@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "一般",
+    "models": "モデル",
     "advanced": "詳細設定",
     "postProcessing": "後処理",
     "history": "履歴",
@@ -19,6 +20,7 @@
     "recommended": "おすすめ",
     "download": "ダウンロード",
     "downloading": "ダウンロード中...",
+    "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
     "modelCard": {
       "accuracy": "精度",
       "speed": "速度"
@@ -71,18 +73,16 @@
       "grant": "権限を許可",
       "granted": "許可済み",
       "waiting": "待機中...",
-      "allGranted": "準備完了！"
+      "allGranted": "準備完了！",
+      "errors": {
+        "checkFailed": "権限の確認に失敗しました。もう一度お試しください。",
+        "requestFailed": "権限のリクエストに失敗しました。もう一度お試しください。"
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Handyへようこそ！",
-    "downloadPrompt": "文字起こしを開始するには、下からモデルをダウンロードしてください。",
-    "availableModels": "利用可能なモデル",
-    "downloadModels": "モデルをダウンロード",
-    "chooseModel": "モデルを選択",
     "active": "アクティブ",
-    "download": "ダウンロード",
-    "downloadSize": "ダウンロードサイズ",
+    "switching": "切替中...",
     "noModelsAvailable": "利用可能なモデルがありません",
     "extracting": "{{modelName}}を展開中...",
     "extractingMultiple": "{{count}}個のモデルを展開中...",
@@ -95,9 +95,42 @@
     "modelError": "モデルエラー",
     "modelUnloaded": "モデルがアンロードされました",
     "noModelDownloadRequired": "モデルなし - ダウンロードが必要",
-    "deleteModel": "{{modelName}}を削除"
+    "deleteModel": "{{modelName}}を削除",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "複数の入力言語をサポート",
+      "multiLanguage": "多言語",
+      "translation": "英語への翻訳が可能",
+      "translate": "英語に翻訳",
+      "singleLanguage": "この言語のみ対応",
+      "languageOnly": "{{language}}のみ"
+    },
+    "cancel": "キャンセル",
+    "cancelDownload": "ダウンロードをキャンセル"
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} 設定",
+      "noSettingsNeeded": "このモデルは設定不要で自動的に動作します。"
+    },
+    "models": {
+      "title": "転写モデル",
+      "description": "転写モデルを選択するか、追加のモデルをダウンロードします。異なるモデルは精度と速度のレベルが異なります。",
+      "downloaded": "ダウンロード済み",
+      "available": "ダウンロード可能",
+      "deleteConfirm": "{{modelName}}を削除してもよろしいですか？再度使用するにはダウンロードが必要です。",
+      "deleteActiveConfirm": "{{modelName}}は現在使用中のモデルです。削除すると、新しいモデルを選択するまで文字起こしが停止します。本当に削除しますか？",
+      "deleteTitle": "モデルを削除",
+      "filters": {
+        "all": "すべて",
+        "multiLanguage": "多言語",
+        "translation": "翻訳",
+        "allLanguages": "すべての言語"
+      },
+      "noModelsMatch": "このフィルターに一致するモデルがありません。",
+      "yourModels": "ダウンロード済みモデル",
+      "availableModels": "ダウンロード可能"
+    },
     "general": {
       "title": "一般",
       "shortcut": {
@@ -115,6 +148,10 @@
           "cancel": {
             "name": "キャンセルショートカット",
             "description": "現在の録音をキャンセルするためのキーボードショートカット。"
+          },
+          "transcribe_with_post_process": {
+            "name": "後処理ホットキー",
+            "description": "オプション：文字起こしに常にAI後処理を適用する専用ホットキー。"
           }
         },
         "errors": {
@@ -363,10 +400,19 @@
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "アプリデータ:",
         "models": "モデル:",
         "settings": "設定:"
+      },
+      "pasteDelay": {
+        "title": "貼り付け遅延",
+        "description": "貼り付けキー送信前の遅延（ミリ秒）。間違ったテキストが貼り付けられる場合は増やしてください。"
       }
     },
     "about": {

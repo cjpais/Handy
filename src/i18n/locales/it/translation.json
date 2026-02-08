@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Generale",
+    "models": "Modelli",
     "advanced": "Avanzate",
     "postProcessing": "Post-Elaborazione",
     "history": "Cronologia",
@@ -19,6 +20,7 @@
     "recommended": "Raccomandato",
     "download": "Scaricare",
     "downloading": "Download in corso...",
+    "downloadFailed": "Download fallito. Riprova.",
     "modelCard": {
       "accuracy": "accuratezza",
       "speed": "velocità"
@@ -71,18 +73,16 @@
       "grant": "Concedi Permesso",
       "granted": "Concesso",
       "waiting": "In attesa...",
-      "allGranted": "Tutto pronto!"
+      "allGranted": "Tutto pronto!",
+      "errors": {
+        "checkFailed": "Impossibile verificare i permessi. Riprova.",
+        "requestFailed": "Impossibile richiedere il permesso. Riprova."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Benvenuto in Handy!",
-    "downloadPrompt": "Scarica un modello per cominciare a trascrivere.",
-    "availableModels": "Modelli Disponibili",
-    "downloadModels": "Scarica Modelli",
-    "chooseModel": "Scegli un Modello",
     "active": "Attivo",
-    "download": "Scarica",
-    "downloadSize": "Dimensione download",
+    "switching": "Cambio...",
     "noModelsAvailable": "Nessun modello disponibile",
     "extracting": "Estrazione di {{modelName}}...",
     "extractingMultiple": "Estrazione di {{count}} modelli...",
@@ -95,9 +95,42 @@
     "modelError": "Errore del Modello",
     "modelUnloaded": "Modello Disattivato",
     "noModelDownloadRequired": "Nessun Modello - Download Richiesto",
-    "deleteModel": "Elimina {{modelName}}"
+    "deleteModel": "Elimina {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Supporta più lingue di input",
+      "multiLanguage": "Multilingua",
+      "translation": "Può tradurre in inglese",
+      "translate": "Traduci in inglese",
+      "singleLanguage": "Supporta solo questa lingua",
+      "languageOnly": "Solo {{language}}"
+    },
+    "cancel": "Annulla",
+    "cancelDownload": "Annulla download"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Impostazioni di {{model}}",
+      "noSettingsNeeded": "Questo modello funziona automaticamente senza bisogno di configurazione."
+    },
+    "models": {
+      "title": "Modelli di Trascrizione",
+      "description": "Seleziona un modello di trascrizione o scarica modelli aggiuntivi. Diversi modelli offrono diversi livelli di accuratezza e velocità.",
+      "downloaded": "Scaricati",
+      "available": "Disponibili per il Download",
+      "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
+      "deleteActiveConfirm": "{{modelName}} è il tuo modello attivo. Eliminarlo interromperà le trascrizioni fino a quando non selezionerai un nuovo modello. Sei sicuro?",
+      "deleteTitle": "Elimina modello",
+      "filters": {
+        "all": "Tutti",
+        "multiLanguage": "Multilingua",
+        "translation": "Traduzione",
+        "allLanguages": "Tutte le lingue"
+      },
+      "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
+      "yourModels": "Modelli scaricati",
+      "availableModels": "Disponibili per il download"
+    },
     "general": {
       "title": "Generale",
       "shortcut": {
@@ -115,6 +148,10 @@
           "cancel": {
             "name": "Scorciatoia Annulla",
             "description": "La scorciatoia da tastiera per annullare la registrazione in corso."
+          },
+          "transcribe_with_post_process": {
+            "name": "Tasto di post-elaborazione",
+            "description": "Facoltativo: Un tasto di scelta rapida dedicato che applica sempre la post-elaborazione IA alla trascrizione."
           }
         },
         "errors": {
@@ -363,10 +400,19 @@
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Dati App:",
         "models": "Modelli:",
         "settings": "Impostazioni:"
+      },
+      "pasteDelay": {
+        "title": "Ritardo incolla",
+        "description": "Ritardo prima dell'invio del tasto incolla (in millisecondi). Aumentare se viene incollato il testo sbagliato."
       }
     },
     "about": {

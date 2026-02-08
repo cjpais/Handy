@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Общие",
+    "models": "Модели",
     "advanced": "Продвинутые",
     "postProcessing": "Постобработка",
     "history": "История",
@@ -19,6 +20,7 @@
     "recommended": "Рекомендуется",
     "download": "Скачать",
     "downloading": "Загрузка...",
+    "downloadFailed": "Загрузка не удалась. Пожалуйста, попробуйте снова.",
     "modelCard": {
       "accuracy": "точность",
       "speed": "скорость"
@@ -71,18 +73,16 @@
       "grant": "Предоставить разрешение",
       "granted": "Предоставлено",
       "waiting": "Ожидание...",
-      "allGranted": "Всё готово!"
+      "allGranted": "Всё готово!",
+      "errors": {
+        "checkFailed": "Не удалось проверить разрешения. Пожалуйста, попробуйте снова.",
+        "requestFailed": "Не удалось запросить разрешение. Пожалуйста, попробуйте снова."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Добро пожаловать в Handy!",
-    "downloadPrompt": "Загрузите модель ниже, чтобы начать транскрипцию.",
-    "availableModels": "Доступные модели",
-    "downloadModels": "Скачать модели",
-    "chooseModel": "Выберите модель",
     "active": "Активный",
-    "download": "Скачать",
-    "downloadSize": "Размер загрузки",
+    "switching": "Переключение...",
     "noModelsAvailable": "Нет доступных моделей",
     "extracting": "Извлечение {{modelName}}...",
     "extractingMultiple": "Извлечение моделей {{count}}...",
@@ -95,9 +95,42 @@
     "modelError": "Ошибка модели",
     "modelUnloaded": "Модель выгружена",
     "noModelDownloadRequired": "Нет модели – требуется загрузка",
-    "deleteModel": "Удалить {{modelName}}"
+    "deleteModel": "Удалить {{modelName}}",
+    "downloadSpeed": "{{speed}} МБ/с",
+    "capabilities": {
+      "languageSelection": "Поддерживает несколько языков ввода",
+      "multiLanguage": "Многоязычный",
+      "translation": "Может переводить на английский",
+      "translate": "Перевести на английский",
+      "singleLanguage": "Поддерживает только этот язык",
+      "languageOnly": "Только {{language}}"
+    },
+    "cancel": "Отмена",
+    "cancelDownload": "Отменить загрузку"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Настройки {{model}}",
+      "noSettingsNeeded": "Эта модель работает автоматически без необходимости настройки."
+    },
+    "models": {
+      "title": "Модели транскрипции",
+      "description": "Выберите модель транскрипции или загрузите дополнительные модели. Разные модели предлагают разные уровни точности и скорости.",
+      "downloaded": "Загружено",
+      "available": "Доступно для загрузки",
+      "deleteConfirm": "Вы уверены, что хотите удалить {{modelName}}? Вам нужно будет загрузить её снова, чтобы использовать.",
+      "deleteActiveConfirm": "{{modelName}} — ваша активная модель. Удаление остановит транскрипцию, пока вы не выберете новую модель. Вы уверены?",
+      "deleteTitle": "Удалить модель",
+      "filters": {
+        "all": "Все",
+        "multiLanguage": "Многоязычные",
+        "translation": "Перевод",
+        "allLanguages": "Все языки"
+      },
+      "noModelsMatch": "Нет моделей, соответствующих этому фильтру.",
+      "yourModels": "Загруженные модели",
+      "availableModels": "Доступны для загрузки"
+    },
     "general": {
       "title": "Общие",
       "shortcut": {
@@ -115,6 +148,10 @@
           "cancel": {
             "name": "Горячая клавиша отмены",
             "description": "Сочетание клавиш для отмены текущей записи."
+          },
+          "transcribe_with_post_process": {
+            "name": "Горячая клавиша постобработки",
+            "description": "Необязательно: Специальная горячая клавиша, которая всегда применяет AI-постобработку к вашей транскрипции."
           }
         },
         "errors": {
@@ -363,10 +400,19 @@
         "label": "Добавить конечный пробел",
         "description": "Добавить пробел после вставленной транскрипции"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Данные приложения:",
         "models": "Модели:",
         "settings": "Настройки:"
+      },
+      "pasteDelay": {
+        "title": "Задержка вставки",
+        "description": "Задержка перед отправкой нажатия клавиши вставки (в миллисекундах). Увеличьте, если вставляется неправильный текст."
       }
     },
     "about": {
