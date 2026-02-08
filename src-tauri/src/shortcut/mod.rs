@@ -21,12 +21,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
     self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
-<<<<<<< HEAD
-    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
-=======
-    PasteMethod, ShortcutBinding, SoundTheme, WhisperComputeMode,
->>>>>>> 481830e (fix: clean rust warnings in tauri backend)
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
