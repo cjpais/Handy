@@ -217,11 +217,11 @@ const ModelCard: React.FC<ModelCardProps> = ({
         )}
         {onDelete && (status === "available" || status === "active") && (
           <Button
-            variant="danger-ghost"
+            variant="ghost"
             size="sm"
             onClick={handleDelete}
             title={t("modelSelector.deleteModel", { modelName: displayName })}
-            className="flex items-center gap-1.5 ml-auto"
+            className="flex items-center gap-1.5 ml-auto text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{t("common.delete")}</span>
