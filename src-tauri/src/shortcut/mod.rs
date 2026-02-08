@@ -977,11 +977,7 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     // Refresh the tray menu with the new language
     if language == "auto" {
         let system_locale = tauri_plugin_os::locale();
-        tray::update_tray_menu(
-            &app,
-            &tray::TrayIconState::Idle,
-            system_locale.as_deref(),
-        );
+        tray::update_tray_menu(&app, &tray::TrayIconState::Idle, system_locale.as_deref());
     } else {
         tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
     }

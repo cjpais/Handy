@@ -117,8 +117,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
               isUpdating("selected_language")
                 ? "opacity-50 cursor-not-allowed"
                 : disabled
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
             }`}
             onClick={handleToggle}
             disabled={disabled || isUpdating("selected_language")}
