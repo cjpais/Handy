@@ -106,3 +106,6 @@ lto = true
 codegen-units = 1
 strip = true
 panic = "abort"
+
+[patch.crates-io]
+transcribe-rs = { path = "../../transcribe-rs" }

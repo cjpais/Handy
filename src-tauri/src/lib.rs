@@ -16,6 +16,7 @@ mod signal_handle;
 mod tray;
 mod tray_i18n;
 mod utils;
+pub mod whisper_worker;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
@@ -255,6 +256,7 @@ pub fn run() {
         shortcut::change_clipboard_handling_setting,
         shortcut::change_post_process_enabled_setting,
         shortcut::change_experimental_enabled_setting,
+        shortcut::change_whisper_compute_mode_setting,
         shortcut::change_post_process_base_url_setting,
         shortcut::change_post_process_api_key_setting,
         shortcut::change_post_process_model_setting,
@@ -315,6 +317,7 @@ pub fn run() {
         commands::transcription::set_model_unload_timeout,
         commands::transcription::get_model_load_status,
         commands::transcription::unload_model_manually,
+        commands::transcription::retry_whisper_gpu,
         commands::history::get_history_entries,
         commands::history::toggle_history_entry_saved,
         commands::history::get_audio_file_path,

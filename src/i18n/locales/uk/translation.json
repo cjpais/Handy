@@ -270,6 +270,18 @@
         "placeholder": "Додати слово",
         "add": "Додати",
         "remove": "Видалити {{word}}"
+      },
+      "whisperCompute": {
+        "title": "Whisper Compute Mode",
+        "description": "Choose how Whisper runs. Auto prefers GPU and falls back to CPU if GPU fails.",
+        "options": {
+          "auto": "Auto (GPU to CPU fallback)",
+          "gpu": "GPU",
+          "cpu": "CPU"
+        },
+        "fallbackWarning": "Whisper GPU failed. Temporarily switched to CPU.",
+        "returnGpu": "Return to GPU",
+        "returnGpuFailed": "Failed to switch Whisper back to GPU."
       }
     },
     "postProcessing": {
