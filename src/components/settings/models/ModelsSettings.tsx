@@ -120,9 +120,12 @@ export const ModelsSettings: React.FC = () => {
   const handleModelDelete = async (modelId: string) => {
     const model = models.find((m: ModelInfo) => m.id === modelId);
     const modelName = model?.name || modelId;
+    const isActive = modelId === currentModel;
 
     const confirmed = await ask(
-      t("settings.models.deleteConfirm", { modelName }),
+      isActive
+        ? t("settings.models.deleteActiveConfirm", { modelName })
+        : t("settings.models.deleteConfirm", { modelName }),
       {
         title: t("settings.models.deleteTitle"),
         kind: "warning",
@@ -173,8 +176,15 @@ export const ModelsSettings: React.FC = () => {
       }
     }
 
+    // Sort downloaded models so the active model is always first
+    downloaded.sort((a, b) => {
+      if (a.id === currentModel) return -1;
+      if (b.id === currentModel) return 1;
+      return 0;
+    });
+
     return { downloadedModels: downloaded, availableModels: available };
-  }, [filteredModels, downloadingModels, extractingModels]);
+  }, [filteredModels, downloadingModels, extractingModels, currentModel]);
 
   if (loading) {
     return (
@@ -238,7 +248,7 @@ export const ModelsSettings: React.FC = () => {
                     }
                   }}
                   placeholder={t("settings.general.language.searchPlaceholder")}
-                  className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                  className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
                 />
               </div>
               <div className="max-h-48 overflow-y-auto">
@@ -304,6 +314,7 @@ export const ModelsSettings: React.FC = () => {
                   onCancel={handleModelCancel}
                   downloadProgress={getDownloadProgress(model.id)}
                   downloadSpeed={getDownloadSpeed(model.id)}
+                  showRecommended={false}
                 />
               ))}
             </div>
@@ -326,6 +337,7 @@ export const ModelsSettings: React.FC = () => {
                   onCancel={handleModelCancel}
                   downloadProgress={getDownloadProgress(model.id)}
                   downloadSpeed={getDownloadSpeed(model.id)}
+                  showRecommended={false}
                 />
               ))}
             </div>

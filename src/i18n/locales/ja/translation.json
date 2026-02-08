@@ -118,6 +118,7 @@
       "downloaded": "ダウンロード済み",
       "available": "ダウンロード可能",
       "deleteConfirm": "{{modelName}}を削除してもよろしいですか？再度使用するにはダウンロードが必要です。",
+      "deleteActiveConfirm": "{{modelName}}は現在使用中のモデルです。削除すると、新しいモデルを選択するまで文字起こしが停止します。本当に削除しますか？",
       "deleteTitle": "モデルを削除",
       "filters": {
         "all": "すべて",

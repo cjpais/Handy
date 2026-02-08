@@ -223,6 +223,7 @@ export const useModelStore = create<ModelsStore>()(
         const result = await commands.deleteModel(modelId);
         if (result.status === "ok") {
           await get().loadModels();
+          await get().loadCurrentModel();
           return true;
         } else {
           set({ error: `Failed to delete model: ${result.error}` });

@@ -36,9 +36,23 @@ pub async fn download_model(
 #[tauri::command]
 #[specta::specta]
 pub async fn delete_model(
+    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    // If deleting the active model, unload it and clear the setting
+    let settings = get_settings(&app_handle);
+    if settings.selected_model == model_id {
+        transcription_manager
+            .unload_model()
+            .map_err(|e| format!("Failed to unload model: {}", e))?;
+
+        let mut settings = get_settings(&app_handle);
+        settings.selected_model = String::new();
+        write_settings(&app_handle, settings);
+    }
+
     model_manager
         .delete_model(&model_id)
         .map_err(|e| e.to_string())

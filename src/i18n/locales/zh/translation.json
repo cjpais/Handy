@@ -118,6 +118,7 @@
       "downloaded": "已下载",
       "available": "可下载",
       "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
+      "deleteActiveConfirm": "{{modelName}} 是您当前使用的模型。删除后将停止转录，直到您选择新的模型。确定要删除吗？",
       "deleteTitle": "删除模型",
       "filters": {
         "all": "全部",

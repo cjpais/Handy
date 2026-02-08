@@ -52,6 +52,7 @@ interface ModelCardProps {
   onCancel?: (modelId: string) => void;
   downloadProgress?: number;
   downloadSpeed?: number; // MB/s
+  showRecommended?: boolean;
 }
 
 const ModelCard: React.FC<ModelCardProps> = ({
@@ -66,6 +67,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   onCancel,
   downloadProgress,
   downloadSpeed,
+  showRecommended = true,
 }) => {
   const { t } = useTranslation();
   const isFeatured = variant === "featured";
@@ -80,7 +82,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const displayDescription = getTranslatedModelDescription(model, t);
 
   const baseClasses =
-    "flex flex-col rounded-xl p-4 text-left transition-all duration-200";
+    "flex flex-col rounded-xl px-4 py-3 gap-2 text-left transition-all duration-200";
 
   const getVariantClasses = () => {
     if (status === "active") {
@@ -132,19 +134,19 @@ const ModelCard: React.FC<ModelCardProps> = ({
         .join(" ")}
     >
       {/* Top section: name/description + score bars */}
-      <div className="flex justify-between items-center w-full pb-2">
+      <div className="flex justify-between items-center w-full">
         <div className="flex flex-col items-start flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <h3
               className={`text-base font-semibold text-text ${canSelect ? "group-hover:text-logo-primary" : ""} transition-colors`}
             >
               {displayName}
             </h3>
-            {model.is_recommended && (
+            {showRecommended && model.is_recommended && (
               <Badge variant="primary">{t("onboarding.recommended")}</Badge>
             )}
             {status === "active" && (
-              <Badge variant="success">
+              <Badge variant="primary">
                 <Check className="w-3 h-3 mr-1" />
                 {t("modelSelector.active")}
               </Badge>
@@ -156,7 +158,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
               </Badge>
             )}
           </div>
-          <p className="text-text/60 text-sm leading-relaxed mt-1">
+          <p className="text-text/60 text-sm leading-relaxed">
             {displayDescription}
           </p>
         </div>
@@ -188,8 +190,10 @@ const ModelCard: React.FC<ModelCardProps> = ({
         </div>
       </div>
 
+      <hr className="w-full border-mid-gray/20" />
+
       {/* Bottom row: tags + action buttons (full width) */}
-      <div className="flex items-center gap-3 mt-2 w-full">
+      <div className="flex items-center gap-3 w-full -mb-0.5">
         <div
           className="flex items-center gap-1 text-xs text-text/50"
           title={
@@ -222,7 +226,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             <span>{formatModelSize(Number(model.size_mb))}</span>
           </Button>
         )}
-        {onDelete && status === "available" && (
+        {onDelete && (status === "available" || status === "active") && (
           <Button
             variant="danger-ghost"
             size="sm"
