@@ -80,7 +80,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
   const displayDescription = getTranslatedModelDescription(model, t);
 
   const baseClasses =
-    "flex justify-between items-start rounded-xl p-4 text-left transition-all duration-200";
+    "flex flex-col rounded-xl p-4 text-left transition-all duration-200";
 
   const getVariantClasses = () => {
     if (status === "active") {
@@ -131,139 +131,92 @@ const ModelCard: React.FC<ModelCardProps> = ({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="flex flex-col items-start flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3
-            className={`text-base font-semibold text-text ${canSelect ? "group-hover:text-logo-primary" : ""} transition-colors`}
-          >
-            {displayName}
-          </h3>
-          {model.is_recommended && (
-            <Badge variant="primary">{t("onboarding.recommended")}</Badge>
-          )}
-          {status === "active" && (
-            <Badge variant="success">
-              <Check className="w-3 h-3 mr-1" />
-              {t("modelSelector.active")}
-            </Badge>
-          )}
-          {status === "switching" && (
-            <Badge variant="secondary">
-              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              {t("modelSelector.switching")}
-            </Badge>
-          )}
-        </div>
-        <p className="text-text/60 text-sm leading-relaxed mt-1">
-          {displayDescription}
-        </p>
-        <div className="flex items-center gap-3 mt-2">
-          <div
-            className="flex items-center gap-1 text-xs text-text/50"
-            title={
-              model.supported_languages.length === 1
-                ? t("modelSelector.capabilities.singleLanguage")
-                : t("modelSelector.capabilities.languageSelection")
-            }
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
-          </div>
-          {model.supports_translation && (
-            <div
-              className="flex items-center gap-1 text-xs text-text/50"
-              title={t("modelSelector.capabilities.translation")}
+      {/* Top section: name/description + score bars */}
+      <div className="flex justify-between items-center w-full pb-2">
+        <div className="flex flex-col items-start flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3
+              className={`text-base font-semibold text-text ${canSelect ? "group-hover:text-logo-primary" : ""} transition-colors`}
             >
-              <Languages className="w-3.5 h-3.5" />
-              <span>{t("modelSelector.capabilities.translate")}</span>
-            </div>
-          )}
+              {displayName}
+            </h3>
+            {model.is_recommended && (
+              <Badge variant="primary">{t("onboarding.recommended")}</Badge>
+            )}
+            {status === "active" && (
+              <Badge variant="success">
+                <Check className="w-3 h-3 mr-1" />
+                {t("modelSelector.active")}
+              </Badge>
+            )}
+            {status === "switching" && (
+              <Badge variant="secondary">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                {t("modelSelector.switching")}
+              </Badge>
+            )}
+          </div>
+          <p className="text-text/60 text-sm leading-relaxed mt-1">
+            {displayDescription}
+          </p>
         </div>
-        {status === "downloading" && downloadProgress !== undefined && (
-          <div className="w-full mt-3">
-            <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-logo-primary rounded-full transition-all duration-300"
-                style={{ width: `${downloadProgress}%` }}
-              />
+        <div className="hidden sm:flex items-center ml-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-text/60 w-14 text-right">
+                {t("onboarding.modelCard.accuracy")}
+              </p>
+              <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-logo-primary rounded-full"
+                  style={{ width: `${model.accuracy_score * 100}%` }}
+                />
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs mt-1">
-              <span className="text-text/50">
-                {t("modelSelector.downloading", {
-                  percentage: Math.round(downloadProgress),
-                })}
-              </span>
-              <div className="flex items-center gap-2">
-                {downloadSpeed !== undefined && downloadSpeed > 0 && (
-                  <span className="tabular-nums text-text/50">
-                    {t("modelSelector.downloadSpeed", {
-                      speed: downloadSpeed.toFixed(1),
-                    })}
-                  </span>
-                )}
-                {onCancel && (
-                  <Button
-                    variant="danger-ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onCancel(model.id);
-                    }}
-                    aria-label={t("modelSelector.cancelDownload")}
-                  >
-                    {t("modelSelector.cancel")}
-                  </Button>
-                )}
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-text/60 w-14 text-right">
+                {t("onboarding.modelCard.speed")}
+              </p>
+              <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-logo-primary rounded-full"
+                  style={{ width: `${model.speed_score * 100}%` }}
+                />
               </div>
             </div>
           </div>
-        )}
-        {status === "extracting" && (
-          <div className="w-full mt-3">
-            <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-              <div className="h-full bg-logo-primary rounded-full animate-pulse w-full" />
-            </div>
-            <p className="text-xs text-text/50 mt-1">
-              {t("modelSelector.extractingGeneric")}
-            </p>
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Right side: accuracy/speed bars + action buttons */}
-      <div className="flex items-center gap-3 ml-4">
-        <div className="space-y-1 hidden sm:block">
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-text/60 w-14 text-right">
-              {t("onboarding.modelCard.accuracy")}
-            </p>
-            <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-logo-primary rounded-full"
-                style={{ width: `${model.accuracy_score * 100}%` }}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-text/60 w-14 text-right">
-              {t("onboarding.modelCard.speed")}
-            </p>
-            <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-logo-primary rounded-full"
-                style={{ width: `${model.speed_score * 100}%` }}
-              />
-            </div>
-          </div>
+      {/* Bottom row: tags + action buttons (full width) */}
+      <div className="flex items-center gap-3 mt-2 w-full">
+        <div
+          className="flex items-center gap-1 text-xs text-text/50"
+          title={
+            model.supported_languages.length === 1
+              ? t("modelSelector.capabilities.singleLanguage")
+              : t("modelSelector.capabilities.languageSelection")
+          }
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
         </div>
+        {model.supports_translation && (
+          <div
+            className="flex items-center gap-1 text-xs text-text/50"
+            title={t("modelSelector.capabilities.translation")}
+          >
+            <Languages className="w-3.5 h-3.5" />
+            <span>{t("modelSelector.capabilities.translate")}</span>
+          </div>
+        )}
         {status === "downloadable" && onDownload && (
           <Button
             variant="primary-soft"
             size="sm"
             onClick={handleDownload}
             disabled={disabled}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 ml-auto"
           >
             <Download className="w-4 h-4" />
             <span>{formatModelSize(Number(model.size_mb))}</span>
@@ -275,13 +228,65 @@ const ModelCard: React.FC<ModelCardProps> = ({
             size="sm"
             onClick={handleDelete}
             title={t("modelSelector.deleteModel", { modelName: displayName })}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-1.5 ml-auto"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{t("common.delete")}</span>
           </Button>
         )}
       </div>
+
+      {/* Download/extract progress */}
+      {status === "downloading" && downloadProgress !== undefined && (
+        <div className="w-full mt-3">
+          <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-logo-primary rounded-full transition-all duration-300"
+              style={{ width: `${downloadProgress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs mt-1">
+            <span className="text-text/50">
+              {t("modelSelector.downloading", {
+                percentage: Math.round(downloadProgress),
+              })}
+            </span>
+            <div className="flex items-center gap-2">
+              {downloadSpeed !== undefined && downloadSpeed > 0 && (
+                <span className="tabular-nums text-text/50">
+                  {t("modelSelector.downloadSpeed", {
+                    speed: downloadSpeed.toFixed(1),
+                  })}
+                </span>
+              )}
+              {onCancel && (
+                <Button
+                  variant="danger-ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCancel(model.id);
+                  }}
+                  aria-label={t("modelSelector.cancelDownload")}
+                >
+                  {t("modelSelector.cancel")}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {status === "extracting" && (
+        <div className="w-full mt-3">
+          <div className="w-full h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+            <div className="h-full bg-logo-primary rounded-full animate-pulse w-full" />
+          </div>
+          <p className="text-xs text-text/50 mt-1">
+            {t("modelSelector.extractingGeneric")}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
