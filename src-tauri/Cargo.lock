@@ -6580,8 +6580,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime"
 version = "2.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9368f09358496f2229313fccb37682ad116b7f46fa76981efe116994a0628926"
+source = "git+https://github.com/antons/tauri.git?branch=fix%2Foverlay-bottom-position#af6f5a91105f696a1b76a5db6ba936a30bbf80c6"
 dependencies = [
  "cookie",
  "dpi",
@@ -6605,8 +6604,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime-wry"
 version = "2.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "929f5df216f5c02a9e894554401bcdab6eec3e39ec6a4a7731c7067fc8688a93"
+source = "git+https://github.com/antons/tauri.git?branch=fix%2Foverlay-bottom-position#af6f5a91105f696a1b76a5db6ba936a30bbf80c6"
 dependencies = [
  "gtk",
  "http",
@@ -6660,8 +6658,7 @@ dependencies = [
 [[package]]
 name = "tauri-utils"
 version = "2.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6b8bbe426abdbf52d050e52ed693130dbd68375b9ad82a3fb17efb4c8d85673"
+source = "git+https://github.com/antons/tauri.git?branch=fix%2Foverlay-bottom-position#af6f5a91105f696a1b76a5db6ba936a30bbf80c6"
 dependencies = [
  "anyhow",
  "brotli",

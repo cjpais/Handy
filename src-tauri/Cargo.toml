@@ -101,6 +101,11 @@ tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 
+[patch.crates-io]
+tauri-runtime = { git = "https://github.com/antons/tauri.git", branch = "fix/overlay-bottom-position" }
+tauri-runtime-wry = { git = "https://github.com/antons/tauri.git", branch = "fix/overlay-bottom-position" }
+tauri-utils = { git = "https://github.com/antons/tauri.git", branch = "fix/overlay-bottom-position" }
+
 [profile.release]
 lto = true
 codegen-units = 1
