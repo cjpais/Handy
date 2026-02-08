@@ -420,10 +420,26 @@ impl ModelManager {
     }
 
     fn auto_select_model_if_needed(&self) -> Result<()> {
-        // Check if we have a selected model in settings
-        let settings = get_settings(&self.app_handle);
+        let mut settings = get_settings(&self.app_handle);
 
-        // If no model is selected or selected model is empty
+        // Clear stale selection: selected model is set but doesn't exist
+        // in available_models (e.g. deleted custom model file)
+        if !settings.selected_model.is_empty() {
+            let models = self.available_models.lock().unwrap();
+            let exists = models.contains_key(&settings.selected_model);
+            drop(models);
+
+            if !exists {
+                info!(
+                    "Selected model '{}' not found in available models, clearing selection",
+                    settings.selected_model
+                );
+                settings.selected_model = String::new();
+                write_settings(&self.app_handle, settings.clone());
+            }
+        }
+
+        // If no model is selected, pick the first downloaded one
         if settings.selected_model.is_empty() {
             // Find the first available (downloaded) model
             let models = self.available_models.lock().unwrap();
