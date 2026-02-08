@@ -36,8 +36,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
     if (model?.is_downloaded && !stillDownloading && !stillExtracting) {
       // Model is ready — select it and transition
-      selectModel(selectedModelId).then(() => {
-        onModelSelected();
+      selectModel(selectedModelId).then((success) => {
+        if (success) {
+          onModelSelected();
+        } else {
+          toast.error(t("onboarding.errors.selectModel"));
+          setSelectedModelId(null);
+        }
       });
     }
   }, [

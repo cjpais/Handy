@@ -355,6 +355,17 @@ export const useModelStore = create<ModelsStore>()(
         },
       );
 
+      listen<string>("model-download-cancelled", (event) => {
+        const modelId = event.payload;
+        set(
+          produce((state) => {
+            delete state.downloadingModels[modelId];
+            delete state.downloadProgress[modelId];
+            delete state.downloadStats[modelId];
+          }),
+        );
+      });
+
       listen<string>("model-deleted", () => {
         get().loadModels();
         get().loadCurrentModel();
