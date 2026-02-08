@@ -10,7 +10,7 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{self, show_recording_overlay, show_transcribing_overlay};
 use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error};
+use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -33,13 +33,9 @@ fn strip_invisible_chars(s: &str) -> String {
 }
 
 /// Build a system prompt from the user's prompt template.
-/// Replaces `${output}` with a reference to the user message so the prompt
-/// still reads sensibly when the transcription is sent separately.
+/// Removes `${output}` placeholder since the transcription is sent as the user message.
 fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template
-        .replace("${output}", "the user's message")
-        .trim()
-        .to_string()
+    prompt_template.replace("${output}", "").trim().to_string()
 }
 
 async fn maybe_post_process_transcription(
@@ -176,7 +172,7 @@ async fn maybe_post_process_transcription(
 
         match crate::llm_client::send_chat_completion_with_schema(
             &provider,
-            api_key,
+            api_key.clone(),
             &model,
             user_content,
             Some(system_prompt),
@@ -217,12 +213,11 @@ async fn maybe_post_process_transcription(
                 return None;
             }
             Err(e) => {
-                error!(
-                    "LLM post-processing failed for provider '{}': {}. Falling back to original transcription.",
-                    provider.id,
-                    e
+                warn!(
+                    "Structured output failed for provider '{}': {}. Falling back to legacy mode.",
+                    provider.id, e
                 );
-                return None;
+                // Fall through to legacy mode below
             }
         }
     }

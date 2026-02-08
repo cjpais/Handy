@@ -521,6 +521,24 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
             changed = true;
         }
 
+        // Sync supports_structured_output field for existing providers (migration)
+        if let Some(existing) = settings
+            .post_process_providers
+            .iter_mut()
+            .find(|p| p.id == provider.id)
+        {
+            if existing.supports_structured_output != provider.supports_structured_output {
+                debug!(
+                    "Updating supports_structured_output for provider '{}' from {} to {}",
+                    provider.id,
+                    existing.supports_structured_output,
+                    provider.supports_structured_output
+                );
+                existing.supports_structured_output = provider.supports_structured_output;
+                changed = true;
+            }
+        }
+
         if !settings.post_process_api_keys.contains_key(&provider.id) {
             settings
                 .post_process_api_keys
