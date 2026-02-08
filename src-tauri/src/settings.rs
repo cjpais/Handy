@@ -512,29 +512,28 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
-        if settings
-            .post_process_providers
-            .iter()
-            .all(|existing| existing.id != provider.id)
-        {
-            settings.post_process_providers.push(provider.clone());
-            changed = true;
-        }
-
-        // Sync supports_structured_output field for existing providers (migration)
-        if let Some(existing) = settings
+        // Use match to do a single lookup - either sync existing or add new
+        match settings
             .post_process_providers
             .iter_mut()
             .find(|p| p.id == provider.id)
         {
-            if existing.supports_structured_output != provider.supports_structured_output {
-                debug!(
-                    "Updating supports_structured_output for provider '{}' from {} to {}",
-                    provider.id,
-                    existing.supports_structured_output,
-                    provider.supports_structured_output
-                );
-                existing.supports_structured_output = provider.supports_structured_output;
+            Some(existing) => {
+                // Sync supports_structured_output field for existing providers (migration)
+                if existing.supports_structured_output != provider.supports_structured_output {
+                    debug!(
+                        "Updating supports_structured_output for provider '{}' from {} to {}",
+                        provider.id,
+                        existing.supports_structured_output,
+                        provider.supports_structured_output
+                    );
+                    existing.supports_structured_output = provider.supports_structured_output;
+                    changed = true;
+                }
+            }
+            None => {
+                // Provider doesn't exist, add it
+                settings.post_process_providers.push(provider.clone());
                 changed = true;
             }
         }

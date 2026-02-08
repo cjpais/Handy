@@ -27,6 +27,9 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction;
 
+/// Field name for structured output JSON schema
+const TRANSCRIPTION_FIELD: &str = "transcription";
+
 /// Strip invisible Unicode characters that some LLMs may insert
 fn strip_invisible_chars(s: &str) -> String {
     s.replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
@@ -161,12 +164,12 @@ async fn maybe_post_process_transcription(
         let json_schema = serde_json::json!({
             "type": "object",
             "properties": {
-                "transcription": {
+                (TRANSCRIPTION_FIELD): {
                     "type": "string",
                     "description": "The cleaned and processed transcription text"
                 }
             },
-            "required": ["transcription"],
+            "required": [TRANSCRIPTION_FIELD],
             "additionalProperties": false
         });
 
@@ -185,7 +188,7 @@ async fn maybe_post_process_transcription(
                 match serde_json::from_str::<serde_json::Value>(&content) {
                     Ok(json) => {
                         if let Some(transcription_value) =
-                            json.get("transcription").and_then(|t| t.as_str())
+                            json.get(TRANSCRIPTION_FIELD).and_then(|t| t.as_str())
                         {
                             let result = strip_invisible_chars(transcription_value);
                             debug!(
