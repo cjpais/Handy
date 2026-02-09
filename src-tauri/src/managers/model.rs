@@ -21,6 +21,7 @@ pub enum EngineType {
     Whisper,
     Parakeet,
     Moonshine,
+    SenseVoice,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -285,6 +286,37 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        // SenseVoice supported languages
+        let sense_voice_languages: Vec<String> =
+            vec!["zh", "zh-Hans", "zh-Hant", "en", "yue", "ja", "ko"]
+                .into_iter()
+                .map(String::from)
+                .collect();
+
+        available_models.insert(
+            "sense-voice-int8".to_string(),
+            ModelInfo {
+                id: "sense-voice-int8".to_string(),
+                name: "SenseVoice".to_string(),
+                description: "Very fast. Chinese, English, Japanese, Korean, Cantonese."
+                    .to_string(),
+                filename: "sense-voice-int8".to_string(),
+                url: Some("https://blob.handy.computer/sense-voice-int8.tar.gz".to_string()),
+                size_mb: 160,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::SenseVoice,
+                accuracy_score: 0.65,
+                speed_score: 0.95,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: sense_voice_languages,
                 is_custom: false,
             },
         );
