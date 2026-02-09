@@ -131,8 +131,7 @@
       },
       "noModelsMatch": "Bu filtreyle eşleşen model yok.",
       "yourModels": "İndirilen modeller",
-      "availableModels": "İndirilebilir",
-      "customModels": "Özel Modeller"
+      "availableModels": "İndirilebilir"
     },
     "general": {
       "title": "Genel",
@@ -402,10 +401,6 @@
       "appendTrailingSpace": {
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
-      },
-      "customModels": {
-        "label": "Özel Modeller",
-        "description": "Model klasöründen özel Whisper modellerinin yüklenmesine izin ver. Topluluk modelleri resmi olarak desteklenmemektedir."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

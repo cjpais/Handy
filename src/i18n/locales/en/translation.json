@@ -173,8 +173,7 @@
         "translation": "Translation",
         "allLanguages": "All Languages"
       },
-      "noModelsMatch": "No models match this filter.",
-      "customModels": "Custom Models"
+      "noModelsMatch": "No models match this filter."
     },
     "sound": {
       "title": "Sound",
@@ -407,10 +406,6 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
-      },
-      "customModels": {
-        "label": "Custom Models",
-        "description": "Allow loading custom Whisper models from the models folder. Community models are not officially supported."
       },
       "paths": {
         "appData": "App Data:",

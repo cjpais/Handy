@@ -131,8 +131,7 @@
       },
       "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
       "yourModels": "Stažené modely",
-      "availableModels": "Dostupné ke stažení",
-      "customModels": "Vlastní modely"
+      "availableModels": "Dostupné ke stažení"
     },
     "general": {
       "title": "Obecné",
@@ -407,10 +406,6 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
-      },
-      "customModels": {
-        "label": "Vlastní modely",
-        "description": "Povolit načítání vlastních modelů Whisper ze složky modelů. Komunitní modely nejsou oficiálně podporovány."
       },
       "paths": {
         "appData": "Data aplikace:",

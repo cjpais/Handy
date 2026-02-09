@@ -131,8 +131,7 @@
       },
       "noModelsMatch": "Нет моделей, соответствующих этому фильтру.",
       "yourModels": "Загруженные модели",
-      "availableModels": "Доступны для загрузки",
-      "customModels": "Пользовательские модели"
+      "availableModels": "Доступны для загрузки"
     },
     "general": {
       "title": "Общие",
@@ -407,10 +406,6 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
-      },
-      "customModels": {
-        "label": "Пользовательские модели",
-        "description": "Разрешить загрузку пользовательских моделей Whisper из папки моделей. Модели сообщества официально не поддерживаются."
       },
       "paths": {
         "appData": "Данные приложения:",

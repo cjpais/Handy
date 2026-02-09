@@ -131,8 +131,7 @@
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
       "yourModels": "ダウンロード済みモデル",
-      "availableModels": "ダウンロード可能",
-      "customModels": "カスタムモデル"
+      "availableModels": "ダウンロード可能"
     },
     "general": {
       "title": "一般",
@@ -407,10 +406,6 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
-      },
-      "customModels": {
-        "label": "カスタムモデル",
-        "description": "モデルフォルダからカスタムWhisperモデルの読み込みを許可します。コミュニティモデルは公式にはサポートされていません。"
       },
       "paths": {
         "appData": "アプリデータ:",

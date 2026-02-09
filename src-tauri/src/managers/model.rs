@@ -289,13 +289,9 @@ impl ModelManager {
             },
         );
 
-        // Auto-discover custom Whisper models if enabled in settings
-        let settings = get_settings(app_handle);
-        if settings.custom_models_enabled {
-            if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models)
-            {
-                warn!("Failed to discover custom models: {}", e);
-            }
+        // Auto-discover custom Whisper models (.bin files) in the models directory
+        if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
+            warn!("Failed to discover custom models: {}", e);
         }
 
         let manager = Self {
@@ -326,18 +322,6 @@ impl ModelManager {
     pub fn get_model_info(&self, model_id: &str) -> Option<ModelInfo> {
         let models = self.available_models.lock().unwrap();
         models.get(model_id).cloned()
-    }
-
-    /// Remove all custom models from the in-memory available models list.
-    pub fn remove_custom_models(&self) {
-        let mut models = self.available_models.lock().unwrap();
-        models.retain(|_, m| !m.is_custom);
-    }
-
-    /// Discover custom models and add them to the in-memory available models list.
-    pub fn add_custom_models(&self) -> Result<()> {
-        let mut models = self.available_models.lock().unwrap();
-        Self::discover_custom_whisper_models(&self.models_dir, &mut models)
     }
 
     fn migrate_bundled_models(&self) -> Result<()> {

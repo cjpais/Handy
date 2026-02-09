@@ -159,16 +159,14 @@ export const ModelsSettings: React.FC = () => {
     });
   }, [models, languageFilter]);
 
-  // Split filtered models into downloaded, custom, and available sections
-  const { downloadedModels, customModels, availableModels } = useMemo(() => {
+  // Split filtered models into downloaded (including custom) and available sections
+  const { downloadedModels, availableModels } = useMemo(() => {
     const downloaded: ModelInfo[] = [];
-    const custom: ModelInfo[] = [];
     const available: ModelInfo[] = [];
 
     for (const model of filteredModels) {
-      if (model.is_custom) {
-        custom.push(model);
-      } else if (
+      if (
+        model.is_custom ||
         model.is_downloaded ||
         model.id in downloadingModels ||
         model.id in extractingModels
@@ -179,21 +177,16 @@ export const ModelsSettings: React.FC = () => {
       }
     }
 
-    // Sort active model first in each section
+    // Sort: active model first, then non-custom, then custom at the bottom
     downloaded.sort((a, b) => {
       if (a.id === currentModel) return -1;
       if (b.id === currentModel) return 1;
-      return 0;
-    });
-    custom.sort((a, b) => {
-      if (a.id === currentModel) return -1;
-      if (b.id === currentModel) return 1;
+      if (a.is_custom !== b.is_custom) return a.is_custom ? 1 : -1;
       return 0;
     });
 
     return {
       downloadedModels: downloaded,
-      customModels: custom,
       availableModels: available,
     };
   }, [filteredModels, downloadingModels, extractingModels, currentModel]);
@@ -334,25 +327,6 @@ export const ModelsSettings: React.FC = () => {
               />
             ))}
           </div>
-
-          {/* Custom Models Section */}
-          {customModels.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-sm font-medium text-text/60">
-                {t("settings.models.customModels")}
-              </h2>
-              {customModels.map((model: ModelInfo) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  status={getModelStatus(model.id)}
-                  onSelect={handleModelSelect}
-                  onDelete={handleModelDelete}
-                  showRecommended={false}
-                />
-              ))}
-            </div>
-          )}
 
           {/* Available Models Section */}
           {availableModels.length > 0 && (

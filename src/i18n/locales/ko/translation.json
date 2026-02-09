@@ -196,8 +196,7 @@
         "translation": "번역",
         "allLanguages": "모든 언어"
       },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
-      "customModels": "사용자 정의 모델"
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
     },
     "advanced": {
       "title": "고급",
@@ -407,10 +406,6 @@
         "title": "키보드 구현",
         "description": "키보드 단축키 백엔드를 선택하세요.",
         "bindingsReset": "키보드 단축키가 호환되지 않아 기본값으로 재설정되었습니다"
-      },
-      "customModels": {
-        "label": "사용자 정의 모델",
-        "description": "모델 폴더에서 사용자 정의 Whisper 모델 로드를 허용합니다. 커뮤니티 모델은 공식적으로 지원되지 않습니다."
       },
       "pasteDelay": {
         "title": "붙여넣기 지연",

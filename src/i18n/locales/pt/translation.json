@@ -173,8 +173,7 @@
       },
       "noModelsMatch": "Nenhum modelo corresponde a este filtro.",
       "yourModels": "Modelos baixados",
-      "availableModels": "Disponíveis para download",
-      "customModels": "Modelos personalizados"
+      "availableModels": "Disponíveis para download"
     },
     "sound": {
       "title": "Som",
@@ -407,10 +406,6 @@
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
-      },
-      "customModels": {
-        "label": "Modelos personalizados",
-        "description": "Permitir o carregamento de modelos Whisper personalizados a partir da pasta de modelos. Os modelos da comunidade não são oficialmente suportados."
       },
       "paths": {
         "appData": "Dados do App:",

@@ -173,8 +173,7 @@
       },
       "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
       "yourModels": "Завантажені моделі",
-      "availableModels": "Доступні для завантаження",
-      "customModels": "Користувацькі моделі"
+      "availableModels": "Доступні для завантаження"
     },
     "sound": {
       "title": "Звук",
@@ -402,10 +401,6 @@
       "appendTrailingSpace": {
         "label": "Додавати пробіл в кінці",
         "description": "Додавати пробіл після вставленої транскрипції"
-      },
-      "customModels": {
-        "label": "Користувацькі моделі",
-        "description": "Дозволити завантаження користувацьких моделей Whisper з папки моделей. Моделі спільноти офіційно не підтримуються."
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",

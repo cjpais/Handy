@@ -16,11 +16,9 @@ mod tauri_impl;
 use log::{error, info, warn};
 use serde::Serialize;
 use specta::Type;
-use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 
-use crate::managers::model::ModelManager;
 use crate::settings::{
     self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
     PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
@@ -981,36 +979,3 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
     Ok(())
 }
 
-#[tauri::command]
-#[specta::specta]
-pub fn change_custom_models_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.custom_models_enabled = enabled;
-
-    let model_manager = app.state::<Arc<ModelManager>>();
-
-    if enabled {
-        // Discover and add custom models so they appear immediately
-        if let Err(e) = model_manager.add_custom_models() {
-            warn!("Failed to discover custom models: {}", e);
-        }
-    } else {
-        // If the currently selected model is custom, reset to empty so
-        // auto_select_model_if_needed picks a valid default on next startup
-        if let Some(model) = model_manager.get_model_info(&settings.selected_model) {
-            if model.is_custom {
-                settings.selected_model = String::new();
-            }
-        }
-
-        // Remove custom models from the in-memory list so the UI updates immediately
-        model_manager.remove_custom_models();
-    }
-
-    settings::write_settings(&app, settings);
-
-    // Notify the frontend so it refreshes the model list
-    let _ = app.emit("model-state-changed", ());
-
-    Ok(())
-}
