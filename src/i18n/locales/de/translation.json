@@ -20,6 +20,7 @@
     "recommended": "Empfohlen",
     "download": "Herunterladen",
     "downloading": "Wird heruntergeladen...",
+    "customModelDescription": "Nicht offiziell unterstützt",
     "downloadFailed": "Download fehlgeschlagen. Bitte erneut versuchen.",
     "modelCard": {
       "accuracy": "Genauigkeit",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Benutzerdefiniert",
     "active": "Aktiv",
     "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",

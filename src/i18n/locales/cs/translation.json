@@ -20,6 +20,7 @@
     "recommended": "Doporučeno",
     "download": "Stáhnout",
     "downloading": "Stahování...",
+    "customModelDescription": "Oficiálně nepodporováno",
     "downloadFailed": "Stahování se nezdařilo. Zkuste to prosím znovu.",
     "modelCard": {
       "accuracy": "přesnost",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Vlastní",
     "active": "Aktivní",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "extracting": "Rozbaluji {{modelName}}...",

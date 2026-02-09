@@ -20,6 +20,7 @@
     "recommended": "Рекомендовано",
     "download": "Завантажити",
     "downloading": "Завантаження...",
+    "customModelDescription": "Офіційно не підтримується",
     "downloadFailed": "Завантаження не вдалося. Будь ласка, спробуйте ще раз.",
     "modelCard": {
       "accuracy": "точність",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Користувацька",
     "active": "Активна",
     "noModelsAvailable": "Немає доступних моделей",
     "extracting": "Розпакування {{modelName}}...",
