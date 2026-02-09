@@ -32,12 +32,13 @@ This guide covers how to set up the development environment and build Handy from
   ```bash
   # Ubuntu/Debian
   sudo apt update
-  sudo apt install build-essential libasound2-dev pkg-config libssl-dev libvulkan-dev vulkan-tools glslc libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf cmake
+  sudo apt install build-essential libasound2-dev pkg-config libssl-dev libvulkan-dev vulkan-tools glslc libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libgtk-layer-shell0 libgtk-layer-shell-dev patchelf cmake
 
   # Fedora/RHEL
   sudo dnf groupinstall "Development Tools"
   sudo dnf install alsa-lib-devel pkgconf openssl-devel vulkan-devel \
     gtk3-devel webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel \
+    gtk-layer-shell gtk-layer-shell-devel \
     cmake
 
   # Arch Linux
