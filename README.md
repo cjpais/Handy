@@ -108,11 +108,11 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 - **Runtime library dependency (`libgtk-layer-shell.so.0`)**:
   - Handy links `gtk-layer-shell` on Linux. If startup fails with `error while loading shared libraries: libgtk-layer-shell.so.0`, install the runtime package for your distro:
 
-    | Distro        | Package to install         | Example command                              |
-    | ------------- | -------------------------- | -------------------------------------------- |
-    | Ubuntu/Debian | `libgtk-layer-shell0`      | `sudo apt install libgtk-layer-shell0`      |
-    | Fedora/RHEL   | `gtk-layer-shell`          | `sudo dnf install gtk-layer-shell`          |
-    | Arch Linux    | `gtk-layer-shell`          | `sudo pacman -S gtk-layer-shell`            |
+    | Distro        | Package to install    | Example command                        |
+    | ------------- | --------------------- | -------------------------------------- |
+    | Ubuntu/Debian | `libgtk-layer-shell0` | `sudo apt install libgtk-layer-shell0` |
+    | Fedora/RHEL   | `gtk-layer-shell`     | `sudo dnf install gtk-layer-shell`     |
+    | Arch Linux    | `gtk-layer-shell`     | `sudo pacman -S gtk-layer-shell`       |
 
   - For building from source on Ubuntu/Debian, you may also need `libgtk-layer-shell-dev`.
 
