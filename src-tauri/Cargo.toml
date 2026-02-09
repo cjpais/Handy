@@ -106,6 +106,9 @@ tauri-runtime = { git = "https://github.com/antons/tauri.git", branch = "fix/ove
 tauri-runtime-wry = { git = "https://github.com/antons/tauri.git", branch = "fix/overlay-bottom-position" }
 tauri-utils = { git = "https://github.com/antons/tauri.git", branch = "fix/overlay-bottom-position" }
 
+[dev-dependencies]
+tempfile = "3"
+
 [profile.release]
 lto = true
 codegen-units = 1

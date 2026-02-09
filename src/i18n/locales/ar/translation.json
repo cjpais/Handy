@@ -20,6 +20,7 @@
     "recommended": "موصى به",
     "download": "تنزيل",
     "downloading": "...جاري التنزيل",
+    "customModelDescription": "غير مدعوم رسميًا",
     "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
     "modelCard": {
       "accuracy": "الدقة",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "مخصص",
     "active": "نشط",
     "noModelsAvailable": "لا توجد نماذج متاحة",
     "extracting": "...جاري استخراج {{modelName}}",
@@ -495,6 +497,7 @@
     "description": "تغيير لغة واجهة Handy"
   },
   "overlay": {
-    "transcribing": "...جاري التفريغ"
+    "transcribing": "...جاري التفريغ",
+    "processing": "...جاري المعالجة"
   }
 }

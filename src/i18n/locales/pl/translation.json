@@ -20,6 +20,7 @@
     "recommended": "Polecane",
     "download": "Pobierz",
     "downloading": "Pobieranie...",
+    "customModelDescription": "Nieoficjalnie wspierane",
     "downloadFailed": "Pobieranie nie powiodło się. Spróbuj ponownie.",
     "modelCard": {
       "accuracy": "dokładność",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Własny",
     "active": "Aktywny",
     "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
@@ -495,6 +497,7 @@
     "description": "Zmień język interfejsu Handy"
   },
   "overlay": {
-    "transcribing": "Transkrypcja..."
+    "transcribing": "Transkrypcja...",
+    "processing": "Przetwarzanie..."
   }
 }

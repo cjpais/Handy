@@ -20,6 +20,7 @@
     "recommended": "Рекомендуется",
     "download": "Скачать",
     "downloading": "Загрузка...",
+    "customModelDescription": "Официально не поддерживается",
     "downloadFailed": "Загрузка не удалась. Пожалуйста, попробуйте снова.",
     "modelCard": {
       "accuracy": "точность",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Пользовательская",
     "active": "Активный",
     "switching": "Переключение...",
     "noModelsAvailable": "Нет доступных моделей",
@@ -495,6 +497,7 @@
     "description": "Изменить языка интерфейса Handy"
   },
   "overlay": {
-    "transcribing": "Расшифровка..."
+    "transcribing": "Расшифровка...",
+    "processing": "Обработка..."
   }
 }

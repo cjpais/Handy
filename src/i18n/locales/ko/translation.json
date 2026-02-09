@@ -20,6 +20,7 @@
     "recommended": "추천",
     "download": "다운로드",
     "downloading": "다운로드 중...",
+    "customModelDescription": "공식 지원되지 않음",
     "downloadFailed": "다운로드에 실패했습니다. 다시 시도해주세요.",
     "modelCard": {
       "accuracy": "정확도",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "사용자 정의",
     "active": "활성",
     "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
@@ -495,6 +497,7 @@
     "description": "Handy 인터페이스의 언어를 변경하세요"
   },
   "overlay": {
-    "transcribing": "텍스트로 변환 중..."
+    "transcribing": "텍스트로 변환 중...",
+    "processing": "처리 중..."
   }
 }

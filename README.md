@@ -264,6 +264,23 @@ Final structure should look like:
 3. Your manually installed models should now appear as "Downloaded"
 4. Select the model you want to use and test transcription
 
+### Custom Whisper Models
+
+Handy can auto-discover custom Whisper GGML models placed in the `models` directory. This is useful for users who want to use fine-tuned or community models not included in the default model list.
+
+**How to use:**
+
+1. Obtain a Whisper model in GGML `.bin` format (e.g., from [Hugging Face](https://huggingface.co/models?search=whisper%20ggml))
+2. Place the `.bin` file in your `models` directory (see paths above)
+3. Restart Handy to discover the new model
+4. The model will appear in the "Custom Models" section of the Models settings page
+
+**Important:**
+
+- Community models are user-provided and may not receive troubleshooting assistance
+- The model must be a valid Whisper GGML format (`.bin` file)
+- Model name is derived from the filename (e.g., `my-custom-model.bin` → "My Custom Model")
+
 ### How to Contribute
 
 1. **Check existing issues** at [github.com/cjpais/Handy/issues](https://github.com/cjpais/Handy/issues)

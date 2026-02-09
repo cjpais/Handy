@@ -20,6 +20,7 @@
     "recommended": "推荐",
     "download": "下载",
     "downloading": "下载中...",
+    "customModelDescription": "非官方支持",
     "downloadFailed": "下载失败。请重试。",
     "modelCard": {
       "accuracy": "准确度",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "自定义",
     "active": "活跃",
     "switching": "切换中...",
     "noModelsAvailable": "没有可用的模型",
@@ -495,6 +497,7 @@
     "description": "更改 Handy 界面的语言"
   },
   "overlay": {
-    "transcribing": "正在转录..."
+    "transcribing": "正在转录...",
+    "processing": "处理中..."
   }
 }

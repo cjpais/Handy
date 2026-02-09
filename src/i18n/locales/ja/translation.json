@@ -20,6 +20,7 @@
     "recommended": "おすすめ",
     "download": "ダウンロード",
     "downloading": "ダウンロード中...",
+    "customModelDescription": "公式サポート対象外",
     "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
     "modelCard": {
       "accuracy": "精度",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "カスタム",
     "active": "アクティブ",
     "switching": "切替中...",
     "noModelsAvailable": "利用可能なモデルがありません",
@@ -495,6 +497,7 @@
     "description": "Handyインターフェースの言語を変更"
   },
   "overlay": {
-    "transcribing": "文字起こし中..."
+    "transcribing": "文字起こし中...",
+    "processing": "処理中..."
   }
 }

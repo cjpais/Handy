@@ -20,6 +20,7 @@
     "recommended": "Önerilen",
     "download": "İndir",
     "downloading": "İndiriliyor...",
+    "customModelDescription": "Resmi olarak desteklenmiyor",
     "downloadFailed": "İndirme başarısız oldu. Lütfen tekrar deneyin.",
     "modelCard": {
       "accuracy": "doğruluk",
@@ -81,6 +82,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Özel",
     "active": "Aktif",
     "noModelsAvailable": "Kullanılabilir model yok",
     "extracting": "{{modelName}} çıkarılıyor...",
@@ -495,6 +497,7 @@
     "description": "Handy arayüzünün dilini değiştirin"
   },
   "overlay": {
-    "transcribing": "Transkribe ediliyor..."
+    "transcribing": "Transkribe ediliyor...",
+    "processing": "İşleniyor..."
   }
 }
