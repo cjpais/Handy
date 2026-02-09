@@ -495,6 +495,7 @@
     "description": "Handy 인터페이스의 언어를 변경하세요"
   },
   "overlay": {
-    "transcribing": "텍스트로 변환 중..."
+    "transcribing": "텍스트로 변환 중...",
+    "processing": "처리 중..."
   }
 }
