@@ -360,6 +360,61 @@ jobs:
             src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/rpm/*.rpm
           retention-days: 30
 
+      - name: Create portable ZIP (Windows)
+        if: contains(inputs.platform, 'windows')
+        shell: pwsh
+        run: |
+          # Determine the target output directory
+          $target = "${{ inputs.target }}"
+          $profile = "${{ steps.build-profile.outputs.profile }}"
+          if ($target -eq "x86_64-pc-windows-msvc" -or $target -eq "") {
+            $targetDir = "src-tauri/target/$profile"
+            $arch = "x64"
+          } else {
+            $targetDir = "src-tauri/target/$target/$profile"
+            $arch = "arm64"
+          }
+
+          $version = "${{ steps.get-version.outputs.version }}"
+          $prefix = "${{ inputs.asset-prefix }}"
+          $zipName = "${prefix}_${version}_${arch}_portable.zip"
+          $stagingDir = "portable-staging/Handy_${version}_${arch}_portable"
+
+          # Create staging directory
+          New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
+
+          # Copy the exe
+          $exePath = "$targetDir/Handy.exe"
+          if (!(Test-Path $exePath)) {
+            Write-Error "Handy.exe not found at $exePath"
+            exit 1
+          }
+          Copy-Item $exePath $stagingDir/
+
+          # Copy the resources directory
+          $resourcesPath = "$targetDir/resources"
+          if (Test-Path $resourcesPath) {
+            Copy-Item -Recurse $resourcesPath "$stagingDir/resources"
+          } else {
+            Write-Warning "Resources directory not found at $resourcesPath"
+          }
+
+          # Create the zip
+          Compress-Archive -Path $stagingDir -DestinationPath $zipName
+          Write-Host "Created portable ZIP: $zipName"
+          echo "PORTABLE_ZIP_PATH=$zipName" >> $env:GITHUB_ENV
+          echo "PORTABLE_ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+      - name: Upload portable ZIP to release (Windows)
+        if: contains(inputs.platform, 'windows') && inputs.release-id != ''
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "v${{ steps.get-version.outputs.version }}" "${{ env.PORTABLE_ZIP_PATH }}" \
+            --repo "${{ github.repository }}" \
+            --clobber
+
       - name: Upload artifacts (Windows)
         if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
         uses: actions/upload-artifact@v4
@@ -369,4 +424,5 @@ jobs:
           path: |
             src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
             src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
+            ${{ env.PORTABLE_ZIP_NAME }}
           retention-days: 30
