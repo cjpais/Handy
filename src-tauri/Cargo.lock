@@ -6581,7 +6581,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime"
 version = "2.9.1"
-source = "git+https://github.com/antons/tauri.git?branch=fix%2Foverlay-bottom-position#af6f5a91105f696a1b76a5db6ba936a30bbf80c6"
+source = "git+https://github.com/cjpais/tauri.git?branch=handy-2.9.1#8ba98c7b543ec155961e1840641b1f28c548b8dd"
 dependencies = [
  "cookie",
  "dpi",
@@ -6605,7 +6605,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime-wry"
 version = "2.9.1"
-source = "git+https://github.com/antons/tauri.git?branch=fix%2Foverlay-bottom-position#af6f5a91105f696a1b76a5db6ba936a30bbf80c6"
+source = "git+https://github.com/cjpais/tauri.git?branch=handy-2.9.1#8ba98c7b543ec155961e1840641b1f28c548b8dd"
 dependencies = [
  "gtk",
  "http",
@@ -6659,7 +6659,7 @@ dependencies = [
 [[package]]
 name = "tauri-utils"
 version = "2.8.0"
-source = "git+https://github.com/antons/tauri.git?branch=fix%2Foverlay-bottom-position#af6f5a91105f696a1b76a5db6ba936a30bbf80c6"
+source = "git+https://github.com/cjpais/tauri.git?branch=handy-2.9.1#8ba98c7b543ec155961e1840641b1f28c548b8dd"
 dependencies = [
  "anyhow",
  "brotli",
