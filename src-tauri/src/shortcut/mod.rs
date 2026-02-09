@@ -978,4 +978,3 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 
     Ok(())
 }
-
