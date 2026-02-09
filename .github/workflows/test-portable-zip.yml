@@ -23,11 +23,11 @@ jobs:
         shell: pwsh
         run: |
           $targetDir = "src-tauri/target/release"
-          New-Item -ItemType Directory -Force -Path "$targetDir/resources/models" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$targetDir" | Out-Null
           # Create a small mock exe
           Set-Content -Path "$targetDir/Handy.exe" -Value "MOCK_EXE_FOR_TESTING"
           # Copy actual resources from the repo
-          Copy-Item -Recurse "src-tauri/resources/*" "$targetDir/resources/"
+          Copy-Item -Recurse "src-tauri/resources" "$targetDir/resources"
 
       - name: Create portable ZIP (Windows) - x64 test
         shell: pwsh
