@@ -150,7 +150,9 @@
         "descriptionUnsupported": "Parakeet model automatically detects the language. No manual selection is needed.",
         "searchPlaceholder": "Search languages...",
         "noResults": "No languages found",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Follow OS ({{language}})",
+        "followOsInput": "Follow OS Input Language"
       },
       "pushToTalk": {
         "label": "Push To Talk",

@@ -978,3 +978,9 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_language_from_os_input() -> Option<String> {
+    crate::input_source::get_language_from_input_source()
+}
