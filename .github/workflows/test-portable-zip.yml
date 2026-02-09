@@ -1,0 +1,83 @@
+name: "Test Portable ZIP"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-portable-zip:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: feature/portable-windows-release
+
+      - name: Get version from tauri.conf.json
+        id: get-version
+        shell: bash
+        run: |
+          VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create mock build output (x64)
+        shell: pwsh
+        run: |
+          $targetDir = "src-tauri/target/release"
+          New-Item -ItemType Directory -Force -Path "$targetDir/resources/models" | Out-Null
+          # Create a small mock exe
+          Set-Content -Path "$targetDir/Handy.exe" -Value "MOCK_EXE_FOR_TESTING"
+          # Copy actual resources from the repo
+          Copy-Item -Recurse "src-tauri/resources/*" "$targetDir/resources/"
+
+      - name: Create portable ZIP (Windows) - x64 test
+        shell: pwsh
+        run: |
+          $target = "x86_64-pc-windows-msvc"
+          $profile = "release"
+          if ($target -eq "x86_64-pc-windows-msvc" -or $target -eq "") {
+            $targetDir = "src-tauri/target/$profile"
+            $arch = "x64"
+          } else {
+            $targetDir = "src-tauri/target/$target/$profile"
+            $arch = "arm64"
+          }
+
+          $version = "${{ steps.get-version.outputs.version }}"
+          $prefix = "handy"
+          $zipName = "${prefix}_${version}_${arch}_portable.zip"
+          $stagingDir = "portable-staging/Handy_${version}_${arch}_portable"
+
+          New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
+
+          $exePath = "$targetDir/Handy.exe"
+          if (-not (Test-Path $exePath)) {
+            Write-Error "Handy.exe not found at $exePath"
+            exit 1
+          }
+          Copy-Item $exePath $stagingDir/
+
+          $resourcesPath = "$targetDir/resources"
+          if (Test-Path $resourcesPath) {
+            Copy-Item -Recurse $resourcesPath "$stagingDir/resources"
+          } else {
+            Write-Warning "Resources directory not found at $resourcesPath"
+          }
+
+          Compress-Archive -Path $stagingDir -DestinationPath $zipName
+          Write-Host "Created portable ZIP: $zipName"
+
+          # Verify contents
+          Write-Host "`n=== ZIP Contents ==="
+          Add-Type -Assembly System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zipName))
+          $zip.Entries | ForEach-Object { Write-Host $_.FullName }
+          $zip.Dispose()
+
+          echo "PORTABLE_ZIP_NAME=$zipName" >> $env:GITHUB_ENV
+
+      - name: Upload portable ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-zip-test-x64
+          path: ${{ env.PORTABLE_ZIP_NAME }}
+          retention-days: 7
