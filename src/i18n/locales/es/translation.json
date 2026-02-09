@@ -215,7 +215,8 @@
       },
       "autostart": {
         "label": "Iniciar al Arranque",
-        "description": "Iniciar Handy automáticamente cuando inicies sesión en tu computadora."
+        "description": "Iniciar Handy automáticamente cuando inicies sesión en tu computadora.",
+        "error": "No se pudo actualizar la configuración de inicio automático. Es posible que tu entorno de escritorio no admita esta función."
       },
       "overlay": {
         "title": "Posición de Superposición",

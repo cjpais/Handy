@@ -215,7 +215,8 @@
       },
       "autostart": {
         "label": "Lancer au démarrage",
-        "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
+        "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur.",
+        "error": "Impossible de mettre à jour le paramètre de démarrage automatique. Votre environnement de bureau peut ne pas prendre en charge cette fonctionnalité."
       },
       "overlay": {
         "title": "Position de la fenêtre d'enregistrement",

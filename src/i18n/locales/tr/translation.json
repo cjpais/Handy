@@ -215,7 +215,8 @@
       },
       "autostart": {
         "label": "Başlangıçta Çalıştır",
-        "description": "Bilgisayara giriş yaptığınızda Handy otomatik olarak başlatılır."
+        "description": "Bilgisayara giriş yaptığınızda Handy otomatik olarak başlatılır.",
+        "error": "Otomatik başlatma ayarı güncellenemedi. Masaüstü ortamınız bu özelliği desteklemiyor olabilir."
       },
       "overlay": {
         "title": "Overlay Konumu",

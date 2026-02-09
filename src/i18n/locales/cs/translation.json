@@ -215,7 +215,8 @@
       },
       "autostart": {
         "label": "Spouštět při startu",
-        "description": "Automaticky spustit Handy po přihlášení do počítače."
+        "description": "Automaticky spustit Handy po přihlášení do počítače.",
+        "error": "Nepodařilo se aktualizovat nastavení automatického spuštění. Vaše desktopové prostředí nemusí tuto funkci podporovat."
       },
       "overlay": {
         "title": "Pozice překryvu",
