@@ -7086,10 +7086,11 @@ dependencies = [
 
 [[package]]
 name = "transcribe-rs"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a15e55d3bd4f74a474b7ff2c87ab416130223db490102c5ad32c6e2227686b0"
+checksum = "2039bf80d6497655ecdef8ebfa10583862fad3cc017077e105bc1c18b7502ff8"
 dependencies = [
+ "base64 0.22.1",
  "derive_builder",
  "env_logger",
  "hound",
@@ -7098,6 +7099,7 @@ dependencies = [
  "once_cell",
  "ort",
  "regex",
+ "rustfft",
  "serde",
  "serde_json",
  "thiserror 2.0.17",

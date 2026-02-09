@@ -8,6 +8,7 @@ export const LANGUAGES: Language[] = [
   { value: "en", label: "English" },
   { value: "zh-Hans", label: "Simplified Chinese" },
   { value: "zh-Hant", label: "Traditional Chinese" },
+  { value: "yue", label: "Cantonese" },
   { value: "de", label: "German" },
   { value: "es", label: "Spanish" },
   { value: "ru", label: "Russian" },
