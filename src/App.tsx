@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { Toaster } from "sonner";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
@@ -25,7 +27,7 @@ const renderSettingsContent = (section: SidebarSection) => {
 };
 
 function App() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
@@ -47,6 +49,37 @@ function App() {
   useEffect(() => {
     checkOnboardingStatus();
   }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    listen<{
+      from: string;
+      to: string;
+      reason: string;
+      can_retry_gpu: boolean;
+    }>("whisper-compute-fallback", () => {
+      toast.warning(t("settings.advanced.whisperCompute.fallbackWarning"), {
+        action: {
+          label: t("settings.advanced.whisperCompute.returnGpu"),
+          onClick: async () => {
+            const result = await commands.retryWhisperGpu();
+            if (result.status === "ok") {
+              await updateSetting("whisper_compute_mode", "gpu");
+            } else {
+              toast.error(t("settings.advanced.whisperCompute.returnGpuFailed"));
+            }
+          },
+        },
+      });
+    }).then((fn) => {
+      unlisten = fn;
+    });
+    return () => {
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, [t, updateSetting]);
 
   // Initialize RTL direction when language changes
   useEffect(() => {

@@ -1,6 +1,9 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::model::{EngineType, ModelManager};
-use crate::settings::{get_settings, ModelUnloadTimeout};
+use crate::settings::{get_settings, ModelUnloadTimeout, WhisperComputeMode};
+use crate::whisper_worker::{
+    WhisperRuntimeMode, WhisperWorkerClient, WhisperWorkerInferenceParams,
+};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -15,7 +18,6 @@ use transcribe_rs::{
         parakeet::{
             ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
         },
-        whisper::{WhisperEngine, WhisperInferenceParams},
     },
     TranscriptionEngine,
 };
@@ -28,8 +30,16 @@ pub struct ModelStateEvent {
     pub error: Option<String>,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub struct WhisperComputeFallbackEvent {
+    pub from: String,
+    pub to: String,
+    pub reason: String,
+    pub can_retry_gpu: bool,
+}
+
 enum LoadedEngine {
-    Whisper(WhisperEngine),
+    Whisper(WhisperWorkerClient),
     Parakeet(ParakeetEngine),
     Moonshine(MoonshineEngine),
 }
@@ -142,7 +152,10 @@ impl TranscriptionManager {
             let mut engine = self.engine.lock().unwrap();
             if let Some(ref mut loaded_engine) = *engine {
                 match loaded_engine {
-                    LoadedEngine::Whisper(ref mut e) => e.unload_model(),
+                    LoadedEngine::Whisper(ref mut e) => {
+                        let _ = e.unload();
+                        e.terminate();
+                    }
                     LoadedEngine::Parakeet(ref mut e) => e.unload_model(),
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
                 }
@@ -225,21 +238,35 @@ impl TranscriptionManager {
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
             EngineType::Whisper => {
-                let mut engine = WhisperEngine::new();
-                engine.load_model(&model_path).map_err(|e| {
-                    let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.clone()),
-                        },
-                    );
-                    anyhow::anyhow!(error_msg)
-                })?;
-                LoadedEngine::Whisper(engine)
+                let settings = get_settings(&self.app_handle);
+                let preferred_mode =
+                    whisper_runtime_mode_from_setting(settings.whisper_compute_mode);
+                let worker = WhisperWorkerClient::spawn_for_model(&model_path, preferred_mode)
+                    .or_else(|first_err| {
+                        if settings.whisper_compute_mode == WhisperComputeMode::Auto {
+                            WhisperWorkerClient::spawn_for_model(
+                                &model_path,
+                                WhisperRuntimeMode::Cpu,
+                            )
+                            .map_err(|cpu_err| anyhow::anyhow!("{}; {}", first_err, cpu_err))
+                        } else {
+                            Err(first_err)
+                        }
+                    })
+                    .map_err(|e| {
+                        let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::Whisper(worker)
             }
             EngineType::Parakeet => {
                 let mut engine = ParakeetEngine::new();
@@ -341,6 +368,31 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
+    pub fn retry_whisper_gpu(&self) -> Result<()> {
+        let model_id = self
+            .get_current_model()
+            .ok_or_else(|| anyhow::anyhow!("No active model"))?;
+        let model_info = self
+            .model_manager
+            .get_model_info(&model_id)
+            .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
+        if !matches!(model_info.engine_type, EngineType::Whisper) {
+            return Err(anyhow::anyhow!("Current model is not Whisper"));
+        }
+
+        let model_path = self.model_manager.get_model_path(&model_id)?;
+        let gpu_worker =
+            WhisperWorkerClient::spawn_for_model(&model_path, WhisperRuntimeMode::Gpu)?;
+        let mut engine_guard = self.engine.lock().unwrap();
+        if let Some(LoadedEngine::Whisper(existing)) = engine_guard.as_mut() {
+            existing.terminate();
+            *existing = gpu_worker;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Whisper engine is not loaded"))
+        }
+    }
+
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
         // Update last activity timestamp
         self.last_activity.store(
@@ -389,8 +441,6 @@ impl TranscriptionManager {
 
             match engine {
                 LoadedEngine::Whisper(whisper_engine) => {
-                    // Normalize language code for Whisper
-                    // Convert zh-Hans and zh-Hant to zh since Whisper uses ISO 639-1 codes
                     let whisper_language = if settings.selected_language == "auto" {
                         None
                     } else {
@@ -404,15 +454,70 @@ impl TranscriptionManager {
                         Some(normalized)
                     };
 
-                    let params = WhisperInferenceParams {
+                    let params = WhisperWorkerInferenceParams {
                         language: whisper_language,
                         translate: settings.translate_to_english,
-                        ..Default::default()
                     };
 
-                    whisper_engine
-                        .transcribe_samples(audio, Some(params))
-                        .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
+                    match whisper_engine.transcribe(audio.clone(), params.clone()) {
+                        Ok(text) => transcribe_rs::TranscriptionResult {
+                            text,
+                            segments: None,
+                        },
+                        Err(err) => {
+                            let can_fallback = matches!(
+                                settings.whisper_compute_mode,
+                                WhisperComputeMode::Auto | WhisperComputeMode::Gpu
+                            ) && whisper_engine.runtime_mode()
+                                == WhisperRuntimeMode::Gpu;
+
+                            if can_fallback {
+                                let current_model_id = self
+                                    .get_current_model()
+                                    .ok_or_else(|| anyhow::anyhow!("No active whisper model"))?;
+                                let model_path =
+                                    self.model_manager.get_model_path(&current_model_id)?;
+                                whisper_engine.terminate();
+                                let mut cpu_worker = WhisperWorkerClient::spawn_for_model(
+                                    &model_path,
+                                    WhisperRuntimeMode::Cpu,
+                                )
+                                .map_err(|e| {
+                                    anyhow::anyhow!(
+                                        "Whisper GPU failed and CPU fallback failed: {}; {}",
+                                        err,
+                                        e
+                                    )
+                                })?;
+                                let retried_text =
+                                    cpu_worker.transcribe(audio, params).map_err(|e| {
+                                        anyhow::anyhow!(
+                                            "Whisper CPU fallback transcription failed: {}",
+                                            e
+                                        )
+                                    })?;
+                                *whisper_engine = cpu_worker;
+                                let _ = self.app_handle.emit(
+                                    "whisper-compute-fallback",
+                                    WhisperComputeFallbackEvent {
+                                        from: "gpu".to_string(),
+                                        to: "cpu".to_string(),
+                                        reason: err.to_string(),
+                                        can_retry_gpu: true,
+                                    },
+                                );
+                                transcribe_rs::TranscriptionResult {
+                                    text: retried_text,
+                                    segments: None,
+                                }
+                            } else {
+                                return Err(anyhow::anyhow!(
+                                    "Whisper transcription failed: {}",
+                                    err
+                                ));
+                            }
+                        }
+                    }
                 }
                 LoadedEngine::Parakeet(parakeet_engine) => {
                     let params = ParakeetInferenceParams {
@@ -484,5 +589,13 @@ impl Drop for TranscriptionManager {
                 debug!("Idle watcher thread joined successfully");
             }
         }
+    }
+}
+
+fn whisper_runtime_mode_from_setting(mode: WhisperComputeMode) -> WhisperRuntimeMode {
+    match mode {
+        WhisperComputeMode::Auto => WhisperRuntimeMode::Gpu,
+        WhisperComputeMode::Gpu => WhisperRuntimeMode::Gpu,
+        WhisperComputeMode::Cpu => WhisperRuntimeMode::Cpu,
     }
 }

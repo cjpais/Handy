@@ -38,3 +38,11 @@ pub fn unload_model_manually(
         .unload_model()
         .map_err(|e| format!("Failed to unload model: {}", e))
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn retry_whisper_gpu(transcription_manager: State<TranscriptionManager>) -> Result<(), String> {
+    transcription_manager
+        .retry_whisper_gpu()
+        .map_err(|e| format!("Failed to return Whisper to GPU: {}", e))
+}

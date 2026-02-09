@@ -158,6 +158,14 @@ pub enum KeyboardImplementation {
     HandyKeys,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum WhisperComputeMode {
+    Auto,
+    Gpu,
+    Cpu,
+}
+
 impl Default for KeyboardImplementation {
     fn default() -> Self {
         // Default to HandyKeys only on macOS where it's well-tested.
@@ -166,6 +174,15 @@ impl Default for KeyboardImplementation {
         return KeyboardImplementation::HandyKeys;
         #[cfg(not(target_os = "macos"))]
         return KeyboardImplementation::Tauri;
+    }
+}
+
+impl Default for WhisperComputeMode {
+    fn default() -> Self {
+        #[cfg(target_os = "windows")]
+        return WhisperComputeMode::Auto;
+        #[cfg(not(target_os = "windows"))]
+        return WhisperComputeMode::Auto;
     }
 }
 
@@ -315,6 +332,8 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
+    #[serde(default)]
+    pub whisper_compute_mode: WhisperComputeMode,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
 }
@@ -631,6 +650,7 @@ pub fn get_default_settings() -> AppSettings {
         app_language: default_app_language(),
         experimental_enabled: false,
         keyboard_implementation: KeyboardImplementation::default(),
+        whisper_compute_mode: WhisperComputeMode::default(),
         paste_delay_ms: default_paste_delay_ms(),
     }
 }

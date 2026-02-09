@@ -21,8 +21,8 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
     self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
-    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    PasteMethod, ShortcutBinding, SoundTheme, WhisperComputeMode,
+    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -726,6 +726,22 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
 pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.experimental_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_whisper_compute_mode_setting(app: AppHandle, mode: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.whisper_compute_mode = match mode.as_str() {
+        "auto" => WhisperComputeMode::Auto,
+        "gpu" => WhisperComputeMode::Gpu,
+        "cpu" => WhisperComputeMode::Cpu,
+        other => {
+            return Err(format!("Invalid whisper compute mode '{}'", other));
+        }
+    };
     settings::write_settings(&app, settings);
     Ok(())
 }

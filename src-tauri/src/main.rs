@@ -2,6 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
+    if std::env::args().any(|arg| arg == "--whisper-worker") {
+        let _ = handy_app_lib::whisper_worker::run_worker_process();
+        return;
+    }
+
     #[cfg(target_os = "linux")]
     {
         if std::path::Path::new("/dev/dri").exists()
