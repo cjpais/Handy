@@ -245,6 +245,10 @@
         "label": "Funkcje Eksperymentalne",
         "description": "Włącz funkcje eksperymentalne, które są jeszcze w fazie rozwoju."
       },
+      "lazyStreamClose": {
+        "label": "Pozostaw mikrofon otwarty między transkrypcjami",
+        "description": "Utrzymuje strumień mikrofonu otwarty przez 30 sekund po zatrzymaniu nagrywania, zmniejszając opóźnienie przy kolejnych transkrypcjach. Może pogorszyć jakość dźwięku Bluetooth."
+      },
       "acceleration": {
         "whisper": {
           "title": "Akceleracja Whisper",

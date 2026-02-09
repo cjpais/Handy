@@ -358,6 +358,7 @@ pub fn run(cli_args: CliArgs) {
         shortcut::resume_binding,
         shortcut::change_mute_while_recording_setting,
         shortcut::change_append_trailing_space_setting,
+        shortcut::change_lazy_stream_close_setting,
         shortcut::change_app_language_setting,
         shortcut::change_update_checks_setting,
         shortcut::change_keyboard_implementation_setting,

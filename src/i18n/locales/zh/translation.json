@@ -245,6 +245,10 @@
         "label": "实验性功能",
         "description": "启用仍在开发中的实验性功能。"
       },
+      "lazyStreamClose": {
+        "label": "在转录之间保持麦克风开启",
+        "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper 加速",
