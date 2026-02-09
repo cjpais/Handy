@@ -8,6 +8,7 @@
   },
   "sidebar": {
     "general": "Genel",
+    "models": "Modeller",
     "advanced": "Gelişmiş",
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
@@ -19,6 +20,7 @@
     "recommended": "Önerilen",
     "download": "İndir",
     "downloading": "İndiriliyor...",
+    "downloadFailed": "İndirme başarısız oldu. Lütfen tekrar deneyin.",
     "modelCard": {
       "accuracy": "doğruluk",
       "speed": "hız"
@@ -79,14 +81,7 @@
     }
   },
   "modelSelector": {
-    "welcome": "Handy'ye Hoş Geldiniz!",
-    "downloadPrompt": "Transkripsiyona başlamak için aşağıdan bir model indirin.",
-    "availableModels": "Mevcut Modeller",
-    "downloadModels": "Modelleri İndir",
-    "chooseModel": "Bir Model Seçin",
     "active": "Aktif",
-    "download": "İndir",
-    "downloadSize": "İndirme boyutu",
     "noModelsAvailable": "Kullanılabilir model yok",
     "extracting": "{{modelName}} çıkarılıyor...",
     "extractingMultiple": "{{count}} model çıkarılıyor...",
@@ -99,9 +94,43 @@
     "modelError": "Model Hatası",
     "modelUnloaded": "Model Boşaltıldı",
     "noModelDownloadRequired": "Model Yok – İndirme Gerekli",
-    "deleteModel": "{{modelName}} Sil"
+    "deleteModel": "{{modelName}} Sil",
+    "switching": "Değiştiriliyor...",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Birden fazla giriş dilini destekler",
+      "multiLanguage": "Çok dilli",
+      "translation": "İngilizce'ye çevirebilir",
+      "translate": "İngilizce'ye çevir",
+      "singleLanguage": "Yalnızca bu dili destekler",
+      "languageOnly": "Yalnızca {{language}}"
+    },
+    "cancel": "İptal",
+    "cancelDownload": "İndirmeyi iptal et"
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Ayarları",
+      "noSettingsNeeded": "Bu model yapılandırma gerektirmeden otomatik olarak çalışır."
+    },
+    "models": {
+      "title": "Transkripsiyon Modelleri",
+      "description": "Bir transkripsiyon modeli seçin veya ek modeller indirin. Farklı modeller değişen doğruluk ve hız seviyeleri sunar.",
+      "downloaded": "İndirildi",
+      "available": "İndirilebilir",
+      "deleteConfirm": "{{modelName}} modelini silmek istediğinizden emin misiniz? Kullanmak için tekrar indirmeniz gerekecek.",
+      "deleteActiveConfirm": "{{modelName}} aktif modelinizdir. Silmek, yeni bir model seçene kadar transkripsiyonları durduracaktır. Emin misiniz?",
+      "deleteTitle": "Modeli Sil",
+      "filters": {
+        "all": "Tümü",
+        "multiLanguage": "Çok dilli",
+        "translation": "Çeviri",
+        "allLanguages": "Tüm Diller"
+      },
+      "noModelsMatch": "Bu filtreyle eşleşen model yok.",
+      "yourModels": "İndirilen modeller",
+      "availableModels": "İndirilebilir"
+    },
     "general": {
       "title": "Genel",
       "shortcut": {
@@ -119,6 +148,10 @@
           "cancel": {
             "name": "İptal Kısayolu",
             "description": "Mevcut kaydı iptal etmek için klavye kısayolu."
+          },
+          "transcribe_with_post_process": {
+            "name": "Son İşlem Kısayolu",
+            "description": "İsteğe bağlı: Transkripsiyonunuza her zaman AI son işleme uygulayan özel bir kısayol tuşu."
           }
         },
         "errors": {
@@ -241,7 +274,9 @@
     },
     "postProcessing": {
       "title": "Son İşlem",
-      "disabledNotice": "Son işlem şu anda devre dışı. Yapılandırmak için Hata Ayıklama ayarlarında etkinleştirin.",
+      "hotkey": {
+        "title": "Kısayol Tuşu"
+      },
       "api": {
         "title": "API (OpenAI Uyumlu)",
         "provider": {
@@ -365,10 +400,19 @@
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Uygulama Verileri:",
         "models": "Modeller:",
         "settings": "Ayarlar:"
+      },
+      "pasteDelay": {
+        "title": "Yapıştırma gecikmesi",
+        "description": "Yapıştırma tuşu göndermeden önce gecikme (milisaniye cinsinden). Yanlış metin yapıştırılıyorsa artırın."
       }
     },
     "about": {

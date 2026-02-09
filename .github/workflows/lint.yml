@@ -14,5 +14,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Check translation consistency
+        run: bun run check:translations
+
       - name: Run ESLint
         run: bun run lint

@@ -12,13 +12,15 @@
     "postProcessing": "معالجة لاحقة",
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
-    "about": "حول"
+    "about": "حول",
+    "models": "النماذج"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
     "recommended": "موصى به",
     "download": "تنزيل",
     "downloading": "...جاري التنزيل",
+    "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
     "modelCard": {
       "accuracy": "الدقة",
       "speed": "السرعة"
@@ -79,14 +81,7 @@
     }
   },
   "modelSelector": {
-    "welcome": "مرحباً بك في Handy!",
-    "downloadPrompt": ".قم بتنزيل نموذج أدناه للبدء في التفريغ الصوتي",
-    "availableModels": "النماذج المتاحة",
-    "downloadModels": "تنزيل النماذج",
-    "chooseModel": "اختر نموذجاً",
     "active": "نشط",
-    "download": "تنزيل",
-    "downloadSize": "حجم التنزيل",
     "noModelsAvailable": "لا توجد نماذج متاحة",
     "extracting": "...جاري استخراج {{modelName}}",
     "extractingMultiple": "...جاري استخراج {{count}} من النماذج",
@@ -99,7 +94,19 @@
     "modelError": "خطأ في النموذج",
     "modelUnloaded": "تم إلغاء تحميل النموذج",
     "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
-    "deleteModel": "حذف {{modelName}}"
+    "deleteModel": "حذف {{modelName}}",
+    "switching": "جارٍ التبديل...",
+    "downloadSpeed": "{{speed}} ميجابايت/ث",
+    "cancel": "إلغاء",
+    "cancelDownload": "إلغاء التنزيل",
+    "capabilities": {
+      "languageSelection": "يدعم اختيار اللغة",
+      "singleLanguage": "يدعم هذه اللغة فقط",
+      "multiLanguage": "متعدد اللغات",
+      "languageOnly": "{{language}} فقط",
+      "translation": "يدعم الترجمة",
+      "translate": "ترجمة"
+    }
   },
   "settings": {
     "general": {
@@ -119,6 +126,10 @@
           "cancel": {
             "name": "اختصار الإلغاء",
             "description": ".اختصار لوحة المفاتيح لإلغاء التسجيل الحالي"
+          },
+          "transcribe_with_post_process": {
+            "name": "مفتاح المعالجة اللاحقة",
+            "description": "اختياري: مفتاح اختصار مخصص يطبق دائماً المعالجة اللاحقة بالذكاء الاصطناعي على التفريغ الصوتي."
           }
         },
         "errors": {
@@ -241,7 +252,9 @@
     },
     "postProcessing": {
       "title": "معالجة لاحقة",
-      "disabledNotice": "المعالجة اللاحقة معطلة حالياً. قم بتمكينها في إعدادات تصحيح الأخطاء للتكوين.",
+      "hotkey": {
+        "title": "مفتاح الاختصار"
+      },
       "api": {
         "title": "API (متوافق مع OpenAI)",
         "provider": {
@@ -374,6 +387,10 @@
         "appData": "بيانات التطبيق:",
         "models": "النماذج:",
         "settings": "الإعدادات:"
+      },
+      "pasteDelay": {
+        "title": "تأخير اللصق",
+        "description": "التأخير قبل إرسال ضغطة مفتاح اللصق (بالمللي ثانية). قم بزيادتها إذا تم لصق نص خاطئ."
       }
     },
     "about": {
@@ -404,6 +421,28 @@
           "details": ".يستخدم Handy برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
         }
       }
+    },
+    "modelSettings": {
+      "title": "إعدادات النموذج",
+      "noSettingsNeeded": "لا توجد إعدادات مطلوبة لهذا النموذج"
+    },
+    "models": {
+      "title": "نماذج النسخ",
+      "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
+      "yourModels": "النماذج المحمّلة",
+      "availableModels": "متاح للتنزيل",
+      "downloaded": "تم التنزيل",
+      "available": "متاح للتنزيل",
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
+      "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
+      "deleteTitle": "حذف النموذج",
+      "filters": {
+        "all": "الكل",
+        "multiLanguage": "متعدد اللغات",
+        "translation": "ترجمة",
+        "allLanguages": "جميع اللغات"
+      },
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
     }
   },
   "footer": {
