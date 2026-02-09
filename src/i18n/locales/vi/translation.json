@@ -245,6 +245,10 @@
         "label": "Tính năng thử nghiệm",
         "description": "Bật các tính năng thử nghiệm đang trong quá trình phát triển."
       },
+      "lazyStreamClose": {
+        "label": "Giữ micro mở giữa các lần phiên âm",
+        "description": "Giữ luồng micro mở trong 30 giây sau khi dừng ghi âm, giảm độ trễ khi phiên âm liên tiếp. Có thể làm giảm chất lượng âm thanh Bluetooth khi đang hoạt động."
+      },
       "acceleration": {
         "whisper": {
           "title": "Tăng tốc Whisper",

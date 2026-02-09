@@ -245,6 +245,10 @@
         "label": "Deneysel Özellikler",
         "description": "Hala geliştirme aşamasında olan deneysel özellikleri etkinleştir."
       },
+      "lazyStreamClose": {
+        "label": "Transkripsiyonlar arasında mikrofonu açık tut",
+        "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper Hızlandırma",
