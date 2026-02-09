@@ -497,6 +497,7 @@
     "description": "Handyインターフェースの言語を変更"
   },
   "overlay": {
-    "transcribing": "文字起こし中..."
+    "transcribing": "文字起こし中...",
+    "processing": "処理中..."
   }
 }

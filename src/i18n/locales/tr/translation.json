@@ -497,6 +497,7 @@
     "description": "Handy arayüzünün dilini değiştirin"
   },
   "overlay": {
-    "transcribing": "Transkribe ediliyor..."
+    "transcribing": "Transkribe ediliyor...",
+    "processing": "İşleniyor..."
   }
 }

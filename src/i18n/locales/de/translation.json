@@ -497,6 +497,7 @@
     "description": "Sprache der Handy-Oberfläche ändern"
   },
   "overlay": {
-    "transcribing": "Transkribiere..."
+    "transcribing": "Transkribiere...",
+    "processing": "Verarbeite..."
   }
 }

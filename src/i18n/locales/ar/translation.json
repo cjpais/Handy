@@ -497,6 +497,7 @@
     "description": "تغيير لغة واجهة Handy"
   },
   "overlay": {
-    "transcribing": "...جاري التفريغ"
+    "transcribing": "...جاري التفريغ",
+    "processing": "...جاري المعالجة"
   }
 }
