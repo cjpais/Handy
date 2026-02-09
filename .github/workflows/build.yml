@@ -385,7 +385,7 @@ jobs:
 
           # Copy the exe
           $exePath = "$targetDir/Handy.exe"
-          if (!(Test-Path $exePath)) {
+          if (-not (Test-Path $exePath)) {
             Write-Error "Handy.exe not found at $exePath"
             exit 1
           }
