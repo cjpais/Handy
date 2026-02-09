@@ -293,9 +293,9 @@ impl ModelManager {
         // SenseVoice supported languages
         let sense_voice_languages: Vec<String> =
             vec!["zh", "zh-Hans", "zh-Hant", "en", "yue", "ja", "ko"]
-            .into_iter()
-            .map(String::from)
-            .collect();
+                .into_iter()
+                .map(String::from)
+                .collect();
 
         available_models.insert(
             "sense-voice-int8".to_string(),

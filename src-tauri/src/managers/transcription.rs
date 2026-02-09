@@ -467,9 +467,7 @@ impl TranscriptionManager {
                     };
                     sense_voice_engine
                         .transcribe_samples(audio, Some(params))
-                        .map_err(|e| {
-                            anyhow::anyhow!("SenseVoice transcription failed: {}", e)
-                        })?
+                        .map_err(|e| anyhow::anyhow!("SenseVoice transcription failed: {}", e))?
                 }
             }
         };

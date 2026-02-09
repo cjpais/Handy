@@ -49,7 +49,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   }, [isOpen]);
 
   const availableLanguages = useMemo(() => {
-    if (!supportedLanguages || supportedLanguages.length === 0) return LANGUAGES;
+    if (!supportedLanguages || supportedLanguages.length === 0)
+      return LANGUAGES;
     return LANGUAGES.filter(
       (lang) =>
         lang.value === "auto" || supportedLanguages.includes(lang.value),
