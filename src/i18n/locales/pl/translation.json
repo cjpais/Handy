@@ -407,6 +407,10 @@
         "label": "Dodaj spację na końcu",
         "description": "Dodaj spację po wklejonej transkrypcji"
       },
+      "filterSilence": {
+        "label": "Filtruj ciszę",
+        "description": "Użyj detekcji aktywności głosowej, aby usunąć ciszę z nagrań przed transkrypcją. Spróbuj wyłączyć, jeśli napotkasz problemy, takie jak usuwanie części mowy. Wyłączenie może prowadzić do częstszych \"halucynacji\" na wyjściu."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

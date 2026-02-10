@@ -968,6 +968,22 @@ pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Re
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_filter_silence_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.filter_silence = enabled;
+    settings::write_settings(&app, settings);
+
+    // Force recorder re-creation so the VAD change takes effect on next recording
+    use crate::managers::audio::AudioRecordingManager;
+    if let Some(audio_mgr) = app.try_state::<std::sync::Arc<AudioRecordingManager>>() {
+        audio_mgr.invalidate_recorder();
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.app_language = language.clone();

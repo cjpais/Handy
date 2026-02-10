@@ -407,6 +407,10 @@
         "label": "Sonuna Boşluk Ekle",
         "description": "Yapıştırılan transkripsiyondan sonra boşluk ekler"
       },
+      "filterSilence": {
+        "label": "Sessizliği filtrele",
+        "description": "Transkripsiyon öncesi kayıtlardan sessizliği kaldırmak için ses etkinliği algılama kullan. Konuşmanın bazı bölümlerinin kaldırılması gibi sorunlarla karşılaşırsan devre dışı bırakmayı dene. Devre dışı bırakma, çıktıda daha sık \"halüsinasyonlara\" yol açabilir."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

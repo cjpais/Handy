@@ -407,6 +407,10 @@
         "label": "Leerzeichen anhängen",
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
       },
+      "filterSilence": {
+        "label": "Stille filtern",
+        "description": "Sprachaktivitätserkennung verwenden, um Stille aus Aufnahmen vor der Transkription zu entfernen. Versuchen Sie die Deaktivierung, wenn Probleme auftreten, z. B. wenn Teile der Sprache entfernt werden. Die Deaktivierung kann zu häufigeren \"Halluzinationen\" in der Ausgabe führen."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

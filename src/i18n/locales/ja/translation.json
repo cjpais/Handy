@@ -407,6 +407,10 @@
         "label": "末尾にスペースを追加",
         "description": "貼り付けた文字起こしの後にスペースを追加"
       },
+      "filterSilence": {
+        "label": "無音をフィルタリング",
+        "description": "音声アクティビティ検出を使用して、文字起こし前に録音から無音部分を除去します。音声の一部が削除されるなどの問題が発生した場合は、無効化を試してください。無効化すると、出力に「幻覚」が頻繁に現れる可能性があります。"
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

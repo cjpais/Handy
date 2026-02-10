@@ -407,6 +407,10 @@
         "label": "Adicionar Espaço Final",
         "description": "Adicionar um espaço após a transcrição colada"
       },
+      "filterSilence": {
+        "label": "Filtrar silêncio",
+        "description": "Usar detecção de atividade de voz para remover silêncio das gravações antes da transcrição. Tente desativar se encontrar problemas, como partes da fala sendo removidas. Desativar pode resultar em \"alucinações\" mais frequentes na saída."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

@@ -407,6 +407,10 @@
         "label": "追加尾部空格",
         "description": "在粘贴的转录后添加空格"
       },
+      "filterSilence": {
+        "label": "过滤静音",
+        "description": "使用语音活动检测在转录前去除录音中的静音部分。如果遇到问题（例如语音部分被删除），请尝试禁用。禁用可能导致输出中出现更频繁的\"幻觉\"。"
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

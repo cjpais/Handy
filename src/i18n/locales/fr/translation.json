@@ -407,6 +407,10 @@
         "label": "Ajouter un espace final",
         "description": "Ajouter un espace après la transcription collée"
       },
+      "filterSilence": {
+        "label": "Filtrer le silence",
+        "description": "Utiliser la détection d'activité vocale pour supprimer les silences des enregistrements avant la transcription. Essayez de désactiver si vous rencontrez des problèmes, comme la suppression de parties de la parole. La désactivation peut entraîner des \"hallucinations\" plus fréquentes dans la sortie."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

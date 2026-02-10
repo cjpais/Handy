@@ -319,6 +319,8 @@ pub struct AppSettings {
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
+    #[serde(default = "default_filter_silence")]
+    pub filter_silence: bool,
 }
 
 fn default_model() -> String {
@@ -399,6 +401,10 @@ fn default_app_language() -> String {
 }
 
 fn default_show_tray_icon() -> bool {
+    true
+}
+
+fn default_filter_silence() -> bool {
     true
 }
 
@@ -639,6 +645,7 @@ pub fn get_default_settings() -> AppSettings {
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
+        filter_silence: default_filter_silence(),
     }
 }
 

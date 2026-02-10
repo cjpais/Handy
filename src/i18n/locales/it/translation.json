@@ -407,6 +407,10 @@
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
       },
+      "filterSilence": {
+        "label": "Filtra silenzio",
+        "description": "Usa il rilevamento dell'attività vocale per rimuovere il silenzio dalle registrazioni prima della trascrizione. Prova a disabilitare se riscontri problemi, come la rimozione di parti del parlato. La disabilitazione può causare \"allucinazioni\" più frequenti nell'output."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

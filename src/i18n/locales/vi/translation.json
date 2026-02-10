@@ -407,6 +407,10 @@
         "label": "Thêm dấu cách cuối",
         "description": "Thêm một dấu cách sau bản ghi đã dán"
       },
+      "filterSilence": {
+        "label": "Lọc khoảng lặng",
+        "description": "Sử dụng phát hiện hoạt động giọng nói để loại bỏ khoảng lặng khỏi bản ghi trước khi chuyển đổi. Thử vô hiệu hóa nếu gặp sự cố, như các phần giọng nói bị xóa. Vô hiệu hóa có thể dẫn đến \"ảo giác\" thường xuyên hơn trong đầu ra."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

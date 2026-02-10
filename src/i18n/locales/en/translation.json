@@ -407,6 +407,10 @@
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
       },
+      "filterSilence": {
+        "label": "Filter Silence",
+        "description": "Use voice activity detection to remove silence from recordings before transcription. Try disabling if encountering issues, like parts of the speech getting removed. Disabling may result in more frequent \"hallucinations\" in the output."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

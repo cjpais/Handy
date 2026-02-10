@@ -118,21 +118,25 @@ fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
 ) -> Result<AudioRecorder, anyhow::Error> {
-    let silero = SileroVad::new(vad_path, 0.3)
-        .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+    let settings = get_settings(app_handle);
 
-    // Recorder with VAD plus a spectrum-level callback that forwards updates to
-    // the frontend.
-    let recorder = AudioRecorder::new()
-        .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
-        .with_vad(Box::new(smoothed_vad))
-        .with_level_callback({
-            let app_handle = app_handle.clone();
-            move |levels| {
-                utils::emit_levels(&app_handle, &levels);
-            }
-        });
+    let mut recorder = AudioRecorder::new()
+        .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?;
+
+    // Attach VAD for silence filtering when enabled
+    if settings.filter_silence {
+        let silero = SileroVad::new(vad_path, 0.3)
+            .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
+        let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+        recorder = recorder.with_vad(Box::new(smoothed_vad));
+    }
+
+    recorder = recorder.with_level_callback({
+        let app_handle = app_handle.clone();
+        move |levels| {
+            utils::emit_levels(&app_handle, &levels);
+        }
+    });
 
     Ok(recorder)
 }
@@ -358,6 +362,22 @@ impl AudioRecordingManager {
             false
         } else {
             false
+        }
+    }
+
+    /// Recreates the recorder with fresh settings (e.g. VAD enabled/disabled).
+    /// If the stream is currently open, it is stopped and restarted.
+    pub fn invalidate_recorder(&self) {
+        let was_open = *self.is_open.lock().unwrap();
+        if was_open {
+            self.stop_microphone_stream();
+        }
+        *self.recorder.lock().unwrap() = None;
+        debug!("Recorder invalidated (will be re-created on next use)");
+        if was_open {
+            if let Err(e) = self.start_microphone_stream() {
+                error!("Failed to restart microphone stream after recorder invalidation: {e}");
+            }
         }
     }
 

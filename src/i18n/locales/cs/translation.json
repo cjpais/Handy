@@ -407,6 +407,10 @@
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"
       },
+      "filterSilence": {
+        "label": "Filtrovat ticho",
+        "description": "Použít detekci hlasové aktivity k odstranění ticha z nahrávek před přepisem. Zkuste vypnout, pokud narazíte na problémy, jako je odstraňování částí řeči. Vypnutí může vést k častějším \"halucinacím\" ve výstupu."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

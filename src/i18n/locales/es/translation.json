@@ -407,6 +407,10 @@
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
       },
+      "filterSilence": {
+        "label": "Filtrar silencio",
+        "description": "Usar detección de actividad de voz para eliminar el silencio de las grabaciones antes de la transcripción. Intente desactivar si encuentra problemas, como que se eliminen partes del discurso. Desactivar puede resultar en \"alucinaciones\" más frecuentes en la salida."
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",
