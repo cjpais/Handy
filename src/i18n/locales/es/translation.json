@@ -244,6 +244,13 @@
           "none": "Ninguno"
         }
       },
+      "typingTool": {
+        "title": "Herramienta de Escritura",
+        "description": "Elige qué herramienta de escritura de Linux usar para el método de pegado directo. Auto detectará y usará automáticamente la mejor herramienta disponible para tu sistema.",
+        "options": {
+          "auto": "Auto (Recomendado)"
+        }
+      },
       "clipboardHandling": {
         "title": "Manejo del Portapapeles",
         "description": "No Modificar Portapapeles conserva el contenido actual de tu portapapeles después de la transcripción. Copiar al Portapapeles deja el resultado de la transcripción en tu portapapeles después de pegar.",
