@@ -220,6 +220,10 @@
         "label": "Launch on Startup",
         "description": "Automatically start Handy when you log in to your computer."
       },
+      "showTrayIcon": {
+        "label": "Show Tray Icon",
+        "description": "Display the Handy icon in the system tray."
+      },
       "overlay": {
         "title": "Overlay Position",
         "description": "Display visual feedback overlay during recording and transcription. On Linux 'None' is recommended.",

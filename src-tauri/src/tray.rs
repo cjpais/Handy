@@ -187,6 +187,15 @@ fn last_transcript_text(entry: &HistoryEntry) -> &str {
         .unwrap_or(&entry.transcription_text)
 }
 
+pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
+    let tray = app.state::<TrayIcon>();
+    if let Err(e) = tray.set_visible(visible) {
+        error!("Failed to set tray visibility: {}", e);
+    } else {
+        info!("Tray visibility set to: {}", visible);
+    }
+}
+
 pub fn copy_last_transcript(app: &AppHandle) {
     let history_manager = app.state::<Arc<HistoryManager>>();
     let entry = match history_manager.get_latest_entry() {

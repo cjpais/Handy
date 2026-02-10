@@ -315,6 +315,8 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
+    #[serde(default = "default_show_tray_icon")]
+    pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
 }
@@ -394,6 +396,10 @@ fn default_app_language() -> String {
     tauri_plugin_os::locale()
         .and_then(|l| l.split(['-', '_']).next().map(String::from))
         .unwrap_or_else(|| "en".to_string())
+}
+
+fn default_show_tray_icon() -> bool {
+    true
 }
 
 fn default_post_process_provider_id() -> String {
@@ -631,6 +637,7 @@ pub fn get_default_settings() -> AppSettings {
         app_language: default_app_language(),
         experimental_enabled: false,
         keyboard_implementation: KeyboardImplementation::default(),
+        show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
     }
 }

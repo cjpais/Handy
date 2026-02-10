@@ -220,6 +220,10 @@
         "label": "Iniciar al Arranque",
         "description": "Iniciar Handy automáticamente cuando inicies sesión en tu computadora."
       },
+      "showTrayIcon": {
+        "label": "Mostrar Icono de Bandeja",
+        "description": "Mostrar el icono de Handy en la bandeja del sistema."
+      },
       "overlay": {
         "title": "Posición de Superposición",
         "description": "Mostrar superposición de retroalimentación visual durante la grabación y transcripción. En Linux se recomienda 'Ninguna'.",

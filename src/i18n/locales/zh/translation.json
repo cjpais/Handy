@@ -220,6 +220,10 @@
         "label": "开机启动",
         "description": "登录计算机时自动启动 Handy。"
       },
+      "showTrayIcon": {
+        "label": "显示托盘图标",
+        "description": "在系统托盘中显示 Handy 图标。"
+      },
       "overlay": {
         "title": "悬浮窗位置",
         "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",

@@ -220,6 +220,10 @@
         "label": "Khởi động cùng hệ thống",
         "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."
       },
+      "showTrayIcon": {
+        "label": "Hiển thị biểu tượng khay",
+        "description": "Hiển thị biểu tượng Handy trong khay hệ thống."
+      },
       "overlay": {
         "title": "Vị trí lớp phủ",
         "description": "Hiển thị lớp phủ phản hồi trực quan trong quá trình ghi âm và chuyển đổi. Trên Linux, 'Không có' được khuyến nghị.",

@@ -220,6 +220,10 @@
         "label": "起動時に実行",
         "description": "コンピューターにログインしたときにHandyを自動的に起動。"
       },
+      "showTrayIcon": {
+        "label": "トレイアイコンを表示",
+        "description": "システムトレイにHandyのアイコンを表示します。"
+      },
       "overlay": {
         "title": "オーバーレイ位置",
         "description": "録音と文字起こし中に視覚的なフィードバックオーバーレイを表示。Linuxでは「なし」を推奨。",

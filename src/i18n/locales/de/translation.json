@@ -220,6 +220,10 @@
         "label": "Beim Start ausführen",
         "description": "Handy automatisch beim Anmelden starten."
       },
+      "showTrayIcon": {
+        "label": "Taskleistensymbol anzeigen",
+        "description": "Das Handy-Symbol in der Taskleiste anzeigen."
+      },
       "overlay": {
         "title": "Overlay-Position",
         "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",

@@ -220,6 +220,10 @@
         "label": "Uruchamiaj przy starcie",
         "description": "Automatycznie uruchamiaj Handy po zalogowaniu."
       },
+      "showTrayIcon": {
+        "label": "Pokaż ikonę w zasobniku",
+        "description": "Wyświetlaj ikonę Handy w zasobniku systemowym."
+      },
       "overlay": {
         "title": "Pozycja nakładki",
         "description": "Wyświetlaj wizualną nakładkę podczas nagrywania i transkrypcji. Na Linuxie zalecane 'Brak'.",
