@@ -220,6 +220,10 @@
         "label": "Başlangıçta Çalıştır",
         "description": "Bilgisayara giriş yaptığınızda Handy otomatik olarak başlatılır."
       },
+      "showTrayIcon": {
+        "label": "Tepsi simgesini göster",
+        "description": "Handy simgesini sistem tepsisinde göster."
+      },
       "overlay": {
         "title": "Overlay Konumu",
         "description": "Kayıt ve transkripsiyon sırasında görsel geri bildirim kaplamasını gösterir. Linux'ta 'Yok' önerilir.",

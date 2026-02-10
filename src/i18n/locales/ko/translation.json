@@ -220,6 +220,10 @@
         "label": "시작 시 실행",
         "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다."
       },
+      "showTrayIcon": {
+        "label": "트레이 아이콘 표시",
+        "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
+      },
       "overlay": {
         "title": "오버레이 위치",
         "description": "녹음 및 전사 중 시각적 피드백 오버레이를 표시합니다. Linux에서는 '없음'을 권장합니다.",

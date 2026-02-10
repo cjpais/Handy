@@ -220,6 +220,10 @@
         "label": "Avvia all'Accensione",
         "description": "Avvia Handy automaticamente quando accedi al computer."
       },
+      "showTrayIcon": {
+        "label": "Mostra icona nella barra di sistema",
+        "description": "Mostra l'icona di Handy nella barra di sistema."
+      },
       "overlay": {
         "title": "Posizione della Sovrimpressione",
         "description": "Mostra un feedback visivo in sovrimpressione durante la registrazione e la trascrizione. Su Linux si raccomanda 'Nessuna'.",

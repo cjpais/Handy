@@ -220,6 +220,10 @@
         "label": "Spouštět při startu",
         "description": "Automaticky spustit Handy po přihlášení do počítače."
       },
+      "showTrayIcon": {
+        "label": "Zobrazit ikonu v systémové liště",
+        "description": "Zobrazit ikonu Handy v systémové liště."
+      },
       "overlay": {
         "title": "Pozice překryvu",
         "description": "Zobrazovat vizuální překryv během nahrávání a přepisu. Na Linuxu je doporučeno 'Žádné'.",
