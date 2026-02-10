@@ -17,6 +17,8 @@ use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
 
 #[cfg(target_os = "linux")]
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+#[cfg(target_os = "linux")]
+use std::env;
 
 #[cfg(target_os = "macos")]
 tauri_panel! {
@@ -67,6 +69,21 @@ fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow
 /// Returns true if layer shell was successfully initialized, false otherwise
 #[cfg(target_os = "linux")]
 fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
+    // On KDE Wayland, layer-shell init has shown protocol instability.
+    // Fall back to regular always-on-top overlay behavior (as in v0.7.1).
+    let is_wayland = env::var("WAYLAND_DISPLAY").is_ok()
+        || env::var("XDG_SESSION_TYPE")
+            .map(|v| v.eq_ignore_ascii_case("wayland"))
+            .unwrap_or(false);
+    let is_kde = env::var("XDG_CURRENT_DESKTOP")
+        .map(|v| v.to_uppercase().contains("KDE"))
+        .unwrap_or(false)
+        || env::var("KDE_SESSION_VERSION").is_ok();
+    if is_wayland && is_kde {
+        debug!("Skipping GTK layer shell init on KDE Wayland");
+        return false;
+    }
+
     if !gtk_layer_shell::is_supported() {
         return false;
     }
