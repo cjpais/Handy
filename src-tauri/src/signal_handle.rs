@@ -5,7 +5,7 @@ use std::thread;
 use tauri::{AppHandle, Manager};
 
 #[cfg(unix)]
-use signal_hook::consts::SIGUSR2;
+use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
 
@@ -13,9 +13,9 @@ use signal_hook::iterator::Signals;
 pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
     let app_handle_for_signal = app_handle.clone();
 
-    debug!("SIGUSR2 signal handler registered successfully");
+    debug!("Signal handlers registered successfully (SIGUSR1, SIGUSR2)");
     thread::spawn(move || {
-        debug!("SIGUSR2 signal handler thread started");
+        debug!("Signal handler thread started");
         for sig in signals.forever() {
             match sig {
                 SIGUSR2 => {
@@ -61,6 +61,50 @@ pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
                             debug!("SIGUSR2: Stopping transcription (was active)");
                             action.stop(&app_handle_for_signal, binding_id, shortcut_string);
                             debug!("SIGUSR2: Transcription stopped");
+                        }
+                    } else {
+                        warn!("No action defined in ACTION_MAP for binding ID '{binding_id}'");
+                    }
+                }
+                SIGUSR1 => {
+                    debug!("Received SIGUSR1 signal (signal number: {sig})");
+
+                    let binding_id = "transcribe_with_post_process";
+                    let shortcut_string = "SIGUSR1";
+
+                    if let Some(action) = ACTION_MAP.get(binding_id) {
+                        let should_start: bool;
+                        {
+                            let toggle_state_manager =
+                                app_handle_for_signal.state::<ManagedToggleState>();
+
+                            let mut states = match toggle_state_manager.lock() {
+                                Ok(s) => s,
+                                Err(e) => {
+                                    warn!("Failed to lock toggle state manager: {e}");
+                                    continue;
+                                }
+                            };
+
+                            let is_currently_active = states
+                                .active_toggles
+                                .entry(binding_id.to_string())
+                                .or_insert(false);
+
+                            should_start = !*is_currently_active;
+                            if should_start {
+                                *is_currently_active = true;
+                            }
+                        } // Lock released here
+
+                        if should_start {
+                            debug!("SIGUSR1: Starting transcription with post-processing (was inactive)");
+                            action.start(&app_handle_for_signal, binding_id, shortcut_string);
+                            info!("SIGUSR1: Transcription with post-processing started");
+                        } else {
+                            debug!("SIGUSR1: Stopping transcription with post-processing (was active)");
+                            action.stop(&app_handle_for_signal, binding_id, shortcut_string);
+                            debug!("SIGUSR1: Transcription with post-processing stopped");
                         }
                     } else {
                         warn!("No action defined in ACTION_MAP for binding ID '{binding_id}'");
