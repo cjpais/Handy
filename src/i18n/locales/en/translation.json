@@ -1,0 +1,508 @@
+{
+  "tray": {
+    "settings": "Settings...",
+    "checkUpdates": "Check for Updates...",
+    "copyLastTranscript": "Copy Last Transcript",
+    "unloadModel": "Unload Model",
+    "quit": "Quit",
+    "cancel": "Cancel"
+  },
+  "sidebar": {
+    "general": "General",
+    "models": "Models",
+    "advanced": "Advanced",
+    "postProcessing": "Post Process",
+    "history": "History",
+    "debug": "Debug",
+    "about": "About"
+  },
+  "onboarding": {
+    "subtitle": "To get started, choose a transcription model",
+    "recommended": "Recommended",
+    "download": "Download",
+    "downloading": "Downloading...",
+    "customModelDescription": "Not officially supported",
+    "downloadFailed": "Download failed. Please try again.",
+    "modelCard": {
+      "accuracy": "accuracy",
+      "speed": "speed"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": "Fast and fairly accurate."
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": "Good accuracy, medium speed"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": "Balanced accuracy and speed."
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": "Good accuracy, but slow."
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": "English only. The best model for English speakers."
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": "Fast and accurate"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": "Very fast, English only. Handles accents well."
+      }
+    },
+    "errors": {
+      "loadModels": "Failed to load available models",
+      "downloadModel": "Failed to download model: {{error}}"
+    },
+    "permissions": {
+      "title": "Permissions Required",
+      "description": "Handy needs a couple of permissions to work properly.",
+      "microphone": {
+        "title": "Microphone Access",
+        "description": "Required to hear your voice for transcription."
+      },
+      "accessibility": {
+        "title": "Accessibility Access",
+        "description": "Required to type transcribed text into your applications."
+      },
+      "grant": "Grant Permission",
+      "granted": "Granted",
+      "waiting": "Waiting...",
+      "allGranted": "All set!",
+      "errors": {
+        "checkFailed": "Failed to check permissions. Please try again.",
+        "requestFailed": "Failed to request permission. Please try again."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "Custom",
+    "active": "Active",
+    "switching": "Switching...",
+    "noModelsAvailable": "No models available",
+    "extracting": "Extracting {{modelName}}...",
+    "extractingMultiple": "Extracting {{count}} models...",
+    "extractingGeneric": "Extracting...",
+    "downloading": "Downloading {{percentage}}%",
+    "downloadingMultiple": "Downloading {{count}} models...",
+    "modelReady": "Model Ready",
+    "loading": "Loading {{modelName}}...",
+    "loadingGeneric": "Loading...",
+    "modelError": "Model Error",
+    "modelUnloaded": "Model Unloaded",
+    "noModelDownloadRequired": "No Model - Download Required",
+    "deleteModel": "Delete {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "Cancel",
+    "cancelDownload": "Cancel download",
+    "capabilities": {
+      "languageSelection": "Supports multiple input languages",
+      "singleLanguage": "Supports this language only",
+      "multiLanguage": "Multi-language",
+      "languageOnly": "{{language}} Only",
+      "translation": "Can translate to English",
+      "translate": "Translate to English"
+    }
+  },
+  "settings": {
+    "modelSettings": {
+      "title": "{{model}} Settings",
+      "noSettingsNeeded": "This model works automatically with no configuration needed."
+    },
+    "general": {
+      "title": "General",
+      "shortcut": {
+        "title": "Handy Shortcuts",
+        "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
+        "loading": "Loading shortcuts...",
+        "none": "No shortcuts configured",
+        "notFound": "Shortcut not found",
+        "pressKeys": "Press keys...",
+        "bindings": {
+          "transcribe": {
+            "name": "Transcribe Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice."
+          },
+          "cancel": {
+            "name": "Cancel Shortcut",
+            "description": "The keyboard shortcut to cancel the current recording."
+          },
+          "transcribe_with_post_process": {
+            "name": "Post-Processing Hotkey",
+            "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          }
+        },
+        "errors": {
+          "restore": "Failed to restore original shortcut",
+          "set": "Failed to set shortcut: {{error}}",
+          "reset": "Failed to reset shortcut to original value"
+        }
+      },
+      "language": {
+        "title": "Language",
+        "description": "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language.",
+        "descriptionUnsupported": "Parakeet model automatically detects the language. No manual selection is needed.",
+        "searchPlaceholder": "Search languages...",
+        "noResults": "No languages found",
+        "auto": "Auto"
+      },
+      "pushToTalk": {
+        "label": "Push To Talk",
+        "description": "Hold to record, release to stop"
+      }
+    },
+    "models": {
+      "title": "Transcription Models",
+      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "yourModels": "Downloaded Models",
+      "availableModels": "Available to Download",
+      "downloaded": "Downloaded",
+      "available": "Available to Download",
+      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
+      "deleteActiveConfirm": "{{modelName}} is your active model. Deleting it will stop transcriptions until you select a new model. Are you sure?",
+      "deleteTitle": "Delete Model",
+      "filters": {
+        "all": "All",
+        "multiLanguage": "Multi-language",
+        "translation": "Translation",
+        "allLanguages": "All Languages"
+      },
+      "noModelsMatch": "No models match this filter."
+    },
+    "sound": {
+      "title": "Sound",
+      "microphone": {
+        "title": "Microphone",
+        "description": "Select your preferred microphone device",
+        "placeholder": "Select microphone...",
+        "loading": "Loading..."
+      },
+      "audioFeedback": {
+        "label": "Audio Feedback",
+        "description": "Play sound when recording starts and stops"
+      },
+      "outputDevice": {
+        "title": "Output Device",
+        "description": "Select your preferred audio output device for feedback sounds",
+        "placeholder": "Select output device...",
+        "loading": "Loading..."
+      },
+      "volume": {
+        "title": "Volume",
+        "description": "Adjust the volume of audio feedback sounds"
+      }
+    },
+    "advanced": {
+      "title": "Advanced",
+      "groups": {
+        "app": "App",
+        "output": "Output",
+        "transcription": "Transcription",
+        "history": "History",
+        "experimental": "Experimental"
+      },
+      "experimentalToggle": {
+        "label": "Experimental Features",
+        "description": "Enable experimental features that are still in development."
+      },
+      "startHidden": {
+        "label": "Start Hidden",
+        "description": "Launch to system tray without opening the window."
+      },
+      "autostart": {
+        "label": "Launch on Startup",
+        "description": "Automatically start Handy when you log in to your computer."
+      },
+      "showTrayIcon": {
+        "label": "Show Tray Icon",
+        "description": "Display the Handy icon in the system tray."
+      },
+      "overlay": {
+        "title": "Overlay Position",
+        "description": "Display visual feedback overlay during recording and transcription. On Linux 'None' is recommended.",
+        "options": {
+          "none": "None",
+          "bottom": "Bottom",
+          "top": "Top"
+        }
+      },
+      "pasteMethod": {
+        "title": "Paste Method",
+        "description": "Choose how text is inserted. Direct: simulates typing via system input. None: skips paste, only updates history/clipboard.",
+        "options": {
+          "clipboard": "Clipboard ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "Clipboard (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "Clipboard (Shift+Insert)",
+          "direct": "Direct",
+          "none": "None"
+        }
+      },
+      "clipboardHandling": {
+        "title": "Clipboard Handling",
+        "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting.",
+        "options": {
+          "dontModify": "Don't Modify Clipboard",
+          "copyToClipboard": "Copy to Clipboard"
+        }
+      },
+      "translateToEnglish": {
+        "label": "Translate to English",
+        "description": "Automatically translate speech from other languages to English during transcription.",
+        "descriptionUnsupported": "Translation is not supported by the {{model}} model."
+      },
+      "modelUnload": {
+        "title": "Unload Model",
+        "description": "Automatically free GPU/CPU memory when the model hasn't been used for the specified time",
+        "options": {
+          "never": "Never",
+          "immediately": "Immediately",
+          "min2": "After 2 minutes",
+          "min5": "After 5 minutes",
+          "min10": "After 10 minutes",
+          "min15": "After 15 minutes",
+          "hour1": "After 1 hour",
+          "sec5": "After 5 seconds (Debug)"
+        }
+      },
+      "customWords": {
+        "title": "Custom Words",
+        "description": "Add words that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",
+        "placeholder": "Add a word",
+        "add": "Add",
+        "remove": "Remove {{word}}"
+      }
+    },
+    "postProcessing": {
+      "title": "Post Process",
+      "hotkey": {
+        "title": "Hotkey"
+      },
+      "api": {
+        "title": "API (OpenAI Compatible)",
+        "provider": {
+          "title": "Provider",
+          "description": "Select an OpenAI-compatible provider."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Runs fully on-device. No API key or network access is required.",
+          "requirements": "Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later. Apple Intelligence must be enabled in System Settings.",
+          "unavailable": "Apple Intelligence is not available on this device. Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings."
+        },
+        "baseUrl": {
+          "title": "Base URL",
+          "description": "API base URL for the selected provider. Only the custom provider can be edited.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API Key",
+          "description": "API key for the selected provider.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionApple": "Provide an optional numeric token limit or keep the default on-device preset.",
+          "descriptionCustom": "Provide the model identifier expected by your custom endpoint.",
+          "descriptionDefault": "Choose a model exposed by the selected provider.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "Search or select a model",
+          "placeholderNoOptions": "Type a model name",
+          "refreshModels": "Refresh models"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Selected Prompt",
+          "description": "Select a template for refining transcriptions or create a new one. Use ${output} inside the prompt text to reference the captured transcript."
+        },
+        "noPrompts": "No prompts available",
+        "selectPrompt": "Select a prompt",
+        "createNew": "Create New Prompt",
+        "promptLabel": "Prompt Label",
+        "promptLabelPlaceholder": "Enter prompt name",
+        "promptInstructions": "Prompt Instructions",
+        "promptInstructionsPlaceholder": "Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}",
+        "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "updatePrompt": "Update Prompt",
+        "deletePrompt": "Delete Prompt",
+        "createPrompt": "Create Prompt",
+        "cancel": "Cancel",
+        "selectToEdit": "Select a prompt above to view and edit its details.",
+        "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
+      }
+    },
+    "history": {
+      "title": "History",
+      "openFolder": "Open Recordings Folder",
+      "loading": "Loading history...",
+      "empty": "No transcriptions yet. Start recording to build your history!",
+      "copyToClipboard": "Copy transcription to clipboard",
+      "save": "Save transcription",
+      "unsave": "Remove from saved",
+      "delete": "Delete entry",
+      "deleteError": "Failed to delete entry. Please try again."
+    },
+    "debug": {
+      "title": "Debug",
+      "logDirectory": {
+        "title": "Log Directory",
+        "description": "Location where log files are stored"
+      },
+      "logLevel": {
+        "title": "Log Level",
+        "description": "Set the verbosity of logging"
+      },
+      "updateChecks": {
+        "label": "Check for Updates",
+        "description": "Automatically check for new versions of Handy"
+      },
+      "soundTheme": {
+        "label": "Sound Theme",
+        "description": "Choose a sound theme for recording start and stop feedback"
+      },
+      "wordCorrectionThreshold": {
+        "title": "Word Correction Threshold",
+        "description": "Sensitivity for custom word corrections"
+      },
+      "historyLimit": {
+        "title": "History Limit",
+        "description": "Maximum number of history entries to keep",
+        "entries": "entries"
+      },
+      "recordingRetention": {
+        "title": "Auto-Delete Recordings",
+        "description": "Automatically delete old recordings to save space",
+        "never": "Never",
+        "preserveLimit": "Keep latest {{count}}",
+        "days3": "After 3 days",
+        "weeks2": "After 2 weeks",
+        "months3": "After 3 months",
+        "placeholder": "Select retention period..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "Always-On Microphone",
+        "description": "Keep microphone active for faster response"
+      },
+      "clamshellMicrophone": {
+        "title": "Clamshell Microphone",
+        "description": "Microphone to use when laptop lid is closed"
+      },
+      "postProcessingToggle": {
+        "label": "Post Processing",
+        "description": "Enable AI-powered text refinement after transcription"
+      },
+      "muteWhileRecording": {
+        "label": "Mute While Recording",
+        "description": "Mute system audio during recording"
+      },
+      "appendTrailingSpace": {
+        "label": "Append Trailing Space",
+        "description": "Add a space after pasted transcription"
+      },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
+      "paths": {
+        "appData": "App Data:",
+        "models": "Models:",
+        "settings": "Settings:"
+      },
+      "pasteDelay": {
+        "title": "Paste Delay",
+        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
+      }
+    },
+    "about": {
+      "title": "About",
+      "version": {
+        "title": "Version",
+        "description": "Current version of Handy"
+      },
+      "appDataDirectory": {
+        "title": "App Data Directory",
+        "description": "Location where Handy stores its data"
+      },
+      "sourceCode": {
+        "title": "Source Code",
+        "description": "View source code and contribute",
+        "button": "View on GitHub"
+      },
+      "supportDevelopment": {
+        "title": "Support Development",
+        "description": "Help us continue building Handy",
+        "button": "Donate"
+      },
+      "acknowledgments": {
+        "title": "Acknowledgments",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
+          "details": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+        }
+      }
+    }
+  },
+  "footer": {
+    "downloadingModel": "Downloading {{model}}...",
+    "checkingUpdates": "Checking for updates...",
+    "updateAvailable": "Update available: {{version}}",
+    "updateAvailableShort": "Update available",
+    "upToDate": "Up to date",
+    "downloadUpdate": "Download Update",
+    "restart": "Restart",
+    "updateCheckingDisabled": "Update Checking Disabled",
+    "downloading": "Downloading... {{progress}}%",
+    "installing": "Installing...",
+    "preparing": "Preparing...",
+    "checkForUpdates": "Check for updates"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "reset": "Reset",
+    "add": "Add",
+    "remove": "Remove",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close",
+    "open": "Open",
+    "default": "Default",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "on": "On",
+    "off": "Off",
+    "yes": "Yes",
+    "no": "No",
+    "noOptionsFound": "No options found"
+  },
+  "accessibility": {
+    "permissionsRequired": "Accessibility Permissions Required",
+    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
+    "openSettings": "Open System Settings",
+    "dismiss": "Dismiss"
+  },
+  "errors": {
+    "loadDirectory": "Error loading directory: {{error}}"
+  },
+  "appLanguage": {
+    "title": "Application Language",
+    "description": "Change the language of the Handy interface"
+  },
+  "overlay": {
+    "transcribing": "Transcribing...",
+    "processing": "Processing..."
+  }
+}

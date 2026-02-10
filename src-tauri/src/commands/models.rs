@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, State};
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_available_models(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<Vec<ModelInfo>, String> {
@@ -12,6 +13,7 @@ pub async fn get_available_models(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_model_info(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
@@ -20,6 +22,7 @@ pub async fn get_model_info(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn download_model(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
@@ -31,16 +34,32 @@ pub async fn download_model(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_model(
+    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
     model_id: String,
 ) -> Result<(), String> {
+    // If deleting the active model, unload it and clear the setting
+    let settings = get_settings(&app_handle);
+    if settings.selected_model == model_id {
+        transcription_manager
+            .unload_model()
+            .map_err(|e| format!("Failed to unload model: {}", e))?;
+
+        let mut settings = get_settings(&app_handle);
+        settings.selected_model = String::new();
+        write_settings(&app_handle, settings);
+    }
+
     model_manager
         .delete_model(&model_id)
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn set_active_model(
     app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
@@ -70,12 +89,14 @@ pub async fn set_active_model(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_current_model(app_handle: AppHandle) -> Result<String, String> {
     let settings = get_settings(&app_handle);
     Ok(settings.selected_model)
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_transcription_model_status(
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
 ) -> Result<Option<String>, String> {
@@ -83,6 +104,7 @@ pub async fn get_transcription_model_status(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn is_model_loading(
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
 ) -> Result<bool, String> {
@@ -92,6 +114,7 @@ pub async fn is_model_loading(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn has_any_models_available(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
@@ -100,6 +123,7 @@ pub async fn has_any_models_available(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn has_any_models_or_downloads(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
@@ -109,6 +133,7 @@ pub async fn has_any_models_or_downloads(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn cancel_download(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
@@ -116,10 +141,4 @@ pub async fn cancel_download(
     model_manager
         .cancel_download(&model_id)
         .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn get_recommended_first_model() -> Result<String, String> {
-    // Recommend Parakeet V3 model for first-time users - fastest and most accurate
-    Ok("parakeet-tdt-0.6b-v3".to_string())
 }

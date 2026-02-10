@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import { ModelInfo } from "../../lib/types";
+import { commands } from "@/bindings";
+import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
+import { useModelStore } from "../../stores/modelStore";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
@@ -13,13 +15,6 @@ interface ModelStateEvent {
   error?: string;
 }
 
-interface DownloadProgress {
-  model_id: string;
-  downloaded: number;
-  total: number;
-  percentage: number;
-}
-
 type ModelStatus =
   | "ready"
   | "loading"
@@ -29,45 +24,59 @@ type ModelStatus =
   | "unloaded"
   | "none";
 
-interface DownloadStats {
-  startTime: number;
-  lastUpdate: number;
-  totalDownloaded: number;
-  speed: number;
-}
-
 interface ModelSelectorProps {
   onError?: (error: string) => void;
 }
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [currentModelId, setCurrentModelId] = useState<string>("");
+  const { t } = useTranslation();
+  const {
+    models,
+    currentModel,
+    downloadProgress,
+    downloadStats,
+    extractingModels,
+    selectModel,
+  } = useModelStore();
+
   const [modelStatus, setModelStatus] = useState<ModelStatus>("unloaded");
   const [modelError, setModelError] = useState<string | null>(null);
-  const [modelDownloadProgress, setModelDownloadProgress] = useState<
-    Map<string, DownloadProgress>
-  >(new Map());
   const [showModelDropdown, setShowModelDropdown] = useState(false);
-  const [downloadStats, setDownloadStats] = useState<
-    Map<string, DownloadStats>
-  >(new Map());
-  const [extractingModels, setExtractingModels] = useState<Set<string>>(
-    new Set(),
-  );
+  // Track pending model switch for optimistic display
+  const [pendingModelId, setPendingModelId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    loadModels();
-    loadCurrentModel();
+  const displayModelId = pendingModelId || currentModel;
 
-    // Listen for model state changes
+  // Check model status when currentModel changes
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (currentModel) {
+        try {
+          const statusResult = await commands.getTranscriptionModelStatus();
+          if (statusResult.status === "ok") {
+            setModelStatus(
+              statusResult.data === currentModel ? "ready" : "unloaded",
+            );
+          }
+        } catch {
+          setModelStatus("error");
+          setModelError("Failed to check model status");
+        }
+      } else {
+        setModelStatus("none");
+      }
+    };
+    checkStatus();
+  }, [currentModel]);
+
+  useEffect(() => {
+    // Listen for model loading lifecycle events
     const modelStateUnlisten = listen<ModelStateEvent>(
       "model-state-changed",
       (event) => {
-        const { event_type, model_id, model_name, error } = event.payload;
-
+        const { event_type, error } = event.payload;
         switch (event_type) {
           case "loading_started":
             setModelStatus("loading");
@@ -76,11 +85,12 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           case "loading_completed":
             setModelStatus("ready");
             setModelError(null);
-            if (model_id) setCurrentModelId(model_id);
+            setPendingModelId(null);
             break;
           case "loading_failed":
             setModelStatus("error");
             setModelError(error || "Failed to load model");
+            setPendingModelId(null);
             break;
           case "unloaded":
             setModelStatus("unloaded");
@@ -90,128 +100,29 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       },
     );
 
-    // Listen for model download progress
-    const downloadProgressUnlisten = listen<DownloadProgress>(
-      "model-download-progress",
-      (event) => {
-        const progress = event.payload;
-        setModelDownloadProgress((prev) => {
-          const newMap = new Map(prev);
-          newMap.set(progress.model_id, progress);
-          return newMap;
-        });
-        setModelStatus("downloading");
-
-        // Update download stats for speed calculation
-        const now = Date.now();
-        setDownloadStats((prev) => {
-          const current = prev.get(progress.model_id);
-          const newStats = new Map(prev);
-
-          if (!current) {
-            // First progress update - initialize
-            newStats.set(progress.model_id, {
-              startTime: now,
-              lastUpdate: now,
-              totalDownloaded: progress.downloaded,
-              speed: 0,
-            });
-          } else {
-            // Calculate speed over last few seconds
-            const timeDiff = (now - current.lastUpdate) / 1000; // seconds
-            const bytesDiff = progress.downloaded - current.totalDownloaded;
-
-            if (timeDiff > 0.5) {
-              // Update speed every 500ms
-              const currentSpeed = bytesDiff / (1024 * 1024) / timeDiff; // MB/s
-              // Smooth the speed with exponential moving average, but ensure positive values
-              const validCurrentSpeed = Math.max(0, currentSpeed);
-              const smoothedSpeed =
-                current.speed > 0
-                  ? current.speed * 0.8 + validCurrentSpeed * 0.2
-                  : validCurrentSpeed;
-
-              newStats.set(progress.model_id, {
-                startTime: current.startTime,
-                lastUpdate: now,
-                totalDownloaded: progress.downloaded,
-                speed: Math.max(0, smoothedSpeed),
-              });
-            }
-          }
-
-          return newStats;
-        });
-      },
-    );
-
-    // Listen for model download completion
+    // Auto-select model when download completes (fires after extraction too)
     const downloadCompleteUnlisten = listen<string>(
       "model-download-complete",
       (event) => {
         const modelId = event.payload;
-        setModelDownloadProgress((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(modelId);
-          return newMap;
-        });
-        setDownloadStats((prev) => {
-          const newStats = new Map(prev);
-          newStats.delete(modelId);
-          return newStats;
-        });
-        loadModels(); // Refresh models list
-
-        // Auto-select the newly downloaded model
-        setTimeout(() => {
-          loadCurrentModel();
-          handleModelSelect(modelId);
+        setTimeout(async () => {
+          try {
+            const isRecording = await commands.isRecording();
+            if (!isRecording) {
+              setPendingModelId(modelId);
+              setModelError(null);
+              setShowModelDropdown(false);
+              const success = await selectModel(modelId);
+              if (!success) {
+                setPendingModelId(null);
+              }
+            }
+          } catch {
+            // Ignore errors in auto-select
+          }
         }, 500);
       },
     );
-
-    // Listen for extraction events
-    const extractionStartedUnlisten = listen<string>(
-      "model-extraction-started",
-      (event) => {
-        const modelId = event.payload;
-        setExtractingModels((prev) => new Set(prev.add(modelId)));
-        setModelStatus("extracting");
-      },
-    );
-
-    const extractionCompletedUnlisten = listen<string>(
-      "model-extraction-completed",
-      (event) => {
-        const modelId = event.payload;
-        setExtractingModels((prev) => {
-          const next = new Set(prev);
-          next.delete(modelId);
-          return next;
-        });
-        loadModels(); // Refresh models list
-
-        // Auto-select the newly extracted model
-        setTimeout(() => {
-          loadCurrentModel();
-          handleModelSelect(modelId);
-        }, 500);
-      },
-    );
-
-    const extractionFailedUnlisten = listen<{
-      model_id: string;
-      error: string;
-    }>("model-extraction-failed", (event) => {
-      const modelId = event.payload.model_id;
-      setExtractingModels((prev) => {
-        const next = new Set(prev);
-        next.delete(modelId);
-        return next;
-      });
-      setModelError(`Failed to extract model: ${event.payload.error}`);
-      setModelStatus("error");
-    });
 
     // Click outside to close dropdown
     const handleClickOutside = (event: MouseEvent) => {
@@ -228,128 +139,95 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       modelStateUnlisten.then((fn) => fn());
-      downloadProgressUnlisten.then((fn) => fn());
       downloadCompleteUnlisten.then((fn) => fn());
-      extractionStartedUnlisten.then((fn) => fn());
-      extractionCompletedUnlisten.then((fn) => fn());
-      extractionFailedUnlisten.then((fn) => fn());
     };
-  }, []);
-
-  const loadModels = async () => {
-    try {
-      const modelList = await invoke<ModelInfo[]>("get_available_models");
-      setModels(modelList);
-    } catch (err) {
-      console.error("Failed to load models:", err);
-    }
-  };
-
-  const loadCurrentModel = async () => {
-    try {
-      const current = await invoke<string>("get_current_model");
-      setCurrentModelId(current);
-
-      if (current) {
-        // Check if model is actually loaded
-        const transcriptionStatus = await invoke<string | null>(
-          "get_transcription_model_status",
-        );
-        if (transcriptionStatus === current) {
-          setModelStatus("ready");
-        } else {
-          setModelStatus("unloaded");
-        }
-      } else {
-        setModelStatus("none");
-      }
-    } catch (err) {
-      console.error("Failed to load current model:", err);
-      setModelStatus("error");
-      setModelError("Failed to check model status");
-    }
-  };
+  }, [selectModel]);
 
   const handleModelSelect = async (modelId: string) => {
-    try {
-      setModelError(null);
-      setShowModelDropdown(false);
-      await invoke("set_active_model", { modelId });
-      setCurrentModelId(modelId);
-    } catch (err) {
-      const errorMsg = `${err}`;
-      setModelError(errorMsg);
+    setPendingModelId(modelId);
+    setModelError(null);
+    setShowModelDropdown(false);
+    const success = await selectModel(modelId);
+    if (!success) {
+      setPendingModelId(null);
       setModelStatus("error");
-      onError?.(errorMsg);
+      setModelError("Failed to switch model");
+      onError?.("Failed to switch model");
     }
-  };
-
-  const handleModelDownload = async (modelId: string) => {
-    try {
-      setModelError(null);
-      await invoke("download_model", { modelId });
-    } catch (err) {
-      const errorMsg = `${err}`;
-      setModelError(errorMsg);
-      setModelStatus("error");
-      onError?.(errorMsg);
-    }
-  };
-
-  const getCurrentModel = () => {
-    return models.find((m) => m.id === currentModelId);
   };
 
   const getModelDisplayText = (): string => {
-    if (extractingModels.size > 0) {
-      if (extractingModels.size === 1) {
-        const [modelId] = Array.from(extractingModels);
+    const extractingKeys = Object.keys(extractingModels);
+    if (extractingKeys.length > 0) {
+      if (extractingKeys.length === 1) {
+        const modelId = extractingKeys[0];
         const model = models.find((m) => m.id === modelId);
-        return `Extracting ${model?.name || "Model"}...`;
+        const modelName = model
+          ? getTranslatedModelName(model, t)
+          : t("modelSelector.extractingGeneric").replace("...", "");
+        return t("modelSelector.extracting", { modelName });
       } else {
-        return `Extracting ${extractingModels.size} models...`;
+        return t("modelSelector.extractingMultiple", {
+          count: extractingKeys.length,
+        });
       }
     }
 
-    if (modelDownloadProgress.size > 0) {
-      if (modelDownloadProgress.size === 1) {
-        const [progress] = Array.from(modelDownloadProgress.values());
+    const progressValues = Object.values(downloadProgress);
+    if (progressValues.length > 0) {
+      if (progressValues.length === 1) {
+        const progress = progressValues[0];
         const percentage = Math.max(
           0,
           Math.min(100, Math.round(progress.percentage)),
         );
-        return `Downloading ${percentage}%`;
+        return t("modelSelector.downloading", { percentage });
       } else {
-        return `Downloading ${modelDownloadProgress.size} models...`;
+        return t("modelSelector.downloadingMultiple", {
+          count: progressValues.length,
+        });
       }
     }
 
-    const currentModel = getCurrentModel();
+    const currentModelInfo = models.find((m) => m.id === displayModelId);
 
     switch (modelStatus) {
       case "ready":
-        return currentModel?.name || "Model Ready";
+        return currentModelInfo
+          ? getTranslatedModelName(currentModelInfo, t)
+          : t("modelSelector.modelReady");
       case "loading":
-        return currentModel ? `Loading ${currentModel.name}...` : "Loading...";
+        return currentModelInfo
+          ? t("modelSelector.loading", {
+              modelName: getTranslatedModelName(currentModelInfo, t),
+            })
+          : t("modelSelector.loadingGeneric");
       case "extracting":
-        return currentModel
-          ? `Extracting ${currentModel.name}...`
-          : "Extracting...";
+        return currentModelInfo
+          ? t("modelSelector.extracting", {
+              modelName: getTranslatedModelName(currentModelInfo, t),
+            })
+          : t("modelSelector.extractingGeneric");
       case "error":
-        return modelError || "Model Error";
+        return modelError || t("modelSelector.modelError");
       case "unloaded":
-        return currentModel?.name || "Model Unloaded";
+        return currentModelInfo
+          ? getTranslatedModelName(currentModelInfo, t)
+          : t("modelSelector.modelUnloaded");
       case "none":
-        return "No Model - Download Required";
+        return t("modelSelector.noModelDownloadRequired");
       default:
-        return currentModel?.name || "Model Unloaded";
+        return currentModelInfo
+          ? getTranslatedModelName(currentModelInfo, t)
+          : t("modelSelector.modelUnloaded");
     }
   };
 
-  const handleModelDelete = async (modelId: string) => {
-    await invoke("delete_model", { modelId });
-    await loadModels();
-    setModelError(null);
+  // Derive display status from model status + store state
+  const getDisplayStatus = (): ModelStatus => {
+    if (Object.keys(extractingModels).length > 0) return "extracting";
+    if (Object.keys(downloadProgress).length > 0) return "downloading";
+    return modelStatus;
   };
 
   return (
@@ -357,7 +235,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       {/* Model Status and Switcher */}
       <div className="relative" ref={dropdownRef}>
         <ModelStatusButton
-          status={modelStatus}
+          status={getDisplayStatus()}
           displayText={getModelDisplayText()}
           isDropdownOpen={showModelDropdown}
           onClick={() => setShowModelDropdown(!showModelDropdown)}
@@ -367,19 +245,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         {showModelDropdown && (
           <ModelDropdown
             models={models}
-            currentModelId={currentModelId}
-            downloadProgress={modelDownloadProgress}
+            currentModelId={displayModelId}
             onModelSelect={handleModelSelect}
-            onModelDownload={handleModelDownload}
-            onModelDelete={handleModelDelete}
-            onError={onError}
           />
         )}
       </div>
 
       {/* Download Progress Bar for Models */}
       <DownloadProgressDisplay
-        downloadProgress={modelDownloadProgress}
+        downloadProgress={downloadProgress}
         downloadStats={downloadStats}
       />
     </>

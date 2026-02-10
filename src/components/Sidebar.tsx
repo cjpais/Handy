@@ -1,5 +1,6 @@
 import React from "react";
-import { Cog, FlaskConical, History, Info, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
@@ -10,6 +11,7 @@ import {
   DebugSettings,
   AboutSettings,
   PostProcessingSettings,
+  ModelsSettings,
 } from "./settings";
 
 export type SidebarSection = keyof typeof SECTIONS_CONFIG;
@@ -23,7 +25,7 @@ interface IconProps {
 }
 
 interface SectionConfig {
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
   enabled: (settings: any) => boolean;
@@ -31,37 +33,43 @@ interface SectionConfig {
 
 export const SECTIONS_CONFIG = {
   general: {
-    label: "General",
+    labelKey: "sidebar.general",
     icon: HandyHand,
     component: GeneralSettings,
     enabled: () => true,
   },
+  models: {
+    labelKey: "sidebar.models",
+    icon: Cpu,
+    component: ModelsSettings,
+    enabled: () => true,
+  },
   advanced: {
-    label: "Advanced",
+    labelKey: "sidebar.advanced",
     icon: Cog,
     component: AdvancedSettings,
     enabled: () => true,
   },
   postprocessing: {
-    label: "Post Process",
+    labelKey: "sidebar.postProcessing",
     icon: Sparkles,
     component: PostProcessingSettings,
     enabled: (settings) => settings?.post_process_enabled ?? false,
   },
   history: {
-    label: "History",
+    labelKey: "sidebar.history",
     icon: History,
     component: HistorySettings,
     enabled: () => true,
   },
   debug: {
-    label: "Debug",
+    labelKey: "sidebar.debug",
     icon: FlaskConical,
     component: DebugSettings,
     enabled: (settings) => settings?.debug_mode ?? false,
   },
   about: {
-    label: "About",
+    labelKey: "sidebar.about",
     icon: Info,
     component: AboutSettings,
     enabled: () => true,
@@ -77,6 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   onSectionChange,
 }) => {
+  const { t } = useTranslation();
   const { settings } = useSettings();
 
   const availableSections = Object.entries(SECTIONS_CONFIG)
@@ -84,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="flex flex-col w-40 h-full border-r border-mid-gray/20 items-center px-2">
+    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
       <HandyTextLogo width={120} className="m-4" />
       <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
         {availableSections.map((section) => {
@@ -101,8 +110,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
               onClick={() => onSectionChange(section.id)}
             >
-              <Icon width={24} height={24} />
-              <p className="text-sm font-medium">{section.label}</p>
+              <Icon width={24} height={24} className="shrink-0" />
+              <p
+                className="text-sm font-medium truncate"
+                title={t(section.labelKey)}
+              >
+                {t(section.labelKey)}
+              </p>
             </div>
           );
         })}

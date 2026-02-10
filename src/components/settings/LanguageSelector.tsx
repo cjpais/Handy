@@ -1,31 +1,29 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../ui/SettingContainer";
 import { ResetButton } from "../ui/ResetButton";
 import { useSettings } from "../../hooks/useSettings";
-import { useModels } from "../../hooks/useModels";
 import { LANGUAGES } from "../../lib/constants/languages";
 
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  supportedLanguages?: string[];
 }
-
-const unsupportedModels = ["parakeet-tdt-0.6b-v2", "parakeet-tdt-0.6b-v3"];
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
+  supportedLanguages,
 }) => {
+  const { t } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
-  const { currentModel, loadCurrentModel } = useModels();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selectedLanguage = getSetting("selected_language") || "auto";
-  const isUnsupported = unsupportedModels.includes(currentModel);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -44,35 +42,32 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     };
   }, []);
 
-  // Listen for model state changes to update UI reactively
-  useEffect(() => {
-    const modelStateUnlisten = listen("model-state-changed", () => {
-      loadCurrentModel();
-    });
-
-    return () => {
-      modelStateUnlisten.then((fn) => fn());
-    };
-  }, [loadCurrentModel]);
-
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [isOpen]);
 
+  const availableLanguages = useMemo(() => {
+    if (!supportedLanguages || supportedLanguages.length === 0)
+      return LANGUAGES;
+    return LANGUAGES.filter(
+      (lang) =>
+        lang.value === "auto" || supportedLanguages.includes(lang.value),
+    );
+  }, [supportedLanguages]);
+
   const filteredLanguages = useMemo(
     () =>
-      LANGUAGES.filter((language) =>
+      availableLanguages.filter((language) =>
         language.label.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [searchQuery],
+    [searchQuery, availableLanguages],
   );
 
-  const selectedLanguageName = isUnsupported
-    ? "Auto"
-    : LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
-      "Auto";
+  const selectedLanguageName =
+    LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
+    t("settings.general.language.auto");
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);
@@ -85,7 +80,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   const handleToggle = () => {
-    if (isUpdating("selected_language") || isUnsupported) return;
+    if (isUpdating("selected_language")) return;
     setIsOpen(!isOpen);
   };
 
@@ -105,31 +100,26 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   return (
     <SettingContainer
-      title="Language"
-      description={
-        isUnsupported
-          ? "Parakeet model automatically detects the language. No manual selection is needed."
-          : "Select the language for speech recognition. Auto will automatically determine the language, while selecting a specific language can improve accuracy for that language."
-      }
+      title={t("settings.general.language.title")}
+      description={t("settings.general.language.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
-      disabled={isUnsupported}
     >
       <div className="flex items-center space-x-1">
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
-            className={`px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded min-w-[200px] text-left flex items-center justify-between transition-all duration-150 ${
-              isUpdating("selected_language") || isUnsupported
+            className={`px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded min-w-[200px] text-start flex items-center justify-between transition-all duration-150 ${
+              isUpdating("selected_language")
                 ? "opacity-50 cursor-not-allowed"
                 : "hover:bg-logo-primary/10 cursor-pointer hover:border-logo-primary"
             }`}
             onClick={handleToggle}
-            disabled={isUpdating("selected_language") || isUnsupported}
+            disabled={isUpdating("selected_language")}
           >
             <span className="truncate">{selectedLanguageName}</span>
             <svg
-              className={`w-4 h-4 ml-2 transition-transform duration-200 ${
+              className={`w-4 h-4 ms-2 transition-transform duration-200 ${
                 isOpen ? "transform rotate-180" : ""
               }`}
               fill="none"
@@ -145,7 +135,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             </svg>
           </button>
 
-          {isOpen && !isUpdating("selected_language") && !isUnsupported && (
+          {isOpen && !isUpdating("selected_language") && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-mid-gray/80 rounded shadow-lg z-50 max-h-60 overflow-hidden">
               {/* Search input */}
               <div className="p-2 border-b border-mid-gray/80">
@@ -155,7 +145,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Search languages..."
+                  placeholder={t("settings.general.language.searchPlaceholder")}
                   className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded focus:outline-none focus:ring-1 focus:ring-logo-primary focus:border-logo-primary"
                 />
               </div>
@@ -163,14 +153,14 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
               <div className="max-h-48 overflow-y-auto">
                 {filteredLanguages.length === 0 ? (
                   <div className="px-2 py-2 text-sm text-mid-gray text-center">
-                    No languages found
+                    {t("settings.general.language.noResults")}
                   </div>
                 ) : (
                   filteredLanguages.map((language) => (
                     <button
                       key={language.value}
                       type="button"
-                      className={`w-full px-2 py-1 text-sm text-left hover:bg-logo-primary/10 transition-colors duration-150 ${
+                      className={`w-full px-2 py-1 text-sm text-start hover:bg-logo-primary/10 transition-colors duration-150 ${
                         selectedLanguage === language.value
                           ? "bg-logo-primary/20 text-logo-primary font-semibold"
                           : ""
@@ -189,7 +179,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         </div>
         <ResetButton
           onClick={handleReset}
-          disabled={isUpdating("selected_language") || isUnsupported}
+          disabled={isUpdating("selected_language")}
         />
       </div>
       {isUpdating("selected_language") && (

@@ -1,26 +1,31 @@
 import React, { useEffect, useState, useRef } from "react";
-import { type } from "@tauri-apps/plugin-os";
+import { useTranslation } from "react-i18next";
 import {
   getKeyName,
   formatKeyCombination,
   normalizeKey,
-  type OSType,
 } from "../../lib/utils/keyboard";
 import { ResetButton } from "../ui/ResetButton";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import { invoke } from "@tauri-apps/api/core";
+import { useOsType } from "../../hooks/useOsType";
+import { commands } from "@/bindings";
 import { toast } from "sonner";
 
-interface HandyShortcutProps {
+interface GlobalShortcutInputProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  shortcutId: string;
+  disabled?: boolean;
 }
 
-export const HandyShortcut: React.FC<HandyShortcutProps> = ({
+export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
+  shortcutId,
+  disabled = false,
 }) => {
+  const { t } = useTranslation();
   const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
     useSettings();
   const [keyPressed, setKeyPressed] = useState<string[]>([]);
@@ -29,41 +34,10 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     null,
   );
   const [originalBinding, setOriginalBinding] = useState<string>("");
-  const [osType, setOsType] = useState<OSType>("unknown");
   const shortcutRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const osType = useOsType();
 
   const bindings = getSetting("bindings") || {};
-
-  // Detect and store OS type
-  useEffect(() => {
-    const detectOsType = async () => {
-      try {
-        const detectedType = type();
-        let normalizedType: OSType;
-
-        switch (detectedType) {
-          case "macos":
-            normalizedType = "macos";
-            break;
-          case "windows":
-            normalizedType = "windows";
-            break;
-          case "linux":
-            normalizedType = "linux";
-            break;
-          default:
-            normalizedType = "unknown";
-        }
-
-        setOsType(normalizedType);
-      } catch (error) {
-        console.error("Error detecting OS type:", error);
-        setOsType("unknown");
-      }
-    };
-
-    detectOsType();
-  }, []);
 
   useEffect(() => {
     // Only add event listeners when we're in editing mode
@@ -80,17 +54,12 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         if (editingShortcutId && originalBinding) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
-            await invoke("resume_binding", { id: editingShortcutId }).catch(
-              console.error,
-            );
           } catch (error) {
             console.error("Failed to restore original binding:", error);
-            toast.error("Failed to restore original shortcut");
+            toast.error(t("settings.general.shortcut.errors.restore"));
           }
         } else if (editingShortcutId) {
-          await invoke("resume_binding", { id: editingShortcutId }).catch(
-            console.error,
-          );
+          await commands.resumeBinding(editingShortcutId).catch(console.error);
         }
         setEditingShortcutId(null);
         setKeyPressed([]);
@@ -128,29 +97,47 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
       const updatedKeyPressed = keyPressed.filter((k) => k !== key);
       if (updatedKeyPressed.length === 0 && recordedKeys.length > 0) {
         // Create the shortcut string from all recorded keys
-        const newShortcut = recordedKeys.join("+");
+        // Sort keys so modifiers come first, then the main key
+        const modifiers = [
+          "ctrl",
+          "control",
+          "shift",
+          "alt",
+          "option",
+          "meta",
+          "command",
+          "cmd",
+          "super",
+          "win",
+          "windows",
+        ];
+        const sortedKeys = recordedKeys.sort((a, b) => {
+          const aIsModifier = modifiers.includes(a.toLowerCase());
+          const bIsModifier = modifiers.includes(b.toLowerCase());
+          if (aIsModifier && !bIsModifier) return -1;
+          if (!aIsModifier && bIsModifier) return 1;
+          return 0;
+        });
+        const newShortcut = sortedKeys.join("+");
 
         if (editingShortcutId && bindings[editingShortcutId]) {
           try {
             await updateBinding(editingShortcutId, newShortcut);
-            // Re-register the shortcut now that recording is finished
-            await invoke("resume_binding", { id: editingShortcutId }).catch(
-              console.error,
-            );
           } catch (error) {
             console.error("Failed to change binding:", error);
-            toast.error(`Failed to set shortcut: ${error}`);
+            toast.error(
+              t("settings.general.shortcut.errors.set", {
+                error: String(error),
+              }),
+            );
 
             // Reset to original binding on error
             if (originalBinding) {
               try {
                 await updateBinding(editingShortcutId, originalBinding);
-                await invoke("resume_binding", { id: editingShortcutId }).catch(
-                  console.error,
-                );
               } catch (resetError) {
                 console.error("Failed to reset binding:", resetError);
-                toast.error("Failed to reset shortcut to original value");
+                toast.error(t("settings.general.shortcut.errors.reset"));
               }
             }
           }
@@ -173,17 +160,12 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
         if (editingShortcutId && originalBinding) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
-            await invoke("resume_binding", { id: editingShortcutId }).catch(
-              console.error,
-            );
           } catch (error) {
             console.error("Failed to restore original binding:", error);
-            toast.error("Failed to restore original shortcut");
+            toast.error(t("settings.general.shortcut.errors.restore"));
           }
         } else if (editingShortcutId) {
-          invoke("resume_binding", { id: editingShortcutId }).catch(
-            console.error,
-          );
+          commands.resumeBinding(editingShortcutId).catch(console.error);
         }
         setEditingShortcutId(null);
         setKeyPressed([]);
@@ -217,7 +199,7 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
     if (editingShortcutId === id) return; // Already editing this shortcut
 
     // Suspend current binding to avoid firing while recording
-    await invoke("suspend_binding", { id }).catch(console.error);
+    await commands.suspendBinding(id).catch(console.error);
 
     // Store the original binding to restore if canceled
     setOriginalBinding(bindings[id]?.current_binding || "");
@@ -228,7 +210,8 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
 
   // Format the current shortcut keys being recorded
   const formatCurrentKeys = (): string => {
-    if (recordedKeys.length === 0) return "Press keys...";
+    if (recordedKeys.length === 0)
+      return t("settings.general.shortcut.pressKeys");
 
     // Use the same formatting as the display to ensure consistency
     return formatKeyCombination(recordedKeys.join("+"), osType);
@@ -243,12 +226,14 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (isLoading) {
     return (
       <SettingContainer
-        title="Handy Shortcuts"
-        description="Configure keyboard shortcuts to trigger speech-to-text recording"
+        title={t("settings.general.shortcut.title")}
+        description={t("settings.general.shortcut.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">Loading shortcuts...</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.loading")}
+        </div>
       </SettingContainer>
     );
   }
@@ -257,58 +242,74 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
   if (Object.keys(bindings).length === 0) {
     return (
       <SettingContainer
-        title="Handy Shortcuts"
-        description="Configure keyboard shortcuts to trigger speech-to-text recording"
+        title={t("settings.general.shortcut.title")}
+        description={t("settings.general.shortcut.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">No shortcuts configured</div>
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.none")}
+        </div>
       </SettingContainer>
     );
   }
 
+  const binding = bindings[shortcutId];
+  if (!binding) {
+    return (
+      <SettingContainer
+        title={t("settings.general.shortcut.title")}
+        description={t("settings.general.shortcut.notFound")}
+        descriptionMode={descriptionMode}
+        grouped={grouped}
+      >
+        <div className="text-sm text-mid-gray">
+          {t("settings.general.shortcut.none")}
+        </div>
+      </SettingContainer>
+    );
+  }
+
+  // Get translated name and description for the binding
+  const translatedName = t(
+    `settings.general.shortcut.bindings.${shortcutId}.name`,
+    binding.name,
+  );
+  const translatedDescription = t(
+    `settings.general.shortcut.bindings.${shortcutId}.description`,
+    binding.description,
+  );
+
   return (
     <SettingContainer
-      title="Handy Shortcut"
-      description="Set the keyboard shortcut to start and stop speech-to-text recording"
+      title={translatedName}
+      description={translatedDescription}
       descriptionMode={descriptionMode}
       grouped={grouped}
-      tooltipPosition="bottom"
+      disabled={disabled}
+      layout="horizontal"
     >
-      {(() => {
-        const primaryBinding = Object.values(bindings)[0];
-        const primaryId = Object.keys(bindings)[0];
-
-        if (!primaryBinding) {
-          return (
-            <div className="text-sm text-mid-gray">No shortcuts configured</div>
-          );
-        }
-
-        return (
-          <div className="flex items-center space-x-1">
-            {editingShortcutId === primaryId ? (
-              <div
-                ref={(ref) => setShortcutRef(primaryId, ref)}
-                className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
-              >
-                {formatCurrentKeys()}
-              </div>
-            ) : (
-              <div
-                className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
-                onClick={() => startRecording(primaryId)}
-              >
-                {formatKeyCombination(primaryBinding.current_binding, osType)}
-              </div>
-            )}
-            <ResetButton
-              onClick={() => resetBinding(primaryId)}
-              disabled={isUpdating(`binding_${primaryId}`)}
-            />
+      <div className="flex items-center space-x-1">
+        {editingShortcutId === shortcutId ? (
+          <div
+            ref={(ref) => setShortcutRef(shortcutId, ref)}
+            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded-md"
+          >
+            {formatCurrentKeys()}
           </div>
-        );
-      })()}
+        ) : (
+          <div
+            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
+            onClick={() => startRecording(shortcutId)}
+          >
+            {formatKeyCombination(binding.current_binding, osType)}
+          </div>
+        )}
+        <ResetButton
+          onClick={() => resetBinding(shortcutId)}
+          disabled={isUpdating(`binding_${shortcutId}`)}
+        />
+      </div>
     </SettingContainer>
   );
 };

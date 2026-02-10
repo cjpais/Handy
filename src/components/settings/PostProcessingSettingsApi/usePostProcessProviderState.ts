@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSettings } from "../../../hooks/useSettings";
-import { useSettingsStore } from "../../../stores/settingsStore";
-import type { PostProcessProvider } from "../../../lib/types";
+import { commands, type PostProcessProvider } from "@/bindings";
 import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
 type PostProcessProviderState = {
-  enabled: boolean;
   providerOptions: DropdownOption[];
   selectedProviderId: string;
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
+  isAppleProvider: boolean;
+  appleIntelligenceUnavailable: boolean;
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
   isBaseUrlUpdating: boolean;
@@ -28,6 +28,8 @@ type PostProcessProviderState = {
   handleRefreshModels: () => void;
 };
 
+const APPLE_PROVIDER_ID = "apple_intelligence";
+
 export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
     settings,
@@ -39,8 +41,6 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     fetchPostProcessModels,
     postProcessModelOptions,
   } = useSettings();
-
-  const enabled = settings?.post_process_enabled || false;
 
   // Settings are guaranteed to have providers after migration
   const providers = settings?.post_process_providers || [];
@@ -56,6 +56,10 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     );
   }, [providers, selectedProviderId]);
 
+  const isAppleProvider = selectedProvider?.id === APPLE_PROVIDER_ID;
+  const [appleIntelligenceUnavailable, setAppleIntelligenceUnavailable] =
+    useState(false);
+
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
   const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
@@ -69,17 +73,30 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   }, [providers]);
 
   const handleProviderSelect = useCallback(
-    (providerId: string) => {
-      if (providerId !== selectedProviderId) {
-        void setPostProcessProvider(providerId);
+    async (providerId: string) => {
+      // Clear error state on any selection attempt (allows dismissing the error)
+      setAppleIntelligenceUnavailable(false);
+
+      if (providerId === selectedProviderId) return;
+
+      // Check Apple Intelligence availability before selecting
+      if (providerId === APPLE_PROVIDER_ID) {
+        const available = await commands.checkAppleIntelligenceAvailable();
+        if (!available) {
+          setAppleIntelligenceUnavailable(true);
+          // Don't return - still set the provider so dropdown shows the selection
+          // The backend gracefully handles unavailable Apple Intelligence
+        }
       }
+
+      void setPostProcessProvider(providerId);
     },
     [selectedProviderId, setPostProcessProvider],
   );
 
   const handleBaseUrlChange = useCallback(
     (value: string) => {
-      if (!selectedProvider || !selectedProvider.allow_base_url_edit) {
+      if (!selectedProvider || selectedProvider.id !== "custom") {
         return;
       }
       const trimmed = value.trim();
@@ -125,8 +142,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   );
 
   const handleRefreshModels = useCallback(() => {
+    if (isAppleProvider) return;
     void fetchPostProcessModels(selectedProviderId);
-  }, [fetchPostProcessModels, selectedProviderId]);
+  }, [fetchPostProcessModels, isAppleProvider, selectedProviderId]);
 
   const availableModelsRaw = postProcessModelOptions[selectedProviderId] || [];
 
@@ -170,11 +188,12 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   // No automatic fetching - user must click refresh button
 
   return {
-    enabled,
     providerOptions,
     selectedProviderId,
     selectedProvider,
     isCustomProvider,
+    isAppleProvider,
+    appleIntelligenceUnavailable,
     baseUrl,
     handleBaseUrlChange,
     isBaseUrlUpdating,

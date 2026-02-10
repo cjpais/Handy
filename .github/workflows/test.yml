@@ -1,0 +1,28 @@
+name: "test"
+on: [pull_request]
+
+jobs:
+  rust-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libasound2-dev libssl-dev libgtk-layer-shell-dev
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Use mock TranscriptionManager (CI only)
+        working-directory: src-tauri
+        run: |
+          # Swap to mock adapter - avoids compiling whisper/Vulkan
+          cp src/managers/transcription_mock.rs src/managers/transcription.rs
+          sed -i '/^transcribe-rs/d' Cargo.toml
+
+      - name: Run Rust tests
+        working-directory: src-tauri
+        run: cargo test

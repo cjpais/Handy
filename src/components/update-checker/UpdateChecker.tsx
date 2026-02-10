@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { listen } from "@tauri-apps/api/event";
 import { ProgressBar } from "../shared";
+import { useSettings } from "../../hooks/useSettings";
 
 interface UpdateCheckerProps {
   className?: string;
 }
 
 const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
+  const { t } = useTranslation();
   // Update checking state
   const [isChecking, setIsChecking] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -16,12 +19,29 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [showUpToDate, setShowUpToDate] = useState(false);
 
+  const { settings, isLoading } = useSettings();
+  const settingsLoaded = !isLoading && settings !== null;
+  const updateChecksEnabled = settings?.update_checks_enabled ?? false;
+
   const upToDateTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const isManualCheckRef = useRef(false);
   const downloadedBytesRef = useRef(0);
   const contentLengthRef = useRef(0);
 
   useEffect(() => {
+    // Wait for settings to load before doing anything
+    if (!settingsLoaded) return;
+
+    if (!updateChecksEnabled) {
+      if (upToDateTimeoutRef.current) {
+        clearTimeout(upToDateTimeoutRef.current);
+      }
+      setIsChecking(false);
+      setUpdateAvailable(false);
+      setShowUpToDate(false);
+      return;
+    }
+
     checkForUpdates();
 
     // Listen for update check events
@@ -35,11 +55,11 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
       }
       updateUnlisten.then((fn) => fn());
     };
-  }, []);
+  }, [settingsLoaded, updateChecksEnabled]);
 
   // Update checking functions
   const checkForUpdates = async () => {
-    if (isChecking) return;
+    if (!updateChecksEnabled || isChecking) return;
 
     try {
       setIsChecking(true);
@@ -70,11 +90,13 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
   };
 
   const handleManualUpdateCheck = () => {
+    if (!updateChecksEnabled) return;
     isManualCheckRef.current = true;
     checkForUpdates();
   };
 
   const installUpdate = async () => {
+    if (!updateChecksEnabled) return;
     try {
       setIsInstalling(true);
       setDownloadProgress(0);
@@ -119,27 +141,33 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
 
   // Update status functions
   const getUpdateStatusText = () => {
+    if (!updateChecksEnabled) {
+      return t("footer.updateCheckingDisabled");
+    }
     if (isInstalling) {
       return downloadProgress > 0 && downloadProgress < 100
-        ? `Downloading... ${downloadProgress.toString().padStart(3)}%`
+        ? t("footer.downloading", {
+            progress: downloadProgress.toString().padStart(3),
+          })
         : downloadProgress === 100
-          ? "Installing..."
-          : "Preparing...";
+          ? t("footer.installing")
+          : t("footer.preparing");
     }
-    if (isChecking) return "Checking...";
-    if (showUpToDate) return "Up to date";
-    if (updateAvailable) return "Update available";
-    return "Check for updates";
+    if (isChecking) return t("footer.checkingUpdates");
+    if (showUpToDate) return t("footer.upToDate");
+    if (updateAvailable) return t("footer.updateAvailableShort");
+    return t("footer.checkForUpdates");
   };
 
   const getUpdateStatusAction = () => {
+    if (!updateChecksEnabled) return undefined;
     if (updateAvailable && !isInstalling) return installUpdate;
     if (!isChecking && !isInstalling && !updateAvailable)
       return handleManualUpdateCheck;
     return undefined;
   };
 
-  const isUpdateDisabled = isChecking || isInstalling;
+  const isUpdateDisabled = !updateChecksEnabled || isChecking || isInstalling;
   const isUpdateClickable =
     !isUpdateDisabled && (updateAvailable || (!isChecking && !showUpToDate));
 

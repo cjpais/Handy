@@ -9,12 +9,17 @@
     "store:default",
     "updater:default",
     "process:default",
+    "dialog:default",
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
     "global-shortcut:allow-unregister-all",
     "macos-permissions:default",
     "fs:read-files",
-    "fs:allow-resource-read-recursive"
+    "fs:allow-resource-read-recursive",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**/*" }]
+    }
   ]
 }

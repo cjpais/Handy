@@ -1,9 +1,12 @@
 mod actions;
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
 mod clipboard;
 mod commands;
 mod helpers;
+mod input;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -11,7 +14,10 @@ mod settings;
 mod shortcut;
 mod signal_handle;
 mod tray;
+mod tray_i18n;
 mod utils;
+use specta_typescript::{BigIntExportBehavior, Typescript};
+use tauri_specta::{collect_commands, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
@@ -28,11 +34,12 @@ use std::sync::{Arc, Mutex};
 use tauri::image::Image;
 
 use tauri::tray::TrayIconBuilder;
-use tauri::Emitter;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 use std::time::{Instant, Duration};
+
+use crate::settings::get_settings;
 
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
@@ -107,7 +114,12 @@ fn show_main_window(app: &AppHandle) {
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
-    // First, initialize the managers
+    // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
+    // The frontend is responsible for calling the `initialize_enigo` command
+    // after onboarding completes. This avoids triggering permission dialogs
+    // on macOS before the user is ready.
+
+    // Initialize the managers
     let recording_manager = Arc::new(
         AudioRecordingManager::new(app_handle).expect("Failed to initialize recording manager"),
     );
@@ -126,8 +138,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
 
-    // Initialize the shortcuts
-    shortcut::init_shortcuts(app_handle);
+    // Note: Shortcuts are NOT initialized here.
+    // The frontend is responsible for calling the `initialize_shortcuts` command
+    // after permissions are confirmed (on macOS) or after onboarding completes.
+    // This matches the pattern used for Enigo initialization.
 
     #[cfg(unix)]
     let signals = Signals::new(&[SIGUSR2]).unwrap();
@@ -198,8 +212,25 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 show_main_window(app);
             }
             "check_updates" => {
-                show_main_window(app);
-                let _ = app.emit("check-for-updates", ());
+                let settings = settings::get_settings(app);
+                if settings.update_checks_enabled {
+                    show_main_window(app);
+                    let _ = app.emit("check-for-updates", ());
+                }
+            }
+            "copy_last_transcript" => {
+                tray::copy_last_transcript(app);
+            }
+            "unload_model" => {
+                let transcription_manager = app.state::<Arc<TranscriptionManager>>();
+                if !transcription_manager.is_model_loaded() {
+                    log::warn!("No model is currently loaded.");
+                    return;
+                }
+                match transcription_manager.unload_model() {
+                    Ok(()) => log::info!("Model unloaded via tray."),
+                    Err(e) => log::error!("Failed to unload model via tray: {}", e),
+                }
             }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
@@ -217,7 +248,19 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(tray);
 
     // Initialize tray menu with idle state
-    utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle);
+    utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
+
+    // Apply show_tray_icon setting
+    let settings = settings::get_settings(app_handle);
+    if !settings.show_tray_icon {
+        tray::set_tray_visibility(app_handle, false);
+    }
+
+    // Refresh tray menu when model state changes
+    let app_handle_for_listener = app_handle.clone();
+    app_handle.listen("model-state-changed", move |_| {
+        tray::update_tray_menu(&app_handle_for_listener, &tray::TrayIconState::Idle, None);
+    });
 
     // Get the autostart manager and configure based on user setting
     let autostart_manager = app_handle.autolaunch();
@@ -236,7 +279,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 }
 
 #[tauri::command]
+#[specta::specta]
 fn trigger_update_check(app: AppHandle) -> Result<(), String> {
+    let settings = settings::get_settings(&app);
+    if !settings.update_checks_enabled {
+        return Ok(());
+    }
     app.emit("check-for-updates", ())
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -248,7 +296,104 @@ pub fn run() {
     // when the variable is unset
     let console_filter = build_console_filter();
 
+    let specta_builder = Builder::<tauri::Wry>::new().commands(collect_commands![
+        shortcut::change_binding,
+        shortcut::reset_binding,
+        shortcut::change_ptt_setting,
+        shortcut::change_audio_feedback_setting,
+        shortcut::change_audio_feedback_volume_setting,
+        shortcut::change_sound_theme_setting,
+        shortcut::change_start_hidden_setting,
+        shortcut::change_autostart_setting,
+        shortcut::change_translate_to_english_setting,
+        shortcut::change_selected_language_setting,
+        shortcut::change_overlay_position_setting,
+        shortcut::change_debug_mode_setting,
+        shortcut::change_word_correction_threshold_setting,
+        shortcut::change_paste_method_setting,
+        shortcut::change_clipboard_handling_setting,
+        shortcut::change_post_process_enabled_setting,
+        shortcut::change_experimental_enabled_setting,
+        shortcut::change_post_process_base_url_setting,
+        shortcut::change_post_process_api_key_setting,
+        shortcut::change_post_process_model_setting,
+        shortcut::set_post_process_provider,
+        shortcut::fetch_post_process_models,
+        shortcut::add_post_process_prompt,
+        shortcut::update_post_process_prompt,
+        shortcut::delete_post_process_prompt,
+        shortcut::set_post_process_selected_prompt,
+        shortcut::update_custom_words,
+        shortcut::suspend_binding,
+        shortcut::resume_binding,
+        shortcut::change_mute_while_recording_setting,
+        shortcut::change_append_trailing_space_setting,
+        shortcut::change_app_language_setting,
+        shortcut::change_update_checks_setting,
+        shortcut::change_keyboard_implementation_setting,
+        shortcut::get_keyboard_implementation,
+        shortcut::change_show_tray_icon_setting,
+        shortcut::handy_keys::start_handy_keys_recording,
+        shortcut::handy_keys::stop_handy_keys_recording,
+        trigger_update_check,
+        commands::cancel_operation,
+        commands::get_app_dir_path,
+        commands::get_app_settings,
+        commands::get_default_settings,
+        commands::get_log_dir_path,
+        commands::set_log_level,
+        commands::open_recordings_folder,
+        commands::open_log_dir,
+        commands::open_app_data_dir,
+        commands::check_apple_intelligence_available,
+        commands::initialize_enigo,
+        commands::initialize_shortcuts,
+        commands::models::get_available_models,
+        commands::models::get_model_info,
+        commands::models::download_model,
+        commands::models::delete_model,
+        commands::models::cancel_download,
+        commands::models::set_active_model,
+        commands::models::get_current_model,
+        commands::models::get_transcription_model_status,
+        commands::models::is_model_loading,
+        commands::models::has_any_models_available,
+        commands::models::has_any_models_or_downloads,
+        commands::audio::update_microphone_mode,
+        commands::audio::get_microphone_mode,
+        commands::audio::get_available_microphones,
+        commands::audio::set_selected_microphone,
+        commands::audio::get_selected_microphone,
+        commands::audio::get_available_output_devices,
+        commands::audio::set_selected_output_device,
+        commands::audio::get_selected_output_device,
+        commands::audio::play_test_sound,
+        commands::audio::check_custom_sounds,
+        commands::audio::set_clamshell_microphone,
+        commands::audio::get_clamshell_microphone,
+        commands::audio::is_recording,
+        commands::transcription::set_model_unload_timeout,
+        commands::transcription::get_model_load_status,
+        commands::transcription::unload_model_manually,
+        commands::history::get_history_entries,
+        commands::history::toggle_history_entry_saved,
+        commands::history::get_audio_file_path,
+        commands::history::delete_history_entry,
+        commands::history::update_history_limit,
+        commands::history::update_recording_retention_period,
+        helpers::clamshell::is_laptop,
+    ]);
+
+    #[cfg(debug_assertions)] // <- Only export on non-release builds
+    specta_builder
+        .export(
+            Typescript::default().bigint(BigIntExportBehavior::Number),
+            "../src/bindings.ts",
+        )
+        .expect("Failed to export typescript bindings");
+
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(
             LogBuilder::new()
                 .level(log::LevelFilter::Trace) // Set to most verbose level globally
@@ -290,14 +435,6 @@ pub fn run() {
         .plugin(tauri_plugin_macos_permissions::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .plugin(
-            tauri_plugin_sql::Builder::default()
-                .add_migrations(
-                    "sqlite:history.db",
-                    managers::history::HistoryManager::get_migrations(),
-                )
-                .build(),
-        )
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
@@ -305,8 +442,9 @@ pub fn run() {
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
-            let settings = settings::get_settings(&app.handle());
-            let file_log_level: log::Level = settings.log_level.clone().into();
+            let settings = get_settings(&app.handle());
+            let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
+            let file_log_level: log::Level = tauri_log_level.into();
             // Store the file log level in the atomic for the filter to use
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
@@ -325,6 +463,12 @@ pub fn run() {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
+                let settings = get_settings(&window.app_handle());
+                // If tray icon is hidden, quit the app
+                if !settings.show_tray_icon {
+                    window.app_handle().exit(0);
+                    return;
+                }
                 api.prevent_close();
                 let _res = window.hide();
                 #[cfg(target_os = "macos")]
@@ -344,80 +488,7 @@ pub fn run() {
             }
             _ => {}
         })
-        .invoke_handler(tauri::generate_handler![
-            shortcut::change_binding,
-            shortcut::reset_binding,
-            shortcut::change_ptt_setting,
-            shortcut::change_audio_feedback_setting,
-            shortcut::change_audio_feedback_volume_setting,
-            shortcut::change_sound_theme_setting,
-            shortcut::change_start_hidden_setting,
-            shortcut::change_autostart_setting,
-            shortcut::change_translate_to_english_setting,
-            shortcut::change_selected_language_setting,
-            shortcut::change_overlay_position_setting,
-            shortcut::change_debug_mode_setting,
-            shortcut::change_word_correction_threshold_setting,
-            shortcut::change_paste_method_setting,
-            shortcut::change_clipboard_handling_setting,
-            shortcut::change_post_process_enabled_setting,
-            shortcut::change_post_process_base_url_setting,
-            shortcut::change_post_process_api_key_setting,
-            shortcut::change_post_process_model_setting,
-            shortcut::set_post_process_provider,
-            shortcut::fetch_post_process_models,
-            shortcut::add_post_process_prompt,
-            shortcut::update_post_process_prompt,
-            shortcut::delete_post_process_prompt,
-            shortcut::set_post_process_selected_prompt,
-            shortcut::update_custom_words,
-            shortcut::suspend_binding,
-            shortcut::resume_binding,
-            shortcut::change_mute_while_recording_setting,
-            trigger_update_check,
-            commands::cancel_operation,
-            commands::get_app_dir_path,
-            commands::get_log_dir_path,
-            commands::set_log_level,
-            commands::open_recordings_folder,
-            commands::open_log_dir,
-            commands::open_app_data_dir,
-            commands::models::get_available_models,
-            commands::models::get_model_info,
-            commands::models::download_model,
-            commands::models::delete_model,
-            commands::models::cancel_download,
-            commands::models::set_active_model,
-            commands::models::get_current_model,
-            commands::models::get_transcription_model_status,
-            commands::models::is_model_loading,
-            commands::models::has_any_models_available,
-            commands::models::has_any_models_or_downloads,
-            commands::models::get_recommended_first_model,
-            commands::audio::update_microphone_mode,
-            commands::audio::get_microphone_mode,
-            commands::audio::get_available_microphones,
-            commands::audio::set_selected_microphone,
-            commands::audio::get_selected_microphone,
-            commands::audio::get_available_output_devices,
-            commands::audio::set_selected_output_device,
-            commands::audio::get_selected_output_device,
-            commands::audio::play_test_sound,
-            commands::audio::check_custom_sounds,
-            commands::audio::set_clamshell_microphone,
-            commands::audio::get_clamshell_microphone,
-            helpers::clamshell::is_clamshell,
-            helpers::clamshell::is_laptop,
-            commands::transcription::set_model_unload_timeout,
-            commands::transcription::get_model_load_status,
-            commands::transcription::unload_model_manually,
-            commands::history::get_history_entries,
-            commands::history::toggle_history_entry_saved,
-            commands::history::get_audio_file_path,
-            commands::history::delete_history_entry,
-            commands::history::update_history_limit,
-            commands::history::update_recording_retention_period
-        ])
+        .invoke_handler(specta_builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

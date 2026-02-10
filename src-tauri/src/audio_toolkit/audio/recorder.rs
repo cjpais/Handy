@@ -204,17 +204,34 @@ impl AudioRecorder {
         device: &cpal::Device,
     ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
         let supported_configs = device.supported_input_configs()?;
+        let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
 
-        // Try to find a config that supports 16kHz
+        // Try to find a config that supports 16kHz, prioritizing better formats
         for config_range in supported_configs {
             if config_range.min_sample_rate().0 <= constants::WHISPER_SAMPLE_RATE
                 && config_range.max_sample_rate().0 >= constants::WHISPER_SAMPLE_RATE
             {
-                // Found a config that supports 16kHz, use it
-                return Ok(
-                    config_range.with_sample_rate(cpal::SampleRate(constants::WHISPER_SAMPLE_RATE))
-                );
+                match best_config {
+                    None => best_config = Some(config_range),
+                    Some(ref current) => {
+                        // Prioritize F32 > I16 > I32 > others
+                        let score = |fmt: cpal::SampleFormat| match fmt {
+                            cpal::SampleFormat::F32 => 4,
+                            cpal::SampleFormat::I16 => 3,
+                            cpal::SampleFormat::I32 => 2,
+                            _ => 1,
+                        };
+
+                        if score(config_range.sample_format()) > score(current.sample_format()) {
+                            best_config = Some(config_range);
+                        }
+                    }
+                }
             }
+        }
+
+        if let Some(config) = best_config {
+            return Ok(config.with_sample_rate(cpal::SampleRate(constants::WHISPER_SAMPLE_RATE)));
         }
 
         // If no config supports 16kHz, fall back to default

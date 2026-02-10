@@ -1,40 +1,62 @@
-import React, { useEffect, useState } from "react";
-import { type as getOsType } from "@tauri-apps/plugin-os";
+import React from "react";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
-import type { PasteMethod } from "../../lib/types";
+import { useOsType } from "../../hooks/useOsType";
+import type { PasteMethod } from "@/bindings";
 
 interface PasteMethodProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
-const getPasteMethodOptions = (osType: string) => {
-  const baseOptions = [
-    { value: "ctrl_v", label: "Clipboard (Ctrl+V)" },
-    { value: "direct", label: "Direct" },
-  ];
-
-  // Add Shift+Insert option for Windows and Linux only
-  if (osType === "windows" || osType === "linux") {
-    baseOptions.push({
-      value: "shift_insert",
-      label: "Clipboard (Shift+Insert)",
-    });
-  }
-
-  return baseOptions;
-};
-
 export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
+    const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
-    const [osType, setOsType] = useState<string>("unknown");
+    const osType = useOsType();
 
-    useEffect(() => {
-      setOsType(getOsType());
-    }, []);
+    const getPasteMethodOptions = (osType: string) => {
+      const mod = osType === "macos" ? "Cmd" : "Ctrl";
+
+      const options = [
+        {
+          value: "ctrl_v",
+          label: t("settings.advanced.pasteMethod.options.clipboard", {
+            modifier: mod,
+          }),
+        },
+        {
+          value: "direct",
+          label: t("settings.advanced.pasteMethod.options.direct"),
+        },
+        {
+          value: "none",
+          label: t("settings.advanced.pasteMethod.options.none"),
+        },
+      ];
+
+      // Add Shift+Insert and Ctrl+Shift+V options for Windows and Linux only
+      if (osType === "windows" || osType === "linux") {
+        options.push(
+          {
+            value: "ctrl_shift_v",
+            label: t(
+              "settings.advanced.pasteMethod.options.clipboardCtrlShiftV",
+            ),
+          },
+          {
+            value: "shift_insert",
+            label: t(
+              "settings.advanced.pasteMethod.options.clipboardShiftInsert",
+            ),
+          },
+        );
+      }
+
+      return options;
+    };
 
     const selectedMethod = (getSetting("paste_method") ||
       "ctrl_v") as PasteMethod;
@@ -43,8 +65,8 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
 
     return (
       <SettingContainer
-        title="Paste Method"
-        description="Clipboard (Ctrl+V) simulates Ctrl/Cmd+V keystrokes to paste from your clipboard. Direct tries to use system input methods if possible, otherwise inputs keystrokes one by one into the text field. Clipboard (Shift+Insert) uses the more universal Shift+Insert shortcut, ideal for terminal applications and SSH clients."
+        title={t("settings.advanced.pasteMethod.title")}
+        description={t("settings.advanced.pasteMethod.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
         tooltipPosition="bottom"

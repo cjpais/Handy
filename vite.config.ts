@@ -9,6 +9,14 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
 
+  // Path aliases
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "./src"),
+      "@/bindings": resolve(__dirname, "./src/bindings.ts"),
+    },
+  },
+
   // Multiple entry points for main app and overlay
   build: {
     rollupOptions: {

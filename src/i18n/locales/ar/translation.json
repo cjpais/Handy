@@ -1,0 +1,508 @@
+{
+  "tray": {
+    "settings": "...الإعدادات",
+    "checkUpdates": "...التحقق من وجود تحديثات",
+    "copyLastTranscript": "نسخ آخر نص تم تفريغه",
+    "unloadModel": "تفريغ النموذج",
+    "quit": "إنهاء",
+    "cancel": "إلغاء"
+  },
+  "sidebar": {
+    "general": "عام",
+    "advanced": "متقدم",
+    "postProcessing": "معالجة لاحقة",
+    "history": "السجل",
+    "debug": "تصحيح الأخطاء",
+    "about": "حول",
+    "models": "النماذج"
+  },
+  "onboarding": {
+    "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
+    "recommended": "موصى به",
+    "download": "تنزيل",
+    "downloading": "...جاري التنزيل",
+    "customModelDescription": "غير مدعوم رسميًا",
+    "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
+    "modelCard": {
+      "accuracy": "الدقة",
+      "speed": "السرعة"
+    },
+    "models": {
+      "small": {
+        "name": "Whisper Small",
+        "description": ".سريع ودقيق إلى حد ما"
+      },
+      "medium": {
+        "name": "Whisper Medium",
+        "description": ".دقة جيدة، سرعة متوسطة"
+      },
+      "turbo": {
+        "name": "Whisper Turbo",
+        "description": ".توازن بين الدقة والسرعة"
+      },
+      "large": {
+        "name": "Whisper Large",
+        "description": ".دقة جيدة، لكنه بطيء"
+      },
+      "parakeet-tdt-0.6b-v2": {
+        "name": "Parakeet V2",
+        "description": ".الإنجليزية فقط. أفضل نموذج للمتحدثين بالإنجليزية"
+      },
+      "parakeet-tdt-0.6b-v3": {
+        "name": "Parakeet V3",
+        "description": ".سريع ودقيق"
+      },
+      "moonshine-base": {
+        "name": "Moonshine Base",
+        "description": ".سريع جداً، الإنجليزية فقط. يتعامل جيداً مع اللهجات"
+      }
+    },
+    "errors": {
+      "loadModels": "فشل تحميل النماذج المتاحة",
+      "downloadModel": "فشل تنزيل النموذج: {{error}}"
+    },
+    "permissions": {
+      "title": "الأذونات المطلوبة",
+      "description": ".يحتاج Handy إلى بعض الأذونات ليعمل بشكل صحيح",
+      "microphone": {
+        "title": "الوصول إلى الميكروفون",
+        "description": ".مطلوب لسماع صوتك من أجل التفريغ الصوتي"
+      },
+      "accessibility": {
+        "title": "إمكانية الوصول",
+        "description": ".مطلوب لكتابة النص المفرغ في تطبيقاتك"
+      },
+      "grant": "منح الإذن",
+      "granted": "تم المنح",
+      "waiting": "...في الانتظار",
+      "allGranted": "كل شيء جاهز!",
+      "errors": {
+        "checkFailed": "فشل التحقق من الأذونات. يرجير المحاولة مرة أخرى.",
+        "requestFailed": "فشل طلب الإذن. يرجى المحاولة مرة أخرى."
+      }
+    }
+  },
+  "modelSelector": {
+    "custom": "مخصص",
+    "active": "نشط",
+    "noModelsAvailable": "لا توجد نماذج متاحة",
+    "extracting": "...جاري استخراج {{modelName}}",
+    "extractingMultiple": "...جاري استخراج {{count}} من النماذج",
+    "extractingGeneric": "...جاري الاستخراج",
+    "downloading": "جاري التنزيل {{percentage}}%",
+    "downloadingMultiple": "جاري تنزيل {{count}} من النماذج...",
+    "modelReady": "النموذج جاهز",
+    "loading": "...جاري تحميل {{modelName}}",
+    "loadingGeneric": "...جاري التحميل",
+    "modelError": "خطأ في النموذج",
+    "modelUnloaded": "تم إلغاء تحميل النموذج",
+    "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
+    "deleteModel": "حذف {{modelName}}",
+    "switching": "جارٍ التبديل...",
+    "downloadSpeed": "{{speed}} ميجابايت/ث",
+    "cancel": "إلغاء",
+    "cancelDownload": "إلغاء التنزيل",
+    "capabilities": {
+      "languageSelection": "يدعم اختيار اللغة",
+      "singleLanguage": "يدعم هذه اللغة فقط",
+      "multiLanguage": "متعدد اللغات",
+      "languageOnly": "{{language}} فقط",
+      "translation": "يدعم الترجمة",
+      "translate": "ترجمة"
+    }
+  },
+  "settings": {
+    "general": {
+      "title": "عام",
+      "shortcut": {
+        "title": "اختصارات Handy",
+        "description": "إعداد اختصارات لوحة المفاتيح لبدء تسجيل التفريغ الصوتي",
+        "loading": "...جاري تحميل الاختصارات",
+        "none": "لا توجد اختصارات مجهزة",
+        "notFound": "الاختصار غير موجود",
+        "pressKeys": "...اضغط على المفاتيح",
+        "bindings": {
+          "transcribe": {
+            "name": "اختصار التفريغ الصوتي",
+            "description": ".اختصار لوحة المفاتيح لتسجيل وتفريغ صوتك"
+          },
+          "cancel": {
+            "name": "اختصار الإلغاء",
+            "description": ".اختصار لوحة المفاتيح لإلغاء التسجيل الحالي"
+          },
+          "transcribe_with_post_process": {
+            "name": "مفتاح المعالجة اللاحقة",
+            "description": "اختياري: مفتاح اختصار مخصص يطبق دائماً المعالجة اللاحقة بالذكاء الاصطناعي على التفريغ الصوتي."
+          }
+        },
+        "errors": {
+          "restore": "فشل استعادة الاختصار الأصلي",
+          "set": "فشل تعيين الاختصار: {{error}}",
+          "reset": "فشل إعادة تعيين الاختصار إلى قيمته الأصلية"
+        }
+      },
+      "language": {
+        "title": "اللغة",
+        "description": ".اختر لغة التعرف على الكلام. سيحدد 'تلقائي' اللغة تلقائياً، بينما يؤدي اختيار لغة معينة إلى تحسين الدقة لتلك اللغة",
+        "descriptionUnsupported": ".يكتشف نموذج Parakeet اللغة تلقائياً. لا يلزم الاختيار اليدوي",
+        "searchPlaceholder": "البحث عن اللغات...",
+        "noResults": "لم يتم العثور على لغات",
+        "auto": "تلقائي"
+      },
+      "pushToTalk": {
+        "label": "اضغط للتحدث",
+        "description": "استمر في الضغط للتسجيل، واترك للتوقف"
+      }
+    },
+    "sound": {
+      "title": "الصوت",
+      "microphone": {
+        "title": "الميكروفون",
+        "description": "اختر جهاز الميكروفون المفضل لديك",
+        "placeholder": "...اختر الميكروفون",
+        "loading": "...جاري التحميل"
+      },
+      "audioFeedback": {
+        "label": "تنبيهات صوتية",
+        "description": "تشغيل صوت عند بدء التسجيل وتوقفه"
+      },
+      "outputDevice": {
+        "title": "جهاز الإخراج",
+        "description": "اختر جهاز إخراج الصوت المفضل لتنبيهات الصوت",
+        "placeholder": "...اختر جهاز الإخراج",
+        "loading": "...جاري التحميل"
+      },
+      "volume": {
+        "title": "مستوى الصوت",
+        "description": "ضبط مستوى صوت تنبيهات الصوت"
+      }
+    },
+    "advanced": {
+      "title": "متقدم",
+      "groups": {
+        "app": "التطبيق",
+        "output": "الإخراج",
+        "transcription": "التفريغ الصوتي",
+        "history": "السجل",
+        "experimental": "تجريبي"
+      },
+      "experimentalToggle": {
+        "label": "الميزات التجريبية",
+        "description": ".تمكين الميزات التجريبية التي لا تزال قيد التطوير"
+      },
+      "startHidden": {
+        "label": "بدء مخفي",
+        "description": ".التشغيل في صينية النظام دون فتح النافذة"
+      },
+      "autostart": {
+        "label": "التشغيل عند بدء التشغيل",
+        "description": ".بدء تشغيل Handy تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
+      },
+      "showTrayIcon": {
+        "label": "إظهار أيقونة شريط النظام",
+        "description": ".عرض أيقونة Handy في شريط النظام"
+      },
+      "overlay": {
+        "title": "موقع التراكب",
+        "description": "عرض تراكب الملاحظات المرئية أثناء التسجيل والتفريغ. على نظام Linux يوصى بـ 'بلا'.",
+        "options": {
+          "none": "بلا",
+          "bottom": "أسفل",
+          "top": "أعلى"
+        }
+      },
+      "pasteMethod": {
+        "title": "طريقة اللصق",
+        "description": ".اختر كيفية إدراج النص. مباشر: يحاكي الكتابة عبر إدخال النظام. بلا: يتخطى اللصق، ويحدث السجل/الحافظة فقط",
+        "options": {
+          "clipboard": "الحافظة ({{modifier}}+V)",
+          "clipboardCtrlShiftV": "الحافظة (Ctrl+Shift+V)",
+          "clipboardShiftInsert": "الحافظة (Shift+Insert)",
+          "direct": "مباشر",
+          "none": "بلا"
+        }
+      },
+      "clipboardHandling": {
+        "title": "التعامل مع الحافظة",
+        "description": ".'عدم تعديل الحافظة' يحافظ على محتويات حافظتك الحالية بعد التفريغ. 'نسخ إلى الحافظة' يترك نتيجة التفريغ في حافظتك بعد اللصق",
+        "options": {
+          "dontModify": "عدم تعديل الحافظة",
+          "copyToClipboard": "نسخ إلى الحافظة"
+        }
+      },
+      "translateToEnglish": {
+        "label": "الترجمة إلى الإنجليزية",
+        "description": ".ترجمة الكلام من اللغات الأخرى تلقائياً إلى الإنجليزية أثناء التفريغ",
+        "descriptionUnsupported": ".الترجمة غير مدعومة من قبل نموذج {{model}}"
+      },
+      "modelUnload": {
+        "title": "إلغاء تحميل النموذج",
+        "description": "تحرير ذاكرة GPU/CPU تلقائياً عندما لا يتم استخدام النموذج للوقت المحدد",
+        "options": {
+          "never": "أبداً",
+          "immediately": "فوراً",
+          "min2": "بعد دقيقتين",
+          "min5": "بعد 5 دقائق",
+          "min10": "بعد 10 دقائق",
+          "min15": "بعد 15 دقيقة",
+          "hour1": "بعد ساعة واحدة",
+          "sec5": "بعد 5 ثوانٍ (تصحيح أخطاء)"
+        }
+      },
+      "customWords": {
+        "title": "كلمات مخصصة",
+        "description": ".أضف الكلمات التي غالباً ما يتم فهمها بشكل خاطئ أو كتابتها بشكل خاطئ أثناء التفريغ. سيقوم النظام تلقائياً بتصحيح الكلمات ذات الصوت المماثل لتطابق قائمتك",
+        "placeholder": "أضف كلمة",
+        "add": "إضافة",
+        "remove": "إزالة {{word}}"
+      }
+    },
+    "postProcessing": {
+      "title": "معالجة لاحقة",
+      "hotkey": {
+        "title": "مفتاح الاختصار"
+      },
+      "api": {
+        "title": "API (متوافق مع OpenAI)",
+        "provider": {
+          "title": "المزود",
+          "description": "اختر مزوداً متوافقاً مع OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "يعمل بالكامل على الجهاز. لا يلزم وجود مفتاح API أو وصول إلى الشبكة.",
+          "requirements": "يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث. يجب تمكين Apple Intelligence في إعدادات النظام.",
+          "unavailable": "Apple Intelligence غير متاح على هذا الجهاز. يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث مع تمكين Apple Intelligence في إعدادات النظام."
+        },
+        "baseUrl": {
+          "title": "URL الأساسي",
+          "description": "URL الأساسي لـ API للمزود المختار. يمكن تعديل المزود المخصص فقط.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "مفتاح API",
+          "description": "مفتاح API للمزود المختار.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "النموذج",
+          "descriptionApple": "قدم حداً اختيارياً للرموز الرقمية أو احتفظ بالإعداد المسبق الافتراضي على الجهاز.",
+          "descriptionCustom": "قدم معرف النموذج المتوقع من قبل نقطة النهاية المخصصة الخاصة بك.",
+          "descriptionDefault": "اختر نموذجاً يعرضه المزود المختار.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "ابحث عن نموذج أو اختره",
+          "placeholderNoOptions": "اكتب اسم النموذج",
+          "refreshModels": "تحديث النماذج"
+        }
+      },
+      "prompts": {
+        "title": "المطالبة",
+        "selectedPrompt": {
+          "title": "المطالبة المختارة",
+          "description": ".اختر قالباً لتحسين التفريغ الصوتي أو أنشئ قالباً جديداً. استخدم ${output} داخل نص المطالبة للإشارة إلى النص الملتقط"
+        },
+        "noPrompts": "لا توجد مطالبات متاحة",
+        "selectPrompt": "اختر مطالبة",
+        "createNew": "إنشاء مطالبة جديدة",
+        "promptLabel": "تسمية المطالبة",
+        "promptLabelPlaceholder": "أدخل اسم المطالبة",
+        "promptInstructions": "تعليمات المطالبة",
+        "promptInstructionsPlaceholder": ".اكتب التعليمات المراد تشغيلها بعد التفريغ الصوتي. مثال: قم بتحسين القواعد والوضوح للنص التالي: ${output}",
+        "promptTip": "تلميح: استخدم <code>${output}</code> لإدراج النص المفرغ في مطالبتك.",
+        "updatePrompt": "تحديث المطالبة",
+        "deletePrompt": "حذف المطالبة",
+        "createPrompt": "إنشاء مطالبة",
+        "cancel": "إلغاء",
+        "selectToEdit": ".اختر مطالبة أعلاه لعرض وتعديل تفاصيلها",
+        "createFirst": ".انقر على 'إنشاء مطالبة جديدة' أعلاه لإنشاء أول مطالبة معالجة لاحقة لك"
+      }
+    },
+    "history": {
+      "title": "السجل",
+      "openFolder": "فتح مجلد التسجيلات",
+      "loading": "...جاري تحميل السجل",
+      "empty": "!لا يوجد تفريغ صوتي بعد. ابدأ التسجيل لبناء سجلك",
+      "copyToClipboard": "نسخ التفريغ إلى الحافظة",
+      "save": "حفظ التفريغ",
+      "unsave": "إزالة من المحفوظات",
+      "delete": "حذف الإدخال",
+      "deleteError": ".فشل حذف الإدخال. يرجى المحاولة مرة أخرى"
+    },
+    "debug": {
+      "title": "تصحيح الأخطاء",
+      "logDirectory": {
+        "title": "مجلد السجلات",
+        "description": "الموقع الذي يتم فيه تخزين ملفات السجل"
+      },
+      "logLevel": {
+        "title": "مستوى السجل",
+        "description": "ضبط درجة تفصيل السجلات"
+      },
+      "updateChecks": {
+        "label": "التحقق من وجود تحديثات",
+        "description": "التحقق تلقائياً من وجود إصدارات جديدة من Handy"
+      },
+      "soundTheme": {
+        "label": "سمة الصوت",
+        "description": "اختر سمة صوت لتنبيهات بدء وتوقف التسجيل"
+      },
+      "wordCorrectionThreshold": {
+        "title": "عتبة تصحيح الكلمات",
+        "description": "حساسية تصحيح الكلمات المخصصة"
+      },
+      "historyLimit": {
+        "title": "حد السجل",
+        "description": "الحد الأقصى لعدد إدخالات السجل المراد الاحتفاظ بها",
+        "entries": "إدخالات"
+      },
+      "recordingRetention": {
+        "title": "حذف التسجيلات تلقائياً",
+        "description": "حذف التسجيلات القديمة تلقائياً لتوفير المساحة",
+        "never": "أبداً",
+        "preserveLimit": "الاحتفاظ بآخر {{count}}",
+        "days3": "بعد 3 أيام",
+        "weeks2": "بعد أسبوعين",
+        "months3": "بعد 3 أشهر",
+        "placeholder": "اختر فترة الاحتفاظ..."
+      },
+      "alwaysOnMicrophone": {
+        "label": "ميكروفون يعمل دائماً",
+        "description": "إبقاء الميكروفون نشطاً لاستجابة أسرع"
+      },
+      "clamshellMicrophone": {
+        "title": "ميكروفون وضع الإغلاق",
+        "description": "الميكروفون المراد استخدامه عندما يكون غطاء المحمول مغلقاً"
+      },
+      "postProcessingToggle": {
+        "label": "معالجة لاحقة",
+        "description": "تمكين تحسين النص المدعوم بالذكاء الاصطناعي بعد التفريغ الصوتي"
+      },
+      "muteWhileRecording": {
+        "label": "كتم الصوت أثناء التسجيل",
+        "description": "كتم صوت النظام أثناء التسجيل"
+      },
+      "appendTrailingSpace": {
+        "label": "إضافة مسافة تابعة",
+        "description": "إضافة مسافة بعد التفريغ الملصق"
+      },
+      "keyboardImplementation": {
+        "title": "تنفيذ لوحة المفاتيح",
+        "description": ".اختر الواجهة الخلفية لاختصارات لوحة المفاتيح",
+        "bindingsReset": "كانت اختصارات لوحة المفاتيح غير متوافقة وتمت إعادة تعيينها إلى القيم الافتراضية"
+      },
+      "paths": {
+        "appData": "بيانات التطبيق:",
+        "models": "النماذج:",
+        "settings": "الإعدادات:"
+      },
+      "pasteDelay": {
+        "title": "تأخير اللصق",
+        "description": "التأخير قبل إرسال ضغطة مفتاح اللصق (بالمللي ثانية). قم بزيادتها إذا تم لصق نص خاطئ."
+      }
+    },
+    "about": {
+      "title": "حول",
+      "version": {
+        "title": "الإصدار",
+        "description": "الإصدار الحالي من Handy"
+      },
+      "appDataDirectory": {
+        "title": "مجلد بيانات التطبيق",
+        "description": "الموقع الذي يخزن فيه Handy بياناته"
+      },
+      "sourceCode": {
+        "title": "كود المصدر",
+        "description": "عرض كود المصدر والمساهمة",
+        "button": "عرض على GitHub"
+      },
+      "supportDevelopment": {
+        "title": "دعم التطوير",
+        "description": "ساعدنا في مواصلة بناء Handy",
+        "button": "تبرع"
+      },
+      "acknowledgments": {
+        "title": "شكر وتقدير",
+        "whisper": {
+          "title": "Whisper.cpp",
+          "description": "استنتاج عالي الأداء لنموذج التعرف التلقائي على الكلام Whisper من OpenAI",
+          "details": ".يستخدم Handy برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
+        }
+      }
+    },
+    "modelSettings": {
+      "title": "إعدادات النموذج",
+      "noSettingsNeeded": "لا توجد إعدادات مطلوبة لهذا النموذج"
+    },
+    "models": {
+      "title": "نماذج النسخ",
+      "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
+      "yourModels": "النماذج المحمّلة",
+      "availableModels": "متاح للتنزيل",
+      "downloaded": "تم التنزيل",
+      "available": "متاح للتنزيل",
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
+      "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
+      "deleteTitle": "حذف النموذج",
+      "filters": {
+        "all": "الكل",
+        "multiLanguage": "متعدد اللغات",
+        "translation": "ترجمة",
+        "allLanguages": "جميع اللغات"
+      },
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+    }
+  },
+  "footer": {
+    "downloadingModel": "...جاري تنزيل {{model}}",
+    "checkingUpdates": "...جاري التحقق من وجود تحديثات",
+    "updateAvailable": "تحديث متاح: {{version}}",
+    "updateAvailableShort": "تحديث متاح",
+    "upToDate": "محدث",
+    "downloadUpdate": "تنزيل التحديث",
+    "restart": "إعادة تشغيل",
+    "updateCheckingDisabled": "تم تعطيل التحقق من التحديث",
+    "downloading": "...جاري التنزيل {{progress}}%",
+    "installing": "...جاري التثبيت",
+    "preparing": "...جاري التحضير",
+    "checkForUpdates": "التحقق من وجود تحديثات"
+  },
+  "common": {
+    "loading": "...جاري التحميل",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "reset": "إعادة تعيين",
+    "add": "إضافة",
+    "remove": "إزالة",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "close": "إغلاق",
+    "open": "فتح",
+    "default": "افتراضي",
+    "enabled": "ممكن",
+    "disabled": "معطل",
+    "on": "تشغيل",
+    "off": "إيقاف",
+    "yes": "نعم",
+    "no": "لا",
+    "noOptionsFound": "لم يتم العثور على خيارات"
+  },
+  "accessibility": {
+    "permissionsRequired": "أذونات إمكانية الوصول مطلوبة",
+    "permissionsDescription": ".يحتاج Handy إلى أذونات إمكانية الوصول لكتابة النص المفرغ",
+    "openSettings": "فتح إعدادات النظام",
+    "dismiss": "تجاهل"
+  },
+  "errors": {
+    "loadDirectory": "خطأ في تحميل المجلد: {{error}}"
+  },
+  "appLanguage": {
+    "title": "لغة التطبيق",
+    "description": "تغيير لغة واجهة Handy"
+  },
+  "overlay": {
+    "transcribing": "...جاري التفريغ",
+    "processing": "...جاري المعالجة"
+  }
+}

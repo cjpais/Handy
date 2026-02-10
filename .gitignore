@@ -7,6 +7,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+package-lock.json
+
 node_modules
 dist
 dist-ssr
@@ -27,3 +29,11 @@ dist-ssr
 /target/
 recording_*
 .crush/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+.direnv
+.envrc

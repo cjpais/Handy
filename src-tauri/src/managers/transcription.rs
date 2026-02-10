@@ -1,4 +1,4 @@
-use crate::audio_toolkit::apply_custom_words;
+use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
@@ -11,8 +11,13 @@ use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter};
 use transcribe_rs::{
     engines::{
+        moonshine::{ModelVariant, MoonshineEngine, MoonshineModelParams},
         parakeet::{
             ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
+        },
+        sense_voice::{
+            Language as SenseVoiceLanguage, SenseVoiceEngine, SenseVoiceInferenceParams,
+            SenseVoiceModelParams,
         },
         whisper::{WhisperEngine, WhisperInferenceParams},
     },
@@ -30,6 +35,8 @@ pub struct ModelStateEvent {
 enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetEngine),
+    Moonshine(MoonshineEngine),
+    SenseVoice(SenseVoiceEngine),
 }
 
 #[derive(Clone)]
@@ -140,8 +147,10 @@ impl TranscriptionManager {
             let mut engine = self.engine.lock().unwrap();
             if let Some(ref mut loaded_engine) = *engine {
                 match loaded_engine {
-                    LoadedEngine::Whisper(ref mut whisper) => whisper.unload_model(),
-                    LoadedEngine::Parakeet(ref mut parakeet) => parakeet.unload_model(),
+                    LoadedEngine::Whisper(ref mut e) => e.unload_model(),
+                    LoadedEngine::Parakeet(ref mut e) => e.unload_model(),
+                    LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
+                    LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -168,6 +177,19 @@ impl TranscriptionManager {
             unload_duration.as_millis()
         );
         Ok(())
+    }
+
+    /// Unloads the model immediately if the setting is enabled and the model is loaded
+    pub fn maybe_unload_immediately(&self, context: &str) {
+        let settings = get_settings(&self.app_handle);
+        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
+            && self.is_model_loaded()
+        {
+            info!("Immediately unloading model after {}", context);
+            if let Err(e) = self.unload_model() {
+                warn!("Failed to immediately unload model: {}", e);
+            }
+        }
     }
 
     pub fn load_model(&self, model_id: &str) -> Result<()> {
@@ -245,6 +267,49 @@ impl TranscriptionManager {
                     })?;
                 LoadedEngine::Parakeet(engine)
             }
+            EngineType::Moonshine => {
+                let mut engine = MoonshineEngine::new();
+                engine
+                    .load_model_with_params(
+                        &model_path,
+                        MoonshineModelParams::variant(ModelVariant::Base),
+                    )
+                    .map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load moonshine model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::Moonshine(engine)
+            }
+            EngineType::SenseVoice => {
+                let mut engine = SenseVoiceEngine::new();
+                engine
+                    .load_model_with_params(&model_path, SenseVoiceModelParams::int8())
+                    .map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load SenseVoice model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::SenseVoice(engine)
+            }
         };
 
         // Update the current engine and model ID
@@ -316,8 +381,9 @@ impl TranscriptionManager {
 
         debug!("Audio vector length: {}", audio.len());
 
-        if audio.len() == 0 {
+        if audio.is_empty() {
             debug!("Empty audio vector");
+            self.maybe_unload_immediately("empty audio");
             return Ok(String::new());
         }
 
@@ -379,10 +445,29 @@ impl TranscriptionManager {
                         timestamp_granularity: TimestampGranularity::Segment,
                         ..Default::default()
                     };
-
                     parakeet_engine
                         .transcribe_samples(audio, Some(params))
                         .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
+                }
+                LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
+                    .transcribe_samples(audio, None)
+                    .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e))?,
+                LoadedEngine::SenseVoice(sense_voice_engine) => {
+                    let language = match settings.selected_language.as_str() {
+                        "zh" | "zh-Hans" | "zh-Hant" => SenseVoiceLanguage::Chinese,
+                        "en" => SenseVoiceLanguage::English,
+                        "ja" => SenseVoiceLanguage::Japanese,
+                        "ko" => SenseVoiceLanguage::Korean,
+                        "yue" => SenseVoiceLanguage::Cantonese,
+                        _ => SenseVoiceLanguage::Auto,
+                    };
+                    let params = SenseVoiceInferenceParams {
+                        language,
+                        use_itn: true,
+                    };
+                    sense_voice_engine
+                        .transcribe_samples(audio, Some(params))
+                        .map_err(|e| anyhow::anyhow!("SenseVoice transcription failed: {}", e))?
                 }
             }
         };
@@ -398,6 +483,9 @@ impl TranscriptionManager {
             result.text
         };
 
+        // Filter out filler words and hallucinations
+        let filtered_result = filter_transcription_output(&corrected_result);
+
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {
             " (translated)"
@@ -410,7 +498,7 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = corrected_result.trim().to_string();
+        let final_result = filtered_result;
 
         if final_result.is_empty() {
             info!("Transcription result is empty");
@@ -418,13 +506,7 @@ impl TranscriptionManager {
             info!("Transcription result: {}", final_result);
         }
 
-        // Check if we should immediately unload the model after transcription
-        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
-            info!("Immediately unloading model after transcription");
-            if let Err(e) = self.unload_model() {
-                error!("Failed to immediately unload model: {}", e);
-            }
-        }
+        self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
     }
