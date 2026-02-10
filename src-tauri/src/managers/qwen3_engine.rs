@@ -1,8 +1,72 @@
 use log::{debug, error, info};
 use serde::Serialize;
 use std::io::{BufRead, BufReader, Write};
+use std::path::PathBuf;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::{Arc, Mutex};
+
+/// Get the path to the embedded Python executable
+fn get_embedded_python_path() -> Option<PathBuf> {
+    // Try to find embedded Python in app resources
+    // This works for both development and production builds
+
+    // First, check if we're in a Tauri app context
+    if let Ok(app_dir) = std::env::current_exe() {
+        // For macOS app bundle: Handy.app/Contents/MacOS/handy
+        // Resources are in: Handy.app/Contents/Resources/
+        let resources_dir = app_dir
+            .parent() // MacOS/
+            .and_then(|p| p.parent()) // Contents/
+            .map(|p| p.join("Resources"));
+
+        if let Some(resources) = resources_dir {
+            let embedded_python = resources.join("python/bin/python3");
+            if embedded_python.exists() {
+                return Some(embedded_python);
+            }
+
+            // Also check for python3.11 specifically
+            let embedded_python311 = resources.join("python/bin/python3.11");
+            if embedded_python311.exists() {
+                return Some(embedded_python311);
+            }
+        }
+    }
+
+    // Check environment variable for custom Python path
+    if let Ok(python_path) = std::env::var("HANDY_EMBEDDED_PYTHON") {
+        let path = PathBuf::from(python_path);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    // Fallback: check if embedded python exists in current working directory
+    let local_python = PathBuf::from("src-tauri/resources/python/bin/python3.11");
+    if local_python.exists() {
+        return Some(local_python);
+    }
+
+    let local_python2 = PathBuf::from("src-tauri/resources/python/bin/python3");
+    if local_python2.exists() {
+        return Some(local_python2);
+    }
+
+    None
+}
+
+/// Get the Python command to use (embedded or system)
+fn get_python_command() -> (String, Vec<String>) {
+    // First try embedded Python
+    if let Some(embedded) = get_embedded_python_path() {
+        info!("Using embedded Python: {:?}", embedded);
+        return (embedded.to_string_lossy().to_string(), vec![]);
+    }
+
+    // Fallback to system Python
+    info!("Embedded Python not found, falling back to system Python");
+    ("python3".to_string(), vec![])
+}
 
 /// Qwen3 ASR Engine using MLX framework (macOS only)
 pub struct Qwen3Engine {
@@ -89,7 +153,16 @@ impl Qwen3Engine {
         info!("Starting Qwen3 ASR server process...");
         let start_time = std::time::Instant::now();
 
-        let mut child = Command::new("python3")
+        // Get Python command (embedded or system)
+        let (python_cmd, python_args) = get_python_command();
+
+        // Build command with all arguments
+        let mut cmd = Command::new(&python_cmd);
+        for arg in &python_args {
+            cmd.arg(arg);
+        }
+
+        let mut child = cmd
             .arg("-c")
             .arg(script)
             .stdin(Stdio::piped())
@@ -97,7 +170,7 @@ impl Qwen3Engine {
             .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| {
-                error!("Failed to start Qwen3 server: {}", e);
+                error!("Failed to start Qwen3 server with '{}': {}", python_cmd, e);
                 Box::new(e) as Box<dyn std::error::Error>
             })?;
 
@@ -289,7 +362,8 @@ impl Qwen3Engine {
     }
 
     fn check_mlx_available(&self) -> std::result::Result<(), Box<dyn std::error::Error>> {
-        let output = Command::new("python3")
+        let (python_cmd, _) = get_python_command();
+        let output = Command::new(&python_cmd)
             .args(["-c", "import mlx; print('MLX available')"])
             .output();
 
@@ -309,7 +383,8 @@ impl Qwen3Engine {
     }
 
     fn check_mlx_audio_available(&self) -> std::result::Result<(), Box<dyn std::error::Error>> {
-        let output = Command::new("python3")
+        let (python_cmd, _) = get_python_command();
+        let output = Command::new(&python_cmd)
             .args(["-c", "from mlx_audio.stt import load as load_stt; print('mlx-audio available')"])
             .output();
 
