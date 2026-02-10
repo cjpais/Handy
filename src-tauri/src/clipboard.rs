@@ -1,7 +1,7 @@
 use crate::input::{self, EnigoState};
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
 use enigo::Enigo;
-use log::info;
+use log::{info, warn};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -27,7 +27,18 @@ fn paste_via_clipboard(
     #[cfg(target_os = "linux")]
     let write_result = if is_wayland() && is_wl_copy_available() {
         info!("Using wl-copy for clipboard write on Wayland");
-        write_clipboard_via_wl_copy(text)
+        match write_clipboard_via_wl_copy(text) {
+            Ok(()) => Ok(()),
+            Err(err) => {
+                warn!(
+                    "wl-copy clipboard write failed ({}), falling back to tauri clipboard",
+                    err
+                );
+                clipboard
+                    .write_text(text)
+                    .map_err(|e| format!("Failed to write to clipboard: {}", e))
+            }
+        }
     } else {
         clipboard
             .write_text(text)
@@ -66,7 +77,9 @@ fn paste_via_clipboard(
     // On Wayland, prefer wl-copy for better compatibility
     #[cfg(target_os = "linux")]
     if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
+        if write_clipboard_via_wl_copy(&clipboard_content).is_err() {
+            let _ = clipboard.write_text(&clipboard_content);
+        }
     } else {
         let _ = clipboard.write_text(&clipboard_content);
     }
@@ -323,11 +336,9 @@ fn type_text_via_kwtype(text: &str) -> Result<(), String> {
 /// Write text to clipboard via wl-copy (Wayland clipboard tool).
 #[cfg(target_os = "linux")]
 fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
-    let output = Command::new("wl-copy")
-        .arg("--")
-        .arg(text)
-        .output()
-        .map_err(|e| format!("Failed to execute wl-copy: {}", e))?;
+    let mut command = Command::new("wl-copy");
+    command.arg("--").arg(text);
+    let output = run_command_with_timeout(command, "wl-copy", Duration::from_secs(2))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -370,17 +381,65 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
         PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
         _ => return Err("Unsupported paste method".into()),
     }
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .output()
-        .map_err(|e| format!("Failed to execute dotool: {}", e))?;
+    let mut dotool = Command::new("sh");
+    dotool.arg("-c").arg(command);
+    let output = run_command_with_timeout(dotool, "dotool", Duration::from_secs(2))?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("dotool failed: {}", stderr));
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn run_command_with_timeout(
+    mut command: Command,
+    label: &str,
+    timeout: Duration,
+) -> Result<std::process::Output, String> {
+    use std::io::Read;
+    use std::process::{Output, Stdio};
+    use std::time::Instant;
+
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command
+        .spawn()
+        .map_err(|e| format!("Failed to spawn {}: {}", label, e))?;
+
+    let start = Instant::now();
+    loop {
+        match child
+            .try_wait()
+            .map_err(|e| format!("Failed to wait for {}: {}", label, e))?
+        {
+            Some(status) => {
+                let mut stdout = Vec::new();
+                let mut stderr = Vec::new();
+
+                if let Some(mut out) = child.stdout.take() {
+                    let _ = out.read_to_end(&mut stdout);
+                }
+                if let Some(mut err) = child.stderr.take() {
+                    let _ = err.read_to_end(&mut stderr);
+                }
+
+                return Ok(Output {
+                    status,
+                    stdout,
+                    stderr,
+                });
+            }
+            None => {
+                if start.elapsed() >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(format!("{} timed out after {:?}", label, timeout));
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+    }
 }
 
 /// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
