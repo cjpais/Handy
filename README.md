@@ -105,6 +105,17 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 
 **Other Notes:**
 
+- **Runtime library dependency (`libgtk-layer-shell.so.0`)**:
+  - Handy links `gtk-layer-shell` on Linux. If startup fails with `error while loading shared libraries: libgtk-layer-shell.so.0`, install the runtime package for your distro:
+
+    | Distro        | Package to install    | Example command                        |
+    | ------------- | --------------------- | -------------------------------------- |
+    | Ubuntu/Debian | `libgtk-layer-shell0` | `sudo apt install libgtk-layer-shell0` |
+    | Fedora/RHEL   | `gtk-layer-shell`     | `sudo dnf install gtk-layer-shell`     |
+    | Arch Linux    | `gtk-layer-shell`     | `sudo pacman -S gtk-layer-shell`       |
+
+  - For building from source on Ubuntu/Debian, you may also need `libgtk-layer-shell-dev`.
+
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
 - If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
 - You can manage global shortcuts outside of Handy and still control the app via signals. Sending `SIGUSR2` to the Handy process toggles recording on/off, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings. Example (Sway):
@@ -263,6 +274,23 @@ Final structure should look like:
 2. Open Settings → Models
 3. Your manually installed models should now appear as "Downloaded"
 4. Select the model you want to use and test transcription
+
+### Custom Whisper Models
+
+Handy can auto-discover custom Whisper GGML models placed in the `models` directory. This is useful for users who want to use fine-tuned or community models not included in the default model list.
+
+**How to use:**
+
+1. Obtain a Whisper model in GGML `.bin` format (e.g., from [Hugging Face](https://huggingface.co/models?search=whisper%20ggml))
+2. Place the `.bin` file in your `models` directory (see paths above)
+3. Restart Handy to discover the new model
+4. The model will appear in the "Custom Models" section of the Models settings page
+
+**Important:**
+
+- Community models are user-provided and may not receive troubleshooting assistance
+- The model must be a valid Whisper GGML format (`.bin` file)
+- Model name is derived from the filename (e.g., `my-custom-model.bin` → "My Custom Model")
 
 ### How to Contribute
 

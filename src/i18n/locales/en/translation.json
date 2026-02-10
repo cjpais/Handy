@@ -9,6 +9,7 @@
   },
   "sidebar": {
     "general": "General",
+    "models": "Models",
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
@@ -20,6 +21,8 @@
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",
+    "customModelDescription": "Not officially supported",
+    "downloadFailed": "Download failed. Please try again.",
     "modelCard": {
       "accuracy": "accuracy",
       "speed": "speed"
@@ -80,14 +83,9 @@
     }
   },
   "modelSelector": {
-    "welcome": "Welcome to Handy!",
-    "downloadPrompt": "Download a model below to get started with transcription.",
-    "availableModels": "Available Models",
-    "downloadModels": "Download Models",
-    "chooseModel": "Choose a Model",
+    "custom": "Custom",
     "active": "Active",
-    "download": "Download",
-    "downloadSize": "Download size",
+    "switching": "Switching...",
     "noModelsAvailable": "No models available",
     "extracting": "Extracting {{modelName}}...",
     "extractingMultiple": "Extracting {{count}} models...",
@@ -100,9 +98,24 @@
     "modelError": "Model Error",
     "modelUnloaded": "Model Unloaded",
     "noModelDownloadRequired": "No Model - Download Required",
-    "deleteModel": "Delete {{modelName}}"
+    "deleteModel": "Delete {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "Cancel",
+    "cancelDownload": "Cancel download",
+    "capabilities": {
+      "languageSelection": "Supports multiple input languages",
+      "singleLanguage": "Supports this language only",
+      "multiLanguage": "Multi-language",
+      "languageOnly": "{{language}} Only",
+      "translation": "Can translate to English",
+      "translate": "Translate to English"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} Settings",
+      "noSettingsNeeded": "This model works automatically with no configuration needed."
+    },
     "general": {
       "title": "General",
       "shortcut": {
@@ -144,6 +157,24 @@
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
       }
+    },
+    "models": {
+      "title": "Transcription Models",
+      "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "yourModels": "Downloaded Models",
+      "availableModels": "Available to Download",
+      "downloaded": "Downloaded",
+      "available": "Available to Download",
+      "deleteConfirm": "Are you sure you want to delete {{modelName}}? You will need to download it again to use it.",
+      "deleteActiveConfirm": "{{modelName}} is your active model. Deleting it will stop transcriptions until you select a new model. Are you sure?",
+      "deleteTitle": "Delete Model",
+      "filters": {
+        "all": "All",
+        "multiLanguage": "Multi-language",
+        "translation": "Translation",
+        "allLanguages": "All Languages"
+      },
+      "noModelsMatch": "No models match this filter."
     },
     "sound": {
       "title": "Sound",
@@ -377,14 +408,14 @@
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
-      "pasteDelay": {
-        "title": "Paste Delay",
-        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
-      },
       "paths": {
         "appData": "App Data:",
         "models": "Models:",
         "settings": "Settings:"
+      },
+      "pasteDelay": {
+        "title": "Paste Delay",
+        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
       }
     },
     "about": {
@@ -467,6 +498,7 @@
     "description": "Change the language of the Handy interface"
   },
   "overlay": {
-    "transcribing": "Transcribing..."
+    "transcribing": "Transcribing...",
+    "processing": "Processing..."
   }
 }

@@ -9,6 +9,7 @@
   },
   "sidebar": {
     "general": "通用",
+    "models": "模型",
     "advanced": "高级",
     "postProcessing": "后处理",
     "history": "历史记录",
@@ -20,6 +21,8 @@
     "recommended": "推荐",
     "download": "下载",
     "downloading": "下载中...",
+    "customModelDescription": "非官方支持",
+    "downloadFailed": "下载失败。请重试。",
     "modelCard": {
       "accuracy": "准确度",
       "speed": "速度"
@@ -72,18 +75,17 @@
       "grant": "授予权限",
       "granted": "已授予",
       "waiting": "等待中...",
-      "allGranted": "全部完成！"
+      "allGranted": "全部完成！",
+      "errors": {
+        "checkFailed": "检查权限失败。请重试。",
+        "requestFailed": "请求权限失败。请重试。"
+      }
     }
   },
   "modelSelector": {
-    "welcome": "欢迎使用 Handy！",
-    "downloadPrompt": "请下载以下模型以开始转录。",
-    "availableModels": "可用模型",
-    "downloadModels": "下载模型",
-    "chooseModel": "选择模型",
+    "custom": "自定义",
     "active": "活跃",
-    "download": "下载",
-    "downloadSize": "下载大小",
+    "switching": "切换中...",
     "noModelsAvailable": "没有可用的模型",
     "extracting": "正在解压 {{modelName}}...",
     "extractingMultiple": "正在解压 {{count}} 个模型...",
@@ -96,9 +98,42 @@
     "modelError": "模型错误",
     "modelUnloaded": "模型已卸载",
     "noModelDownloadRequired": "无模型 - 需要下载",
-    "deleteModel": "删除 {{modelName}}"
+    "deleteModel": "删除 {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "支持多种输入语言",
+      "multiLanguage": "多语言",
+      "translation": "可翻译为英语",
+      "translate": "翻译为英语",
+      "singleLanguage": "仅支持此语言",
+      "languageOnly": "仅 {{language}}"
+    },
+    "cancel": "取消",
+    "cancelDownload": "取消下载"
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} 设置",
+      "noSettingsNeeded": "此模型自动运行，无需配置。"
+    },
+    "models": {
+      "title": "转录模型",
+      "description": "选择转录模型或下载其他模型。不同模型提供不同的准确度和速度。",
+      "downloaded": "已下载",
+      "available": "可下载",
+      "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
+      "deleteActiveConfirm": "{{modelName}} 是您当前使用的模型。删除后将停止转录，直到您选择新的模型。确定要删除吗？",
+      "deleteTitle": "删除模型",
+      "filters": {
+        "all": "全部",
+        "multiLanguage": "多语言",
+        "translation": "翻译",
+        "allLanguages": "所有语言"
+      },
+      "noModelsMatch": "没有符合此筛选条件的模型。",
+      "yourModels": "已下载的模型",
+      "availableModels": "可供下载"
+    },
     "general": {
       "title": "通用",
       "shortcut": {
@@ -116,6 +151,10 @@
           "cancel": {
             "name": "取消快捷键",
             "description": "用于取消当前录制的键盘快捷键。"
+          },
+          "transcribe_with_post_process": {
+            "name": "后处理快捷键",
+            "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
           }
         },
         "errors": {
@@ -364,10 +403,19 @@
         "label": "追加尾部空格",
         "description": "在粘贴的转录后添加空格"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "应用数据:",
         "models": "模型:",
         "settings": "设置:"
+      },
+      "pasteDelay": {
+        "title": "粘贴延迟",
+        "description": "发送粘贴按键前的延迟（毫秒）。如果粘贴了错误的文本，请增加此值。"
       }
     },
     "about": {
@@ -450,6 +498,7 @@
     "description": "更改 Handy 界面的语言"
   },
   "overlay": {
-    "transcribing": "正在转录..."
+    "transcribing": "正在转录...",
+    "processing": "处理中..."
   }
 }

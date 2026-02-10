@@ -168,8 +168,7 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
         let y = match settings.overlay_position {
             OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
             OverlayPosition::Bottom | OverlayPosition::None => {
-                // don't subtract the overlay height it puts it too far up
-                work_area_y + work_area_height - OVERLAY_BOTTOM_OFFSET
+                work_area_y + work_area_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
             }
         };
 
@@ -272,39 +271,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
-/// Shows the recording overlay window with fade-in animation
-pub fn show_recording_overlay(app_handle: &AppHandle) {
-    // Check if overlay should be shown based on position setting
-    let settings = settings::get_settings(app_handle);
-    if settings.overlay_position == OverlayPosition::None {
-        return;
-    }
-
-    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Update position before showing to prevent flicker from position changes
-        #[cfg(target_os = "linux")]
-        {
-            update_gtk_layer_shell_anchors(&overlay_window);
-        }
-
-        if let Some((x, y)) = calculate_overlay_position(app_handle) {
-            let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
-        }
-
-        let _ = overlay_window.show();
-
-        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
-        #[cfg(target_os = "windows")]
-        force_overlay_topmost(&overlay_window);
-
-        // Emit event to trigger fade-in animation with recording state
-        let _ = overlay_window.emit("show-overlay", "recording");
-    }
-}
-
-/// Shows the transcribing overlay window
-pub fn show_transcribing_overlay(app_handle: &AppHandle) {
+fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // Check if overlay should be shown based on position setting
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
@@ -320,9 +287,23 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 
-        // Emit event to switch to transcribing state
-        let _ = overlay_window.emit("show-overlay", "transcribing");
+        let _ = overlay_window.emit("show-overlay", state);
     }
+}
+
+/// Shows the recording overlay window with fade-in animation
+pub fn show_recording_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "recording");
+}
+
+/// Shows the transcribing overlay window
+pub fn show_transcribing_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "transcribing");
+}
+
+/// Shows the processing overlay window
+pub fn show_processing_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "processing");
 }
 
 /// Updates the overlay window position based on current settings

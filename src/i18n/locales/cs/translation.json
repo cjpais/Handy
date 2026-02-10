@@ -9,6 +9,7 @@
   },
   "sidebar": {
     "general": "Obecné",
+    "models": "Modely",
     "advanced": "Pokročilé",
     "postProcessing": "Následné zpracování",
     "history": "Historie",
@@ -20,6 +21,8 @@
     "recommended": "Doporučeno",
     "download": "Stáhnout",
     "downloading": "Stahování...",
+    "customModelDescription": "Oficiálně nepodporováno",
+    "downloadFailed": "Stahování se nezdařilo. Zkuste to prosím znovu.",
     "modelCard": {
       "accuracy": "přesnost",
       "speed": "rychlost"
@@ -57,17 +60,31 @@
     "errors": {
       "loadModels": "Nepodařilo se načíst dostupné modely",
       "downloadModel": "Nepodařilo se stáhnout model: {{error}}"
+    },
+    "permissions": {
+      "title": "Vyžadována oprávnění",
+      "description": "Handy potřebuje několik oprávnění pro správné fungování.",
+      "microphone": {
+        "title": "Přístup k mikrofonu",
+        "description": "Potřebný pro zachycení vašeho hlasu k přepisu."
+      },
+      "accessibility": {
+        "title": "Přístup k usnadnění",
+        "description": "Potřebný pro psaní přepsaného textu do vašich aplikací."
+      },
+      "grant": "Udělit oprávnění",
+      "granted": "Uděleno",
+      "waiting": "Čekání...",
+      "allGranted": "Vše připraveno!",
+      "errors": {
+        "checkFailed": "Nepodařilo se zkontrolovat oprávnění. Zkuste to prosím znovu.",
+        "requestFailed": "Nepodařilo se požádat o oprávnění. Zkuste to prosím znovu."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Vítejte v Handy!",
-    "downloadPrompt": "Pro zahájení přepisu si níže stáhněte model.",
-    "availableModels": "Dostupné modely",
-    "downloadModels": "Stáhnout modely",
-    "chooseModel": "Vybrat model",
+    "custom": "Vlastní",
     "active": "Aktivní",
-    "download": "Stáhnout",
-    "downloadSize": "Velikost stažení",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "extracting": "Rozbaluji {{modelName}}...",
     "extractingMultiple": "Rozbaluji {{count}} modelů...",
@@ -80,9 +97,43 @@
     "modelError": "Chyba modelu",
     "modelUnloaded": "Model uvolněn",
     "noModelDownloadRequired": "Žádný model - je nutné stáhnout",
-    "deleteModel": "Smazat {{modelName}}"
+    "deleteModel": "Smazat {{modelName}}",
+    "switching": "Přepínání...",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Podporuje více vstupních jazyků",
+      "multiLanguage": "Vícejazyčný",
+      "translation": "Umí překládat do angličtiny",
+      "translate": "Přeložit do angličtiny",
+      "singleLanguage": "Podporuje pouze tento jazyk",
+      "languageOnly": "Pouze {{language}}"
+    },
+    "cancel": "Zrušit",
+    "cancelDownload": "Zrušit stahování"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Nastavení {{model}}",
+      "noSettingsNeeded": "Tento model funguje automaticky bez nutnosti konfigurace."
+    },
+    "models": {
+      "title": "Modely přepisu",
+      "description": "Vyberte model přepisu nebo stáhněte další modely. Různé modely nabízejí různé úrovně přesnosti a rychlosti.",
+      "downloaded": "Staženo",
+      "available": "K dispozici ke stažení",
+      "deleteConfirm": "Opravdu chcete smazat {{modelName}}? Pro opětovné použití jej budete muset znovu stáhnout.",
+      "deleteActiveConfirm": "{{modelName}} je váš aktivní model. Jeho smazáním se zastaví přepisy, dokud nevyberete nový model. Opravdu chcete pokračovat?",
+      "deleteTitle": "Smazat model",
+      "filters": {
+        "all": "Vše",
+        "multiLanguage": "Vícejazyčný",
+        "translation": "Překlad",
+        "allLanguages": "Všechny jazyky"
+      },
+      "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
+      "yourModels": "Stažené modely",
+      "availableModels": "Dostupné ke stažení"
+    },
     "general": {
       "title": "Obecné",
       "shortcut": {
@@ -100,6 +151,10 @@
           "cancel": {
             "name": "Zkratka zrušení",
             "description": "Klávesová zkratka pro zrušení aktuálního nahrávání."
+          },
+          "transcribe_with_post_process": {
+            "name": "Klávesa pro následné zpracování",
+            "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
           }
         },
         "errors": {
@@ -222,6 +277,9 @@
     },
     "postProcessing": {
       "title": "Následné zpracování",
+      "hotkey": {
+        "title": "Klávesová zkratka"
+      },
       "api": {
         "title": "API (kompatibilní s OpenAI)",
         "provider": {
@@ -345,10 +403,19 @@
         "label": "Přidat koncovou mezeru",
         "description": "Přidat mezeru po vloženém přepisu"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Data aplikace:",
         "models": "Modely:",
         "settings": "Nastavení:"
+      },
+      "pasteDelay": {
+        "title": "Zpoždění vložení",
+        "description": "Zpoždění před odesláním klávesy pro vložení (v milisekundách). Zvyšte, pokud se vkládá špatný text."
       }
     },
     "about": {
@@ -431,6 +498,7 @@
     "description": "Změňte jazyk rozhraní Handy"
   },
   "overlay": {
-    "transcribing": "Přepisuji..."
+    "transcribing": "Přepisuji...",
+    "processing": "Zpracovávám..."
   }
 }

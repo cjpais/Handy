@@ -315,7 +315,6 @@ pub fn run() {
         commands::models::is_model_loading,
         commands::models::has_any_models_available,
         commands::models::has_any_models_or_downloads,
-        commands::models::get_recommended_first_model,
         commands::audio::update_microphone_mode,
         commands::audio::get_microphone_mode,
         commands::audio::get_available_microphones,
@@ -349,29 +348,31 @@ pub fn run() {
         )
         .expect("Failed to export typescript bindings");
 
-    let mut builder = tauri::Builder::default().plugin(
-        LogBuilder::new()
-            .level(log::LevelFilter::Trace) // Set to most verbose level globally
-            .max_file_size(500_000)
-            .rotation_strategy(RotationStrategy::KeepOne)
-            .clear_targets()
-            .targets([
-                // Console output respects RUST_LOG environment variable
-                Target::new(TargetKind::Stdout).filter({
-                    let console_filter = console_filter.clone();
-                    move |metadata| console_filter.enabled(metadata)
-                }),
-                // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
-                Target::new(TargetKind::LogDir {
-                    file_name: Some("handy".into()),
-                })
-                .filter(|metadata| {
-                    let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
-                    metadata.level() <= level_filter_from_u8(file_level)
-                }),
-            ])
-            .build(),
-    );
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            LogBuilder::new()
+                .level(log::LevelFilter::Trace) // Set to most verbose level globally
+                .max_file_size(500_000)
+                .rotation_strategy(RotationStrategy::KeepOne)
+                .clear_targets()
+                .targets([
+                    // Console output respects RUST_LOG environment variable
+                    Target::new(TargetKind::Stdout).filter({
+                        let console_filter = console_filter.clone();
+                        move |metadata| console_filter.enabled(metadata)
+                    }),
+                    // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("handy".into()),
+                    })
+                    .filter(|metadata| {
+                        let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
+                        metadata.level() <= level_filter_from_u8(file_level)
+                    }),
+                ])
+                .build(),
+        );
 
     #[cfg(target_os = "macos")]
     {
