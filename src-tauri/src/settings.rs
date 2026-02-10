@@ -143,6 +143,14 @@ pub enum ClipboardHandling {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
+pub enum AutoSubmitKey {
+    Enter,
+    CtrlEnter,
+    CmdEnter,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum RecordingRetentionPeriod {
     Never,
     PreserveLimit,
@@ -188,6 +196,12 @@ impl Default for PasteMethod {
 impl Default for ClipboardHandling {
     fn default() -> Self {
         ClipboardHandling::DontModify
+    }
+}
+
+impl Default for AutoSubmitKey {
+    fn default() -> Self {
+        AutoSubmitKey::Enter
     }
 }
 
@@ -291,6 +305,10 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
+    #[serde(default = "default_auto_submit")]
+    pub auto_submit: bool,
+    #[serde(default)]
+    pub auto_submit_key: AutoSubmitKey,
     #[serde(default = "default_post_process_enabled")]
     pub post_process_enabled: bool,
     #[serde(default = "default_post_process_provider_id")]
@@ -370,6 +388,10 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_auto_submit() -> bool {
+    false
 }
 
 fn default_history_limit() -> usize {
@@ -625,6 +647,8 @@ pub fn get_default_settings() -> AppSettings {
         recording_retention_period: default_recording_retention_period(),
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
+        auto_submit: default_auto_submit(),
+        auto_submit_key: AutoSubmitKey::default(),
         post_process_enabled: default_post_process_enabled(),
         post_process_provider_id: default_post_process_provider_id(),
         post_process_providers: default_post_process_providers(),
@@ -770,4 +794,16 @@ pub fn get_history_limit(app: &AppHandle) -> usize {
 pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeriod {
     let settings = get_settings(app);
     settings.recording_retention_period
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_settings_disable_auto_submit() {
+        let settings = get_default_settings();
+        assert!(!settings.auto_submit);
+        assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
 }
