@@ -341,6 +341,48 @@
           "requirements": "Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later. Apple Intelligence must be enabled in System Settings.",
           "unavailable": "Apple Intelligence is not available on this device. Requires an Apple Silicon Mac running macOS Tahoe (26.0) or later with Apple Intelligence enabled in System Settings."
         },
+        "bedrock": {
+          "authType": {
+            "title": "Authentication",
+            "description": "Choose how to authenticate with AWS Bedrock.",
+            "credentials": "IAM Credentials",
+            "profile": "AWS Profile"
+          },
+          "accessKeyId": {
+            "title": "Access Key ID",
+            "placeholder": "AKIA..."
+          },
+          "secretAccessKey": {
+            "title": "Secret Access Key",
+            "placeholder": "Enter secret access key"
+          },
+          "sessionToken": {
+            "title": "Session Token",
+            "description": "Optional. Required for temporary credentials from STS assume-role or SSO.",
+            "placeholder": "Enter session token (optional)"
+          },
+          "region": {
+            "title": "Region",
+            "placeholder": "us-east-1"
+          },
+          "profile": {
+            "title": "Profile Name",
+            "description": "Named profile from ~/.aws/credentials",
+            "placeholder": "default"
+          },
+          "crossRegion": {
+            "title": "Cross-Region Inference",
+            "description": "Enable cross-region inference for broader model availability."
+          },
+          "testConnection": {
+            "title": "Test Connection",
+            "description": "Send a test prompt to verify your Bedrock configuration and permissions.",
+            "button": "Test Connection",
+            "testing": "Testing...",
+            "success": "Connection successful",
+            "selectModel": "Select a model first"
+          }
+        },
         "baseUrl": {
           "title": "Base URL",
           "description": "API base URL for the selected provider. Only the custom provider can be edited.",

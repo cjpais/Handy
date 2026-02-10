@@ -76,6 +76,9 @@ specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 tauri-plugin-dialog = "2.6"
+aws-config = "1"
+aws-sdk-bedrock = "1"
+aws-sdk-bedrockruntime = "1"
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"

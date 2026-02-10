@@ -989,6 +989,10 @@ pub async fn fetch_post_process_models(
         }
     }
 
+    if provider.id == settings::BEDROCK_PROVIDER_ID {
+        return crate::bedrock_client::list_models(&settings).await;
+    }
+
     // Get API key
     let api_key = settings
         .post_process_api_keys
@@ -1020,6 +1024,39 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
     settings.post_process_selected_prompt_id = Some(id);
     settings::write_settings(&app, settings);
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_bedrock_setting(app: AppHandle, key: String, value: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    match key.as_str() {
+        "access_key_id" => settings.bedrock_access_key_id = value,
+        "secret_access_key" => settings.bedrock_secret_access_key = value,
+        "session_token" => settings.bedrock_session_token = value,
+        "region" => settings.bedrock_region = value,
+        "profile" => settings.bedrock_profile = value,
+        "use_profile" => settings.bedrock_use_profile = value == "true",
+        "use_cross_region" => settings.bedrock_use_cross_region = value == "true",
+        _ => return Err(format!("Unknown Bedrock setting key: {}", key)),
+    }
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn test_bedrock_connection(app: AppHandle) -> Result<String, String> {
+    let settings = settings::get_settings(&app);
+    let model = settings
+        .post_process_models
+        .get(settings::BEDROCK_PROVIDER_ID)
+        .cloned()
+        .unwrap_or_default();
+    if model.trim().is_empty() {
+        return Err("No Bedrock model selected".to_string());
+    }
+    crate::bedrock_client::test_connection(&settings, &model).await
 }
 
 #[tauri::command]

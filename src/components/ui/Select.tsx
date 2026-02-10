@@ -23,6 +23,7 @@ type BaseProps = {
   isClearable?: boolean;
   onChange: (value: string | null, action: ActionMeta<SelectOption>) => void;
   onBlur?: () => void;
+  onMenuOpen?: () => void;
   className?: string;
   formatCreateLabel?: (input: string) => string;
 };
@@ -129,6 +130,7 @@ export const Select: React.FC<SelectProps> = React.memo(
     isClearable = true,
     onChange,
     onBlur,
+    onMenuOpen,
     className = "",
     isCreatable,
     formatCreateLabel,
@@ -158,6 +160,7 @@ export const Select: React.FC<SelectProps> = React.memo(
       isDisabled: disabled,
       isLoading,
       onBlur,
+      onMenuOpen,
       isClearable,
       styles: selectStyles,
     };

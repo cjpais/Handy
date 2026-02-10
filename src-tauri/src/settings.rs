@@ -8,6 +8,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const BEDROCK_PROVIDER_ID: &str = "bedrock";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -362,6 +363,20 @@ pub struct AppSettings {
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
+    #[serde(default)]
+    pub bedrock_access_key_id: String,
+    #[serde(default)]
+    pub bedrock_secret_access_key: String,
+    #[serde(default)]
+    pub bedrock_session_token: String,
+    #[serde(default = "default_bedrock_region")]
+    pub bedrock_region: String,
+    #[serde(default)]
+    pub bedrock_profile: String,
+    #[serde(default)]
+    pub bedrock_use_profile: bool,
+    #[serde(default)]
+    pub bedrock_use_cross_region: bool,
 }
 
 fn default_model() -> String {
@@ -437,6 +452,10 @@ fn default_sound_theme() -> SoundTheme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_bedrock_region() -> String {
+    "us-east-1".to_string()
 }
 
 fn default_app_language() -> String {
@@ -521,6 +540,16 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         });
     }
 
+    // AWS Bedrock - uses AWS SDK, not OpenAI-compatible API
+    providers.push(PostProcessProvider {
+        id: BEDROCK_PROVIDER_ID.to_string(),
+        label: "AWS Bedrock".to_string(),
+        base_url: "bedrock://aws".to_string(),
+        allow_base_url_edit: false,
+        models_endpoint: None,
+        supports_structured_output: false,
+    });
+
     // Custom provider always comes last
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
@@ -595,8 +624,15 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                 }
             }
             None => {
-                // Provider doesn't exist, add it
-                settings.post_process_providers.push(provider.clone());
+                // Insert before "custom" (which should always be last)
+                let insert_idx = settings
+                    .post_process_providers
+                    .iter()
+                    .position(|p| p.id == "custom")
+                    .unwrap_or(settings.post_process_providers.len());
+                settings
+                    .post_process_providers
+                    .insert(insert_idx, provider.clone());
                 changed = true;
             }
         }
@@ -727,6 +763,13 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
+        bedrock_access_key_id: String::new(),
+        bedrock_secret_access_key: String::new(),
+        bedrock_session_token: String::new(),
+        bedrock_region: default_bedrock_region(),
+        bedrock_profile: String::new(),
+        bedrock_use_profile: false,
+        bedrock_use_cross_region: false,
     }
 }
 
@@ -763,7 +806,10 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(mut settings) => {
-                debug!("Found existing settings: {:?}", settings);
+                debug!(
+                    "Found existing settings for provider: {}",
+                    settings.post_process_provider_id
+                );
                 let default_settings = get_default_settings();
                 let mut updated = false;
 

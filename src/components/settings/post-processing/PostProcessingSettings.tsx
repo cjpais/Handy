@@ -50,6 +50,213 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             {t("settings.postProcessing.api.appleIntelligence.unavailable")}
           </Alert>
         ) : null
+      ) : state.isBedrockProvider ? (
+        <>
+          <SettingContainer
+            title={t("settings.postProcessing.api.bedrock.authType.title")}
+            description={t(
+              "settings.postProcessing.api.bedrock.authType.description",
+            )}
+            descriptionMode="tooltip"
+            layout="horizontal"
+            grouped={true}
+          >
+            <Dropdown
+              options={[
+                {
+                  value: "credentials",
+                  label: t(
+                    "settings.postProcessing.api.bedrock.authType.credentials",
+                  ),
+                },
+                {
+                  value: "profile",
+                  label: t(
+                    "settings.postProcessing.api.bedrock.authType.profile",
+                  ),
+                },
+              ]}
+              selectedValue={
+                state.bedrockUseProfile ? "profile" : "credentials"
+              }
+              onSelect={(v) =>
+                state.handleBedrockSettingChange(
+                  "use_profile",
+                  v === "profile" ? "true" : "false",
+                )
+              }
+              className="flex-1"
+            />
+          </SettingContainer>
+
+          {state.bedrockUseProfile ? (
+            <SettingContainer
+              title={t("settings.postProcessing.api.bedrock.profile.title")}
+              description={t(
+                "settings.postProcessing.api.bedrock.profile.description",
+              )}
+              descriptionMode="tooltip"
+              layout="horizontal"
+              grouped={true}
+            >
+              <Input
+                type="text"
+                defaultValue={state.bedrockProfile}
+                onBlur={(e) =>
+                  state.handleBedrockSettingChange(
+                    "profile",
+                    e.target.value.trim(),
+                  )
+                }
+                autoCapitalize="off"
+                autoCorrect="off"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={t(
+                  "settings.postProcessing.api.bedrock.profile.placeholder",
+                )}
+                variant="compact"
+                className="min-w-[200px]"
+              />
+            </SettingContainer>
+          ) : (
+            <>
+              <SettingContainer
+                title={t(
+                  "settings.postProcessing.api.bedrock.accessKeyId.title",
+                )}
+                description={t(
+                  "settings.postProcessing.api.bedrock.accessKeyId.title",
+                )}
+                descriptionMode="tooltip"
+                layout="horizontal"
+                grouped={true}
+              >
+                <Input
+                  type="text"
+                  defaultValue={state.bedrockAccessKeyId}
+                  onBlur={(e) =>
+                    state.handleBedrockSettingChange(
+                      "access_key_id",
+                      e.target.value.trim(),
+                    )
+                  }
+                  placeholder={t(
+                    "settings.postProcessing.api.bedrock.accessKeyId.placeholder",
+                  )}
+                  variant="compact"
+                  className="min-w-[200px]"
+                />
+              </SettingContainer>
+              <SettingContainer
+                title={t(
+                  "settings.postProcessing.api.bedrock.secretAccessKey.title",
+                )}
+                description={t(
+                  "settings.postProcessing.api.bedrock.secretAccessKey.title",
+                )}
+                descriptionMode="tooltip"
+                layout="horizontal"
+                grouped={true}
+              >
+                <Input
+                  type="password"
+                  defaultValue={state.bedrockSecretAccessKey}
+                  onBlur={(e) =>
+                    state.handleBedrockSettingChange(
+                      "secret_access_key",
+                      e.target.value.trim(),
+                    )
+                  }
+                  placeholder={t(
+                    "settings.postProcessing.api.bedrock.secretAccessKey.placeholder",
+                  )}
+                  variant="compact"
+                  className="min-w-[200px]"
+                />
+              </SettingContainer>
+              <SettingContainer
+                title={t(
+                  "settings.postProcessing.api.bedrock.sessionToken.title",
+                )}
+                description={t(
+                  "settings.postProcessing.api.bedrock.sessionToken.description",
+                )}
+                descriptionMode="tooltip"
+                layout="horizontal"
+                grouped={true}
+              >
+                <Input
+                  type="password"
+                  defaultValue={state.bedrockSessionToken}
+                  onBlur={(e) =>
+                    state.handleBedrockSettingChange(
+                      "session_token",
+                      e.target.value.trim(),
+                    )
+                  }
+                  placeholder={t(
+                    "settings.postProcessing.api.bedrock.sessionToken.placeholder",
+                  )}
+                  variant="compact"
+                  className="min-w-[200px]"
+                />
+              </SettingContainer>
+            </>
+          )}
+
+          <SettingContainer
+            title={t("settings.postProcessing.api.bedrock.region.title")}
+            description=""
+            layout="horizontal"
+            grouped={true}
+          >
+            <Dropdown
+              options={[
+                { value: "us-east-1", label: "us-east-1" },
+                { value: "us-east-2", label: "us-east-2" },
+                { value: "us-west-2", label: "us-west-2" },
+                { value: "eu-west-1", label: "eu-west-1" },
+                { value: "eu-west-2", label: "eu-west-2" },
+                { value: "eu-west-3", label: "eu-west-3" },
+                { value: "eu-central-1", label: "eu-central-1" },
+                { value: "eu-north-1", label: "eu-north-1" },
+                { value: "ap-southeast-1", label: "ap-southeast-1" },
+                { value: "ap-southeast-2", label: "ap-southeast-2" },
+                { value: "ap-northeast-1", label: "ap-northeast-1" },
+                { value: "ap-northeast-2", label: "ap-northeast-2" },
+                { value: "ap-south-1", label: "ap-south-1" },
+                { value: "ca-central-1", label: "ca-central-1" },
+                { value: "sa-east-1", label: "sa-east-1" },
+              ]}
+              selectedValue={state.bedrockRegion}
+              onSelect={(v) => state.handleBedrockSettingChange("region", v)}
+              className="flex-1"
+            />
+          </SettingContainer>
+
+          <SettingContainer
+            title={t("settings.postProcessing.api.bedrock.crossRegion.title")}
+            description={t(
+              "settings.postProcessing.api.bedrock.crossRegion.description",
+            )}
+            descriptionMode="tooltip"
+            layout="horizontal"
+            grouped={true}
+          >
+            <input
+              type="checkbox"
+              checked={state.bedrockUseCrossRegion}
+              onChange={(e) =>
+                state.handleBedrockSettingChange(
+                  "use_cross_region",
+                  e.target.checked ? "true" : "false",
+                )
+              }
+              className="h-4 w-4"
+            />
+          </SettingContainer>
+        </>
       ) : (
         <>
           {state.selectedProvider?.id === "custom" && (
@@ -124,19 +331,78 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               onSelect={state.handleModelSelect}
               onCreate={state.handleModelCreate}
               onBlur={() => {}}
+              onMenuOpen={
+                state.isBedrockProvider ? state.handleRefreshModels : undefined
+              }
               className="flex-1 min-w-[380px]"
             />
-            <ResetButton
-              onClick={state.handleRefreshModels}
-              disabled={state.isFetchingModels}
-              ariaLabel={t("settings.postProcessing.api.model.refreshModels")}
-              className="flex h-10 w-10 items-center justify-center"
-            >
-              <RefreshCcw
-                className={`h-4 w-4 ${state.isFetchingModels ? "animate-spin" : ""}`}
-              />
-            </ResetButton>
+            {!state.isBedrockProvider && (
+              <ResetButton
+                onClick={state.handleRefreshModels}
+                disabled={state.isFetchingModels}
+                ariaLabel={t("settings.postProcessing.api.model.refreshModels")}
+                className="flex h-10 w-10 items-center justify-center"
+              >
+                <RefreshCcw
+                  className={`h-4 w-4 ${state.isFetchingModels ? "animate-spin" : ""}`}
+                />
+              </ResetButton>
+            )}
           </div>
+          {state.modelFetchError && (
+            <p className="text-sm text-red-500 mt-1">{state.modelFetchError}</p>
+          )}
+        </SettingContainer>
+      )}
+
+      {state.isBedrockProvider && (
+        <SettingContainer
+          title={t("settings.postProcessing.api.bedrock.testConnection.title")}
+          description={t(
+            "settings.postProcessing.api.bedrock.testConnection.description",
+          )}
+          descriptionMode="tooltip"
+          layout="horizontal"
+          grouped={true}
+        >
+          <div
+            title={
+              !state.model
+                ? t(
+                    "settings.postProcessing.api.bedrock.testConnection.selectModel",
+                  )
+                : ""
+            }
+          >
+            <Button
+              onClick={state.handleBedrockTestConnection}
+              variant="secondary"
+              size="md"
+              disabled={
+                state.bedrockTestResult.status === "testing" || !state.model
+              }
+              className={
+                state.bedrockTestResult.status === "success"
+                  ? "border-green-500 text-green-500"
+                  : ""
+              }
+            >
+              {state.bedrockTestResult.status === "testing"
+                ? t(
+                    "settings.postProcessing.api.bedrock.testConnection.testing",
+                  )
+                : state.bedrockTestResult.status === "success"
+                  ? `✓ ${t("settings.postProcessing.api.bedrock.testConnection.success")}`
+                  : t(
+                      "settings.postProcessing.api.bedrock.testConnection.button",
+                    )}
+            </Button>
+          </div>
+          {state.bedrockTestResult.status === "error" && (
+            <p className="text-sm text-red-500 mt-1">
+              {state.bedrockTestResult.message}
+            </p>
+          )}
         </SettingContainer>
       )}
     </>

@@ -10,6 +10,7 @@ type PostProcessProviderState = {
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
   isAppleProvider: boolean;
+  isBedrockProvider: boolean;
   appleIntelligenceUnavailable: boolean;
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
@@ -26,9 +27,25 @@ type PostProcessProviderState = {
   handleModelSelect: (value: string) => void;
   handleModelCreate: (value: string) => void;
   handleRefreshModels: () => void;
+  // Bedrock-specific
+  bedrockRegion: string;
+  bedrockUseProfile: boolean;
+  bedrockUseCrossRegion: boolean;
+  bedrockAccessKeyId: string;
+  bedrockSecretAccessKey: string;
+  bedrockSessionToken: string;
+  bedrockProfile: string;
+  handleBedrockSettingChange: (key: string, value: string) => void;
+  bedrockTestResult: {
+    status: "idle" | "testing" | "success" | "error";
+    message: string;
+  };
+  handleBedrockTestConnection: () => void;
+  modelFetchError: string;
 };
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
+const BEDROCK_PROVIDER_ID = "bedrock";
 
 export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
@@ -40,6 +57,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     updatePostProcessModel,
     fetchPostProcessModels,
     postProcessModelOptions,
+    refreshSettings,
   } = useSettings();
 
   // Settings are guaranteed to have providers after migration
@@ -57,6 +75,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   }, [providers, selectedProviderId]);
 
   const isAppleProvider = selectedProvider?.id === APPLE_PROVIDER_ID;
+  const isBedrockProvider = selectedProvider?.id === BEDROCK_PROVIDER_ID;
   const [appleIntelligenceUnavailable, setAppleIntelligenceUnavailable] =
     useState(false);
 
@@ -163,10 +182,57 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     [selectedProviderId, updatePostProcessModel],
   );
 
+  const [modelFetchError, setModelFetchError] = useState("");
+
   const handleRefreshModels = useCallback(() => {
     if (isAppleProvider) return;
-    void fetchPostProcessModels(selectedProviderId);
+    setModelFetchError("");
+    void commands.fetchPostProcessModels(selectedProviderId).then((result) => {
+      if (result.status === "ok") {
+        // Update via store to keep model options in sync
+        void fetchPostProcessModels(selectedProviderId);
+      } else {
+        setModelFetchError(String(result.error));
+      }
+    });
   }, [fetchPostProcessModels, isAppleProvider, selectedProviderId]);
+
+  // Bedrock settings from AppSettings
+  const bedrockRegion = settings?.bedrock_region ?? "us-east-1";
+  const bedrockUseProfile = settings?.bedrock_use_profile ?? false;
+  const bedrockUseCrossRegion = settings?.bedrock_use_cross_region ?? false;
+  const bedrockAccessKeyId = settings?.bedrock_access_key_id ?? "";
+  const bedrockSecretAccessKey = settings?.bedrock_secret_access_key ?? "";
+  const bedrockSessionToken = settings?.bedrock_session_token ?? "";
+  const bedrockProfile = settings?.bedrock_profile ?? "";
+
+  const handleBedrockSettingChange = useCallback(
+    (key: string, value: string) => {
+      void commands.changeBedrockSetting(key, value).then(() => {
+        refreshSettings();
+      });
+    },
+    [refreshSettings],
+  );
+
+  const [bedrockTestResult, setBedrockTestResult] = useState<{
+    status: "idle" | "testing" | "success" | "error";
+    message: string;
+  }>({ status: "idle", message: "" });
+
+  const handleBedrockTestConnection = useCallback(() => {
+    setBedrockTestResult({ status: "testing", message: "" });
+    void commands.testBedrockConnection().then((result) => {
+      if (result.status === "ok") {
+        setBedrockTestResult({ status: "success", message: result.data });
+      } else {
+        setBedrockTestResult({
+          status: "error",
+          message: String(result.error),
+        });
+      }
+    });
+  }, []);
 
   const availableModelsRaw = postProcessModelOptions[selectedProviderId] || [];
 
@@ -215,6 +281,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     selectedProvider,
     isCustomProvider,
     isAppleProvider,
+    isBedrockProvider,
     appleIntelligenceUnavailable,
     baseUrl,
     handleBaseUrlChange,
@@ -231,5 +298,16 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     handleModelSelect,
     handleModelCreate,
     handleRefreshModels,
+    bedrockRegion,
+    bedrockUseProfile,
+    bedrockUseCrossRegion,
+    bedrockAccessKeyId,
+    bedrockSecretAccessKey,
+    bedrockSessionToken,
+    bedrockProfile,
+    handleBedrockSettingChange,
+    bedrockTestResult,
+    handleBedrockTestConnection,
+    modelFetchError,
   };
 };

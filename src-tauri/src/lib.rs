@@ -3,6 +3,7 @@ mod actions;
 mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
+mod bedrock_client;
 pub mod cli;
 mod clipboard;
 mod commands;
@@ -292,6 +293,8 @@ pub fn run(cli_args: CliArgs) {
         shortcut::update_post_process_prompt,
         shortcut::delete_post_process_prompt,
         shortcut::set_post_process_selected_prompt,
+        shortcut::change_bedrock_setting,
+        shortcut::test_bedrock_connection,
         shortcut::update_custom_words,
         shortcut::suspend_binding,
         shortcut::resume_binding,

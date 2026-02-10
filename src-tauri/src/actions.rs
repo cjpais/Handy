@@ -112,6 +112,29 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         provider.id, model
     );
 
+    // Handle Bedrock early - it uses its own API (Converse), not OpenAI-compatible
+    if provider.id == crate::settings::BEDROCK_PROVIDER_ID {
+        let processed_prompt = prompt.replace("${output}", transcription);
+        return match crate::bedrock_client::send_converse(settings, &model, processed_prompt).await
+        {
+            Ok(Some(content)) => {
+                debug!(
+                    "Bedrock post-processing succeeded. Output length: {} chars",
+                    content.len()
+                );
+                Some(content)
+            }
+            Ok(None) => {
+                error!("Bedrock Converse API response has no content");
+                None
+            }
+            Err(e) => {
+                error!("Bedrock post-processing failed: {}", e);
+                None
+            }
+        };
+    }
+
     let api_key = settings
         .post_process_api_keys
         .get(&provider.id)

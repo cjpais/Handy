@@ -11,6 +11,7 @@ type ModelSelectProps = {
   onSelect: (value: string) => void;
   onCreate: (value: string) => void;
   onBlur: () => void;
+  onMenuOpen?: () => void;
   className?: string;
 };
 
@@ -24,6 +25,7 @@ export const ModelSelect: React.FC<ModelSelectProps> = React.memo(
     onSelect,
     onCreate,
     onBlur,
+    onMenuOpen,
     className = "flex-1 min-w-[360px]",
   }) => {
     const handleCreate = (inputValue: string) => {
@@ -42,6 +44,7 @@ export const ModelSelect: React.FC<ModelSelectProps> = React.memo(
         onChange={(selected) => onSelect(selected ?? "")}
         onCreateOption={handleCreate}
         onBlur={onBlur}
+        onMenuOpen={onMenuOpen}
         placeholder={placeholder}
         disabled={disabled}
         isLoading={isLoading}
