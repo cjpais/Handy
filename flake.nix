@@ -22,30 +22,152 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-        in
-        {
-          # AppImage-based package
-          handy-appimage =
-            let
-              appimage = pkgs.appimageTools.wrapType2 {
-                pname = "handy-appimage-unwrapped";
-                inherit version;
-                src = pkgs.fetchurl {
-                  url = "https://github.com/cjpais/Handy/releases/download/v${version}/Handy_${version}_amd64.AppImage";
-                  hash = "sha256-tTswFYLCPGtMbHAb2bQMsklRiRCVXLrtu4pQC8IHdqQ=";
-                };
-                extraPkgs =
-                  p: with p; [
-                    alsa-lib
-                  ];
-              };
-            in
-            pkgs.writeShellScriptBin "handy" ''
-              export WEBKIT_DISABLE_DMABUF_RENDERER=1
-              exec ${appimage}/bin/handy-appimage-unwrapped "$@"
+          lib = pkgs.lib;
+
+          bunDeps = pkgs.stdenv.mkDerivation {
+            pname = "handy-bun-deps";
+            inherit version;
+            src = self;
+
+            nativeBuildInputs = [
+              pkgs.bun
+              pkgs.cacert
+            ];
+
+            dontFixup = true;
+
+            buildPhase = ''
+              export HOME=$TMPDIR
+              bun install --frozen-lockfile --no-progress
             '';
 
-          default = self.packages.${system}.handy-appimage;
+            installPhase = ''
+              mkdir -p $out
+              cp -r node_modules $out/
+            '';
+
+            outputHashAlgo = "sha256";
+            outputHashMode = "recursive";
+            outputHash = "sha256-+hUANv0w3qnK5d2+4JW3XMazLRDhWCbOxUXQyTGta/0=";
+          };
+        in
+        {
+          handy = pkgs.rustPlatform.buildRustPackage {
+            pname = "handy";
+            inherit version;
+            src = self;
+
+            cargoRoot = "src-tauri";
+
+            cargoLock = {
+              lockFile = ./src-tauri/Cargo.lock;
+              outputHashes = {
+                "rdev-0.5.0-2" = "sha256-0F7EaPF8Oa1nnSCAjzEAkitWVpMldL3nCp3c5DVFMe0=";
+                "rodio-0.20.1" = "sha256-wq72awTvN4fXZ9qZc5KLYS9oMxtNDZ4YGxfqz8msofs=";
+                "tauri-nspanel-2.1.0" = "sha256-gotQQ1DOhavdXU8lTEux0vdY880LLetk7VLvSm6/8TI=";
+                "tauri-runtime-2.9.1" = "sha256-sdneSI2kfRMgTkuqQoFPgtYvkqMPSuoyrffFwOph+ZM=";
+                "vad-rs-0.1.5" = "sha256-Q9Dxq31npyUPY9wwi6OxqSJrEvFvG8/n0dbyT7XNcyI=";
+              };
+            };
+
+            postPatch = ''
+              ${pkgs.jq}/bin/jq 'del(.build.beforeBuildCommand) | .bundle.createUpdaterArtifacts = false' \
+                src-tauri/tauri.conf.json > $TMPDIR/tauri.conf.json
+              cp $TMPDIR/tauri.conf.json src-tauri/tauri.conf.json
+
+              # Point libappindicator-sys to the Nix store path
+              substituteInPlace \
+                $cargoDepsCopy/libappindicator-sys-*/src/lib.rs \
+                --replace-fail \
+                  "libayatana-appindicator3.so.1" \
+                  "${pkgs.libayatana-appindicator}/lib/libayatana-appindicator3.so.1"
+
+              # Disable cbindgen in ferrous-opencc (calls cargo metadata which fails in sandbox)
+              # Upstream removed this call in v0.3.1+
+              substituteInPlace $cargoDepsCopy/ferrous-opencc-0.2.3/build.rs \
+                --replace-fail '.expect("Unable to generate bindings")' '.ok();'
+              substituteInPlace $cargoDepsCopy/ferrous-opencc-0.2.3/build.rs \
+                --replace-fail '.write_to_file("opencc.h");' '// skipped'
+            '';
+
+            preBuild = ''
+              cp -r ${bunDeps}/node_modules node_modules
+              chmod -R +w node_modules
+              patchShebangs node_modules
+              export HOME=$TMPDIR
+              ${pkgs.bun}/bin/bun run build
+            '';
+
+            doCheck = false;
+
+            # The tauri hook's installPhase expects target/ in cwd, but our
+            # cargoRoot puts it under src-tauri/. Override to extract the DEB.
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out
+              cd src-tauri
+              mv target/x86_64-unknown-linux-gnu/release/bundle/deb/*/data/usr/* $out/
+              runHook postInstall
+            '';
+
+            nativeBuildInputs = with pkgs; [
+              cargo-tauri.hook
+              pkg-config
+              wrapGAppsHook4
+              bun
+              nodejs
+              jq
+              cmake
+              llvmPackages.libclang
+              shaderc
+            ];
+
+            buildInputs = with pkgs; [
+              webkitgtk_4_1
+              gtk3
+              glib
+              glib-networking
+              libsoup_3
+              alsa-lib
+              onnxruntime
+              libayatana-appindicator
+              libevdev
+              xorg.libX11
+              xorg.libXtst
+              gtk-layer-shell
+              openssl
+              vulkan-loader
+              vulkan-headers
+              shaderc
+            ];
+
+            env = {
+              LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+              BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${lib.getVersion pkgs.llvmPackages.libclang}/include -isystem ${pkgs.glibc.dev}/include";
+              ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
+              OPENSSL_NO_VENDOR = "1";
+            };
+
+            preFixup = ''
+              gappsWrapperArgs+=(
+                --set WEBKIT_DISABLE_DMABUF_RENDERER 1
+                --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [
+                  pkgs.vulkan-loader
+                  pkgs.onnxruntime
+                ]}"
+              )
+            '';
+
+            meta = {
+              description = "A free, open source, and extensible speech-to-text application that works completely offline";
+              homepage = "https://github.com/cjpais/Handy";
+              license = lib.licenses.mit;
+              mainProgram = "handy";
+              platforms = [ "x86_64-linux" ];
+            };
+          };
+
+          default = self.packages.${system}.handy;
         }
       );
 
