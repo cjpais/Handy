@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { commands, type ModelInfo } from "@/bindings";
+import { toast } from "sonner";
+import type { ModelInfo } from "@/bindings";
+import type { ModelCardStatus } from "./ModelCard";
 import ModelCard from "./ModelCard";
 import HandyTextLogo from "../icons/HandyTextLogo";
+import { useModelStore } from "../../stores/modelStore";
 
 interface OnboardingProps {
   onModelSelected: () => void;
@@ -10,52 +13,69 @@ interface OnboardingProps {
 
 const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   const { t } = useTranslation();
-  const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
-  const [downloading, setDownloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    models,
+    downloadModel,
+    selectModel,
+    downloadingModels,
+    extractingModels,
+    downloadProgress,
+    downloadStats,
+  } = useModelStore();
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
 
+  const isDownloading = selectedModelId !== null;
+
+  // Watch for the selected model to finish downloading + extracting
   useEffect(() => {
-    loadModels();
-  }, []);
+    if (!selectedModelId) return;
 
-  const loadModels = async () => {
-    try {
-      const result = await commands.getAvailableModels();
-      if (result.status === "ok") {
-        // Only show downloadable models for onboarding
-        setAvailableModels(result.data.filter((m) => !m.is_downloaded));
-      } else {
-        setError(t("onboarding.errors.loadModels"));
-      }
-    } catch (err) {
-      console.error("Failed to load models:", err);
-      setError(t("onboarding.errors.loadModels"));
+    const model = models.find((m) => m.id === selectedModelId);
+    const stillDownloading = selectedModelId in downloadingModels;
+    const stillExtracting = selectedModelId in extractingModels;
+
+    if (model?.is_downloaded && !stillDownloading && !stillExtracting) {
+      // Model is ready — select it and transition
+      selectModel(selectedModelId).then((success) => {
+        if (success) {
+          onModelSelected();
+        } else {
+          toast.error(t("onboarding.errors.selectModel"));
+          setSelectedModelId(null);
+        }
+      });
     }
-  };
+  }, [
+    selectedModelId,
+    models,
+    downloadingModels,
+    extractingModels,
+    selectModel,
+    onModelSelected,
+  ]);
 
   const handleDownloadModel = async (modelId: string) => {
-    setDownloading(true);
-    setError(null);
+    setSelectedModelId(modelId);
 
-    // Immediately transition to main app - download will continue in footer
-    onModelSelected();
-
-    try {
-      const result = await commands.downloadModel(modelId);
-      if (result.status === "error") {
-        console.error("Download failed:", result.error);
-        setError(t("onboarding.errors.downloadModel", { error: result.error }));
-        setDownloading(false);
-      }
-    } catch (err) {
-      console.error("Download failed:", err);
-      setError(t("onboarding.errors.downloadModel", { error: String(err) }));
-      setDownloading(false);
+    const success = await downloadModel(modelId);
+    if (!success) {
+      toast.error(t("onboarding.downloadFailed"));
+      setSelectedModelId(null);
     }
   };
 
-  const getRecommendedBadge = (modelId: string): boolean => {
-    return modelId === "parakeet-tdt-0.6b-v3";
+  const getModelStatus = (modelId: string): ModelCardStatus => {
+    if (modelId in extractingModels) return "extracting";
+    if (modelId in downloadingModels) return "downloading";
+    return "downloadable";
+  };
+
+  const getModelDownloadProgress = (modelId: string): number | undefined => {
+    return downloadProgress[modelId]?.percentage;
+  };
+
+  const getModelDownloadSpeed = (modelId: string): number | undefined => {
+    return downloadStats[modelId]?.speed;
   };
 
   return (
@@ -68,34 +88,41 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
       </div>
 
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4 shrink-0">
-            <p className="text-red-400 text-sm">{error}</p>
-          </div>
-        )}
-
         <div className="flex flex-col gap-4 pb-6">
-          {availableModels
-            .filter((model) => getRecommendedBadge(model.id))
-            .map((model) => (
+          {models
+            .filter((m: ModelInfo) => !m.is_downloaded)
+            .filter((model: ModelInfo) => model.is_recommended)
+            .map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
                 model={model}
                 variant="featured"
-                disabled={downloading}
+                status={getModelStatus(model.id)}
+                disabled={isDownloading}
                 onSelect={handleDownloadModel}
+                onDownload={handleDownloadModel}
+                downloadProgress={getModelDownloadProgress(model.id)}
+                downloadSpeed={getModelDownloadSpeed(model.id)}
               />
             ))}
 
-          {availableModels
-            .filter((model) => !getRecommendedBadge(model.id))
-            .sort((a, b) => Number(a.size_mb) - Number(b.size_mb))
-            .map((model) => (
+          {models
+            .filter((m: ModelInfo) => !m.is_downloaded)
+            .filter((model: ModelInfo) => !model.is_recommended)
+            .sort(
+              (a: ModelInfo, b: ModelInfo) =>
+                Number(a.size_mb) - Number(b.size_mb),
+            )
+            .map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
                 model={model}
-                disabled={downloading}
+                status={getModelStatus(model.id)}
+                disabled={isDownloading}
                 onSelect={handleDownloadModel}
+                onDownload={handleDownloadModel}
+                downloadProgress={getModelDownloadProgress(model.id)}
+                downloadSpeed={getModelDownloadSpeed(model.id)}
               />
             ))}
         </div>

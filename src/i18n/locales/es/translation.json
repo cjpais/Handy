@@ -3,11 +3,13 @@
     "settings": "Configuración...",
     "checkUpdates": "Buscar actualizaciones...",
     "copyLastTranscript": "Copiar la última transcripción",
+    "unloadModel": "Descargar modelo",
     "quit": "Salir",
     "cancel": "Cancelar"
   },
   "sidebar": {
     "general": "General",
+    "models": "Modelos",
     "advanced": "Avanzado",
     "postProcessing": "Post Proceso",
     "history": "Historial",
@@ -19,6 +21,8 @@
     "recommended": "Recomendado",
     "download": "Descargar",
     "downloading": "Descargando...",
+    "customModelDescription": "Sin soporte oficial",
+    "downloadFailed": "La descarga falló. Por favor, inténtalo de nuevo.",
     "modelCard": {
       "accuracy": "precisión",
       "speed": "velocidad"
@@ -71,18 +75,17 @@
       "grant": "Conceder Permiso",
       "granted": "Concedido",
       "waiting": "Esperando...",
-      "allGranted": "¡Todo listo!"
+      "allGranted": "¡Todo listo!",
+      "errors": {
+        "checkFailed": "Error al verificar permisos. Por favor, inténtalo de nuevo.",
+        "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "¡Bienvenido a Handy!",
-    "downloadPrompt": "Descarga un modelo a continuación para comenzar con la transcripción.",
-    "availableModels": "Modelos Disponibles",
-    "downloadModels": "Descargar Modelos",
-    "chooseModel": "Elegir un Modelo",
+    "custom": "Personalizado",
     "active": "Activo",
-    "download": "Descargar",
-    "downloadSize": "Tamaño de descarga",
+    "switching": "Cambiando...",
     "noModelsAvailable": "No hay modelos disponibles",
     "extracting": "Extrayendo {{modelName}}...",
     "extractingMultiple": "Extrayendo {{count}} modelos...",
@@ -95,9 +98,42 @@
     "modelError": "Error del Modelo",
     "modelUnloaded": "Modelo Descargado",
     "noModelDownloadRequired": "Sin Modelo - Descarga Requerida",
-    "deleteModel": "Eliminar {{modelName}}"
+    "deleteModel": "Eliminar {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Soporta múltiples idiomas de entrada",
+      "multiLanguage": "Multiidioma",
+      "translation": "Puede traducir al inglés",
+      "translate": "Traducir al inglés",
+      "singleLanguage": "Solo admite este idioma",
+      "languageOnly": "Solo {{language}}"
+    },
+    "cancel": "Cancelar",
+    "cancelDownload": "Cancelar descarga"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Configuración de {{model}}",
+      "noSettingsNeeded": "Este modelo funciona automáticamente sin necesidad de configuración."
+    },
+    "models": {
+      "title": "Modelos de Transcripción",
+      "description": "Selecciona un modelo de transcripción o descarga modelos adicionales. Diferentes modelos ofrecen distintos niveles de precisión y velocidad.",
+      "downloaded": "Descargados",
+      "available": "Disponibles para Descargar",
+      "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
+      "deleteActiveConfirm": "{{modelName}} es tu modelo activo. Eliminarlo detendrá las transcripciones hasta que selecciones un nuevo modelo. ¿Estás seguro?",
+      "deleteTitle": "Eliminar modelo",
+      "filters": {
+        "all": "Todos",
+        "multiLanguage": "Multiidioma",
+        "translation": "Traducción",
+        "allLanguages": "Todos los idiomas"
+      },
+      "noModelsMatch": "Ningún modelo coincide con este filtro.",
+      "yourModels": "Modelos descargados",
+      "availableModels": "Disponibles para descargar"
+    },
     "general": {
       "title": "General",
       "shortcut": {
@@ -115,6 +151,10 @@
           "cancel": {
             "name": "Atajo de Cancelar",
             "description": "El atajo de teclado para cancelar la grabación actual."
+          },
+          "transcribe_with_post_process": {
+            "name": "Tecla de Post Procesamiento",
+            "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
           }
         },
         "errors": {
@@ -241,7 +281,9 @@
     },
     "postProcessing": {
       "title": "Post Proceso",
-      "disabledNotice": "El post procesamiento está actualmente deshabilitado. Habilítalo en la configuración de Depuración para configurarlo.",
+      "hotkey": {
+        "title": "Tecla de acceso rápido"
+      },
       "api": {
         "title": "API (Compatible con OpenAI)",
         "provider": {
@@ -365,10 +407,19 @@
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Datos de la Aplicación:",
         "models": "Modelos:",
         "settings": "Configuración:"
+      },
+      "pasteDelay": {
+        "title": "Retraso de pegado",
+        "description": "Retraso antes de enviar la pulsación de tecla de pegar (en milisegundos). Aumente si se está pegando texto incorrecto."
       }
     },
     "about": {
@@ -451,6 +502,7 @@
     "description": "Cambia el idioma de la interfaz de Handy"
   },
   "overlay": {
-    "transcribing": "Transcribiendo..."
+    "transcribing": "Transcribiendo...",
+    "processing": "Procesando..."
   }
 }

@@ -3,11 +3,13 @@
     "settings": "Ustawienia...",
     "checkUpdates": "Sprawdź aktualizacje...",
     "copyLastTranscript": "Kopiuj ostatnią transkrypcję",
+    "unloadModel": "Zwolnij model",
     "quit": "Zamknij",
     "cancel": "Anuluj"
   },
   "sidebar": {
     "general": "Ogólne",
+    "models": "Modele",
     "advanced": "Zaawansowane",
     "postProcessing": "Postproces",
     "history": "Historia",
@@ -19,6 +21,8 @@
     "recommended": "Polecane",
     "download": "Pobierz",
     "downloading": "Pobieranie...",
+    "customModelDescription": "Nieoficjalnie wspierane",
+    "downloadFailed": "Pobieranie nie powiodło się. Spróbuj ponownie.",
     "modelCard": {
       "accuracy": "dokładność",
       "speed": "szybkość"
@@ -71,18 +75,17 @@
       "grant": "Przyznaj uprawnienie",
       "granted": "Przyznano",
       "waiting": "Oczekiwanie...",
-      "allGranted": "Wszystko gotowe!"
+      "allGranted": "Wszystko gotowe!",
+      "errors": {
+        "checkFailed": "Nie udało się sprawdzić uprawnień. Spróbuj ponownie.",
+        "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Witamy w Handy!",
-    "downloadPrompt": "Pobierz model poniżej, aby rozpocząć transkrypcję.",
-    "availableModels": "Dostępne modele",
-    "downloadModels": "Pobierz modele",
-    "chooseModel": "Wybierz model",
+    "custom": "Własny",
     "active": "Aktywny",
-    "download": "Pobierz",
-    "downloadSize": "Rozmiar pobierania",
+    "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
     "extracting": "Rozpakowywanie {{modelName}}...",
     "extractingMultiple": "Rozpakowywanie {{count}} modeli...",
@@ -95,9 +98,42 @@
     "modelError": "Błąd modelu",
     "modelUnloaded": "Model wyładowany",
     "noModelDownloadRequired": "Brak modelu – wymagane pobranie",
-    "deleteModel": "Usuń {{modelName}}"
+    "deleteModel": "Usuń {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Obsługuje wiele języków wejściowych",
+      "multiLanguage": "Wielojęzyczny",
+      "translation": "Może tłumaczyć na angielski",
+      "translate": "Tłumacz na angielski",
+      "singleLanguage": "Obsługuje tylko ten język",
+      "languageOnly": "Tylko {{language}}"
+    },
+    "cancel": "Anuluj",
+    "cancelDownload": "Anuluj pobieranie"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Ustawienia {{model}}",
+      "noSettingsNeeded": "Ten model działa automatycznie bez konieczności konfiguracji."
+    },
+    "models": {
+      "title": "Modele transkrypcji",
+      "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
+      "downloaded": "Pobrane",
+      "available": "Dostępne do pobrania",
+      "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
+      "deleteActiveConfirm": "{{modelName}} jest Twoim aktywnym modelem. Usunięcie go zatrzyma transkrypcje, dopóki nie wybierzesz nowego modelu. Czy na pewno chcesz kontynuować?",
+      "deleteTitle": "Usuń model",
+      "filters": {
+        "all": "Wszystkie",
+        "multiLanguage": "Wielojęzyczne",
+        "translation": "Tłumaczenie",
+        "allLanguages": "Wszystkie języki"
+      },
+      "noModelsMatch": "Żadne modele nie pasują do tego filtra.",
+      "yourModels": "Pobrane modele",
+      "availableModels": "Dostępne do pobrania"
+    },
     "general": {
       "title": "Ogólne",
       "shortcut": {
@@ -115,6 +151,10 @@
           "cancel": {
             "name": "Skrót anulowania",
             "description": "Skrót klawiaturowy do anulowania bieżącego nagrywania."
+          },
+          "transcribe_with_post_process": {
+            "name": "Skrót postprocessingu",
+            "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
           }
         },
         "errors": {
@@ -237,7 +277,9 @@
     },
     "postProcessing": {
       "title": "Postprocess",
-      "disabledNotice": "Postprocess jest obecnie wyłączony. Włącz go w ustawieniach Debug, aby skonfigurować.",
+      "hotkey": {
+        "title": "Skrót klawiszowy"
+      },
       "api": {
         "title": "API (zgodne z OpenAI)",
         "provider": {
@@ -361,10 +403,19 @@
         "label": "Dodaj spację na końcu",
         "description": "Dodaj spację po wklejonej transkrypcji"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Dane aplikacji:",
         "models": "Modele:",
         "settings": "Ustawienia:"
+      },
+      "pasteDelay": {
+        "title": "Opóźnienie wklejania",
+        "description": "Opóźnienie przed wysłaniem klawisza wklejania (w milisekundach). Zwiększ, jeśli wklejany jest nieprawidłowy tekst."
       }
     },
     "about": {
@@ -447,6 +498,7 @@
     "description": "Zmień język interfejsu Handy"
   },
   "overlay": {
-    "transcribing": "Transkrypcja..."
+    "transcribing": "Transkrypcja...",
+    "processing": "Przetwarzanie..."
   }
 }
