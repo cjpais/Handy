@@ -1,7 +1,7 @@
 use crate::input::{self, EnigoState};
 use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
 use enigo::Enigo;
-use log::info;
+use log::{info, warn};
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -20,14 +20,50 @@ fn paste_via_clipboard(
     paste_delay_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
+
+    #[cfg(target_os = "linux")]
+    let use_wayland_wl_clipboard = is_wayland() && is_wl_copy_available();
+
+    #[cfg(not(target_os = "linux"))]
+    let use_wayland_wl_clipboard = false;
+
+    // Read current clipboard content before temporarily replacing it.
+    #[cfg(target_os = "linux")]
+    let clipboard_content = if use_wayland_wl_clipboard && is_wl_paste_available() {
+        match read_clipboard_via_wl_paste() {
+            Ok(text) => text,
+            Err(err) => {
+                warn!(
+                    "wl-paste clipboard read failed ({}), falling back to tauri clipboard read",
+                    err
+                );
+                clipboard.read_text().unwrap_or_default()
+            }
+        }
+    } else {
+        clipboard.read_text().unwrap_or_default()
+    };
+
+    #[cfg(not(target_os = "linux"))]
     let clipboard_content = clipboard.read_text().unwrap_or_default();
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
     #[cfg(target_os = "linux")]
-    let write_result = if is_wayland() && is_wl_copy_available() {
+    let write_result = if use_wayland_wl_clipboard {
         info!("Using wl-copy for clipboard write on Wayland");
-        write_clipboard_via_wl_copy(text)
+        match write_clipboard_via_wl_copy(text) {
+            Ok(()) => Ok(()),
+            Err(err) => {
+                warn!(
+                    "wl-copy clipboard write failed ({}), falling back to tauri clipboard",
+                    err
+                );
+                clipboard
+                    .write_text(text)
+                    .map_err(|e| format!("Failed to write to clipboard: {}", e))
+            }
+        }
     } else {
         clipboard
             .write_text(text)
@@ -65,8 +101,10 @@ fn paste_via_clipboard(
     // Restore original clipboard content
     // On Wayland, prefer wl-copy for better compatibility
     #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
+    if use_wayland_wl_clipboard {
+        if write_clipboard_via_wl_copy(&clipboard_content).is_err() {
+            let _ = clipboard.write_text(&clipboard_content);
+        }
     } else {
         let _ = clipboard.write_text(&clipboard_content);
     }
@@ -220,6 +258,16 @@ fn is_wl_copy_available() -> bool {
         .unwrap_or(false)
 }
 
+/// Check if wl-paste is available (Wayland clipboard read tool).
+#[cfg(target_os = "linux")]
+fn is_wl_paste_available() -> bool {
+    Command::new("which")
+        .arg("wl-paste")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
 /// Type text directly via wtype on Wayland.
 #[cfg(target_os = "linux")]
 fn type_text_via_wtype(text: &str) -> Result<(), String> {
@@ -323,18 +371,30 @@ fn type_text_via_kwtype(text: &str) -> Result<(), String> {
 /// Write text to clipboard via wl-copy (Wayland clipboard tool).
 #[cfg(target_os = "linux")]
 fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
-    let output = Command::new("wl-copy")
-        .arg("--")
-        .arg(text)
-        .output()
-        .map_err(|e| format!("Failed to execute wl-copy: {}", e))?;
+    let mut command = Command::new("wl-copy");
+    command.arg("--").arg(text);
+    let status = run_command_with_timeout_status(command, "wl-copy", Duration::from_secs(2))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("wl-copy failed: {}", stderr));
+    if !status.success() {
+        return Err("wl-copy failed".into());
     }
 
     Ok(())
+}
+
+/// Read clipboard text via wl-paste (Wayland clipboard tool).
+#[cfg(target_os = "linux")]
+fn read_clipboard_via_wl_paste() -> Result<String, String> {
+    let mut command = Command::new("wl-paste");
+    command.arg("--no-newline");
+    let output = run_command_with_timeout_capture(command, "wl-paste", Duration::from_secs(2))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("wl-paste failed: {}", stderr));
+    }
+
+    String::from_utf8(output.stdout).map_err(|e| format!("wl-paste returned invalid UTF-8: {}", e))
 }
 
 /// Send a key combination (e.g., Ctrl+V) via wtype on Wayland.
@@ -370,17 +430,100 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
         PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
         _ => return Err("Unsupported paste method".into()),
     }
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .output()
-        .map_err(|e| format!("Failed to execute dotool: {}", e))?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("dotool failed: {}", stderr));
+    let mut dotool = Command::new("sh");
+    dotool.arg("-c").arg(command);
+    let status = run_command_with_timeout_status(dotool, "dotool", Duration::from_secs(2))?;
+    if !status.success() {
+        return Err("dotool failed".into());
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn run_command_with_timeout_capture(
+    mut command: Command,
+    label: &str,
+    timeout: Duration,
+) -> Result<std::process::Output, String> {
+    use std::io::Read;
+    use std::process::{Output, Stdio};
+    use std::time::Instant;
+
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = command
+        .spawn()
+        .map_err(|e| format!("Failed to spawn {}: {}", label, e))?;
+
+    let start = Instant::now();
+    loop {
+        match child
+            .try_wait()
+            .map_err(|e| format!("Failed to wait for {}: {}", label, e))?
+        {
+            Some(status) => {
+                let mut stdout = Vec::new();
+                let mut stderr = Vec::new();
+
+                if let Some(mut out) = child.stdout.take() {
+                    let _ = out.read_to_end(&mut stdout);
+                }
+                if let Some(mut err) = child.stderr.take() {
+                    let _ = err.read_to_end(&mut stderr);
+                }
+
+                return Ok(Output {
+                    status,
+                    stdout,
+                    stderr,
+                });
+            }
+            None => {
+                if start.elapsed() >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(format!("{} timed out after {:?}", label, timeout));
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn run_command_with_timeout_status(
+    mut command: Command,
+    label: &str,
+    timeout: Duration,
+) -> Result<std::process::ExitStatus, String> {
+    use std::process::Stdio;
+    use std::time::Instant;
+
+    // Important: avoid piped stdout/stderr here. Some tools (notably wl-copy on
+    // Wayland compositors) may leave descendants holding these fds open, which
+    // can block read_to_end indefinitely even after the parent process exits.
+    command.stdout(Stdio::null()).stderr(Stdio::null());
+    let mut child = command
+        .spawn()
+        .map_err(|e| format!("Failed to spawn {}: {}", label, e))?;
+
+    let start = Instant::now();
+    loop {
+        match child
+            .try_wait()
+            .map_err(|e| format!("Failed to wait for {}: {}", label, e))?
+        {
+            Some(status) => return Ok(status),
+            None => {
+                if start.elapsed() >= timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(format!("{} timed out after {:?}", label, timeout));
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+    }
 }
 
 /// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).
