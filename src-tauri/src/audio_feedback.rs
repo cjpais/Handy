@@ -1,3 +1,4 @@
+use crate::settings::SoundTheme;
 use crate::settings::{self, AppSettings};
 use cpal::traits::{DeviceTrait, HostTrait};
 use log::{debug, error, warn};
@@ -8,57 +9,9 @@ use std::path::{Path, PathBuf};
 use std::thread;
 use tauri::{AppHandle, Manager};
 
-#[derive(Clone, Copy)]
 pub enum SoundType {
     Start,
     Stop,
-}
-
-fn sound_type_key(sound_type: SoundType) -> &'static str {
-    match sound_type {
-        SoundType::Start => "start",
-        SoundType::Stop => "stop",
-    }
-}
-
-fn resolve_custom_sound_path(
-    app: &AppHandle,
-    settings: &AppSettings,
-    sound_type: SoundType,
-) -> Option<PathBuf> {
-    let configured_path = match sound_type {
-        SoundType::Start => settings.custom_start_sound_path.as_ref(),
-        SoundType::Stop => settings.custom_stop_sound_path.as_ref(),
-    };
-
-    let resolved = if let Some(path) = configured_path {
-        let candidate = PathBuf::from(path);
-        if candidate.is_absolute() {
-            candidate
-        } else {
-            app.path()
-                .resolve(path, tauri::path::BaseDirectory::AppData)
-                .ok()?
-        }
-    } else {
-        app.path()
-            .resolve(
-                format!("custom_{}.wav", sound_type_key(sound_type)),
-                tauri::path::BaseDirectory::AppData,
-            )
-            .ok()?
-    };
-
-    if resolved.exists() {
-        Some(resolved)
-    } else {
-        warn!(
-            "Custom {} sound does not exist at '{}'",
-            sound_type_key(sound_type),
-            resolved.display()
-        );
-        None
-    }
 }
 
 fn resolve_sound_path(
@@ -66,17 +19,25 @@ fn resolve_sound_path(
     settings: &AppSettings,
     sound_type: SoundType,
 ) -> Option<PathBuf> {
-    if settings.sound_theme == crate::settings::SoundTheme::Custom {
-        return resolve_custom_sound_path(app, settings, sound_type);
-    }
+    let sound_file = get_sound_path(settings, sound_type);
+    let base_dir = get_sound_base_dir(settings);
+    app.path().resolve(&sound_file, base_dir).ok()
+}
 
-    let sound_file = match sound_type {
-        SoundType::Start => settings.sound_theme.to_start_path(),
-        SoundType::Stop => settings.sound_theme.to_stop_path(),
-    };
-    app.path()
-        .resolve(&sound_file, tauri::path::BaseDirectory::Resource)
-        .ok()
+fn get_sound_path(settings: &AppSettings, sound_type: SoundType) -> String {
+    match (settings.sound_theme, sound_type) {
+        (SoundTheme::Custom, SoundType::Start) => "custom_start.wav".to_string(),
+        (SoundTheme::Custom, SoundType::Stop) => "custom_stop.wav".to_string(),
+        (_, SoundType::Start) => settings.sound_theme.to_start_path(),
+        (_, SoundType::Stop) => settings.sound_theme.to_stop_path(),
+    }
+}
+
+fn get_sound_base_dir(settings: &AppSettings) -> tauri::path::BaseDirectory {
+    match settings.sound_theme {
+        SoundTheme::Custom => tauri::path::BaseDirectory::AppData,
+        _ => tauri::path::BaseDirectory::Resource,
+    }
 }
 
 pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {

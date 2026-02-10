@@ -188,19 +188,6 @@
         "label": "Audio-Feedback",
         "description": "Ton bei Start und Ende der Aufnahme abspielen"
       },
-      "soundTheme": {
-        "label": "Sound-Thema",
-        "description": "Eingebautes Sound-Thema auswählen oder eigene Sounddateien verwenden"
-      },
-      "customSounds": {
-        "themeOption": "Benutzerdefiniert",
-        "startLabel": "Start",
-        "stopLabel": "Stopp",
-        "notSelected": "Keine Datei ausgewählt",
-        "choose": "Datei wählen",
-        "preview": "Benutzerdefinierten Sound vorhören",
-        "previewTheme": "Sound-Thema vorhören (spielt Start und dann Stopp)"
-      },
       "outputDevice": {
         "title": "Ausgabegerät",
         "description": "Bevorzugtes Audioausgabegerät für Feedback-Töne auswählen",
