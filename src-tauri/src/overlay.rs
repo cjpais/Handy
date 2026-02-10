@@ -180,6 +180,25 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
+    #[cfg(target_os = "linux")]
+    {
+        let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok()
+            || std::env::var("XDG_SESSION_TYPE")
+                .map(|v| v.eq_ignore_ascii_case("wayland"))
+                .unwrap_or(false);
+        let is_kde = std::env::var("XDG_CURRENT_DESKTOP")
+            .map(|v| v.to_uppercase().contains("KDE"))
+            .unwrap_or(false)
+            || std::env::var("KDE_SESSION_VERSION").is_ok();
+
+        if is_wayland && is_kde {
+            log::warn!(
+                "Disabling recording overlay on KDE Wayland due to GTK layer shell protocol instability"
+            );
+            return;
+        }
+    }
+
     let position = calculate_overlay_position(app_handle);
 
     // On Linux (Wayland), monitor detection often fails, but we don't need exact coordinates
