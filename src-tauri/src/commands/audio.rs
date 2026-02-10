@@ -5,7 +5,6 @@ use crate::settings::{get_settings, write_settings};
 use log::warn;
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::path::Path;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
@@ -15,13 +14,7 @@ pub struct CustomSounds {
     stop: bool,
 }
 
-#[derive(Serialize, Type)]
-pub struct CustomSoundPaths {
-    start: Option<String>,
-    stop: Option<String>,
-}
-
-fn legacy_custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
+fn custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
     app.path()
         .resolve(
             format!("custom_{}.wav", sound_type),
@@ -30,74 +23,13 @@ fn legacy_custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
         .map_or(false, |path| path.exists())
 }
 
-fn custom_sound_exists(app: &AppHandle, sound_path: Option<&str>, sound_type: &str) -> bool {
-    if let Some(path) = sound_path {
-        Path::new(path).is_file()
-    } else {
-        legacy_custom_sound_exists(app, sound_type)
-    }
-}
-
-fn validate_custom_sound_path(path: &str) -> Result<(), String> {
-    let path_ref = Path::new(path);
-    if !path_ref.exists() {
-        return Err("Selected sound file does not exist".to_string());
-    }
-    if !path_ref.is_file() {
-        return Err("Selected sound path is not a file".to_string());
-    }
-    Ok(())
-}
-
 #[tauri::command]
 #[specta::specta]
 pub fn check_custom_sounds(app: AppHandle) -> CustomSounds {
-    let settings = get_settings(&app);
     CustomSounds {
-        start: custom_sound_exists(&app, settings.custom_start_sound_path.as_deref(), "start"),
-        stop: custom_sound_exists(&app, settings.custom_stop_sound_path.as_deref(), "stop"),
+        start: custom_sound_exists(&app, "start"),
+        stop: custom_sound_exists(&app, "stop"),
     }
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn get_custom_sound_paths(app: AppHandle) -> CustomSoundPaths {
-    let settings = get_settings(&app);
-    CustomSoundPaths {
-        start: settings.custom_start_sound_path,
-        stop: settings.custom_stop_sound_path,
-    }
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn set_custom_sound_path(
-    app: AppHandle,
-    sound_type: String,
-    path: Option<String>,
-) -> Result<(), String> {
-    let mut settings = get_settings(&app);
-    let normalized_path = path.and_then(|p| {
-        let trimmed = p.trim().to_string();
-        if trimmed.is_empty() {
-            None
-        } else {
-            Some(trimmed)
-        }
-    });
-
-    if let Some(path) = normalized_path.as_deref() {
-        validate_custom_sound_path(path)?;
-    }
-
-    match sound_type.as_str() {
-        "start" => settings.custom_start_sound_path = normalized_path,
-        "stop" => settings.custom_stop_sound_path = normalized_path,
-        _ => return Err(format!("Unknown sound type: {}", sound_type)),
-    }
-
-    write_settings(&app, settings);
-    Ok(())
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
