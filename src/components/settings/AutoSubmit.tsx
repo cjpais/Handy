@@ -1,7 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
+import { useOsType } from "../../hooks/useOsType";
 import type { AutoSubmitKey } from "@/bindings";
 
 interface AutoSubmitProps {
@@ -9,57 +11,69 @@ interface AutoSubmitProps {
   grouped?: boolean;
 }
 
-const autoSubmitKeyOptions = [
-  {
-    value: "enter",
-    label: "Enter",
-  },
-  {
-    value: "ctrl_enter",
-    label: "Ctrl+Enter",
-  },
-  {
-    value: "cmd_enter",
-    label: "Cmd+Enter",
-  },
-];
+type AutoSubmitOptionValue = AutoSubmitKey | "off";
 
 export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
+    const { t } = useTranslation();
+    const osType = useOsType();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
     const enabled = getSetting("auto_submit") ?? false;
     const selectedKey = (getSetting("auto_submit_key") ||
       "enter") as AutoSubmitKey;
+    const selectedValue: AutoSubmitOptionValue = enabled ? selectedKey : "off";
+    const submitWithMetaLabel =
+      osType === "macos"
+        ? t("settings.advanced.autoSubmit.options.cmdEnter")
+        : t("settings.advanced.autoSubmit.options.superEnter");
+
+    const autoSubmitOptions = [
+      {
+        value: "off",
+        label: t("settings.advanced.autoSubmit.options.off"),
+      },
+      {
+        value: "enter",
+        label: t("settings.advanced.autoSubmit.options.enter"),
+      },
+      {
+        value: "ctrl_enter",
+        label: t("settings.advanced.autoSubmit.options.ctrlEnter"),
+      },
+      {
+        value: "cmd_enter",
+        label: submitWithMetaLabel,
+      },
+    ];
+
+    const handleAutoSubmitSelect = async (value: string) => {
+      const selected = value as AutoSubmitOptionValue;
+
+      if (selected === "off") {
+        await updateSetting("auto_submit", false);
+        return;
+      }
+
+      await updateSetting("auto_submit_key", selected as AutoSubmitKey);
+      if (!enabled) {
+        await updateSetting("auto_submit", true);
+      }
+    };
 
     return (
       <SettingContainer
-        title="Auto Submit"
-        description="Send Enter automatically after text insertion."
+        title={t("settings.advanced.autoSubmit.title")}
+        description={t("settings.advanced.autoSubmit.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="flex items-center gap-3">
-          <Dropdown
-            options={autoSubmitKeyOptions}
-            selectedValue={selectedKey}
-            onSelect={(value) =>
-              updateSetting("auto_submit_key", value as AutoSubmitKey)
-            }
-            disabled={!enabled || isUpdating("auto_submit_key")}
-          />
-          <label className="inline-flex items-center cursor-pointer select-none">
-            <input
-              type="checkbox"
-              value=""
-              className="sr-only peer"
-              checked={enabled}
-              disabled={isUpdating("auto_submit")}
-              onChange={(e) => updateSetting("auto_submit", e.target.checked)}
-            />
-            <div className="relative w-11 h-6 bg-mid-gray/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-background-ui peer-disabled:opacity-50"></div>
-          </label>
-        </div>
+        <Dropdown
+          options={autoSubmitOptions}
+          selectedValue={selectedValue}
+          onSelect={handleAutoSubmitSelect}
+          disabled={isUpdating("auto_submit") || isUpdating("auto_submit_key")}
+        />
       </SettingContainer>
     );
   },
