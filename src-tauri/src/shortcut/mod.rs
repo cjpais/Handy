@@ -680,6 +680,19 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
 
 #[tauri::command]
 #[specta::specta]
+pub fn get_available_typing_tools() -> Vec<String> {
+    #[cfg(target_os = "linux")]
+    {
+        crate::clipboard::get_available_typing_tools()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        vec!["auto".to_string()]
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_typing_tool_setting(app: AppHandle, tool: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match tool.as_str() {

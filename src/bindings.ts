@@ -117,6 +117,9 @@ async changePasteMethodSetting(method: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getAvailableTypingTools() : Promise<string[]> {
+    return await TAURI_INVOKE("get_available_typing_tools");
+},
 async changeTypingToolSetting(tool: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_typing_tool_setting", { tool }) };
