@@ -197,6 +197,19 @@
       "volume": {
         "title": "Volume",
         "description": "Regola il volume del feedback audio"
+      },
+      "soundTheme": {
+        "label": "Sound Theme",
+        "description": "Choose a built-in sound theme or use your own sound files"
+      },
+      "customSounds": {
+        "themeOption": "Custom",
+        "startLabel": "Start",
+        "stopLabel": "Stop",
+        "notSelected": "No file selected",
+        "choose": "Choose File",
+        "preview": "Preview custom sound",
+        "previewTheme": "Preview sound theme (plays start then stop)"
       }
     },
     "advanced": {

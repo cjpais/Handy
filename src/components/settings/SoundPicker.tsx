@@ -126,7 +126,10 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
     const canPreview = Boolean(path);
 
     return (
-      <div className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-2" key={soundType}>
+      <div
+        className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-2"
+        key={soundType}
+      >
         <div className="text-xs font-medium text-text/80" title={soundType}>
           {soundType === "start"
             ? t("settings.sound.customSounds.startLabel")
