@@ -230,6 +230,17 @@
           "copyToClipboard": "نسخ إلى الحافظة"
         }
       },
+      "autoSubmit": {
+        "title": "إرسال تلقائي",
+        "description": "إرسال مجموعة المفاتيح المحددة تلقائياً بعد إدراج النص. Cmd+Enter ينطبق على macOS، بينما يستخدم Windows/Linux مفتاح Super+Enter.",
+        "options": {
+          "off": "إيقاف",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "الترجمة إلى الإنجليزية",
         "description": ".ترجمة الكلام من اللغات الأخرى تلقائياً إلى الإنجليزية أثناء التفريغ",
