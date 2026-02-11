@@ -536,7 +536,19 @@
           "none": "無",
           "externalScript": "外部腳本"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "description": "在 Wayland 上，Direct 模式需要「遠端桌面」權限。此權限僅允許 Handy 將聽寫文字插入目前使用的視窗，不會建立任何遠端連線。",
+          "authorized": "權限已啟用：Handy 可以透過「遠端桌面」將聽寫文字插入目前使用的視窗。",
+          "authorizedRappel": "提醒：此權限不會建立任何遠端連線。",
+          "button": "請求權限",
+          "buttonRequesting": "正在請求…",
+          "buttonRevoke": "移除權限",
+          "errors": {
+            "requestFailed": "權限請求失敗。",
+            "revokeFailed": "權限移除失敗。"
+          }
+        }
       },
       "typingTool": {
         "title": "輸入工具",

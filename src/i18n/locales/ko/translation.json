@@ -536,7 +536,19 @@
           "none": "없음",
           "externalScript": "외부 스크립트"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "description": "Wayland에서 Direct 모드를 사용하려면 “원격 데스크톱” 권한이 필요합니다. 이 권한은 Handy가 받아쓴 텍스트를 활성 창에 입력하는 데만 사용됩니다. 원격 연결은 생성되지 않습니다.",
+          "authorized": "권한 활성화됨: Handy가 “원격 데스크톱”을 통해 받아쓴 텍스트를 활성 창에 입력할 수 있습니다.",
+          "authorizedRappel": "알림: 이 권한은 원격 연결을 생성하지 않습니다.",
+          "button": "권한 요청",
+          "buttonRequesting": "요청 중…",
+          "buttonRevoke": "권한 제거",
+          "errors": {
+            "requestFailed": "권한 요청에 실패했습니다.",
+            "revokeFailed": "권한 제거에 실패했습니다."
+          }
+        }
       },
       "typingTool": {
         "title": "타이핑 도구",
