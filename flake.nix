@@ -11,7 +11,7 @@
       nixpkgs,
     }:
     let
-      supportedSystems = [ "x86_64-linux" ];
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       # Read version from Cargo.toml
       cargoToml = builtins.fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
@@ -106,7 +106,7 @@
               runHook preInstall
               mkdir -p $out
               cd src-tauri
-              mv target/x86_64-unknown-linux-gnu/release/bundle/deb/*/data/usr/* $out/
+              mv target/${pkgs.stdenv.hostPlatform.rust.rustcTarget}/release/bundle/deb/*/data/usr/* $out/
               runHook postInstall
             '';
 
