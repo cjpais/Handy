@@ -684,6 +684,28 @@ async completeOnboarding() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async isWaylandActive() : Promise<boolean> {
+    return await TAURI_INVOKE("is_wayland_active");
+},
+async requestRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("request_remote_desktop_authorization") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_remote_desktop_authorization") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getRemoteDesktopAuthorization() : Promise<boolean> {
+    return await TAURI_INVOKE("get_remote_desktop_authorization");
+},
 async getAvailableModels() : Promise<Result<ModelInfo[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_available_models") };
@@ -1170,7 +1192,7 @@ language_detection_window_secs?: number;
  * not gated on this — that follows model capability. Migrated from the old
  * `overlay_position` (position `none` → style `None`).
  */
-overlay_style?: OverlayStyle }
+overlay_style?: OverlayStyle; remote_desktop_token?: string | null }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AutoUnavailableReason = 
@@ -1546,7 +1568,7 @@ export type TranscriptionOutcome =
  * Transcribing or pasting failed.
  */
 "failed"
-export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
+export type TypingTool = "auto" | "remote_desktop" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type VadBackend = "silero" | "earshot"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
 

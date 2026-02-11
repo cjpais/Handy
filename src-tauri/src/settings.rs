@@ -322,6 +322,7 @@ pub enum Theme {
 pub enum TypingTool {
     #[default]
     Auto,
+    RemoteDesktop,
     Wtype,
     Kwtype,
     Dotool,
@@ -569,6 +570,8 @@ pub struct AppSettings {
     /// `overlay_position` (position `none` → style `None`).
     #[serde(default = "default_overlay_style")]
     pub overlay_style: OverlayStyle,
+    #[serde(default)]
+    pub remote_desktop_token: Option<String>,
 }
 
 fn default_model() -> String {
@@ -1067,6 +1070,7 @@ pub fn get_default_settings() -> AppSettings {
         language_detection: LanguageDetectionMode::default(),
         language_detection_window_secs: default_language_detection_window_secs(),
         overlay_style: default_overlay_style(),
+        remote_desktop_token: None,
     }
 }
 
@@ -1079,6 +1083,16 @@ impl Default for AppSettings {
 /// The language detector's window bounds: below 2 s it guesses, and it only
 /// scores the first 30 s of what it's given.
 pub const LANGUAGE_DETECTION_WINDOW_SECS: std::ops::RangeInclusive<u32> = 2..=30;
+
+pub fn get_remote_desktop_token(app: &AppHandle) -> Option<String> {
+    get_settings(app).remote_desktop_token
+}
+
+pub fn set_remote_desktop_token(app: &AppHandle, token: Option<String>) {
+    let mut settings = get_settings(app);
+    settings.remote_desktop_token = token;
+    write_settings(app, settings);
+}
 
 impl AppSettings {
     /// Samples (16 kHz) of speech the language detector hears.
