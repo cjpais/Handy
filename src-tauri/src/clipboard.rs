@@ -1,6 +1,7 @@
 use crate::input::{self, EnigoState};
+use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
 #[cfg(target_os = "linux")]
-use crate::settings::{get_settings, ClipboardHandling, PasteMethod, TypingTool};
+use crate::settings::TypingTool;
 use enigo::Enigo;
 use log::info;
 use std::time::Duration;
@@ -472,7 +473,11 @@ fn send_key_combo_via_xdotool(paste_method: &PasteMethod) -> Result<(), String> 
 }
 
 /// Types text directly by simulating individual key presses.
-fn paste_direct(enigo: &mut Enigo, text: &str, typing_tool: TypingTool) -> Result<(), String> {
+fn paste_direct(
+    enigo: &mut Enigo,
+    text: &str,
+    #[cfg(target_os = "linux")] typing_tool: TypingTool,
+) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
         if try_direct_typing_linux(text, typing_tool)? {
@@ -516,8 +521,12 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             info!("PasteMethod::None selected - skipping paste action");
         }
         PasteMethod::Direct => {
-            let typing_tool = get_settings(&app_handle).typing_tool;
-            paste_direct(&mut enigo, &text, typing_tool)?;
+            paste_direct(
+                &mut enigo,
+                &text,
+                #[cfg(target_os = "linux")]
+                settings.typing_tool,
+            )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(
