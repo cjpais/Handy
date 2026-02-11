@@ -3,6 +3,7 @@
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
     "copyLastTranscript": "Copier la dernière transcription",
+    "unloadModel": "Décharger le modèle",
     "quit": "Quitter",
     "cancel": "Annuler"
   },
@@ -219,6 +220,10 @@
         "label": "Lancer au démarrage",
         "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
       },
+      "showTrayIcon": {
+        "label": "Afficher l'icône de la barre",
+        "description": "Afficher l'icône de Handy dans la barre système."
+      },
       "overlay": {
         "title": "Position de la fenêtre d'enregistrement",
         "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
@@ -239,12 +244,30 @@
           "none": "Aucun"
         }
       },
+      "typingTool": {
+        "title": "Outil de frappe",
+        "description": "Choisissez quel outil de frappe Linux utiliser pour la méthode de collage direct. Auto détectera et utilisera automatiquement le meilleur outil disponible pour votre système.",
+        "options": {
+          "auto": "Auto (Recommandé)"
+        }
+      },
       "clipboardHandling": {
         "title": "Gestion du presse-papiers",
         "description": "Ne pas modifier le presse-papiers préserve le contenu actuel de votre presse-papiers après la transcription. Copier dans le presse-papiers laisse le résultat de la transcription dans votre presse-papiers après le collage.",
         "options": {
           "dontModify": "Ne pas modifier le presse-papiers",
           "copyToClipboard": "Copier dans le presse-papiers"
+        }
+      },
+      "autoSubmit": {
+        "title": "Envoi automatique",
+        "description": "Envoie automatiquement la combinaison de touches sélectionnée après l'insertion du texte. Cmd+Enter s'applique sur macOS, tandis que Windows/Linux utilisent Super+Enter.",
+        "options": {
+          "off": "Désactivé",
+          "enter": "Entrée",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

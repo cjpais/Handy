@@ -3,6 +3,7 @@
     "settings": "...الإعدادات",
     "checkUpdates": "...التحقق من وجود تحديثات",
     "copyLastTranscript": "نسخ آخر نص تم تفريغه",
+    "unloadModel": "تفريغ النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء"
   },
@@ -197,6 +198,10 @@
         "label": "التشغيل عند بدء التشغيل",
         "description": ".بدء تشغيل Handy تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
       },
+      "showTrayIcon": {
+        "label": "إظهار أيقونة شريط النظام",
+        "description": ".عرض أيقونة Handy في شريط النظام"
+      },
       "overlay": {
         "title": "موقع التراكب",
         "description": "عرض تراكب الملاحظات المرئية أثناء التسجيل والتفريغ. على نظام Linux يوصى بـ 'بلا'.",
@@ -217,12 +222,30 @@
           "none": "بلا"
         }
       },
+      "typingTool": {
+        "title": "أداة الكتابة",
+        "description": ".اختر أداة الكتابة في Linux لاستخدامها مع طريقة اللصق المباشر. سيكتشف \"تلقائي\" تلقائياً أفضل أداة متاحة لنظامك ويستخدمها",
+        "options": {
+          "auto": "تلقائي (موصى به)"
+        }
+      },
       "clipboardHandling": {
         "title": "التعامل مع الحافظة",
         "description": ".'عدم تعديل الحافظة' يحافظ على محتويات حافظتك الحالية بعد التفريغ. 'نسخ إلى الحافظة' يترك نتيجة التفريغ في حافظتك بعد اللصق",
         "options": {
           "dontModify": "عدم تعديل الحافظة",
           "copyToClipboard": "نسخ إلى الحافظة"
+        }
+      },
+      "autoSubmit": {
+        "title": "إرسال تلقائي",
+        "description": "إرسال مجموعة المفاتيح المحددة تلقائياً بعد إدراج النص. Cmd+Enter ينطبق على macOS، بينما يستخدم Windows/Linux مفتاح Super+Enter.",
+        "options": {
+          "off": "إيقاف",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

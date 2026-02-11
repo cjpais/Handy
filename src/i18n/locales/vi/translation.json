@@ -3,6 +3,7 @@
     "settings": "Cài đặt...",
     "checkUpdates": "Kiểm tra cập nhật...",
     "copyLastTranscript": "Sao chép bản chép lời mới nhất",
+    "unloadModel": "Dỡ mô hình",
     "quit": "Thoát",
     "cancel": "Hủy"
   },
@@ -219,6 +220,10 @@
         "label": "Khởi động cùng hệ thống",
         "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."
       },
+      "showTrayIcon": {
+        "label": "Hiển thị biểu tượng khay",
+        "description": "Hiển thị biểu tượng Handy trong khay hệ thống."
+      },
       "overlay": {
         "title": "Vị trí lớp phủ",
         "description": "Hiển thị lớp phủ phản hồi trực quan trong quá trình ghi âm và chuyển đổi. Trên Linux, 'Không có' được khuyến nghị.",
@@ -239,12 +244,30 @@
           "none": "Không có"
         }
       },
+      "typingTool": {
+        "title": "Công cụ gõ",
+        "description": "Chọn công cụ gõ trên Linux cho phương thức dán trực tiếp. Auto sẽ tự động phát hiện và dùng công cụ tốt nhất có sẵn cho hệ thống của bạn.",
+        "options": {
+          "auto": "Auto (Khuyến nghị)"
+        }
+      },
       "clipboardHandling": {
         "title": "Xử lý Clipboard",
         "description": "Không sửa đổi Clipboard giữ nguyên nội dung clipboard hiện tại sau khi chuyển đổi. Sao chép vào Clipboard để lại kết quả chuyển đổi trong clipboard sau khi dán.",
         "options": {
           "dontModify": "Không sửa đổi Clipboard",
           "copyToClipboard": "Sao chép vào Clipboard"
+        }
+      },
+      "autoSubmit": {
+        "title": "Gửi tự động",
+        "description": "Tự động gửi tổ hợp phím đã chọn sau khi chèn văn bản. Cmd+Enter áp dụng trên macOS, còn Windows/Linux dùng Super+Enter.",
+        "options": {
+          "off": "Tắt",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

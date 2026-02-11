@@ -3,6 +3,7 @@
     "settings": "设置...",
     "checkUpdates": "检查更新...",
     "copyLastTranscript": "复制最新转录",
+    "unloadModel": "卸载模型",
     "quit": "退出",
     "cancel": "取消"
   },
@@ -219,6 +220,10 @@
         "label": "开机启动",
         "description": "登录计算机时自动启动 Handy。"
       },
+      "showTrayIcon": {
+        "label": "显示托盘图标",
+        "description": "在系统托盘中显示 Handy 图标。"
+      },
       "overlay": {
         "title": "悬浮窗位置",
         "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
@@ -239,12 +244,30 @@
           "none": "无"
         }
       },
+      "typingTool": {
+        "title": "输入工具",
+        "description": "选择在直接粘贴方式下使用的 Linux 输入工具。Auto 会自动检测并使用系统中可用的最佳工具。",
+        "options": {
+          "auto": "Auto（推荐）"
+        }
+      },
       "clipboardHandling": {
         "title": "剪贴板处理",
         "description": "不修改剪贴板将在转录后保留当前剪贴板内容。复制到剪贴板将在粘贴后将转录结果留在剪贴板中。",
         "options": {
           "dontModify": "不修改剪贴板",
           "copyToClipboard": "复制到剪贴板"
+        }
+      },
+      "autoSubmit": {
+        "title": "自动提交",
+        "description": "在文本插入后自动发送所选的按键组合。macOS 上使用 Cmd+Enter，Windows/Linux 上使用 Super+Enter。",
+        "options": {
+          "off": "关闭",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

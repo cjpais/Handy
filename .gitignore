@@ -34,3 +34,6 @@ recording_*
 playwright-report/
 test-results/
 blob-report/
+
+.direnv
+.envrc
