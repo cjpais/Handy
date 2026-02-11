@@ -112,6 +112,7 @@ const settingUpdaters: {
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
+  typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
   auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),

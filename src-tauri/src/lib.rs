@@ -274,6 +274,8 @@ pub fn run() {
         shortcut::change_debug_mode_setting,
         shortcut::change_word_correction_threshold_setting,
         shortcut::change_paste_method_setting,
+        shortcut::get_available_typing_tools,
+        shortcut::change_typing_tool_setting,
         shortcut::change_clipboard_handling_setting,
         shortcut::change_auto_submit_setting,
         shortcut::change_auto_submit_key_setting,

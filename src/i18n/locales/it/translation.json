@@ -244,6 +244,13 @@
           "none": "Nessuno"
         }
       },
+      "typingTool": {
+        "title": "Strumento di digitazione",
+        "description": "Scegli quale strumento di digitazione Linux usare per il metodo di incolla diretto. Auto rileverà e userà automaticamente lo strumento migliore disponibile per il tuo sistema.",
+        "options": {
+          "auto": "Auto (Consigliato)"
+        }
+      },
       "clipboardHandling": {
         "title": "Gestione Appunti",
         "description": "Non Modificare gli Appunti mantiene il contenuto dei tuoi appunti dopo la trascrizione. Copia negli Appunti lascia il risultato della trascrizione negli appunti dopo aver incollato.",

@@ -244,6 +244,13 @@
           "none": "无"
         }
       },
+      "typingTool": {
+        "title": "输入工具",
+        "description": "选择在直接粘贴方式下使用的 Linux 输入工具。Auto 会自动检测并使用系统中可用的最佳工具。",
+        "options": {
+          "auto": "Auto（推荐）"
+        }
+      },
       "clipboardHandling": {
         "title": "剪贴板处理",
         "description": "不修改剪贴板将在转录后保留当前剪贴板内容。复制到剪贴板将在粘贴后将转录结果留在剪贴板中。",

@@ -244,6 +244,13 @@
           "none": "None"
         }
       },
+      "typingTool": {
+        "title": "Typing Tool",
+        "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
+        "options": {
+          "auto": "Auto (Recommended)"
+        }
+      },
       "clipboardHandling": {
         "title": "Clipboard Handling",
         "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting.",
