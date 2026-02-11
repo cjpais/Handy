@@ -242,6 +242,18 @@
           "clipboardShiftInsert": "Schránka (Shift+Insert)",
           "direct": "Přímé",
           "none": "Žádné"
+        },
+        "portal": {
+          "description": "V Wayland vyžaduje režim Přímý vstup oprávnění „Vzdálená plocha“. Dovoluje aplikaci Handy pouze vložit diktovaný text do aktivního okna. Nevytváří žádné vzdálené připojení.",
+          "authorized": "Aktivní oprávnění: Handy může vložit diktovaný text do aktivního okna přes „Vzdálenou plochu“.",
+          "authorizedRappel": "Připomenutí: toto oprávnění nevytváří žádné vzdálené připojení.",
+          "button": "Požádat o oprávnění",
+          "buttonRequesting": "Probíhá žádost…",
+          "buttonRevoke": "Odebrat oprávnění",
+          "errors": {
+            "requestFailed": "Žádost o oprávnění se nezdařila.",
+            "revokeFailed": "Odebrání oprávnění se nezdařilo."
+          }
         }
       },
       "typingTool": {

@@ -242,6 +242,18 @@
           "clipboardShiftInsert": "剪贴板 (Shift+Insert)",
           "direct": "直接",
           "none": "无"
+        },
+        "portal": {
+          "description": "在 Wayland 上，直接模式需要“远程桌面”权限。它仅允许 Handy 将口述文本插入到活动窗口，不会创建任何远程连接。",
+          "authorized": "权限已启用：Handy 可通过“远程桌面”将口述文本插入活动窗口。",
+          "authorizedRappel": "提醒：此权限不会创建任何远程连接。",
+          "button": "请求权限",
+          "buttonRequesting": "正在请求…",
+          "buttonRevoke": "移除权限",
+          "errors": {
+            "requestFailed": "权限请求失败。",
+            "revokeFailed": "移除权限失败。"
+          }
         }
       },
       "typingTool": {

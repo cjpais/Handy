@@ -242,6 +242,18 @@
           "clipboardShiftInsert": "Clipboard (Shift+Insert)",
           "direct": "Direct",
           "none": "None"
+        },
+        "portal": {
+          "description": "On Wayland, Direct mode needs a “Remote Desktop” permission. It only lets Handy insert the dictated text into the active window. No remote connection is created.",
+          "authorized": "Permission active: Handy can insert dictated text in the active window via “Remote Desktop”.",
+          "authorizedRappel": "Reminder: this permission does not create any remote connection.",
+          "button": "Request permission",
+          "buttonRequesting": "Requesting…",
+          "buttonRevoke": "Remove permission",
+          "errors": {
+            "requestFailed": "Permission request failed.",
+            "revokeFailed": "Permission removal failed."
+          }
         }
       },
       "typingTool": {

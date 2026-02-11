@@ -242,6 +242,18 @@
           "clipboardShiftInsert": "Appunti (Shift+Insert)",
           "direct": "Diretto",
           "none": "Nessuno"
+        },
+        "portal": {
+          "description": "Su Wayland, la modalità Diretta richiede un’autorizzazione «Desktop remoto». Consente solo a Handy di inserire il testo dettato nella finestra attiva. Non viene creata alcuna connessione remota.",
+          "authorized": "Autorizzazione attiva: Handy può inserire il testo dettato nella finestra attiva tramite «Desktop remoto».",
+          "authorizedRappel": "Promemoria: questa autorizzazione non crea alcuna connessione remota.",
+          "button": "Richiedi autorizzazione",
+          "buttonRequesting": "Richiesta in corso…",
+          "buttonRevoke": "Rimuovi autorizzazione",
+          "errors": {
+            "requestFailed": "Richiesta di autorizzazione non riuscita.",
+            "revokeFailed": "Rimozione dell'autorizzazione non riuscita."
+          }
         }
       },
       "typingTool": {

@@ -242,6 +242,18 @@
           "clipboardShiftInsert": "Área de Transferência (Shift+Insert)",
           "direct": "Direto",
           "none": "Nenhum"
+        },
+        "portal": {
+          "description": "No Wayland, o modo Direto precisa de uma autorização de «Área de trabalho remota». Ela permite apenas que o Handy insira o texto ditado na janela ativa. Nenhuma conexão remota é criada.",
+          "authorized": "Autorização ativa: o Handy pode inserir o texto ditado na janela ativa via «Área de trabalho remota».",
+          "authorizedRappel": "Lembrete: essa autorização não cria nenhuma conexão remota.",
+          "button": "Solicitar autorização",
+          "buttonRequesting": "Solicitando…",
+          "buttonRevoke": "Remover autorização",
+          "errors": {
+            "requestFailed": "Falha ao solicitar autorização.",
+            "revokeFailed": "Falha ao remover autorização."
+          }
         }
       },
       "typingTool": {
