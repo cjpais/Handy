@@ -302,7 +302,19 @@
           "none": "Нет",
           "externalScript": "Внешний скрипт"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "description": "В Wayland режим «Прямой ввод» требует разрешение «Удалённый рабочий стол». Оно позволяет Handy лишь вставлять продиктованный текст в активное окно. Никакое удалённое подключение не создаётся.",
+          "authorized": "Разрешение активно: Handy может вставлять продиктованный текст в активное окно через «Удалённый рабочий стол».",
+          "authorizedRappel": "Напоминание: это разрешение не создаёт удалённого подключения.",
+          "button": "Запросить разрешение",
+          "buttonRequesting": "Запрос…",
+          "buttonRevoke": "Удалить разрешение",
+          "errors": {
+            "requestFailed": "Не удалось запросить разрешение.",
+            "revokeFailed": "Не удалось удалить разрешение."
+          }
+        }
       },
       "typingTool": {
         "title": "Инструмент ввода",
