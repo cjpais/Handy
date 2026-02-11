@@ -244,12 +244,30 @@
           "none": "Nenhum"
         }
       },
+      "typingTool": {
+        "title": "Ferramenta de digitação",
+        "description": "Escolha qual ferramenta de digitação do Linux usar para o método de colagem direta. Auto detectará e usará automaticamente a melhor ferramenta disponível para o seu sistema.",
+        "options": {
+          "auto": "Auto (Recomendado)"
+        }
+      },
       "clipboardHandling": {
         "title": "Manipulação da Área de Transferência",
         "description": "Não Modificar Área de Transferência preserva o conteúdo atual da área de transferência após a transcrição. Copiar para Área de Transferência deixa o resultado da transcrição na área de transferência após colar.",
         "options": {
           "dontModify": "Não Modificar Área de Transferência",
           "copyToClipboard": "Copiar para Área de Transferência"
+        }
+      },
+      "autoSubmit": {
+        "title": "Envio automático",
+        "description": "Envia automaticamente a combinação de teclas selecionada após a inserção do texto. Cmd+Enter aplica-se no macOS, enquanto Windows/Linux usam Super+Enter.",
+        "options": {
+          "off": "Desativado",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

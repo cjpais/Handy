@@ -244,12 +244,30 @@
           "none": "Yok"
         }
       },
+      "typingTool": {
+        "title": "Yazma Aracı",
+        "description": "Doğrudan yapıştırma yöntemi için hangi Linux yazma aracının kullanılacağını seçin. Auto, sisteminiz için mevcut en iyi aracı otomatik olarak algılar ve kullanır.",
+        "options": {
+          "auto": "Auto (Önerilen)"
+        }
+      },
       "clipboardHandling": {
         "title": "Pano Yönetimi",
         "description": "Panoyu Değiştirme, transkripsiyon sonrası mevcut pano içeriğini korur. Panoya Kopyala ise yapıştırma işleminden sonra transkripsiyon sonucunu panoda bırakır.",
         "options": {
           "dontModify": "Panoyu Değiştirme",
           "copyToClipboard": "Panoya Kopyala"
+        }
+      },
+      "autoSubmit": {
+        "title": "Otomatik Gönder",
+        "description": "Metin eklendikten sonra seçilen tuş kombinasyonunu otomatik olarak gönderir. macOS'ta Cmd+Enter, Windows/Linux'ta Super+Enter geçerlidir.",
+        "options": {
+          "off": "Kapalı",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

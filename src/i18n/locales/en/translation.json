@@ -244,12 +244,30 @@
           "none": "None"
         }
       },
+      "typingTool": {
+        "title": "Typing Tool",
+        "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
+        "options": {
+          "auto": "Auto (Recommended)"
+        }
+      },
       "clipboardHandling": {
         "title": "Clipboard Handling",
         "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting.",
         "options": {
           "dontModify": "Don't Modify Clipboard",
           "copyToClipboard": "Copy to Clipboard"
+        }
+      },
+      "autoSubmit": {
+        "title": "Auto Submit",
+        "description": "Automatically send the selected key combination after text insertion. Cmd+Enter applies on macOS, while Windows/Linux use Super+Enter.",
+        "options": {
+          "off": "Off",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

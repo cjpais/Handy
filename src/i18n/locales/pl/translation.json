@@ -244,12 +244,30 @@
           "none": "Brak"
         }
       },
+      "typingTool": {
+        "title": "Narzędzie do wpisywania",
+        "description": "Wybierz, którego narzędzia do wpisywania w Linuxie użyć dla metody bezpośredniego wklejania. Auto automatycznie wykryje i użyje najlepszego dostępnego narzędzia dla Twojego systemu.",
+        "options": {
+          "auto": "Auto (Zalecane)"
+        }
+      },
       "clipboardHandling": {
         "title": "Obsługa schowka",
         "description": "Nie modyfikuj schowka zachowuje jego zawartość. Kopiuj do schowka pozostawia wynik transkrypcji w schowku.",
         "options": {
           "dontModify": "Nie modyfikuj schowka",
           "copyToClipboard": "Kopiuj do schowka"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatyczne wysyłanie",
+        "description": "Automatycznie wysyła wybraną kombinację klawiszy po wstawieniu tekstu. Cmd+Enter dotyczy macOS, natomiast Windows/Linux używają Super+Enter.",
+        "options": {
+          "off": "Wyłączone",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
