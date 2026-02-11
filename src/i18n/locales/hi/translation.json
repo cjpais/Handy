@@ -536,7 +536,19 @@
           "none": "कोई नहीं",
           "externalScript": "बाहरी स्क्रिप्ट"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "description": "Wayland पर Direct मोड के लिए “रिमोट डेस्कटॉप” की अनुमति आवश्यक है। यह केवल Handy को सक्रिय विंडो में बोला गया टेक्स्ट डालने देती है। कोई रिमोट कनेक्शन नहीं बनाया जाता।",
+          "authorized": "अनुमति सक्रिय है: Handy “रिमोट डेस्कटॉप” के ज़रिए सक्रिय विंडो में बोला गया टेक्स्ट डाल सकता है।",
+          "authorizedRappel": "याद रखें: यह अनुमति कोई रिमोट कनेक्शन नहीं बनाती।",
+          "button": "अनुमति माँगें",
+          "buttonRequesting": "अनुमति माँगी जा रही है…",
+          "buttonRevoke": "अनुमति हटाएँ",
+          "errors": {
+            "requestFailed": "अनुमति का अनुरोध विफल रहा।",
+            "revokeFailed": "अनुमति हटाना विफल रहा।"
+          }
+        }
       },
       "typingTool": {
         "title": "टाइपिंग टूल",

@@ -536,7 +536,19 @@
           "none": "ללא",
           "externalScript": "סקריפט חיצוני"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "description": "ב־Wayland, מצב Direct דורש הרשאת ״שולחן עבודה מרוחק״. היא מאפשרת ל־Handy להכניס רק את הטקסט המוכתב לחלון הפעיל. לא נוצר חיבור מרוחק.",
+          "authorized": "ההרשאה פעילה: Handy יכול להכניס טקסט מוכתב לחלון הפעיל באמצעות ״שולחן עבודה מרוחק״.",
+          "authorizedRappel": "תזכורת: הרשאה זו אינה יוצרת חיבור מרוחק.",
+          "button": "בקשת הרשאה",
+          "buttonRequesting": "מבקש…",
+          "buttonRevoke": "הסרת הרשאה",
+          "errors": {
+            "requestFailed": "בקשת ההרשאה נכשלה.",
+            "revokeFailed": "הסרת ההרשאה נכשלה."
+          }
+        }
       },
       "typingTool": {
         "title": "כלי הקלדה",

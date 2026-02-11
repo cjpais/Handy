@@ -536,7 +536,19 @@
           "none": "بلا",
           "externalScript": "نص برمجي خارجي"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "description": "في Wayland، يتطلب وضع Direct إذن «سطح المكتب البعيد». يسمح هذا الإذن لـ Handy فقط بإدراج النص المُملَى في النافذة النشطة. لا يتم إنشاء أي اتصال عن بُعد.",
+          "authorized": "الإذن مُفعّل: يمكن لـ Handy إدراج النص المُملَى في النافذة النشطة عبر «سطح المكتب البعيد».",
+          "authorizedRappel": "تذكير: هذا الإذن لا ينشئ أي اتصال عن بُعد.",
+          "button": "طلب الإذن",
+          "buttonRequesting": "جارٍ الطلب…",
+          "buttonRevoke": "إزالة الإذن",
+          "errors": {
+            "requestFailed": "فشل طلب الإذن.",
+            "revokeFailed": "فشلت إزالة الإذن."
+          }
+        }
       },
       "typingTool": {
         "title": "أداة الكتابة",

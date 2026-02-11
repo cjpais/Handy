@@ -536,7 +536,19 @@
           "none": "Tidak Ada",
           "externalScript": "Skrip Eksternal"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "description": "Di Wayland, mode Direct memerlukan izin “Desktop Jarak Jauh”. Izin ini hanya memungkinkan Handy menyisipkan teks yang didiktekan ke jendela aktif. Tidak ada koneksi jarak jauh yang dibuat.",
+          "authorized": "Izin aktif: Handy dapat menyisipkan teks yang didiktekan ke jendela aktif melalui “Desktop Jarak Jauh”.",
+          "authorizedRappel": "Pengingat: izin ini tidak membuat koneksi jarak jauh.",
+          "button": "Minta izin",
+          "buttonRequesting": "Meminta…",
+          "buttonRevoke": "Hapus izin",
+          "errors": {
+            "requestFailed": "Permintaan izin gagal.",
+            "revokeFailed": "Penghapusan izin gagal."
+          }
+        }
       },
       "typingTool": {
         "title": "Alat Pengetikan",

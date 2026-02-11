@@ -536,7 +536,19 @@
           "none": "Ingen",
           "externalScript": "Externt skript"
         },
-        "externalScriptPlaceholder": "/sökväg/till/ditt/skript.sh"
+        "externalScriptPlaceholder": "/sökväg/till/ditt/skript.sh",
+        "portal": {
+          "description": "På Wayland kräver läget Direct behörigheten ”Fjärrskrivbord”. Den låter bara Handy infoga dikterad text i det aktiva fönstret. Ingen fjärranslutning skapas.",
+          "authorized": "Behörighet aktiv: Handy kan infoga dikterad text i det aktiva fönstret via ”Fjärrskrivbord”.",
+          "authorizedRappel": "Påminnelse: den här behörigheten skapar ingen fjärranslutning.",
+          "button": "Begär behörighet",
+          "buttonRequesting": "Begär…",
+          "buttonRevoke": "Ta bort behörighet",
+          "errors": {
+            "requestFailed": "Behörighetsbegäran misslyckades.",
+            "revokeFailed": "Det gick inte att ta bort behörigheten."
+          }
+        }
       },
       "typingTool": {
         "title": "Skrivverktyg",
