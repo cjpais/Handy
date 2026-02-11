@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Handy Storybook</title>
+  </head>
+  <body>
+    <div id="root">
+      <div
+        style="
+          max-width: 640px;
+          margin: 48px auto;
+          padding: 16px;
+          border: 1px solid #d9d9d9;
+          border-radius: 12px;
+          font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+          line-height: 1.5;
+        "
+      >
+        <h1 style="margin: 0 0 8px; font-size: 20px">Handy Storybook</h1>
+        <p style="margin: 0 0 8px">
+          This page must be served with Vite. Opening this file directly will
+          not render React components.
+        </p>
+        <p style="margin: 0 0 8px">Run:</p>
+        <pre
+          style="
+            margin: 0;
+            padding: 10px;
+            background: #f6f6f6;
+            border-radius: 8px;
+            overflow: auto;
+          "
+        ><code>bun install
+bun run storybook</code></pre>
+        <p style="margin: 8px 0 0">Then open: <code>http://localhost:1422/HandyMain/storybook/</code></p>
+      </div>
+    </div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

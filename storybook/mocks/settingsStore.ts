@@ -1,0 +1,45 @@
+import { MOCK_AUDIO_DEVICES, MOCK_OUTPUT_DEVICES, MOCK_SETTINGS } from "./data";
+
+const store = {
+  settings: MOCK_SETTINGS,
+  defaultSettings: MOCK_SETTINGS,
+  isLoading: false,
+  isUpdating: {},
+  audioDevices: MOCK_AUDIO_DEVICES,
+  outputDevices: MOCK_OUTPUT_DEVICES,
+  customSounds: { start: true, stop: true },
+  postProcessModelOptions: {
+    openai: ["gpt-4o-mini", "gpt-4o"],
+    custom: ["custom-llm"],
+  },
+  initialize: async () => {},
+  loadDefaultSettings: async () => {},
+  updateSetting: async () => {},
+  resetSetting: async () => {},
+  refreshSettings: async () => {},
+  refreshAudioDevices: async () => {},
+  refreshOutputDevices: async () => {},
+  updateBinding: async () => {},
+  resetBinding: async () => {},
+  getSetting: (key: string) => (store.settings as any)?.[key],
+  isUpdatingKey: () => false,
+  playTestSound: async () => {},
+  checkCustomSounds: async () => {},
+  setPostProcessProvider: async () => {},
+  updatePostProcessSetting: async () => {},
+  updatePostProcessBaseUrl: async () => {},
+  updatePostProcessApiKey: async () => {},
+  updatePostProcessModel: async () => {},
+  fetchPostProcessModels: async () => [],
+  setPostProcessModelOptions: () => {},
+  setSettings: () => {},
+  setDefaultSettings: () => {},
+  setLoading: () => {},
+  setUpdating: () => {},
+  setAudioDevices: () => {},
+  setOutputDevices: () => {},
+  setCustomSounds: () => {},
+};
+
+export const useSettingsStore = (selector: (state: typeof store) => any) =>
+  selector(store);
