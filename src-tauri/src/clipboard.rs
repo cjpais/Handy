@@ -382,17 +382,21 @@ fn type_text_via_kwtype(text: &str) -> Result<(), String> {
 }
 
 /// Write text to clipboard via wl-copy (Wayland clipboard tool).
+/// Uses Stdio::null() to avoid blocking on repeated calls — wl-copy forks a
+/// daemon that inherits piped fds, causing read_to_end to hang indefinitely.
 #[cfg(target_os = "linux")]
 fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
-    let output = Command::new("wl-copy")
+    use std::process::Stdio;
+    let status = Command::new("wl-copy")
         .arg("--")
         .arg(text)
-        .output()
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
         .map_err(|e| format!("Failed to execute wl-copy: {}", e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("wl-copy failed: {}", stderr));
+    if !status.success() {
+        return Err("wl-copy failed".into());
     }
 
     Ok(())
@@ -431,14 +435,16 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
         PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
         _ => return Err("Unsupported paste method".into()),
     }
-    let output = Command::new("sh")
+    use std::process::Stdio;
+    let status = Command::new("sh")
         .arg("-c")
         .arg(command)
-        .output()
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
         .map_err(|e| format!("Failed to execute dotool: {}", e))?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("dotool failed: {}", stderr));
+    if !status.success() {
+        return Err("dotool failed".into());
     }
 
     Ok(())
