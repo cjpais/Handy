@@ -3,6 +3,7 @@ mod actions;
 mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
+pub mod cli;
 mod clipboard;
 mod commands;
 mod helpers;
@@ -16,6 +17,8 @@ mod signal_handle;
 mod tray;
 mod tray_i18n;
 mod utils;
+
+pub use cli::CliArgs;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
@@ -254,7 +257,7 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+pub fn run(cli_args: CliArgs) {
     // Parse console logging directives from RUST_LOG, falling back to info-level logging
     // when the variable is unset
     let console_filter = build_console_filter();
@@ -387,8 +390,12 @@ pub fn run() {
     }
 
     builder
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            show_main_window(app);
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if args.iter().any(|a| a == "--toggle-transcription") {
+                signal_handle::toggle_transcription(app, "CLI");
+            } else {
+                show_main_window(app);
+            }
         }))
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
@@ -404,8 +411,16 @@ pub fn run() {
             Some(vec![]),
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
+        .manage(cli_args.clone())
         .setup(move |app| {
-            let settings = get_settings(&app.handle());
+            let mut settings = get_settings(&app.handle());
+
+            // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
+            if cli_args.debug {
+                settings.debug_mode = true;
+                settings.log_level = settings::LogLevel::Trace;
+            }
+
             let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
             let file_log_level: log::Level = tauri_log_level.into();
             // Store the file log level in the atomic for the filter to use
@@ -414,8 +429,15 @@ pub fn run() {
 
             initialize_core_logic(&app_handle);
 
+            // Hide tray icon if --no-tray was passed
+            if cli_args.no_tray {
+                tray::set_tray_visibility(&app_handle, false);
+            }
+
             // Show main window only if not starting hidden
-            if !settings.start_hidden {
+            // CLI --start-hidden flag overrides the setting
+            let should_hide = settings.start_hidden || cli_args.start_hidden;
+            if !should_hide {
                 if let Some(main_window) = app_handle.get_webview_window("main") {
                     main_window.show().unwrap();
                     main_window.set_focus().unwrap();
@@ -427,8 +449,9 @@ pub fn run() {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 let settings = get_settings(&window.app_handle());
-                // If tray icon is hidden, quit the app
-                if !settings.show_tray_icon {
+                let cli = window.app_handle().state::<CliArgs>();
+                // If tray icon is hidden (via setting or --no-tray flag), quit the app
+                if !settings.show_tray_icon || cli.no_tray {
                     window.app_handle().exit(0);
                     return;
                 }

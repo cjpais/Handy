@@ -118,7 +118,60 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
 - If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
-- You can manage global shortcuts outside of Handy and still control the app via signals. Sending `SIGUSR2` to the Handy process toggles recording on/off, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings. Example (Sway):
+- **CLI Parameters:** Handy supports command-line flags for scripting and desktop integration:
+
+  ```bash
+  handy --start-hidden            # Start without showing the main window
+  handy --no-tray                 # Start without the system tray icon
+  handy --toggle-transcription    # Toggle recording on/off on a running instance
+  handy --debug                   # Enable debug mode with verbose logging
+  handy --help                    # Show all available flags
+  ```
+
+  The `--toggle-transcription` flag communicates with an already-running Handy instance — it starts or stops recording without needing to use keyboard shortcuts.
+
+  You can also combine flags for autostart scenarios:
+
+  ```bash
+  # Start hidden with no tray icon (e.g., for a service-like setup)
+  handy --start-hidden --no-tray
+  ```
+
+- **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the `--toggle-transcription` CLI flag as the command for your custom shortcut.
+
+  **GNOME:**
+
+  1. Open **Settings > Keyboard > Keyboard Shortcuts > Custom Shortcuts**
+  2. Click the **+** button to add a new shortcut
+  3. Set the **Name** to `Toggle Handy Transcription`
+  4. Set the **Command** to `handy --toggle-transcription`
+  5. Click **Set Shortcut** and press your desired key combination (e.g., `Super+O`)
+
+  **KDE Plasma:**
+
+  1. Open **System Settings > Shortcuts > Custom Shortcuts**
+  2. Click **Edit > New > Global Shortcut > Command/URL**
+  3. Name it `Toggle Handy Transcription`
+  4. In the **Trigger** tab, set your desired key combination
+  5. In the **Action** tab, set the command to `handy --toggle-transcription`
+
+  **Sway / i3:**
+
+  Add to your config file (`~/.config/sway/config` or `~/.config/i3/config`):
+
+  ```ini
+  bindsym $mod+o exec handy --toggle-transcription
+  ```
+
+  **Hyprland:**
+
+  Add to your config file (`~/.config/hypr/hyprland.conf`):
+
+  ```ini
+  bind = $mainMod, O, exec, handy --toggle-transcription
+  ```
+
+- You can also manage global shortcuts outside of Handy via Unix signals. Sending `SIGUSR2` to the Handy process toggles recording on/off, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings. Example (Sway):
 
   ```ini
   bindsym $mod+o exec pkill -USR2 -n handy
