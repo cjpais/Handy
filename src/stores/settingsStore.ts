@@ -114,6 +114,9 @@ const settingUpdaters: {
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
+  auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),
+  auto_submit_key: (value) =>
+    commands.changeAutoSubmitKeySetting(value as string),
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),

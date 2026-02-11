@@ -252,6 +252,17 @@
           "copyToClipboard": "Copier dans le presse-papiers"
         }
       },
+      "autoSubmit": {
+        "title": "Envoi automatique",
+        "description": "Envoie automatiquement la combinaison de touches sélectionnée après l'insertion du texte. Cmd+Enter s'applique sur macOS, tandis que Windows/Linux utilisent Super+Enter.",
+        "options": {
+          "off": "Désactivé",
+          "enter": "Entrée",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "Traduire en anglais",
         "description": "Traduire automatiquement la parole d'autres langues vers l'anglais pendant la transcription.",

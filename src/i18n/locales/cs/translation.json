@@ -252,6 +252,17 @@
           "copyToClipboard": "Kopírovat do schránky"
         }
       },
+      "autoSubmit": {
+        "title": "Automatické odeslání",
+        "description": "Automaticky odešle vybranou kombinaci kláves po vložení textu. Cmd+Enter platí pro macOS, zatímco Windows/Linux používají Super+Enter.",
+        "options": {
+          "off": "Vypnuto",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "Překládat do angličtiny",
         "description": "Během přepisu automaticky překládat řeč z jiných jazyků do angličtiny.",
