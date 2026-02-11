@@ -259,6 +259,17 @@
           "copyToClipboard": "Sao chép vào Clipboard"
         }
       },
+      "autoSubmit": {
+        "title": "Gửi tự động",
+        "description": "Tự động gửi tổ hợp phím đã chọn sau khi chèn văn bản. Cmd+Enter áp dụng trên macOS, còn Windows/Linux dùng Super+Enter.",
+        "options": {
+          "off": "Tắt",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "Dịch sang tiếng Anh",
         "description": "Tự động dịch giọng nói từ các ngôn ngữ khác sang tiếng Anh trong quá trình chuyển đổi.",

@@ -259,6 +259,17 @@
           "copyToClipboard": "Copia negli Appunti"
         }
       },
+      "autoSubmit": {
+        "title": "Invio automatico",
+        "description": "Invia automaticamente la combinazione di tasti selezionata dopo l'inserimento del testo. Cmd+Enter si applica su macOS, mentre Windows/Linux usano Super+Enter.",
+        "options": {
+          "off": "Disattivato",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "Traduci in inglese",
         "description": "Traduci automaticamente in inglese la voce in altre lingue durante la trascrizione.",

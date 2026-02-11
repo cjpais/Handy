@@ -277,6 +277,8 @@ pub fn run() {
         shortcut::get_available_typing_tools,
         shortcut::change_typing_tool_setting,
         shortcut::change_clipboard_handling_setting,
+        shortcut::change_auto_submit_setting,
+        shortcut::change_auto_submit_key_setting,
         shortcut::change_post_process_enabled_setting,
         shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,

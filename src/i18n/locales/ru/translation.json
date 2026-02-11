@@ -259,6 +259,17 @@
           "copyToClipboard": "Копировать в буфер обмена"
         }
       },
+      "autoSubmit": {
+        "title": "Автоматическая отправка",
+        "description": "Автоматически отправляет выбранную комбинацию клавиш после вставки текста. Cmd+Enter применяется на macOS, а Windows/Linux используют Super+Enter.",
+        "options": {
+          "off": "Выкл.",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "Перевести на английский",
         "description": "Автоматически переводить речь с других языков на английский во время транскрипции.",

@@ -259,6 +259,17 @@
           "copyToClipboard": "Panoya Kopyala"
         }
       },
+      "autoSubmit": {
+        "title": "Otomatik Gönder",
+        "description": "Metin eklendikten sonra seçilen tuş kombinasyonunu otomatik olarak gönderir. macOS'ta Cmd+Enter, Windows/Linux'ta Super+Enter geçerlidir.",
+        "options": {
+          "off": "Kapalı",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "İngilizceye Çevir",
         "description": "Transkripsiyon sırasında diğer dillerden İngilizceye otomatik olarak çevirir.",

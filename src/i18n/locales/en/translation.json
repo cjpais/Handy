@@ -259,6 +259,17 @@
           "copyToClipboard": "Copy to Clipboard"
         }
       },
+      "autoSubmit": {
+        "title": "Auto Submit",
+        "description": "Automatically send the selected key combination after text insertion. Cmd+Enter applies on macOS, while Windows/Linux use Super+Enter.",
+        "options": {
+          "off": "Off",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "Translate to English",
         "description": "Automatically translate speech from other languages to English during transcription.",

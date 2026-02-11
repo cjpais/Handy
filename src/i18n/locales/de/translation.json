@@ -259,6 +259,17 @@
           "copyToClipboard": "In Zwischenablage kopieren"
         }
       },
+      "autoSubmit": {
+        "title": "Automatisch absenden",
+        "description": "Sendet nach dem Einfügen von Text automatisch die ausgewählte Tastenkombination. Cmd+Enter gilt für macOS, während Windows/Linux Super+Enter verwenden.",
+        "options": {
+          "off": "Aus",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "Ins Englische übersetzen",
         "description": "Sprache aus anderen Sprachen automatisch während der Transkription ins Englische übersetzen.",

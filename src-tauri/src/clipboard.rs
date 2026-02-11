@@ -1,8 +1,8 @@
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
-use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
-use enigo::Enigo;
+use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -511,6 +511,53 @@ fn paste_direct(
     input::paste_text_direct(enigo, text)
 }
 
+fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
+    match key_type {
+        AutoSubmitKey::Enter => {
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+        }
+        AutoSubmitKey::CtrlEnter => {
+            enigo
+                .key(Key::Control, Direction::Press)
+                .map_err(|e| format!("Failed to press Control key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+            enigo
+                .key(Key::Control, Direction::Release)
+                .map_err(|e| format!("Failed to release Control key: {}", e))?;
+        }
+        AutoSubmitKey::CmdEnter => {
+            enigo
+                .key(Key::Meta, Direction::Press)
+                .map_err(|e| format!("Failed to press Meta/Cmd key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+            enigo
+                .key(Key::Meta, Direction::Release)
+                .map_err(|e| format!("Failed to release Meta/Cmd key: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool {
+    auto_submit && paste_method != PasteMethod::None
+}
+
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
@@ -561,6 +608,11 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
     }
 
+    if should_send_auto_submit(settings.auto_submit, paste_method) {
+        std::thread::sleep(Duration::from_millis(50));
+        send_return_key(&mut enigo, settings.auto_submit_key)?;
+    }
+
     // After pasting, optionally copy to clipboard based on settings
     if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
         let clipboard = app_handle.clipboard();
@@ -570,4 +622,28 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn auto_submit_requires_setting_enabled() {
+        assert!(!should_send_auto_submit(false, PasteMethod::CtrlV));
+        assert!(!should_send_auto_submit(false, PasteMethod::Direct));
+    }
+
+    #[test]
+    fn auto_submit_skips_none_paste_method() {
+        assert!(!should_send_auto_submit(true, PasteMethod::None));
+    }
+
+    #[test]
+    fn auto_submit_runs_for_active_paste_methods() {
+        assert!(should_send_auto_submit(true, PasteMethod::CtrlV));
+        assert!(should_send_auto_submit(true, PasteMethod::Direct));
+        assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
+        assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
 }

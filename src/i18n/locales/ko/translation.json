@@ -259,6 +259,17 @@
           "copyToClipboard": "클립보드에 복사"
         }
       },
+      "autoSubmit": {
+        "title": "자동 제출",
+        "description": "텍스트 삽입 후 선택한 키 조합을 자동으로 전송합니다. macOS에서는 Cmd+Enter가, Windows/Linux에서는 Super+Enter가 적용됩니다.",
+        "options": {
+          "off": "끄기",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
+        }
+      },
       "translateToEnglish": {
         "label": "영어로 번역",
         "description": "텍스트로 변환시 다른 언어의 음성을 자동으로 영어로 번역합니다.",
