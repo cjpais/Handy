@@ -117,12 +117,16 @@ fn build_apple_intelligence_bridge() {
     use std::path::{Path, PathBuf};
     use std::process::Command;
 
+    // Silence `unexpected_cfgs` warnings for our build-script-defined cfgs.
+    println!("cargo:rustc-check-cfg=cfg(handy_apple_intelligence_swift)");
+    println!("cargo:rustc-check-cfg=cfg(handy_apple_intelligence_stub)");
+
     const REAL_SWIFT_FILE: &str = "swift/apple_intelligence.swift";
-    const STUB_SWIFT_FILE: &str = "swift/apple_intelligence_stub.swift";
     const BRIDGE_HEADER: &str = "swift/apple_intelligence_bridge.h";
 
     println!("cargo:rerun-if-changed={REAL_SWIFT_FILE}");
-    println!("cargo:rerun-if-changed={STUB_SWIFT_FILE}");
+    // Keep tracking the stub file even if we don't compile it; it is part of the repo contract.
+    println!("cargo:rerun-if-changed=swift/apple_intelligence_stub.swift");
     println!("cargo:rerun-if-changed={BRIDGE_HEADER}");
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
@@ -145,13 +149,20 @@ fn build_apple_intelligence_bridge() {
         Path::new(&sdk_path).join("System/Library/Frameworks/FoundationModels.framework");
     let has_foundation_models = framework_path.exists();
 
-    let source_file = if has_foundation_models {
-        println!("cargo:warning=Building with Apple Intelligence support.");
-        REAL_SWIFT_FILE
-    } else {
-        println!("cargo:warning=Apple Intelligence SDK not found. Building with stubs.");
-        STUB_SWIFT_FILE
-    };
+    if !has_foundation_models {
+        // No Apple Intelligence SDK available. Don't invoke swiftc at all.
+        //
+        // This avoids toolchain/SDK mismatches and ModuleCache permission issues on machines
+        // that don't have FoundationModels available, while still allowing the app to build.
+        // The Rust side provides a no-op stub implementation in this configuration.
+        println!("cargo:warning=Apple Intelligence SDK not found. Building without Swift bridge (stubbed in Rust).");
+        println!("cargo:rustc-cfg=handy_apple_intelligence_stub");
+        return;
+    }
+
+    println!("cargo:warning=Building with Apple Intelligence support.");
+    println!("cargo:rustc-cfg=handy_apple_intelligence_swift");
+    let source_file = REAL_SWIFT_FILE;
 
     if !Path::new(source_file).exists() {
         panic!("Source file {} is missing!", source_file);
@@ -186,6 +197,7 @@ fn build_apple_intelligence_bridge() {
             "-sdk",
             &sdk_path,
             "-O",
+            "-parse-as-library",
             "-import-objc-header",
             BRIDGE_HEADER,
             "-c",
@@ -229,11 +241,9 @@ fn build_apple_intelligence_bridge() {
     println!("cargo:rustc-link-search=native={}", sdk_swift_lib.display());
     println!("cargo:rustc-link-lib=framework=Foundation");
 
-    if has_foundation_models {
-        // Use weak linking so the app can launch on systems without FoundationModels
-        println!("cargo:rustc-link-arg=-weak_framework");
-        println!("cargo:rustc-link-arg=FoundationModels");
-    }
+    // Use weak linking so the app can launch on systems without FoundationModels
+    println!("cargo:rustc-link-arg=-weak_framework");
+    println!("cargo:rustc-link-arg=FoundationModels");
 
     println!("cargo:rustc-link-arg=-Wl,-rpath,/usr/lib/swift");
 }
