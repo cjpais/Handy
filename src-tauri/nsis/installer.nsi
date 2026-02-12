@@ -586,6 +586,14 @@ Function .onInit
   ${EndIf}
 
 
+  ; --- PORTABLE MODE --- Auto-detect portable mode during updates.
+  ; If the target directory already has a portable marker file, preserve
+  ; portable mode so the Tauri updater works without needing /PORTABLE.
+  ${If} $PortableMode <> 1
+  ${AndIf} ${FileExists} "$INSTDIR\portable"
+    StrCpy $PortableMode 1
+  ${EndIf}
+
   !if "${INSTALLMODE}" == "both"
     !insertmacro MULTIUSER_INIT
   !endif
