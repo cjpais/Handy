@@ -10,6 +10,8 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
+#[cfg(target_os = "windows")]
+use crate::windows_ocr;
 use crate::ManagedToggleState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
@@ -31,6 +33,110 @@ struct TranscribeAction {
     post_process: bool,
 }
 
+const OUTPUT_TEMPLATE_VARIABLE: &str = "${output}";
+const OCR_TEMPLATE_VARIABLE_UPPER: &str = "${OCR}";
+const OCR_TEMPLATE_VARIABLE_LOWER: &str = "${ocr}";
+const MAX_OCR_TEXT_CHARS: usize = 8_000;
+
+fn prompt_uses_ocr_variable(prompt_template: &str) -> bool {
+    prompt_template.contains(OCR_TEMPLATE_VARIABLE_UPPER)
+        || prompt_template.contains(OCR_TEMPLATE_VARIABLE_LOWER)
+}
+
+fn truncate_to_char_limit(text: &str, max_chars: usize) -> String {
+    text.chars().take(max_chars).collect()
+}
+
+fn expand_prompt_template(prompt_template: &str, transcription: &str, ocr_text: &str) -> String {
+    let with_output = prompt_template.replace(OUTPUT_TEMPLATE_VARIABLE, transcription);
+    let with_upper = with_output.replace(OCR_TEMPLATE_VARIABLE_UPPER, ocr_text);
+    with_upper.replace(OCR_TEMPLATE_VARIABLE_LOWER, ocr_text)
+}
+
+fn resolve_ocr_template_value<F>(
+    prompt_template: &str,
+    experimental_enabled: bool,
+    fetch_ocr_text: F,
+) -> String
+where
+    F: FnOnce() -> String,
+{
+    if !prompt_uses_ocr_variable(prompt_template) {
+        return String::new();
+    }
+
+    if !experimental_enabled {
+        debug!(
+            "Prompt contains OCR template variable but experimental features are disabled; injecting empty OCR value"
+        );
+        return String::new();
+    }
+
+    fetch_ocr_text()
+}
+
+#[cfg(target_os = "windows")]
+fn fetch_ocr_template_value() -> String {
+    let ocr_start = Instant::now();
+    match windows_ocr::capture_frontmost_window_ocr_text() {
+        Ok(text) => {
+            debug!(
+                "Captured OCR context in {:?} ({} chars before truncation)",
+                ocr_start.elapsed(),
+                text.chars().count()
+            );
+            text
+        }
+        Err(err) => {
+            error!("Failed to capture OCR context: {}", err);
+            String::new()
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn fetch_ocr_template_value() -> String {
+    debug!("OCR template variable is only supported on Windows; injecting empty OCR value");
+    String::new()
+}
+
+fn build_processed_prompt_with_fetcher<F>(
+    experimental_enabled: bool,
+    prompt_template: &str,
+    transcription: &str,
+    fetch_ocr_text: F,
+) -> String
+where
+    F: FnOnce() -> String,
+{
+    let ocr_text =
+        resolve_ocr_template_value(prompt_template, experimental_enabled, fetch_ocr_text);
+    let ocr_char_count = ocr_text.chars().count();
+    let truncated_ocr_text = truncate_to_char_limit(&ocr_text, MAX_OCR_TEXT_CHARS);
+    let truncated_char_count = truncated_ocr_text.chars().count();
+
+    if truncated_char_count < ocr_char_count {
+        debug!(
+            "Truncated OCR context from {} to {} chars",
+            ocr_char_count, truncated_char_count
+        );
+    }
+
+    expand_prompt_template(prompt_template, transcription, &truncated_ocr_text)
+}
+
+fn build_processed_prompt(
+    settings: &AppSettings,
+    prompt_template: &str,
+    transcription: &str,
+) -> String {
+    build_processed_prompt_with_fetcher(
+        settings.experimental_enabled,
+        prompt_template,
+        transcription,
+        fetch_ocr_template_value,
+    )
+}
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
@@ -87,8 +193,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         provider.id, model
     );
 
-    // Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
+    let processed_prompt = build_processed_prompt(settings, &prompt, transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {

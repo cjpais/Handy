@@ -87,10 +87,18 @@ tauri-plugin-updater = "2.9.0"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61.3", features = [
+  "Foundation",
+  "Graphics_Imaging",
+  "Media_Ocr",
+  "Security_Cryptography",
+  "Storage_Streams",
   "Win32_Media_Audio_Endpoints",
+  "Win32_Storage_Xps",
+  "Win32_System_Com",
   "Win32_System_Com_StructuredStorage",
   "Win32_System_Variant",
   "Win32_Foundation",
+  "Win32_Graphics_Gdi",
   "Win32_UI_WindowsAndMessaging",
 ] }
 

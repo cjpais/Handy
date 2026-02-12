@@ -16,6 +16,8 @@ mod signal_handle;
 mod tray;
 mod tray_i18n;
 mod utils;
+#[cfg(target_os = "windows")]
+mod windows_ocr;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
