@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::OnceLock;
+use tauri::Manager;
 
 /// Portable mode support for Handy.
 ///
