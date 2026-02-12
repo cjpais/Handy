@@ -215,9 +215,15 @@ impl ShortcutAction for TranscribeAction {
         let start_time = Instant::now();
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
-        // Load model in the background
-        let tm = app.state::<Arc<TranscriptionManager>>();
-        tm.initiate_model_load();
+        let settings = get_settings(app);
+        let is_remote_whisper_enabled = settings.remote_whisper_enabled;
+        let is_always_on = settings.always_on_microphone;
+
+        if !is_remote_whisper_enabled {
+            // Load local model in the background
+            let tm = app.state::<Arc<TranscriptionManager>>();
+            tm.initiate_model_load();
+        }
 
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
@@ -225,9 +231,6 @@ impl ShortcutAction for TranscribeAction {
 
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
-        // Get the microphone mode to determine audio feedback timing
-        let settings = get_settings(app);
-        let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
         let mut recording_started = false;
@@ -321,7 +324,14 @@ impl ShortcutAction for TranscribeAction {
 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
+                let settings = get_settings(&ah);
+                let transcription_result = if settings.remote_whisper_enabled {
+                    crate::remote_whisper::transcribe(&samples, &settings).await
+                } else {
+                    tm.transcribe(samples).map_err(|e| e.to_string())
+                };
+
+                match transcription_result {
                     Ok(transcription) => {
                         debug!(
                             "Transcription completed in {:?}: '{}'",
@@ -329,7 +339,6 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;

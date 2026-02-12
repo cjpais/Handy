@@ -290,6 +290,20 @@ pub struct AppSettings {
     pub update_checks_enabled: bool,
     #[serde(default = "default_model")]
     pub selected_model: String,
+    #[serde(default)]
+    pub remote_whisper_enabled: bool,
+    #[serde(default = "default_remote_whisper_base_url")]
+    pub remote_whisper_base_url: String,
+    #[serde(default)]
+    pub remote_whisper_api_key: String,
+    #[serde(default = "default_remote_whisper_model")]
+    pub remote_whisper_model: String,
+    #[serde(default)]
+    pub remote_whisper_prompt: String,
+    #[serde(default = "default_remote_whisper_language")]
+    pub remote_whisper_language: String,
+    #[serde(default = "default_remote_whisper_temperature")]
+    pub remote_whisper_temperature: f32,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -360,6 +374,22 @@ pub struct AppSettings {
 
 fn default_model() -> String {
     "".to_string()
+}
+
+fn default_remote_whisper_base_url() -> String {
+    "https://whisper.example.com/v1".to_string()
+}
+
+fn default_remote_whisper_model() -> String {
+    "whisper-1".to_string()
+}
+
+fn default_remote_whisper_language() -> String {
+    "auto".to_string()
+}
+
+fn default_remote_whisper_temperature() -> f32 {
+    0.0
 }
 
 fn default_always_on_microphone() -> bool {
@@ -654,6 +684,13 @@ pub fn get_default_settings() -> AppSettings {
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
+        remote_whisper_enabled: false,
+        remote_whisper_base_url: default_remote_whisper_base_url(),
+        remote_whisper_api_key: String::new(),
+        remote_whisper_model: default_remote_whisper_model(),
+        remote_whisper_prompt: String::new(),
+        remote_whisper_language: default_remote_whisper_language(),
+        remote_whisper_temperature: default_remote_whisper_temperature(),
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,

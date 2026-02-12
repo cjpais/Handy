@@ -123,6 +123,20 @@ const settingUpdaters: {
     commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
+  remote_whisper_enabled: (value) =>
+    commands.changeRemoteWhisperEnabledSetting(value as boolean),
+  remote_whisper_base_url: (value) =>
+    commands.changeRemoteWhisperBaseUrlSetting(value as string),
+  remote_whisper_api_key: (value) =>
+    commands.changeRemoteWhisperApiKeySetting(value as string),
+  remote_whisper_model: (value) =>
+    commands.changeRemoteWhisperModelSetting(value as string),
+  remote_whisper_prompt: (value) =>
+    commands.changeRemoteWhisperPromptSetting(value as string),
+  remote_whisper_language: (value) =>
+    commands.changeRemoteWhisperLanguageSetting(value as string),
+  remote_whisper_temperature: (value) =>
+    commands.changeRemoteWhisperTemperatureSetting(value as number),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>

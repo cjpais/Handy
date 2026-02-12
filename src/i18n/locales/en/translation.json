@@ -275,6 +275,36 @@
         "description": "Automatically translate speech from other languages to English during transcription.",
         "descriptionUnsupported": "Translation is not supported by the {{model}} model."
       },
+      "remoteWhisper": {
+        "toggle": {
+          "label": "Remote Whisper API",
+          "description": "Send recordings to an OpenAI-compatible /audio/transcriptions endpoint instead of local model inference."
+        },
+        "baseUrl": {
+          "title": "Base URL",
+          "description": "Base URL for the remote Whisper server. Example: https://whisper.example.com/v1"
+        },
+        "apiKey": {
+          "title": "API Key",
+          "description": "Bearer token for the remote Whisper server. Leave empty if the endpoint does not require auth."
+        },
+        "model": {
+          "title": "Model",
+          "description": "Model name sent in multipart form as the 'model' field (for example, whisper-1)."
+        },
+        "language": {
+          "title": "Language",
+          "description": "Optional language code (ru, en, etc.). Use auto for automatic detection."
+        },
+        "prompt": {
+          "title": "Prompt",
+          "description": "Optional transcription prompt sent as the 'prompt' field."
+        },
+        "temperature": {
+          "title": "Temperature",
+          "description": "Sampling temperature sent to the remote endpoint (range 0-2)."
+        }
+      },
       "modelUnload": {
         "title": "Unload Model",
         "description": "Automatically free GPU/CPU memory when the model hasn't been used for the specified time",

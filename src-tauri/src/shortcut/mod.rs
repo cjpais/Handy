@@ -793,6 +793,101 @@ pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_remote_whisper_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.remote_whisper_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_remote_whisper_base_url_setting(
+    app: AppHandle,
+    base_url: String,
+) -> Result<(), String> {
+    let trimmed = base_url.trim();
+    if trimmed.is_empty() {
+        return Err("Remote Whisper base URL cannot be empty".to_string());
+    }
+    let mut settings = settings::get_settings(&app);
+    settings.remote_whisper_base_url = trimmed.to_string();
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_remote_whisper_api_key_setting(
+    app: AppHandle,
+    api_key: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.remote_whisper_api_key = api_key.trim().to_string();
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_remote_whisper_model_setting(app: AppHandle, model: String) -> Result<(), String> {
+    let trimmed = model.trim();
+    if trimmed.is_empty() {
+        return Err("Remote Whisper model cannot be empty".to_string());
+    }
+    let mut settings = settings::get_settings(&app);
+    settings.remote_whisper_model = trimmed.to_string();
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_remote_whisper_prompt_setting(
+    app: AppHandle,
+    prompt: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.remote_whisper_prompt = prompt.trim().to_string();
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_remote_whisper_language_setting(
+    app: AppHandle,
+    language: String,
+) -> Result<(), String> {
+    let trimmed = language.trim();
+    let mut settings = settings::get_settings(&app);
+    settings.remote_whisper_language = if trimmed.is_empty() {
+        "auto".to_string()
+    } else {
+        trimmed.to_string()
+    };
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_remote_whisper_temperature_setting(
+    app: AppHandle,
+    temperature: f32,
+) -> Result<(), String> {
+    if !temperature.is_finite() {
+        return Err("Remote Whisper temperature must be a finite number".to_string());
+    }
+    let clamped = temperature.clamp(0.0, 2.0);
+    let mut settings = settings::get_settings(&app);
+    settings.remote_whisper_temperature = clamped;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_post_process_base_url_setting(
     app: AppHandle,
     provider_id: String,
