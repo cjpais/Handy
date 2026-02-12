@@ -10,6 +10,7 @@ mod input;
 mod llm_client;
 mod managers;
 mod overlay;
+mod remote_whisper;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -281,6 +282,13 @@ pub fn run() {
         shortcut::change_auto_submit_key_setting,
         shortcut::change_post_process_enabled_setting,
         shortcut::change_experimental_enabled_setting,
+        shortcut::change_remote_whisper_enabled_setting,
+        shortcut::change_remote_whisper_base_url_setting,
+        shortcut::change_remote_whisper_api_key_setting,
+        shortcut::change_remote_whisper_model_setting,
+        shortcut::change_remote_whisper_prompt_setting,
+        shortcut::change_remote_whisper_language_setting,
+        shortcut::change_remote_whisper_temperature_setting,
         shortcut::change_post_process_base_url_setting,
         shortcut::change_post_process_api_key_setting,
         shortcut::change_post_process_model_setting,
