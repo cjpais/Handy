@@ -420,6 +420,26 @@ pub fn run() {
         ))
         .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
+            // Create main window programmatically so we can set data_directory
+            // for portable mode (redirects WebView2 cache to portable Data dir)
+            let mut win_builder = tauri::WebviewWindowBuilder::new(
+                app,
+                "main",
+                tauri::WebviewUrl::App("/".into()),
+            )
+            .title("Handy")
+            .inner_size(680.0, 570.0)
+            .min_inner_size(680.0, 570.0)
+            .resizable(true)
+            .maximizable(false)
+            .visible(false);
+
+            if let Some(data_dir) = portable::data_dir() {
+                win_builder = win_builder.data_directory(data_dir.join("webview"));
+            }
+
+            win_builder.build()?;
+
             let settings = get_settings(&app.handle());
             let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
             let file_log_level: log::Level = tauri_log_level.into();
