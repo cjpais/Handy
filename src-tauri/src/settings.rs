@@ -435,7 +435,7 @@ fn default_post_process_enabled() -> bool {
 
 fn default_app_language() -> String {
     tauri_plugin_os::locale()
-        .and_then(|l| l.split(['-', '_']).next().map(String::from))
+        .map(|l| l.replace('_', "-"))
         .unwrap_or_else(|| "en".to_string())
 }
 
