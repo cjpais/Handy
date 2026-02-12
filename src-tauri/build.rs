@@ -186,6 +186,7 @@ fn build_apple_intelligence_bridge() {
             "-sdk",
             &sdk_path,
             "-O",
+            "-parse-as-library",
             "-import-objc-header",
             BRIDGE_HEADER,
             "-c",
