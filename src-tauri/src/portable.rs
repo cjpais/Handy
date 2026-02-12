@@ -32,10 +32,7 @@ pub fn init() {
 
 /// Returns `true` if running in portable mode.
 pub fn is_portable() -> bool {
-    PORTABLE_DATA_DIR
-        .get()
-        .and_then(|v| v.as_ref())
-        .is_some()
+    PORTABLE_DATA_DIR.get().and_then(|v| v.as_ref()).is_some()
 }
 
 /// Get the portable data dir (if active). Does not require an AppHandle.
