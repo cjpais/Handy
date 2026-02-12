@@ -17,8 +17,8 @@ export const LANGUAGE_METADATA: Record<
   }
 > = {
   en: { name: "English", nativeName: "English", priority: 1 },
-  zh: { name: "Chinese (Simplified)", nativeName: "简体中文", priority: 2 },
-  "zh-TW": { name: "Chinese (Traditional)", nativeName: "繁體中文", priority: 3 },
+  zh: { name: "Simplified Chinese", nativeName: "简体中文", priority: 2 },
+  "zh-TW": { name: "Traditional Chinese", nativeName: "繁體中文", priority: 3 },
   es: { name: "Spanish", nativeName: "Español", priority: 4 },
   fr: { name: "French", nativeName: "Français", priority: 5 },
   de: { name: "German", nativeName: "Deutsch", priority: 6 },
