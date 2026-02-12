@@ -10,6 +10,7 @@ mod input;
 mod llm_client;
 mod managers;
 mod overlay;
+pub mod portable;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -255,6 +256,9 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Detect portable mode before anything else
+    portable::init();
+
     // Parse console logging directives from RUST_LOG, falling back to info-level logging
     // when the variable is unset
     let console_filter = build_console_filter();
@@ -374,8 +378,15 @@ pub fn run() {
                         move |metadata| console_filter.enabled(metadata)
                     }),
                     // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
-                    Target::new(TargetKind::LogDir {
-                        file_name: Some("handy".into()),
+                    Target::new(if let Some(data_dir) = portable::data_dir() {
+                        TargetKind::Folder {
+                            path: data_dir.join("logs"),
+                            file_name: Some("handy".into()),
+                        }
+                    } else {
+                        TargetKind::LogDir {
+                            file_name: Some("handy".into()),
+                        }
                     })
                     .filter(|metadata| {
                         let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
