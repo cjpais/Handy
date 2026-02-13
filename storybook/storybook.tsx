@@ -93,56 +93,6 @@ function useStories() {
                 { name: "mid-gray", var: "--color-mid-gray" },
               ],
             },
-            {
-              label: "Semantic",
-              tokens: [
-                { name: "error", var: "--color-error" },
-                { name: "error-text", var: "--color-error-text" },
-                { name: "error-bg", var: "--color-error-bg" },
-                { name: "warning", var: "--color-warning" },
-                { name: "warning-text", var: "--color-warning-text" },
-                { name: "warning-bg", var: "--color-warning-bg" },
-                { name: "info", var: "--color-info" },
-                { name: "info-text", var: "--color-info-text" },
-                { name: "info-bg", var: "--color-info-bg" },
-                { name: "success", var: "--color-success" },
-                { name: "success-text", var: "--color-success-text" },
-                { name: "success-bg", var: "--color-success-bg" },
-              ],
-            },
-            {
-              label: "Primary Alpha",
-              tokens: [
-                { name: "primary-alpha-5", var: "--color-primary-alpha-5" },
-                { name: "primary-alpha-10", var: "--color-primary-alpha-10" },
-                { name: "primary-alpha-20", var: "--color-primary-alpha-20" },
-                { name: "primary-alpha-30", var: "--color-primary-alpha-30" },
-                { name: "primary-alpha-50", var: "--color-primary-alpha-50" },
-                { name: "primary-alpha-80", var: "--color-primary-alpha-80" },
-              ],
-            },
-            {
-              label: "Gray Alpha",
-              tokens: [
-                { name: "gray-alpha-5", var: "--color-gray-alpha-5" },
-                { name: "gray-alpha-10", var: "--color-gray-alpha-10" },
-                { name: "gray-alpha-20", var: "--color-gray-alpha-20" },
-                { name: "gray-alpha-40", var: "--color-gray-alpha-40" },
-                { name: "gray-alpha-60", var: "--color-gray-alpha-60" },
-                { name: "gray-alpha-80", var: "--color-gray-alpha-80" },
-              ],
-            },
-            {
-              label: "Text Alpha",
-              tokens: [
-                { name: "text-alpha-40", var: "--color-text-alpha-40" },
-                { name: "text-alpha-50", var: "--color-text-alpha-50" },
-                { name: "text-alpha-60", var: "--color-text-alpha-60" },
-                { name: "text-alpha-70", var: "--color-text-alpha-70" },
-                { name: "text-alpha-80", var: "--color-text-alpha-80" },
-                { name: "text-alpha-90", var: "--color-text-alpha-90" },
-              ],
-            },
           ];
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
