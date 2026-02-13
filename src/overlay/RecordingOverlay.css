@@ -1,95 +1,29 @@
 .recording-overlay {
   height: 36px;
   width: 172px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
+  justify-content: center;
   padding: 6px;
-  background: #000000cc;
+  background: #000000;
   border-radius: 18px;
+  border: 1px solid #3a3a3a;
   opacity: 0;
   transition: opacity 300ms ease-out;
   box-sizing: border-box;
 }
 
-.overlay-left {
-  display: flex;
-  align-items: center;
-}
-
-.overlay-middle {
+.waveform-container {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.overlay-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.bars-container {
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  gap: 3px;
-  padding-bottom: 0px;
   height: 24px;
-  overflow: hidden;
-}
 
-.bar {
-  width: 6px;
-  background: #ffe5ee;
-  max-height: 20px;
-  border-radius: 2px;
-  transition: height 80ms linear;
-  min-height: 4px;
+  canvas {
+    width:  130px !important;
+  }
 }
 
 .recording-overlay.fade-in {
   opacity: 1;
-}
-
-.transcribing-text {
-  color: white;
-  font-size: 12px;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  animation: transcribing-pulse 1.5s infinite ease-in-out;
-}
-
-@keyframes transcribing-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.cancel-button {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    transform 100ms ease-out;
-  flex-shrink: 0;
-}
-
-.cancel-button:hover {
-  background: #faa2ca33;
-  transform: scale(1.05);
-}
-
-.cancel-button:active {
-  transform: scale(0.95);
 }
