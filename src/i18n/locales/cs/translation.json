@@ -322,7 +322,11 @@
         "apiKey": {
           "title": "API klíč",
           "description": "API klíč pro vybraného poskytovatele.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Bezpečně uloženo",
+          "edit": "Upravit",
+          "clear": "Vymazat",
+          "noKey": "Žádný API klíč není uložen"
         },
         "model": {
           "title": "Model",

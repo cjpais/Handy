@@ -127,11 +127,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider.id)
-        .cloned()
-        .unwrap_or_default();
+    let api_key = crate::keyring::get_api_key(&provider.id).unwrap_or_default();
 
     // Send the chat completion request
     match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)

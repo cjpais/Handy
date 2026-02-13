@@ -12,6 +12,7 @@ interface SettingsStore {
   outputDevices: AudioDevice[];
   customSounds: { start: boolean; stop: boolean };
   postProcessModelOptions: Record<string, string[]>;
+  apiKeyHints: Record<string, string | null>;
 
   // Actions
   initialize: () => Promise<void>;
@@ -47,6 +48,8 @@ interface SettingsStore {
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
+  fetchApiKeyHint: (providerId: string) => Promise<string | null>;
+  fetchAllApiKeyHints: () => Promise<void>;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -145,6 +148,7 @@ export const useSettingsStore = create<SettingsStore>()(
     outputDevices: [],
     customSounds: { start: false, stop: false },
     postProcessModelOptions: {},
+    apiKeyHints: {},
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
@@ -438,14 +442,20 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     updatePostProcessApiKey: async (providerId, apiKey) => {
-      // Clear cached models when API key changes - user should click refresh after
+      // Clear cached models when API key changes - user should click refresh after.
+      // Optimistically clear the hint when deleting a key for instant UI feedback.
       set((state) => ({
         postProcessModelOptions: {
           ...state.postProcessModelOptions,
           [providerId]: [],
         },
+        ...(apiKey.trim() === "" && {
+          apiKeyHints: { ...state.apiKeyHints, [providerId]: null },
+        }),
       }));
-      return get().updatePostProcessSetting("api_key", providerId, apiKey);
+      await get().updatePostProcessSetting("api_key", providerId, apiKey);
+      // Re-fetch the hint so the UI shows the masked indicator
+      await get().fetchApiKeyHint(providerId);
     },
 
     updatePostProcessModel: async (providerId, model) => {
@@ -485,6 +495,31 @@ export const useSettingsStore = create<SettingsStore>()(
         },
       })),
 
+    fetchApiKeyHint: async (providerId) => {
+      try {
+        const result = await commands.getPostProcessApiKeyHint(providerId);
+        if (result.status === "ok") {
+          set((state) => ({
+            apiKeyHints: {
+              ...state.apiKeyHints,
+              [providerId]: result.data,
+            },
+          }));
+          return result.data;
+        }
+        return null;
+      } catch (error) {
+        console.error("Failed to fetch API key hint:", error);
+        return null;
+      }
+    },
+
+    fetchAllApiKeyHints: async () => {
+      const { settings, fetchApiKeyHint } = get();
+      const providerIds = Object.keys(settings?.post_process_api_keys ?? {});
+      await Promise.all(providerIds.map((id) => fetchApiKeyHint(id)));
+    },
+
     // Load default settings from Rust
     loadDefaultSettings: async () => {
       try {
@@ -501,7 +536,12 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Initialize everything
     initialize: async () => {
-      const { refreshSettings, checkCustomSounds, loadDefaultSettings } = get();
+      const {
+        refreshSettings,
+        checkCustomSounds,
+        loadDefaultSettings,
+        fetchAllApiKeyHints,
+      } = get();
 
       // Note: Audio devices are NOT refreshed here. The frontend (App.tsx)
       // is responsible for calling refreshAudioDevices/refreshOutputDevices
@@ -512,6 +552,10 @@ export const useSettingsStore = create<SettingsStore>()(
         refreshSettings(),
         checkCustomSounds(),
       ]);
+
+      // Fetch all API key hints after settings are loaded (needs provider IDs).
+      // Fire-and-forget: don't block init (Linux keychain may prompt for a master password).
+      void fetchAllApiKeyHints();
     },
   })),
 );

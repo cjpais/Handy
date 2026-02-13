@@ -322,7 +322,11 @@
         "apiKey": {
           "title": "API 金鑰",
           "description": "所選供應商的 API 金鑰",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "已安全儲存",
+          "edit": "編輯",
+          "clear": "清除",
+          "noKey": "未儲存 API 金鑰"
         },
         "model": {
           "title": "模型",

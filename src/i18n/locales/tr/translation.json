@@ -322,7 +322,11 @@
         "apiKey": {
           "title": "API Anahtarı",
           "description": "Seçili sağlayıcı için API anahtarı.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Güvenli şekilde kaydedildi",
+          "edit": "Düzenle",
+          "clear": "Temizle",
+          "noKey": "API anahtarı kaydedilmedi"
         },
         "model": {
           "title": "Model",

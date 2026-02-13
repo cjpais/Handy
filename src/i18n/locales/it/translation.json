@@ -322,7 +322,11 @@
         "apiKey": {
           "title": "Chiave API",
           "description": "Chiave API per il provider selezionato.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Salvato in modo sicuro",
+          "edit": "Modifica",
+          "clear": "Cancella",
+          "noKey": "Nessuna chiave API salvata"
         },
         "model": {
           "title": "Modello",

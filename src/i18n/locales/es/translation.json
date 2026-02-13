@@ -322,7 +322,11 @@
         "apiKey": {
           "title": "Clave API",
           "description": "Clave API para el proveedor seleccionado.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Guardado de forma segura",
+          "edit": "Editar",
+          "clear": "Borrar",
+          "noKey": "No hay clave API guardada"
         },
         "model": {
           "title": "Modelo",

@@ -300,7 +300,11 @@
         "apiKey": {
           "title": "مفتاح API",
           "description": "مفتاح API للمزود المختار.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "تم الحفظ بأمان",
+          "edit": "تعديل",
+          "clear": "مسح",
+          "noKey": "لم يتم حفظ مفتاح API"
         },
         "model": {
           "title": "النموذج",

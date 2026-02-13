@@ -322,7 +322,11 @@
         "apiKey": {
           "title": "APIキー",
           "description": "選択したプロバイダーのAPIキー。",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "安全に保存済み",
+          "edit": "編集",
+          "clear": "クリア",
+          "noKey": "APIキーが保存されていません"
         },
         "model": {
           "title": "モデル",

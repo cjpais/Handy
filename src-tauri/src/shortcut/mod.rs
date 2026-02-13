@@ -844,9 +844,25 @@ pub fn change_post_process_api_key_setting(
 ) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     validate_provider_exists(&settings, &provider_id)?;
-    settings.post_process_api_keys.insert(provider_id, api_key);
+
+    if api_key.trim().is_empty() {
+        crate::keyring::delete_api_key(&provider_id)?;
+    } else {
+        crate::keyring::set_api_key(&provider_id, &api_key)?;
+    }
+
+    // Store empty placeholder in settings (no plaintext keys in JSON)
+    settings
+        .post_process_api_keys
+        .insert(provider_id, String::new());
     settings::write_settings(&app, settings);
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_post_process_api_key_hint(provider_id: String) -> Result<Option<String>, String> {
+    crate::keyring::get_api_key_hint(&provider_id)
 }
 
 #[tauri::command]
@@ -976,12 +992,8 @@ pub async fn fetch_post_process_models(
         }
     }
 
-    // Get API key
-    let api_key = settings
-        .post_process_api_keys
-        .get(&provider_id)
-        .cloned()
-        .unwrap_or_default();
+    // Get API key from keychain
+    let api_key = crate::keyring::get_api_key(&provider_id).unwrap_or_default();
 
     // Skip fetching if no API key for providers that typically need one
     if api_key.trim().is_empty() && provider.id != "custom" {
