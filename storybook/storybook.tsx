@@ -119,53 +119,6 @@ function useStories() {
           );
         },
       },
-      {
-        id: "typography",
-        name: "Typography",
-        group: "Design Tokens",
-        render: () => {
-          const typeScale = [
-            { label: "Display", size: "28px", weight: "700", lineHeight: "1.2", sample: "Handy — Voice to Text" },
-            { label: "Heading 1", size: "22px", weight: "600", lineHeight: "1.3", sample: "Settings & Preferences" },
-            { label: "Heading 2", size: "18px", weight: "600", lineHeight: "1.3", sample: "General Settings" },
-            { label: "Heading 3", size: "15px", weight: "600", lineHeight: "1.4", sample: "Recording Options" },
-            { label: "Body", size: "14px", weight: "400", lineHeight: "1.5", sample: "Select your preferred microphone and configure how recordings are handled." },
-            { label: "Body Medium", size: "14px", weight: "500", lineHeight: "1.5", sample: "Push to talk is enabled" },
-            { label: "Small", size: "13px", weight: "400", lineHeight: "1.5", sample: "Choose an audio input device from the list below." },
-            { label: "Small Medium", size: "13px", weight: "500", lineHeight: "1.5", sample: "Model downloaded successfully" },
-            { label: "Caption", size: "12px", weight: "400", lineHeight: "1.4", sample: "Last updated 3 minutes ago" },
-            { label: "Label", size: "11px", weight: "600", lineHeight: "1.4", sample: "AUDIO INPUT", style: "uppercase" as const, letterSpacing: "0.05em" },
-            { label: "Mono", size: "13px", weight: "400", lineHeight: "1.5", sample: "sk-ant-api03-xxxxxxxxxxxxxx", fontFamily: "monospace" },
-          ];
-          return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "120px 80px 60px auto", gap: "8px 16px", marginBottom: 8, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--sb-dim)", padding: "0 0 8px", borderBottom: "1px solid var(--sb-border)" }}>
-                <span>Style</span>
-                <span>Size / Weight</span>
-                <span>Line Height</span>
-                <span>Sample</span>
-              </div>
-              {typeScale.map((row) => (
-                <div key={row.label} style={{ display: "grid", gridTemplateColumns: "120px 80px 60px auto", gap: "8px 16px", alignItems: "baseline", padding: "10px 0", borderBottom: "1px solid var(--sb-border)" }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--sb-dim)" }}>{row.label}</span>
-                  <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--sb-dim)" }}>{row.size} / {row.weight}</span>
-                  <span style={{ fontSize: 10, fontFamily: "monospace", color: "var(--sb-dim)" }}>{row.lineHeight}</span>
-                  <span style={{
-                    fontSize: row.size,
-                    fontWeight: row.weight as React.CSSProperties["fontWeight"],
-                    lineHeight: row.lineHeight,
-                    fontFamily: row.fontFamily ?? "inherit",
-                    textTransform: row.style ?? "none",
-                    letterSpacing: row.letterSpacing ?? "normal",
-                    color: "var(--color-text)",
-                  }}>{row.sample}</span>
-                </div>
-              ))}
-            </div>
-          );
-        },
-      },
-
       // ── Icons ──────────────────────────────────────────
       {
         id: "icons",
