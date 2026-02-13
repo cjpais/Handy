@@ -115,9 +115,46 @@ pub fn send_paste_shift_insert(enigo: &mut Enigo) -> Result<(), String> {
 /// Pastes text directly using the enigo text method.
 /// This tries to use system input methods if possible, otherwise simulates keystrokes one by one.
 pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
-    enigo
-        .text(text)
-        .map_err(|e| format!("Failed to send text directly: {}", e))?;
+    // On Linux, enigo uses x11rb which dynamically remaps keycodes for characters
+    // not in the base keymap (like uppercase letters). On XWayland (KDE Plasma etc.),
+    // the keymap change doesn't propagate fast enough, causing uppercase letters to
+    // be dropped. Work around this by explicitly using Shift + lowercase letter for
+    // ASCII uppercase, which avoids keymap remapping entirely.
+    #[cfg(target_os = "linux")]
+    {
+        for c in text.chars() {
+            if c.is_ascii_uppercase() {
+                // Press Shift, type the lowercase letter, release Shift.
+                // This uses keycodes already in the base keymap, avoiding
+                // the dynamic remap that fails on XWayland.
+                enigo
+                    .key(Key::Shift, enigo::Direction::Press)
+                    .map_err(|e| format!("Failed to press Shift: {}", e))?;
+                std::thread::sleep(std::time::Duration::from_millis(5));
+                enigo
+                    .key(
+                        Key::Unicode(c.to_ascii_lowercase()),
+                        enigo::Direction::Click,
+                    )
+                    .map_err(|e| format!("Failed to type character: {}", e))?;
+                std::thread::sleep(std::time::Duration::from_millis(5));
+                enigo
+                    .key(Key::Shift, enigo::Direction::Release)
+                    .map_err(|e| format!("Failed to release Shift: {}", e))?;
+            } else {
+                enigo
+                    .key(Key::Unicode(c), enigo::Direction::Click)
+                    .map_err(|e| format!("Failed to type character: {}", e))?;
+            }
+        }
+        return Ok(());
+    }
 
-    Ok(())
+    #[cfg(not(target_os = "linux"))]
+    {
+        enigo
+            .text(text)
+            .map_err(|e| format!("Failed to send text directly: {}", e))?;
+        Ok(())
+    }
 }
