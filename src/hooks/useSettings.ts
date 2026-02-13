@@ -41,6 +41,8 @@ interface UseSettingsReturn {
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  apiKeyHints: Record<string, string | null>;
+  fetchApiKeyHint: (providerId: string) => Promise<string | null>;
 }
 
 export const useSettings = (): UseSettingsReturn => {
@@ -74,5 +76,7 @@ export const useSettings = (): UseSettingsReturn => {
     updatePostProcessApiKey: store.updatePostProcessApiKey,
     updatePostProcessModel: store.updatePostProcessModel,
     fetchPostProcessModels: store.fetchPostProcessModels,
+    apiKeyHints: store.apiKeyHints,
+    fetchApiKeyHint: store.fetchApiKeyHint,
   };
 };
