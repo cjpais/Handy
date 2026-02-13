@@ -47,6 +47,14 @@ The process is entirely local:
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
+To preview UI components in isolation, run the component storybook:
+
+```bash
+bun run storybook
+```
+
+Then open [http://localhost:1422](http://localhost:1422) in your browser.
+
 ## Architecture
 
 Handy is built as a Tauri application combining:
