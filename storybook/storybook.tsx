@@ -18,7 +18,6 @@ import { ResetButton } from "@/components/ui/ResetButton";
 import { Dropdown } from "@/components/ui/Dropdown";
 import Badge from "@/components/ui/Badge";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
-import { IconButton } from "@/components/ui/IconButton";
 import { PathDisplay } from "@/components/ui/PathDisplay";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
@@ -272,35 +271,6 @@ function useStories() {
                 <Button disabled>Primary Disabled</Button>
                 <Button variant="secondary" disabled>Secondary Disabled</Button>
                 <Button variant="danger" disabled>Danger Disabled</Button>
-              </div>
-            </Variant>
-          </>
-        ),
-      },
-      {
-        id: "icon-button",
-        name: "IconButton",
-        group: "UI",
-        render: () => (
-          <>
-            <Variant label="Variants">
-              <div className="sb-box-row">
-                <IconButton aria-label="Primary" variant="primary" icon={<ResetIcon />} />
-                <IconButton aria-label="Secondary" variant="secondary" icon={<ResetIcon />} />
-                <IconButton aria-label="Danger" variant="danger" icon={<CancelIcon />} />
-                <IconButton aria-label="Ghost" variant="ghost" icon={<MicrophoneIcon />} />
-              </div>
-            </Variant>
-            <Variant label="Sizes">
-              <div className="sb-box-row">
-                <IconButton aria-label="Small" size="sm" icon={<ResetIcon />} />
-                <IconButton aria-label="Medium" size="md" icon={<ResetIcon />} />
-                <IconButton aria-label="Large" size="lg" icon={<ResetIcon />} />
-              </div>
-            </Variant>
-            <Variant label="Disabled">
-              <div className="sb-box-row">
-                <IconButton aria-label="Disabled" disabled icon={<ResetIcon />} />
               </div>
             </Variant>
           </>
