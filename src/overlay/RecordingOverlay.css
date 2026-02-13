@@ -1,26 +1,45 @@
 .recording-overlay {
   height: 36px;
-  width: 172px;
+  width: 130px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  overflow: hidden;
   background: #000000;
   border-radius: 18px;
-  border: 1px solid #3a3a3a;
+  border: 1.5px solid #3f3f3f;
   opacity: 0;
   transition: opacity 300ms ease-out;
   box-sizing: border-box;
+  cursor: grab;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px, rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
+}
+
+.recording-overlay:active {
+  cursor: grabbing;
 }
 
 .waveform-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 24px;
+  position: relative;
+  height: 30px;
+
+  &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, rgb(0, 0, 0), rgba(0, 0, 0, 0), rgb(0, 0, 0));
+    }
 
   canvas {
     width:  130px !important;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0), rgb(10, 10, 10), rgba(0, 0, 0, 0));
   }
 }
 

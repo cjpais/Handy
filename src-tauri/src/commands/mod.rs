@@ -189,3 +189,13 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }
+
+#[specta::specta]
+#[tauri::command]
+pub fn save_overlay_position(app: AppHandle, x: f64, y: f64) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.overlay_custom_x = Some(x);
+    settings.overlay_custom_y = Some(y);
+    write_settings(&app, settings);
+    Ok(())
+}

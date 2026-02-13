@@ -22,7 +22,7 @@ use tauri_plugin_autostart::ManagerExt;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
     OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
-    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
+    APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 

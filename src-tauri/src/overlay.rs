@@ -30,8 +30,8 @@ tauri_panel! {
     })
 }
 
-const OVERLAY_WIDTH: f64 = 172.0;
-const OVERLAY_HEIGHT: f64 = 36.0;
+const OVERLAY_WIDTH: f64 = 200.0;
+const OVERLAY_HEIGHT: f64 = 80.0;
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -171,6 +171,14 @@ fn is_mouse_within_monitor(
 }
 
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
+    let settings = settings::get_settings(app_handle);
+    
+    // Check if user has set a custom position by dragging the overlay
+    if let (Some(x), Some(y)) = (settings.overlay_custom_x, settings.overlay_custom_y) {
+        return Some((x, y));
+    }
+    
+    // Otherwise, calculate default position based on overlay_position setting
     if let Some(monitor) = get_monitor_with_cursor(app_handle) {
         let work_area = monitor.work_area();
         let scale = monitor.scale_factor();
@@ -178,8 +186,6 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
         let work_area_height = work_area.size.height as f64 / scale;
         let work_area_x = work_area.position.x as f64 / scale;
         let work_area_y = work_area.position.y as f64 / scale;
-
-        let settings = settings::get_settings(app_handle);
 
         let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
         let y = match settings.overlay_position {
@@ -232,11 +238,11 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 
     match builder.build() {
-        Ok(window) => {
+        Ok(_window) => {
             #[cfg(target_os = "linux")]
             {
                 // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
-                if init_gtk_layer_shell(&window) {
+                if init_gtk_layer_shell(&_window) {
                     debug!("GTK layer shell initialized for overlay window");
                 } else {
                     debug!("GTK layer shell not available, falling back to regular window");

@@ -1,9 +1,11 @@
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import React, { useEffect, useState } from "react";
 import { LiveWaveform } from "@/components/ui/live-waveform"
 import "./RecordingOverlay.css";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
+import { commands } from "@/bindings";
 
 type OverlayState = "recording" | "transcribing" | "processing";
 
@@ -11,6 +13,15 @@ const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const direction = getLanguageDirection(i18n.language);
+
+  const handleMouseDown = async () => {
+    const currentWindow = getCurrentWindow();
+    try {
+      await currentWindow.startDragging();
+    } catch (error) {
+      console.error("Failed to start dragging:", error);
+    }
+  };
 
   useEffect(() => {
     const setupEventListeners = async () => {
@@ -28,10 +39,22 @@ const RecordingOverlay: React.FC = () => {
         setIsVisible(false);
       });
 
+      // Listen for window moved event to save position
+      const currentWindow = getCurrentWindow();
+      const unlistenMoved = await currentWindow.onMoved(async ({ payload }) => {
+        // Save the new position when user drags the overlay
+        try {
+          await commands.saveOverlayPosition(payload.x, payload.y);
+        } catch (error) {
+          console.error("Failed to save overlay position:", error);
+        }
+      });
+
       // Cleanup function
       return () => {
         unlistenShow();
         unlistenHide();
+        unlistenMoved();
       };
     };
 
@@ -44,6 +67,7 @@ const RecordingOverlay: React.FC = () => {
     <div
       dir={direction}
       className={`recording-overlay ${isVisible ? "fade-in" : ""}`}
+      onMouseDown={handleMouseDown}
     >
       <div className="waveform-container">
         <LiveWaveform
@@ -53,6 +77,7 @@ const RecordingOverlay: React.FC = () => {
           barColor="#ffffff"
           barGap={1}
           barWidth={2}
+          height={60}
           fadeEdges={true}
         />
       </div>
