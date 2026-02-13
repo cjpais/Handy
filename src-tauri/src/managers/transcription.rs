@@ -15,6 +15,10 @@ use transcribe_rs::{
         parakeet::{
             ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
         },
+        sense_voice::{
+            Language as SenseVoiceLanguage, SenseVoiceEngine, SenseVoiceInferenceParams,
+            SenseVoiceModelParams,
+        },
         whisper::{WhisperEngine, WhisperInferenceParams},
     },
     TranscriptionEngine,
@@ -32,6 +36,7 @@ enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetEngine),
     Moonshine(MoonshineEngine),
+    SenseVoice(SenseVoiceEngine),
 }
 
 #[derive(Clone)]
@@ -145,6 +150,7 @@ impl TranscriptionManager {
                     LoadedEngine::Whisper(ref mut e) => e.unload_model(),
                     LoadedEngine::Parakeet(ref mut e) => e.unload_model(),
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
+                    LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -283,6 +289,26 @@ impl TranscriptionManager {
                         anyhow::anyhow!(error_msg)
                     })?;
                 LoadedEngine::Moonshine(engine)
+            }
+            EngineType::SenseVoice => {
+                let mut engine = SenseVoiceEngine::new();
+                engine
+                    .load_model_with_params(&model_path, SenseVoiceModelParams::int8())
+                    .map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load SenseVoice model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::SenseVoice(engine)
             }
         };
 
@@ -426,6 +452,23 @@ impl TranscriptionManager {
                 LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
                     .transcribe_samples(audio, None)
                     .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e))?,
+                LoadedEngine::SenseVoice(sense_voice_engine) => {
+                    let language = match settings.selected_language.as_str() {
+                        "zh" | "zh-Hans" | "zh-Hant" => SenseVoiceLanguage::Chinese,
+                        "en" => SenseVoiceLanguage::English,
+                        "ja" => SenseVoiceLanguage::Japanese,
+                        "ko" => SenseVoiceLanguage::Korean,
+                        "yue" => SenseVoiceLanguage::Cantonese,
+                        _ => SenseVoiceLanguage::Auto,
+                    };
+                    let params = SenseVoiceInferenceParams {
+                        language,
+                        use_itn: true,
+                    };
+                    sense_voice_engine
+                        .transcribe_samples(audio, Some(params))
+                        .map_err(|e| anyhow::anyhow!("SenseVoice transcription failed: {}", e))?
+                }
             }
         };
 

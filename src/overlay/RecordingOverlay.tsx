@@ -5,7 +5,7 @@ import "./RecordingOverlay.css";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "transcribing";
+type OverlayState = "recording" | "transcribing" | "processing";
 
 const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);

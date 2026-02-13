@@ -1,7 +1,7 @@
 {
   "name": "handy-app",
   "private": true,
-  "version": "0.7.1",
+  "version": "0.7.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,13 +15,15 @@
     "format:frontend": "prettier --write .",
     "format:backend": "cd src-tauri && cargo fmt",
     "test:playwright": "playwright test",
-    "test:playwright:ui": "playwright test --ui"
+    "test:playwright:ui": "playwright test --ui",
+    "check:translations": "bun scripts/check-translations.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",
     "@tauri-apps/api": "^2.9.0",
     "@tauri-apps/plugin-autostart": "~2.5.1",
     "@tauri-apps/plugin-clipboard-manager": "~2.3.2",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "~2.4.4",
     "@tauri-apps/plugin-global-shortcut": "~2.3.1",
     "@tauri-apps/plugin-opener": "^2.5.2",

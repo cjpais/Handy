@@ -3,11 +3,13 @@
     "settings": "설정...",
     "checkUpdates": "업데이트 확인...",
     "copyLastTranscript": "마지막 녹음 내용 복사",
+    "unloadModel": "모델 언로드",
     "quit": "종료",
     "cancel": "취소"
   },
   "sidebar": {
     "general": "일반",
+    "models": "모델",
     "advanced": "고급",
     "postProcessing": "후처리",
     "history": "히스토리",
@@ -19,6 +21,8 @@
     "recommended": "추천",
     "download": "다운로드",
     "downloading": "다운로드 중...",
+    "customModelDescription": "공식 지원되지 않음",
+    "downloadFailed": "다운로드에 실패했습니다. 다시 시도해주세요.",
     "modelCard": {
       "accuracy": "정확도",
       "speed": "속도"
@@ -79,14 +83,9 @@
     }
   },
   "modelSelector": {
-    "welcome": "Handy에 오신 것을 환영합니다!",
-    "downloadPrompt": "음성 인식을 시작하려면 아래에서 모델을 다운로드하세요.",
-    "availableModels": "사용 가능한 모델",
-    "downloadModels": "모델 다운로드",
-    "chooseModel": "모델 선택",
+    "custom": "사용자 정의",
     "active": "활성",
-    "download": "다운로드",
-    "downloadSize": "다운로드 크기",
+    "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
     "extracting": "{{modelName}} 압축 해제 중...",
     "extractingMultiple": "{{count}}개 모델 압축 해제 중...",
@@ -99,9 +98,24 @@
     "modelError": "모델 오류",
     "modelUnloaded": "모델 언로드됨",
     "noModelDownloadRequired": "모델 없음 - 다운로드 필요",
-    "deleteModel": "{{modelName}} 삭제"
+    "deleteModel": "{{modelName}} 삭제",
+    "downloadSpeed": "{{speed}} MB/s",
+    "cancel": "취소",
+    "cancelDownload": "다운로드 취소",
+    "capabilities": {
+      "languageSelection": "여러 입력 언어를 지원합니다",
+      "singleLanguage": "이 언어만 지원합니다",
+      "multiLanguage": "다국어",
+      "languageOnly": "{{language}} 전용",
+      "translation": "영어로 번역 가능",
+      "translate": "영어로 번역"
+    }
   },
   "settings": {
+    "modelSettings": {
+      "title": "{{model}} 설정",
+      "noSettingsNeeded": "이 모델은 별도의 설정 없이 자동으로 작동합니다."
+    },
     "general": {
       "title": "일반",
       "shortcut": {
@@ -119,6 +133,10 @@
           "cancel": {
             "name": "취소 단축키",
             "description": "현재 녹음을 취소하는 키보드 단축키입니다."
+          },
+          "transcribe_with_post_process": {
+            "name": "후처리 단축키",
+            "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
           }
         },
         "errors": {
@@ -163,6 +181,24 @@
         "description": "오디오 피드백 사운드의 볼륨 조절"
       }
     },
+    "models": {
+      "title": "음성 인식 모델",
+      "description": "음성 인식 모델을 선택하거나 추가 모델을 다운로드하세요. 모델마다 정확도와 속도가 다릅니다.",
+      "yourModels": "다운로드된 모델",
+      "availableModels": "다운로드 가능",
+      "downloaded": "다운로드됨",
+      "available": "다운로드 가능",
+      "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
+      "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
+      "deleteTitle": "모델 삭제",
+      "filters": {
+        "all": "전체",
+        "multiLanguage": "다국어",
+        "translation": "번역",
+        "allLanguages": "모든 언어"
+      },
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
+    },
     "advanced": {
       "title": "고급",
       "groups": {
@@ -184,6 +220,10 @@
         "label": "시작 시 실행",
         "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다."
       },
+      "showTrayIcon": {
+        "label": "트레이 아이콘 표시",
+        "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
+      },
       "overlay": {
         "title": "오버레이 위치",
         "description": "녹음 및 전사 중 시각적 피드백 오버레이를 표시합니다. Linux에서는 '없음'을 권장합니다.",
@@ -204,12 +244,30 @@
           "none": "없음"
         }
       },
+      "typingTool": {
+        "title": "타이핑 도구",
+        "description": "직접 붙여넣기 방식에 사용할 Linux 타이핑 도구를 선택하세요. Auto는 시스템에서 사용 가능한 최적의 도구를 자동으로 감지해 사용합니다.",
+        "options": {
+          "auto": "Auto (권장)"
+        }
+      },
       "clipboardHandling": {
         "title": "클립보드 처리",
         "description": "클립보드 수정 안 함은 전사 후 현재 클립보드 내용을 보존합니다. 클립보드에 복사는 붙여넣기 후 전사 결과를 클립보드에 남겨둡니다.",
         "options": {
           "dontModify": "클립보드 수정 안 함",
           "copyToClipboard": "클립보드에 복사"
+        }
+      },
+      "autoSubmit": {
+        "title": "자동 제출",
+        "description": "텍스트 삽입 후 선택한 키 조합을 자동으로 전송합니다. macOS에서는 Cmd+Enter가, Windows/Linux에서는 Super+Enter가 적용됩니다.",
+        "options": {
+          "off": "끄기",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -241,6 +299,9 @@
     },
     "postProcessing": {
       "title": "후처리",
+      "hotkey": {
+        "title": "단축키"
+      },
       "api": {
         "title": "API (OpenAI 호환)",
         "provider": {
@@ -459,6 +520,7 @@
     "description": "Handy 인터페이스의 언어를 변경하세요"
   },
   "overlay": {
-    "transcribing": "텍스트로 변환 중..."
+    "transcribing": "텍스트로 변환 중...",
+    "processing": "처리 중..."
   }
 }

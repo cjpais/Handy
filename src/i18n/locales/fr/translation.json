@@ -1,14 +1,15 @@
 {
-  "_comment": "French translation for Handy. Contribute at: https://github.com/cjpais/Handy",
   "tray": {
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
     "copyLastTranscript": "Copier la dernière transcription",
+    "unloadModel": "Décharger le modèle",
     "quit": "Quitter",
     "cancel": "Annuler"
   },
   "sidebar": {
     "general": "Général",
+    "models": "Modèles",
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "history": "Historique",
@@ -20,6 +21,8 @@
     "recommended": "Recommandé",
     "download": "Télécharger",
     "downloading": "Téléchargement...",
+    "customModelDescription": "Non officiellement pris en charge",
+    "downloadFailed": "Échec du téléchargement. Veuillez réessayer.",
     "modelCard": {
       "accuracy": "précision",
       "speed": "vitesse"
@@ -72,18 +75,17 @@
       "grant": "Accorder l'autorisation",
       "granted": "Accordé",
       "waiting": "En attente...",
-      "allGranted": "Tout est prêt !"
+      "allGranted": "Tout est prêt !",
+      "errors": {
+        "checkFailed": "Échec de la vérification des autorisations. Veuillez réessayer.",
+        "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Bienvenue sur Handy !",
-    "downloadPrompt": "Téléchargez un modèle ci-dessous pour commencer la transcription.",
-    "availableModels": "Modèles Disponibles",
-    "downloadModels": "Télécharger des Modèles",
-    "chooseModel": "Choisir un Modèle",
+    "custom": "Personnalisé",
     "active": "Actif",
-    "download": "Télécharger",
-    "downloadSize": "Taille du téléchargement",
+    "switching": "Changement...",
     "noModelsAvailable": "Aucun modèle disponible",
     "extracting": "Extraction de {{modelName}}...",
     "extractingMultiple": "Extraction de {{count}} modèles...",
@@ -96,9 +98,42 @@
     "modelError": "Erreur du Modèle",
     "modelUnloaded": "Modèle Déchargé",
     "noModelDownloadRequired": "Aucun Modèle - Téléchargement Requis",
-    "deleteModel": "Supprimer {{modelName}}"
+    "deleteModel": "Supprimer {{modelName}}",
+    "downloadSpeed": "{{speed}} Mo/s",
+    "capabilities": {
+      "languageSelection": "Prend en charge plusieurs langues d'entrée",
+      "multiLanguage": "Multilingue",
+      "translation": "Peut traduire en anglais",
+      "translate": "Traduire en anglais",
+      "singleLanguage": "Prend en charge uniquement cette langue",
+      "languageOnly": "{{language}} uniquement"
+    },
+    "cancel": "Annuler",
+    "cancelDownload": "Annuler le téléchargement"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Paramètres de {{model}}",
+      "noSettingsNeeded": "Ce modèle fonctionne automatiquement sans configuration nécessaire."
+    },
+    "models": {
+      "title": "Modèles de Transcription",
+      "description": "Sélectionnez un modèle de transcription ou téléchargez des modèles supplémentaires. Différents modèles offrent différents niveaux de précision et de vitesse.",
+      "downloaded": "Téléchargés",
+      "available": "Disponibles au Téléchargement",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
+      "deleteActiveConfirm": "{{modelName}} est votre modèle actif. Le supprimer arrêtera les transcriptions jusqu'à ce que vous sélectionniez un nouveau modèle. Êtes-vous sûr ?",
+      "deleteTitle": "Supprimer le modèle",
+      "filters": {
+        "all": "Tous",
+        "multiLanguage": "Multilingue",
+        "translation": "Traduction",
+        "allLanguages": "Toutes les langues"
+      },
+      "noModelsMatch": "Aucun modèle ne correspond à ce filtre.",
+      "yourModels": "Modèles téléchargés",
+      "availableModels": "Disponibles au téléchargement"
+    },
     "general": {
       "title": "Général",
       "shortcut": {
@@ -116,6 +151,10 @@
           "cancel": {
             "name": "Raccourci d'Annulation",
             "description": "Le raccourci clavier pour annuler l'enregistrement en cours."
+          },
+          "transcribe_with_post_process": {
+            "name": "Raccourci de post-traitement",
+            "description": "Facultatif : Un raccourci dédié qui applique toujours le post-traitement IA à votre transcription."
           }
         },
         "errors": {
@@ -181,6 +220,10 @@
         "label": "Lancer au démarrage",
         "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
       },
+      "showTrayIcon": {
+        "label": "Afficher l'icône de la barre",
+        "description": "Afficher l'icône de Handy dans la barre système."
+      },
       "overlay": {
         "title": "Position de la fenêtre d'enregistrement",
         "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
@@ -201,12 +244,30 @@
           "none": "Aucun"
         }
       },
+      "typingTool": {
+        "title": "Outil de frappe",
+        "description": "Choisissez quel outil de frappe Linux utiliser pour la méthode de collage direct. Auto détectera et utilisera automatiquement le meilleur outil disponible pour votre système.",
+        "options": {
+          "auto": "Auto (Recommandé)"
+        }
+      },
       "clipboardHandling": {
         "title": "Gestion du presse-papiers",
         "description": "Ne pas modifier le presse-papiers préserve le contenu actuel de votre presse-papiers après la transcription. Copier dans le presse-papiers laisse le résultat de la transcription dans votre presse-papiers après le collage.",
         "options": {
           "dontModify": "Ne pas modifier le presse-papiers",
           "copyToClipboard": "Copier dans le presse-papiers"
+        }
+      },
+      "autoSubmit": {
+        "title": "Envoi automatique",
+        "description": "Envoie automatiquement la combinaison de touches sélectionnée après l'insertion du texte. Cmd+Enter s'applique sur macOS, tandis que Windows/Linux utilisent Super+Enter.",
+        "options": {
+          "off": "Désactivé",
+          "enter": "Entrée",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -364,10 +425,19 @@
         "label": "Ajouter un espace final",
         "description": "Ajouter un espace après la transcription collée"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Données de l'application :",
         "models": "Modèles :",
         "settings": "Paramètres :"
+      },
+      "pasteDelay": {
+        "title": "Délai de collage",
+        "description": "Délai avant l'envoi de la touche de collage (en millisecondes). Augmentez si le mauvais texte est collé."
       }
     },
     "about": {
@@ -450,6 +520,7 @@
     "description": "Changer la langue de l'interface de Handy"
   },
   "overlay": {
-    "transcribing": "Transcription..."
+    "transcribing": "Transcription...",
+    "processing": "Traitement..."
   }
 }
