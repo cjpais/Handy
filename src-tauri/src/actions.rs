@@ -10,7 +10,7 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
-use crate::TranscriptionState;
+use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
@@ -424,9 +424,9 @@ impl ShortcutAction for TranscribeAction {
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
 
-            // Pipeline finished — return to idle so new recordings can start.
-            if let Some(ts) = ah.try_state::<TranscriptionState>() {
-                ts.reset();
+            // Notify coordinator that the full recording->paste pipeline is complete.
+            if let Some(coordinator) = ah.try_state::<TranscriptionCoordinator>() {
+                coordinator.notify_processing_finished();
             }
         });
 
