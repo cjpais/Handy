@@ -4,6 +4,7 @@
 //! used by both the Tauri and handy-keys implementations.
 
 use log::warn;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
@@ -62,6 +63,16 @@ pub fn handle_shortcut_event(
 
     // Toggle mode: toggle state on press only
     if is_pressed {
+        // Guard: if a toggle action is already in progress, drop this press.
+        // The microphone pipeline is purely singleton — no point piling up threads.
+        static TOGGLE_BUSY: AtomicBool = AtomicBool::new(false);
+        if TOGGLE_BUSY
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            return;
+        }
+
         // Determine action and update state while holding the lock,
         // but RELEASE the lock before calling the action to avoid deadlocks.
         // (Actions may need to acquire the lock themselves, e.g., cancel_current_operation)
@@ -87,5 +98,7 @@ pub fn handle_shortcut_event(
         } else {
             action.stop(app, binding_id, hotkey_string);
         }
+
+        TOGGLE_BUSY.store(false, Ordering::SeqCst);
     }
 }
