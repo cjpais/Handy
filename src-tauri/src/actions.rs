@@ -10,7 +10,7 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
-use crate::ManagedToggleState;
+use crate::TranscriptionState;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
@@ -424,9 +424,9 @@ impl ShortcutAction for TranscribeAction {
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
 
-            // Clear toggle state now that transcription is complete
-            if let Ok(mut states) = ah.state::<ManagedToggleState>().lock() {
-                states.active_toggles.insert(binding_id, false);
+            // Pipeline finished — return to idle so new recordings can start.
+            if let Some(ts) = ah.try_state::<TranscriptionState>() {
+                ts.reset();
             }
         });
 

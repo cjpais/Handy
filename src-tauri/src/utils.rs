@@ -1,7 +1,7 @@
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
-use crate::ManagedToggleState;
+use crate::{ManagedToggleState, TranscriptionState};
 use log::{info, warn};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
@@ -40,6 +40,11 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.maybe_unload_immediately("cancellation");
+
+    // Reset transcription state so all entry points accept new signals
+    if let Some(ts) = app.try_state::<TranscriptionState>() {
+        ts.reset();
+    }
 
     info!("Operation cancellation completed - returned to idle state");
 }
