@@ -2,6 +2,11 @@
 //!
 //! This module provides shortcut functionality using Tauri's built-in
 //! global-shortcut plugin.
+//!
+//! NOTE: tauri-plugin-global-shortcut does NOT natively support left/right modifier keys.
+//! When modifier_side setting is used on Windows/Linux, the workaround would be to register
+//! both left and right variants as separate shortcuts (e.g., "ctrl_left+space" AND "ctrl_right+space")
+//! when modifier_side == Any.
 
 use log::{error, warn};
 use tauri::AppHandle;

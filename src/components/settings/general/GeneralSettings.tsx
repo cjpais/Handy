@@ -10,14 +10,20 @@ import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
+import { ModifierSideSelector } from "../ModifierSideSelector";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { audioFeedbackEnabled } = useSettings();
+  const { audioFeedbackEnabled, getSetting } = useSettings();
+  const experimentalEnabled = getSetting("experimental_enabled") ?? false;
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.general.title")}>
         <ShortcutInput shortcutId="transcribe" grouped={true} />
+        {experimentalEnabled && (
+          <ModifierSideSelector descriptionMode="tooltip" grouped={true} />
+        )}
         <PushToTalk descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
       <ModelSettingsCard />

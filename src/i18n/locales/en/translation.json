@@ -158,6 +158,15 @@
         "description": "Hold to record, release to stop"
       }
     },
+    "modifierSide": {
+      "title": "Modifier Key Side",
+      "description": "Choose which modifier key side to use for shortcuts.",
+      "options": {
+        "any": "Any Modifier Key",
+        "left": "Left Modifier Keys Only",
+        "right": "Right Modifier Keys Only"
+      }
+    },
     "models": {
       "title": "Transcription Models",
       "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",

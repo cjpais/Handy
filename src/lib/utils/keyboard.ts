@@ -203,16 +203,43 @@ export const formatKeyCombination = (
 };
 
 /**
- * Normalize modifier keys to handle left/right variants
+ * Normalize modifier keys based on modifier_side setting
+ * @param key - The key to normalize (e.g., "left ctrl", "right option", "ctrl")
+ * @param modifierSide - The modifier side setting: "any" | "left" | "right"
+ * @returns The normalized key
  */
-export const normalizeKey = (key: string): string => {
-  // Handle left/right variants of modifier keys
+export const normalizeKey = (
+  key: string,
+  modifierSide: "any" | "left" | "right" = "any",
+): string => {
+  // If modifier_side is "any", keep both left and right variants
+  if (modifierSide === "any") {
+    return key;
+  }
+
+  // Check if the key has a left/right prefix
   if (key.startsWith("left ") || key.startsWith("right ")) {
     const parts = key.split(" ");
     if (parts.length === 2) {
-      // Return just the modifier name without left/right prefix
-      return parts[1];
+      const side = parts[0]; // "left" or "right"
+      const modifier = parts[1]; // "ctrl", "option", etc.
+
+      // If setting is "left", keep only left-side modifiers
+      if (modifierSide === "left" && side === "left") {
+        return key;
+      }
+
+      // If setting is "right", keep only right-side modifiers
+      if (modifierSide === "right" && side === "right") {
+        return key;
+      }
+
+      // Filter out variants that don't match the setting
+      return "";
     }
   }
+
+  // For compound modifiers (e.g., "ctrl", "option") without side info,
+  // keep them only when modifierSide is "any"
   return key;
 };

@@ -299,6 +299,8 @@ pub fn run() {
         shortcut::change_update_checks_setting,
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
+        shortcut::change_modifier_side_setting,
+        shortcut::get_modifier_side,
         shortcut::change_show_tray_icon_setting,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,

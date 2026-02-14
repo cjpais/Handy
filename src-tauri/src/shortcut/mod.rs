@@ -353,6 +353,44 @@ fn parse_keyboard_implementation(s: &str) -> KeyboardImplementation {
     }
 }
 
+/// Parse a modifier side string into the enum
+fn parse_modifier_side(s: &str) -> settings::ModifierSide {
+    match s {
+        "any" => settings::ModifierSide::Any,
+        "left" => settings::ModifierSide::Left,
+        "right" => settings::ModifierSide::Right,
+        other => {
+            warn!("Invalid modifier side '{}', defaulting to any", other);
+            settings::ModifierSide::Any
+        }
+    }
+}
+
+/// Change the modifier side setting
+#[tauri::command]
+#[specta::specta]
+pub fn change_modifier_side_setting(
+    app: AppHandle,
+    value: String,
+) -> Result<settings::ModifierSide, String> {
+    let new_side = parse_modifier_side(&value);
+
+    let mut settings = settings::get_settings(&app);
+    settings.modifier_side = new_side;
+    settings::write_settings(&app, settings);
+
+    info!("Changed modifier side setting to {:?}", new_side);
+    Ok(new_side)
+}
+
+/// Get the current modifier side setting
+#[tauri::command]
+#[specta::specta]
+pub fn get_modifier_side(app: AppHandle) -> settings::ModifierSide {
+    let settings = settings::get_settings(&app);
+    settings.modifier_side
+}
+
 /// Unregister all shortcuts for the current implementation
 fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementation) {
     let bindings = settings::get_bindings(app);

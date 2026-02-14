@@ -380,27 +380,61 @@ impl Drop for HandyKeysState {
 }
 
 /// Convert handy-keys Modifiers to a list of strings
+/// Preserves left/right side information when available
 fn modifiers_to_strings(modifiers: handy_keys::Modifiers) -> Vec<String> {
     let mut result = Vec::new();
 
-    if modifiers.contains(handy_keys::Modifiers::CTRL) {
+    // Check side-specific modifiers first to preserve left/right info
+    if modifiers.contains(handy_keys::Modifiers::CTRL_LEFT) {
+        result.push("ctrl_left".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::CTRL_RIGHT) {
+        result.push("ctrl_right".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::CTRL) {
         result.push("ctrl".to_string());
     }
-    if modifiers.contains(handy_keys::Modifiers::OPT) {
+
+    if modifiers.contains(handy_keys::Modifiers::OPT_LEFT) {
+        #[cfg(target_os = "macos")]
+        result.push("option_left".to_string());
+        #[cfg(not(target_os = "macos"))]
+        result.push("alt_left".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::OPT_RIGHT) {
+        #[cfg(target_os = "macos")]
+        result.push("option_right".to_string());
+        #[cfg(not(target_os = "macos"))]
+        result.push("alt_right".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::OPT) {
         #[cfg(target_os = "macos")]
         result.push("option".to_string());
         #[cfg(not(target_os = "macos"))]
         result.push("alt".to_string());
     }
-    if modifiers.contains(handy_keys::Modifiers::SHIFT) {
+
+    if modifiers.contains(handy_keys::Modifiers::SHIFT_LEFT) {
+        result.push("shift_left".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::SHIFT_RIGHT) {
+        result.push("shift_right".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::SHIFT) {
         result.push("shift".to_string());
     }
-    if modifiers.contains(handy_keys::Modifiers::CMD) {
+
+    if modifiers.contains(handy_keys::Modifiers::CMD_LEFT) {
+        #[cfg(target_os = "macos")]
+        result.push("command_left".to_string());
+        #[cfg(not(target_os = "macos"))]
+        result.push("super_left".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::CMD_RIGHT) {
+        #[cfg(target_os = "macos")]
+        result.push("command_right".to_string());
+        #[cfg(not(target_os = "macos"))]
+        result.push("super_right".to_string());
+    } else if modifiers.contains(handy_keys::Modifiers::CMD) {
         #[cfg(target_os = "macos")]
         result.push("command".to_string());
         #[cfg(not(target_os = "macos"))]
         result.push("super".to_string());
     }
+
     if modifiers.contains(handy_keys::Modifiers::FN) {
         result.push("fn".to_string());
     }
