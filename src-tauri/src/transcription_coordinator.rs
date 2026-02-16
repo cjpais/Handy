@@ -1,6 +1,6 @@
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
-use log::{debug, warn};
+use log::{debug, error, warn};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -27,7 +27,7 @@ enum Command {
 enum Stage {
     Idle,
     Recording(String),  // binding_id
-    Processing(String), // binding_id
+    Processing,
 }
 
 /// Serialises all transcription lifecycle events through a single thread
@@ -46,64 +46,71 @@ impl TranscriptionCoordinator {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
-            let mut stage = Stage::Idle;
-            let mut last_press: Option<Instant> = None;
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let mut stage = Stage::Idle;
+                let mut last_press: Option<Instant> = None;
 
-            while let Ok(cmd) = rx.recv() {
-                match cmd {
-                    Command::Input {
-                        binding_id,
-                        hotkey_string,
-                        is_pressed,
-                        push_to_talk,
-                    } => {
-                        // Debounce rapid-fire press events (key repeat / double-tap).
-                        // Releases always pass through for push-to-talk.
-                        if is_pressed {
-                            let now = Instant::now();
-                            if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE) {
-                                debug!("Debounced press for '{binding_id}'");
-                                continue;
-                            }
-                            last_press = Some(now);
-                        }
-
-                        if push_to_talk {
-                            if is_pressed && matches!(stage, Stage::Idle) {
-                                start(&app, &mut stage, &binding_id, &hotkey_string);
-                            } else if !is_pressed
-                                && matches!(&stage, Stage::Recording(id) if id == &binding_id)
-                            {
-                                stop(&app, &mut stage, &binding_id, &hotkey_string);
-                            }
-                        } else if is_pressed {
-                            match &stage {
-                                Stage::Idle => {
-                                    start(&app, &mut stage, &binding_id, &hotkey_string);
+                while let Ok(cmd) = rx.recv() {
+                    match cmd {
+                        Command::Input {
+                            binding_id,
+                            hotkey_string,
+                            is_pressed,
+                            push_to_talk,
+                        } => {
+                            // Debounce rapid-fire press events (key repeat / double-tap).
+                            // Releases always pass through for push-to-talk.
+                            if is_pressed {
+                                let now = Instant::now();
+                                if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE) {
+                                    debug!("Debounced press for '{binding_id}'");
+                                    continue;
                                 }
-                                Stage::Recording(id) if id == &binding_id => {
+                                last_press = Some(now);
+                            }
+
+                            if push_to_talk {
+                                if is_pressed && matches!(stage, Stage::Idle) {
+                                    start(&app, &mut stage, &binding_id, &hotkey_string);
+                                } else if !is_pressed
+                                    && matches!(&stage, Stage::Recording(id) if id == &binding_id)
+                                {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
                                 }
-                                _ => debug!("Ignoring press for '{binding_id}': pipeline busy"),
+                            } else if is_pressed {
+                                match &stage {
+                                    Stage::Idle => {
+                                        start(&app, &mut stage, &binding_id, &hotkey_string);
+                                    }
+                                    Stage::Recording(id) if id == &binding_id => {
+                                        stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                    }
+                                    _ => {
+                                        debug!("Ignoring press for '{binding_id}': pipeline busy")
+                                    }
+                                }
                             }
                         }
-                    }
-                    Command::Cancel {
-                        recording_was_active,
-                    } => {
-                        // Don't reset during processing — wait for the pipeline to finish.
-                        if !matches!(stage, Stage::Processing(_))
-                            && (recording_was_active || matches!(stage, Stage::Recording(_)))
-                        {
+                        Command::Cancel {
+                            recording_was_active,
+                        } => {
+                            // Don't reset during processing — wait for the pipeline to finish.
+                            if !matches!(stage, Stage::Processing)
+                                && (recording_was_active || matches!(stage, Stage::Recording(_)))
+                            {
+                                stage = Stage::Idle;
+                            }
+                        }
+                        Command::ProcessingFinished => {
                             stage = Stage::Idle;
                         }
                     }
-                    Command::ProcessingFinished => {
-                        stage = Stage::Idle;
-                    }
                 }
+                debug!("Transcription coordinator exited");
+            }));
+            if let Err(e) = result {
+                error!("Transcription coordinator panicked: {e:?}");
             }
-            debug!("Transcription coordinator exited");
         });
 
         Self { tx }
@@ -118,22 +125,36 @@ impl TranscriptionCoordinator {
         is_pressed: bool,
         push_to_talk: bool,
     ) {
-        let _ = self.tx.send(Command::Input {
-            binding_id: binding_id.to_string(),
-            hotkey_string: hotkey_string.to_string(),
-            is_pressed,
-            push_to_talk,
-        });
+        if self
+            .tx
+            .send(Command::Input {
+                binding_id: binding_id.to_string(),
+                hotkey_string: hotkey_string.to_string(),
+                is_pressed,
+                push_to_talk,
+            })
+            .is_err()
+        {
+            warn!("Transcription coordinator channel closed");
+        }
     }
 
     pub fn notify_cancel(&self, recording_was_active: bool) {
-        let _ = self.tx.send(Command::Cancel {
-            recording_was_active,
-        });
+        if self
+            .tx
+            .send(Command::Cancel {
+                recording_was_active,
+            })
+            .is_err()
+        {
+            warn!("Transcription coordinator channel closed");
+        }
     }
 
     pub fn notify_processing_finished(&self) {
-        let _ = self.tx.send(Command::ProcessingFinished);
+        if self.tx.send(Command::ProcessingFinished).is_err() {
+            warn!("Transcription coordinator channel closed");
+        }
     }
 }
 
@@ -159,5 +180,5 @@ fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &st
         return;
     };
     action.stop(app, binding_id, hotkey_string);
-    *stage = Stage::Processing(binding_id.to_string());
+    *stage = Stage::Processing;
 }
