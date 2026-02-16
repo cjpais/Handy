@@ -435,7 +435,6 @@ impl ShortcutAction for TranscribeAction {
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
-
         });
 
         debug!(
