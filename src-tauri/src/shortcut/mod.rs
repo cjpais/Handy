@@ -1277,7 +1277,7 @@ pub async fn fetch_search_models(
         ));
     }
 
-    crate::llm_client::fetch_models(provider, api_key).await
+    crate::llm_client::fetch_models(&provider, api_key).await
 }
 
 #[tauri::command]
