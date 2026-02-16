@@ -118,10 +118,18 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
 - If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
-- You can manage global shortcuts outside of Handy and still control the app via signals. Sending `SIGUSR2` to the Handy process toggles recording on/off, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings. Example (Sway):
+- You can manage global shortcuts outside of Handy and still control the app via signals, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings:
+
+  | Signal    | Action                                    | Example                |
+  | --------- | ----------------------------------------- | ---------------------- |
+  | `SIGUSR2` | Toggle transcription                      | `pkill -USR2 -n handy` |
+  | `SIGUSR1` | Toggle transcription with post-processing | `pkill -USR1 -n handy` |
+
+  Example Sway config:
 
   ```ini
   bindsym $mod+o exec pkill -USR2 -n handy
+  bindsym $mod+p exec pkill -USR1 -n handy
   ```
 
   `pkill` here simply delivers the signal—it does not terminate the process.
