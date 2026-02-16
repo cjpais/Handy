@@ -20,6 +20,17 @@ use std::time::Instant;
 use tauri::AppHandle;
 use tauri::Manager;
 
+/// Drop guard that notifies the [`TranscriptionCoordinator`] when the
+/// transcription pipeline finishes — whether it completes normally or panics.
+struct FinishGuard(AppHandle);
+impl Drop for FinishGuard {
+    fn drop(&mut self) {
+        if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
+            c.notify_processing_finished();
+        }
+    }
+}
+
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
     fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
@@ -305,6 +316,7 @@ impl ShortcutAction for TranscribeAction {
         let post_process = self.post_process;
 
         tauri::async_runtime::spawn(async move {
+            let _guard = FinishGuard(ah.clone());
             let binding_id = binding_id.clone(); // Clone for the inner async task
             debug!(
                 "Starting async transcription task for binding: {}",
@@ -424,10 +436,6 @@ impl ShortcutAction for TranscribeAction {
                 change_tray_icon(&ah, TrayIconState::Idle);
             }
 
-            // Notify coordinator that the full recording->paste pipeline is complete.
-            if let Some(coordinator) = ah.try_state::<TranscriptionCoordinator>() {
-                coordinator.notify_processing_finished();
-            }
         });
 
         debug!(
