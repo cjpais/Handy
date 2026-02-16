@@ -133,6 +133,7 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
+  vad_mode: (value) => commands.changeVadModeSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

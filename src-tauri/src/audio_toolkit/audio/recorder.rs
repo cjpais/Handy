@@ -18,6 +18,7 @@ use crate::audio_toolkit::{
 
 enum Cmd {
     Start,
+    StartStreaming(mpsc::Sender<Vec<f32>>),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -133,6 +134,14 @@ impl AudioRecorder {
             tx.send(Cmd::Start)?;
         }
         Ok(())
+    }
+
+    pub fn start_streaming(&self) -> Result<mpsc::Receiver<Vec<f32>>, Box<dyn std::error::Error>> {
+        let (tx, rx) = mpsc::channel();
+        if let Some(cmd_tx) = &self.cmd_tx {
+            cmd_tx.send(Cmd::StartStreaming(tx))?;
+        }
+        Ok(rx)
     }
 
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
@@ -254,6 +263,8 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut was_speech = false;
+    let mut chunk_tx: Option<mpsc::Sender<Vec<f32>>> = None;
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -265,27 +276,6 @@ fn run_consumer(
         400.0,  // vocal_min_hz
         4000.0, // vocal_max_hz
     );
-
-    fn handle_frame(
-        samples: &[f32],
-        recording: bool,
-        vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
-        out_buf: &mut Vec<f32>,
-    ) {
-        if !recording {
-            return;
-        }
-
-        if let Some(vad_arc) = vad {
-            let mut det = vad_arc.lock().unwrap();
-            match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
-            }
-        } else {
-            out_buf.extend_from_slice(samples);
-        }
-    }
 
     loop {
         let raw = match sample_rx.recv() {
@@ -300,9 +290,38 @@ fn run_consumer(
             }
         }
 
-        // ---------- existing pipeline ------------------------------------ //
+        // ---------- audio pipeline --------------------------------------- //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            if !recording {
+                return;
+            }
+
+            let is_speech = if let Some(vad_arc) = &vad {
+                match vad_arc
+                    .lock()
+                    .unwrap()
+                    .push_frame(frame)
+                    .unwrap_or(VadFrame::Speech(frame))
+                {
+                    VadFrame::Speech(buf) => {
+                        processed_samples.extend_from_slice(buf);
+                        true
+                    }
+                    VadFrame::Noise => false,
+                }
+            } else {
+                // No VAD — all audio is "speech"
+                processed_samples.extend_from_slice(frame);
+                true
+            };
+
+            // Detect speech→silence transition and send chunk
+            if was_speech && !is_speech && !processed_samples.is_empty() {
+                if let Some(tx) = &chunk_tx {
+                    let _ = tx.send(std::mem::take(&mut processed_samples));
+                }
+            }
+            was_speech = is_speech;
         });
 
         // non-blocking check for a command
@@ -311,7 +330,19 @@ fn run_consumer(
                 Cmd::Start => {
                     processed_samples.clear();
                     recording = true;
-                    visualizer.reset(); // Reset visualization buffer
+                    was_speech = false;
+                    chunk_tx = None;
+                    visualizer.reset();
+                    if let Some(v) = &vad {
+                        v.lock().unwrap().reset();
+                    }
+                }
+                Cmd::StartStreaming(tx) => {
+                    processed_samples.clear();
+                    recording = true;
+                    was_speech = false;
+                    chunk_tx = Some(tx);
+                    visualizer.reset();
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
                     }
@@ -320,9 +351,26 @@ fn run_consumer(
                     recording = false;
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        // we still want to process the last few frames
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        if let Some(vad_arc) = &vad {
+                            match vad_arc
+                                .lock()
+                                .unwrap()
+                                .push_frame(frame)
+                                .unwrap_or(VadFrame::Speech(frame))
+                            {
+                                VadFrame::Speech(buf) => {
+                                    processed_samples.extend_from_slice(buf);
+                                }
+                                VadFrame::Noise => {}
+                            }
+                        } else {
+                            processed_samples.extend_from_slice(frame);
+                        }
                     });
+
+                    // Drop chunk_tx so the streaming thread's iterator exits
+                    chunk_tx = None;
+                    was_speech = false;
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
                 }

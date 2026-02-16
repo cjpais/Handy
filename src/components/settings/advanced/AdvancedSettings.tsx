@@ -18,6 +18,7 @@ import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
+import { VadModeSetting } from "../VadModeSetting";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -62,6 +63,7 @@ export const AdvancedSettings: React.FC = () => {
             descriptionMode="tooltip"
             grouped={true}
           />
+          <VadModeSetting descriptionMode="tooltip" grouped={true} />
         </SettingsGroup>
       )}
     </div>

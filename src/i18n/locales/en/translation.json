@@ -425,6 +425,16 @@
         "label": "Append Trailing Space",
         "description": "Add a space after pasted transcription"
       },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Off: no voice filtering. Filter: removes silence (default). Stream: pastes text sentence-by-sentence while you speak. Batch Stream: transcribes in the background but pastes all at once when you stop.",
+        "options": {
+          "off": "Off",
+          "filter": "Filter",
+          "stream": "Stream",
+          "batchStream": "Batch Stream"
+        }
+      },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
         "description": "Choose the keyboard shortcut backend.",

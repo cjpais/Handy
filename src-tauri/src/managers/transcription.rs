@@ -4,7 +4,7 @@ use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -50,6 +50,7 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    streaming_sessions: Arc<AtomicUsize>,
 }
 
 impl TranscriptionManager {
@@ -69,6 +70,7 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            streaming_sessions: Arc::new(AtomicUsize::new(0)),
         };
 
         // Start the idle watcher
@@ -91,6 +93,11 @@ impl TranscriptionManager {
                     if let Some(limit_seconds) = timeout_seconds {
                         // Skip polling-based unloading for immediate timeout since it's handled directly in transcribe()
                         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
+                            continue;
+                        }
+
+                        // Skip unloading while a streaming session is active
+                        if manager_cloned.streaming_sessions.load(Ordering::Relaxed) > 0 {
                             continue;
                         }
 
@@ -179,8 +186,13 @@ impl TranscriptionManager {
         Ok(())
     }
 
-    /// Unloads the model immediately if the setting is enabled and the model is loaded
+    /// Unloads the model immediately if the setting is enabled and the model is loaded.
+    /// Skips unloading when a streaming session is active.
     pub fn maybe_unload_immediately(&self, context: &str) {
+        if self.streaming_sessions.load(Ordering::Relaxed) > 0 {
+            debug!("Skipping immediate unload during active streaming session");
+            return;
+        }
         let settings = get_settings(&self.app_handle);
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
             && self.is_model_loaded()
@@ -189,6 +201,30 @@ impl TranscriptionManager {
             if let Err(e) = self.unload_model() {
                 warn!("Failed to immediately unload model: {}", e);
             }
+        }
+    }
+
+    /// Mark a streaming session as active. While active, the model will not be
+    /// auto-unloaded between transcription calls.
+    pub fn begin_streaming(&self) {
+        self.streaming_sessions.fetch_add(1, Ordering::Relaxed);
+        debug!(
+            "Streaming session started (active: {})",
+            self.streaming_sessions.load(Ordering::Relaxed)
+        );
+    }
+
+    /// Mark a streaming session as finished. If no sessions remain, normal
+    /// unload behaviour resumes.
+    pub fn end_streaming(&self) {
+        let prev = self.streaming_sessions.fetch_sub(1, Ordering::Relaxed);
+        debug!(
+            "Streaming session ended (active: {})",
+            prev.saturating_sub(1)
+        );
+        // Now that streaming is done, check if we should unload
+        if prev == 1 {
+            self.maybe_unload_immediately("streaming session ended");
         }
     }
 
