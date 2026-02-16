@@ -272,6 +272,21 @@ impl Default for TypingTool {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum VadMode {
+    Off,
+    Filter,
+    Stream,
+    BatchStream,
+}
+
+impl Default for VadMode {
+    fn default() -> Self {
+        VadMode::Filter
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -356,6 +371,8 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default)]
+    pub vad_mode: VadMode,
 }
 
 fn default_model() -> String {
@@ -687,6 +704,7 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
+        vad_mode: VadMode::default(),
     }
 }
 

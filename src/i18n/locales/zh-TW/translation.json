@@ -295,6 +295,16 @@
         "placeholder": "新增詞彙",
         "add": "新增",
         "remove": "刪除 {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "關閉：不過濾語音。過濾：移除靜音（預設）。串流：說話時逐句貼上文字。批次串流：在背景轉錄，但停止時一次貼上所有內容。",
+        "options": {
+          "off": "關閉",
+          "filter": "過濾",
+          "stream": "串流",
+          "batchStream": "批次串流"
+        }
       }
     },
     "postProcessing": {

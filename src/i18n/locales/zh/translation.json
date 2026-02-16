@@ -295,6 +295,16 @@
         "placeholder": "添加词汇",
         "add": "添加",
         "remove": "删除 {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "关闭：不过滤语音。过滤：移除静音（默认）。流式：说话时逐句粘贴文本。批量流式：在后台转录，但停止时一次性粘贴所有内容。",
+        "options": {
+          "off": "关闭",
+          "filter": "过滤",
+          "stream": "流式",
+          "batchStream": "批量流式"
+        }
       }
     },
     "postProcessing": {

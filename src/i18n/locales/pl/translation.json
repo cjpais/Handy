@@ -295,6 +295,16 @@
         "placeholder": "Dodaj słowo",
         "add": "Dodaj",
         "remove": "Usuń {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Wyłączone: brak filtrowania głosu. Filtr: usuwa ciszę (domyślnie). Strumień: wkleja tekst zdanie po zdaniu podczas mówienia. Strumień zbiorczy: transkrybuje w tle, ale wkleja wszystko naraz po zatrzymaniu.",
+        "options": {
+          "off": "Wyłączone",
+          "filter": "Filtr",
+          "stream": "Strumień",
+          "batchStream": "Strumień zbiorczy"
+        }
       }
     },
     "postProcessing": {

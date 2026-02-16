@@ -295,6 +295,16 @@
         "placeholder": "Aggiungi una parola",
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Disattivato: nessun filtraggio vocale. Filtro: rimuove i silenzi (predefinito). Flusso: incolla il testo frase per frase mentre parli. Flusso batch: trascrive in background ma incolla tutto insieme quando ti fermi.",
+        "options": {
+          "off": "Disattivato",
+          "filter": "Filtro",
+          "stream": "Flusso",
+          "batchStream": "Flusso batch"
+        }
       }
     },
     "postProcessing": {

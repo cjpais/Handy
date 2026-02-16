@@ -295,6 +295,16 @@
         "placeholder": "単語を追加",
         "add": "追加",
         "remove": "{{word}}を削除"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "オフ：音声フィルタリングなし。フィルター：無音を除去（デフォルト）。ストリーム：話している間に文ごとにテキストを貼り付け。バッチストリーム：バックグラウンドで文字起こしし、停止時にまとめて貼り付け。",
+        "options": {
+          "off": "オフ",
+          "filter": "フィルター",
+          "stream": "ストリーム",
+          "batchStream": "バッチストリーム"
+        }
       }
     },
     "postProcessing": {

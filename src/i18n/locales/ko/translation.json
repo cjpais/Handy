@@ -295,6 +295,16 @@
         "placeholder": "단어 추가",
         "add": "추가",
         "remove": "{{word}} 제거"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "끄기: 음성 필터링 없음. 필터: 무음 제거 (기본값). 스트림: 말하는 동안 문장 단위로 텍스트 붙여넣기. 배치 스트림: 백그라운드에서 전사하지만 멈추면 한꺼번에 붙여넣기.",
+        "options": {
+          "off": "끄기",
+          "filter": "필터",
+          "stream": "스트림",
+          "batchStream": "배치 스트림"
+        }
       }
     },
     "postProcessing": {

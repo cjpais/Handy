@@ -295,6 +295,16 @@
         "placeholder": "Agregar una palabra",
         "add": "Agregar",
         "remove": "Eliminar {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Desactivado: sin filtrado de voz. Filtro: elimina silencios (predeterminado). Flujo: pega texto oración por oración mientras hablas. Flujo por lotes: transcribe en segundo plano pero pega todo de una vez al detenerte.",
+        "options": {
+          "off": "Desactivado",
+          "filter": "Filtro",
+          "stream": "Flujo",
+          "batchStream": "Flujo por lotes"
+        }
       }
     },
     "postProcessing": {

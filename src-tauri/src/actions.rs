@@ -3,8 +3,9 @@ use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::managers::streaming::StreamingSession;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{get_settings, AppSettings, VadMode, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -15,10 +16,13 @@ use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::AppHandle;
 use tauri::Manager;
+
+/// Active streaming session (if any). Keeps state isolated per recording.
+static STREAMING_SESSION: Lazy<Mutex<Option<StreamingSession>>> = Lazy::new(|| Mutex::new(None));
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -231,7 +235,42 @@ impl ShortcutAction for TranscribeAction {
         debug!("Microphone mode - always_on: {}", is_always_on);
 
         let mut recording_started = false;
-        if is_always_on {
+        let vad_mode = settings.vad_mode;
+
+        if vad_mode == VadMode::Stream || vad_mode == VadMode::BatchStream {
+            // Stream / BatchStream: start streaming recording and spawn consumer
+            *STREAMING_SESSION.lock().unwrap() = None;
+
+            if is_always_on {
+                let rm_clone = Arc::clone(&rm);
+                let app_clone = app.clone();
+                std::thread::spawn(move || {
+                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                    rm_clone.apply_mute();
+                });
+            }
+
+            if let Some(chunk_rx) = rm.try_start_streaming_recording(&binding_id) {
+                recording_started = true;
+                debug!("Streaming recording started (mode: {:?})", vad_mode);
+
+                if !is_always_on {
+                    let app_clone = app.clone();
+                    let rm_clone = Arc::clone(&rm);
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                        rm_clone.apply_mute();
+                    });
+                }
+
+                let session =
+                    StreamingSession::start(vad_mode, Arc::clone(&tm), app.clone(), chunk_rx);
+                *STREAMING_SESSION.lock().unwrap() = Some(session);
+            } else {
+                debug!("Failed to start streaming recording");
+            }
+        } else if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
             let rm_clone = Arc::clone(&rm);
@@ -303,6 +342,8 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let settings = get_settings(app);
+        let vad_mode = settings.vad_mode;
 
         tauri::async_runtime::spawn(async move {
             let binding_id = binding_id.clone(); // Clone for the inner async task
@@ -319,107 +360,225 @@ impl ShortcutAction for TranscribeAction {
                     samples.len()
                 );
 
-                let transcription_time = Instant::now();
-                let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
-                    Ok(transcription) => {
-                        debug!(
-                            "Transcription completed in {:?}: '{}'",
-                            transcription_time.elapsed(),
-                            transcription
-                        );
-                        if !transcription.is_empty() {
-                            let settings = get_settings(&ah);
-                            let mut final_text = transcription.clone();
-                            let mut post_processed_text: Option<String> = None;
-                            let mut post_process_prompt: Option<String> = None;
+                if vad_mode == VadMode::Stream || vad_mode == VadMode::BatchStream {
+                    let session = STREAMING_SESSION.lock().unwrap().take();
+                    if let Some(session) = session {
+                        let result = session.finish(samples.clone());
+                        let transcription = result.combined_text.clone();
 
-                            // First, check if Chinese variant conversion is needed
-                            if let Some(converted_text) =
-                                maybe_convert_chinese_variant(&settings, &transcription).await
-                            {
-                                final_text = converted_text;
-                            }
-
-                            // Then apply LLM post-processing if this is the post-process hotkey
-                            // Uses final_text which may already have Chinese conversion applied
-                            if post_process {
-                                show_processing_overlay(&ah);
-                            }
-                            let processed = if post_process {
-                                post_process_transcription(&settings, &final_text).await
-                            } else {
-                                None
-                            };
-                            if let Some(processed_text) = processed {
-                                post_processed_text = Some(processed_text.clone());
-                                final_text = processed_text;
-
-                                // Get the prompt that was used
-                                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
-                                    if let Some(prompt) = settings
-                                        .post_process_prompts
-                                        .iter()
-                                        .find(|p| &p.id == prompt_id)
+                        if vad_mode == VadMode::Stream {
+                            // Stream mode: chunks already pasted. Save history only.
+                            if !transcription.is_empty() {
+                                let hm_clone = Arc::clone(&hm);
+                                tauri::async_runtime::spawn(async move {
+                                    if let Err(e) = hm_clone
+                                        .save_transcription(result.audio, transcription, None, None)
+                                        .await
                                     {
-                                        post_process_prompt = Some(prompt.prompt.clone());
+                                        error!(
+                                            "Failed to save streaming transcription to history: {}",
+                                            e
+                                        );
                                     }
-                                }
-                            } else if final_text != transcription {
-                                // Chinese conversion was applied but no LLM post-processing
-                                post_processed_text = Some(final_text.clone());
+                                });
                             }
 
-                            // Save to history with post-processed text and prompt
-                            let hm_clone = Arc::clone(&hm);
-                            let transcription_for_history = transcription.clone();
-                            tauri::async_runtime::spawn(async move {
-                                if let Err(e) = hm_clone
-                                    .save_transcription(
-                                        samples_clone,
-                                        transcription_for_history,
-                                        post_processed_text,
-                                        post_process_prompt,
-                                    )
-                                    .await
-                                {
-                                    error!("Failed to save transcription to history: {}", e);
-                                }
-                            });
+                            utils::hide_recording_overlay(&ah);
+                            change_tray_icon(&ah, TrayIconState::Idle);
+                        } else {
+                            // BatchStream: run full pipeline on combined text.
+                            if !transcription.is_empty() {
+                                let settings = get_settings(&ah);
+                                let mut final_text = transcription.clone();
+                                let mut post_processed_text: Option<String> = None;
+                                let mut post_process_prompt: Option<String> = None;
 
-                            // Paste the final text (either processed or original)
-                            let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
+                                if let Some(converted) =
+                                    maybe_convert_chinese_variant(&settings, &transcription).await
+                                {
+                                    final_text = converted;
                                 }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+
+                                if post_process {
+                                    show_processing_overlay(&ah);
+                                }
+                                let processed = if post_process {
+                                    post_process_transcription(&settings, &final_text).await
+                                } else {
+                                    None
+                                };
+                                if let Some(processed_text) = processed {
+                                    post_processed_text = Some(processed_text.clone());
+                                    final_text = processed_text;
+                                    if let Some(prompt_id) =
+                                        &settings.post_process_selected_prompt_id
+                                    {
+                                        if let Some(prompt) = settings
+                                            .post_process_prompts
+                                            .iter()
+                                            .find(|p| &p.id == prompt_id)
+                                        {
+                                            post_process_prompt = Some(prompt.prompt.clone());
+                                        }
+                                    }
+                                } else if final_text != transcription {
+                                    post_processed_text = Some(final_text.clone());
+                                }
+
+                                let hm_clone = Arc::clone(&hm);
+                                let transcription_for_history = transcription.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    if let Err(e) = hm_clone
+                                        .save_transcription(
+                                            result.audio,
+                                            transcription_for_history,
+                                            post_processed_text,
+                                            post_process_prompt,
+                                        )
+                                        .await
+                                    {
+                                        error!("Failed to save transcription to history: {}", e);
+                                    }
+                                });
+
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+                                ah.run_on_main_thread(move || {
+                                    match utils::paste(final_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    }
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            } else {
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
-                            });
-                        } else {
+                            }
+                        }
+                    } else {
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                    }
+                } else {
+                    // Standard (Filter / Off) mode — full transcription pipeline
+                    let transcription_time = Instant::now();
+                    let samples_clone = samples.clone(); // Clone for history saving
+                    match tm.transcribe(samples) {
+                        Ok(transcription) => {
+                            debug!(
+                                "Transcription completed in {:?}: '{}'",
+                                transcription_time.elapsed(),
+                                transcription
+                            );
+                            if !transcription.is_empty() {
+                                let settings = get_settings(&ah);
+                                let mut final_text = transcription.clone();
+                                let mut post_processed_text: Option<String> = None;
+                                let mut post_process_prompt: Option<String> = None;
+
+                                // First, check if Chinese variant conversion is needed
+                                if let Some(converted_text) =
+                                    maybe_convert_chinese_variant(&settings, &transcription).await
+                                {
+                                    final_text = converted_text;
+                                }
+
+                                // Then apply LLM post-processing if this is the post-process hotkey
+                                // Uses final_text which may already have Chinese conversion applied
+                                if post_process {
+                                    show_processing_overlay(&ah);
+                                }
+                                let processed = if post_process {
+                                    post_process_transcription(&settings, &final_text).await
+                                } else {
+                                    None
+                                };
+                                if let Some(processed_text) = processed {
+                                    post_processed_text = Some(processed_text.clone());
+                                    final_text = processed_text;
+
+                                    // Get the prompt that was used
+                                    if let Some(prompt_id) =
+                                        &settings.post_process_selected_prompt_id
+                                    {
+                                        if let Some(prompt) = settings
+                                            .post_process_prompts
+                                            .iter()
+                                            .find(|p| &p.id == prompt_id)
+                                        {
+                                            post_process_prompt = Some(prompt.prompt.clone());
+                                        }
+                                    }
+                                } else if final_text != transcription {
+                                    // Chinese conversion was applied but no LLM post-processing
+                                    post_processed_text = Some(final_text.clone());
+                                }
+
+                                // Save to history with post-processed text and prompt
+                                let hm_clone = Arc::clone(&hm);
+                                let transcription_for_history = transcription.clone();
+                                tauri::async_runtime::spawn(async move {
+                                    if let Err(e) = hm_clone
+                                        .save_transcription(
+                                            samples_clone,
+                                            transcription_for_history,
+                                            post_processed_text,
+                                            post_process_prompt,
+                                        )
+                                        .await
+                                    {
+                                        error!("Failed to save transcription to history: {}", e);
+                                    }
+                                });
+
+                                // Paste the final text (either processed or original)
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+                                ah.run_on_main_thread(move || {
+                                    match utils::paste(final_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => {
+                                            error!("Failed to paste transcription: {}", e)
+                                        }
+                                    }
+                                    // Hide the overlay after transcription is complete
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            } else {
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                            }
+                        }
+                        Err(err) => {
+                            debug!("Global Shortcut Transcription error: {}", err);
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
-                    Err(err) => {
-                        debug!("Global Shortcut Transcription error: {}", err);
-                        utils::hide_recording_overlay(&ah);
-                        change_tray_icon(&ah, TrayIconState::Idle);
-                    }
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
+                if vad_mode == VadMode::Stream || vad_mode == VadMode::BatchStream {
+                    tm.end_streaming();
+                }
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }

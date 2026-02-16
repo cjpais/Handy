@@ -295,6 +295,16 @@
         "placeholder": "Ajouter un mot",
         "add": "Ajouter",
         "remove": "Supprimer {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Désactivé : pas de filtrage vocal. Filtre : supprime les silences (par défaut). Flux : colle le texte phrase par phrase pendant que vous parlez. Flux par lots : transcrit en arrière-plan mais colle tout en une fois lorsque vous arrêtez.",
+        "options": {
+          "off": "Désactivé",
+          "filter": "Filtre",
+          "stream": "Flux",
+          "batchStream": "Flux par lots"
+        }
       }
     },
     "postProcessing": {

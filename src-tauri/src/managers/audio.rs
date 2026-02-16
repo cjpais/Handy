@@ -1,9 +1,9 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
 use crate::helpers::clamshell;
-use crate::settings::{get_settings, AppSettings};
+use crate::settings::{get_settings, AppSettings, VadMode};
 use crate::utils;
 use log::{debug, error, info};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
 
@@ -117,22 +117,34 @@ pub enum MicrophoneMode {
 fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
+    vad_mode: VadMode,
 ) -> Result<AudioRecorder, anyhow::Error> {
-    let silero = SileroVad::new(vad_path, 0.3)
-        .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+    let mut recorder = AudioRecorder::new()
+        .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?;
 
-    // Recorder with VAD plus a spectrum-level callback that forwards updates to
-    // the frontend.
-    let recorder = AudioRecorder::new()
-        .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
-        .with_vad(Box::new(smoothed_vad))
-        .with_level_callback({
-            let app_handle = app_handle.clone();
-            move |levels| {
-                utils::emit_levels(&app_handle, &levels);
-            }
-        });
+    // Only attach VAD when mode is not Off
+    if vad_mode != VadMode::Off {
+        let silero = SileroVad::new(vad_path, 0.3)
+            .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
+
+        // Stream mode uses a moderately longer hangover to reduce mid-sentence splits.
+        // Filter and BatchStream use longer hangover to bridge natural pauses
+        // (BatchStream doesn't paste live, so quality > speed).
+        let hangover_frames = match vad_mode {
+            VadMode::Stream => 12, // ~360ms
+            _ => 15,               // ~450ms
+        };
+        let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, hangover_frames, 2);
+        recorder = recorder.with_vad(Box::new(smoothed_vad));
+    }
+
+    // Spectrum-level callback that forwards updates to the frontend.
+    let recorder = recorder.with_level_callback({
+        let app_handle = app_handle.clone();
+        move |levels| {
+            utils::emit_levels(&app_handle, &levels);
+        }
+    });
 
     Ok(recorder)
 }
@@ -258,9 +270,11 @@ impl AudioRecordingManager {
         let mut recorder_opt = self.recorder.lock().unwrap();
 
         if recorder_opt.is_none() {
+            let settings = get_settings(&self.app_handle);
             *recorder_opt = Some(create_audio_recorder(
                 vad_path.to_str().unwrap(),
                 &self.app_handle,
+                settings.vad_mode,
             )?);
         }
 
@@ -358,6 +372,43 @@ impl AudioRecordingManager {
             false
         } else {
             false
+        }
+    }
+
+    pub fn try_start_streaming_recording(
+        &self,
+        binding_id: &str,
+    ) -> Option<mpsc::Receiver<Vec<f32>>> {
+        let mut state = self.state.lock().unwrap();
+
+        if let RecordingState::Idle = *state {
+            // Ensure microphone is open in on-demand mode
+            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
+                if let Err(e) = self.start_microphone_stream() {
+                    error!("Failed to open microphone stream: {e}");
+                    return None;
+                }
+            }
+
+            if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                match rec.start_streaming() {
+                    Ok(rx) => {
+                        *self.is_recording.lock().unwrap() = true;
+                        *state = RecordingState::Recording {
+                            binding_id: binding_id.to_string(),
+                        };
+                        debug!("Streaming recording started for binding {binding_id}");
+                        return Some(rx);
+                    }
+                    Err(e) => {
+                        error!("start_streaming() failed: {e}");
+                    }
+                }
+            }
+            error!("Recorder not available");
+            None
+        } else {
+            None
         }
     }
 
