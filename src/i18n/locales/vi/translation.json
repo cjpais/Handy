@@ -14,7 +14,8 @@
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "search": "Tìm kiếm Web"
   },
   "onboarding": {
     "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
+          },
+          "transcribe_with_search": {
+            "name": "Phím tắt Tìm kiếm AI",
+            "description": "Tùy chọn: Phím tắt chuyên dụng để ghi âm, chuyển đổi và tìm kiếm bằng AI."
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "Thêm một từ",
         "add": "Thêm",
         "remove": "Xóa {{word}}"
+      },
+      "postProcessingToggle": {
+        "label": "Xử lý sau",
+        "description": "Bật tính năng tối ưu hóa văn bản bằng AI sau khi chuyển đổi"
+      },
+      "searchToggle": {
+        "label": "Tìm kiếm Web",
+        "description": "Bật tìm kiếm web sau khi chuyển đổi (có hoặc không có AI) (chỉ macOS)"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "Micrô chế độ gập",
         "description": "Micrô sử dụng khi nắp laptop được đóng"
       },
-      "postProcessingToggle": {
-        "label": "Xử lý sau",
-        "description": "Bật tinh chỉnh văn bản bằng AI sau khi chuyển đổi"
-      },
       "muteWhileRecording": {
         "label": "Tắt tiếng khi ghi âm",
         "description": "Tắt tiếng âm thanh hệ thống trong khi ghi âm"
@@ -467,6 +476,74 @@
           "description": "Suy luận hiệu suất cao của mô hình nhận dạng giọng nói tự động Whisper của OpenAI",
           "details": "Handy sử dụng Whisper.cpp để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
         }
+      }
+    },
+    "search": {
+      "title": "Tìm kiếm Web",
+      "hotkey": {
+        "title": "Phím tắt"
+      },
+      "searchEngine": {
+        "title": "Công cụ Tìm kiếm",
+        "description": "Chọn công cụ tìm kiếm để sử dụng cho tìm kiếm của bạn."
+      },
+      "useAi": {
+        "title": "Truy vấn thông minh hỗ trợ bởi AI",
+        "description": "Sử dụng AI để tạo truy vấn tìm kiếm thông minh từ bản chuyển đổi của bạn"
+      },
+      "api": {
+        "title": "API (Tương thích OpenAI)",
+        "provider": {
+          "title": "Nhà cung cấp",
+          "description": "Chọn một nhà cung cấp tương thích OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Chạy hoàn toàn trên thiết bị. Không cần khóa API hoặc truy cập mạng.",
+          "requirements": "Yêu cầu Mac Apple Silicon chạy macOS Tahoe (26.0) trở lên. Apple Intelligence phải được bật trong Cài đặt Hệ thống.",
+          "unavailable": "Apple Intelligence không khả dụng trên thiết bị này. Yêu cầu Mac Apple Silicon chạy macOS Tahoe (26.0) trở lên with Apple Intelligence được bật trong Cài đặt Hệ thống."
+        },
+        "baseUrl": {
+          "title": "URL cơ sở",
+          "description": "URL cơ sở API cho nhà cung cấp đã chọn. Chỉ có thể chỉnh sửa nhà cung cấp tùy chỉnh.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Khóa API",
+          "description": "Khóa API cho nhà cung cấp đã chọn.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Mô hình",
+          "descriptionApple": "Cung cấp giới hạn token tùy chọn hoặc giữ cài đặt mặc định trên thiết bị.",
+          "descriptionCustom": "Cung cấp định danh mô hình được yêu cầu bởi điểm cuối tùy chỉnh của bạn.",
+          "descriptionDefault": "Chọn một mô hình được cung cấp bởi nhà cung cấp đã chọn.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "Nhập tên mô hình",
+          "placeholderWithOptions": "Tìm kiếm hoặc chọn một mô hình",
+          "refreshModels": "Làm mới mô hình"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Prompt đã chọn",
+          "description": "Chọn một mẫu để tạo truy vấn tìm kiếm hoặc tạo mới. Sử dụng  trong văn bản prompt để tham chiếu bản ghi đã chụp."
+        },
+        "noPrompts": "Không có prompt nào",
+        "selectPrompt": "Chọn một prompt",
+        "createNew": "Tạo Prompt mới",
+        "promptLabel": "Nhãn Prompt",
+        "promptLabelPlaceholder": "Nhập tên prompt",
+        "promptInstructions": "Hướng dẫn Prompt",
+        "promptInstructionsPlaceholder": "Viết hướng dẫn để tạo truy vấn tìm kiếm từ bản chuyển đổi. Ví dụ: Tạo một truy vấn tìm kiếm ngắn gọn 5-10 từ cho: ",
+        "promptTip": "Mẹo: Sử dụng <code></code> để chèn văn bản đã chuyển đổi vào prompt của bạn.",
+        "updatePrompt": "Cập nhật Prompt",
+        "deletePrompt": "Xóa Prompt",
+        "createPrompt": "Tạo Prompt",
+        "cancel": "Hủy",
+        "selectToEdit": "Chọn một prompt ở trên để xem và chỉnh sửa chi tiết.",
+        "createFirst": "Nhấn 'Tạo Prompt mới' ở trên để tạo prompt tìm kiếm đầu tiên của bạn."
       }
     }
   },

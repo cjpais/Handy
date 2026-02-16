@@ -491,6 +491,36 @@ fn get_search_url(settings: &AppSettings, query: &str) -> String {
 async fn perform_search(app: &AppHandle, transcription: &str) -> Option<()> {
     let settings = get_settings(app);
 
+    // Check if AI is enabled
+    if !settings.search_use_ai {
+        // Use raw transcription as search query
+        let raw_query = transcription.trim().to_string();
+        if raw_query.is_empty() {
+            debug!("Transcription is empty, cannot search");
+            return None;
+        }
+        debug!(
+            "AI disabled, using raw transcription as search query: {}",
+            raw_query
+        );
+
+        // Build the search URL
+        let search_url = get_search_url(&settings, &raw_query);
+        debug!("Opening search URL: {}", search_url);
+
+        // Open the browser
+        return match open_url(&search_url, None::<&str>) {
+            Ok(_) => {
+                debug!("Browser opened successfully with search query");
+                Some(())
+            }
+            Err(e) => {
+                error!("Failed to open browser: {}", e);
+                None
+            }
+        };
+    }
+
     let provider = match settings.active_search_provider().cloned() {
         Some(provider) => provider,
         None => {
@@ -547,7 +577,6 @@ async fn perform_search(app: &AppHandle, transcription: &str) -> Option<()> {
     // Get the search query from LLM
     let search_query: Option<String>;
 
-    // Handle Apple Intelligence specially
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
         #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
         {

@@ -138,6 +138,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "transcribe_with_search": {
+            "name": "AI Search Hotkey",
+            "description": "Optional: A dedicated hotkey to record, transcribe, and search with AI."
           }
         },
         "errors": {
@@ -375,6 +379,10 @@
         "title": "Search Engine",
         "description": "Select the search engine to use for your search."
       },
+      "useAi": {
+        "title": "AI powered smart query",
+        "description": "Use AI to generate a smart search query from your transcription"
+      },
       "api": {
         "title": "API (OpenAI Compatible)",
         "provider": {
@@ -593,4 +601,3 @@
     "processing": "Processing..."
   }
 }
-

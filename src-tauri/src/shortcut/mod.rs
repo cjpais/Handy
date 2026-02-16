@@ -1313,3 +1313,12 @@ pub fn change_search_engine_setting(app: AppHandle, engine: String) -> Result<()
     settings::write_settings(&app, settings);
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_search_use_ai_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.search_use_ai = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}

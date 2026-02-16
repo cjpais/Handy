@@ -14,7 +14,8 @@
     "postProcessing": "Postproces",
     "history": "Historia",
     "debug": "Debugowanie",
-    "about": "O programie"
+    "about": "O programie",
+    "search": "Wyszukiwanie w sieci"
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "Skrót postprocessingu",
             "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
+          },
+          "transcribe_with_search": {
+            "name": "Skrót klawiszowy wyszukiwania AI",
+            "description": "Opcjonalnie: Dedykowany skrót klawiszowy do nagrywania, transkrypcji i wyszukiwania za pomocą AI."
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "Dodaj słowo",
         "add": "Dodaj",
         "remove": "Usuń {{word}}"
+      },
+      "postProcessingToggle": {
+        "label": "Przetwarzanie końcowe",
+        "description": "Włącz udoskonalanie tekstu przez AI po transkrypcji"
+      },
+      "searchToggle": {
+        "label": "Wyszukiwanie w sieci",
+        "description": "Włącz wyszukiwanie w sieci po transkrypcji (z AI lub bez) (tylko macOS)"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "Mikrofon przy zamkniętej pokrywie",
         "description": "Mikrofon używany, gdy pokrywa laptopa jest zamknięta"
       },
-      "postProcessingToggle": {
-        "label": "Postprocess",
-        "description": "Włącz AI do ulepszania tekstu po transkrypcji"
-      },
       "muteWhileRecording": {
         "label": "Wycisz podczas nagrywania",
         "description": "Wycisz dźwięk systemu podczas nagrywania"
@@ -467,6 +476,74 @@
           "description": "Wydajne wykonywanie modelu rozpoznawania mowy Whisper od OpenAI",
           "details": "Handy używa Whisper.cpp do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
+      }
+    },
+    "search": {
+      "title": "Wyszukiwanie w sieci",
+      "hotkey": {
+        "title": "Skrót klawiszowy"
+      },
+      "searchEngine": {
+        "title": "Wyszukiwarka",
+        "description": "Wybierz wyszukiwarkę, której chcesz używać."
+      },
+      "useAi": {
+        "title": "Inteligentne zapytanie AI",
+        "description": "Użyj AI, aby wygenerować inteligentne zapytanie na podstawie transkrypcji"
+      },
+      "api": {
+        "title": "API (kompatybilne z OpenAI)",
+        "provider": {
+          "title": "Dostawca",
+          "description": "Wybierz dostawcę kompatybilnego z OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Działa całkowicie na urządzeniu. Nie wymaga klucza API ani dostępu do sieci.",
+          "requirements": "Wymaga komputera Mac z procesorem Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym. Apple Intelligence musi być włączone w ustawieniach systemowych.",
+          "unavailable": "Apple Intelligence nie jest dostępne na tym urządzeniu. Wymaga komputera Mac z procesorem Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym oraz вłączonej usługi Apple Intelligence."
+        },
+        "baseUrl": {
+          "title": "Bazowy URL",
+          "description": "Bazowy URL API dla wybranego dostawcy. Tylko własny dostawca może być edytowany.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Klucz API",
+          "description": "Klucz API dla wybranego dostawcy.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionApple": "Podaj opcjonalny limit tokenów lub zachowaj domyślne ustawienie urządzenia.",
+          "descriptionCustom": "Podaj identyfikator modelu oczekiwany przez Twój własny punkt końcowy.",
+          "descriptionDefault": "Wybierz model udostępniony przez wybranego dostawcę.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "Wpisz nazwę modelu",
+          "placeholderWithOptions": "Szukaj lub wybierz model",
+          "refreshModels": "Odśwież modele"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Wybrany prompt",
+          "description": "Wybierz szablon do generowania zapytań lub utwórz nowy. Użyj  w tekście promptu, aby odnieść się do transkrypcji."
+        },
+        "noPrompts": "Brak dostępnych promptów",
+        "selectPrompt": "Wybierz prompt",
+        "createNew": "Utwórz nowy prompt",
+        "promptLabel": "Etykieta promptu",
+        "promptLabelPlaceholder": "Wprowadź nazwę promptu",
+        "promptInstructions": "Instrukcje promptu",
+        "promptInstructionsPlaceholder": "Napiš instrukcje generowania zapytania na podstawie transkrypcji. Przykład: Stwórz zwięzłe zapytanie (5-10 słów) dla: ",
+        "promptTip": "Wskazówka: Użyj <code></code>, aby wstawić transkrybowany tekst do promptu.",
+        "updatePrompt": "Aktualizuj prompt",
+        "deletePrompt": "Usuń prompt",
+        "createPrompt": "Utwórz prompt",
+        "cancel": "Anuluj",
+        "selectToEdit": "Wybierz prompt powyżej, aby wyświetlić i edytować jego szczegóły.",
+        "createFirst": "Kliknij 'Utwórz nowy prompt' powyżej, aby stworzyć swój pierwszy prompt wyszukiwania."
       }
     }
   },

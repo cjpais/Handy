@@ -14,7 +14,8 @@
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
     "debug": "Hata Ayıklama",
-    "about": "Hakkında"
+    "about": "Hakkında",
+    "search": "Web Araması"
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "Son İşlem Kısayolu",
             "description": "İsteğe bağlı: Transkripsiyonunuza her zaman AI son işleme uygulayan özel bir kısayol tuşu."
+          },
+          "transcribe_with_search": {
+            "name": "AI Arama Kısayolu",
+            "description": "İsteğe bağlı: AI ile kaydetmek, transkribe etmek ve arama yapmak için özel bir kısayol tuşu."
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "Kelime ekle",
         "add": "Ekle",
         "remove": "{{word}} Kaldır"
+      },
+      "postProcessingToggle": {
+        "label": "Son İşlem",
+        "description": "Yapay zeka destekli metin iyileştirmeyi etkinleştir"
+      },
+      "searchToggle": {
+        "label": "Web Araması",
+        "description": "Transkripsiyondan sonra web araması yapmayı etkinleştir (AI ile veya AI olmadan) (yalnızca macOS)"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "Kapalı Kapak Mikrofonu",
         "description": "Dizüstü bilgisayar kapağı kapalıyken kullanılacak mikrofon"
       },
-      "postProcessingToggle": {
-        "label": "Son İşlem",
-        "description": "Transkripsiyon sonrası yapay zekâ destekli metin iyileştirmeyi etkinleştirir"
-      },
       "muteWhileRecording": {
         "label": "Kayıt Sırasında Sessize Al",
         "description": "Kayıt sırasında sistem sesini kapatır"
@@ -467,6 +476,74 @@
           "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
           "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için Whisper.cpp kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
         }
+      }
+    },
+    "search": {
+      "title": "Web Araması",
+      "hotkey": {
+        "title": "Kısayol Tuşu"
+      },
+      "searchEngine": {
+        "title": "Arama Motoru",
+        "description": "Aramanız için kullanılacak arama motorunu seçin."
+      },
+      "useAi": {
+        "title": "AI destekli akıllı sorgu",
+        "description": "Transkripsiyonunuzdan akıllı bir arama sorgusu oluşturmak için AI kullanın"
+      },
+      "api": {
+        "title": "API (OpenAI Uyumlu)",
+        "provider": {
+          "title": "Sağlayıcı",
+          "description": "OpenAI uyumlu bir sağlayıcı seçin."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Tamamen cihaz üzerinde çalışır. API anahtarı veya ağ erişimi gerekmez.",
+          "requirements": "macOS Tahoe (26.0) veya üzeri çalıştıran bir Apple Silicon Mac gerektirir. Sistem Ayarları'nda Apple Intelligence etkin olmalıdır.",
+          "unavailable": "Apple Intelligence bu cihazda kullanılamıyor. macOS Tahoe (26.0) veya üzeri ve Sistem Ayarları'nda Apple Intelligence etkin olan bir Apple Silicon Mac gerektirir."
+        },
+        "baseUrl": {
+          "title": "Temel URL",
+          "description": "Seçili sağlayıcı için API temel URL'si. Yalnızca özel sağlayıcı düzenlenebilir.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API Anahtarı",
+          "description": "Seçili sağlayıcı için API anahtarı.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionApple": "İsteğe bağlı bir sayısal token sınırı belirleyin veya varsayılan cihaz içi ön ayarı kullanın.",
+          "descriptionCustom": "Özel uç noktanızın beklediği model tanımlayıcısını girin.",
+          "descriptionDefault": "Seçili sağlayıcının sunduğu bir modeli seçin.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "Model adı yazın",
+          "placeholderWithOptions": "Model ara veya seç",
+          "refreshModels": "Modelleri Yenile"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Seçili Prompt",
+          "description": "Arama sorguları oluşturmak için bir şablon seçin veya yeni bir tane oluşturun. Yakalanan transkripte referans vermek için prompt metni içinde  kullanın."
+        },
+        "noPrompts": "Kullanılabilir prompt yok",
+        "selectPrompt": "Prompt Seç",
+        "createNew": "Yeni Prompt Oluştur",
+        "promptLabel": "Prompt Etiketi",
+        "promptLabelPlaceholder": "Prompt adı girin",
+        "promptInstructions": "Prompt Talimatları",
+        "promptInstructionsPlaceholder": "Transkripsiyondan bir arama sorgusu oluşturmak için talimatları yazın. Örnek: Şunun için kısa bir 5-10 kelimelik arama sorgusu oluştur: ",
+        "promptTip": "İpucu: Transkribe edilen metni promptunuza eklemek için <code></code> kullanın.",
+        "updatePrompt": "Promptu Güncelle",
+        "deletePrompt": "Promptu Sil",
+        "createPrompt": "Prompt Oluştur",
+        "cancel": "İptal",
+        "selectToEdit": "Ayrıntılarını görüntülemek ve düzenlemek için yukarıdan bir prompt seçin.",
+        "createFirst": "İlk arama prompt'unuzu oluşturmak için yukarıdaki “Yeni Prompt Oluştur” seçeneğine tıklayın."
       }
     }
   },

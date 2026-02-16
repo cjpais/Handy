@@ -148,6 +148,7 @@ const settingUpdaters: {
   search_enabled: (value) =>
     commands.changeSearchEnabledSetting(value as boolean),
   search_engine: (value) => commands.changeSearchEngineSetting(value as string),
+  search_use_ai: (value) => commands.changeSearchUseAiSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
 };

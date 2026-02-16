@@ -14,7 +14,8 @@
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
     "about": "حول",
-    "models": "النماذج"
+    "models": "النماذج",
+    "search": "بحث الويب"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
@@ -133,6 +134,10 @@
           "transcribe_with_post_process": {
             "name": "مفتاح المعالجة اللاحقة",
             "description": "اختياري: مفتاح اختصار مخصص يطبق دائماً المعالجة اللاحقة بالذكاء الاصطناعي على التفريغ الصوتي."
+          },
+          "transcribe_with_search": {
+            "name": "مفتاح اختصار البحث بالذكاء الاصطناعي",
+            "description": "اختياري: مفتاح اختصار مخصص للتسجيل والنسخ والبحث باستخدام الذاء الاصطناعي."
           }
         },
         "errors": {
@@ -273,6 +278,14 @@
         "placeholder": "أضف كلمة",
         "add": "إضافة",
         "remove": "إزالة {{word}}"
+      },
+      "postProcessingToggle": {
+        "label": "المعالجة اللاحقة",
+        "description": "تمكين تحسين النص المدعوم بالذكاء الاصطناعي بعد النسخ"
+      },
+      "searchToggle": {
+        "label": "بحث الويب",
+        "description": "تمكين بحث الويب بعد النسخ (مع أو بدون ذكاء اصطناعي) (macOS فقط)"
       }
     },
     "postProcessing": {
@@ -391,10 +404,6 @@
         "title": "ميكروفون وضع الإغلاق",
         "description": "الميكروفون المراد استخدامه عندما يكون غطاء المحمول مغلقاً"
       },
-      "postProcessingToggle": {
-        "label": "معالجة لاحقة",
-        "description": "تمكين تحسين النص المدعوم بالذكاء الاصطناعي بعد التفريغ الصوتي"
-      },
       "muteWhileRecording": {
         "label": "كتم الصوت أثناء التسجيل",
         "description": "كتم صوت النظام أثناء التسجيل"
@@ -468,6 +477,74 @@
         "allLanguages": "جميع اللغات"
       },
       "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+    },
+    "search": {
+      "title": "بحث الويب",
+      "hotkey": {
+        "title": "مفتاح الاختصار"
+      },
+      "searchEngine": {
+        "title": "محرك البحث",
+        "description": "اختر محرك البحث لاستخدامه في بحثك."
+      },
+      "useAi": {
+        "title": "استعلام ذكي مدعوم بالذكاء الاصطناعي",
+        "description": "استخدم الذكاء الاصطناعي لإنشاء استعلام بحث ذكي من النص المنسوخ"
+      },
+      "api": {
+        "title": "API (متوافق مع OpenAI)",
+        "provider": {
+          "title": "المزود",
+          "description": "اختر مزودًا متوافقًا مع OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "يعمل بالكامل على الجهاز. لا يتطلب مفتاح API أو الوصول إلى الشبكة.",
+          "requirements": "يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث. يجب تمكين Apple Intelligence في إعدادات النظام.",
+          "unavailable": "Apple Intelligence غير متوفر على هذا الجهاز. يتطلب جهاز Mac بمعالج Apple Silicon يعمل بنظام macOS Tahoe (26.0) أو أحدث مع تمكين Apple Intelligence في إعدادات النظام."
+        },
+        "baseUrl": {
+          "title": "رابط الأساس (Base URL)",
+          "description": "رابط API الأساسي للمزود المختار. يمكن تعديل المزود المخصص فقط.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "مفتاح API",
+          "description": "مفتاح API للمزود المختار.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "النموذج",
+          "descriptionApple": "أدخل حدًا اختياريًا لعدد الرموز (tokens) أو احتفظ بالإعداد المسبق الافتراضي للجهاز.",
+          "descriptionCustom": "أدخل معرف النموذج المتوقع من قبل نقطة النهاية المخصصة الخاصة بك.",
+          "descriptionDefault": "اختر نموذجًا يوفره المزود المختار.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "ابحث عن نموذج أو اختره",
+          "placeholderNoOptions": "اكتب اسم النموذج",
+          "refreshModels": "تحديث النماذج"
+        }
+      },
+      "prompts": {
+        "title": "المطالبة",
+        "selectedPrompt": {
+          "title": "المطالبة المختارة",
+          "description": "اختر قالبًا لإنشاء استعلامات البحث أو أنشئ قالبًا جديدًا. استخدم  داخل نص المطالبة للإشارة إلى النص المنسوخ."
+        },
+        "noPrompts": "لا توجد مطالبات متاحة",
+        "selectPrompt": "اختر مطالبة",
+        "createNew": "إنشاء مطالبة جديدة",
+        "promptLabel": "تسمية المطالبة",
+        "promptLabelPlaceholder": "أدخل اسم المطالبة",
+        "promptInstructions": "تعليمات المطالبة",
+        "promptInstructionsPlaceholder": "اكتب التعليمات لإنشاء استعلام بحث من النسخ. مثال: أنشئ استعلام بحث موجزًا من 5-10 كلمات لـ: ",
+        "promptTip": "نصيحة: استخدم <code></code> لإدراج النص المنسوخ في مطالبتك.",
+        "updatePrompt": "تحديث المطالبة",
+        "deletePrompt": "حذف المطالبة",
+        "createPrompt": "إنشاء مطالبة",
+        "cancel": "إلغاء",
+        "selectToEdit": "اختر مطالبة أعلاه لعرض وتعديل تفاصيلها.",
+        "createFirst": "انقر على 'إنشاء مطالبة جديدة' أعلاه لإنشاء أول مطالبة بحث لك."
+      }
     }
   },
   "footer": {

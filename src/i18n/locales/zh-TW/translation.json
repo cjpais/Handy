@@ -14,7 +14,8 @@
     "postProcessing": "後處理",
     "history": "歷史紀錄",
     "debug": "偵錯",
-    "about": "關於"
+    "about": "關於",
+    "search": "網頁搜尋"
   },
   "onboarding": {
     "subtitle": "首先，請選擇一種模型",
@@ -137,6 +138,10 @@
           "transcribe_with_post_process": {
             "name": "後處理快捷鍵",
             "description": "可選：專用快捷鍵，使用時一律對轉錄結果套用 AI 後處理"
+          },
+          "transcribe_with_search": {
+            "name": "AI 搜尋快捷鍵",
+            "description": "選配：錄音、轉錄並使用 AI 搜尋的專用快捷鍵。"
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "新增詞彙",
         "add": "新增",
         "remove": "刪除 {{word}}"
+      },
+      "postProcessingToggle": {
+        "label": "後處理",
+        "description": "轉錄後啟用 AI 驅動的文本優化"
+      },
+      "searchToggle": {
+        "label": "網頁搜尋",
+        "description": "轉錄後啟用網頁搜尋（使用或不使用 AI）（僅限 macOS）"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "闔蓋麥克風",
         "description": "筆記型電腦闔蓋時使用的麥克風"
       },
-      "postProcessingToggle": {
-        "label": "後處理",
-        "description": "啟用轉錄後的 AI 文字最佳化"
-      },
       "muteWhileRecording": {
         "label": "錄製時靜音",
         "description": "錄製期間靜音系統音訊"
@@ -467,6 +476,74 @@
           "description": "針對 OpenAI Whisper 自動語音識別模型的高效能推理引擎",
           "details": "Handy 使用 Whisper.cpp 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
+      }
+    },
+    "search": {
+      "title": "網頁搜尋",
+      "hotkey": {
+        "title": "快捷鍵"
+      },
+      "searchEngine": {
+        "title": "搜尋引擎",
+        "description": "選擇用於搜尋的搜尋引擎。"
+      },
+      "useAi": {
+        "title": "AI 驅動的智慧查詢",
+        "description": "使用 AI 從轉錄中生成智慧搜尋查詢"
+      },
+      "api": {
+        "title": "API（相容 OpenAI）",
+        "provider": {
+          "title": "供應商",
+          "description": "選擇一個相容 OpenAI 的供應商。"
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "完全在裝置上運行。無需 API 金鑰或網路存取。",
+          "requirements": "需要執行 macOS Tahoe (26.0) 或更高版本的 Apple Silicon Mac。必須在系統設定中啟用 Apple Intelligence。",
+          "unavailable": "Apple Intelligence 在此裝置上不可用。需要執行 macOS Tahoe (26.0) 或更高版本的 Apple Silicon Mac，並在系統設定中啟用 Apple Intelligence。"
+        },
+        "baseUrl": {
+          "title": "基礎網址",
+          "description": "所選供應商的 API 基礎網址。僅自訂供應商可編輯。",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API 金鑰",
+          "description": "所選供應商的 API 金鑰。",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "模型",
+          "descriptionApple": "提供選配的數字權杖限制 or 保持預設的裝置預設值。",
+          "descriptionCustom": "提供自訂端點所需的模型識別碼。",
+          "descriptionDefault": "選擇所選供應商提供的模型。",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "輸入模型名稱",
+          "placeholderWithOptions": "搜尋或選擇模型",
+          "refreshModels": "重新整理模型"
+        }
+      },
+      "prompts": {
+        "title": "提示詞",
+        "selectedPrompt": {
+          "title": "已選提示詞",
+          "description": "選擇用於生成搜尋查詢的範本或建立新範本。在提示詞文本中使用  來引用擷取的轉錄。"
+        },
+        "noPrompts": "沒有可用提示詞",
+        "selectPrompt": "選擇提示詞",
+        "createNew": "建立新提示詞",
+        "promptLabel": "提示詞標籤",
+        "promptLabelPlaceholder": "輸入提示詞名稱",
+        "promptInstructions": "提示詞指令",
+        "promptInstructionsPlaceholder": "編寫從轉錄中生成搜尋查詢的指令。範例：為以下內容建立一個簡潔的 5-10 個詞的搜尋查詢：",
+        "promptTip": "提示：使用 <code></code> 將轉錄文字插入到您的提示詞中。",
+        "updatePrompt": "更新提示詞",
+        "deletePrompt": "刪除提示詞",
+        "createPrompt": "建立提示詞",
+        "cancel": "取消",
+        "selectToEdit": "選擇上方的提示詞以檢視和編輯其詳細資訊。",
+        "createFirst": "點擊上方的「建立新提示詞」來建立您的第一個搜尋提示詞。"
       }
     }
   },

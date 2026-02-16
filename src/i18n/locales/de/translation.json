@@ -14,7 +14,8 @@
     "postProcessing": "Nachbearbeitung",
     "history": "Verlauf",
     "debug": "Debug",
-    "about": "Info"
+    "about": "Info",
+    "search": "Websuche"
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "Nachbearbeitungs-Tastenkürzel",
             "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf Ihre Transkription anwendet."
+          },
+          "transcribe_with_search": {
+            "name": "KI-Suche Hotkey",
+            "description": "Optional: Ein spezieller Hotkey zum Aufnehmen, Transkribieren und Suchen mit KI."
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "Wort hinzufügen",
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen"
+      },
+      "postProcessingToggle": {
+        "label": "Nachbearbeitung",
+        "description": "KI-gestützte Textoptimierung nach der Transkription aktivieren"
+      },
+      "searchToggle": {
+        "label": "Websuche",
+        "description": "Websuche nach der Transkription aktivieren (mit oder ohne KI) (nur macOS)"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "Clamshell-Mikrofon",
         "description": "Mikrofon bei geschlossenem Laptop-Deckel"
       },
-      "postProcessingToggle": {
-        "label": "Nachbearbeitung",
-        "description": "KI-gestützte Textverfeinerung nach der Transkription aktivieren"
-      },
       "muteWhileRecording": {
         "label": "Während Aufnahme stummschalten",
         "description": "Systemaudio während der Aufnahme stummschalten"
@@ -467,6 +476,74 @@
           "description": "Hochleistungs-Inferenz des Whisper-Spracherkennungsmodells von OpenAI",
           "details": "Handy verwendet Whisper.cpp für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
         }
+      }
+    },
+    "search": {
+      "title": "Websuche",
+      "hotkey": {
+        "title": "Hotkey"
+      },
+      "searchEngine": {
+        "title": "Suchmaschine",
+        "description": "Wählen Sie die Suchmaschine für Ihre Suche aus."
+      },
+      "useAi": {
+        "title": "KI-gestützte intelligente Abfrage",
+        "description": "KI verwenden, um aus Ihrer Transkription eine intelligente Suchanfrage zu generieren"
+      },
+      "api": {
+        "title": "API (OpenAI-kompatibel)",
+        "provider": {
+          "title": "Anbieter",
+          "description": "Wählen Sie einen OpenAI-kompatiblen Anbieter aus."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Läuft vollständig lokal auf dem Gerät. Kein API-Schlüssel oder Netzwerkzugriff erforderlich.",
+          "requirements": "Erfordert einen Mac mit Apple Silicon und macOS Tahoe (26.0) oder neuer. Apple Intelligence muss in den Systemeinstellungen aktiviert sein.",
+          "unavailable": "Apple Intelligence ist auf diesem Gerät nicht verfügbar. Erfordert einen Mac mit Apple Silicon und macOS Tahoe (26.0) oder neuer mit aktiviertem Apple Intelligence in den Systemeinstellungen."
+        },
+        "baseUrl": {
+          "title": "Basis-URL",
+          "description": "API-Basis-URL für den ausgewählten Anbieter. Nur der benutzerdefinierte Anbieter kann bearbeitet werden.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API-Schlüssel",
+          "description": "API-Schlüssel für den ausgewählten Anbieter.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modell",
+          "descriptionApple": "Geben Sie ein optionales numerisches Token-Limit an oder behalten Sie die Standard-Voreinstellung bei.",
+          "descriptionCustom": "Geben Sie die Modell-ID an, die von Ihrem benutzerdefinierten Endpunkt erwartet wird.",
+          "descriptionDefault": "Wählen Sie ein vom ausgewählten Anbieter bereitgestelltes Modell.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "Modellnamen eingeben",
+          "placeholderWithOptions": "Modell suchen oder auswählen",
+          "refreshModels": "Modelle aktualisieren"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Ausgewählter Prompt",
+          "description": "Wählen Sie eine Vorlage für die Generierung von Suchanfragen oder erstellen Sie eine neue. Verwenden Sie  im Prompt-Text, um auf das erfasste Transkript zu verweisen."
+        },
+        "noPrompts": "Keine Prompts verfügbar",
+        "selectPrompt": "Prompt auswählen",
+        "createNew": "Neuen Prompt erstellen",
+        "promptLabel": "Prompt-Name",
+        "promptLabelPlaceholder": "Prompt-Namen eingeben",
+        "promptInstructions": "Prompt-Anweisungen",
+        "promptInstructionsPlaceholder": "Schreiben Sie die Anweisungen zum Generieren einer Suchanfrage aus der Transkription. Beispiel: Erstelle eine prägnante Suchanfrage mit 5-10 Wörtern für: ",
+        "promptTip": "Tipp: Verwenden Sie <code></code>, um den transkribierten Text in Ihren Prompt einzufügen.",
+        "updatePrompt": "Prompt aktualisieren",
+        "deletePrompt": "Prompt löschen",
+        "createPrompt": "Prompt erstellen",
+        "cancel": "Abbrechen",
+        "selectToEdit": "Wählen Sie oben einen Prompt aus, um dessen Details anzuzeigen und zu bearbeiten.",
+        "createFirst": "Klicken Sie oben auf 'Neuen Prompt erstellen', um Ihren ersten Such-Prompt zu erstellen."
       }
     }
   },

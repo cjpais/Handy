@@ -14,7 +14,8 @@
     "postProcessing": "Post Proceso",
     "history": "Historial",
     "debug": "Depuración",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "search": "Búsqueda web"
   },
   "onboarding": {
     "subtitle": "Para comenzar, elige un modelo de transcripción",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "Tecla de Post Procesamiento",
             "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
+          },
+          "transcribe_with_search": {
+            "name": "Atajo de búsqueda con IA",
+            "description": "Opcional: Un atajo de teclado dedicado para grabar, transcribir y buscar con IA."
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "Agregar una palabra",
         "add": "Agregar",
         "remove": "Eliminar {{word}}"
+      },
+      "postProcessingToggle": {
+        "label": "Postprocesamiento",
+        "description": "Activar el refinamiento de texto mediante IA después de la transcripción"
+      },
+      "searchToggle": {
+        "label": "Búsqueda web",
+        "description": "Activar la búsqueda web después de la transcripción (con o sin IA) (solo macOS)"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "Micrófono en Modo Clamshell",
         "description": "Micrófono a usar cuando la tapa del portátil está cerrada"
       },
-      "postProcessingToggle": {
-        "label": "Post Procesamiento",
-        "description": "Habilitar refinamiento de texto impulsado por IA después de la transcripción"
-      },
       "muteWhileRecording": {
         "label": "Silenciar Durante la Grabación",
         "description": "Silenciar el audio del sistema durante la grabación"
@@ -467,6 +476,74 @@
           "description": "Inferencia de alto rendimiento del modelo de reconocimiento automático de voz Whisper de OpenAI",
           "details": "Handy usa Whisper.cpp para procesamiento de voz a texto rápido y local. Gracias al increíble trabajo de Georgi Gerganov y colaboradores."
         }
+      }
+    },
+    "search": {
+      "title": "Búsqueda web",
+      "hotkey": {
+        "title": "Atajo de teclado"
+      },
+      "searchEngine": {
+        "title": "Motor de búsqueda",
+        "description": "Selecciona el motor de búsqueda que deseas utilizar."
+      },
+      "useAi": {
+        "title": "Consulta inteligente con IA",
+        "description": "Usa la IA para generar una consulta de búsqueda inteligente a partir de tu transcripción"
+      },
+      "api": {
+        "title": "API (compatible con OpenAI)",
+        "provider": {
+          "title": "Proveedor",
+          "description": "Selecciona un proveedor compatible con OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Se ejecuta completamente en el dispositivo. No requiere clave API ni acceso a la red.",
+          "requirements": "Requiere un Mac con Apple Silicon y macOS Tahoe (26.0) o posterior. Apple Intelligence debe estar activado en los Ajustes del Sistema.",
+          "unavailable": "Apple Intelligence no está disponible en este dispositivo. Requiere un Mac con Apple Silicon y macOS Tahoe (26.0) o posterior con Apple Intelligence activado en los Ajustes del Sistema."
+        },
+        "baseUrl": {
+          "title": "URL base",
+          "description": "URL base de la API para el proveedor seleccionado. Solo se puede editar el proveedor personalizado.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "Clave API",
+          "description": "Clave API para el proveedor seleccionado.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Modelo",
+          "descriptionApple": "Proporciona un límite opcional de tokens numéricos o mantén el valor predeterminado del dispositivo.",
+          "descriptionCustom": "Proporciona el identificador de modelo esperado por tu endpoint personalizado.",
+          "descriptionDefault": "Elige un modelo expuesto por el proveedor seleccionado.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "Escribe el nombre de un modelo",
+          "placeholderWithOptions": "Buscar o seleccionar un modelo",
+          "refreshModels": "Actualizar modelos"
+        }
+      },
+      "prompts": {
+        "title": "Instrucción (Prompt)",
+        "selectedPrompt": {
+          "title": "Instrucción seleccionada",
+          "description": "Selecciona una plantilla para generar consultas de búsqueda o crea una nueva. Usa  dentro del texto de la instrucción para referenciar la transcripción capturada."
+        },
+        "noPrompts": "No hay instrucciones disponibles",
+        "selectPrompt": "Seleccionar una instrucción",
+        "createNew": "Crear nueva instrucción",
+        "promptLabel": "Etiqueta de la instrucción",
+        "promptLabelPlaceholder": "Introduce el nombre de la instrucción",
+        "promptInstructions": "Instrucciones del prompt",
+        "promptInstructionsPlaceholder": "Escribe las instrucciones para generar una consulta de búsqueda a partir de la transcripción. Ejemplo: Crea una consulta de búsqueda concisa de 5 a 10 palabras para: ",
+        "promptTip": "Consejo: Usa <code></code> para insertar el texto transcrito en tu instrucción.",
+        "updatePrompt": "Actualizar instrucción",
+        "deletePrompt": "Eliminar instrucción",
+        "createPrompt": "Crear instrucción",
+        "cancel": "Cancelar",
+        "selectToEdit": "Selecciona una instrucción arriba para ver y editar sus detalles.",
+        "createFirst": "Haz clic en 'Crear nueva instrucción' arriba para crear tu primera instrucción de búsqueda."
       }
     }
   },

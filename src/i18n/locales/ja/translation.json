@@ -14,7 +14,8 @@
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
-    "about": "概要"
+    "about": "概要",
+    "search": "ウェブ検索"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "後処理ホットキー",
             "description": "オプション：文字起こしに常にAI後処理を適用する専用ホットキー。"
+          },
+          "transcribe_with_search": {
+            "name": "AI検索ホットキー",
+            "description": "オプション：AIを使用して録音、文字起こし、検索を行うための専用ホットキー。"
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "単語を追加",
         "add": "追加",
         "remove": "{{word}}を削除"
+      },
+      "postProcessingToggle": {
+        "label": "後処理",
+        "description": "文字起こし後にAIによるテキストの推敲を有効にする"
+      },
+      "searchToggle": {
+        "label": "ウェブ検索",
+        "description": "文字起こし後にウェブ検索を有効にする（AIの有無を問わず）（macOSのみ）"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "クラムシェルマイク",
         "description": "ノートパソコンの蓋を閉じたときに使用するマイク"
       },
-      "postProcessingToggle": {
-        "label": "後処理",
-        "description": "文字起こし後のAIによるテキスト改善を有効化"
-      },
       "muteWhileRecording": {
         "label": "録音中にミュート",
         "description": "録音中にシステムオーディオをミュート"
@@ -467,6 +476,74 @@
           "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
           "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
+      }
+    },
+    "search": {
+      "title": "ウェブ検索",
+      "hotkey": {
+        "title": "ホットキー"
+      },
+      "searchEngine": {
+        "title": "検索エンジン",
+        "description": "検索に使用する検索エンジンを選択します。"
+      },
+      "useAi": {
+        "title": "AIによるスマートクエリ",
+        "description": "AIを使用して文字起こしからスマートな検索クエリを生成する"
+      },
+      "api": {
+        "title": "API（OpenAI互換）",
+        "provider": {
+          "title": "プロバイダー",
+          "description": "OpenAI互換のプロバイダーを選択してください。"
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "完全にデバイス上で実行されます。APIキーやネットワークアクセスは不要です。",
+          "requirements": "Appleシリコンを搭載し、macOS Tahoe (26.0) 以降が動作するMacが必要です。システム設定でApple Intelligenceを有効にする必要があります。",
+          "unavailable": "このデバイスではApple Intelligenceを利用できません。Appleシリコンを搭載し、macOS Tahoe (26.0) 以降が動作し、システム設定でApple Intelligenceが有効なMacが必要です。"
+        },
+        "baseUrl": {
+          "title": "ベースURL",
+          "description": "選択したプロバイダーのAPIベースURL。カスタムプロバイダーのみ編集可能です。",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "APIキー",
+          "description": "選択したプロバイダーのAPIキー。",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "モデル",
+          "descriptionApple": "オプションの数値トークン制限を指定するか、デフォルトのデバイス上のプリセットを維持します。",
+          "descriptionCustom": "カスタムエンドポイントが期待するモデル識別子を入力してください。",
+          "descriptionDefault": "選択したプロバイダーが提供するモデルを選択してください。",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "モデル名を入力",
+          "placeholderWithOptions": "モデルを検索または選択",
+          "refreshModels": "モデルを更新"
+        }
+      },
+      "prompts": {
+        "title": "プロンプト",
+        "selectedPrompt": {
+          "title": "選択されたプロンプト",
+          "description": "検索クエリ生成用のテンプレートを選択するか、新しく作成します。プロンプトテキスト内で  を使用して、取得した文字起こしを参照します。"
+        },
+        "noPrompts": "利用可能なプロンプトはありません",
+        "selectPrompt": "プロンプトを選択",
+        "createNew": "新しいプロンプトを作成",
+        "promptLabel": "プロンプトラベル",
+        "promptLabelPlaceholder": "プロンプト名を入力",
+        "promptInstructions": "プロンプト指示",
+        "promptInstructionsPlaceholder": "文字起こしから検索クエリを生成するための指示を記述します。例：次の内容から5〜10語の簡潔な検索クエリを作成してください：",
+        "promptTip": "ヒント：プロンプトに文字起こしテキストを挿入するには <code></code> を使用してください。",
+        "updatePrompt": "プロンプトを更新",
+        "deletePrompt": "プロンプトを削除",
+        "createPrompt": "プロンプトを作成",
+        "cancel": "キャンセル",
+        "selectToEdit": "上のプロンプトを選択して詳細を表示・編集します。",
+        "createFirst": "上の「新しいプロンプトを作成」をクリックして、最初の検索プロンプトを作成してください。"
       }
     }
   },

@@ -372,6 +372,8 @@ pub struct AppSettings {
     pub search_selected_prompt_id: Option<String>,
     #[serde(default = "default_search_engine")]
     pub search_engine: SearchEngine,
+    #[serde(default = "default_search_use_ai")]
+    pub search_use_ai: bool,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -622,6 +624,10 @@ fn default_search_engine() -> SearchEngine {
     SearchEngine::Google
 }
 
+fn default_search_use_ai() -> bool {
+    true
+}
+
 fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
@@ -817,6 +823,7 @@ pub fn get_default_settings() -> AppSettings {
         search_prompts: default_search_prompts(),
         search_selected_prompt_id: None,
         search_engine: default_search_engine(),
+        search_use_ai: default_search_use_ai(),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),

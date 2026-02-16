@@ -14,7 +14,8 @@
     "postProcessing": "后处理",
     "history": "历史记录",
     "debug": "调试",
-    "about": "关于"
+    "about": "关于",
+    "search": "网页搜索"
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "后处理快捷键",
             "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
+          },
+          "transcribe_with_search": {
+            "name": "AI 搜索快捷键",
+            "description": "可选：用于录制、转录并使用 AI 搜索的专用快捷键。"
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "添加词汇",
         "add": "添加",
         "remove": "删除 {{word}}"
+      },
+      "postProcessingToggle": {
+        "label": "后处理",
+        "description": "在转录后启用 AI 驱动的文本优化"
+      },
+      "searchToggle": {
+        "label": "网页搜索",
+        "description": "转录后启用网页搜索（使用或不使用 AI）（仅限 macOS）"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "合盖麦克风",
         "description": "笔记本电脑盖子关闭时使用的麦克风"
       },
-      "postProcessingToggle": {
-        "label": "后处理",
-        "description": "启用转录后的 AI 文本优化"
-      },
       "muteWhileRecording": {
         "label": "录制时静音",
         "description": "录制期间静音系统音频"
@@ -467,6 +476,74 @@
           "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
           "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
+      }
+    },
+    "search": {
+      "title": "网页搜索",
+      "hotkey": {
+        "title": "快捷键"
+      },
+      "searchEngine": {
+        "title": "搜索引擎",
+        "description": "选择用于搜索的搜索引擎。"
+      },
+      "useAi": {
+        "title": "AI 驱动的智能查询",
+        "description": "使用 AI 从转录中生成智能搜索查询"
+      },
+      "api": {
+        "title": "API（兼容 OpenAI）",
+        "provider": {
+          "title": "提供商",
+          "description": "选择一个兼容 OpenAI 的提供商。"
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "完全在设备上运行。无需 API 密钥或网络访问。",
+          "requirements": "需要运行 macOS Tahoe (26.0) 或更高版本的 Apple Silicon Mac。必须在系统设置中启用 Apple Intelligence。",
+          "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe (26.0) 或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
+        },
+        "baseUrl": {
+          "title": "基础 URL",
+          "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API 密钥",
+          "description": "所选提供商的 API 密钥。",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "模型",
+          "descriptionApple": "提供可选的数字令牌限制或保持默认的设备预设。",
+          "descriptionCustom": "提供自定义端点期望的模型标识符。",
+          "descriptionDefault": "选择所选提供商提供的模型。",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "输入模型名称",
+          "placeholderWithOptions": "搜索或选择模型",
+          "refreshModels": "刷新模型"
+        }
+      },
+      "prompts": {
+        "title": "提示词",
+        "selectedPrompt": {
+          "title": "已选提示词",
+          "description": "选择用于生成搜索查询的模板或创建新模板。在提示词文本中使用  来引用捕获的转录。"
+        },
+        "noPrompts": "没有可用提示词",
+        "selectPrompt": "选择提示词",
+        "createNew": "创建新提示词",
+        "promptLabel": "提示词标签",
+        "promptLabelPlaceholder": "输入提示词名称",
+        "promptInstructions": "提示词指令",
+        "promptInstructionsPlaceholder": "编写从转录中生成搜索查询的指令。示例：为以下内容创建一个简洁的 5-10 个词的搜索查询：",
+        "promptTip": "提示：使用 <code></code> 将转录文本插入到您的提示词中。",
+        "updatePrompt": "更新提示词",
+        "deletePrompt": "删除提示词",
+        "createPrompt": "创建提示词",
+        "cancel": "取消",
+        "selectToEdit": "选择上方的提示词以查看和编辑其详细信息。",
+        "createFirst": "点击上方的“创建新提示词”来创建您的第一个搜索提示词。"
       }
     }
   },

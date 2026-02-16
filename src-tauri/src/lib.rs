@@ -301,6 +301,7 @@ pub fn run() {
         shortcut::delete_search_prompt,
         shortcut::set_search_selected_prompt,
         shortcut::change_search_engine_setting,
+        shortcut::change_search_use_ai_setting,
         shortcut::update_custom_words,
         shortcut::suspend_binding,
         shortcut::resume_binding,

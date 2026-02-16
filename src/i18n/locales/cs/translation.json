@@ -14,7 +14,8 @@
     "postProcessing": "Následné zpracování",
     "history": "Historie",
     "debug": "Ladění",
-    "about": "O aplikaci"
+    "about": "O aplikaci",
+    "search": "Webové vyhledávání"
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",
@@ -155,6 +156,10 @@
           "transcribe_with_post_process": {
             "name": "Klávesa pro následné zpracování",
             "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
+          },
+          "transcribe_with_search": {
+            "name": "Klávesová zkratka AI vyhledávání",
+            "description": "Volitelné: Vyhrazená klávesová zkratka pro nahrávání, přepis a vyhledávání pomocí AI."
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "Přidat slovo",
         "add": "Přidat",
         "remove": "Odebrat {{word}}"
+      },
+      "postProcessingToggle": {
+        "label": "Následné zpracování",
+        "description": "Povolit vylepšení textu pomocí AI po přepisu"
+      },
+      "searchToggle": {
+        "label": "Webové vyhledávání",
+        "description": "Povolit webové vyhledávání po přepisu (s AI nebo bez ní) (pouze macOS)"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "Mikrofon při zavřeném víku",
         "description": "Mikrofon, který se použije při zavřeném víku notebooku"
       },
-      "postProcessingToggle": {
-        "label": "Následné zpracování",
-        "description": "Povolit AI vylepšení textu po přepisu"
-      },
       "muteWhileRecording": {
         "label": "Ztlumit při nahrávání",
         "description": "Ztlumit systémový zvuk během nahrávání"
@@ -467,6 +476,74 @@
           "description": "Vysoce výkonné inferenční zpracování modelu automatického rozpoznávání řeči Whisper od OpenAI",
           "details": "Handy používá Whisper.cpp pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
         }
+      }
+    },
+    "search": {
+      "title": "Webové vyhledávání",
+      "hotkey": {
+        "title": "Klávesová zkratka"
+      },
+      "searchEngine": {
+        "title": "Vyhledávač",
+        "description": "Vyberte vyhledávač, který chcete použít."
+      },
+      "useAi": {
+        "title": "Chytrý dotaz s AI",
+        "description": "Použít AI k vygenerování chytrého vyhledávacího dotazu z vašeho přepisu"
+      },
+      "api": {
+        "title": "API (kompatibilní s OpenAI)",
+        "provider": {
+          "title": "Poskytovatel",
+          "description": "Vyberte poskytovatele kompatibilního s OpenAI."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "Běží zcela v zařízení. Není vyžadován API klíč ani přístup k síti.",
+          "requirements": "Vyžaduje Mac s Apple Silicon a macOS Tahoe (26.0) nebo novějším. Apple Intelligence musí být povolena v nastavení systému.",
+          "unavailable": "Apple Intelligence není na tomto zařízení k dispozici. Vyžaduje Mac s Apple Silicon a macOS Tahoe (26.0) nebo novějším s povolenou Apple Intelligence v nastavení systému."
+        },
+        "baseUrl": {
+          "title": "Základní URL",
+          "description": "Základní URL API pro vybraného poskytovatele. Upravovat lze pouze vlastního poskytovatele.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API klíč",
+          "description": "API klíč pro vybraného poskytovatele.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionApple": "Zadejte volitelný číselný limit tokenů nebo ponechte výchozí předvolbu v zařízení.",
+          "descriptionCustom": "Zadejte identifikátor modelu očekávaný vaším vlastním koncovým bodem.",
+          "descriptionDefault": "Vyberte model nabízený vybraným poskytovatelem.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderWithOptions": "Hledat nebo vybrat model",
+          "placeholderNoOptions": "Zadejte název modelu",
+          "refreshModels": "Obnovit modely"
+        }
+      },
+      "prompts": {
+        "title": "Prompt",
+        "selectedPrompt": {
+          "title": "Vybraný prompt",
+          "description": "Vyberte šablonu pro generování vyhledávacích dotazů nebo vytvořte novou. Použijte  uvnitř textu promptu pro odkaz na zachycený přepis."
+        },
+        "noPrompts": "Nejsou k dispozici žádné prompty",
+        "selectPrompt": "Vybrat prompt",
+        "createNew": "Vytvořit nový prompt",
+        "promptLabel": "Název promptu",
+        "promptLabelPlaceholder": "Zadejte název promptu",
+        "promptInstructions": "Instrukce promptu",
+        "promptInstructionsPlaceholder": "Napište instrukce pro vygenerování vyhledávacího dotazu z přepisu. Příklad: Vytvoř stručný vyhledávací dotaz o 5-10 slovech pro: ",
+        "promptTip": "Tip: Použijte <code></code> pro vložení přepsaného textu do promptu.",
+        "updatePrompt": "Aktualizovat prompt",
+        "deletePrompt": "Smazat prompt",
+        "createPrompt": "Vytvořit prompt",
+        "cancel": "Zrušit",
+        "selectToEdit": "Vyberte prompt výše pro zobrazení a úpravu podrobností.",
+        "createFirst": "Klikněte na 'Vytvořit nový prompt' výše pro vytvoření prvního vyhledávacího promptu."
       }
     }
   },

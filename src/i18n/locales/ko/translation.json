@@ -14,7 +14,8 @@
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
-    "about": "정보"
+    "about": "정보",
+    "search": "웹 검색"
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
@@ -137,6 +138,10 @@
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
+          },
+          "transcribe_with_search": {
+            "name": "AI 검색 단축키",
+            "description": "선택 사항: AI를 사용하여 녹음, 전사 및 검색을 수행하는 전용 단축키입니다."
           }
         },
         "errors": {
@@ -295,6 +300,14 @@
         "placeholder": "단어 추가",
         "add": "추가",
         "remove": "{{word}} 제거"
+      },
+      "postProcessingToggle": {
+        "label": "후처리",
+        "description": "전사 후 AI 기반 텍스트 개선 활성화"
+      },
+      "searchToggle": {
+        "label": "웹 검색",
+        "description": "전사 후 웹 검색 활성화 (AI 사용 여부 선택 가능) (macOS 전용)"
       }
     },
     "postProcessing": {
@@ -413,10 +426,6 @@
         "title": "클램셸 마이크",
         "description": "노트북 덮개가 닫혀 있을 때 사용할 마이크"
       },
-      "postProcessingToggle": {
-        "label": "후처리",
-        "description": "텍스트 변환 후 AI 기반 텍스트 개선 활성화"
-      },
       "muteWhileRecording": {
         "label": "녹음 중 음소거",
         "description": "녹음 중 시스템 오디오 음소거"
@@ -467,6 +476,74 @@
           "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
           "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
+      }
+    },
+    "search": {
+      "title": "웹 검색",
+      "hotkey": {
+        "title": "단축키"
+      },
+      "searchEngine": {
+        "title": "검색 엔진",
+        "description": "검색에 사용할 검색 엔진을 선택하세요."
+      },
+      "useAi": {
+        "title": "AI 기반 스마트 쿼리",
+        "description": "AI를 사용하여 전사된 내용에서 스마트 검색 쿼리 생성"
+      },
+      "api": {
+        "title": "API (OpenAI 호환)",
+        "provider": {
+          "title": "공급자",
+          "description": "OpenAI 호환 공급자를 선택하세요."
+        },
+        "appleIntelligence": {
+          "title": "Apple Intelligence",
+          "description": "완전히 기기 내에서 실행됩니다. API 키나 네트워크 액세스가 필요하지 않습니다.",
+          "requirements": "macOS Tahoe (26.0) 이상이 실행되는 Apple Silicon Mac이 필요합니다. 시스템 설정에서 Apple Intelligence를 활성화해야 합니다.",
+          "unavailable": "이 기기에서는 Apple Intelligence를 사용할 수 없습니다. macOS Tahoe (26.0) 이상이 실행되고 시스템 설정에서 Apple Intelligence가 활성화된 Apple Silicon Mac이 필요합니다."
+        },
+        "baseUrl": {
+          "title": "기본 URL",
+          "description": "선택한 공급자의 API 기본 URL입니다. 사용자 정의 공급자만 편집할 수 있습니다.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API 키",
+          "description": "선택한 공급자의 API 키입니다.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "모델",
+          "descriptionApple": "선택적 숫자 토큰 제한을 입력하거나 기본 기기 내 프리셋을 유지하세요.",
+          "descriptionCustom": "사용자 정의 엔드포인트에서 요구하는 모델 식별자를 입력하세요.",
+          "descriptionDefault": "선택한 공급자가 제공하는 모델을 선택하세요.",
+          "placeholderApple": "Apple Intelligence",
+          "placeholderNoOptions": "모델 이름 입력",
+          "placeholderWithOptions": "모델 검색 또는 선택",
+          "refreshModels": "모델 새로고침"
+        }
+      },
+      "prompts": {
+        "title": "프롬프트",
+        "selectedPrompt": {
+          "title": "선택된 프롬프트",
+          "description": "검색 쿼리 생성을 위한 템플릿을 선택하거나 새로 만드세요. 프롬프트 텍스트 내에서 을 사용하여 전사된 텍스트를 참조합니다."
+        },
+        "noPrompts": "사용 가능한 프롬프트가 없습니다",
+        "selectPrompt": "프롬프트 선택",
+        "createNew": "새 프롬프트 생성",
+        "promptLabel": "프롬프트 이름",
+        "promptLabelPlaceholder": "프롬프트 이름을 입력하세요",
+        "promptInstructions": "프롬프트 지침",
+        "promptInstructionsPlaceholder": "전사된 내용에서 검색 쿼리를 생성하기 위한 지침을 작성하세요. 예: 다음 내용에 대해 5-10단어의 간결한 검색 쿼리를 작성하세요: ",
+        "promptTip": "팁: 프롬프트에 전사된 텍스트를 삽입하려면 <code></code>을 사용하세요.",
+        "updatePrompt": "프롬프트 업데이트",
+        "deletePrompt": "프롬프트 삭제",
+        "createPrompt": "프롬프트 생성",
+        "cancel": "취소",
+        "selectToEdit": "위에서 프롬프트를 선택하여 상세 정보를 확인하고 편집하세요.",
+        "createFirst": "위의 '새 프롬프트 생성'을 클릭하여 첫 번째 검색 프롬프트를 만드세요."
       }
     }
   },

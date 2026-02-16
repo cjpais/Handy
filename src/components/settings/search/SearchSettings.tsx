@@ -9,6 +9,7 @@ import {
   SettingContainer,
   SettingsGroup,
   Textarea,
+  ToggleSwitch,
 } from "@/components/ui";
 import { Button } from "../../ui/Button";
 import { ResetButton } from "../../ui/ResetButton";
@@ -22,12 +23,18 @@ import { useSearchProviderState } from "./useSearchProviderState";
 import { ShortcutInput } from "../ShortcutInput";
 import { useSettings } from "../../../hooks/useSettings";
 
-const SearchSettingsApiComponent: React.FC = () => {
+interface SearchSettingsApiProps {
+  disabled?: boolean;
+}
+
+const SearchSettingsApiComponent: React.FC<SearchSettingsApiProps> = ({
+  disabled = false,
+}) => {
   const { t } = useTranslation();
   const state = useSearchProviderState();
 
   return (
-    <>
+    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
       <SettingContainer
         title={t("settings.search.api.provider.title")}
         description={t("settings.search.api.provider.description")}
@@ -133,11 +140,17 @@ const SearchSettingsApiComponent: React.FC = () => {
           </div>
         </SettingContainer>
       )}
-    </>
+    </div>
   );
 };
 
-const SearchSettingsPromptsComponent: React.FC = () => {
+interface SearchSettingsPromptsProps {
+  disabled?: boolean;
+}
+
+const SearchSettingsPromptsComponent: React.FC<SearchSettingsPromptsProps> = ({
+  disabled = false,
+}) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating, refreshSettings } =
     useSettings();
@@ -242,164 +255,166 @@ const SearchSettingsPromptsComponent: React.FC = () => {
       draftText.trim() !== selectedPrompt.prompt.trim());
 
   return (
-    <SettingContainer
-      title={t("settings.search.prompts.selectedPrompt.title")}
-      description={t("settings.search.prompts.selectedPrompt.description")}
-      descriptionMode="tooltip"
-      layout="stacked"
-      grouped={true}
-    >
-      <div className="space-y-3">
-        <div className="flex gap-2">
-          <Dropdown
-            selectedValue={selectedPromptId || null}
-            options={prompts.map((p) => ({
-              value: p.id,
-              label: p.name,
-            }))}
-            onSelect={(value) => handlePromptSelect(value)}
-            placeholder={
-              prompts.length === 0
-                ? t("settings.search.prompts.noPrompts")
-                : t("settings.search.prompts.selectPrompt")
-            }
-            disabled={isUpdating("search_selected_prompt_id") || isCreating}
-            className="flex-1"
-          />
-          <Button
-            onClick={handleStartCreate}
-            variant="primary"
-            size="md"
-            disabled={isCreating}
-          >
-            {t("settings.search.prompts.createNew")}
-          </Button>
+    <div className={disabled ? "opacity-50 pointer-events-none" : ""}>
+      <SettingContainer
+        title={t("settings.search.prompts.selectedPrompt.title")}
+        description={t("settings.search.prompts.selectedPrompt.description")}
+        descriptionMode="tooltip"
+        layout="stacked"
+        grouped={true}
+      >
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Dropdown
+              selectedValue={selectedPromptId || null}
+              options={prompts.map((p) => ({
+                value: p.id,
+                label: p.name,
+              }))}
+              onSelect={(value) => handlePromptSelect(value)}
+              placeholder={
+                prompts.length === 0
+                  ? t("settings.search.prompts.noPrompts")
+                  : t("settings.search.prompts.selectPrompt")
+              }
+              disabled={isUpdating("search_selected_prompt_id") || isCreating}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleStartCreate}
+              variant="primary"
+              size="md"
+              disabled={isCreating}
+            >
+              {t("settings.search.prompts.createNew")}
+            </Button>
+          </div>
+
+          {!isCreating && hasPrompts && selectedPrompt && (
+            <div className="space-y-3">
+              <div className="space-y-2 flex flex-col">
+                <label className="text-sm font-semibold">
+                  {t("settings.search.prompts.promptLabel")}
+                </label>
+                <Input
+                  type="text"
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  placeholder={t(
+                    "settings.search.prompts.promptLabelPlaceholder",
+                  )}
+                  variant="compact"
+                />
+              </div>
+
+              <div className="space-y-2 flex flex-col">
+                <label className="text-sm font-semibold">
+                  {t("settings.search.prompts.promptInstructions")}
+                </label>
+                <Textarea
+                  value={draftText}
+                  onChange={(e) => setDraftText(e.target.value)}
+                  placeholder={t(
+                    "settings.search.prompts.promptInstructionsPlaceholder",
+                  )}
+                />
+                <p
+                  className="text-xs text-mid-gray/70"
+                  dangerouslySetInnerHTML={{
+                    __html: t("settings.search.prompts.promptTip"),
+                  }}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={handleUpdatePrompt}
+                  variant="primary"
+                  size="md"
+                  disabled={!draftName.trim() || !draftText.trim() || !isDirty}
+                >
+                  {t("settings.search.prompts.updatePrompt")}
+                </Button>
+                <Button
+                  onClick={() => handleDeletePrompt(selectedPromptId)}
+                  variant="secondary"
+                  size="md"
+                  disabled={!selectedPromptId || prompts.length <= 1}
+                >
+                  {t("settings.search.prompts.deletePrompt")}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isCreating && !selectedPrompt && (
+            <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/20">
+              <p className="text-sm text-mid-gray">
+                {hasPrompts
+                  ? t("settings.search.prompts.selectToEdit")
+                  : t("settings.search.prompts.createFirst")}
+              </p>
+            </div>
+          )}
+
+          {isCreating && (
+            <div className="space-y-3">
+              <div className="space-y-2 block flex flex-col">
+                <label className="text-sm font-semibold text-text">
+                  {t("settings.search.prompts.promptLabel")}
+                </label>
+                <Input
+                  type="text"
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  placeholder={t(
+                    "settings.search.prompts.promptLabelPlaceholder",
+                  )}
+                  variant="compact"
+                />
+              </div>
+
+              <div className="space-y-2 flex flex-col">
+                <label className="text-sm font-semibold">
+                  {t("settings.search.prompts.promptInstructions")}
+                </label>
+                <Textarea
+                  value={draftText}
+                  onChange={(e) => setDraftText(e.target.value)}
+                  placeholder={t(
+                    "settings.search.prompts.promptInstructionsPlaceholder",
+                  )}
+                />
+                <p
+                  className="text-xs text-mid-gray/70"
+                  dangerouslySetInnerHTML={{
+                    __html: t("settings.search.prompts.promptTip"),
+                  }}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={handleCreatePrompt}
+                  variant="primary"
+                  size="md"
+                  disabled={!draftName.trim() || !draftText.trim()}
+                >
+                  {t("settings.search.prompts.createPrompt")}
+                </Button>
+                <Button
+                  onClick={handleCancelCreate}
+                  variant="secondary"
+                  size="md"
+                >
+                  {t("settings.search.prompts.cancel")}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {!isCreating && hasPrompts && selectedPrompt && (
-          <div className="space-y-3">
-            <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold">
-                {t("settings.search.prompts.promptLabel")}
-              </label>
-              <Input
-                type="text"
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                placeholder={t(
-                  "settings.search.prompts.promptLabelPlaceholder",
-                )}
-                variant="compact"
-              />
-            </div>
-
-            <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold">
-                {t("settings.search.prompts.promptInstructions")}
-              </label>
-              <Textarea
-                value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
-                placeholder={t(
-                  "settings.search.prompts.promptInstructionsPlaceholder",
-                )}
-              />
-              <p
-                className="text-xs text-mid-gray/70"
-                dangerouslySetInnerHTML={{
-                  __html: t("settings.search.prompts.promptTip"),
-                }}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <Button
-                onClick={handleUpdatePrompt}
-                variant="primary"
-                size="md"
-                disabled={!draftName.trim() || !draftText.trim() || !isDirty}
-              >
-                {t("settings.search.prompts.updatePrompt")}
-              </Button>
-              <Button
-                onClick={() => handleDeletePrompt(selectedPromptId)}
-                variant="secondary"
-                size="md"
-                disabled={!selectedPromptId || prompts.length <= 1}
-              >
-                {t("settings.search.prompts.deletePrompt")}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {!isCreating && !selectedPrompt && (
-          <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/20">
-            <p className="text-sm text-mid-gray">
-              {hasPrompts
-                ? t("settings.search.prompts.selectToEdit")
-                : t("settings.search.prompts.createFirst")}
-            </p>
-          </div>
-        )}
-
-        {isCreating && (
-          <div className="space-y-3">
-            <div className="space-y-2 block flex flex-col">
-              <label className="text-sm font-semibold text-text">
-                {t("settings.search.prompts.promptLabel")}
-              </label>
-              <Input
-                type="text"
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                placeholder={t(
-                  "settings.search.prompts.promptLabelPlaceholder",
-                )}
-                variant="compact"
-              />
-            </div>
-
-            <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold">
-                {t("settings.search.prompts.promptInstructions")}
-              </label>
-              <Textarea
-                value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
-                placeholder={t(
-                  "settings.search.prompts.promptInstructionsPlaceholder",
-                )}
-              />
-              <p
-                className="text-xs text-mid-gray/70"
-                dangerouslySetInnerHTML={{
-                  __html: t("settings.search.prompts.promptTip"),
-                }}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <Button
-                onClick={handleCreatePrompt}
-                variant="primary"
-                size="md"
-                disabled={!draftName.trim() || !draftText.trim()}
-              >
-                {t("settings.search.prompts.createPrompt")}
-              </Button>
-              <Button
-                onClick={handleCancelCreate}
-                variant="secondary"
-                size="md"
-              >
-                {t("settings.search.prompts.cancel")}
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    </SettingContainer>
+      </SettingContainer>
+    </div>
   );
 };
 
@@ -443,6 +458,29 @@ const SearchEngineSelector: React.FC = () => {
   );
 };
 
+const SearchUseAiToggle: React.FC = () => {
+  const { t } = useTranslation();
+  const { getSetting, updateSetting, isUpdating } = useSettings();
+
+  const useAi = getSetting("search_use_ai") ?? true;
+
+  const handleChange = (enabled: boolean) => {
+    updateSetting("search_use_ai", enabled);
+  };
+
+  return (
+    <ToggleSwitch
+      checked={useAi}
+      onChange={handleChange}
+      isUpdating={isUpdating("search_use_ai")}
+      label={t("settings.search.useAi.title")}
+      description={t("settings.search.useAi.description")}
+      descriptionMode="tooltip"
+      grouped={true}
+    />
+  );
+};
+
 export const SearchSettingsApi = React.memo(SearchSettingsApiComponent);
 SearchSettingsApi.displayName = "SearchSettingsApi";
 
@@ -451,6 +489,9 @@ SearchSettingsPrompts.displayName = "SearchSettingsPrompts";
 
 export const SearchSettings: React.FC = () => {
   const { t } = useTranslation();
+  const { getSetting } = useSettings();
+
+  const useAi = getSetting("search_use_ai") ?? true;
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -466,12 +507,16 @@ export const SearchSettings: React.FC = () => {
         <SearchEngineSelector />
       </SettingsGroup>
 
+      <SettingsGroup title={t("settings.search.useAi.title")}>
+        <SearchUseAiToggle />
+      </SettingsGroup>
+
       <SettingsGroup title={t("settings.search.api.title")}>
-        <SearchSettingsApi />
+        <SearchSettingsApi disabled={!useAi} />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.search.prompts.title")}>
-        <SearchSettingsPrompts />
+        <SearchSettingsPrompts disabled={!useAi} />
       </SettingsGroup>
     </div>
   );
