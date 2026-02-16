@@ -122,10 +122,7 @@ fn pad_short_chunk(samples: Vec<f32>) -> Vec<f32> {
     }
 }
 
-fn transcribe_remainder(
-    tm: &Arc<TranscriptionManager>,
-    samples: Vec<f32>,
-) -> Option<String> {
+fn transcribe_remainder(tm: &Arc<TranscriptionManager>, samples: Vec<f32>) -> Option<String> {
     if samples.is_empty() {
         return None;
     }

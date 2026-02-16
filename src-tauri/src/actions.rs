@@ -264,12 +264,8 @@ impl ShortcutAction for TranscribeAction {
                     });
                 }
 
-                let session = StreamingSession::start(
-                    vad_mode,
-                    Arc::clone(&tm),
-                    app.clone(),
-                    chunk_rx,
-                );
+                let session =
+                    StreamingSession::start(vad_mode, Arc::clone(&tm), app.clone(), chunk_rx);
                 *STREAMING_SESSION.lock().unwrap() = Some(session);
             } else {
                 debug!("Failed to start streaming recording");
@@ -376,12 +372,7 @@ impl ShortcutAction for TranscribeAction {
                                 let hm_clone = Arc::clone(&hm);
                                 tauri::async_runtime::spawn(async move {
                                     if let Err(e) = hm_clone
-                                        .save_transcription(
-                                            result.audio,
-                                            transcription,
-                                            None,
-                                            None,
-                                        )
+                                        .save_transcription(result.audio, transcription, None, None)
                                         .await
                                     {
                                         error!(
@@ -545,10 +536,7 @@ impl ShortcutAction for TranscribeAction {
                                         )
                                         .await
                                     {
-                                        error!(
-                                            "Failed to save transcription to history: {}",
-                                            e
-                                        );
+                                        error!("Failed to save transcription to history: {}", e);
                                     }
                                 });
 
