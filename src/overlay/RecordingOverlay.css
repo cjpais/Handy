@@ -12,21 +12,39 @@
   box-sizing: border-box;
 }
 
+/* When streaming text is present, adapt to content */
+.recording-overlay.has-text {
+  width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding: 8px 12px;
+  align-items: flex-start;
+}
+
 .overlay-left {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  padding-top: 1px;
 }
 
 .overlay-middle {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.recording-overlay.has-text .overlay-middle {
+  align-items: flex-start;
 }
 
 .overlay-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .bars-container {
@@ -50,6 +68,59 @@
 
 .recording-overlay.fade-in {
   opacity: 1;
+}
+
+.streaming-text {
+  color: #ffffffee;
+  font-size: 13px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.4;
+  padding: 0 6px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  max-height: 140px;
+  overflow-y: auto;
+  text-align: left;
+  transition: opacity 200ms ease-out;
+}
+
+/* During transcription processing, dim the text slightly */
+.streaming-text.processing {
+  opacity: 0.7;
+}
+
+/* Hide scrollbar but keep scrollable */
+.streaming-text::-webkit-scrollbar {
+  width: 3px;
+}
+
+.streaming-text::-webkit-scrollbar-thumb {
+  background: #ffffff44;
+  border-radius: 2px;
+}
+
+.streaming-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Processing indicator - small spinning dot */
+.processing-indicator {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #ffffff44;
+  border-top-color: #ffffffcc;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .transcribing-text {
@@ -91,5 +162,37 @@
 }
 
 .cancel-button:active {
+  transform: scale(0.95);
+}
+
+/* Done state buttons */
+.done-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.overlay-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    transform 100ms ease-out;
+  flex-shrink: 0;
+}
+
+.overlay-btn:hover {
+  background: #faa2ca33;
+  transform: scale(1.05);
+}
+
+.overlay-btn:active {
   transform: scale(0.95);
 }

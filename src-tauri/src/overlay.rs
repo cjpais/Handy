@@ -354,6 +354,75 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+/// Emit streaming transcription text to the overlay window.
+/// Also resizes the overlay to fit the text content.
+pub fn emit_streaming_text(app_handle: &AppHandle, text: &str) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("streaming-text", text);
+
+        // Resize overlay to fit text: estimate width from character count
+        let char_count = text.chars().count();
+        let estimated_width = if char_count == 0 {
+            OVERLAY_WIDTH
+        } else {
+            let text_width = (char_count as f64 * 8.0) + 80.0;
+            text_width.clamp(OVERLAY_WIDTH, 600.0)
+        };
+
+        // Height grows for multi-line: base 36px + extra for wrapped lines
+        let estimated_lines = if estimated_width >= 600.0 {
+            ((char_count as f64 * 8.0 + 80.0) / 600.0).ceil() as u32
+        } else {
+            1
+        };
+        let estimated_height = if estimated_lines > 1 {
+            36.0 + (estimated_lines - 1) as f64 * 18.0
+        } else {
+            OVERLAY_HEIGHT
+        };
+
+        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: estimated_width,
+            height: estimated_height,
+        }));
+
+        // Re-center horizontally after resize
+        if let Some((_, y)) = calculate_overlay_position(app_handle) {
+            if let Some(monitor) = get_monitor_with_cursor(app_handle) {
+                let work_area = monitor.work_area();
+                let scale = monitor.scale_factor();
+                let work_area_width = work_area.size.width as f64 / scale;
+                let work_area_x = work_area.position.x as f64 / scale;
+                let x = work_area_x + (work_area_width - estimated_width) / 2.0;
+                let _ = overlay_window
+                    .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            }
+        }
+    }
+}
+
+/// Transition overlay to "done" state: text stays visible with copy/close buttons.
+/// The overlay window is NOT hidden — the user dismisses it manually.
+pub fn emit_overlay_done(app_handle: &AppHandle, final_text: &str) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("overlay-done", final_text);
+    }
+}
+
+/// Reset overlay to its default size
+pub fn reset_overlay_size(app_handle: &AppHandle) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: OVERLAY_WIDTH,
+            height: OVERLAY_HEIGHT,
+        }));
+        if let Some((x, y)) = calculate_overlay_position(app_handle) {
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+    }
+}
+
 pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
     // emit levels to main app
     let _ = app_handle.emit("mic-level", levels);
