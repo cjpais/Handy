@@ -20,8 +20,8 @@ export const PostProcessingToggle: React.FC<PostProcessingToggleProps> =
         checked={enabled}
         onChange={(enabled) => updateSetting("post_process_enabled", enabled)}
         isUpdating={isUpdating("post_process_enabled")}
-        label={t("settings.debug.postProcessingToggle.label")}
-        description={t("settings.debug.postProcessingToggle.description")}
+        label={t("settings.advanced.postProcessingToggle.label")}
+        description={t("settings.advanced.postProcessingToggle.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
       />

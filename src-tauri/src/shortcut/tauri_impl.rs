@@ -25,6 +25,15 @@ pub fn init_shortcuts(app: &AppHandle) {
         if id == "transcribe_with_post_process" && !user_settings.post_process_enabled {
             continue;
         }
+        // Skip search shortcut on non-macOS or when disabled
+        #[cfg(not(target_os = "macos"))]
+        if id == "transcribe_with_search" {
+            continue;
+        }
+        #[cfg(target_os = "macos")]
+        if id == "transcribe_with_search" && !user_settings.search_enabled {
+            continue;
+        }
         let binding = user_settings
             .bindings
             .get(&id)

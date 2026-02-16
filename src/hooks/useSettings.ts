@@ -11,6 +11,7 @@ interface UseSettingsReturn {
   outputDevices: AudioDevice[];
   audioFeedbackEnabled: boolean;
   postProcessModelOptions: Record<string, string[]>;
+  searchModelOptions: Record<string, string[]>;
 
   // Actions
   updateSetting: <K extends keyof Settings>(
@@ -41,6 +42,13 @@ interface UseSettingsReturn {
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+
+  // Search helpers
+  setSearchProvider: (providerId: string) => Promise<void>;
+  updateSearchBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
+  updateSearchApiKey: (providerId: string, apiKey: string) => Promise<void>;
+  updateSearchModel: (providerId: string, model: string) => Promise<void>;
+  fetchSearchModels: (providerId: string) => Promise<string[]>;
 }
 
 export const useSettings = (): UseSettingsReturn => {
@@ -61,6 +69,7 @@ export const useSettings = (): UseSettingsReturn => {
     outputDevices: store.outputDevices,
     audioFeedbackEnabled: store.settings?.audio_feedback || false,
     postProcessModelOptions: store.postProcessModelOptions,
+    searchModelOptions: store.searchModelOptions,
     updateSetting: store.updateSetting,
     resetSetting: store.resetSetting,
     refreshSettings: store.refreshSettings,
@@ -74,5 +83,10 @@ export const useSettings = (): UseSettingsReturn => {
     updatePostProcessApiKey: store.updatePostProcessApiKey,
     updatePostProcessModel: store.updatePostProcessModel,
     fetchPostProcessModels: store.fetchPostProcessModels,
+    setSearchProvider: store.setSearchProvider,
+    updateSearchBaseUrl: store.updateSearchBaseUrl,
+    updateSearchApiKey: store.updateSearchApiKey,
+    updateSearchModel: store.updateSearchModel,
+    fetchSearchModels: store.fetchSearchModels,
   };
 };

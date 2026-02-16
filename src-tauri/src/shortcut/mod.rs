@@ -21,7 +21,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    OverlayPosition, PasteMethod, SearchEngine, ShortcutBinding, SoundTheme, TypingTool,
     APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
@@ -394,6 +394,16 @@ fn register_all_shortcuts_for_implementation(
 
         // Skip post-processing shortcut when the feature is disabled
         if id == "transcribe_with_post_process" && !current_settings.post_process_enabled {
+            continue;
+        }
+
+        // Skip search shortcut on non-macOS or when disabled
+        #[cfg(not(target_os = "macos"))]
+        if id == "transcribe_with_search" {
+            continue;
+        }
+        #[cfg(target_os = "macos")]
+        if id == "transcribe_with_search" && !current_settings.search_enabled {
             continue;
         }
 
@@ -835,6 +845,21 @@ fn validate_provider_exists(
     Ok(())
 }
 
+/// Helper to validate search provider exists
+fn validate_search_provider_exists(
+    settings: &settings::AppSettings,
+    provider_id: &str,
+) -> Result<(), String> {
+    if !settings
+        .search_providers
+        .iter()
+        .any(|provider| provider.id == provider_id)
+    {
+        return Err(format!("Provider '{}' not found", provider_id));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn change_post_process_api_key_setting(
@@ -1050,5 +1075,241 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     // Apply change immediately
     tray::set_tray_visibility(&app, enabled);
 
+    Ok(())
+}
+
+// ============================================================================
+// Search Settings Commands (macOS only)
+// ============================================================================
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_search_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.search_enabled = enabled;
+    settings::write_settings(&app, settings.clone());
+
+    // Register or unregister the search shortcut (macOS only)
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(binding) = settings.bindings.get("transcribe_with_search").cloned() {
+            if enabled && settings.experimental_enabled {
+                let _ = register_shortcut(&app, binding);
+            } else {
+                let _ = unregister_shortcut(&app, binding);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_search_base_url_setting(
+    app: AppHandle,
+    provider_id: String,
+    base_url: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let label = settings
+        .search_provider(&provider_id)
+        .map(|provider| provider.label.clone())
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    let provider = settings
+        .search_provider_mut(&provider_id)
+        .expect("Provider looked up above must exist");
+
+    if provider.id != "custom" {
+        return Err(format!(
+            "Provider '{}' does not allow editing the base URL",
+            label
+        ));
+    }
+
+    provider.base_url = base_url;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_search_api_key_setting(
+    app: AppHandle,
+    provider_id: String,
+    api_key: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_search_provider_exists(&settings, &provider_id)?;
+    settings.search_api_keys.insert(provider_id, api_key);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_search_model_setting(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_search_provider_exists(&settings, &provider_id)?;
+    settings.search_models.insert(provider_id, model);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_search_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_search_provider_exists(&settings, &provider_id)?;
+    settings.search_provider_id = provider_id;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn add_search_prompt(
+    app: AppHandle,
+    name: String,
+    prompt: String,
+) -> Result<LLMPrompt, String> {
+    let mut settings = settings::get_settings(&app);
+
+    let id = format!("search_prompt_{}", chrono::Utc::now().timestamp_millis());
+
+    let new_prompt = LLMPrompt {
+        id: id.clone(),
+        name,
+        prompt,
+    };
+
+    settings.search_prompts.push(new_prompt.clone());
+    settings::write_settings(&app, settings);
+
+    Ok(new_prompt)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn update_search_prompt(
+    app: AppHandle,
+    id: String,
+    name: String,
+    prompt: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if let Some(existing_prompt) = settings.search_prompts.iter_mut().find(|p| p.id == id) {
+        existing_prompt.name = name;
+        existing_prompt.prompt = prompt;
+        settings::write_settings(&app, settings);
+        Ok(())
+    } else {
+        Err(format!("Prompt with id '{}' not found", id))
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_search_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if settings.search_prompts.len() <= 1 {
+        return Err("Cannot delete the last prompt".to_string());
+    }
+
+    let original_len = settings.search_prompts.len();
+    settings.search_prompts.retain(|p| p.id != id);
+
+    if settings.search_prompts.len() == original_len {
+        return Err(format!("Prompt with id '{}' not found", id));
+    }
+
+    if settings.search_selected_prompt_id.as_ref() == Some(&id) {
+        settings.search_selected_prompt_id = settings.search_prompts.first().map(|p| p.id.clone());
+    }
+
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn fetch_search_models(
+    app: AppHandle,
+    provider_id: String,
+) -> Result<Vec<String>, String> {
+    let settings = settings::get_settings(&app);
+
+    let provider = settings
+        .search_providers
+        .iter()
+        .find(|p| p.id == provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            return Ok(vec![APPLE_INTELLIGENCE_DEFAULT_MODEL_ID.to_string()]);
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            return Err("Apple Intelligence is only available on Apple silicon Macs running macOS 15 or later.".to_string());
+        }
+    }
+
+    let api_key = settings
+        .search_api_keys
+        .get(&provider_id)
+        .cloned()
+        .unwrap_or_default();
+
+    if api_key.trim().is_empty() && provider.id != "custom" {
+        return Err(format!(
+            "API key is required for {}. Please add an API key to list available models.",
+            provider.label
+        ));
+    }
+
+    crate::llm_client::fetch_models(&provider, api_key).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_search_selected_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if !settings.search_prompts.iter().any(|p| p.id == id) {
+        return Err(format!("Prompt with id '{}' not found", id));
+    }
+
+    settings.search_selected_prompt_id = Some(id);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_search_engine_setting(app: AppHandle, engine: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match engine.as_str() {
+        "google" => SearchEngine::Google,
+        "bing" => SearchEngine::Bing,
+        "duckduckgo" => SearchEngine::DuckDuckGo,
+        "yahoo" => SearchEngine::Yahoo,
+        "perplexity" => SearchEngine::Perplexity,
+        other => {
+            warn!("Invalid search engine '{}', defaulting to google", other);
+            SearchEngine::Google
+        }
+    };
+    settings.search_engine = parsed;
+    settings::write_settings(&app, settings);
     Ok(())
 }

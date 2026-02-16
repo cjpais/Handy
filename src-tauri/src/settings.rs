@@ -177,6 +177,22 @@ impl Default for KeyboardImplementation {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum SearchEngine {
+    Google,
+    Bing,
+    DuckDuckGo,
+    Yahoo,
+    Perplexity,
+}
+
+impl Default for SearchEngine {
+    fn default() -> Self {
+        SearchEngine::Google
+    }
+}
+
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
         ModelUnloadTimeout::Never
@@ -340,6 +356,22 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    #[serde(default = "default_search_enabled")]
+    pub search_enabled: bool,
+    #[serde(default = "default_search_provider_id")]
+    pub search_provider_id: String,
+    #[serde(default = "default_search_providers")]
+    pub search_providers: Vec<PostProcessProvider>,
+    #[serde(default = "default_search_api_keys")]
+    pub search_api_keys: HashMap<String, String>,
+    #[serde(default = "default_search_models")]
+    pub search_models: HashMap<String, String>,
+    #[serde(default = "default_search_prompts")]
+    pub search_prompts: Vec<LLMPrompt>,
+    #[serde(default)]
+    pub search_selected_prompt_id: Option<String>,
+    #[serde(default = "default_search_engine")]
+    pub search_engine: SearchEngine,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -547,6 +579,49 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
+fn default_search_enabled() -> bool {
+    false
+}
+
+fn default_search_provider_id() -> String {
+    "openai".to_string()
+}
+
+fn default_search_providers() -> Vec<PostProcessProvider> {
+    default_post_process_providers()
+}
+
+fn default_search_api_keys() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_search_providers() {
+        map.insert(provider.id, String::new());
+    }
+    map
+}
+
+fn default_search_models() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_search_providers() {
+        map.insert(
+            provider.id.clone(),
+            default_model_for_provider(&provider.id),
+        );
+    }
+    map
+}
+
+fn default_search_prompts() -> Vec<LLMPrompt> {
+    vec![LLMPrompt {
+        id: "default_search_query".to_string(),
+        name: "Generate Search Query".to_string(),
+        prompt: "Given the following transcription, create a concise search query (5-10 words) that would help find more information about this topic. Only output the search query, nothing else.\n\nTranscription: ${output}\n\nSearch query:".to_string(),
+    }]
+}
+
+fn default_search_engine() -> SearchEngine {
+    SearchEngine::Google
+}
+
 fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
@@ -581,6 +656,45 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
             None => {
                 settings
                     .post_process_models
+                    .insert(provider.id.clone(), default_model);
+                changed = true;
+            }
+        }
+    }
+
+    changed
+}
+
+fn ensure_search_defaults(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+    for provider in default_search_providers() {
+        if settings
+            .search_providers
+            .iter()
+            .all(|existing| existing.id != provider.id)
+        {
+            settings.search_providers.push(provider.clone());
+            changed = true;
+        }
+
+        if !settings.search_api_keys.contains_key(&provider.id) {
+            settings
+                .search_api_keys
+                .insert(provider.id.clone(), String::new());
+            changed = true;
+        }
+
+        let default_model = default_model_for_provider(&provider.id);
+        match settings.search_models.get_mut(&provider.id) {
+            Some(existing) => {
+                if existing.is_empty() && !default_model.is_empty() {
+                    *existing = default_model.clone();
+                    changed = true;
+                }
+            }
+            None => {
+                settings
+                    .search_models
                     .insert(provider.id.clone(), default_model);
                 changed = true;
             }
@@ -633,6 +747,22 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+    // Search shortcut is macOS only
+    #[cfg(target_os = "macos")]
+    {
+        let default_search_shortcut = "option+shift+s";
+        bindings.insert(
+            "transcribe_with_search".to_string(),
+            ShortcutBinding {
+                id: "transcribe_with_search".to_string(),
+                name: "Transcribe with Search".to_string(),
+                description: "Converts your speech into text and opens a browser search."
+                    .to_string(),
+                default_binding: default_search_shortcut.to_string(),
+                current_binding: default_search_shortcut.to_string(),
+            },
+        );
+    }
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -679,6 +809,14 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        search_enabled: default_search_enabled(),
+        search_provider_id: default_search_provider_id(),
+        search_providers: default_search_providers(),
+        search_api_keys: default_search_api_keys(),
+        search_models: default_search_models(),
+        search_prompts: default_search_prompts(),
+        search_selected_prompt_id: None,
+        search_engine: default_search_engine(),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -708,6 +846,24 @@ impl AppSettings {
         provider_id: &str,
     ) -> Option<&mut PostProcessProvider> {
         self.post_process_providers
+            .iter_mut()
+            .find(|provider| provider.id == provider_id)
+    }
+
+    pub fn active_search_provider(&self) -> Option<&PostProcessProvider> {
+        self.search_providers
+            .iter()
+            .find(|provider| provider.id == self.search_provider_id)
+    }
+
+    pub fn search_provider(&self, provider_id: &str) -> Option<&PostProcessProvider> {
+        self.search_providers
+            .iter()
+            .find(|provider| provider.id == provider_id)
+    }
+
+    pub fn search_provider_mut(&mut self, provider_id: &str) -> Option<&mut PostProcessProvider> {
+        self.search_providers
             .iter_mut()
             .find(|provider| provider.id == provider_id)
     }
@@ -761,6 +917,10 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
+    if ensure_search_defaults(&mut settings) {
+        store.set("settings", serde_json::to_value(&settings).unwrap());
+    }
+
     settings
 }
 
@@ -782,6 +942,10 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     };
 
     if ensure_post_process_defaults(&mut settings) {
+        store.set("settings", serde_json::to_value(&settings).unwrap());
+    }
+
+    if ensure_search_defaults(&mut settings) {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

@@ -12,6 +12,7 @@ interface SettingsStore {
   outputDevices: AudioDevice[];
   customSounds: { start: boolean; stop: boolean };
   postProcessModelOptions: Record<string, string[]>;
+  searchModelOptions: Record<string, string[]>;
 
   // Actions
   initialize: () => Promise<void>;
@@ -47,6 +48,17 @@ interface SettingsStore {
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
+  setSearchProvider: (providerId: string) => Promise<void>;
+  updateSearchSetting: (
+    settingType: "base_url" | "api_key" | "model",
+    providerId: string,
+    value: string,
+  ) => Promise<void>;
+  updateSearchBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
+  updateSearchApiKey: (providerId: string, apiKey: string) => Promise<void>;
+  updateSearchModel: (providerId: string, model: string) => Promise<void>;
+  fetchSearchModels: (providerId: string) => Promise<string[]>;
+  setSearchModelOptions: (providerId: string, models: string[]) => void;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -123,6 +135,8 @@ const settingUpdaters: {
     commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
+  search_selected_prompt_id: (value) =>
+    commands.setSearchSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
@@ -131,6 +145,9 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  search_enabled: (value) =>
+    commands.changeSearchEnabledSetting(value as boolean),
+  search_engine: (value) => commands.changeSearchEngineSetting(value as string),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
 };
@@ -145,6 +162,7 @@ export const useSettingsStore = create<SettingsStore>()(
     outputDevices: [],
     customSounds: { start: false, stop: false },
     postProcessModelOptions: {},
+    searchModelOptions: {},
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
@@ -481,6 +499,117 @@ export const useSettingsStore = create<SettingsStore>()(
       set((state) => ({
         postProcessModelOptions: {
           ...state.postProcessModelOptions,
+          [providerId]: models,
+        },
+      })),
+
+    // Search settings
+    setSearchProvider: async (providerId) => {
+      const { settings, setUpdating, refreshSettings } = get();
+      const updateKey = "search_provider_id";
+      const previousId = settings?.search_provider_id ?? null;
+
+      setUpdating(updateKey, true);
+
+      if (settings) {
+        set((state) => ({
+          settings: state.settings
+            ? { ...state.settings, search_provider_id: providerId }
+            : null,
+        }));
+      }
+
+      try {
+        await commands.setSearchProvider(providerId);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to set search provider:", error);
+        if (previousId !== null) {
+          set((state) => ({
+            settings: state.settings
+              ? { ...state.settings, search_provider_id: previousId }
+              : null,
+          }));
+        }
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateSearchSetting: async (
+      settingType: "base_url" | "api_key" | "model",
+      providerId: string,
+      value: string,
+    ) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `search_${settingType}:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        if (settingType === "base_url") {
+          await commands.changeSearchBaseUrlSetting(providerId, value);
+        } else if (settingType === "api_key") {
+          await commands.changeSearchApiKeySetting(providerId, value);
+        } else if (settingType === "model") {
+          await commands.changeSearchModelSetting(providerId, value);
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error(
+          `Failed to update search ${settingType.replace("_", " ")}:`,
+          error,
+        );
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateSearchBaseUrl: async (providerId, baseUrl) => {
+      return get().updateSearchSetting("base_url", providerId, baseUrl);
+    },
+
+    updateSearchApiKey: async (providerId, apiKey) => {
+      set((state) => ({
+        searchModelOptions: {
+          ...state.searchModelOptions,
+          [providerId]: [],
+        },
+      }));
+      return get().updateSearchSetting("api_key", providerId, apiKey);
+    },
+
+    updateSearchModel: async (providerId, model) => {
+      return get().updateSearchSetting("model", providerId, model);
+    },
+
+    fetchSearchModels: async (providerId) => {
+      const updateKey = `search_models_fetch:${providerId}`;
+      const { setUpdating, setSearchModelOptions } = get();
+
+      setUpdating(updateKey, true);
+
+      try {
+        const result = await commands.fetchSearchModels(providerId);
+        if (result.status === "ok") {
+          setSearchModelOptions(providerId, result.data);
+          return result.data;
+        } else {
+          console.error("Failed to fetch search models:", result.error);
+          return [];
+        }
+      } catch (error) {
+        console.error("Failed to fetch search models:", error);
+        return [];
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    setSearchModelOptions: (providerId, models) =>
+      set((state) => ({
+        searchModelOptions: {
+          ...state.searchModelOptions,
           [providerId]: models,
         },
       })),

@@ -4,7 +4,7 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{get_settings, AppSettings, SearchEngine, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -19,6 +19,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tauri::AppHandle;
 use tauri::Manager;
+use tauri_plugin_opener::open_url;
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -473,6 +474,314 @@ impl ShortcutAction for TestAction {
     }
 }
 
+// Search Action (macOS only)
+struct SearchAction;
+
+fn get_search_url(settings: &AppSettings, query: &str) -> String {
+    let encoded = urlencoding::encode(query);
+    match settings.search_engine {
+        SearchEngine::Google => format!("https://www.google.com/search?q={}", encoded),
+        SearchEngine::Bing => format!("https://www.bing.com/search?q={}", encoded),
+        SearchEngine::DuckDuckGo => format!("https://duckduckgo.com/?q={}", encoded),
+        SearchEngine::Yahoo => format!("https://search.yahoo.com/search?p={}", encoded),
+        SearchEngine::Perplexity => format!("https://www.perplexity.ai/search?q={}", encoded),
+    }
+}
+
+async fn perform_search(app: &AppHandle, transcription: &str) -> Option<()> {
+    let settings = get_settings(app);
+
+    let provider = match settings.active_search_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("Search enabled but no provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .search_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "Search skipped because provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    let selected_prompt_id = match &settings.search_selected_prompt_id {
+        Some(id) => id.clone(),
+        None => {
+            debug!("Search skipped because no prompt is selected");
+            return None;
+        }
+    };
+
+    let prompt = match settings
+        .search_prompts
+        .iter()
+        .find(|prompt| prompt.id == selected_prompt_id)
+    {
+        Some(prompt) => prompt.prompt.clone(),
+        None => {
+            debug!(
+                "Search skipped because prompt '{}' was not found",
+                selected_prompt_id
+            );
+            return None;
+        }
+    };
+
+    if prompt.trim().is_empty() {
+        debug!("Search skipped because the selected prompt is empty");
+        return None;
+    }
+
+    // Replace ${output} variable in the prompt with the actual text
+    let processed_prompt = prompt.replace("${output}", transcription);
+
+    // Get the search query from LLM
+    let search_query: Option<String>;
+
+    // Handle Apple Intelligence specially
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            if !apple_intelligence::check_apple_intelligence_availability() {
+                debug!("Apple Intelligence selected but not currently available on this device");
+                return None;
+            }
+
+            let token_limit = model.trim().parse::<i32>().unwrap_or(0);
+            search_query = match apple_intelligence::process_text(&processed_prompt, token_limit) {
+                Ok(result) => {
+                    if result.trim().is_empty() {
+                        debug!("Apple Intelligence returned an empty response");
+                        None
+                    } else {
+                        let query = result.trim().to_string();
+                        debug!("Apple Intelligence search query succeeded: {}", query);
+                        Some(query)
+                    }
+                }
+                Err(err) => {
+                    error!("Apple Intelligence search query failed: {}", err);
+                    None
+                }
+            };
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            debug!("Apple Intelligence provider selected on unsupported platform");
+            return None;
+        }
+    } else {
+        // Get API key for other providers
+        let api_key = settings
+            .search_api_keys
+            .get(&provider.id)
+            .cloned()
+            .unwrap_or_default();
+
+        // Send the chat completion request
+        search_query = match crate::llm_client::send_chat_completion(
+            &provider,
+            api_key,
+            &model,
+            processed_prompt,
+        )
+        .await
+        {
+            Ok(Some(content)) => {
+                // Strip invisible Unicode characters
+                let query = content
+                    .replace('\u{200B}', "")
+                    .replace('\u{200C}', "")
+                    .replace('\u{200D}', "")
+                    .replace('\u{FEFF}', "")
+                    .trim()
+                    .to_string();
+                debug!("LLM search query succeeded: {}", query);
+                Some(query)
+            }
+            Ok(None) => {
+                error!("LLM API response has no content");
+                None
+            }
+            Err(e) => {
+                error!("LLM search query generation failed: {}", e);
+                None
+            }
+        };
+    }
+
+    // Get the search query or return
+    let search_query = match search_query {
+        Some(q) if !q.is_empty() => q,
+        _ => {
+            debug!("No valid search query generated");
+            return None;
+        }
+    };
+
+    debug!("Generated search query: {}", search_query);
+
+    // Build the search URL
+    let search_url = get_search_url(&settings, &search_query);
+    debug!("Opening search URL: {}", search_url);
+
+    // Open the browser
+    match open_url(&search_url, None::<&str>) {
+        Ok(_) => {
+            debug!("Browser opened successfully with search query");
+            Some(())
+        }
+        Err(e) => {
+            error!("Failed to open browser: {}", e);
+            None
+        }
+    }
+}
+
+impl ShortcutAction for SearchAction {
+    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        let start_time = Instant::now();
+        debug!("SearchAction::start called for binding: {}", binding_id);
+
+        // Load model in the background
+        let tm = app.state::<Arc<TranscriptionManager>>();
+        tm.initiate_model_load();
+
+        let binding_id = binding_id.to_string();
+        change_tray_icon(app, TrayIconState::Recording);
+        show_recording_overlay(app);
+
+        let rm = app.state::<Arc<AudioRecordingManager>>();
+
+        // Get the microphone mode to determine audio feedback timing
+        let settings = get_settings(app);
+        let is_always_on = settings.always_on_microphone;
+        debug!("Microphone mode - always_on: {}", is_always_on);
+
+        let mut recording_started = false;
+        if is_always_on {
+            debug!("Always-on mode: Playing audio feedback immediately");
+            let rm_clone = Arc::clone(&rm);
+            let app_clone = app.clone();
+            std::thread::spawn(move || {
+                play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                rm_clone.apply_mute();
+            });
+
+            recording_started = rm.try_start_recording(&binding_id);
+            debug!("Recording started: {}", recording_started);
+        } else {
+            debug!("On-demand mode: Starting recording first, then audio feedback");
+            let recording_start_time = Instant::now();
+            if rm.try_start_recording(&binding_id) {
+                recording_started = true;
+                debug!("Recording started in {:?}", recording_start_time.elapsed());
+                let app_clone = app.clone();
+                let rm_clone = Arc::clone(&rm);
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    debug!("Handling delayed audio feedback/mute sequence");
+                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                    rm_clone.apply_mute();
+                });
+            } else {
+                debug!("Failed to start recording");
+            }
+        }
+
+        if recording_started {
+            shortcut::register_cancel_shortcut(app);
+        }
+
+        debug!(
+            "SearchAction::start completed in {:?}",
+            start_time.elapsed()
+        );
+    }
+
+    fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        shortcut::unregister_cancel_shortcut(app);
+
+        let stop_time = Instant::now();
+        debug!("SearchAction::stop called for binding: {}", binding_id);
+
+        let ah = app.clone();
+        let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
+        let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
+
+        change_tray_icon(app, TrayIconState::Transcribing);
+        show_transcribing_overlay(app);
+
+        rm.remove_mute();
+        play_feedback_sound(app, SoundType::Stop);
+
+        let binding_id = binding_id.to_string();
+
+        tauri::async_runtime::spawn(async move {
+            let binding_id = binding_id.clone();
+            debug!("Starting async search task for binding: {}", binding_id);
+
+            let stop_recording_time = Instant::now();
+            if let Some(samples) = rm.stop_recording(&binding_id) {
+                debug!(
+                    "Recording stopped and samples retrieved in {:?}, sample count: {}",
+                    stop_recording_time.elapsed(),
+                    samples.len()
+                );
+
+                let transcription_time = Instant::now();
+                match tm.transcribe(samples) {
+                    Ok(transcription) => {
+                        debug!(
+                            "Transcription completed in {:?}: '{}'",
+                            transcription_time.elapsed(),
+                            transcription
+                        );
+                        if !transcription.is_empty() {
+                            show_processing_overlay(&ah);
+
+                            // Perform the search
+                            if perform_search(&ah, &transcription).await.is_some() {
+                                debug!("Search completed successfully");
+                            } else {
+                                debug!("Search failed or was skipped");
+                            }
+                        }
+
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                    }
+                    Err(err) => {
+                        debug!("Search Transcription error: {}", err);
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                    }
+                }
+            } else {
+                debug!("No samples retrieved from recording stop");
+                utils::hide_recording_overlay(&ah);
+                change_tray_icon(&ah, TrayIconState::Idle);
+            }
+
+            if let Ok(mut states) = ah.state::<ManagedToggleState>().lock() {
+                states.active_toggles.insert(binding_id, false);
+            }
+        });
+
+        debug!("SearchAction::stop completed in {:?}", stop_time.elapsed());
+    }
+}
+
 // Static Action Map
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -485,6 +794,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe_with_post_process".to_string(),
         Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_with_search".to_string(),
+        Arc::new(SearchAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
