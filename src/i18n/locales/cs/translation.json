@@ -295,6 +295,16 @@
         "placeholder": "Přidat slovo",
         "add": "Přidat",
         "remove": "Odebrat {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Vypnuto: žádné filtrování hlasu. Filtr: odstraňuje ticho (výchozí). Stream: vkládá text větu po větě během řeči. Dávkový stream: přepisuje na pozadí, ale vloží vše najednou po zastavení.",
+        "options": {
+          "off": "Vypnuto",
+          "filter": "Filtr",
+          "stream": "Stream",
+          "batchStream": "Dávkový stream"
+        }
       }
     },
     "postProcessing": {

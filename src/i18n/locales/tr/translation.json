@@ -295,6 +295,16 @@
         "placeholder": "Kelime ekle",
         "add": "Ekle",
         "remove": "{{word}} Kaldır"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Kapalı: ses filtreleme yok. Filtre: sessizliği kaldırır (varsayılan). Akış: konuşurken metni cümle cümle yapıştırır. Toplu Akış: arka planda transkribe eder ancak durduğunuzda hepsini bir kerede yapıştırır.",
+        "options": {
+          "off": "Kapalı",
+          "filter": "Filtre",
+          "stream": "Akış",
+          "batchStream": "Toplu Akış"
+        }
       }
     },
     "postProcessing": {

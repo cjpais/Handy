@@ -295,6 +295,16 @@
         "placeholder": "Thêm một từ",
         "add": "Thêm",
         "remove": "Xóa {{word}}"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Tắt: không lọc giọng nói. Lọc: loại bỏ khoảng lặng (mặc định). Luồng: dán văn bản từng câu khi bạn nói. Luồng hàng loạt: chuyển đổi ở nền nhưng dán tất cả cùng lúc khi bạn dừng.",
+        "options": {
+          "off": "Tắt",
+          "filter": "Lọc",
+          "stream": "Luồng",
+          "batchStream": "Luồng hàng loạt"
+        }
       }
     },
     "postProcessing": {

@@ -295,6 +295,16 @@
         "placeholder": "Wort hinzufügen",
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen"
+      },
+      "vadMode": {
+        "title": "VAD Mode",
+        "description": "Aus: keine Sprachfilterung. Filter: entfernt Stille (Standard). Stream: fügt Text satzweise während des Sprechens ein. Batch-Stream: transkribiert im Hintergrund, fügt aber alles auf einmal ein, wenn du aufhörst.",
+        "options": {
+          "off": "Aus",
+          "filter": "Filter",
+          "stream": "Stream",
+          "batchStream": "Batch-Stream"
+        }
       }
     },
     "postProcessing": {

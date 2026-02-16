@@ -20,26 +20,26 @@ export const VadModeSetting: React.FC<VadModeSettingProps> = React.memo(
     const options = [
       {
         value: "off",
-        label: t("settings.debug.vadMode.options.off"),
+        label: t("settings.advanced.vadMode.options.off"),
       },
       {
         value: "filter",
-        label: t("settings.debug.vadMode.options.filter"),
+        label: t("settings.advanced.vadMode.options.filter"),
       },
       {
         value: "stream",
-        label: t("settings.debug.vadMode.options.stream"),
+        label: t("settings.advanced.vadMode.options.stream"),
       },
       {
         value: "batch_stream",
-        label: t("settings.debug.vadMode.options.batchStream"),
+        label: t("settings.advanced.vadMode.options.batchStream"),
       },
     ];
 
     return (
       <SettingContainer
-        title={t("settings.debug.vadMode.title")}
-        description={t("settings.debug.vadMode.description")}
+        title={t("settings.advanced.vadMode.title")}
+        description={t("settings.advanced.vadMode.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
         tooltipPosition="bottom"
