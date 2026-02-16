@@ -629,10 +629,7 @@ async fn perform_search(app: &AppHandle, transcription: &str) -> Option<()> {
             Ok(Some(content)) => {
                 // Strip invisible Unicode characters
                 let query = content
-                    .replace('\u{200B}', "")
-                    .replace('\u{200C}', "")
-                    .replace('\u{200D}', "")
-                    .replace('\u{FEFF}', "")
+                    .replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
                     .trim()
                     .to_string();
                 debug!("LLM search query succeeded: {}", query);
