@@ -171,10 +171,18 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
   bind = $mainMod, O, exec, handy --toggle-transcription
   ```
 
-- You can also manage global shortcuts outside of Handy via Unix signals. Sending `SIGUSR2` to the Handy process toggles recording on/off, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings. Example (Sway):
+- You can also manage global shortcuts outside of Handy via Unix signals, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings:
+
+  | Signal    | Action                                    | Example                |
+  | --------- | ----------------------------------------- | ---------------------- |
+  | `SIGUSR2` | Toggle transcription                      | `pkill -USR2 -n handy` |
+  | `SIGUSR1` | Toggle transcription with post-processing | `pkill -USR1 -n handy` |
+
+  Example Sway config:
 
   ```ini
   bindsym $mod+o exec pkill -USR2 -n handy
+  bindsym $mod+p exec pkill -USR1 -n handy
   ```
 
   `pkill` here simply delivers the signal—it does not terminate the process.
