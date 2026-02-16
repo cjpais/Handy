@@ -26,7 +26,7 @@ enum Command {
 /// Pipeline lifecycle, owned exclusively by the coordinator thread.
 enum Stage {
     Idle,
-    Recording(String),  // binding_id
+    Recording(String), // binding_id
     Processing,
 }
 

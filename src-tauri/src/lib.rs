@@ -79,7 +79,6 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
-
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         // First, ensure the window is visible
