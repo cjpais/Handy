@@ -120,9 +120,9 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 - If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
 - You can manage global shortcuts outside of Handy and still control the app via signals, which lets Wayland window managers or other hotkey daemons keep ownership of keybindings:
 
-  | Signal    | Action                              | Example                         |
-  | --------- | ----------------------------------- | ------------------------------- |
-  | `SIGUSR2` | Toggle transcription                | `pkill -USR2 -n handy`         |
+  | Signal    | Action                                    | Example                |
+  | --------- | ----------------------------------------- | ---------------------- |
+  | `SIGUSR2` | Toggle transcription                      | `pkill -USR2 -n handy` |
   | `SIGUSR1` | Toggle transcription with post-processing | `pkill -USR1 -n handy` |
 
   Example Sway config:
