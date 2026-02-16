@@ -244,12 +244,30 @@
           "none": "なし"
         }
       },
+      "typingTool": {
+        "title": "タイピングツール",
+        "description": "直接貼り付け方式で使用する Linux のタイピングツールを選択します。Auto は自動的に最適なツールを検出して使用します。",
+        "options": {
+          "auto": "Auto（推奨）"
+        }
+      },
       "clipboardHandling": {
         "title": "クリップボードの処理",
         "description": "クリップボードを変更しないを選択すると、文字起こし後も現在のクリップボード内容が保持されます。クリップボードにコピーを選択すると、貼り付け後も文字起こし結果がクリップボードに残ります。",
         "options": {
           "dontModify": "クリップボードを変更しない",
           "copyToClipboard": "クリップボードにコピー"
+        }
+      },
+      "autoSubmit": {
+        "title": "自動送信",
+        "description": "テキスト挿入後に選択したキーの組み合わせを自動的に送信します。macOSではCmd+Enter、Windows/LinuxではSuper+Enterが適用されます。",
+        "options": {
+          "off": "オフ",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

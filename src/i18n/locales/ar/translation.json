@@ -222,12 +222,30 @@
           "none": "بلا"
         }
       },
+      "typingTool": {
+        "title": "أداة الكتابة",
+        "description": ".اختر أداة الكتابة في Linux لاستخدامها مع طريقة اللصق المباشر. سيكتشف \"تلقائي\" تلقائياً أفضل أداة متاحة لنظامك ويستخدمها",
+        "options": {
+          "auto": "تلقائي (موصى به)"
+        }
+      },
       "clipboardHandling": {
         "title": "التعامل مع الحافظة",
         "description": ".'عدم تعديل الحافظة' يحافظ على محتويات حافظتك الحالية بعد التفريغ. 'نسخ إلى الحافظة' يترك نتيجة التفريغ في حافظتك بعد اللصق",
         "options": {
           "dontModify": "عدم تعديل الحافظة",
           "copyToClipboard": "نسخ إلى الحافظة"
+        }
+      },
+      "autoSubmit": {
+        "title": "إرسال تلقائي",
+        "description": "إرسال مجموعة المفاتيح المحددة تلقائياً بعد إدراج النص. Cmd+Enter ينطبق على macOS، بينما يستخدم Windows/Linux مفتاح Super+Enter.",
+        "options": {
+          "off": "إيقاف",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

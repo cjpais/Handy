@@ -13,6 +13,7 @@ mod overlay;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
@@ -28,10 +29,10 @@ use managers::transcription::TranscriptionManager;
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tauri::image::Image;
+pub use transcription_coordinator::TranscriptionCoordinator;
 
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Listener, Manager};
@@ -77,14 +78,6 @@ fn build_console_filter() -> env_filter::Filter {
 
     builder.build()
 }
-
-#[derive(Default)]
-struct ShortcutToggleStates {
-    // Map: shortcut_binding_id -> is_active
-    active_toggles: HashMap<String, bool>,
-}
-
-type ManagedToggleState = Mutex<ShortcutToggleStates>;
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
@@ -274,7 +267,11 @@ pub fn run() {
         shortcut::change_debug_mode_setting,
         shortcut::change_word_correction_threshold_setting,
         shortcut::change_paste_method_setting,
+        shortcut::get_available_typing_tools,
+        shortcut::change_typing_tool_setting,
         shortcut::change_clipboard_handling_setting,
+        shortcut::change_auto_submit_setting,
+        shortcut::change_auto_submit_key_setting,
         shortcut::change_post_process_enabled_setting,
         shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,
@@ -403,7 +400,6 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
-        .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
             let settings = get_settings(&app.handle());
             let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
@@ -411,6 +407,7 @@ pub fn run() {
             // Store the file log level in the atomic for the filter to use
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
+            app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
 

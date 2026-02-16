@@ -244,12 +244,30 @@
           "none": "없음"
         }
       },
+      "typingTool": {
+        "title": "타이핑 도구",
+        "description": "직접 붙여넣기 방식에 사용할 Linux 타이핑 도구를 선택하세요. Auto는 시스템에서 사용 가능한 최적의 도구를 자동으로 감지해 사용합니다.",
+        "options": {
+          "auto": "Auto (권장)"
+        }
+      },
       "clipboardHandling": {
         "title": "클립보드 처리",
         "description": "클립보드 수정 안 함은 전사 후 현재 클립보드 내용을 보존합니다. 클립보드에 복사는 붙여넣기 후 전사 결과를 클립보드에 남겨둡니다.",
         "options": {
           "dontModify": "클립보드 수정 안 함",
           "copyToClipboard": "클립보드에 복사"
+        }
+      },
+      "autoSubmit": {
+        "title": "자동 제출",
+        "description": "텍스트 삽입 후 선택한 키 조합을 자동으로 전송합니다. macOS에서는 Cmd+Enter가, Windows/Linux에서는 Super+Enter가 적용됩니다.",
+        "options": {
+          "off": "끄기",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

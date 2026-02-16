@@ -244,12 +244,30 @@
           "none": "Žádné"
         }
       },
+      "typingTool": {
+        "title": "Nástroj pro psaní",
+        "description": "Vyberte, který linuxový nástroj pro psaní použít pro metodu přímého vložení. Auto automaticky zjistí a použije nejlepší dostupný nástroj pro váš systém.",
+        "options": {
+          "auto": "Auto (Doporučeno)"
+        }
+      },
       "clipboardHandling": {
         "title": "Práce se schránkou",
         "description": "'Neměnit schránku' zachová po přepisu aktuální obsah schránky. 'Kopírovat do schránky' ponechá po vložení výsledek přepisu ve schránce.",
         "options": {
           "dontModify": "Neměnit schránku",
           "copyToClipboard": "Kopírovat do schránky"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatické odeslání",
+        "description": "Automaticky odešle vybranou kombinaci kláves po vložení textu. Cmd+Enter platí pro macOS, zatímco Windows/Linux používají Super+Enter.",
+        "options": {
+          "off": "Vypnuto",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {

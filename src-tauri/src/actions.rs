@@ -10,7 +10,7 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
-use crate::ManagedToggleState;
+use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error};
 use once_cell::sync::Lazy;
@@ -19,6 +19,17 @@ use std::sync::Arc;
 use std::time::Instant;
 use tauri::AppHandle;
 use tauri::Manager;
+
+/// Drop guard that notifies the [`TranscriptionCoordinator`] when the
+/// transcription pipeline finishes — whether it completes normally or panics.
+struct FinishGuard(AppHandle);
+impl Drop for FinishGuard {
+    fn drop(&mut self) {
+        if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
+            c.notify_processing_finished();
+        }
+    }
+}
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -305,6 +316,7 @@ impl ShortcutAction for TranscribeAction {
         let post_process = self.post_process;
 
         tauri::async_runtime::spawn(async move {
+            let _guard = FinishGuard(ah.clone());
             let binding_id = binding_id.clone(); // Clone for the inner async task
             debug!(
                 "Starting async transcription task for binding: {}",
@@ -422,11 +434,6 @@ impl ShortcutAction for TranscribeAction {
                 debug!("No samples retrieved from recording stop");
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
-            }
-
-            // Clear toggle state now that transcription is complete
-            if let Ok(mut states) = ah.state::<ManagedToggleState>().lock() {
-                states.active_toggles.insert(binding_id, false);
             }
         });
 

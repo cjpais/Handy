@@ -10,7 +10,8 @@ use tauri::{AppHandle, Manager};
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::get_settings;
-use crate::ManagedToggleState;
+use crate::transcription_coordinator::is_transcribe_binding;
+use crate::TranscriptionCoordinator;
 
 /// Handle a shortcut event from either implementation.
 ///
@@ -33,6 +34,16 @@ pub fn handle_shortcut_event(
 ) {
     let settings = get_settings(app);
 
+    // Transcribe bindings are handled by the coordinator.
+    if is_transcribe_binding(binding_id) {
+        if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+            coordinator.send_input(binding_id, hotkey_string, is_pressed, settings.push_to_talk);
+        } else {
+            warn!("TranscriptionCoordinator is not initialized");
+        }
+        return;
+    }
+
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!(
             "No action defined in ACTION_MAP for shortcut ID '{}'. Shortcut: '{}', Pressed: {}",
@@ -50,42 +61,10 @@ pub fn handle_shortcut_event(
         return;
     }
 
-    // Push-to-talk mode: start on press, stop on release
-    if settings.push_to_talk {
-        if is_pressed {
-            action.start(app, binding_id, hotkey_string);
-        } else {
-            action.stop(app, binding_id, hotkey_string);
-        }
-        return;
-    }
-
-    // Toggle mode: toggle state on press only
+    // Remaining bindings (e.g. "test") use simple start/stop on press/release.
     if is_pressed {
-        // Determine action and update state while holding the lock,
-        // but RELEASE the lock before calling the action to avoid deadlocks.
-        // (Actions may need to acquire the lock themselves, e.g., cancel_current_operation)
-        let should_start: bool;
-        {
-            let toggle_state_manager = app.state::<ManagedToggleState>();
-            let mut states = toggle_state_manager
-                .lock()
-                .expect("Failed to lock toggle state manager");
-
-            let is_currently_active = states
-                .active_toggles
-                .entry(binding_id.to_string())
-                .or_insert(false);
-
-            should_start = !*is_currently_active;
-            *is_currently_active = should_start;
-        } // Lock released here
-
-        // Now call the action without holding the lock
-        if should_start {
-            action.start(app, binding_id, hotkey_string);
-        } else {
-            action.stop(app, binding_id, hotkey_string);
-        }
+        action.start(app, binding_id, hotkey_string);
+    } else {
+        action.stop(app, binding_id, hotkey_string);
     }
 }
