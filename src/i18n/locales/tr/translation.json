@@ -55,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "Çok hızlı, yalnızca İngilizce. Aksanları iyi işler."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultra hızlı, yalnızca İngilizce"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Hızlı, yalnızca İngilizce. Hız ve doğruluk arasında iyi denge."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Yalnızca İngilizce. Yüksek kalite."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Tayvan Mandarin Çincesi için optimize edilmiş. Dil değiştirme desteği."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Çok hızlı. Çince, İngilizce, Japonca, Korece, Kantonca."
       }
     },
     "errors": {

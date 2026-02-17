@@ -3,6 +3,7 @@ mod actions;
 mod apple_intelligence;
 mod audio_feedback;
 pub mod audio_toolkit;
+pub mod cli;
 mod clipboard;
 mod commands;
 mod helpers;
@@ -14,9 +15,12 @@ pub mod portable;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
+
+pub use cli::CliArgs;
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
@@ -26,13 +30,13 @@ use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
-use signal_hook::consts::SIGUSR2;
+use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tauri::image::Image;
+pub use transcription_coordinator::TranscriptionCoordinator;
 
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Listener, Manager};
@@ -78,14 +82,6 @@ fn build_console_filter() -> env_filter::Filter {
 
     builder.build()
 }
-
-#[derive(Default)]
-struct ShortcutToggleStates {
-    // Map: shortcut_binding_id -> is_active
-    active_toggles: HashMap<String, bool>,
-}
-
-type ManagedToggleState = Mutex<ShortcutToggleStates>;
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
@@ -140,8 +136,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // This matches the pattern used for Enigo initialization.
 
     #[cfg(unix)]
-    let signals = Signals::new(&[SIGUSR2]).unwrap();
-    // Set up SIGUSR2 signal handler for toggling transcription
+    let signals = Signals::new(&[SIGUSR1, SIGUSR2]).unwrap();
+    // Set up signal handlers for toggling transcription
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone(), signals);
 
@@ -255,7 +251,7 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
+pub fn run(cli_args: CliArgs) {
     // Detect portable mode before anything else
     portable::init();
 
@@ -402,8 +398,16 @@ pub fn run() {
     }
 
     builder
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            show_main_window(app);
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if args.iter().any(|a| a == "--toggle-transcription") {
+                signal_handle::send_transcription_input(app, "transcribe", "CLI");
+            } else if args.iter().any(|a| a == "--toggle-post-process") {
+                signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
+            } else if args.iter().any(|a| a == "--cancel") {
+                crate::utils::cancel_current_operation(app);
+            } else {
+                show_main_window(app);
+            }
         }))
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
@@ -418,7 +422,7 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
-        .manage(Mutex::new(ShortcutToggleStates::default()))
+        .manage(cli_args.clone())
         .setup(move |app| {
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
@@ -437,17 +441,32 @@ pub fn run() {
 
             win_builder.build()?;
 
-            let settings = get_settings(&app.handle());
+            let mut settings = get_settings(&app.handle());
+
+            // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
+            if cli_args.debug {
+                settings.debug_mode = true;
+                settings.log_level = settings::LogLevel::Trace;
+            }
+
             let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
             let file_log_level: log::Level = tauri_log_level.into();
             // Store the file log level in the atomic for the filter to use
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
+            app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
 
+            // Hide tray icon if --no-tray was passed
+            if cli_args.no_tray {
+                tray::set_tray_visibility(&app_handle, false);
+            }
+
             // Show main window only if not starting hidden
-            if !settings.start_hidden {
+            // CLI --start-hidden flag overrides the setting
+            let should_hide = settings.start_hidden || cli_args.start_hidden;
+            if !should_hide {
                 if let Some(main_window) = app_handle.get_webview_window("main") {
                     main_window.show().unwrap();
                     main_window.set_focus().unwrap();
@@ -459,8 +478,9 @@ pub fn run() {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 let settings = get_settings(&window.app_handle());
-                // If tray icon is hidden, quit the app
-                if !settings.show_tray_icon {
+                let cli = window.app_handle().state::<CliArgs>();
+                // If tray icon is hidden (via setting or --no-tray flag), quit the app
+                if !settings.show_tray_icon || cli.no_tray {
                     window.app_handle().exit(0);
                     return;
                 }

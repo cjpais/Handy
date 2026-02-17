@@ -96,11 +96,14 @@
             preBuild = ''
               cp -r ${bunDeps}/node_modules node_modules
               chmod -R +w node_modules
-              patchShebangs node_modules
+              substituteInPlace node_modules/.bin/{tsc,vite} \
+                --replace-fail "/usr/bin/env node" "${lib.getExe pkgs.bun}"
               export HOME=$TMPDIR
-              ${pkgs.bun}/bin/bun run build
+              bun run build
             '';
 
+            # Tests require runtime resources (audio devices, model files, GPU/Vulkan)
+            # not available in the Nix build sandbox
             doCheck = false;
 
             # The tauri hook's installPhase expects target/ in cwd, but our
@@ -118,7 +121,6 @@
               pkg-config
               wrapGAppsHook4
               bun
-              nodejs
               jq
               cmake
               llvmPackages.libclang

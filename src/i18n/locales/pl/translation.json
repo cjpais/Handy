@@ -54,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Bardzo szybki, tylko angielski. Dobrze radzi sobie z akcentami."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultraszybki, tylko angielski"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Szybki, tylko angielski. Dobra równowaga między szybkością a dokładnością."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Tylko angielski. Wysoka jakość."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Zoptymalizowany dla tajwańskiego mandaryńskiego. Obsługa przełączania języków."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Bardzo szybki. Chiński, angielski, japoński, koreański, kantoński."
       }
     },
     "errors": {

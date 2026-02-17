@@ -68,9 +68,10 @@ chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = { version = "0.2.3", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
+transcribe-rs = { version = "0.2.5", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
 handy-keys = "0.2.0"
 ferrous-opencc = "0.2.3"
+clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
