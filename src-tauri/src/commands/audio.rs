@@ -20,7 +20,7 @@ fn custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
             format!("custom_{}.wav", sound_type),
             tauri::path::BaseDirectory::AppData,
         )
-        .map_or(false, |path| path.exists())
+        .is_ok_and(|path| path.exists())
 }
 
 #[tauri::command]

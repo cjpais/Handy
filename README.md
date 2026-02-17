@@ -162,6 +162,32 @@ The following are recommendations for running Handy on your own machine. If you 
 
 We're actively working on several features and improvements. Contributions and feedback are welcome!
 
+### Experimental
+
+**Post Processing:**
+
+Post-processing allows you to refine transcriptions using an LLM after transcribing the initial text. You can create custom prompt templates with the following variables:
+
+| Variable                   | Description                                                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `${output}`                | The transcription text                                                                                                       |
+| `${current_app}`           | Name of the frontmost application when recording started                                                                     |
+| `${short_prev_transcript}` | Recent transcript from same app (last 200 words, expires after 5 min)                                                        |
+| `${time_local}`            | Current local time (e.g., "Tuesday, February 3, 2026 10:33:39 AM")                                                           |
+| `${language}`              | Selected transcription language for Whisper models (e.g., "en", "zh-Hans"), or "auto" for other models (Parakeet, Moonshine) |
+
+Example prompt template:
+
+```
+Fix grammar and punctuation in this transcription in preferred 'Language'. Keep the original meaning.
+Current app: ${current_app}
+Time: ${time_local}
+Language code: ${language}
+Previous transcript (for context): ${short_prev_transcript}
+
+Transcription: ${output}
+```
+
 ### In Progress
 
 **Debug Logging:**
