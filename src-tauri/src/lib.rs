@@ -14,11 +14,8 @@ mod overlay;
 mod settings;
 mod shortcut;
 mod signal_handle;
-<<<<<<< HEAD
 mod transcript_context;
-=======
 mod transcription_coordinator;
->>>>>>> main
 mod tray;
 mod tray_i18n;
 mod utils;
