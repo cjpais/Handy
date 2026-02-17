@@ -55,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": ".سريع جداً، الإنجليزية فقط. يتعامل جيداً مع اللهجات"
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "سريع للغاية، الإنجليزية فقط"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "سريع، الإنجليزية فقط. توازن جيد بين السرعة والدقة."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "الإنجليزية فقط. جودة عالية."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "محسّن للماندرين التايوانية. دعم التبديل بين اللغات."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "سريع جداً. الصينية، الإنجليزية، اليابانية، الكورية، الكانتونية."
       }
     },
     "errors": {

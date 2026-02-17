@@ -55,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "Velmi rychlý, pouze angličtina. Dobře zvládá přízvuky."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultrarychlý, pouze angličtina"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Rychlý, pouze angličtina. Dobrý poměr rychlosti a přesnosti."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Pouze angličtina. Vysoká kvalita."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimalizováno pro tchajwanskou mandarínštinu. Podpora přepínání jazyků."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Velmi rychlý. Čínština, angličtina, japonština, korejština, kantonština."
       }
     },
     "errors": {

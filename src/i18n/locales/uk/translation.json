@@ -54,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Дуже швидкий, лише англійська. Добре справляється з акцентами."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Надшвидкий, лише англійська"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Швидкий, лише англійська. Добрий баланс швидкості та точності."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Лише англійська. Висока якість."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Оптимізовано для тайванської мандаринської. Підтримка перемикання мов."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Дуже швидкий. Китайська, англійська, японська, корейська, кантонська."
       }
     },
     "errors": {

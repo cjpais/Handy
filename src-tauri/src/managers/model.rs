@@ -21,6 +21,7 @@ pub enum EngineType {
     Whisper,
     Parakeet,
     Moonshine,
+    MoonshineStreaming,
     SenseVoice,
 }
 
@@ -283,6 +284,81 @@ impl ModelManager {
                 engine_type: EngineType::Moonshine,
                 accuracy_score: 0.70,
                 speed_score: 0.90,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "moonshine-tiny-streaming-en".to_string(),
+            ModelInfo {
+                id: "moonshine-tiny-streaming-en".to_string(),
+                name: "Moonshine V2 Tiny".to_string(),
+                description: "Ultra-fast, English only".to_string(),
+                filename: "moonshine-tiny-streaming-en".to_string(),
+                url: Some(
+                    "https://blob.handy.computer/moonshine-tiny-streaming-en.tar.gz".to_string(),
+                ),
+                size_mb: 31,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::MoonshineStreaming,
+                accuracy_score: 0.55,
+                speed_score: 0.95,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "moonshine-small-streaming-en".to_string(),
+            ModelInfo {
+                id: "moonshine-small-streaming-en".to_string(),
+                name: "Moonshine V2 Small".to_string(),
+                description: "Fast, English only. Good balance of speed and accuracy.".to_string(),
+                filename: "moonshine-small-streaming-en".to_string(),
+                url: Some(
+                    "https://blob.handy.computer/moonshine-small-streaming-en.tar.gz".to_string(),
+                ),
+                size_mb: 100,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::MoonshineStreaming,
+                accuracy_score: 0.65,
+                speed_score: 0.90,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "moonshine-medium-streaming-en".to_string(),
+            ModelInfo {
+                id: "moonshine-medium-streaming-en".to_string(),
+                name: "Moonshine V2 Medium".to_string(),
+                description: "English only. High quality.".to_string(),
+                filename: "moonshine-medium-streaming-en".to_string(),
+                url: Some(
+                    "https://blob.handy.computer/moonshine-medium-streaming-en.tar.gz".to_string(),
+                ),
+                size_mb: 192,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::MoonshineStreaming,
+                accuracy_score: 0.75,
+                speed_score: 0.80,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
