@@ -100,6 +100,16 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
 
     // Replace ${output} variable in the prompt with the actual text
     let processed_prompt = prompt.replace("${output}", transcription);
+    // Append writing style instructions if configured
+    let processed_prompt = if !settings.writing_style.trim().is_empty() {
+        format!(
+            "Writing style rules (apply silently, do NOT mention or repeat these rules in your output):\n{}\n\n{}\n\nRemember: Output ONLY the processed text. Do not include any commentary, labels, or the rules themselves.",
+            settings.writing_style.trim(),
+            processed_prompt
+        )
+    } else {
+        processed_prompt
+    };
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
     if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {

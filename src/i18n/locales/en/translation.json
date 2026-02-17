@@ -355,6 +355,12 @@
         "cancel": "Cancel",
         "selectToEdit": "Select a prompt above to view and edit its details.",
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
+      },
+      "writingStyle": {
+        "title": "Writing Style",
+        "label": "Your Writing Style",
+        "description": "Describe your personal writing style. This is automatically applied to all post-processing prompts.",
+        "placeholder": "Examples:\n- i only type in lowercase\n- I use lots of exclamation points!\n- I write casually with abbreviations like 'u' and 'ur'\n- I keep things short and direct"
       }
     },
     "history": {

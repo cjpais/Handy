@@ -423,6 +423,25 @@ export const PostProcessingSettingsPrompts = React.memo(
 );
 PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
 
+const WritingStyleSection: React.FC = () => {
+  const { t } = useTranslation();
+  const { getSetting, updateSetting } = useSettings();
+  const writingStyle = (getSetting("writing_style") as string) || "";
+
+  return (
+    <SettingContainer
+      title={t("settings.postProcessing.writingStyle.label")}
+      description={t("settings.postProcessing.writingStyle.description")}
+    >
+      <Textarea
+        value={writingStyle}
+        onChange={(e) => updateSetting("writing_style", e.target.value)}
+        placeholder={t("settings.postProcessing.writingStyle.placeholder")}
+      />
+    </SettingContainer>
+  );
+};
+
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
 
@@ -442,6 +461,12 @@ export const PostProcessingSettings: React.FC = () => {
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
         <PostProcessingSettingsPrompts />
+      </SettingsGroup>
+
+      <SettingsGroup
+        title={t("settings.postProcessing.writingStyle.title")}
+      >
+        <WritingStyleSection />
       </SettingsGroup>
     </div>
   );
