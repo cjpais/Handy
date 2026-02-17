@@ -2445,6 +2445,7 @@ version = "0.7.5"
 dependencies = [
  "anyhow",
  "chrono",
+ "clap",
  "cpal",
  "enigo",
  "env_filter",
