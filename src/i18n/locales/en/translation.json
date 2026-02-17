@@ -67,6 +67,14 @@
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
         "description": "English only. High quality."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimized for Taiwanese Mandarin. Code-switching support."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Very fast. Chinese, English, Japanese, Korean, Cantonese."
       }
     },
     "errors": {

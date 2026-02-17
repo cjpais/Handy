@@ -58,15 +58,23 @@
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Ultra-fast, English only"
+        "description": "超快速，僅支援英語"
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Fast, English only. Good balance of speed and accuracy."
+        "description": "快速，僅支援英語。速度與準確度的良好平衡。"
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "English only. High quality."
+        "description": "僅支援英語。高品質。"
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "針對臺灣華語最佳化。支援語碼轉換。"
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "速度極快。支援中文、英語、日語、韓語、粵語。"
       }
     },
     "errors": {

@@ -54,19 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Sehr schnell, nur Englisch. Verarbeitet Akzente gut."
       },
       "moonshine-tiny-streaming-en": {
         "name": "Moonshine V2 Tiny",
-        "description": "Ultra-fast, English only"
+        "description": "Ultraschnell, nur Englisch"
       },
       "moonshine-small-streaming-en": {
         "name": "Moonshine V2 Small",
-        "description": "Fast, English only. Good balance of speed and accuracy."
+        "description": "Schnell, nur Englisch. Gute Balance zwischen Geschwindigkeit und Genauigkeit."
       },
       "moonshine-medium-streaming-en": {
         "name": "Moonshine V2 Medium",
-        "description": "English only. High quality."
+        "description": "Nur Englisch. Hohe Qualität."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimiert für taiwanesisches Mandarin. Unterstützung für Code-Switching."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Sehr schnell. Chinesisch, Englisch, Japanisch, Koreanisch, Kantonesisch."
       }
     },
     "errors": {
