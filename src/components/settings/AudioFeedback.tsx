@@ -2,7 +2,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ToggleSwitch } from "../ui/ToggleSwitch";
 import { useSettings } from "../../hooks/useSettings";
-import { VolumeSlider } from "./VolumeSlider";
 import { SoundPicker } from "./SoundPicker";
 
 interface AudioFeedbackProps {
@@ -26,6 +25,11 @@ export const AudioFeedback: React.FC<AudioFeedbackProps> = React.memo(
           description={t("settings.sound.audioFeedback.description")}
           descriptionMode={descriptionMode}
           grouped={grouped}
+        />
+        <SoundPicker
+          label={t("settings.sound.soundTheme.label")}
+          description={t("settings.sound.soundTheme.description")}
+          disabled={!audioFeedbackEnabled}
         />
       </div>
     );

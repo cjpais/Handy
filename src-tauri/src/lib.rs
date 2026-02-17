@@ -332,6 +332,8 @@ pub fn run(cli_args: CliArgs) {
         commands::audio::get_selected_output_device,
         commands::audio::play_test_sound,
         commands::audio::check_custom_sounds,
+        commands::audio::get_custom_sound_paths,
+        commands::audio::set_custom_sound_path,
         commands::audio::set_clamshell_microphone,
         commands::audio::get_clamshell_microphone,
         commands::audio::is_recording,
