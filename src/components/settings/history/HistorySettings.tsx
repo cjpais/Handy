@@ -92,25 +92,28 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
-  const getAudioUrl = async (fileName: string) => {
-    try {
-      const result = await commands.getAudioFilePath(fileName);
-      if (result.status === "ok") {
-        if (osType === "linux") {
-          const fileData = await readFile(result.data);
-          const blob = new Blob([fileData], { type: "audio/wav" });
+  const getAudioUrl = useCallback(
+    async (fileName: string) => {
+      try {
+        const result = await commands.getAudioFilePath(fileName);
+        if (result.status === "ok") {
+          if (osType === "linux") {
+            const fileData = await readFile(result.data);
+            const blob = new Blob([fileData], { type: "audio/wav" });
 
-          return URL.createObjectURL(blob);
+            return URL.createObjectURL(blob);
+          }
+
+          return convertFileSrc(result.data, "asset");
         }
-
-        return convertFileSrc(result.data, "asset");
+        return null;
+      } catch (error) {
+        console.error("Failed to get audio file path:", error);
+        return null;
       }
-      return null;
-    } catch (error) {
-      console.error("Failed to get audio file path:", error);
-      return null;
-    }
-  };
+    },
+    [osType],
+  );
 
   const deleteAudioEntry = async (id: number) => {
     try {
@@ -228,34 +231,12 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   deleteAudio,
 }) => {
   const { t, i18n } = useTranslation();
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [showCopied, setShowCopied] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    let urlToRevoke: string | null = null;
-
-    const loadAudio = async () => {
-      const url = await getAudioUrl(entry.file_name);
-
-      if (!cancelled) {
-        urlToRevoke = url;
-        setAudioUrl(url);
-      } else if (url?.startsWith("blob:")) {
-        URL.revokeObjectURL(url);
-      }
-    };
-
-    loadAudio();
-
-    return () => {
-      cancelled = true;
-
-      if (urlToRevoke?.startsWith("blob:")) {
-        URL.revokeObjectURL(urlToRevoke);
-      }
-    };
-  }, [entry.file_name]);
+  const handleLoadAudio = useCallback(
+    () => getAudioUrl(entry.file_name),
+    [getAudioUrl, entry.file_name],
+  );
 
   const handleCopyText = () => {
     onCopyText();
@@ -292,7 +273,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
           <button
             onClick={onToggleSaved}
-            className={`p-2 rounded  transition-colors cursor-pointer ${
+            className={`p-2 rounded-md transition-colors cursor-pointer ${
               entry.saved
                 ? "text-logo-primary hover:text-logo-primary/80"
                 : "text-text/50 hover:text-logo-primary"
@@ -321,7 +302,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
         {entry.transcription_text}
       </p>
-      {audioUrl && <AudioPlayer src={audioUrl} className="w-full" />}
+      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );
 };

@@ -23,6 +23,7 @@ fn get_effective_base_url(provider: &PostProcessProvider) -> String {
     }
     provider.base_url.trim_end_matches('/').to_string()
 }
+use serde_json::Value;
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -31,9 +32,25 @@ struct ChatMessage {
 }
 
 #[derive(Debug, Serialize)]
+struct JsonSchema {
+    name: String,
+    strict: bool,
+    schema: Value,
+}
+
+#[derive(Debug, Serialize)]
+struct ResponseFormat {
+    #[serde(rename = "type")]
+    format_type: String,
+    json_schema: JsonSchema,
+}
+
+#[derive(Debug, Serialize)]
 struct ChatCompletionRequest {
     model: String,
     messages: Vec<ChatMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_format: Option<ResponseFormat>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -108,18 +125,58 @@ pub async fn send_chat_completion(
 ) -> Result<Option<String>, String> {
     // Get effective base URL (checks env var for custom provider on each call)
     let base_url = get_effective_base_url(provider);
+    send_chat_completion_with_schema(provider, api_key, model, prompt, None, None).await
+}
+
+/// Send a chat completion request with structured output support
+/// When json_schema is provided, uses structured outputs mode
+/// system_prompt is used as the system message when provided
+pub async fn send_chat_completion_with_schema(
+    provider: &PostProcessProvider,
+    api_key: String,
+    model: &str,
+    user_content: String,
+    system_prompt: Option<String>,
+    json_schema: Option<Value>,
+) -> Result<Option<String>, String> {
+    let base_url = get_effective_base_url(provider);
     let url = format!("{}/chat/completions", base_url);
 
     debug!("Sending chat completion request to: {}", url);
 
     let client = create_client(provider, &api_key)?;
 
+    // Build messages vector
+    let mut messages = Vec::new();
+
+    // Add system prompt if provided
+    if let Some(system) = system_prompt {
+        messages.push(ChatMessage {
+            role: "system".to_string(),
+            content: system,
+        });
+    }
+
+    // Add user message
+    messages.push(ChatMessage {
+        role: "user".to_string(),
+        content: user_content,
+    });
+
+    // Build response_format if schema is provided
+    let response_format = json_schema.map(|schema| ResponseFormat {
+        format_type: "json_schema".to_string(),
+        json_schema: JsonSchema {
+            name: "transcription_output".to_string(),
+            strict: true,
+            schema,
+        },
+    });
+
     let request_body = ChatCompletionRequest {
         model: model.to_string(),
-        messages: vec![ChatMessage {
-            role: "user".to_string(),
-            content: prompt,
-        }],
+        messages,
+        response_format,
     };
 
     let response = client

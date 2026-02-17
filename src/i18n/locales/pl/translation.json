@@ -3,11 +3,13 @@
     "settings": "Ustawienia...",
     "checkUpdates": "Sprawdź aktualizacje...",
     "copyLastTranscript": "Kopiuj ostatnią transkrypcję",
+    "unloadModel": "Zwolnij model",
     "quit": "Zamknij",
     "cancel": "Anuluj"
   },
   "sidebar": {
     "general": "Ogólne",
+    "models": "Modele",
     "advanced": "Zaawansowane",
     "postProcessing": "Postproces",
     "history": "Historia",
@@ -19,6 +21,8 @@
     "recommended": "Polecane",
     "download": "Pobierz",
     "downloading": "Pobieranie...",
+    "customModelDescription": "Nieoficjalnie wspierane",
+    "downloadFailed": "Pobieranie nie powiodło się. Spróbuj ponownie.",
     "modelCard": {
       "accuracy": "dokładność",
       "speed": "szybkość"
@@ -50,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Bardzo szybki, tylko angielski. Dobrze radzi sobie z akcentami."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultraszybki, tylko angielski"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Szybki, tylko angielski. Dobra równowaga między szybkością a dokładnością."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Tylko angielski. Wysoka jakość."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Zoptymalizowany dla tajwańskiego mandaryńskiego. Obsługa przełączania języków."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Bardzo szybki. Chiński, angielski, japoński, koreański, kantoński."
       }
     },
     "errors": {
@@ -71,18 +95,17 @@
       "grant": "Przyznaj uprawnienie",
       "granted": "Przyznano",
       "waiting": "Oczekiwanie...",
-      "allGranted": "Wszystko gotowe!"
+      "allGranted": "Wszystko gotowe!",
+      "errors": {
+        "checkFailed": "Nie udało się sprawdzić uprawnień. Spróbuj ponownie.",
+        "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Witamy w Handy!",
-    "downloadPrompt": "Pobierz model poniżej, aby rozpocząć transkrypcję.",
-    "availableModels": "Dostępne modele",
-    "downloadModels": "Pobierz modele",
-    "chooseModel": "Wybierz model",
+    "custom": "Własny",
     "active": "Aktywny",
-    "download": "Pobierz",
-    "downloadSize": "Rozmiar pobierania",
+    "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
     "extracting": "Rozpakowywanie {{modelName}}...",
     "extractingMultiple": "Rozpakowywanie {{count}} modeli...",
@@ -95,9 +118,42 @@
     "modelError": "Błąd modelu",
     "modelUnloaded": "Model wyładowany",
     "noModelDownloadRequired": "Brak modelu – wymagane pobranie",
-    "deleteModel": "Usuń {{modelName}}"
+    "deleteModel": "Usuń {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Obsługuje wiele języków wejściowych",
+      "multiLanguage": "Wielojęzyczny",
+      "translation": "Może tłumaczyć na angielski",
+      "translate": "Tłumacz na angielski",
+      "singleLanguage": "Obsługuje tylko ten język",
+      "languageOnly": "Tylko {{language}}"
+    },
+    "cancel": "Anuluj",
+    "cancelDownload": "Anuluj pobieranie"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Ustawienia {{model}}",
+      "noSettingsNeeded": "Ten model działa automatycznie bez konieczności konfiguracji."
+    },
+    "models": {
+      "title": "Modele transkrypcji",
+      "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
+      "downloaded": "Pobrane",
+      "available": "Dostępne do pobrania",
+      "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
+      "deleteActiveConfirm": "{{modelName}} jest Twoim aktywnym modelem. Usunięcie go zatrzyma transkrypcje, dopóki nie wybierzesz nowego modelu. Czy na pewno chcesz kontynuować?",
+      "deleteTitle": "Usuń model",
+      "filters": {
+        "all": "Wszystkie",
+        "multiLanguage": "Wielojęzyczne",
+        "translation": "Tłumaczenie",
+        "allLanguages": "Wszystkie języki"
+      },
+      "noModelsMatch": "Żadne modele nie pasują do tego filtra.",
+      "yourModels": "Pobrane modele",
+      "availableModels": "Dostępne do pobrania"
+    },
     "general": {
       "title": "Ogólne",
       "shortcut": {
@@ -115,6 +171,10 @@
           "cancel": {
             "name": "Skrót anulowania",
             "description": "Skrót klawiaturowy do anulowania bieżącego nagrywania."
+          },
+          "transcribe_with_post_process": {
+            "name": "Skrót postprocessingu",
+            "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
           }
         },
         "errors": {
@@ -180,6 +240,10 @@
         "label": "Uruchamiaj przy starcie",
         "description": "Automatycznie uruchamiaj Handy po zalogowaniu."
       },
+      "showTrayIcon": {
+        "label": "Pokaż ikonę w zasobniku",
+        "description": "Wyświetlaj ikonę Handy w zasobniku systemowym."
+      },
       "overlay": {
         "title": "Pozycja nakładki",
         "description": "Wyświetlaj wizualną nakładkę podczas nagrywania i transkrypcji. Na Linuxie zalecane 'Brak'.",
@@ -200,12 +264,30 @@
           "none": "Brak"
         }
       },
+      "typingTool": {
+        "title": "Narzędzie do wpisywania",
+        "description": "Wybierz, którego narzędzia do wpisywania w Linuxie użyć dla metody bezpośredniego wklejania. Auto automatycznie wykryje i użyje najlepszego dostępnego narzędzia dla Twojego systemu.",
+        "options": {
+          "auto": "Auto (Zalecane)"
+        }
+      },
       "clipboardHandling": {
         "title": "Obsługa schowka",
         "description": "Nie modyfikuj schowka zachowuje jego zawartość. Kopiuj do schowka pozostawia wynik transkrypcji w schowku.",
         "options": {
           "dontModify": "Nie modyfikuj schowka",
           "copyToClipboard": "Kopiuj do schowka"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatyczne wysyłanie",
+        "description": "Automatycznie wysyła wybraną kombinację klawiszy po wstawieniu tekstu. Cmd+Enter dotyczy macOS, natomiast Windows/Linux używają Super+Enter.",
+        "options": {
+          "off": "Wyłączone",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -237,7 +319,9 @@
     },
     "postProcessing": {
       "title": "Postprocess",
-      "disabledNotice": "Postprocess jest obecnie wyłączony. Włącz go w ustawieniach Debug, aby skonfigurować.",
+      "hotkey": {
+        "title": "Skrót klawiszowy"
+      },
       "api": {
         "title": "API (zgodne z OpenAI)",
         "provider": {
@@ -361,10 +445,19 @@
         "label": "Dodaj spację na końcu",
         "description": "Dodaj spację po wklejonej transkrypcji"
       },
+      "keyboardImplementation": {
+        "title": "Keyboard Implementation",
+        "description": "Choose the keyboard shortcut backend.",
+        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+      },
       "paths": {
         "appData": "Dane aplikacji:",
         "models": "Modele:",
         "settings": "Ustawienia:"
+      },
+      "pasteDelay": {
+        "title": "Opóźnienie wklejania",
+        "description": "Opóźnienie przed wysłaniem klawisza wklejania (w milisekundach). Zwiększ, jeśli wklejany jest nieprawidłowy tekst."
       }
     },
     "about": {
@@ -447,6 +540,7 @@
     "description": "Zmień język interfejsu Handy"
   },
   "overlay": {
-    "transcribing": "Transkrypcja..."
+    "transcribing": "Transkrypcja...",
+    "processing": "Przetwarzanie..."
   }
 }
