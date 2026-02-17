@@ -342,7 +342,11 @@
         "apiKey": {
           "title": "API 密钥",
           "description": "所选提供商的 API 密钥。",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "已安全保存",
+          "edit": "编辑",
+          "clear": "清除",
+          "noKey": "未保存 API 密钥"
         },
         "model": {
           "title": "模型",

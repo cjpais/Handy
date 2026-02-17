@@ -590,6 +590,41 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+/// Migrate any plaintext API keys from settings JSON into the OS keychain.
+/// Returns `true` if any keys were migrated (caller should save settings to clear plaintext).
+fn migrate_api_keys_to_keychain(settings: &mut AppSettings) -> bool {
+    let mut migrated = false;
+    let keys: Vec<(String, String)> = settings
+        .post_process_api_keys
+        .iter()
+        .filter(|(_, v)| !v.is_empty())
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+
+    for (provider_id, api_key) in keys {
+        match crate::keyring::set_api_key(&provider_id, &api_key) {
+            Ok(()) => {
+                debug!(
+                    "Migrated API key for provider '{}' to OS keychain",
+                    provider_id
+                );
+                settings
+                    .post_process_api_keys
+                    .insert(provider_id, String::new());
+                migrated = true;
+            }
+            Err(e) => {
+                warn!(
+                    "Failed to migrate API key for provider '{}' to keychain: {}. Keeping plaintext.",
+                    provider_id, e
+                );
+            }
+        }
+    }
+
+    migrated
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -757,7 +792,11 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut needs_save = ensure_post_process_defaults(&mut settings);
+    if migrate_api_keys_to_keychain(&mut settings) {
+        needs_save = true;
+    }
+    if needs_save {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

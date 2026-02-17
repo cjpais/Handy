@@ -342,7 +342,11 @@
         "apiKey": {
           "title": "Clé API",
           "description": "Clé API pour le fournisseur sélectionné.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Enregistré en toute sécurité",
+          "edit": "Modifier",
+          "clear": "Effacer",
+          "noKey": "Aucune clé API enregistrée"
         },
         "model": {
           "title": "Modèle",

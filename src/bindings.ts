@@ -184,6 +184,14 @@ async changePostProcessApiKeySetting(providerId: string, apiKey: string) : Promi
     else return { status: "error", error: e  as any };
 }
 },
+async getPostProcessApiKeyHint(providerId: string) : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_post_process_api_key_hint", { providerId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async changePostProcessModelSetting(providerId: string, model: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_post_process_model_setting", { providerId, model }) };

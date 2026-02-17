@@ -342,7 +342,11 @@
         "apiKey": {
           "title": "API-ключ",
           "description": "API-ключ для выбранного провайдера.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Сохранено безопасно",
+          "edit": "Редактировать",
+          "clear": "Очистить",
+          "noKey": "API-ключ не сохранён"
         },
         "model": {
           "title": "Модель",

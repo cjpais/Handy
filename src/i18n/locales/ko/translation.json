@@ -342,7 +342,11 @@
         "apiKey": {
           "title": "API 키",
           "description": "선택한 제공자의 API 키입니다.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "안전하게 저장됨",
+          "edit": "편집",
+          "clear": "삭제",
+          "noKey": "저장된 API 키 없음"
         },
         "model": {
           "title": "모델",

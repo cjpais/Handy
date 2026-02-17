@@ -7,6 +7,7 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
+mod keyring;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -276,6 +277,7 @@ pub fn run() {
         shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,
         shortcut::change_post_process_api_key_setting,
+        shortcut::get_post_process_api_key_hint,
         shortcut::change_post_process_model_setting,
         shortcut::set_post_process_provider,
         shortcut::fetch_post_process_models,

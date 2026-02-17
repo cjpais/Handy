@@ -342,7 +342,11 @@
         "apiKey": {
           "title": "Khóa API",
           "description": "Khóa API cho nhà cung cấp đã chọn.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Đã lưu an toàn",
+          "edit": "Chỉnh sửa",
+          "clear": "Xóa",
+          "noKey": "Chưa lưu khóa API"
         },
         "model": {
           "title": "Mô hình",

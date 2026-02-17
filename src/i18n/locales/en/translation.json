@@ -342,7 +342,11 @@
         "apiKey": {
           "title": "API Key",
           "description": "API key for the selected provider.",
-          "placeholder": "sk-..."
+          "placeholder": "sk-...",
+          "savedSecurely": "Saved securely",
+          "edit": "Edit",
+          "clear": "Clear",
+          "noKey": "No API key saved"
         },
         "model": {
           "title": "Model",
