@@ -168,13 +168,13 @@ We're actively working on several features and improvements. Contributions and f
 
 Post-processing allows you to refine transcriptions using an LLM after transcribing the initial text. You can create custom prompt templates with the following variables:
 
-| Variable | Description |
-|----------|-------------|
-| `${output}` | The transcription text |
-| `${current_app}` | Name of the frontmost application when recording started |
-| `${short_prev_transcript}` | Recent transcript from same app (last 200 words, expires after 5 min) |
-| `${time_local}` | Current local time (e.g., "Tuesday, February 3, 2026 10:33:39 AM") |
-| `${language}` | Selected transcription language for Whisper models (e.g., "en", "zh-Hans"), or "auto" for other models (Parakeet, Moonshine) |
+| Variable                   | Description                                                                                                                  |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `${output}`                | The transcription text                                                                                                       |
+| `${current_app}`           | Name of the frontmost application when recording started                                                                     |
+| `${short_prev_transcript}` | Recent transcript from same app (last 200 words, expires after 5 min)                                                        |
+| `${time_local}`            | Current local time (e.g., "Tuesday, February 3, 2026 10:33:39 AM")                                                           |
+| `${language}`              | Selected transcription language for Whisper models (e.g., "en", "zh-Hans"), or "auto" for other models (Parakeet, Moonshine) |
 
 Example prompt template:
 

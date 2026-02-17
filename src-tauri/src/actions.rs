@@ -83,7 +83,11 @@ fn build_system_prompt(prompt_template: &str, context: &PostProcessContext) -> S
         .to_string()
 }
 
-async fn post_process_transcription(settings: &AppSettings, transcription: &str, context: &PostProcessContext) -> Option<String> {
+async fn post_process_transcription(
+    settings: &AppSettings,
+    transcription: &str,
+    context: &PostProcessContext,
+) -> Option<String> {
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
         None => {
@@ -536,7 +540,8 @@ impl ShortcutAction for TranscribeAction {
                                 show_processing_overlay(&ah);
                             }
                             let processed = if post_process {
-                                post_process_transcription(&settings, &final_text, &pp_context).await
+                                post_process_transcription(&settings, &final_text, &pp_context)
+                                    .await
                             } else {
                                 None
                             };

@@ -79,12 +79,12 @@ pub fn update_transcript_context(app_name: &str, transcript: &str) {
     };
 
     // Update or insert the entry
-    let entry = context.entry(app_name.to_string()).or_insert_with(|| {
-        TranscriptEntry {
+    let entry = context
+        .entry(app_name.to_string())
+        .or_insert_with(|| TranscriptEntry {
             text: String::new(),
             last_updated: Instant::now(),
-        }
-    });
+        });
 
     // Append the new transcript to existing text, then trim
     if !entry.text.is_empty() && entry.last_updated.elapsed() < EXPIRY_DURATION {

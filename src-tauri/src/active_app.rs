@@ -17,8 +17,7 @@ pub fn get_frontmost_app_name() -> Option<String> {
         }
 
         // Get frontmost application (NSRunningApplication)
-        let frontmost_app: *mut objc::runtime::Object =
-            msg_send![workspace, frontmostApplication];
+        let frontmost_app: *mut objc::runtime::Object = msg_send![workspace, frontmostApplication];
         if frontmost_app.is_null() {
             return None;
         }
@@ -68,9 +67,7 @@ pub fn get_frontmost_app_name() -> Option<String> {
 
         if chars_copied > 0 {
             buffer.truncate(chars_copied as usize);
-            let title = OsString::from_wide(&buffer)
-                .to_string_lossy()
-                .into_owned();
+            let title = OsString::from_wide(&buffer).to_string_lossy().into_owned();
             if !title.is_empty() {
                 return Some(title);
             }
