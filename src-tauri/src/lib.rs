@@ -390,6 +390,10 @@ pub fn run(cli_args: CliArgs) {
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == "--toggle-transcription") {
                 signal_handle::toggle_transcription(app, "CLI");
+            } else if args.iter().any(|a| a == "--toggle-post-process") {
+                signal_handle::toggle_post_process(app, "CLI");
+            } else if args.iter().any(|a| a == "--cancel") {
+                signal_handle::cancel(app);
             } else {
                 show_main_window(app);
             }

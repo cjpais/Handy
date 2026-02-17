@@ -18,6 +18,20 @@ pub fn toggle_transcription(app: &AppHandle, source: &str) {
     }
 }
 
+/// Toggle transcription with post-processing on/off. CLI --toggle-post-process.
+pub fn toggle_post_process(app: &AppHandle, source: &str) {
+    if let Some(c) = app.try_state::<TranscriptionCoordinator>() {
+        c.send_input("transcribe_with_post_process", source, true, false);
+    } else {
+        warn!("TranscriptionCoordinator not initialized");
+    }
+}
+
+/// Cancel the current operation. CLI --cancel.
+pub fn cancel(app: &AppHandle) {
+    crate::utils::cancel_current_operation(app);
+}
+
 #[cfg(unix)]
 pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
     debug!("Signal handlers registered (SIGUSR1, SIGUSR2)");
