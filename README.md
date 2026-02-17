@@ -68,6 +68,39 @@ Handy includes an advanced debug mode for development and troubleshooting. Acces
 - **macOS**: `Cmd+Shift+D`
 - **Windows/Linux**: `Ctrl+Shift+D`
 
+### CLI Parameters
+
+Handy supports command-line flags for controlling a running instance and customizing startup behavior. These work on all platforms (macOS, Windows, Linux).
+
+**Remote control flags** (sent to an already-running instance via the single-instance plugin):
+
+```bash
+handy --toggle-transcription    # Toggle recording on/off
+handy --toggle-post-process     # Toggle recording with post-processing on/off
+handy --cancel                  # Cancel the current operation
+```
+
+**Startup flags:**
+
+```bash
+handy --start-hidden            # Start without showing the main window
+handy --no-tray                 # Start without the system tray icon
+handy --debug                   # Enable debug mode with verbose logging
+handy --help                    # Show all available flags
+```
+
+Flags can be combined for autostart scenarios:
+
+```bash
+handy --start-hidden --no-tray
+```
+
+> **macOS tip:** When Handy is installed as an app bundle, invoke the binary directly:
+>
+> ```bash
+> /Applications/Handy.app/Contents/MacOS/Handy --toggle-transcription
+> ```
+
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
@@ -118,26 +151,7 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
 - If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
-- **CLI Parameters:** Handy supports command-line flags for scripting and desktop integration:
-
-  ```bash
-  handy --start-hidden            # Start without showing the main window
-  handy --no-tray                 # Start without the system tray icon
-  handy --toggle-transcription    # Toggle recording on/off on a running instance
-  handy --debug                   # Enable debug mode with verbose logging
-  handy --help                    # Show all available flags
-  ```
-
-  The `--toggle-transcription` flag communicates with an already-running Handy instance — it starts or stops recording without needing to use keyboard shortcuts.
-
-  You can also combine flags for autostart scenarios:
-
-  ```bash
-  # Start hidden with no tray icon (e.g., for a service-like setup)
-  handy --start-hidden --no-tray
-  ```
-
-- **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the `--toggle-transcription` CLI flag as the command for your custom shortcut.
+- **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the [CLI flags](#cli-parameters) as the command for your custom shortcut.
 
   **GNOME:**
   1. Open **Settings > Keyboard > Keyboard Shortcuts > Custom Shortcuts**

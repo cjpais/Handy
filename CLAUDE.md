@@ -119,31 +119,33 @@ Use conventional commits:
 - `refactor:` code refactoring
 - `chore:` maintenance
 
-## CLI Parameters (Linux)
+## CLI Parameters
 
-Handy supports command-line parameters for integration with scripts, window managers, and autostart configurations.
+Handy supports command-line parameters on all platforms for integration with scripts, window managers, and autostart configurations.
 
 **Implementation files:**
 
 - `src-tauri/src/cli.rs` - CLI argument definitions (clap derive)
 - `src-tauri/src/main.rs` - Argument parsing before Tauri launch
 - `src-tauri/src/lib.rs` - Applying CLI overrides (setup closure + single-instance callback)
-- `src-tauri/src/signal_handle.rs` - `toggle_transcription()` reusable function
+- `src-tauri/src/signal_handle.rs` - `send_transcription_input()` reusable function
 
 **Available flags:**
 
 | Flag                     | Description                                                                        |
 | ------------------------ | ---------------------------------------------------------------------------------- |
+| `--toggle-transcription` | Toggle recording on/off on a running instance (via `tauri_plugin_single_instance`) |
+| `--toggle-post-process`  | Toggle recording with post-processing on/off on a running instance                 |
+| `--cancel`               | Cancel the current operation on a running instance                                 |
 | `--start-hidden`         | Launch without showing the main window (tray icon still visible)                   |
 | `--no-tray`              | Launch without the system tray icon (closing window quits the app)                 |
-| `--toggle-transcription` | Toggle recording on/off on a running instance (via `tauri_plugin_single_instance`) |
 | `--debug`                | Enable debug mode with verbose (Trace) logging                                     |
 
 **Key design decisions:**
 
 - CLI flags are runtime-only overrides — they do NOT modify persisted settings
-- `--toggle-transcription` works by launching a second instance that sends its args to the running instance via `tauri_plugin_single_instance`, then exits
-- `toggle_transcription()` in `signal_handle.rs` is shared between SIGUSR2 handler and CLI to avoid code duplication
+- Remote control flags (`--toggle-transcription`, `--toggle-post-process`, `--cancel`) work by launching a second instance that sends its args to the running instance via `tauri_plugin_single_instance`, then exits
+- `send_transcription_input()` in `signal_handle.rs` is shared between signal handlers and CLI to avoid code duplication
 - `CliArgs` is stored in Tauri managed state (`.manage()`) so it's accessible in `on_window_event` and other handlers
 
 ## Debug Mode
