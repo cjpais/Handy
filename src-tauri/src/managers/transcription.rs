@@ -307,10 +307,7 @@ impl TranscriptionManager {
             EngineType::MoonshineStreaming => {
                 let mut engine = MoonshineStreamingEngine::new();
                 engine
-                    .load_model_with_params(
-                        &model_path,
-                        StreamingModelParams::default(),
-                    )
+                    .load_model_with_params(&model_path, StreamingModelParams::default())
                     .map_err(|e| {
                         let error_msg = format!(
                             "Failed to load moonshine streaming model {}: {}",
@@ -464,8 +461,8 @@ impl TranscriptionManager {
             // Release the lock before transcribing — no mutex held during the engine call
             drop(engine_guard);
 
-            let transcribe_result =
-                catch_unwind(AssertUnwindSafe(|| -> Result<transcribe_rs::TranscriptionResult> {
+            let transcribe_result = catch_unwind(AssertUnwindSafe(
+                || -> Result<transcribe_rs::TranscriptionResult> {
                     match &mut engine {
                         LoadedEngine::Whisper(whisper_engine) => {
                             let whisper_language = if settings.selected_language == "auto" {
@@ -489,9 +486,7 @@ impl TranscriptionManager {
 
                             whisper_engine
                                 .transcribe_samples(audio, Some(params))
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Whisper transcription failed: {}", e)
-                                })
+                                .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
                         }
                         LoadedEngine::Parakeet(parakeet_engine) => {
                             let params = ParakeetInferenceParams {
@@ -506,16 +501,11 @@ impl TranscriptionManager {
                         }
                         LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
                             .transcribe_samples(audio, None)
-                            .map_err(|e| {
-                                anyhow::anyhow!("Moonshine transcription failed: {}", e)
-                            }),
+                            .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
                         LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
                             .transcribe_samples(audio, None)
                             .map_err(|e| {
-                                anyhow::anyhow!(
-                                    "Moonshine streaming transcription failed: {}",
-                                    e
-                                )
+                                anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
                             }),
                         LoadedEngine::SenseVoice(sense_voice_engine) => {
                             let language = match settings.selected_language.as_str() {
@@ -537,7 +527,8 @@ impl TranscriptionManager {
                                 })
                         }
                     }
-                }));
+                },
+            ));
 
             match transcribe_result {
                 Ok(inner_result) => {
@@ -563,7 +554,10 @@ impl TranscriptionManager {
 
                     // Clear the model ID so it will be reloaded on next attempt
                     {
-                        let mut current_model = self.current_model_id.lock().unwrap_or_else(|e| e.into_inner());
+                        let mut current_model = self
+                            .current_model_id
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner());
                         *current_model = None;
                     }
 
