@@ -9,27 +9,14 @@ use signal_hook::iterator::Signals;
 #[cfg(unix)]
 use std::thread;
 
-/// Toggle transcription on/off. Reused by signal handlers and CLI --toggle-transcription.
-pub fn toggle_transcription(app: &AppHandle, source: &str) {
+/// Send a transcription input to the coordinator.
+/// Used by signal handlers, CLI flags, and any other external trigger.
+pub fn send_transcription_input(app: &AppHandle, binding_id: &str, source: &str) {
     if let Some(c) = app.try_state::<TranscriptionCoordinator>() {
-        c.send_input("transcribe", source, true, false);
+        c.send_input(binding_id, source, true, false);
     } else {
         warn!("TranscriptionCoordinator not initialized");
     }
-}
-
-/// Toggle transcription with post-processing on/off. CLI --toggle-post-process.
-pub fn toggle_post_process(app: &AppHandle, source: &str) {
-    if let Some(c) = app.try_state::<TranscriptionCoordinator>() {
-        c.send_input("transcribe_with_post_process", source, true, false);
-    } else {
-        warn!("TranscriptionCoordinator not initialized");
-    }
-}
-
-/// Cancel the current operation. CLI --cancel.
-pub fn cancel(app: &AppHandle) {
-    crate::utils::cancel_current_operation(app);
 }
 
 #[cfg(unix)]
@@ -43,11 +30,7 @@ pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
                 _ => continue,
             };
             debug!("Received {signal_name}");
-            if let Some(c) = app_handle.try_state::<TranscriptionCoordinator>() {
-                c.send_input(binding_id, signal_name, true, false);
-            } else {
-                warn!("TranscriptionCoordinator not initialized");
-            }
+            send_transcription_input(&app_handle, binding_id, signal_name);
         }
     });
 }

@@ -389,11 +389,11 @@ pub fn run(cli_args: CliArgs) {
     builder
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == "--toggle-transcription") {
-                signal_handle::toggle_transcription(app, "CLI");
+                signal_handle::send_transcription_input(app, "transcribe", "CLI");
             } else if args.iter().any(|a| a == "--toggle-post-process") {
-                signal_handle::toggle_post_process(app, "CLI");
+                signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
             } else if args.iter().any(|a| a == "--cancel") {
-                signal_handle::cancel(app);
+                crate::utils::cancel_current_operation(app);
             } else {
                 show_main_window(app);
             }
