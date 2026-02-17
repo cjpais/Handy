@@ -481,7 +481,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.groq.com/openai/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
-            supports_structured_output: true,
+            supports_structured_output: false,
         },
         PostProcessProvider {
             id: "cerebras".to_string(),
