@@ -493,7 +493,6 @@ impl ShortcutAction for TranscribeAction {
                                 final_text = converted_text;
                             }
 
-<<<<<<< HEAD
                             // Build context for LLM post-processing
                             // Get previous transcript from same app (last 200 words, 5 min expiry)
                             let short_prev_transcript =
@@ -531,28 +530,17 @@ impl ShortcutAction for TranscribeAction {
                                 pp_context.language
                             );
 
-                            // Then apply regular post-processing if enabled
-                            // Uses final_text which may already have Chinese conversion applied
-                            if let Some(processed_text) = maybe_post_process_transcription(
-                                &settings,
-                                &final_text,
-                                &pp_context,
-                            )
-                            .await
-                            {
-=======
                             // Then apply LLM post-processing if this is the post-process hotkey
                             // Uses final_text which may already have Chinese conversion applied
                             if post_process {
                                 show_processing_overlay(&ah);
                             }
                             let processed = if post_process {
-                                post_process_transcription(&settings, &final_text).await
+                                post_process_transcription(&settings, &final_text, &pp_context).await
                             } else {
                                 None
                             };
                             if let Some(processed_text) = processed {
->>>>>>> main
                                 post_processed_text = Some(processed_text.clone());
                                 final_text = processed_text;
 
