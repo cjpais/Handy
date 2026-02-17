@@ -13,6 +13,7 @@ mod overlay;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
@@ -25,17 +26,16 @@ use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
-use signal_hook::consts::SIGUSR2;
+use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tauri::image::Image;
+pub use transcription_coordinator::TranscriptionCoordinator;
 
 use tauri::tray::TrayIconBuilder;
-use tauri::Emitter;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
@@ -78,14 +78,6 @@ fn build_console_filter() -> env_filter::Filter {
 
     builder.build()
 }
-
-#[derive(Default)]
-struct ShortcutToggleStates {
-    // Map: shortcut_binding_id -> is_active
-    active_toggles: HashMap<String, bool>,
-}
-
-type ManagedToggleState = Mutex<ShortcutToggleStates>;
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
@@ -140,8 +132,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // This matches the pattern used for Enigo initialization.
 
     #[cfg(unix)]
-    let signals = Signals::new(&[SIGUSR2]).unwrap();
-    // Set up SIGUSR2 signal handler for toggling transcription
+    let signals = Signals::new(&[SIGUSR1, SIGUSR2]).unwrap();
+    // Set up signal handlers for toggling transcription
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone(), signals);
 
@@ -185,6 +177,17 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             "copy_last_transcript" => {
                 tray::copy_last_transcript(app);
             }
+            "unload_model" => {
+                let transcription_manager = app.state::<Arc<TranscriptionManager>>();
+                if !transcription_manager.is_model_loaded() {
+                    log::warn!("No model is currently loaded.");
+                    return;
+                }
+                match transcription_manager.unload_model() {
+                    Ok(()) => log::info!("Model unloaded via tray."),
+                    Err(e) => log::error!("Failed to unload model via tray: {}", e),
+                }
+            }
             "cancel" => {
                 use crate::utils::cancel_current_operation;
 
@@ -202,6 +205,18 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Initialize tray menu with idle state
     utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
+
+    // Apply show_tray_icon setting
+    let settings = settings::get_settings(app_handle);
+    if !settings.show_tray_icon {
+        tray::set_tray_visibility(app_handle, false);
+    }
+
+    // Refresh tray menu when model state changes
+    let app_handle_for_listener = app_handle.clone();
+    app_handle.listen("model-state-changed", move |_| {
+        tray::update_tray_menu(&app_handle_for_listener, &tray::TrayIconState::Idle, None);
+    });
 
     // Get the autostart manager and configure based on user setting
     let autostart_manager = app_handle.autolaunch();
@@ -252,7 +267,11 @@ pub fn run() {
         shortcut::change_debug_mode_setting,
         shortcut::change_word_correction_threshold_setting,
         shortcut::change_paste_method_setting,
+        shortcut::get_available_typing_tools,
+        shortcut::change_typing_tool_setting,
         shortcut::change_clipboard_handling_setting,
+        shortcut::change_auto_submit_setting,
+        shortcut::change_auto_submit_key_setting,
         shortcut::change_post_process_enabled_setting,
         shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,
@@ -273,6 +292,7 @@ pub fn run() {
         shortcut::change_update_checks_setting,
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
+        shortcut::change_show_tray_icon_setting,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
@@ -299,7 +319,6 @@ pub fn run() {
         commands::models::is_model_loading,
         commands::models::has_any_models_available,
         commands::models::has_any_models_or_downloads,
-        commands::models::get_recommended_first_model,
         commands::audio::update_microphone_mode,
         commands::audio::get_microphone_mode,
         commands::audio::get_available_microphones,
@@ -333,29 +352,31 @@ pub fn run() {
         )
         .expect("Failed to export typescript bindings");
 
-    let mut builder = tauri::Builder::default().plugin(
-        LogBuilder::new()
-            .level(log::LevelFilter::Trace) // Set to most verbose level globally
-            .max_file_size(500_000)
-            .rotation_strategy(RotationStrategy::KeepOne)
-            .clear_targets()
-            .targets([
-                // Console output respects RUST_LOG environment variable
-                Target::new(TargetKind::Stdout).filter({
-                    let console_filter = console_filter.clone();
-                    move |metadata| console_filter.enabled(metadata)
-                }),
-                // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
-                Target::new(TargetKind::LogDir {
-                    file_name: Some("handy".into()),
-                })
-                .filter(|metadata| {
-                    let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
-                    metadata.level() <= level_filter_from_u8(file_level)
-                }),
-            ])
-            .build(),
-    );
+    let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            LogBuilder::new()
+                .level(log::LevelFilter::Trace) // Set to most verbose level globally
+                .max_file_size(500_000)
+                .rotation_strategy(RotationStrategy::KeepOne)
+                .clear_targets()
+                .targets([
+                    // Console output respects RUST_LOG environment variable
+                    Target::new(TargetKind::Stdout).filter({
+                        let console_filter = console_filter.clone();
+                        move |metadata| console_filter.enabled(metadata)
+                    }),
+                    // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("handy".into()),
+                    })
+                    .filter(|metadata| {
+                        let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
+                        metadata.level() <= level_filter_from_u8(file_level)
+                    }),
+                ])
+                .build(),
+        );
 
     #[cfg(target_os = "macos")]
     {
@@ -379,7 +400,6 @@ pub fn run() {
             MacosLauncher::LaunchAgent,
             Some(vec![]),
         ))
-        .manage(Mutex::new(ShortcutToggleStates::default()))
         .setup(move |app| {
             let settings = get_settings(&app.handle());
             let tauri_log_level: tauri_plugin_log::LogLevel = settings.log_level.into();
@@ -387,6 +407,7 @@ pub fn run() {
             // Store the file log level in the atomic for the filter to use
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
+            app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
 
@@ -402,6 +423,12 @@ pub fn run() {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
+                let settings = get_settings(&window.app_handle());
+                // If tray icon is hidden, quit the app
+                if !settings.show_tray_icon {
+                    window.app_handle().exit(0);
+                    return;
+                }
                 api.prevent_close();
                 let _res = window.hide();
                 #[cfg(target_os = "macos")]

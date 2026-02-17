@@ -3,6 +3,7 @@
     "settings": "...الإعدادات",
     "checkUpdates": "...التحقق من وجود تحديثات",
     "copyLastTranscript": "نسخ آخر نص تم تفريغه",
+    "unloadModel": "تفريغ النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء"
   },
@@ -12,13 +13,16 @@
     "postProcessing": "معالجة لاحقة",
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
-    "about": "حول"
+    "about": "حول",
+    "models": "النماذج"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
     "recommended": "موصى به",
     "download": "تنزيل",
     "downloading": "...جاري التنزيل",
+    "customModelDescription": "غير مدعوم رسميًا",
+    "downloadFailed": "فشل التنزيل. يرجى المحاولة مرة أخرى.",
     "modelCard": {
       "accuracy": "الدقة",
       "speed": "السرعة"
@@ -51,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": ".سريع جداً، الإنجليزية فقط. يتعامل جيداً مع اللهجات"
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "سريع للغاية، الإنجليزية فقط"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "سريع، الإنجليزية فقط. توازن جيد بين السرعة والدقة."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "الإنجليزية فقط. جودة عالية."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "محسّن للماندرين التايوانية. دعم التبديل بين اللغات."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "سريع جداً. الصينية، الإنجليزية، اليابانية، الكورية، الكانتونية."
       }
     },
     "errors": {
@@ -79,14 +103,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "مرحباً بك في Handy!",
-    "downloadPrompt": ".قم بتنزيل نموذج أدناه للبدء في التفريغ الصوتي",
-    "availableModels": "النماذج المتاحة",
-    "downloadModels": "تنزيل النماذج",
-    "chooseModel": "اختر نموذجاً",
+    "custom": "مخصص",
     "active": "نشط",
-    "download": "تنزيل",
-    "downloadSize": "حجم التنزيل",
     "noModelsAvailable": "لا توجد نماذج متاحة",
     "extracting": "...جاري استخراج {{modelName}}",
     "extractingMultiple": "...جاري استخراج {{count}} من النماذج",
@@ -99,7 +117,19 @@
     "modelError": "خطأ في النموذج",
     "modelUnloaded": "تم إلغاء تحميل النموذج",
     "noModelDownloadRequired": "لا يوجد نموذج - التنزيل مطلوب",
-    "deleteModel": "حذف {{modelName}}"
+    "deleteModel": "حذف {{modelName}}",
+    "switching": "جارٍ التبديل...",
+    "downloadSpeed": "{{speed}} ميجابايت/ث",
+    "cancel": "إلغاء",
+    "cancelDownload": "إلغاء التنزيل",
+    "capabilities": {
+      "languageSelection": "يدعم اختيار اللغة",
+      "singleLanguage": "يدعم هذه اللغة فقط",
+      "multiLanguage": "متعدد اللغات",
+      "languageOnly": "{{language}} فقط",
+      "translation": "يدعم الترجمة",
+      "translate": "ترجمة"
+    }
   },
   "settings": {
     "general": {
@@ -119,6 +149,10 @@
           "cancel": {
             "name": "اختصار الإلغاء",
             "description": ".اختصار لوحة المفاتيح لإلغاء التسجيل الحالي"
+          },
+          "transcribe_with_post_process": {
+            "name": "مفتاح المعالجة اللاحقة",
+            "description": "اختياري: مفتاح اختصار مخصص يطبق دائماً المعالجة اللاحقة بالذكاء الاصطناعي على التفريغ الصوتي."
           }
         },
         "errors": {
@@ -184,6 +218,10 @@
         "label": "التشغيل عند بدء التشغيل",
         "description": ".بدء تشغيل Handy تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"
       },
+      "showTrayIcon": {
+        "label": "إظهار أيقونة شريط النظام",
+        "description": ".عرض أيقونة Handy في شريط النظام"
+      },
       "overlay": {
         "title": "موقع التراكب",
         "description": "عرض تراكب الملاحظات المرئية أثناء التسجيل والتفريغ. على نظام Linux يوصى بـ 'بلا'.",
@@ -204,12 +242,30 @@
           "none": "بلا"
         }
       },
+      "typingTool": {
+        "title": "أداة الكتابة",
+        "description": ".اختر أداة الكتابة في Linux لاستخدامها مع طريقة اللصق المباشر. سيكتشف \"تلقائي\" تلقائياً أفضل أداة متاحة لنظامك ويستخدمها",
+        "options": {
+          "auto": "تلقائي (موصى به)"
+        }
+      },
       "clipboardHandling": {
         "title": "التعامل مع الحافظة",
         "description": ".'عدم تعديل الحافظة' يحافظ على محتويات حافظتك الحالية بعد التفريغ. 'نسخ إلى الحافظة' يترك نتيجة التفريغ في حافظتك بعد اللصق",
         "options": {
           "dontModify": "عدم تعديل الحافظة",
           "copyToClipboard": "نسخ إلى الحافظة"
+        }
+      },
+      "autoSubmit": {
+        "title": "إرسال تلقائي",
+        "description": "إرسال مجموعة المفاتيح المحددة تلقائياً بعد إدراج النص. Cmd+Enter ينطبق على macOS، بينما يستخدم Windows/Linux مفتاح Super+Enter.",
+        "options": {
+          "off": "إيقاف",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -241,7 +297,9 @@
     },
     "postProcessing": {
       "title": "معالجة لاحقة",
-      "disabledNotice": "المعالجة اللاحقة معطلة حالياً. قم بتمكينها في إعدادات تصحيح الأخطاء للتكوين.",
+      "hotkey": {
+        "title": "مفتاح الاختصار"
+      },
       "api": {
         "title": "API (متوافق مع OpenAI)",
         "provider": {
@@ -374,6 +432,10 @@
         "appData": "بيانات التطبيق:",
         "models": "النماذج:",
         "settings": "الإعدادات:"
+      },
+      "pasteDelay": {
+        "title": "تأخير اللصق",
+        "description": "التأخير قبل إرسال ضغطة مفتاح اللصق (بالمللي ثانية). قم بزيادتها إذا تم لصق نص خاطئ."
       }
     },
     "about": {
@@ -404,6 +466,28 @@
           "details": ".يستخدم Handy برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
         }
       }
+    },
+    "modelSettings": {
+      "title": "إعدادات النموذج",
+      "noSettingsNeeded": "لا توجد إعدادات مطلوبة لهذا النموذج"
+    },
+    "models": {
+      "title": "نماذج النسخ",
+      "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
+      "yourModels": "النماذج المحمّلة",
+      "availableModels": "متاح للتنزيل",
+      "downloaded": "تم التنزيل",
+      "available": "متاح للتنزيل",
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف {{modelName}}؟ ستحتاج إلى تنزيله مرة أخرى لاستخدامه.",
+      "deleteActiveConfirm": "{{modelName}} هو النموذج النشط حاليًا. حذفه سيوقف النسخ حتى تختار نموذجًا جديدًا. هل أنت متأكد؟",
+      "deleteTitle": "حذف النموذج",
+      "filters": {
+        "all": "الكل",
+        "multiLanguage": "متعدد اللغات",
+        "translation": "ترجمة",
+        "allLanguages": "جميع اللغات"
+      },
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
     }
   },
   "footer": {
@@ -456,6 +540,7 @@
     "description": "تغيير لغة واجهة Handy"
   },
   "overlay": {
-    "transcribing": "...جاري التفريغ"
+    "transcribing": "...جاري التفريغ",
+    "processing": "...جاري المعالجة"
   }
 }

@@ -155,16 +155,51 @@ export const getKeyName = (
 };
 
 /**
+ * Capitalize a key name for display (e.g. "space" -> "Space", "f1" -> "F1")
+ */
+const capitalizeKey = (key: string): string => {
+  // fn key: keep lowercase
+  if (key === "fn") return "fn";
+  // Function keys: f1 -> F1
+  if (/^f\d+$/.test(key)) return key.toUpperCase();
+  // Single char: a -> A
+  if (key.length === 1) return key.toUpperCase();
+  // Multi-word: capitalize first letter of each word
+  return key.replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+/**
+ * Format a single key part for display.
+ * Handles _left/_right suffixes and capitalizes names.
+ * e.g. "shift_left" -> "Left Shift", "option" -> "Option", "space" -> "Space"
+ */
+const formatKeyPart = (part: string): string => {
+  const trimmed = part.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.endsWith("_left")) {
+    const name = trimmed.slice(0, -5);
+    return `Left ${capitalizeKey(name)}`;
+  }
+  if (trimmed.endsWith("_right")) {
+    const name = trimmed.slice(0, -6);
+    return `Right ${capitalizeKey(name)}`;
+  }
+
+  return capitalizeKey(trimmed);
+};
+
+/**
  * Get display-friendly key combination string for the current OS
- * Returns basic plus-separated format with correct platform key names
+ * Formats raw hotkey strings like "option_left+shift+space" into
+ * human-readable form like "Left Option + Shift + Space"
  */
 export const formatKeyCombination = (
   combination: string,
-  osType: OSType,
+  _osType: OSType,
 ): string => {
-  // Simply return the combination as-is since getKeyName already provides
-  // the correct platform-specific key names
-  return combination;
+  if (!combination) return "";
+  return combination.split("+").map(formatKeyPart).join(" + ");
 };
 
 /**

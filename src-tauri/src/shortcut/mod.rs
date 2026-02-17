@@ -20,9 +20,9 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
-    self, get_settings, ClipboardHandling, KeyboardImplementation, LLMPrompt, OverlayPosition,
-    PasteMethod, ShortcutBinding, SoundTheme, APPLE_INTELLIGENCE_DEFAULT_MODEL_ID,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
+    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -108,19 +108,37 @@ pub fn change_binding(
     id: String,
     binding: String,
 ) -> Result<BindingResponse, String> {
+    // Reject empty bindings — every shortcut should have a value
+    if binding.trim().is_empty() {
+        return Err("Binding cannot be empty".to_string());
+    }
+
     let mut settings = settings::get_settings(&app);
 
-    // Get the binding to modify
+    // Get the binding to modify, or create it from defaults if it doesn't exist
     let binding_to_modify = match settings.bindings.get(&id) {
         Some(binding) => binding.clone(),
         None => {
-            let error_msg = format!("Binding with id '{}' not found", id);
-            warn!("change_binding error: {}", error_msg);
-            return Ok(BindingResponse {
-                success: false,
-                binding: None,
-                error: Some(error_msg),
-            });
+            // Try to get the default binding for this id
+            let default_settings = settings::get_default_settings();
+            match default_settings.bindings.get(&id) {
+                Some(default_binding) => {
+                    warn!(
+                        "Binding '{}' not found in settings, creating from defaults",
+                        id
+                    );
+                    default_binding.clone()
+                }
+                None => {
+                    let error_msg = format!("Binding with id '{}' not found in defaults", id);
+                    warn!("change_binding error: {}", error_msg);
+                    return Ok(BindingResponse {
+                        success: false,
+                        binding: None,
+                        error: Some(error_msg),
+                    });
+                }
+            }
         }
     };
 
@@ -371,6 +389,11 @@ fn register_all_shortcuts_for_implementation(
     for (id, default_binding) in &default_bindings {
         // Skip cancel shortcut as it's dynamically registered
         if id == "cancel" {
+            continue;
+        }
+
+        // Skip post-processing shortcut when the feature is disabled
+        if id == "transcribe_with_post_process" && !current_settings.post_process_enabled {
             continue;
         }
 
@@ -657,6 +680,40 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
 
 #[tauri::command]
 #[specta::specta]
+pub fn get_available_typing_tools() -> Vec<String> {
+    #[cfg(target_os = "linux")]
+    {
+        crate::clipboard::get_available_typing_tools()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        vec!["auto".to_string()]
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_typing_tool_setting(app: AppHandle, tool: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match tool.as_str() {
+        "auto" => TypingTool::Auto,
+        "wtype" => TypingTool::Wtype,
+        "kwtype" => TypingTool::Kwtype,
+        "dotool" => TypingTool::Dotool,
+        "ydotool" => TypingTool::Ydotool,
+        "xdotool" => TypingTool::Xdotool,
+        other => {
+            warn!("Invalid typing tool '{}', defaulting to auto", other);
+            TypingTool::Auto
+        }
+    };
+    settings.typing_tool = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match handling.as_str() {
@@ -677,10 +734,51 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_auto_submit_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.auto_submit = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_auto_submit_key_setting(app: AppHandle, key: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match key.as_str() {
+        "enter" => AutoSubmitKey::Enter,
+        "ctrl_enter" => AutoSubmitKey::CtrlEnter,
+        "cmd_enter" => AutoSubmitKey::CmdEnter,
+        other => {
+            warn!("Invalid auto submit key '{}', defaulting to enter", other);
+            AutoSubmitKey::Enter
+        }
+    };
+    settings.auto_submit_key = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.post_process_enabled = enabled;
-    settings::write_settings(&app, settings);
+    settings::write_settings(&app, settings.clone());
+
+    // Register or unregister the post-processing shortcut
+    if let Some(binding) = settings
+        .bindings
+        .get("transcribe_with_post_process")
+        .cloned()
+    {
+        if enabled {
+            let _ = register_shortcut(&app, binding);
+        } else {
+            let _ = unregister_shortcut(&app, binding);
+        }
+    }
+
     Ok(())
 }
 
@@ -938,6 +1036,19 @@ pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(
 
     // Refresh the tray menu with the new language
     tray::update_tray_menu(&app, &tray::TrayIconState::Idle, Some(&language));
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.show_tray_icon = enabled;
+    settings::write_settings(&app, settings);
+
+    // Apply change immediately
+    tray::set_tray_visibility(&app, enabled);
 
     Ok(())
 }
