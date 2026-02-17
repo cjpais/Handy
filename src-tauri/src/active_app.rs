@@ -1,8 +1,9 @@
-/// Module for getting the frontmost/active application name.
-/// This is platform-specific and returns the name of the application
-/// that has keyboard focus when the user starts transcribing.
+//! Module for getting the frontmost/active application name.
+//! This is platform-specific and returns the name of the application
+//! that has keyboard focus when the user starts transcribing.
 
 #[cfg(target_os = "macos")]
+#[allow(unexpected_cfgs)]
 pub fn get_frontmost_app_name() -> Option<String> {
     use objc::{msg_send, sel, sel_impl};
     use std::ffi::CStr;
