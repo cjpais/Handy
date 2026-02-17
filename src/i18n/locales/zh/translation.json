@@ -54,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "非常快速，仅支持英语。口音处理良好。"
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "超快速，仅支持英语"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "快速，仅支持英语。速度与准确度的良好平衡。"
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "仅支持英语。高质量。"
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "针对台湾国语优化。支持语码转换。"
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "非常快速。支持中文、英语、日语、韩语、粤语。"
       }
     },
     "errors": {

@@ -55,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "매우 빠름, 영어 전용. 억양을 잘 처리합니다."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "초고속, 영어 전용"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "빠름, 영어 전용. 속도와 정확도의 균형이 좋음."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "영어 전용. 높은 품질."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "대만 만다린에 최적화. 코드 스위칭 지원."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "매우 빠름. 중국어, 영어, 일본어, 한국어, 광둥어."
       }
     },
     "errors": {
