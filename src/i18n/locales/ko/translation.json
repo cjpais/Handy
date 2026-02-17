@@ -55,6 +55,18 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "매우 빠름, 영어 전용. 억양을 잘 처리합니다."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultra-fast, English only"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Fast, English only. Good balance of speed and accuracy."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "English only. High quality."
       }
     },
     "errors": {
