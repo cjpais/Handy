@@ -140,7 +140,6 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 - **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the `--toggle-transcription` CLI flag as the command for your custom shortcut.
 
   **GNOME:**
-
   1. Open **Settings > Keyboard > Keyboard Shortcuts > Custom Shortcuts**
   2. Click the **+** button to add a new shortcut
   3. Set the **Name** to `Toggle Handy Transcription`
@@ -148,7 +147,6 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
   5. Click **Set Shortcut** and press your desired key combination (e.g., `Super+O`)
 
   **KDE Plasma:**
-
   1. Open **System Settings > Shortcuts > Custom Shortcuts**
   2. Click **Edit > New > Global Shortcut > Command/URL**
   3. Name it `Toggle Handy Transcription`
