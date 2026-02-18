@@ -17,6 +17,8 @@ use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
 
 #[cfg(target_os = "linux")]
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+#[cfg(target_os = "linux")]
+use std::env;
 
 #[cfg(target_os = "macos")]
 tauri_panel! {
@@ -67,6 +69,21 @@ fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow
 /// Returns true if layer shell was successfully initialized, false otherwise
 #[cfg(target_os = "linux")]
 fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
+    // On KDE Wayland, layer-shell init has shown protocol instability.
+    // Fall back to regular always-on-top overlay behavior (as in v0.7.1).
+    let is_wayland = env::var("WAYLAND_DISPLAY").is_ok()
+        || env::var("XDG_SESSION_TYPE")
+            .map(|v| v.eq_ignore_ascii_case("wayland"))
+            .unwrap_or(false);
+    let is_kde = env::var("XDG_CURRENT_DESKTOP")
+        .map(|v| v.to_uppercase().contains("KDE"))
+        .unwrap_or(false)
+        || env::var("KDE_SESSION_VERSION").is_ok();
+    if is_wayland && is_kde {
+        debug!("Skipping GTK layer shell init on KDE Wayland");
+        return false;
+    }
+
     if !gtk_layer_shell::is_supported() {
         return false;
     }
@@ -168,8 +185,7 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
         let y = match settings.overlay_position {
             OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
             OverlayPosition::Bottom | OverlayPosition::None => {
-                // don't subtract the overlay height it puts it too far up
-                work_area_y + work_area_height - OVERLAY_BOTTOM_OFFSET
+                work_area_y + work_area_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
             }
         };
 
@@ -272,39 +288,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
-/// Shows the recording overlay window with fade-in animation
-pub fn show_recording_overlay(app_handle: &AppHandle) {
-    // Check if overlay should be shown based on position setting
-    let settings = settings::get_settings(app_handle);
-    if settings.overlay_position == OverlayPosition::None {
-        return;
-    }
-
-    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        // Update position before showing to prevent flicker from position changes
-        #[cfg(target_os = "linux")]
-        {
-            update_gtk_layer_shell_anchors(&overlay_window);
-        }
-
-        if let Some((x, y)) = calculate_overlay_position(app_handle) {
-            let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
-        }
-
-        let _ = overlay_window.show();
-
-        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
-        #[cfg(target_os = "windows")]
-        force_overlay_topmost(&overlay_window);
-
-        // Emit event to trigger fade-in animation with recording state
-        let _ = overlay_window.emit("show-overlay", "recording");
-    }
-}
-
-/// Shows the transcribing overlay window
-pub fn show_transcribing_overlay(app_handle: &AppHandle) {
+fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // Check if overlay should be shown based on position setting
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
@@ -320,9 +304,23 @@ pub fn show_transcribing_overlay(app_handle: &AppHandle) {
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 
-        // Emit event to switch to transcribing state
-        let _ = overlay_window.emit("show-overlay", "transcribing");
+        let _ = overlay_window.emit("show-overlay", state);
     }
+}
+
+/// Shows the recording overlay window with fade-in animation
+pub fn show_recording_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "recording");
+}
+
+/// Shows the transcribing overlay window
+pub fn show_transcribing_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "transcribing");
+}
+
+/// Shows the processing overlay window
+pub fn show_processing_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "processing");
 }
 
 /// Updates the overlay window position based on current settings

@@ -3,6 +3,7 @@
     "settings": "Settings...",
     "checkUpdates": "Check for Updates...",
     "copyLastTranscript": "Copy Last Transcript",
+    "unloadModel": "Unload Model",
     "quit": "Quit",
     "cancel": "Cancel"
   },
@@ -20,6 +21,7 @@
     "recommended": "Recommended",
     "download": "Download",
     "downloading": "Downloading...",
+    "customModelDescription": "Not officially supported",
     "downloadFailed": "Download failed. Please try again.",
     "modelCard": {
       "accuracy": "accuracy",
@@ -53,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "Very fast, English only. Handles accents well."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultra-fast, English only"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Fast, English only. Good balance of speed and accuracy."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "English only. High quality."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimized for Taiwanese Mandarin. Code-switching support."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Very fast. Chinese, English, Japanese, Korean, Cantonese."
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Custom",
     "active": "Active",
     "switching": "Switching...",
     "noModelsAvailable": "No models available",
@@ -218,6 +241,10 @@
         "description": "Automatically start Handy when you log in to your computer.",
         "error": "Failed to update autostart setting. Your desktop environment may not support this feature."
       },
+      "showTrayIcon": {
+        "label": "Show Tray Icon",
+        "description": "Display the Handy icon in the system tray."
+      },
       "overlay": {
         "title": "Overlay Position",
         "description": "Display visual feedback overlay during recording and transcription. On Linux 'None' is recommended.",
@@ -238,12 +265,30 @@
           "none": "None"
         }
       },
+      "typingTool": {
+        "title": "Typing Tool",
+        "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
+        "options": {
+          "auto": "Auto (Recommended)"
+        }
+      },
       "clipboardHandling": {
         "title": "Clipboard Handling",
         "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting.",
         "options": {
           "dontModify": "Don't Modify Clipboard",
           "copyToClipboard": "Copy to Clipboard"
+        }
+      },
+      "autoSubmit": {
+        "title": "Auto Submit",
+        "description": "Automatically send the selected key combination after text insertion. Cmd+Enter applies on macOS, while Windows/Linux use Super+Enter.",
+        "options": {
+          "off": "Off",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -406,10 +451,6 @@
         "description": "Choose the keyboard shortcut backend.",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
-      "pasteDelay": {
-        "title": "Paste Delay",
-        "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
-      },
       "paths": {
         "appData": "App Data:",
         "models": "Models:",
@@ -500,6 +541,7 @@
     "description": "Change the language of the Handy interface"
   },
   "overlay": {
-    "transcribing": "Transcribing..."
+    "transcribing": "Transcribing...",
+    "processing": "Processing..."
   }
 }

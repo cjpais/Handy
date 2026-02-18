@@ -3,6 +3,7 @@
     "settings": "设置...",
     "checkUpdates": "检查更新...",
     "copyLastTranscript": "复制最新转录",
+    "unloadModel": "卸载模型",
     "quit": "退出",
     "cancel": "取消"
   },
@@ -20,6 +21,7 @@
     "recommended": "推荐",
     "download": "下载",
     "downloading": "下载中...",
+    "customModelDescription": "非官方支持",
     "downloadFailed": "下载失败。请重试。",
     "modelCard": {
       "accuracy": "准确度",
@@ -52,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "非常快速，仅支持英语。口音处理良好。"
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "超快速，仅支持英语"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "快速，仅支持英语。速度与准确度的良好平衡。"
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "仅支持英语。高质量。"
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "针对台湾国语优化。支持语码转换。"
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "非常快速。支持中文、英语、日语、韩语、粤语。"
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "自定义",
     "active": "活跃",
     "switching": "切换中...",
     "noModelsAvailable": "没有可用的模型",
@@ -218,6 +241,10 @@
         "description": "登录计算机时自动启动 Handy。",
         "error": "无法更新自动启动设置。您的桌面环境可能不支持此功能。"
       },
+      "showTrayIcon": {
+        "label": "显示托盘图标",
+        "description": "在系统托盘中显示 Handy 图标。"
+      },
       "overlay": {
         "title": "悬浮窗位置",
         "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
@@ -238,12 +265,30 @@
           "none": "无"
         }
       },
+      "typingTool": {
+        "title": "输入工具",
+        "description": "选择在直接粘贴方式下使用的 Linux 输入工具。Auto 会自动检测并使用系统中可用的最佳工具。",
+        "options": {
+          "auto": "Auto（推荐）"
+        }
+      },
       "clipboardHandling": {
         "title": "剪贴板处理",
         "description": "不修改剪贴板将在转录后保留当前剪贴板内容。复制到剪贴板将在粘贴后将转录结果留在剪贴板中。",
         "options": {
           "dontModify": "不修改剪贴板",
           "copyToClipboard": "复制到剪贴板"
+        }
+      },
+      "autoSubmit": {
+        "title": "自动提交",
+        "description": "在文本插入后自动发送所选的按键组合。macOS 上使用 Cmd+Enter，Windows/Linux 上使用 Super+Enter。",
+        "options": {
+          "off": "关闭",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "更改 Handy 界面的语言"
   },
   "overlay": {
-    "transcribing": "正在转录..."
+    "transcribing": "正在转录...",
+    "processing": "处理中..."
   }
 }

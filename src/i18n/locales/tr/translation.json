@@ -3,6 +3,7 @@
     "settings": "Ayarlar...",
     "checkUpdates": "Güncellemeleri Kontrol Et...",
     "copyLastTranscript": "Son transkripti kopyala",
+    "unloadModel": "Modeli boşalt",
     "quit": "Çıkış",
     "cancel": "İptal"
   },
@@ -20,6 +21,7 @@
     "recommended": "Önerilen",
     "download": "İndir",
     "downloading": "İndiriliyor...",
+    "customModelDescription": "Resmi olarak desteklenmiyor",
     "downloadFailed": "İndirme başarısız oldu. Lütfen tekrar deneyin.",
     "modelCard": {
       "accuracy": "doğruluk",
@@ -53,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "Çok hızlı, yalnızca İngilizce. Aksanları iyi işler."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultra hızlı, yalnızca İngilizce"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Hızlı, yalnızca İngilizce. Hız ve doğruluk arasında iyi denge."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Yalnızca İngilizce. Yüksek kalite."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Tayvan Mandarin Çincesi için optimize edilmiş. Dil değiştirme desteği."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Çok hızlı. Çince, İngilizce, Japonca, Korece, Kantonca."
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Özel",
     "active": "Aktif",
     "noModelsAvailable": "Kullanılabilir model yok",
     "extracting": "{{modelName}} çıkarılıyor...",
@@ -218,6 +241,10 @@
         "description": "Bilgisayara giriş yaptığınızda Handy otomatik olarak başlatılır.",
         "error": "Otomatik başlatma ayarı güncellenemedi. Masaüstü ortamınız bu özelliği desteklemiyor olabilir."
       },
+      "showTrayIcon": {
+        "label": "Tepsi simgesini göster",
+        "description": "Handy simgesini sistem tepsisinde göster."
+      },
       "overlay": {
         "title": "Overlay Konumu",
         "description": "Kayıt ve transkripsiyon sırasında görsel geri bildirim kaplamasını gösterir. Linux'ta 'Yok' önerilir.",
@@ -238,12 +265,30 @@
           "none": "Yok"
         }
       },
+      "typingTool": {
+        "title": "Yazma Aracı",
+        "description": "Doğrudan yapıştırma yöntemi için hangi Linux yazma aracının kullanılacağını seçin. Auto, sisteminiz için mevcut en iyi aracı otomatik olarak algılar ve kullanır.",
+        "options": {
+          "auto": "Auto (Önerilen)"
+        }
+      },
       "clipboardHandling": {
         "title": "Pano Yönetimi",
         "description": "Panoyu Değiştirme, transkripsiyon sonrası mevcut pano içeriğini korur. Panoya Kopyala ise yapıştırma işleminden sonra transkripsiyon sonucunu panoda bırakır.",
         "options": {
           "dontModify": "Panoyu Değiştirme",
           "copyToClipboard": "Panoya Kopyala"
+        }
+      },
+      "autoSubmit": {
+        "title": "Otomatik Gönder",
+        "description": "Metin eklendikten sonra seçilen tuş kombinasyonunu otomatik olarak gönderir. macOS'ta Cmd+Enter, Windows/Linux'ta Super+Enter geçerlidir.",
+        "options": {
+          "off": "Kapalı",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "Handy arayüzünün dilini değiştirin"
   },
   "overlay": {
-    "transcribing": "Transkribe ediliyor..."
+    "transcribing": "Transkribe ediliyor...",
+    "processing": "İşleniyor..."
   }
 }

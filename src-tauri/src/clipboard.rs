@@ -1,6 +1,8 @@
 use crate::input::{self, EnigoState};
-use crate::settings::{get_settings, ClipboardHandling, PasteMethod};
-use enigo::Enigo;
+#[cfg(target_os = "linux")]
+use crate::settings::TypingTool;
+use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -120,7 +122,43 @@ fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> 
 /// Attempts to type text directly using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
-fn try_direct_typing_linux(text: &str) -> Result<bool, String> {
+fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<bool, String> {
+    // If user specified a tool, try only that one
+    if preferred_tool != TypingTool::Auto {
+        return match preferred_tool {
+            TypingTool::Wtype if is_wtype_available() => {
+                info!("Using user-specified wtype");
+                type_text_via_wtype(text)?;
+                Ok(true)
+            }
+            TypingTool::Kwtype if is_kwtype_available() => {
+                info!("Using user-specified kwtype");
+                type_text_via_kwtype(text)?;
+                Ok(true)
+            }
+            TypingTool::Dotool if is_dotool_available() => {
+                info!("Using user-specified dotool");
+                type_text_via_dotool(text)?;
+                Ok(true)
+            }
+            TypingTool::Ydotool if is_ydotool_available() => {
+                info!("Using user-specified ydotool");
+                type_text_via_ydotool(text)?;
+                Ok(true)
+            }
+            TypingTool::Xdotool if is_xdotool_available() => {
+                info!("Using user-specified xdotool");
+                type_text_via_xdotool(text)?;
+                Ok(true)
+            }
+            _ => Err(format!(
+                "Typing tool {:?} is not available on this system",
+                preferred_tool
+            )),
+        };
+    }
+
+    // Auto mode - existing fallback chain
     if is_wayland() {
         // KDE Wayland: prefer kwtype (uses KDE Fake Input protocol, supports umlauts)
         if is_kde_wayland() && is_kwtype_available() {
@@ -160,6 +198,29 @@ fn try_direct_typing_linux(text: &str) -> Result<bool, String> {
     }
 
     Ok(false)
+}
+
+/// Returns the list of available typing tools on this system.
+/// Always includes "auto" as the first entry.
+#[cfg(target_os = "linux")]
+pub fn get_available_typing_tools() -> Vec<String> {
+    let mut tools = vec!["auto".to_string()];
+    if is_wtype_available() {
+        tools.push("wtype".to_string());
+    }
+    if is_kwtype_available() {
+        tools.push("kwtype".to_string());
+    }
+    if is_dotool_available() {
+        tools.push("dotool".to_string());
+    }
+    if is_ydotool_available() {
+        tools.push("ydotool".to_string());
+    }
+    if is_xdotool_available() {
+        tools.push("xdotool".to_string());
+    }
+    tools
 }
 
 /// Check if wtype is available (Wayland text input tool)
@@ -331,17 +392,21 @@ fn type_text_via_kwtype(text: &str) -> Result<(), String> {
 }
 
 /// Write text to clipboard via wl-copy (Wayland clipboard tool).
+/// Uses Stdio::null() to avoid blocking on repeated calls — wl-copy forks a
+/// daemon that inherits piped fds, causing read_to_end to hang indefinitely.
 #[cfg(target_os = "linux")]
 fn write_clipboard_via_wl_copy(text: &str) -> Result<(), String> {
-    let output = Command::new("wl-copy")
+    use std::process::Stdio;
+    let status = Command::new("wl-copy")
         .arg("--")
         .arg(text)
-        .output()
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
         .map_err(|e| format!("Failed to execute wl-copy: {}", e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("wl-copy failed: {}", stderr));
+    if !status.success() {
+        return Err("wl-copy failed".into());
     }
 
     Ok(())
@@ -380,14 +445,16 @@ fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
         PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
         _ => return Err("Unsupported paste method".into()),
     }
-    let output = Command::new("sh")
+    use std::process::Stdio;
+    let status = Command::new("sh")
         .arg("-c")
         .arg(command)
-        .output()
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
         .map_err(|e| format!("Failed to execute dotool: {}", e))?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("dotool failed: {}", stderr));
+    if !status.success() {
+        return Err("dotool failed".into());
     }
 
     Ok(())
@@ -444,10 +511,14 @@ fn send_key_combo_via_xdotool(paste_method: &PasteMethod) -> Result<(), String> 
 }
 
 /// Types text directly by simulating individual key presses.
-fn paste_direct(enigo: Option<&mut Enigo>, text: &str) -> Result<(), String> {
+fn paste_direct(
+    enigo: Option<&mut Enigo>,
+    text: &str,
+    #[cfg(target_os = "linux")] typing_tool: TypingTool,
+) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
-        if try_direct_typing_linux(text)? {
+        if try_direct_typing_linux(text, typing_tool)? {
             return Ok(());
         }
         info!("Falling back to enigo for direct text input");
@@ -455,6 +526,53 @@ fn paste_direct(enigo: Option<&mut Enigo>, text: &str) -> Result<(), String> {
 
     let enigo = enigo.ok_or("Enigo not available and native tools failed")?;
     input::paste_text_direct(enigo, text)
+}
+
+fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
+    match key_type {
+        AutoSubmitKey::Enter => {
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+        }
+        AutoSubmitKey::CtrlEnter => {
+            enigo
+                .key(Key::Control, Direction::Press)
+                .map_err(|e| format!("Failed to press Control key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+            enigo
+                .key(Key::Control, Direction::Release)
+                .map_err(|e| format!("Failed to release Control key: {}", e))?;
+        }
+        AutoSubmitKey::CmdEnter => {
+            enigo
+                .key(Key::Meta, Direction::Press)
+                .map_err(|e| format!("Failed to press Meta/Cmd key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Press)
+                .map_err(|e| format!("Failed to press Return key: {}", e))?;
+            enigo
+                .key(Key::Return, Direction::Release)
+                .map_err(|e| format!("Failed to release Return key: {}", e))?;
+            enigo
+                .key(Key::Meta, Direction::Release)
+                .map_err(|e| format!("Failed to release Meta/Cmd key: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool {
+    auto_submit && paste_method != PasteMethod::None
 }
 
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
@@ -483,9 +601,12 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         PasteMethod::None => {
             info!("PasteMethod::None selected - skipping paste action");
         }
-        PasteMethod::Direct => {
-            paste_direct(enigo_guard.as_deref_mut(), &text)?;
-        }
+        PasteMethod::Direct => paste_direct(
+            enigo_guard.as_deref_mut(),
+            &text,
+            #[cfg(target_os = "linux")]
+            settings.typing_tool,
+        )?,
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(
                 enigo_guard.as_deref_mut(),
@@ -497,6 +618,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         }
     }
 
+    if should_send_auto_submit(settings.auto_submit, paste_method) {
+        let enigo = enigo_guard
+            .as_deref_mut()
+            .ok_or("Enigo not available for auto-submit")?;
+        std::thread::sleep(Duration::from_millis(50));
+        send_return_key(enigo, settings.auto_submit_key)?;
+    }
+
     // After pasting, optionally copy to clipboard based on settings
     if settings.clipboard_handling == ClipboardHandling::CopyToClipboard {
         let clipboard = app_handle.clipboard();
@@ -506,4 +635,28 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn auto_submit_requires_setting_enabled() {
+        assert!(!should_send_auto_submit(false, PasteMethod::CtrlV));
+        assert!(!should_send_auto_submit(false, PasteMethod::Direct));
+    }
+
+    #[test]
+    fn auto_submit_skips_none_paste_method() {
+        assert!(!should_send_auto_submit(true, PasteMethod::None));
+    }
+
+    #[test]
+    fn auto_submit_runs_for_active_paste_methods() {
+        assert!(should_send_auto_submit(true, PasteMethod::CtrlV));
+        assert!(should_send_auto_submit(true, PasteMethod::Direct));
+        assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
+        assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
 }

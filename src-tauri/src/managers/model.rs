@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -21,6 +21,8 @@ pub enum EngineType {
     Whisper,
     Parakeet,
     Moonshine,
+    MoonshineStreaming,
+    SenseVoice,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -41,6 +43,7 @@ pub struct ModelInfo {
     pub supports_translation: bool, // Whether the model supports translating to English
     pub is_recommended: bool,       // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
+    pub is_custom: bool,            // Whether this is a user-provided custom model
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -110,6 +113,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -133,6 +137,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -155,6 +160,7 @@ impl ModelManager {
                 supports_translation: false, // Turbo doesn't support translation
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -177,6 +183,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                is_custom: false,
             },
         );
 
@@ -200,6 +207,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: whisper_languages,
+                is_custom: false,
             },
         );
 
@@ -223,6 +231,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                is_custom: false,
             },
         );
 
@@ -255,6 +264,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages,
+                is_custom: false,
             },
         );
 
@@ -277,8 +287,120 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                is_custom: false,
             },
         );
+
+        available_models.insert(
+            "moonshine-tiny-streaming-en".to_string(),
+            ModelInfo {
+                id: "moonshine-tiny-streaming-en".to_string(),
+                name: "Moonshine V2 Tiny".to_string(),
+                description: "Ultra-fast, English only".to_string(),
+                filename: "moonshine-tiny-streaming-en".to_string(),
+                url: Some(
+                    "https://blob.handy.computer/moonshine-tiny-streaming-en.tar.gz".to_string(),
+                ),
+                size_mb: 31,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::MoonshineStreaming,
+                accuracy_score: 0.55,
+                speed_score: 0.95,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "moonshine-small-streaming-en".to_string(),
+            ModelInfo {
+                id: "moonshine-small-streaming-en".to_string(),
+                name: "Moonshine V2 Small".to_string(),
+                description: "Fast, English only. Good balance of speed and accuracy.".to_string(),
+                filename: "moonshine-small-streaming-en".to_string(),
+                url: Some(
+                    "https://blob.handy.computer/moonshine-small-streaming-en.tar.gz".to_string(),
+                ),
+                size_mb: 100,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::MoonshineStreaming,
+                accuracy_score: 0.65,
+                speed_score: 0.90,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "moonshine-medium-streaming-en".to_string(),
+            ModelInfo {
+                id: "moonshine-medium-streaming-en".to_string(),
+                name: "Moonshine V2 Medium".to_string(),
+                description: "English only. High quality.".to_string(),
+                filename: "moonshine-medium-streaming-en".to_string(),
+                url: Some(
+                    "https://blob.handy.computer/moonshine-medium-streaming-en.tar.gz".to_string(),
+                ),
+                size_mb: 192,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::MoonshineStreaming,
+                accuracy_score: 0.75,
+                speed_score: 0.80,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        // SenseVoice supported languages
+        let sense_voice_languages: Vec<String> =
+            vec!["zh", "zh-Hans", "zh-Hant", "en", "yue", "ja", "ko"]
+                .into_iter()
+                .map(String::from)
+                .collect();
+
+        available_models.insert(
+            "sense-voice-int8".to_string(),
+            ModelInfo {
+                id: "sense-voice-int8".to_string(),
+                name: "SenseVoice".to_string(),
+                description: "Very fast. Chinese, English, Japanese, Korean, Cantonese."
+                    .to_string(),
+                filename: "sense-voice-int8".to_string(),
+                url: Some("https://blob.handy.computer/sense-voice-int8.tar.gz".to_string()),
+                size_mb: 160,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::SenseVoice,
+                accuracy_score: 0.65,
+                speed_score: 0.95,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: sense_voice_languages,
+                is_custom: false,
+            },
+        );
+
+        // Auto-discover custom Whisper models (.bin files) in the models directory
+        if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
+            warn!("Failed to discover custom models: {}", e);
+        }
 
         let manager = Self {
             app_handle: app_handle.clone(),
@@ -390,10 +512,26 @@ impl ModelManager {
     }
 
     fn auto_select_model_if_needed(&self) -> Result<()> {
-        // Check if we have a selected model in settings
-        let settings = get_settings(&self.app_handle);
+        let mut settings = get_settings(&self.app_handle);
 
-        // If no model is selected or selected model is empty
+        // Clear stale selection: selected model is set but doesn't exist
+        // in available_models (e.g. deleted custom model file)
+        if !settings.selected_model.is_empty() {
+            let models = self.available_models.lock().unwrap();
+            let exists = models.contains_key(&settings.selected_model);
+            drop(models);
+
+            if !exists {
+                info!(
+                    "Selected model '{}' not found in available models, clearing selection",
+                    settings.selected_model
+                );
+                settings.selected_model = String::new();
+                write_settings(&self.app_handle, settings.clone());
+            }
+        }
+
+        // If no model is selected, pick the first downloaded one
         if settings.selected_model.is_empty() {
             // Find the first available (downloaded) model
             let models = self.available_models.lock().unwrap();
@@ -410,6 +548,125 @@ impl ModelManager {
 
                 info!("Successfully auto-selected model: {}", available_model.id);
             }
+        }
+
+        Ok(())
+    }
+
+    /// Discover custom Whisper models (.bin files) in the models directory.
+    /// Skips files that match predefined model filenames.
+    fn discover_custom_whisper_models(
+        models_dir: &Path,
+        available_models: &mut HashMap<String, ModelInfo>,
+    ) -> Result<()> {
+        if !models_dir.exists() {
+            return Ok(());
+        }
+
+        // Collect filenames of predefined Whisper file-based models to skip
+        let predefined_filenames: HashSet<String> = available_models
+            .values()
+            .filter(|m| matches!(m.engine_type, EngineType::Whisper) && !m.is_directory)
+            .map(|m| m.filename.clone())
+            .collect();
+
+        // Scan models directory for .bin files
+        for entry in fs::read_dir(models_dir)? {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) => {
+                    warn!("Failed to read directory entry: {}", e);
+                    continue;
+                }
+            };
+
+            let path = entry.path();
+
+            // Only process .bin files (not directories)
+            if !path.is_file() {
+                continue;
+            }
+
+            let filename = match path.file_name().and_then(|s| s.to_str()) {
+                Some(name) => name.to_string(),
+                None => continue,
+            };
+
+            // Skip hidden files
+            if filename.starts_with('.') {
+                continue;
+            }
+
+            // Only process .bin files (Whisper GGML format).
+            // This also excludes .partial downloads (e.g., "model.bin.partial").
+            // If we add discovery for other formats, add a .partial check before this filter.
+            if !filename.ends_with(".bin") {
+                continue;
+            }
+
+            // Skip predefined model files
+            if predefined_filenames.contains(&filename) {
+                continue;
+            }
+
+            // Generate model ID from filename (remove .bin extension)
+            let model_id = filename.trim_end_matches(".bin").to_string();
+
+            // Skip if model ID already exists (shouldn't happen, but be safe)
+            if available_models.contains_key(&model_id) {
+                continue;
+            }
+
+            // Generate display name: replace - and _ with space, capitalize words
+            let display_name = model_id
+                .replace(['-', '_'], " ")
+                .split_whitespace()
+                .map(|word| {
+                    let mut chars = word.chars();
+                    match chars.next() {
+                        None => String::new(),
+                        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+
+            // Get file size in MB
+            let size_mb = match path.metadata() {
+                Ok(meta) => meta.len() / (1024 * 1024),
+                Err(e) => {
+                    warn!("Failed to get metadata for {}: {}", filename, e);
+                    0
+                }
+            };
+
+            info!(
+                "Discovered custom Whisper model: {} ({}, {} MB)",
+                model_id, filename, size_mb
+            );
+
+            available_models.insert(
+                model_id.clone(),
+                ModelInfo {
+                    id: model_id,
+                    name: display_name,
+                    description: "Not officially supported".to_string(),
+                    filename,
+                    url: None, // Custom models have no download URL
+                    size_mb,
+                    is_downloaded: true, // Already present on disk
+                    is_downloading: false,
+                    partial_size: 0,
+                    is_directory: false,
+                    engine_type: EngineType::Whisper,
+                    accuracy_score: 0.0, // Sentinel: UI hides score bars when both are 0
+                    speed_score: 0.0,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: vec![],
+                    is_custom: true,
+                },
+            );
         }
 
         Ok(())
@@ -817,9 +1074,17 @@ impl ModelManager {
             return Err(anyhow::anyhow!("No model files found to delete"));
         }
 
-        // Update download status
-        self.update_download_status()?;
-        debug!("ModelManager: download status updated");
+        // Custom models should be removed from the list entirely since they
+        // have no download URL and can't be re-downloaded
+        if model_info.is_custom {
+            let mut models = self.available_models.lock().unwrap();
+            models.remove(model_id);
+            debug!("ModelManager: removed custom model from available models");
+        } else {
+            // Update download status (marks predefined models as not downloaded)
+            self.update_download_status()?;
+            debug!("ModelManager: download status updated");
+        }
 
         // Emit event to notify UI
         let _ = self.app_handle.emit("model-deleted", model_id);
@@ -902,5 +1167,110 @@ impl ModelManager {
 
         info!("Download cancellation initiated for: {}", model_id);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_discover_custom_whisper_models() {
+        let temp_dir = TempDir::new().unwrap();
+        let models_dir = temp_dir.path().to_path_buf();
+
+        // Create test .bin files
+        let mut custom_file = File::create(models_dir.join("my-custom-model.bin")).unwrap();
+        custom_file.write_all(b"fake model data").unwrap();
+
+        let mut another_file = File::create(models_dir.join("whisper_medical_v2.bin")).unwrap();
+        another_file.write_all(b"another fake model").unwrap();
+
+        // Create files that should be ignored
+        File::create(models_dir.join(".hidden-model.bin")).unwrap(); // Hidden file
+        File::create(models_dir.join("readme.txt")).unwrap(); // Non-.bin file
+        File::create(models_dir.join("ggml-small.bin")).unwrap(); // Predefined filename
+        fs::create_dir(models_dir.join("some-directory.bin")).unwrap(); // Directory
+
+        // Set up available_models with a predefined Whisper model
+        let mut models = HashMap::new();
+        models.insert(
+            "small".to_string(),
+            ModelInfo {
+                id: "small".to_string(),
+                name: "Whisper Small".to_string(),
+                description: "Test".to_string(),
+                filename: "ggml-small.bin".to_string(),
+                url: Some("https://example.com".to_string()),
+                size_mb: 100,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Whisper,
+                accuracy_score: 0.5,
+                speed_score: 0.5,
+                supports_translation: true,
+                is_recommended: false,
+                supported_languages: vec!["en".to_string()],
+                is_custom: false,
+            },
+        );
+
+        // Discover custom models
+        ModelManager::discover_custom_whisper_models(&models_dir, &mut models).unwrap();
+
+        // Should have discovered 2 custom models (my-custom-model and whisper_medical_v2)
+        assert!(models.contains_key("my-custom-model"));
+        assert!(models.contains_key("whisper_medical_v2"));
+
+        // Verify custom model properties
+        let custom = models.get("my-custom-model").unwrap();
+        assert_eq!(custom.name, "My Custom Model");
+        assert_eq!(custom.filename, "my-custom-model.bin");
+        assert!(custom.url.is_none()); // Custom models have no URL
+        assert!(custom.is_downloaded);
+        assert!(custom.is_custom);
+        assert_eq!(custom.accuracy_score, 0.0);
+        assert_eq!(custom.speed_score, 0.0);
+        assert!(custom.supported_languages.is_empty());
+
+        // Verify underscore handling
+        let medical = models.get("whisper_medical_v2").unwrap();
+        assert_eq!(medical.name, "Whisper Medical V2");
+
+        // Should NOT have discovered hidden, non-.bin, predefined, or directories
+        assert!(!models.contains_key(".hidden-model"));
+        assert!(!models.contains_key("readme"));
+        assert!(!models.contains_key("some-directory"));
+    }
+
+    #[test]
+    fn test_discover_custom_models_empty_dir() {
+        let temp_dir = TempDir::new().unwrap();
+        let models_dir = temp_dir.path().to_path_buf();
+
+        let mut models = HashMap::new();
+        let count_before = models.len();
+
+        ModelManager::discover_custom_whisper_models(&models_dir, &mut models).unwrap();
+
+        // No new models should be added
+        assert_eq!(models.len(), count_before);
+    }
+
+    #[test]
+    fn test_discover_custom_models_nonexistent_dir() {
+        let models_dir = PathBuf::from("/nonexistent/path/that/does/not/exist");
+
+        let mut models = HashMap::new();
+        let count_before = models.len();
+
+        // Should not error, just return Ok
+        let result = ModelManager::discover_custom_whisper_models(&models_dir, &mut models);
+        assert!(result.is_ok());
+        assert_eq!(models.len(), count_before);
     }
 }

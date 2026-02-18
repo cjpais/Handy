@@ -41,3 +41,6 @@ src-tauri/flatpak/handy.deb
 playwright-report/
 test-results/
 blob-report/
+
+.direnv
+.envrc

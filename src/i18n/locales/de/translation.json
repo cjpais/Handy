@@ -3,6 +3,7 @@
     "settings": "Einstellungen...",
     "checkUpdates": "Nach Updates suchen...",
     "copyLastTranscript": "Letzte Transkription kopieren",
+    "unloadModel": "Modell entladen",
     "quit": "Beenden",
     "cancel": "Abbrechen"
   },
@@ -20,6 +21,7 @@
     "recommended": "Empfohlen",
     "download": "Herunterladen",
     "downloading": "Wird heruntergeladen...",
+    "customModelDescription": "Nicht offiziell unterstützt",
     "downloadFailed": "Download fehlgeschlagen. Bitte erneut versuchen.",
     "modelCard": {
       "accuracy": "Genauigkeit",
@@ -52,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Sehr schnell, nur Englisch. Verarbeitet Akzente gut."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultraschnell, nur Englisch"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Schnell, nur Englisch. Gute Balance zwischen Geschwindigkeit und Genauigkeit."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Nur Englisch. Hohe Qualität."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimiert für taiwanesisches Mandarin. Unterstützung für Code-Switching."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Sehr schnell. Chinesisch, Englisch, Japanisch, Koreanisch, Kantonesisch."
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Benutzerdefiniert",
     "active": "Aktiv",
     "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",
@@ -218,6 +241,10 @@
         "description": "Handy automatisch beim Anmelden starten.",
         "error": "Autostart-Einstellung konnte nicht aktualisiert werden. Ihre Desktop-Umgebung unterstützt diese Funktion möglicherweise nicht."
       },
+      "showTrayIcon": {
+        "label": "Taskleistensymbol anzeigen",
+        "description": "Das Handy-Symbol in der Taskleiste anzeigen."
+      },
       "overlay": {
         "title": "Overlay-Position",
         "description": "Visuelles Feedback-Overlay während Aufnahme und Transkription anzeigen. Unter Linux wird 'Keine' empfohlen.",
@@ -238,12 +265,30 @@
           "none": "Keine"
         }
       },
+      "typingTool": {
+        "title": "Eingabetool",
+        "description": "Wählen Sie, welches Linux-Eingabetool für die Direkt-Einfügen-Methode verwendet werden soll. Auto erkennt und verwendet automatisch das beste verfügbare Tool für Ihr System.",
+        "options": {
+          "auto": "Auto (Empfohlen)"
+        }
+      },
       "clipboardHandling": {
         "title": "Zwischenablage-Verhalten",
         "description": "Zwischenablage nicht ändern bewahrt den aktuellen Inhalt nach der Transkription. In Zwischenablage kopieren hinterlässt das Transkriptionsergebnis in der Zwischenablage.",
         "options": {
           "dontModify": "Zwischenablage nicht ändern",
           "copyToClipboard": "In Zwischenablage kopieren"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatisch absenden",
+        "description": "Sendet nach dem Einfügen von Text automatisch die ausgewählte Tastenkombination. Cmd+Enter gilt für macOS, während Windows/Linux Super+Enter verwenden.",
+        "options": {
+          "off": "Aus",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "Sprache der Handy-Oberfläche ändern"
   },
   "overlay": {
-    "transcribing": "Transkribiere..."
+    "transcribing": "Transkribiere...",
+    "processing": "Verarbeite..."
   }
 }

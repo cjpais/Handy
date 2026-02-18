@@ -3,6 +3,7 @@
     "settings": "Настройки...",
     "checkUpdates": "Проверить обновления...",
     "copyLastTranscript": "Скопировать последнюю транскрипцию",
+    "unloadModel": "Выгрузить модель",
     "quit": "Выход",
     "cancel": "Отмена"
   },
@@ -20,6 +21,7 @@
     "recommended": "Рекомендуется",
     "download": "Скачать",
     "downloading": "Загрузка...",
+    "customModelDescription": "Официально не поддерживается",
     "downloadFailed": "Загрузка не удалась. Пожалуйста, попробуйте снова.",
     "modelCard": {
       "accuracy": "точность",
@@ -52,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Очень быстрый, только английский. Хорошо справляется с акцентами."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Сверхбыстрый, только английский"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Быстрый, только английский. Хороший баланс скорости и точности."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Только английский. Высокое качество."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Оптимизирован для тайваньского мандаринского. Поддержка переключения языков."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Очень быстрый. Китайский, английский, японский, корейский, кантонский."
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Пользовательская",
     "active": "Активный",
     "switching": "Переключение...",
     "noModelsAvailable": "Нет доступных моделей",
@@ -218,6 +241,10 @@
         "description": "Автоматически запускать Handy при входе в систему.",
         "error": "Не удалось обновить настройку автозапуска. Ваше окружение рабочего стола может не поддерживать эту функцию."
       },
+      "showTrayIcon": {
+        "label": "Показать значок в трее",
+        "description": "Отображать значок Handy в системном трее."
+      },
       "overlay": {
         "title": "Позиция наложения",
         "description": "Отображение наложения визуальной обратной связи во время записи и транскрипции. В Linux рекомендуется выбрать «Нет».",
@@ -238,12 +265,30 @@
           "none": "Нет"
         }
       },
+      "typingTool": {
+        "title": "Инструмент ввода",
+        "description": "Выберите, какой инструмент ввода в Linux использовать для метода прямой вставки. Auto автоматически определит и использует лучший доступный инструмент для вашей системы.",
+        "options": {
+          "auto": "Auto (Рекомендуется)"
+        }
+      },
       "clipboardHandling": {
         "title": "Обработка буфера обмена",
         "description": "Функция «Не изменять буфер обмена» сохраняет текущее содержимое буфера обмена после транскрипции. Копировать в буфер обмена оставляет результат транскрипции в буфере обмена после вставки.",
         "options": {
           "dontModify": "Не изменять буфер обмена",
           "copyToClipboard": "Копировать в буфер обмена"
+        }
+      },
+      "autoSubmit": {
+        "title": "Автоматическая отправка",
+        "description": "Автоматически отправляет выбранную комбинацию клавиш после вставки текста. Cmd+Enter применяется на macOS, а Windows/Linux используют Super+Enter.",
+        "options": {
+          "off": "Выкл.",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "Изменить языка интерфейса Handy"
   },
   "overlay": {
-    "transcribing": "Расшифровка..."
+    "transcribing": "Расшифровка...",
+    "processing": "Обработка..."
   }
 }

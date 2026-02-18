@@ -3,6 +3,7 @@
     "settings": "Ustawienia...",
     "checkUpdates": "Sprawdź aktualizacje...",
     "copyLastTranscript": "Kopiuj ostatnią transkrypcję",
+    "unloadModel": "Zwolnij model",
     "quit": "Zamknij",
     "cancel": "Anuluj"
   },
@@ -20,6 +21,7 @@
     "recommended": "Polecane",
     "download": "Pobierz",
     "downloading": "Pobieranie...",
+    "customModelDescription": "Nieoficjalnie wspierane",
     "downloadFailed": "Pobieranie nie powiodło się. Spróbuj ponownie.",
     "modelCard": {
       "accuracy": "dokładność",
@@ -52,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Bardzo szybki, tylko angielski. Dobrze radzi sobie z akcentami."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultraszybki, tylko angielski"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Szybki, tylko angielski. Dobra równowaga między szybkością a dokładnością."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Tylko angielski. Wysoka jakość."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Zoptymalizowany dla tajwańskiego mandaryńskiego. Obsługa przełączania języków."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Bardzo szybki. Chiński, angielski, japoński, koreański, kantoński."
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Własny",
     "active": "Aktywny",
     "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
@@ -218,6 +241,10 @@
         "description": "Automatycznie uruchamiaj Handy po zalogowaniu.",
         "error": "Nie udało się zaktualizować ustawienia automatycznego uruchamiania. Twoje środowisko graficzne może nie obsługiwać tej funkcji."
       },
+      "showTrayIcon": {
+        "label": "Pokaż ikonę w zasobniku",
+        "description": "Wyświetlaj ikonę Handy w zasobniku systemowym."
+      },
       "overlay": {
         "title": "Pozycja nakładki",
         "description": "Wyświetlaj wizualną nakładkę podczas nagrywania i transkrypcji. Na Linuxie zalecane 'Brak'.",
@@ -238,12 +265,30 @@
           "none": "Brak"
         }
       },
+      "typingTool": {
+        "title": "Narzędzie do wpisywania",
+        "description": "Wybierz, którego narzędzia do wpisywania w Linuxie użyć dla metody bezpośredniego wklejania. Auto automatycznie wykryje i użyje najlepszego dostępnego narzędzia dla Twojego systemu.",
+        "options": {
+          "auto": "Auto (Zalecane)"
+        }
+      },
       "clipboardHandling": {
         "title": "Obsługa schowka",
         "description": "Nie modyfikuj schowka zachowuje jego zawartość. Kopiuj do schowka pozostawia wynik transkrypcji w schowku.",
         "options": {
           "dontModify": "Nie modyfikuj schowka",
           "copyToClipboard": "Kopiuj do schowka"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatyczne wysyłanie",
+        "description": "Automatycznie wysyła wybraną kombinację klawiszy po wstawieniu tekstu. Cmd+Enter dotyczy macOS, natomiast Windows/Linux używają Super+Enter.",
+        "options": {
+          "off": "Wyłączone",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "Zmień język interfejsu Handy"
   },
   "overlay": {
-    "transcribing": "Transkrypcja..."
+    "transcribing": "Transkrypcja...",
+    "processing": "Przetwarzanie..."
   }
 }

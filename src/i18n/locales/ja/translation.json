@@ -3,6 +3,7 @@
     "settings": "設定...",
     "checkUpdates": "アップデートを確認...",
     "copyLastTranscript": "最新の文字起こしをコピー",
+    "unloadModel": "モデルをアンロード",
     "quit": "終了",
     "cancel": "キャンセル"
   },
@@ -20,6 +21,7 @@
     "recommended": "おすすめ",
     "download": "ダウンロード",
     "downloading": "ダウンロード中...",
+    "customModelDescription": "公式サポート対象外",
     "downloadFailed": "ダウンロードに失敗しました。もう一度お試しください。",
     "modelCard": {
       "accuracy": "精度",
@@ -52,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "非常に高速、英語のみ。アクセントにも対応。"
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "超高速、英語のみ"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "高速、英語のみ。速度と精度のバランスが良い。"
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "英語のみ。高品質。"
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "台湾華語に最適化。コードスイッチングに対応。"
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "非常に高速。中国語、英語、日本語、韓国語、広東語。"
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "カスタム",
     "active": "アクティブ",
     "switching": "切替中...",
     "noModelsAvailable": "利用可能なモデルがありません",
@@ -218,6 +241,10 @@
         "description": "コンピューターにログインしたときにHandyを自動的に起動。",
         "error": "自動起動設定の更新に失敗しました。お使いのデスクトップ環境はこの機能をサポートしていない可能性があります。"
       },
+      "showTrayIcon": {
+        "label": "トレイアイコンを表示",
+        "description": "システムトレイにHandyのアイコンを表示します。"
+      },
       "overlay": {
         "title": "オーバーレイ位置",
         "description": "録音と文字起こし中に視覚的なフィードバックオーバーレイを表示。Linuxでは「なし」を推奨。",
@@ -238,12 +265,30 @@
           "none": "なし"
         }
       },
+      "typingTool": {
+        "title": "タイピングツール",
+        "description": "直接貼り付け方式で使用する Linux のタイピングツールを選択します。Auto は自動的に最適なツールを検出して使用します。",
+        "options": {
+          "auto": "Auto（推奨）"
+        }
+      },
       "clipboardHandling": {
         "title": "クリップボードの処理",
         "description": "クリップボードを変更しないを選択すると、文字起こし後も現在のクリップボード内容が保持されます。クリップボードにコピーを選択すると、貼り付け後も文字起こし結果がクリップボードに残ります。",
         "options": {
           "dontModify": "クリップボードを変更しない",
           "copyToClipboard": "クリップボードにコピー"
+        }
+      },
+      "autoSubmit": {
+        "title": "自動送信",
+        "description": "テキスト挿入後に選択したキーの組み合わせを自動的に送信します。macOSではCmd+Enter、Windows/LinuxではSuper+Enterが適用されます。",
+        "options": {
+          "off": "オフ",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "Handyインターフェースの言語を変更"
   },
   "overlay": {
-    "transcribing": "文字起こし中..."
+    "transcribing": "文字起こし中...",
+    "processing": "処理中..."
   }
 }

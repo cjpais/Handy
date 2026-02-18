@@ -3,6 +3,7 @@
     "settings": "Nastavení...",
     "checkUpdates": "Zkontrolovat aktualizace...",
     "copyLastTranscript": "Zkopírovat poslední přepis",
+    "unloadModel": "Uvolnit model",
     "quit": "Ukončit",
     "cancel": "Zrušit"
   },
@@ -20,6 +21,7 @@
     "recommended": "Doporučeno",
     "download": "Stáhnout",
     "downloading": "Stahování...",
+    "customModelDescription": "Oficiálně nepodporováno",
     "downloadFailed": "Stahování se nezdařilo. Zkuste to prosím znovu.",
     "modelCard": {
       "accuracy": "přesnost",
@@ -53,6 +55,26 @@
       "moonshine-base": {
         "name": "Moonshine Base",
         "description": "Velmi rychlý, pouze angličtina. Dobře zvládá přízvuky."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultrarychlý, pouze angličtina"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Rychlý, pouze angličtina. Dobrý poměr rychlosti a přesnosti."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Pouze angličtina. Vysoká kvalita."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimalizováno pro tchajwanskou mandarínštinu. Podpora přepínání jazyků."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Velmi rychlý. Čínština, angličtina, japonština, korejština, kantonština."
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Vlastní",
     "active": "Aktivní",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "extracting": "Rozbaluji {{modelName}}...",
@@ -218,6 +241,10 @@
         "description": "Automaticky spustit Handy po přihlášení do počítače.",
         "error": "Nepodařilo se aktualizovat nastavení automatického spuštění. Vaše desktopové prostředí nemusí tuto funkci podporovat."
       },
+      "showTrayIcon": {
+        "label": "Zobrazit ikonu v systémové liště",
+        "description": "Zobrazit ikonu Handy v systémové liště."
+      },
       "overlay": {
         "title": "Pozice překryvu",
         "description": "Zobrazovat vizuální překryv během nahrávání a přepisu. Na Linuxu je doporučeno 'Žádné'.",
@@ -238,12 +265,30 @@
           "none": "Žádné"
         }
       },
+      "typingTool": {
+        "title": "Nástroj pro psaní",
+        "description": "Vyberte, který linuxový nástroj pro psaní použít pro metodu přímého vložení. Auto automaticky zjistí a použije nejlepší dostupný nástroj pro váš systém.",
+        "options": {
+          "auto": "Auto (Doporučeno)"
+        }
+      },
       "clipboardHandling": {
         "title": "Práce se schránkou",
         "description": "'Neměnit schránku' zachová po přepisu aktuální obsah schránky. 'Kopírovat do schránky' ponechá po vložení výsledek přepisu ve schránce.",
         "options": {
           "dontModify": "Neměnit schránku",
           "copyToClipboard": "Kopírovat do schránky"
+        }
+      },
+      "autoSubmit": {
+        "title": "Automatické odeslání",
+        "description": "Automaticky odešle vybranou kombinaci kláves po vložení textu. Cmd+Enter platí pro macOS, zatímco Windows/Linux používají Super+Enter.",
+        "options": {
+          "off": "Vypnuto",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "Změňte jazyk rozhraní Handy"
   },
   "overlay": {
-    "transcribing": "Přepisuji..."
+    "transcribing": "Přepisuji...",
+    "processing": "Zpracovávám..."
   }
 }

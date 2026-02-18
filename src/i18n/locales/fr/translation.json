@@ -3,6 +3,7 @@
     "settings": "Paramètres...",
     "checkUpdates": "Rechercher des mises à jour...",
     "copyLastTranscript": "Copier la dernière transcription",
+    "unloadModel": "Décharger le modèle",
     "quit": "Quitter",
     "cancel": "Annuler"
   },
@@ -20,6 +21,7 @@
     "recommended": "Recommandé",
     "download": "Télécharger",
     "downloading": "Téléchargement...",
+    "customModelDescription": "Non officiellement pris en charge",
     "downloadFailed": "Échec du téléchargement. Veuillez réessayer.",
     "modelCard": {
       "accuracy": "précision",
@@ -52,7 +54,27 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Très rapide, anglais uniquement. Gère bien les accents."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultra-rapide, anglais uniquement"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Rapide, anglais uniquement. Bon équilibre entre vitesse et précision."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Anglais uniquement. Haute qualité."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimisé pour le mandarin taïwanais. Prise en charge de l'alternance codique."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Très rapide. Chinois, anglais, japonais, coréen, cantonais."
       }
     },
     "errors": {
@@ -81,6 +103,7 @@
     }
   },
   "modelSelector": {
+    "custom": "Personnalisé",
     "active": "Actif",
     "switching": "Changement...",
     "noModelsAvailable": "Aucun modèle disponible",
@@ -218,6 +241,10 @@
         "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur.",
         "error": "Impossible de mettre à jour le paramètre de démarrage automatique. Votre environnement de bureau peut ne pas prendre en charge cette fonctionnalité."
       },
+      "showTrayIcon": {
+        "label": "Afficher l'icône de la barre",
+        "description": "Afficher l'icône de Handy dans la barre système."
+      },
       "overlay": {
         "title": "Position de la fenêtre d'enregistrement",
         "description": "Afficher un retour visuel pendant l'enregistrement et la transcription. Sur Linux, 'Aucune' est recommandé.",
@@ -238,12 +265,30 @@
           "none": "Aucun"
         }
       },
+      "typingTool": {
+        "title": "Outil de frappe",
+        "description": "Choisissez quel outil de frappe Linux utiliser pour la méthode de collage direct. Auto détectera et utilisera automatiquement le meilleur outil disponible pour votre système.",
+        "options": {
+          "auto": "Auto (Recommandé)"
+        }
+      },
       "clipboardHandling": {
         "title": "Gestion du presse-papiers",
         "description": "Ne pas modifier le presse-papiers préserve le contenu actuel de votre presse-papiers après la transcription. Copier dans le presse-papiers laisse le résultat de la transcription dans votre presse-papiers après le collage.",
         "options": {
           "dontModify": "Ne pas modifier le presse-papiers",
           "copyToClipboard": "Copier dans le presse-papiers"
+        }
+      },
+      "autoSubmit": {
+        "title": "Envoi automatique",
+        "description": "Envoie automatiquement la combinaison de touches sélectionnée après l'insertion du texte. Cmd+Enter s'applique sur macOS, tandis que Windows/Linux utilisent Super+Enter.",
+        "options": {
+          "off": "Désactivé",
+          "enter": "Entrée",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -496,6 +541,7 @@
     "description": "Changer la langue de l'interface de Handy"
   },
   "overlay": {
-    "transcribing": "Transcription..."
+    "transcribing": "Transcription...",
+    "processing": "Traitement..."
   }
 }

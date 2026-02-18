@@ -110,8 +110,12 @@ const settingUpdaters: {
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
+  typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
+  auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),
+  auto_submit_key: (value) =>
+    commands.changeAutoSubmitKeySetting(value as string),
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),
@@ -125,6 +129,8 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  show_tray_icon: (value) =>
+    commands.changeShowTrayIconSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

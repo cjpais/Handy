@@ -101,6 +101,8 @@ pub struct PostProcessProvider {
     pub allow_base_url_edit: bool,
     #[serde(default)]
     pub models_endpoint: Option<String>,
+    #[serde(default)]
+    pub supports_structured_output: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -139,6 +141,14 @@ pub enum PasteMethod {
 pub enum ClipboardHandling {
     DontModify,
     CopyToClipboard,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum AutoSubmitKey {
+    Enter,
+    CtrlEnter,
+    CmdEnter,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -188,6 +198,12 @@ impl Default for PasteMethod {
 impl Default for ClipboardHandling {
     fn default() -> Self {
         ClipboardHandling::DontModify
+    }
+}
+
+impl Default for AutoSubmitKey {
+    fn default() -> Self {
+        AutoSubmitKey::Enter
     }
 }
 
@@ -241,6 +257,23 @@ impl SoundTheme {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum TypingTool {
+    Auto,
+    Wtype,
+    Kwtype,
+    Dotool,
+    Ydotool,
+    Xdotool,
+}
+
+impl Default for TypingTool {
+    fn default() -> Self {
+        TypingTool::Auto
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -291,6 +324,10 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
+    #[serde(default = "default_auto_submit")]
+    pub auto_submit: bool,
+    #[serde(default)]
+    pub auto_submit_key: AutoSubmitKey,
     #[serde(default = "default_post_process_enabled")]
     pub post_process_enabled: bool,
     #[serde(default = "default_post_process_provider_id")]
@@ -315,8 +352,12 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
+    #[serde(default = "default_show_tray_icon")]
+    pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
+    #[serde(default = "default_typing_tool")]
+    pub typing_tool: TypingTool,
 }
 
 fn default_model() -> String {
@@ -370,6 +411,10 @@ fn default_paste_delay_ms() -> u64 {
     60
 }
 
+fn default_auto_submit() -> bool {
+    false
+}
+
 fn default_history_limit() -> usize {
     5
 }
@@ -392,8 +437,12 @@ fn default_post_process_enabled() -> bool {
 
 fn default_app_language() -> String {
     tauri_plugin_os::locale()
-        .and_then(|l| l.split(['-', '_']).next().map(String::from))
+        .map(|l| l.replace('_', "-"))
         .unwrap_or_else(|| "en".to_string())
+}
+
+fn default_show_tray_icon() -> bool {
+    true
 }
 
 fn default_post_process_provider_id() -> String {
@@ -408,6 +457,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.openai.com/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            supports_structured_output: true,
         },
         PostProcessProvider {
             id: "openrouter".to_string(),
@@ -415,6 +465,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://openrouter.ai/api/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            supports_structured_output: true,
         },
         PostProcessProvider {
             id: "anthropic".to_string(),
@@ -422,6 +473,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.anthropic.com/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            supports_structured_output: false,
         },
         PostProcessProvider {
             id: "groq".to_string(),
@@ -429,6 +481,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.groq.com/openai/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            supports_structured_output: false,
         },
         PostProcessProvider {
             id: "cerebras".to_string(),
@@ -436,6 +489,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "https://api.cerebras.ai/v1".to_string(),
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
+            supports_structured_output: true,
         },
     ];
 
@@ -451,6 +505,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             base_url: "apple-intelligence://local".to_string(),
             allow_base_url_edit: false,
             models_endpoint: None,
+            supports_structured_output: true,
         });
     }
 
@@ -461,6 +516,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         base_url: "http://localhost:11434/v1".to_string(),
         allow_base_url_edit: true,
         models_endpoint: Some("/models".to_string()),
+        supports_structured_output: false,
     });
 
     providers
@@ -500,16 +556,37 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
+fn default_typing_tool() -> TypingTool {
+    TypingTool::Auto
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
-        if settings
+        // Use match to do a single lookup - either sync existing or add new
+        match settings
             .post_process_providers
-            .iter()
-            .all(|existing| existing.id != provider.id)
+            .iter_mut()
+            .find(|p| p.id == provider.id)
         {
-            settings.post_process_providers.push(provider.clone());
-            changed = true;
+            Some(existing) => {
+                // Sync supports_structured_output field for existing providers (migration)
+                if existing.supports_structured_output != provider.supports_structured_output {
+                    debug!(
+                        "Updating supports_structured_output for provider '{}' from {} to {}",
+                        provider.id,
+                        existing.supports_structured_output,
+                        provider.supports_structured_output
+                    );
+                    existing.supports_structured_output = provider.supports_structured_output;
+                    changed = true;
+                }
+            }
+            None => {
+                // Provider doesn't exist, add it
+                settings.post_process_providers.push(provider.clone());
+                changed = true;
+            }
         }
 
         if !settings.post_process_api_keys.contains_key(&provider.id) {
@@ -619,6 +696,8 @@ pub fn get_default_settings() -> AppSettings {
         recording_retention_period: default_recording_retention_period(),
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
+        auto_submit: default_auto_submit(),
+        auto_submit_key: AutoSubmitKey::default(),
         post_process_enabled: default_post_process_enabled(),
         post_process_provider_id: default_post_process_provider_id(),
         post_process_providers: default_post_process_providers(),
@@ -631,7 +710,9 @@ pub fn get_default_settings() -> AppSettings {
         app_language: default_app_language(),
         experimental_enabled: false,
         keyboard_implementation: KeyboardImplementation::default(),
+        show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
+        typing_tool: default_typing_tool(),
     }
 }
 
@@ -763,4 +844,16 @@ pub fn get_history_limit(app: &AppHandle) -> usize {
 pub fn get_recording_retention_period(app: &AppHandle) -> RecordingRetentionPeriod {
     let settings = get_settings(app);
     settings.recording_retention_period
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_settings_disable_auto_submit() {
+        let settings = get_default_settings();
+        assert!(!settings.auto_submit);
+        assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
 }
