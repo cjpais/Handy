@@ -358,6 +358,8 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default = "default_audio_speed")]
+    pub audio_speed: f32,
 }
 
 fn default_model() -> String {
@@ -560,6 +562,10 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
+fn default_audio_speed() -> f32 {
+    1.0
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
@@ -713,6 +719,7 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
+        audio_speed: default_audio_speed(),
     }
 }
 

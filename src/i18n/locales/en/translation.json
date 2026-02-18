@@ -217,6 +217,11 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "audioSpeed": {
+        "title": "Audio Speed",
+        "description": "Speed up audio before transcription to make it faster on slow hardware. Higher speeds reduce quality but improve performance.",
+        "warning": "Higher speeds may reduce transcription accuracy. Test to find the best value for your speaking style."
       }
     },
     "advanced": {

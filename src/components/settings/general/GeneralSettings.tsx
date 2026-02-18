@@ -10,6 +10,7 @@ import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
+import { AudioSpeed } from "../AudioSpeed";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -31,6 +32,7 @@ export const GeneralSettings: React.FC = () => {
           disabled={!audioFeedbackEnabled}
         />
         <VolumeSlider disabled={!audioFeedbackEnabled} />
+        <AudioSpeed grouped={true} />
       </SettingsGroup>
     </div>
   );

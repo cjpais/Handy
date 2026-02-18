@@ -1052,3 +1052,16 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_audio_speed_setting(app: AppHandle, speed: f32) -> Result<(), String> {
+    // Validate speed is in reasonable range (1.0 to 3.0)
+    if speed < 1.0 || speed > 3.0 {
+        return Err("Audio speed must be between 1.0 and 3.0".to_string());
+    }
+    let mut settings = settings::get_settings(&app);
+    settings.audio_speed = speed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}

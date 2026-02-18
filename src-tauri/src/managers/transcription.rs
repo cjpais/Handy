@@ -28,6 +28,43 @@ use transcribe_rs::{
     TranscriptionEngine,
 };
 
+/// Speeds up audio by resampling using linear interpolation.
+/// This reduces the audio duration by the given speed factor,
+/// making transcription faster but potentially reducing quality.
+fn speed_up_audio(audio: &[f32], speed: f32) -> Vec<f32> {
+    if speed <= 0.0 || speed == 1.0 {
+        return audio.to_vec();
+    }
+
+    let target_length = (audio.len() as f32 / speed).ceil() as usize;
+    let mut result = Vec::with_capacity(target_length);
+
+    for i in 0..target_length {
+        let src_index = i as f32 * speed;
+        let src_index_floor = src_index.floor() as usize;
+        let src_index_frac = src_index.fract();
+
+        if src_index_floor + 1 < audio.len() {
+            // Linear interpolation between adjacent samples
+            let sample1 = audio[src_index_floor];
+            let sample2 = audio[src_index_floor + 1];
+            let interpolated = sample1 + (sample2 - sample1) * src_index_frac;
+            result.push(interpolated);
+        } else if src_index_floor < audio.len() {
+            // Last sample, no interpolation possible
+            result.push(audio[src_index_floor]);
+        }
+    }
+
+    debug!(
+        "Audio speed-up complete: {} samples -> {} samples ({}x)",
+        audio.len(),
+        result.len(),
+        speed
+    );
+    result
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
     pub event_type: String,
@@ -439,6 +476,18 @@ impl TranscriptionManager {
 
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
+
+        // Apply audio speed-up if configured (speeds up transcription on slow hardware)
+        let audio = if settings.audio_speed != 1.0 && settings.audio_speed > 0.0 {
+            debug!(
+                "Applying audio speed-up: {}x (original length: {})",
+                settings.audio_speed,
+                audio.len()
+            );
+            speed_up_audio(&audio, settings.audio_speed)
+        } else {
+            audio
+        };
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
