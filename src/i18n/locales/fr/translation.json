@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Presse-papiers (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Presse-papiers (Shift+Insert)",
           "direct": "Direct",
-          "none": "Aucun"
-        }
+          "none": "Aucun",
+          "externalScript": "Script externe"
+        },
+        "externalScriptPlaceholder": "/chemin/vers/votre/script.sh"
       },
       "typingTool": {
         "title": "Outil de frappe",

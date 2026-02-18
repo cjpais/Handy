@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Zwischenablage (Strg+Umschalt+V)",
           "clipboardShiftInsert": "Zwischenablage (Umschalt+Einfg)",
           "direct": "Direkt",
-          "none": "Keine"
-        }
+          "none": "Keine",
+          "externalScript": "Externes Skript"
+        },
+        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh"
       },
       "typingTool": {
         "title": "Eingabetool",

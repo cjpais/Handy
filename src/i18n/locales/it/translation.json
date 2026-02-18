@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Appunti (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Appunti (Shift+Insert)",
           "direct": "Diretto",
-          "none": "Nessuno"
-        }
+          "none": "Nessuno",
+          "externalScript": "Script esterno"
+        },
+        "externalScriptPlaceholder": "/percorso/del/tuo/script.sh"
       },
       "typingTool": {
         "title": "Strumento di digitazione",
