@@ -134,6 +134,7 @@ pub enum PasteMethod {
     None,
     ShiftInsert,
     CtrlShiftV,
+    ExternalScript,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -358,6 +359,7 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    pub external_script_path: Option<String>,
 }
 
 fn default_model() -> String {
@@ -713,6 +715,7 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
+        external_script_path: None,
     }
 }
 
