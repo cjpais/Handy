@@ -54,12 +54,10 @@ export const HistorySettings: React.FC = () => {
     (getSetting("history_post_process_enabled") || false);
 
   const providerId = getSetting("post_process_provider_id");
-  const apiKeys = getSetting("post_process_api_keys");
   const selectedPromptId = getSetting("post_process_selected_prompt_id");
   const postProcessConfigured = useMemo(
-    () =>
-      !!providerId && !!(apiKeys && apiKeys[providerId]) && !!selectedPromptId,
-    [providerId, apiKeys, selectedPromptId],
+    () => !!providerId && !!selectedPromptId,
+    [providerId, selectedPromptId],
   );
 
   const loadHistoryEntries = useCallback(async () => {
@@ -313,6 +311,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <p className="text-sm font-medium">{formattedDate}</p>
+        {hasEnhancedText && (
+          <button
+            onClick={() => setShowOriginal(!showOriginal)}
+            className="text-xs px-2 py-1 border border-text/20 rounded text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer"
+          >
+            {showOriginal
+              ? t("settings.history.showEnhanced")
+              : t("settings.history.showOriginal")}
+          </button>
+        )}
         <div className="flex items-center gap-1">
           {showPostProcess && (
             <button
@@ -322,7 +330,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
                 !postProcessConfigured ||
                 entry.transcription_text.trim().length === 0
               }
-              className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 rounded-md text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               title={
                 postProcessConfigured
                   ? t("settings.history.postProcess")
@@ -384,16 +392,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
         {displayText}
       </p>
-      {hasEnhancedText && (
-        <button
-          onClick={() => setShowOriginal(!showOriginal)}
-          className="text-xs text-text/50 hover:text-logo-primary transition-colors cursor-pointer self-start"
-        >
-          {showOriginal
-            ? t("settings.history.showEnhanced")
-            : t("settings.history.showOriginal")}
-        </button>
-      )}
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );
