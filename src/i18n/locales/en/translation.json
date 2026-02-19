@@ -405,7 +405,8 @@
       "restoreError": "Failed to restore version",
       "versionNotFound": "Version not found",
       "showMore": "Show more",
-      "showLess": "Show less"
+      "showLess": "Show less",
+      "promptLabel": "Prompt"
     },
     "debug": {
       "title": "Debug",
