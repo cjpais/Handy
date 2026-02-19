@@ -516,44 +516,32 @@ impl HistoryManager {
         Ok(())
     }
 
-    /// Update the post-processed text for an existing history entry
-    pub fn update_post_processed_text(
-        &self,
-        id: i64,
-        post_processed_text: &str,
-        post_process_prompt: &str,
-    ) -> Result<()> {
-        let conn = self.get_connection()?;
-        conn.execute(
-            "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
-            params![post_processed_text, post_process_prompt, id],
-        )?;
+    /// Save a version and update post-processed text atomically in a single transaction
+    pub fn save_version_and_update(&self, id: i64, text: &str, prompt: &str) -> Result<()> {
+        let mut conn = self.get_connection()?;
+        let timestamp = Utc::now().timestamp();
 
-        debug!("Updated post-processed text for entry {}", id);
+        let tx = conn.transaction()?;
+        tx.execute(
+            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![id, text, Some(prompt), timestamp],
+        )?;
+        tx.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
+            params![text, prompt, id],
+        )?;
+        tx.commit()?;
+
+        debug!(
+            "Saved version and updated post-processed text for entry {}",
+            id
+        );
 
         // Emit history updated event
         if let Err(e) = self.app_handle.emit("history-updated", ()) {
             error!("Failed to emit history-updated event: {}", e);
         }
 
-        Ok(())
-    }
-
-    /// Save a post-processing version for a history entry
-    pub fn save_version(
-        &self,
-        history_entry_id: i64,
-        text: &str,
-        prompt: Option<&str>,
-    ) -> Result<()> {
-        let conn = self.get_connection()?;
-        let timestamp = Utc::now().timestamp();
-        conn.execute(
-            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
-            params![history_entry_id, text, prompt, timestamp],
-        )?;
-
-        debug!("Saved version for history entry {}", history_entry_id);
         Ok(())
     }
 
@@ -597,22 +585,15 @@ impl HistoryManager {
 mod tests {
     use super::*;
     use rusqlite::{params, Connection};
+    use rusqlite_migration::Migrations;
 
-    fn setup_conn() -> Connection {
-        let conn = Connection::open_in_memory().expect("open in-memory db");
-        conn.execute_batch(
-            "CREATE TABLE transcription_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                file_name TEXT NOT NULL,
-                timestamp INTEGER NOT NULL,
-                saved BOOLEAN NOT NULL DEFAULT 0,
-                title TEXT NOT NULL,
-                transcription_text TEXT NOT NULL,
-                post_processed_text TEXT,
-                post_process_prompt TEXT
-            );",
-        )
-        .expect("create transcription_history table");
+    /// Create an in-memory database with all migrations applied.
+    /// This uses the same MIGRATIONS constant as production code,
+    /// ensuring tests validate the actual schema.
+    fn setup_migrated_conn() -> Connection {
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        let migrations = Migrations::new(MIGRATIONS.to_vec());
+        migrations.to_latest(&mut conn).expect("run migrations");
         conn
     }
 
@@ -634,15 +615,30 @@ mod tests {
     }
 
     #[test]
+    fn migrations_apply_cleanly() {
+        // Verifies that all migrations can be applied to a fresh database
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        let migrations = Migrations::new(MIGRATIONS.to_vec());
+        migrations
+            .to_latest(&mut conn)
+            .expect("migrations should apply cleanly");
+
+        let version: i32 = conn
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .expect("read user_version");
+        assert_eq!(version, MIGRATIONS.len() as i32);
+    }
+
+    #[test]
     fn get_latest_entry_returns_none_when_empty() {
-        let conn = setup_conn();
+        let conn = setup_migrated_conn();
         let entry = HistoryManager::get_latest_entry_with_conn(&conn).expect("fetch latest entry");
         assert!(entry.is_none());
     }
 
     #[test]
     fn get_latest_entry_returns_newest_entry() {
-        let conn = setup_conn();
+        let conn = setup_migrated_conn();
         insert_entry(&conn, 100, "first", None);
         insert_entry(&conn, 200, "second", Some("processed"));
 
@@ -657,53 +653,64 @@ mod tests {
 
     #[test]
     fn update_post_processed_text_updates_entry() {
-        let conn = setup_conn();
-        conn.execute_batch(
-            "CREATE TABLE transcription_versions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                history_entry_id INTEGER NOT NULL,
-                text TEXT NOT NULL,
-                prompt TEXT,
-                timestamp INTEGER NOT NULL,
-                FOREIGN KEY (history_entry_id) REFERENCES transcription_history(id) ON DELETE CASCADE
-            );",
-        )
-        .expect("create versions table");
-
+        let conn = setup_migrated_conn();
         insert_entry(&conn, 100, "raw text", None);
 
+        // Uses the same SQL as HistoryManager::update_post_processed_text
         conn.execute(
             "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
             params!["enhanced text", "clean this", 1],
         )
         .expect("update post processed text");
 
-        let updated: String = conn
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch entry")
+            .expect("entry exists");
+
+        assert_eq!(entry.post_processed_text.as_deref(), Some("enhanced text"));
+        assert_eq!(entry.post_process_prompt.as_deref(), Some("clean this"));
+        // Original transcription text is preserved
+        assert_eq!(entry.transcription_text, "raw text");
+    }
+
+    #[test]
+    fn save_version_and_update_is_atomic() {
+        let mut conn = setup_migrated_conn();
+        insert_entry(&conn, 100, "raw text", None);
+
+        // Mirrors HistoryManager::save_version_and_update - transaction wrapping both operations
+        let tx = conn.transaction().expect("begin transaction");
+        tx.execute(
+            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![1, "enhanced text", Some("prompt"), 200],
+        )
+        .expect("insert version");
+        tx.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
+            params!["enhanced text", "prompt", 1],
+        )
+        .expect("update entry");
+        tx.commit().expect("commit transaction");
+
+        // Verify both the version and the entry were updated
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch entry")
+            .expect("entry exists");
+        assert_eq!(entry.post_processed_text.as_deref(), Some("enhanced text"));
+
+        let version_count: i64 = conn
             .query_row(
-                "SELECT post_processed_text FROM transcription_history WHERE id = 1",
+                "SELECT COUNT(*) FROM transcription_versions WHERE history_entry_id = 1",
                 [],
                 |row| row.get(0),
             )
-            .expect("read updated text");
-
-        assert_eq!(updated, "enhanced text");
+            .expect("count versions");
+        assert_eq!(version_count, 1);
     }
 
     #[test]
     fn save_and_get_versions() {
-        let conn = setup_conn();
-        conn.execute_batch(
-            "CREATE TABLE transcription_versions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                history_entry_id INTEGER NOT NULL,
-                text TEXT NOT NULL,
-                prompt TEXT,
-                timestamp INTEGER NOT NULL,
-                FOREIGN KEY (history_entry_id) REFERENCES transcription_history(id) ON DELETE CASCADE
-            );",
-        )
-        .expect("create versions table");
-
+        let conn = setup_migrated_conn();
         insert_entry(&conn, 100, "raw text", None);
 
         conn.execute(
@@ -722,22 +729,54 @@ mod tests {
             .prepare("SELECT id, history_entry_id, text, prompt, timestamp FROM transcription_versions WHERE history_entry_id = ?1 ORDER BY timestamp ASC")
             .expect("prepare query");
 
-        let versions: Vec<(i64, i64, String, Option<String>, i64)> = stmt
+        let versions: Vec<TranscriptionVersion> = stmt
             .query_map(params![1], |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                ))
+                Ok(TranscriptionVersion {
+                    id: row.get("id")?,
+                    history_entry_id: row.get("history_entry_id")?,
+                    text: row.get("text")?,
+                    prompt: row.get("prompt")?,
+                    timestamp: row.get("timestamp")?,
+                })
             })
             .expect("query versions")
             .filter_map(|r| r.ok())
             .collect();
 
         assert_eq!(versions.len(), 2);
-        assert_eq!(versions[0].2, "version 1");
-        assert_eq!(versions[1].2, "version 2");
+        assert_eq!(versions[0].text, "version 1");
+        assert_eq!(versions[0].prompt.as_deref(), Some("prompt 1"));
+        assert_eq!(versions[1].text, "version 2");
+        assert_eq!(versions[1].prompt.as_deref(), Some("prompt 2"));
+    }
+
+    #[test]
+    fn cascade_delete_removes_versions() {
+        let conn = setup_migrated_conn();
+        // Enable foreign keys (required for ON DELETE CASCADE)
+        conn.execute_batch("PRAGMA foreign_keys = ON;")
+            .expect("enable foreign keys");
+
+        insert_entry(&conn, 100, "raw text", None);
+
+        conn.execute(
+            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![1, "version 1", "prompt 1", 200],
+        )
+        .expect("insert version");
+
+        // Delete the parent entry
+        conn.execute("DELETE FROM transcription_history WHERE id = 1", [])
+            .expect("delete entry");
+
+        // Versions should be cascade-deleted
+        let version_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM transcription_versions WHERE history_entry_id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .expect("count versions");
+        assert_eq!(version_count, 0);
     }
 }

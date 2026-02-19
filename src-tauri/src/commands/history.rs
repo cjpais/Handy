@@ -153,14 +153,9 @@ pub async fn post_process_history_entry(
         })
         .unwrap_or_default();
 
-    // Save version
+    // Save version and update entry atomically
     history_manager
-        .save_version(id, &processed_text, Some(&prompt_text))
-        .map_err(|e| e.to_string())?;
-
-    // Update the entry's post_processed_text
-    history_manager
-        .update_post_processed_text(id, &processed_text, &prompt_text)
+        .save_version_and_update(id, &processed_text, &prompt_text)
         .map_err(|e| e.to_string())?;
 
     Ok(processed_text)

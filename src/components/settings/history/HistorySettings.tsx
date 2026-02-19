@@ -53,6 +53,16 @@ export const HistorySettings: React.FC = () => {
     (getSetting("post_process_enabled") || false) &&
     (getSetting("history_post_process_enabled") || false);
 
+  const postProcessConfigured = (() => {
+    const providerId = getSetting("post_process_provider_id");
+    const apiKeys = getSetting("post_process_api_keys");
+    const selectedPromptId = getSetting("post_process_selected_prompt_id");
+    const hasProvider = !!providerId;
+    const hasApiKey = !!(providerId && apiKeys && apiKeys[providerId]);
+    const hasPrompt = !!selectedPromptId;
+    return hasProvider && hasApiKey && hasPrompt;
+  })();
+
   const loadHistoryEntries = useCallback(async () => {
     try {
       const result = await commands.getHistoryEntries();
@@ -214,6 +224,7 @@ export const HistorySettings: React.FC = () => {
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
                 showPostProcess={historyPostProcessEnabled}
+                postProcessConfigured={postProcessConfigured}
               />
             ))}
           </div>
@@ -229,6 +240,7 @@ interface HistoryEntryProps {
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
   showPostProcess: boolean;
+  postProcessConfigured: boolean;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -237,6 +249,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   getAudioUrl,
   deleteAudio,
   showPostProcess,
+  postProcessConfigured,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
@@ -246,7 +259,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const hasEnhancedText = entry.post_processed_text != null;
   const displayText =
     hasEnhancedText && !showOriginal
-      ? entry.post_processed_text!
+      ? (entry.post_processed_text ?? entry.transcription_text)
       : entry.transcription_text;
 
   const handleLoadAudio = useCallback(
@@ -299,10 +312,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             <button
               onClick={handlePostProcess}
               disabled={
-                isProcessing || entry.transcription_text.trim().length === 0
+                isProcessing ||
+                !postProcessConfigured ||
+                entry.transcription_text.trim().length === 0
               }
               className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-              title={t("settings.history.postProcess")}
+              title={
+                postProcessConfigured
+                  ? t("settings.history.postProcess")
+                  : t("settings.history.postProcessNotConfigured")
+              }
             >
               {isProcessing ? (
                 <Loader2 width={16} height={16} className="animate-spin" />
