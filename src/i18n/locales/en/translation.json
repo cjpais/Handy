@@ -386,7 +386,13 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "postProcess": "Enhance transcription",
+      "postProcessing": "Enhancing...",
+      "postProcessError": "Post-processing failed. Check your provider settings.",
+      "postProcessNotConfigured": "Set up post-processing in settings first",
+      "showOriginal": "Show original",
+      "showEnhanced": "Show enhanced"
     },
     "debug": {
       "title": "Debug",
@@ -436,6 +442,10 @@
       "postProcessingToggle": {
         "label": "Post Processing",
         "description": "Enable AI-powered text refinement after transcription"
+      },
+      "historyPostProcessToggle": {
+        "label": "Post-process History",
+        "description": "Add a button to enhance past transcriptions from the History tab"
       },
       "muteWhileRecording": {
         "label": "Mute While Recording",
