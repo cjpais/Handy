@@ -286,7 +286,11 @@ const VersionCard: React.FC<VersionCardProps> = ({
       </p>
       {version.prompt && (
         <div className="flex items-start gap-1">
-          <Sparkles width={10} height={10} className="text-text/30 mt-1 shrink-0" />
+          <Sparkles
+            width={10}
+            height={10}
+            className="text-text/30 mt-1 shrink-0"
+          />
           <ExpandableText
             text={version.prompt}
             limit={80}
