@@ -89,10 +89,17 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
         }
       }
 
-      void setPostProcessProvider(providerId);
-    },
-    [selectedProviderId, setPostProcessProvider],
-  );
+    await setPostProcessProvider(providerId);
+
+    // Auto-fetch available models for the new provider so the model dropdown
+    // reflects what's actually valid. Without this, a stale model value from
+    // a previous provider/base_url can persist and silently 404 at runtime.
+    if (providerId !== APPLE_PROVIDER_ID) {
+      void fetchPostProcessModels(providerId);
+    }
+  },
+  [selectedProviderId, setPostProcessProvider, fetchPostProcessModels],
+);
 
   const handleBaseUrlChange = useCallback(
     (value: string) => {

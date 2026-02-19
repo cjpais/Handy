@@ -374,7 +374,7 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     setPostProcessProvider: async (providerId) => {
-      const { settings, setUpdating, refreshSettings } = get();
+      const { settings, setUpdating, refreshSettings, setPostProcessModelOptions } = get();
       const updateKey = "post_process_provider_id";
       const previousId = settings?.post_process_provider_id ?? null;
 
@@ -387,6 +387,10 @@ export const useSettingsStore = create<SettingsStore>()(
             : null,
         }));
       }
+
+      // Clear cached model options for the new provider so the dropdown
+      // doesn't show stale models from a previous fetch or base_url.
+      setPostProcessModelOptions(providerId, []);
 
       try {
         await commands.setPostProcessProvider(providerId);
@@ -436,6 +440,16 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     updatePostProcessBaseUrl: async (providerId, baseUrl) => {
+      // Clear cached models and reset stored model when base URL changes,
+      // since the previous model value is almost certainly invalid for
+      // the new endpoint (e.g. switching Custom from Groq to Cerebras).
+      set((state) => ({
+        postProcessModelOptions: {
+          ...state.postProcessModelOptions,
+          [providerId]: [],
+        },
+      }));
+      await get().updatePostProcessSetting("model", providerId, "");
       return get().updatePostProcessSetting("base_url", providerId, baseUrl);
     },
 
