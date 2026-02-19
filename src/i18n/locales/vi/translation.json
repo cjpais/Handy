@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Clipboard (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Clipboard (Shift+Insert)",
           "direct": "Trực tiếp",
-          "none": "Không có"
-        }
+          "none": "Không có",
+          "externalScript": "Script bên ngoài"
+        },
+        "externalScriptPlaceholder": "/duong-dan/toi/script.sh"
       },
       "typingTool": {
         "title": "Công cụ gõ",

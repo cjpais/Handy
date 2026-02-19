@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Schowek (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Schowek (Shift+Insert)",
           "direct": "Bezpośrednio",
-          "none": "Brak"
-        }
+          "none": "Brak",
+          "externalScript": "Skrypt zewnętrzny"
+        },
+        "externalScriptPlaceholder": "/sciezka/do/twojego/skryptu.sh"
       },
       "typingTool": {
         "title": "Narzędzie do wpisywania",

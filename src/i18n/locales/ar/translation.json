@@ -239,8 +239,10 @@
           "clipboardCtrlShiftV": "الحافظة (Ctrl+Shift+V)",
           "clipboardShiftInsert": "الحافظة (Shift+Insert)",
           "direct": "مباشر",
-          "none": "بلا"
-        }
+          "none": "بلا",
+          "externalScript": "نص برمجي خارجي"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
       },
       "typingTool": {
         "title": "أداة الكتابة",

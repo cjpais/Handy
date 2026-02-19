@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Pano (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Pano (Shift+Insert)",
           "direct": "Doğrudan",
-          "none": "Yok"
-        }
+          "none": "Yok",
+          "externalScript": "Harici Betik"
+        },
+        "externalScriptPlaceholder": "/dosya/yolu/betik.sh"
       },
       "typingTool": {
         "title": "Yazma Aracı",

@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Portapapeles (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Portapapeles (Shift+Insert)",
           "direct": "Directo",
-          "none": "Ninguno"
-        }
+          "none": "Ninguno",
+          "externalScript": "Script externo"
+        },
+        "externalScriptPlaceholder": "/ruta/a/su/script.sh"
       },
       "typingTool": {
         "title": "Herramienta de Escritura",

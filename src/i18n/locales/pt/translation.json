@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Área de Transferência (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Área de Transferência (Shift+Insert)",
           "direct": "Direto",
-          "none": "Nenhum"
-        }
+          "none": "Nenhum",
+          "externalScript": "Script externo"
+        },
+        "externalScriptPlaceholder": "/caminho/para/seu/script.sh"
       },
       "typingTool": {
         "title": "Ferramenta de digitação",
