@@ -53,14 +53,14 @@ export const HistorySettings: React.FC = () => {
     (getSetting("post_process_enabled") || false) &&
     (getSetting("history_post_process_enabled") || false);
 
-  const postProcessConfigured = useMemo(() => {
-    const providerId = getSetting("post_process_provider_id");
-    const apiKeys = getSetting("post_process_api_keys");
-    const selectedPromptId = getSetting("post_process_selected_prompt_id");
-    return (
-      !!providerId && !!(apiKeys && apiKeys[providerId]) && !!selectedPromptId
-    );
-  }, [getSetting]);
+  const providerId = getSetting("post_process_provider_id");
+  const apiKeys = getSetting("post_process_api_keys");
+  const selectedPromptId = getSetting("post_process_selected_prompt_id");
+  const postProcessConfigured = useMemo(
+    () =>
+      !!providerId && !!(apiKeys && apiKeys[providerId]) && !!selectedPromptId,
+    [providerId, apiKeys, selectedPromptId],
+  );
 
   const loadHistoryEntries = useCallback(async () => {
     try {

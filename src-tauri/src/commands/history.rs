@@ -140,8 +140,7 @@ pub async fn post_process_history_entry(
         return Err("TRANSCRIPTION_EMPTY".to_string());
     }
 
-    // Get current settings and run post-processing
-    let settings = crate::settings::get_settings(&app);
+    // Run post-processing (reuses settings from feature gate check above)
     let processed_text = post_process_transcription(&settings, &entry.transcription_text)
         .await
         .ok_or_else(|| "POST_PROCESS_FAILED".to_string())?;
