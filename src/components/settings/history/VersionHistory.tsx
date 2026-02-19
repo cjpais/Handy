@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   ChevronUp,
@@ -53,13 +59,17 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ entry }) => {
     }
   }, [isExpanded, fetchVersions]);
 
-  // Refresh versions when history updates (if expanded)
+  // Refresh versions when history updates
+  // If expanded, re-fetch immediately. If collapsed but previously fetched, mark stale.
   useEffect(() => {
-    if (!isExpanded) return;
-
     const setupListener = async () => {
       const unlisten = await listen("history-updated", () => {
-        fetchVersions();
+        if (isExpanded) {
+          fetchVersions();
+        } else {
+          // Mark as stale so next expand triggers a re-fetch
+          hasFetched.current = false;
+        }
       });
       return unlisten;
     };
@@ -74,6 +84,38 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ entry }) => {
 
   const versionCount = versions ? versions.length + 1 : null; // +1 for original
   const isOriginalActive = entry.post_processed_text == null;
+
+  // Determine the single active version ID by matching text + prompt.
+  // If multiple versions match (e.g., same LLM output), pick the most recent one.
+  const activeVersionId = useMemo(() => {
+    if (isOriginalActive || versions == null) return null;
+    const matches = versions.filter(
+      (v) =>
+        v.text === entry.post_processed_text &&
+        (v.prompt ?? "") === (entry.post_process_prompt ?? ""),
+    );
+    if (matches.length > 0) {
+      // Return the one with the highest timestamp (most recent)
+      return matches.reduce((latest, v) =>
+        v.timestamp > latest.timestamp ? v : latest,
+      ).id;
+    }
+    // Fallback: if no exact text+prompt match, try text-only match (latest)
+    const textMatches = versions.filter(
+      (v) => v.text === entry.post_processed_text,
+    );
+    if (textMatches.length > 0) {
+      return textMatches.reduce((latest, v) =>
+        v.timestamp > latest.timestamp ? v : latest,
+      ).id;
+    }
+    return null;
+  }, [
+    versions,
+    entry.post_processed_text,
+    entry.post_process_prompt,
+    isOriginalActive,
+  ]);
 
   return (
     <div className="border-t border-mid-gray/20">
@@ -111,7 +153,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ entry }) => {
             <div className="flex flex-col">
               {/* Versions in reverse chronological order (newest first) */}
               {[...versions].reverse().map((version, index) => {
-                const isActive = entry.post_processed_text === version.text;
+                const isActive = version.id === activeVersionId;
                 const isFirst = index === 0;
                 return (
                   <div key={version.id}>
