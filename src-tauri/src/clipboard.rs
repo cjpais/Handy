@@ -428,13 +428,12 @@ fn send_key_combo_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
 /// Send a key combination (e.g., Ctrl+V) via dotool.
 #[cfg(target_os = "linux")]
 fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
-    let command;
-    match paste_method {
-        PasteMethod::CtrlV => command = "echo key ctrl+v | dotool",
-        PasteMethod::ShiftInsert => command = "echo key shift+insert | dotool",
-        PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
+    let command = match paste_method {
+        PasteMethod::CtrlV => "echo key ctrl+v | dotool",
+        PasteMethod::ShiftInsert => "echo key shift+insert | dotool",
+        PasteMethod::CtrlShiftV => "echo key ctrl+shift+v | dotool",
         _ => return Err("Unsupported paste method".into()),
-    }
+    };
     use std::process::Stdio;
     let status = Command::new("sh")
         .arg("-c")
