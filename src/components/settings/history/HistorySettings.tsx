@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
@@ -53,15 +53,14 @@ export const HistorySettings: React.FC = () => {
     (getSetting("post_process_enabled") || false) &&
     (getSetting("history_post_process_enabled") || false);
 
-  const postProcessConfigured = (() => {
+  const postProcessConfigured = useMemo(() => {
     const providerId = getSetting("post_process_provider_id");
     const apiKeys = getSetting("post_process_api_keys");
     const selectedPromptId = getSetting("post_process_selected_prompt_id");
-    const hasProvider = !!providerId;
-    const hasApiKey = !!(providerId && apiKeys && apiKeys[providerId]);
-    const hasPrompt = !!selectedPromptId;
-    return hasProvider && hasApiKey && hasPrompt;
-  })();
+    return (
+      !!providerId && !!(apiKeys && apiKeys[providerId]) && !!selectedPromptId
+    );
+  }, [getSetting]);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -291,7 +290,14 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       if (result.status === "ok") {
         setShowOriginal(false);
       } else {
-        toast.error(result.error);
+        const errorKey: Record<string, string> = {
+          HISTORY_POST_PROCESS_DISABLED: "settings.history.postProcessDisabled",
+          TRANSCRIPTION_EMPTY: "settings.history.postProcessEmptyText",
+          POST_PROCESS_FAILED: "settings.history.postProcessError",
+        };
+        const key =
+          errorKey[result.error] ?? "settings.history.postProcessError";
+        toast.error(t(key));
       }
     } catch (error) {
       toast.error(t("settings.history.postProcessError"));

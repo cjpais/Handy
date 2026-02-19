@@ -1,5 +1,5 @@
 use crate::actions::post_process_transcription;
-use crate::managers::history::{HistoryEntry, HistoryManager, TranscriptionVersion};
+use crate::managers::history::{HistoryEntry, HistoryManager};
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -120,6 +120,15 @@ pub async fn post_process_history_entry(
     history_manager: State<'_, Arc<HistoryManager>>,
     id: i64,
 ) -> Result<String, String> {
+    // Enforce three-level feature gate on the backend
+    let settings = crate::settings::get_settings(&app);
+    if !settings.experimental_enabled
+        || !settings.post_process_enabled
+        || !settings.history_post_process_enabled
+    {
+        return Err("HISTORY_POST_PROCESS_DISABLED".to_string());
+    }
+
     // Get the history entry
     let entry = history_manager
         .get_entry_by_id(id)
@@ -128,17 +137,14 @@ pub async fn post_process_history_entry(
         .ok_or_else(|| format!("History entry {} not found", id))?;
 
     if entry.transcription_text.trim().is_empty() {
-        return Err("Transcription text is empty".to_string());
+        return Err("TRANSCRIPTION_EMPTY".to_string());
     }
 
     // Get current settings and run post-processing
     let settings = crate::settings::get_settings(&app);
     let processed_text = post_process_transcription(&settings, &entry.transcription_text)
         .await
-        .ok_or_else(|| {
-            "Post-processing failed. Check your provider, API key, and prompt configuration."
-                .to_string()
-        })?;
+        .ok_or_else(|| "POST_PROCESS_FAILED".to_string())?;
 
     // Get the prompt that was used
     let prompt_text = settings
@@ -159,16 +165,4 @@ pub async fn post_process_history_entry(
         .map_err(|e| e.to_string())?;
 
     Ok(processed_text)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn get_transcription_versions(
-    _app: AppHandle,
-    history_manager: State<'_, Arc<HistoryManager>>,
-    entry_id: i64,
-) -> Result<Vec<TranscriptionVersion>, String> {
-    history_manager
-        .get_versions(entry_id)
-        .map_err(|e| e.to_string())
 }

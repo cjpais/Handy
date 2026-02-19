@@ -720,14 +720,6 @@ async postProcessHistoryEntry(id: number) : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getTranscriptionVersions(entryId: number) : Promise<Result<TranscriptionVersion[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_transcription_versions", { entryId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 /**
  * Checks if the Mac is a laptop by detecting battery presence
  * 

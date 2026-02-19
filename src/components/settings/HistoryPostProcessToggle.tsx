@@ -18,8 +18,8 @@ export const HistoryPostProcessToggle: React.FC<HistoryPostProcessToggleProps> =
     return (
       <ToggleSwitch
         checked={enabled}
-        onChange={(enabled) =>
-          updateSetting("history_post_process_enabled", enabled)
+        onChange={(value) =>
+          updateSetting("history_post_process_enabled", value)
         }
         isUpdating={isUpdating("history_post_process_enabled")}
         label={t("settings.debug.historyPostProcessToggle.label")}
@@ -29,3 +29,5 @@ export const HistoryPostProcessToggle: React.FC<HistoryPostProcessToggleProps> =
       />
     );
   });
+
+HistoryPostProcessToggle.displayName = "HistoryPostProcessToggle";

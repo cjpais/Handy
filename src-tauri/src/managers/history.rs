@@ -55,6 +55,9 @@ pub struct HistoryEntry {
     pub post_process_prompt: Option<String>,
 }
 
+/// Version history for post-processed transcriptions.
+/// Currently used by tests; will be exposed via a command when the version history UI is added.
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct TranscriptionVersion {
     pub id: i64,
@@ -192,7 +195,9 @@ impl HistoryManager {
     }
 
     fn get_connection(&self) -> Result<Connection> {
-        Ok(Connection::open(&self.db_path)?)
+        let conn = Connection::open(&self.db_path)?;
+        conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+        Ok(conn)
     }
 
     /// Save a transcription to history (both database and WAV file)
@@ -545,31 +550,6 @@ impl HistoryManager {
         Ok(())
     }
 
-    /// Get all post-processing versions for a history entry
-    pub fn get_versions(&self, history_entry_id: i64) -> Result<Vec<TranscriptionVersion>> {
-        let conn = self.get_connection()?;
-        let mut stmt = conn.prepare(
-            "SELECT id, history_entry_id, text, prompt, timestamp FROM transcription_versions WHERE history_entry_id = ?1 ORDER BY timestamp ASC",
-        )?;
-
-        let rows = stmt.query_map(params![history_entry_id], |row| {
-            Ok(TranscriptionVersion {
-                id: row.get("id")?,
-                history_entry_id: row.get("history_entry_id")?,
-                text: row.get("text")?,
-                prompt: row.get("prompt")?,
-                timestamp: row.get("timestamp")?,
-            })
-        })?;
-
-        let mut versions = Vec::new();
-        for row in rows {
-            versions.push(row?);
-        }
-
-        Ok(versions)
-    }
-
     fn format_timestamp_title(&self, timestamp: i64) -> String {
         if let Some(utc_datetime) = DateTime::from_timestamp(timestamp, 0) {
             // Convert UTC to local timezone
@@ -592,6 +572,8 @@ mod tests {
     /// ensuring tests validate the actual schema.
     fn setup_migrated_conn() -> Connection {
         let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        conn.execute_batch("PRAGMA foreign_keys = ON;")
+            .expect("enable foreign keys");
         let migrations = Migrations::new(MIGRATIONS.to_vec());
         migrations.to_latest(&mut conn).expect("run migrations");
         conn
@@ -753,9 +735,6 @@ mod tests {
     #[test]
     fn cascade_delete_removes_versions() {
         let conn = setup_migrated_conn();
-        // Enable foreign keys (required for ON DELETE CASCADE)
-        conn.execute_batch("PRAGMA foreign_keys = ON;")
-            .expect("enable foreign keys");
 
         insert_entry(&conn, 100, "raw text", None);
 
