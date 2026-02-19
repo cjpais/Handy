@@ -1,4 +1,5 @@
-use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::actions::post_process_transcription;
+use crate::managers::history::{HistoryEntry, HistoryManager, TranscriptionVersion};
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -98,4 +99,110 @@ pub async fn update_recording_retention_period(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn change_history_post_process_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = crate::settings::get_settings(&app);
+    settings.history_post_process_enabled = enabled;
+    crate::settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn post_process_history_entry(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+) -> Result<String, String> {
+    // Enforce three-level feature gate on the backend
+    let settings = crate::settings::get_settings(&app);
+    if !settings.experimental_enabled
+        || !settings.post_process_enabled
+        || !settings.history_post_process_enabled
+    {
+        return Err("HISTORY_POST_PROCESS_DISABLED".to_string());
+    }
+
+    // Get the history entry
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    if entry.transcription_text.trim().is_empty() {
+        return Err("TRANSCRIPTION_EMPTY".to_string());
+    }
+
+    // Run post-processing (reuses settings from feature gate check above)
+    let processed_text = post_process_transcription(&settings, &entry.transcription_text)
+        .await
+        .ok_or_else(|| "POST_PROCESS_FAILED".to_string())?;
+
+    // Get the prompt that was used
+    let prompt_text = settings
+        .post_process_selected_prompt_id
+        .as_ref()
+        .and_then(|prompt_id| {
+            settings
+                .post_process_prompts
+                .iter()
+                .find(|p| &p.id == prompt_id)
+                .map(|p| p.prompt.clone())
+        })
+        .unwrap_or_default();
+
+    // Save version and update entry atomically
+    history_manager
+        .save_version_and_update(id, &processed_text, &prompt_text)
+        .map_err(|e| e.to_string())?;
+
+    Ok(processed_text)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn restore_version(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    entry_id: i64,
+    version_id: Option<i64>,
+) -> Result<(), String> {
+    // Enforce three-level feature gate on the backend
+    let settings = crate::settings::get_settings(&app);
+    if !settings.experimental_enabled
+        || !settings.post_process_enabled
+        || !settings.history_post_process_enabled
+    {
+        return Err("HISTORY_POST_PROCESS_DISABLED".to_string());
+    }
+
+    history_manager
+        .restore_version(entry_id, version_id)
+        .map_err(|e| {
+            let msg = e.to_string();
+            if msg.contains("VERSION_NOT_FOUND") {
+                "VERSION_NOT_FOUND".to_string()
+            } else {
+                msg
+            }
+        })
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_transcription_versions(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    entry_id: i64,
+) -> Result<Vec<TranscriptionVersion>, String> {
+    history_manager
+        .get_versions(entry_id)
+        .map_err(|e| e.to_string())
 }
