@@ -135,7 +135,10 @@ pub async fn post_process_history_entry(
     let settings = crate::settings::get_settings(&app);
     let processed_text = post_process_transcription(&settings, &entry.transcription_text)
         .await
-        .ok_or_else(|| "Post-processing failed. Check your provider, API key, and prompt configuration.".to_string())?;
+        .ok_or_else(|| {
+            "Post-processing failed. Check your provider, API key, and prompt configuration."
+                .to_string()
+        })?;
 
     // Get the prompt that was used
     let prompt_text = settings

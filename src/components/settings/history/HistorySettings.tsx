@@ -2,7 +2,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen, Sparkles, Loader2 } from "lucide-react";
+import {
+  Copy,
+  Star,
+  Check,
+  Trash2,
+  FolderOpen,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
