@@ -319,8 +319,14 @@ fn run_consumer(
                 Cmd::Stop(reply_tx) => {
                     recording = false;
 
+                    // Drain any audio chunks that were captured but not yet consumed
+                    while let Ok(remaining) = sample_rx.try_recv() {
+                        frame_resampler.push(&remaining, &mut |frame: &[f32]| {
+                            handle_frame(frame, true, &vad, &mut processed_samples)
+                        });
+                    }
+
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        // we still want to process the last few frames
                         handle_frame(frame, true, &vad, &mut processed_samples)
                     });
 
