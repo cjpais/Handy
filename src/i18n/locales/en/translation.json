@@ -388,9 +388,7 @@
       "delete": "Delete entry",
       "deleteError": "Failed to delete entry. Please try again.",
       "postProcess": "Enhance transcription",
-      "postProcessing": "Enhancing...",
       "postProcessError": "Post-processing failed. Check your provider settings.",
-      "postProcessNotConfigured": "Set up post-processing in settings first",
       "showOriginal": "Show original",
       "showEnhanced": "Show enhanced"
     },
