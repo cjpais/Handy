@@ -316,7 +316,8 @@
         "description": "Add words that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",
         "placeholder": "Add a word",
         "add": "Add",
-        "remove": "Remove {{word}}"
+        "remove": "Remove {{word}}",
+        "duplicate": "\"{{word}}\" already exists"
       }
     },
     "postProcessing": {

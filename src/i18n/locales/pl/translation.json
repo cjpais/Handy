@@ -316,7 +316,8 @@
         "description": "Dodaj słowa, które często są źle rozpoznawane lub zapisywane podczas transkrypcji. System automatycznie poprawi podobnie brzmiące słowa, aby pasowały do Twojej listy.",
         "placeholder": "Dodaj słowo",
         "add": "Dodaj",
-        "remove": "Usuń {{word}}"
+        "remove": "Usuń {{word}}",
+        "duplicate": "\"{{word}}\" już istnieje"
       }
     },
     "postProcessing": {

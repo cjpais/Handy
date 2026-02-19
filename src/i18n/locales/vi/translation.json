@@ -316,7 +316,8 @@
         "description": "Thêm các từ thường bị nghe nhầm hoặc viết sai trong quá trình chuyển đổi. Hệ thống sẽ tự động sửa các từ có âm thanh tương tự để khớp với danh sách của bạn.",
         "placeholder": "Thêm một từ",
         "add": "Thêm",
-        "remove": "Xóa {{word}}"
+        "remove": "Xóa {{word}}",
+        "duplicate": "\"{{word}}\" đã tồn tại"
       }
     },
     "postProcessing": {

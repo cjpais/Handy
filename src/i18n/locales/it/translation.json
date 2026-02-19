@@ -316,7 +316,8 @@
         "description": "Aggiungi parole che vengono spesso fraintese o scritte in modo errato durante la trascrizione. Il sistema correggerà automaticamente le parole dal suono simile in modo che corrispondano al tuo elenco.",
         "placeholder": "Aggiungi una parola",
         "add": "Aggiungi",
-        "remove": "Rimuovi {{word}}"
+        "remove": "Rimuovi {{word}}",
+        "duplicate": "\"{{word}}\" esiste già"
       }
     },
     "postProcessing": {

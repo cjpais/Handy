@@ -316,7 +316,8 @@
         "description": "Ajoutez des mots souvent mal entendus ou mal orthographiés lors de la transcription. Le système corrigera automatiquement les mots similaires pour correspondre à votre liste.",
         "placeholder": "Ajouter un mot",
         "add": "Ajouter",
-        "remove": "Supprimer {{word}}"
+        "remove": "Supprimer {{word}}",
+        "duplicate": "\"{{word}}\" existe déjà"
       }
     },
     "postProcessing": {

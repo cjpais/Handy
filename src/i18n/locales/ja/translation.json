@@ -316,7 +316,8 @@
         "description": "よく誤認識または誤入力される単語を追加します。システムは自動的に類似した発音の単語をリストに合わせて修正します。",
         "placeholder": "単語を追加",
         "add": "追加",
-        "remove": "{{word}}を削除"
+        "remove": "{{word}}を削除",
+        "duplicate": "「{{word}}」は既に存在します"
       }
     },
     "postProcessing": {

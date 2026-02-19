@@ -316,7 +316,8 @@
         "description": "Agrega palabras que a menudo se escuchan mal o se escriben incorrectamente durante la transcripción. El sistema corregirá automáticamente palabras similares para que coincidan con tu lista.",
         "placeholder": "Agregar una palabra",
         "add": "Agregar",
-        "remove": "Eliminar {{word}}"
+        "remove": "Eliminar {{word}}",
+        "duplicate": "\"{{word}}\" ya existe"
       }
     },
     "postProcessing": {

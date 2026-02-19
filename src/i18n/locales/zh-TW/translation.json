@@ -316,7 +316,8 @@
         "description": "新增經常被誤聽或拼寫錯誤的詞彙。系統會自動將發音相似的詞彙修正為您列表中的詞彙",
         "placeholder": "新增詞彙",
         "add": "新增",
-        "remove": "刪除 {{word}}"
+        "remove": "刪除 {{word}}",
+        "duplicate": "「{{word}}」已存在"
       }
     },
     "postProcessing": {

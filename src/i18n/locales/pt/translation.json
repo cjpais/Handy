@@ -316,7 +316,8 @@
         "description": "Adicione palavras que são frequentemente mal ouvidas ou mal escritas durante a transcrição. O sistema irá automaticamente corrigir palavras semelhantes para corresponder à sua lista.",
         "placeholder": "Adicionar uma palavra",
         "add": "Adicionar",
-        "remove": "Remover {{word}}"
+        "remove": "Remover {{word}}",
+        "duplicate": "\"{{word}}\" já existe"
       }
     },
     "postProcessing": {

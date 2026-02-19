@@ -316,7 +316,8 @@
         "description": "Přidejte slova, která jsou při přepisu často špatně rozpoznána nebo napsána. Systém automaticky opraví podobně znějící slova podle vašeho seznamu.",
         "placeholder": "Přidat slovo",
         "add": "Přidat",
-        "remove": "Odebrat {{word}}"
+        "remove": "Odebrat {{word}}",
+        "duplicate": "\"{{word}}\" již existuje"
       }
     },
     "postProcessing": {

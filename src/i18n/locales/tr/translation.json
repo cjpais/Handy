@@ -316,7 +316,8 @@
         "description": "Transkripsiyon sırasında sıkça yanlış duyulan veya yanlış yazılan kelimeleri ekleyin. Sistem, benzer sesli kelimeleri listenize göre otomatik olarak düzeltir.",
         "placeholder": "Kelime ekle",
         "add": "Ekle",
-        "remove": "{{word}} Kaldır"
+        "remove": "{{word}} Kaldır",
+        "duplicate": "\"{{word}}\" zaten mevcut"
       }
     },
     "postProcessing": {

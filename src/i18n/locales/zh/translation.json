@@ -316,7 +316,8 @@
         "description": "添加经常被误听或拼写错误的词汇。系统将自动将发音相似的词汇修正为您列表中的词汇。",
         "placeholder": "添加词汇",
         "add": "添加",
-        "remove": "删除 {{word}}"
+        "remove": "删除 {{word}}",
+        "duplicate": "\"{{word}}\" 已存在"
       }
     },
     "postProcessing": {
