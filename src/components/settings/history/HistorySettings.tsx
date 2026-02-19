@@ -2,13 +2,15 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import { Copy, Star, Check, Trash2, FolderOpen, Sparkles, Loader2 } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
+import { toast } from "sonner";
+import { useSettings } from "@/hooks/useSettings";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -36,6 +38,12 @@ export const HistorySettings: React.FC = () => {
   const osType = useOsType();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const { getSetting } = useSettings();
+  const historyPostProcessEnabled =
+    (getSetting("experimental_enabled") || false) &&
+    (getSetting("post_process_enabled") || false) &&
+    (getSetting("history_post_process_enabled") || false);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -203,9 +211,9 @@ export const HistorySettings: React.FC = () => {
                 key={entry.id}
                 entry={entry}
                 onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
+                showPostProcess={historyPostProcessEnabled}
               />
             ))}
           </div>
@@ -218,20 +226,28 @@ export const HistorySettings: React.FC = () => {
 interface HistoryEntryProps {
   entry: HistoryEntry;
   onToggleSaved: () => void;
-  onCopyText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
+  showPostProcess: boolean;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   entry,
   onToggleSaved,
-  onCopyText,
   getAudioUrl,
   deleteAudio,
+  showPostProcess,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
+
+  const hasEnhancedText = entry.post_processed_text != null;
+  const displayText =
+    hasEnhancedText && !showOriginal
+      ? entry.post_processed_text!
+      : entry.transcription_text;
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -239,7 +255,9 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   );
 
   const handleCopyText = () => {
-    onCopyText();
+    navigator.clipboard.writeText(displayText).catch((error) => {
+      console.error("Failed to copy to clipboard:", error);
+    });
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
   };
@@ -249,7 +267,24 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert("Failed to delete entry. Please try again.");
+      alert(t("settings.history.deleteError"));
+    }
+  };
+
+  const handlePostProcess = async () => {
+    setIsProcessing(true);
+    try {
+      const result = await commands.postProcessHistoryEntry(entry.id);
+      if (result.status === "ok") {
+        setShowOriginal(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (error) {
+      toast.error(t("settings.history.postProcessError"));
+      console.error("Failed to post-process entry:", error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -260,9 +295,25 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <div className="flex justify-between items-center">
         <p className="text-sm font-medium">{formattedDate}</p>
         <div className="flex items-center gap-1">
+          {showPostProcess && (
+            <button
+              onClick={handlePostProcess}
+              disabled={
+                isProcessing || entry.transcription_text.trim().length === 0
+              }
+              className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              title={t("settings.history.postProcess")}
+            >
+              {isProcessing ? (
+                <Loader2 width={16} height={16} className="animate-spin" />
+              ) : (
+                <Sparkles width={16} height={16} />
+              )}
+            </button>
+          )}
           <button
             onClick={handleCopyText}
-            className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
+            className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer"
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
@@ -300,8 +351,18 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         </div>
       </div>
       <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
-        {entry.transcription_text}
+        {displayText}
       </p>
+      {hasEnhancedText && (
+        <button
+          onClick={() => setShowOriginal(!showOriginal)}
+          className="text-xs text-text/50 hover:text-logo-primary transition-colors cursor-pointer self-start"
+        >
+          {showOriginal
+            ? t("settings.history.showEnhanced")
+            : t("settings.history.showOriginal")}
+        </button>
+      )}
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );
