@@ -1,5 +1,5 @@
 use crate::actions::post_process_transcription;
-use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::managers::history::{HistoryEntry, HistoryManager, TranscriptionVersion};
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -164,4 +164,16 @@ pub async fn post_process_history_entry(
         .map_err(|e| e.to_string())?;
 
     Ok(processed_text)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_transcription_versions(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    entry_id: i64,
+) -> Result<Vec<TranscriptionVersion>, String> {
+    history_manager
+        .get_versions(entry_id)
+        .map_err(|e| e.to_string())
 }

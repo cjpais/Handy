@@ -41,6 +41,9 @@ static MIGRATIONS: &[M] = &[
             FOREIGN KEY (history_entry_id) REFERENCES transcription_history(id) ON DELETE CASCADE
         );",
     ),
+    M::up(
+        "CREATE INDEX IF NOT EXISTS idx_transcription_versions_entry_id ON transcription_versions(history_entry_id);",
+    ),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -55,9 +58,6 @@ pub struct HistoryEntry {
     pub post_process_prompt: Option<String>,
 }
 
-/// Version history for post-processed transcriptions.
-/// Currently used by tests; will be exposed via a command when the version history UI is added.
-#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct TranscriptionVersion {
     pub id: i64,
@@ -549,6 +549,26 @@ impl HistoryManager {
         }
 
         Ok(())
+    }
+
+    /// Get all post-processing versions for a history entry
+    pub fn get_versions(&self, history_entry_id: i64) -> Result<Vec<TranscriptionVersion>> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, history_entry_id, text, prompt, timestamp FROM transcription_versions WHERE history_entry_id = ?1 ORDER BY timestamp ASC",
+        )?;
+
+        let rows = stmt.query_map(params![history_entry_id], |row| {
+            Ok(TranscriptionVersion {
+                id: row.get("id")?,
+                history_entry_id: row.get("history_entry_id")?,
+                text: row.get("text")?,
+                prompt: row.get("prompt")?,
+                timestamp: row.get("timestamp")?,
+            })
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
     fn format_timestamp_title(&self, timestamp: i64) -> String {

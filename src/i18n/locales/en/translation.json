@@ -383,6 +383,8 @@
       "loading": "Loading history...",
       "empty": "No transcriptions yet. Start recording to build your history!",
       "copyToClipboard": "Copy transcription to clipboard",
+      "copyOriginal": "Copy original transcription",
+      "copyEnhanced": "Copy enhanced transcription",
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",

@@ -339,7 +339,13 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           <button
             onClick={handleCopyText}
             className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer"
-            title={t("settings.history.copyToClipboard")}
+            title={
+              hasEnhancedText
+                ? showOriginal
+                  ? t("settings.history.copyOriginal")
+                  : t("settings.history.copyEnhanced")
+                : t("settings.history.copyToClipboard")
+            }
           >
             {showCopied ? (
               <Check width={16} height={16} />
