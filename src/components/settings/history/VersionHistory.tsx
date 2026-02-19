@@ -185,6 +185,43 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({ entry }) => {
 
 VersionHistory.displayName = "VersionHistory";
 
+interface ExpandableTextProps {
+  text: string;
+  limit: number;
+  className?: string;
+}
+
+const ExpandableText: React.FC<ExpandableTextProps> = ({
+  text,
+  limit,
+  className,
+}) => {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const needsTruncation = text.length > limit;
+
+  return (
+    <span className={className}>
+      {needsTruncation && !expanded ? `${text.substring(0, limit)}...` : text}
+      {needsTruncation && (
+        <>
+          {" "}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-logo-primary hover:text-logo-primary/80 transition-colors cursor-pointer"
+          >
+            {expanded
+              ? t("settings.history.showLess")
+              : t("settings.history.showMore")}
+          </button>
+        </>
+      )}
+    </span>
+  );
+};
+
+ExpandableText.displayName = "ExpandableText";
+
 const VersionConnector: React.FC = () => (
   <div className="flex pl-4">
     <div className="w-0.5 h-4 bg-mid-gray/20" />
@@ -245,18 +282,16 @@ const VersionCard: React.FC<VersionCardProps> = ({
       <p
         className={`text-xs leading-relaxed mb-2 ${isActive ? "text-text/80" : "text-text/50"}`}
       >
-        {version.text.length > 200
-          ? `${version.text.substring(0, 200)}...`
-          : version.text}
+        <ExpandableText text={version.text} limit={200} />
       </p>
       {version.prompt && (
         <div className="flex items-center gap-1">
           <Sparkles width={10} height={10} className="text-text/30" />
-          <span className="text-[11px] text-text/30">
-            {version.prompt.length > 60
-              ? `${version.prompt.substring(0, 60)}...`
-              : version.prompt}
-          </span>
+          <ExpandableText
+            text={version.prompt}
+            limit={60}
+            className="text-[11px] text-text/30"
+          />
         </div>
       )}
     </div>
@@ -313,9 +348,7 @@ const OriginalCard: React.FC<OriginalCardProps> = ({
       <p
         className={`text-xs leading-relaxed mb-2 ${isActive ? "text-text/80" : "text-text/50"}`}
       >
-        {entry.transcription_text.length > 200
-          ? `${entry.transcription_text.substring(0, 200)}...`
-          : entry.transcription_text}
+        <ExpandableText text={entry.transcription_text} limit={200} />
       </p>
       <div className="flex items-center gap-1">
         <Mic width={10} height={10} className="text-text/30" />

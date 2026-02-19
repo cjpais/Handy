@@ -403,7 +403,9 @@
       "restore": "Restore",
       "confirmRestore": "Confirm restore?",
       "restoreError": "Failed to restore version",
-      "versionNotFound": "Version not found"
+      "versionNotFound": "Version not found",
+      "showMore": "Show more",
+      "showLess": "Show less"
     },
     "debug": {
       "title": "Debug",
