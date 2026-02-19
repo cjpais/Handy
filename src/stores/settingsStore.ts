@@ -440,17 +440,34 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     updatePostProcessBaseUrl: async (providerId, baseUrl) => {
-      // Clear cached models and reset stored model when base URL changes,
-      // since the previous model value is almost certainly invalid for
-      // the new endpoint (e.g. switching Custom from Groq to Cerebras).
-      set((state) => ({
-        postProcessModelOptions: {
-          ...state.postProcessModelOptions,
-          [providerId]: [],
-        },
-      }));
-      await get().updatePostProcessSetting("model", providerId, "");
-      return get().updatePostProcessSetting("base_url", providerId, baseUrl);
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `post_process_base_url:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        // Persist the new base URL first.
+        await commands.changePostProcessBaseUrlSetting(providerId, baseUrl);
+
+        // Only after a successful write do we clear cached models and reset
+        // the stored model, since the previous value is almost certainly
+        // invalid for the new endpoint (e.g. switching Custom from Groq
+        // to Cerebras).
+        set((state) => ({
+          postProcessModelOptions: {
+            ...state.postProcessModelOptions,
+            [providerId]: [],
+          },
+        }));
+        await commands.changePostProcessModelSetting(providerId, "");
+
+        // Single refresh after both backend writes.
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update post-process base URL:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
     },
 
     updatePostProcessApiKey: async (providerId, apiKey) => {
