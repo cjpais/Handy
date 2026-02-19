@@ -393,7 +393,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
         {displayText}
       </p>
-      {hasEnhancedText && <VersionHistory entry={entry} />}
+      {entry.version_count > 0 && <VersionHistory entry={entry} />}
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );

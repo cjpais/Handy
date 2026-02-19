@@ -730,8 +730,7 @@ async getTranscriptionVersions(entryId: number) : Promise<Result<TranscriptionVe
 },
 async restoreVersion(entryId: number, versionId: number | null) : Promise<Result<null, string>> {
     try {
-    await TAURI_INVOKE("restore_version", { entryId, versionId });
-    return { status: "ok", data: null };
+    return { status: "ok", data: await TAURI_INVOKE("restore_version", { entryId, versionId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -768,7 +767,7 @@ export type BindingResponse = { success: boolean; binding: ShortcutBinding | nul
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice"
-export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null }
+export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; version_count: number }
 /**
  * Result of changing keyboard implementation
  */

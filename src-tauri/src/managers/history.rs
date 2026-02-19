@@ -56,6 +56,7 @@ pub struct HistoryEntry {
     pub transcription_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    pub version_count: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -380,7 +381,7 @@ impl HistoryManager {
     pub async fn get_history_entries(&self) -> Result<Vec<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt FROM transcription_history ORDER BY timestamp DESC"
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, (SELECT COUNT(*) FROM transcription_versions WHERE history_entry_id = transcription_history.id) AS version_count FROM transcription_history ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -393,6 +394,7 @@ impl HistoryManager {
                 transcription_text: row.get("transcription_text")?,
                 post_processed_text: row.get("post_processed_text")?,
                 post_process_prompt: row.get("post_process_prompt")?,
+                version_count: row.get("version_count")?,
             })
         })?;
 
@@ -411,7 +413,8 @@ impl HistoryManager {
 
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt,
+             (SELECT COUNT(*) FROM transcription_versions WHERE history_entry_id = transcription_history.id) AS version_count
              FROM transcription_history
              ORDER BY timestamp DESC
              LIMIT 1",
@@ -428,6 +431,7 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    version_count: row.get("version_count")?,
                 })
             })
             .optional()?;
@@ -469,7 +473,8 @@ impl HistoryManager {
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt,
+             (SELECT COUNT(*) FROM transcription_versions WHERE history_entry_id = transcription_history.id) AS version_count
              FROM transcription_history WHERE id = ?1",
         )?;
 
@@ -484,6 +489,7 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    version_count: row.get("version_count")?,
                 })
             })
             .optional()?;
