@@ -344,6 +344,7 @@ pub fn run(cli_args: CliArgs) {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::history::change_history_post_process_enabled_setting,
         helpers::clamshell::is_laptop,
     ]);
 

@@ -99,3 +99,15 @@ pub async fn update_recording_retention_period(
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub async fn change_history_post_process_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = crate::settings::get_settings(&app);
+    settings.history_post_process_enabled = enabled;
+    crate::settings::write_settings(&app, settings);
+    Ok(())
+}
