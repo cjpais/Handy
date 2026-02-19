@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "剪貼簿 (Ctrl+Shift+V)",
           "clipboardShiftInsert": "剪貼簿 (Shift+Insert)",
           "direct": "直接",
-          "none": "無"
-        }
+          "none": "無",
+          "externalScript": "外部腳本"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
       },
       "typingTool": {
         "title": "輸入工具",

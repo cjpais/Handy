@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "クリップボード (Ctrl+Shift+V)",
           "clipboardShiftInsert": "クリップボード (Shift+Insert)",
           "direct": "直接",
-          "none": "なし"
-        }
+          "none": "なし",
+          "externalScript": "外部スクリプト"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
       },
       "typingTool": {
         "title": "タイピングツール",

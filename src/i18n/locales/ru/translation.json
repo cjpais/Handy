@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Буфер обмена (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Буфер обмена (Shift+Insert)",
           "direct": "Прямой",
-          "none": "Нет"
-        }
+          "none": "Нет",
+          "externalScript": "Внешний скрипт"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
       },
       "typingTool": {
         "title": "Инструмент ввода",

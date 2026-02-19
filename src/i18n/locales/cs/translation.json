@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Schránka (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Schránka (Shift+Insert)",
           "direct": "Přímé",
-          "none": "Žádné"
-        }
+          "none": "Žádné",
+          "externalScript": "Externí skript"
+        },
+        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh"
       },
       "typingTool": {
         "title": "Nástroj pro psaní",

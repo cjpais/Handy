@@ -261,8 +261,10 @@
           "clipboardCtrlShiftV": "Буфер обміну (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Буфер обміну (Shift+Insert)",
           "direct": "Прямий",
-          "none": "Немає"
-        }
+          "none": "Немає",
+          "externalScript": "Зовнішній скрипт"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
       },
       "typingTool": {
         "title": "Інструмент введення",
