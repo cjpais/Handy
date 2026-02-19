@@ -107,7 +107,13 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
         }
       }
     },
-    [selectedProviderId, setPostProcessProvider, fetchPostProcessModels, providers, settings],
+    [
+      selectedProviderId,
+      setPostProcessProvider,
+      fetchPostProcessModels,
+      providers,
+      settings,
+    ],
   );
 
   const handleBaseUrlChange = useCallback(

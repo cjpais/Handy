@@ -374,7 +374,12 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     setPostProcessProvider: async (providerId) => {
-      const { settings, setUpdating, refreshSettings, setPostProcessModelOptions } = get();
+      const {
+        settings,
+        setUpdating,
+        refreshSettings,
+        setPostProcessModelOptions,
+      } = get();
       const updateKey = "post_process_provider_id";
       const previousId = settings?.post_process_provider_id ?? null;
 
@@ -447,19 +452,34 @@ export const useSettingsStore = create<SettingsStore>()(
 
       try {
         // Persist the new base URL first.
-        await commands.changePostProcessBaseUrlSetting(providerId, baseUrl);
+        const urlResult = await commands.changePostProcessBaseUrlSetting(
+          providerId,
+          baseUrl,
+        );
+        if (urlResult.status === "error") {
+          console.error("Failed to persist base URL:", urlResult.error);
+          return;
+        }
 
-        // Only after a successful write do we clear cached models and reset
-        // the stored model, since the previous value is almost certainly
-        // invalid for the new endpoint (e.g. switching Custom from Groq
-        // to Cerebras).
+        // Reset the stored model since the previous value is almost certainly
+        // invalid for the new endpoint (e.g. switching Custom from Groq to
+        // Cerebras). Only proceed if the reset succeeds.
+        const modelResult = await commands.changePostProcessModelSetting(
+          providerId,
+          "",
+        );
+        if (modelResult.status === "error") {
+          console.error("Failed to reset model setting:", modelResult.error);
+          return;
+        }
+
+        // Clear cached model options only after both backend writes succeed.
         set((state) => ({
           postProcessModelOptions: {
             ...state.postProcessModelOptions,
             [providerId]: [],
           },
         }));
-        await commands.changePostProcessModelSetting(providerId, "");
 
         // Single refresh after both backend writes.
         await refreshSettings();
