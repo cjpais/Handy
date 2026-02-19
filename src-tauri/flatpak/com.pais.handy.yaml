@@ -98,8 +98,9 @@ modules:
 
       # Install icons
       - install -Dm644 deb-extract/usr/share/icons/hicolor/32x32/apps/handy.png /app/share/icons/hicolor/32x32/apps/com.pais.handy.png
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/64x64/apps/handy.png /app/share/icons/hicolor/64x64/apps/com.pais.handy.png
       - install -Dm644 deb-extract/usr/share/icons/hicolor/128x128/apps/handy.png /app/share/icons/hicolor/128x128/apps/com.pais.handy.png
-      - install -Dm644 deb-extract/usr/share/icons/hicolor/256x256@2/apps/handy.png /app/share/icons/hicolor/256x256@2/apps/com.pais.handy.png || true
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/256x256@2x/apps/handy.png /app/share/icons/hicolor/256x256@2x/apps/com.pais.handy.png || true
 
       # Install metainfo
       - install -Dm644 com.pais.handy.metainfo.xml /app/share/metainfo/com.pais.handy.metainfo.xml

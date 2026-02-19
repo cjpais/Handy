@@ -4,7 +4,9 @@ set -euo pipefail
 # Build Flatpak for Handy
 # Usage: ./scripts/build-flatpak.sh [path-to-deb]
 #
-# If no .deb path is provided, it will look for one in the default Tauri output location.
+# If no .deb path is provided, the app is built from source inside the Flatpak SDK
+# to ensure glibc compatibility with the runtime. This avoids the mismatch that
+# occurs when building on newer host systems (e.g. with local glibc vs the GNOME flatpak's runtime glibc).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -55,42 +57,152 @@ check_dependencies() {
     fi
 }
 
-# Check for required Flatpak runtime
+# Check for required Flatpak runtimes
 check_runtime() {
-    if ! flatpak info org.gnome.Platform//48 &> /dev/null; then
-        log_warn "GNOME Platform 48 runtime not installed"
-        log_info "Installing required runtimes..."
-        flatpak install -y --user flathub org.gnome.Platform//48 org.gnome.Sdk//48
-    fi
-}
-
-# Find .deb file
-find_deb() {
-    local deb_path="$1"
-
-    if [ -n "$deb_path" ] && [ -f "$deb_path" ]; then
-        echo "$deb_path"
-        return 0
-    fi
-
-    # Look in default Tauri build locations
-    local search_paths=(
-        "$PROJECT_ROOT/src-tauri/target/release/bundle/deb"
-        "$PROJECT_ROOT/src-tauri/target/debug/bundle/deb"
+    local runtimes=(
+        "org.gnome.Platform//48"
+        "org.gnome.Sdk//48"
     )
 
-    for search_path in "${search_paths[@]}"; do
-        if [ -d "$search_path" ]; then
-            local found_deb
-            found_deb=$(find "$search_path" -name "*.deb" -type f -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
-            if [ -n "$found_deb" ]; then
-                echo "$found_deb"
-                return 0
-            fi
+    for ref in "${runtimes[@]}"; do
+        if ! flatpak info "$ref" &> /dev/null; then
+            log_info "Installing $ref..."
+            flatpak install -y --user flathub "$ref"
         fi
     done
+}
 
-    return 1
+# Check for SDK extensions needed only when building from source
+check_sdk_extensions() {
+    local extensions=(
+        "org.freedesktop.Sdk.Extension.rust-stable//24.08"
+        "org.freedesktop.Sdk.Extension.llvm19//24.08"
+    )
+
+    for ref in "${extensions[@]}"; do
+        if ! flatpak info "$ref" &> /dev/null; then
+            log_info "Installing $ref..."
+            flatpak install -y --user flathub "$ref"
+        fi
+    done
+}
+
+# Build the Tauri app inside the Flatpak SDK so the binary links against the
+# runtime's glibc instead of the (potentially newer) host glibc.
+# Produces a minimal .deb-like archive that the Flatpak manifest can consume.
+build_in_sdk() {
+    local build_missing=()
+    if ! command -v bun &> /dev/null; then
+        build_missing+=("bun")
+    fi
+    if ! command -v ar &> /dev/null; then
+        build_missing+=("ar (binutils)")
+    fi
+    if [ ${#build_missing[@]} -ne 0 ]; then
+        log_error "Missing tools required for source build: ${build_missing[*]}"
+        exit 1
+    fi
+
+    log_info "Building Handy inside Flatpak SDK (ensures glibc compatibility)..."
+
+    local bun_path
+    bun_path="$(which bun)"
+
+    local sdk_prefix="$PROJECT_ROOT/.flatpak-sdk-prefix"
+
+    flatpak run \
+        --share=network \
+        --filesystem=home \
+        --env=PATH=/usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm19/bin:/usr/bin:/bin \
+        --env=LIBCLANG_PATH=/usr/lib/sdk/llvm19/lib \
+        --env=WHISPER_NO_AVX=ON \
+        --env=WHISPER_NO_AVX2=ON \
+        --env=HOME="$HOME" \
+        --env=SDK_PREFIX="$sdk_prefix" \
+        --env=SDK_PROJECT_ROOT="$PROJECT_ROOT" \
+        --env=SDK_BUN_PATH="$bun_path" \
+        --command=bash \
+        org.gnome.Sdk//48 \
+        -c '
+            set -euo pipefail
+
+            export PKG_CONFIG_PATH="$SDK_PREFIX/lib/pkgconfig:$SDK_PREFIX/lib64/pkgconfig:${PKG_CONFIG_PATH:-}"
+            export LD_LIBRARY_PATH="$SDK_PREFIX/lib:$SDK_PREFIX/lib64:${LD_LIBRARY_PATH:-}"
+
+            # Build gtk-layer-shell if not already cached
+            if ! pkg-config --exists gtk-layer-shell-0 2>/dev/null; then
+                echo "Building gtk-layer-shell..."
+                cd /tmp
+                curl -sL https://github.com/wmww/gtk-layer-shell/archive/refs/tags/v0.10.0.tar.gz | tar xz
+                cd gtk-layer-shell-0.10.0
+                meson setup build --prefix="$SDK_PREFIX" -Dexamples=false -Ddocs=false -Dtests=false
+                ninja -C build install
+            fi
+
+            cd "$SDK_PROJECT_ROOT"
+
+            # Build frontend and Rust binary via Tauri (--no-bundle skips
+            # the deb/appimage bundling step that requires appindicator)
+            "$SDK_BUN_PATH" install --frozen-lockfile
+            "$SDK_BUN_PATH" run tauri build --no-bundle
+        '
+
+    if [ ! -f "$PROJECT_ROOT/src-tauri/target/release/handy" ]; then
+        log_error "SDK build failed — binary not found at src-tauri/target/release/handy"
+        exit 1
+    fi
+
+    # Assemble a minimal .deb-like archive from the build output for the Flatpak manifest
+    log_info "Assembling .deb from build output..."
+
+    local staging="$PROJECT_ROOT/src-tauri/target/release/flatpak-deb-staging"
+    rm -rf "$staging"
+
+    # Binary
+    install -Dm755 "$PROJECT_ROOT/src-tauri/target/release/handy" "$staging/data/usr/bin/handy"
+
+    # Resources
+    mkdir -p "$staging/data/usr/lib/Handy"
+    cp -r "$PROJECT_ROOT/src-tauri/resources" "$staging/data/usr/lib/Handy/resources"
+
+    # Desktop file
+    mkdir -p "$staging/data/usr/share/applications"
+    cat > "$staging/data/usr/share/applications/Handy.desktop" << 'DESKTOP'
+[Desktop Entry]
+Categories=Audio;Utility;Accessibility;
+Comment=Handy
+GenericName=Speech to Text
+Exec=handy
+StartupWMClass=handy
+Icon=handy
+Name=Handy
+Terminal=false
+Type=Application
+DESKTOP
+
+    # Icons
+    install -Dm644 "$PROJECT_ROOT/src-tauri/icons/32x32.png" "$staging/data/usr/share/icons/hicolor/32x32/apps/handy.png"
+    install -Dm644 "$PROJECT_ROOT/src-tauri/icons/64x64.png" "$staging/data/usr/share/icons/hicolor/64x64/apps/handy.png"
+    install -Dm644 "$PROJECT_ROOT/src-tauri/icons/128x128.png" "$staging/data/usr/share/icons/hicolor/128x128/apps/handy.png"
+    install -Dm644 "$PROJECT_ROOT/src-tauri/icons/128x128@2x.png" "$staging/data/usr/share/icons/hicolor/256x256@2x/apps/handy.png" || true
+
+    # Create data.tar.gz
+    tar -C "$staging/data" -czf "$staging/data.tar.gz" .
+
+    # Create minimal control
+    mkdir -p "$staging/control"
+    echo "Package: handy" > "$staging/control/control"
+    tar -C "$staging/control" -czf "$staging/control.tar.gz" .
+
+    # Create debian-binary
+    echo "2.0" > "$staging/debian-binary"
+
+    # Assemble .deb (ar archive)
+    local deb_output="$PROJECT_ROOT/src-tauri/target/release/handy-flatpak.deb"
+    ar rc "$deb_output" "$staging/debian-binary" "$staging/control.tar.gz" "$staging/data.tar.gz"
+
+    rm -rf "$staging"
+    log_info "SDK build produced: $deb_output"
 }
 
 main() {
@@ -111,25 +223,23 @@ main() {
         git -C "$PROJECT_ROOT" submodule update --init --recursive
     fi
 
-    # Find .deb file
-    log_info "Looking for .deb file..."
+    # Get or build .deb
     local deb_path
-    if ! deb_path=$(find_deb "$deb_input"); then
-        log_error "No .deb file found!"
-        echo ""
-        echo "Either:"
-        echo "  1. Build the app first: bun run tauri build --bundles deb"
-        echo "  2. Provide the path: $0 /path/to/handy.deb"
-        exit 1
+    if [ -n "$deb_input" ] && [ -f "$deb_input" ]; then
+        deb_path="$deb_input"
+        log_info "Using provided .deb: $deb_path"
+    else
+        check_sdk_extensions
+        build_in_sdk
+        deb_path="$PROJECT_ROOT/src-tauri/target/release/handy-flatpak.deb"
     fi
-
-    log_info "Using .deb: $deb_path"
 
     # Clean previous builds
     rm -rf "$BUILD_DIR" "$REPO_DIR"
     mkdir -p "$BUILD_DIR"
 
     # Copy .deb to flatpak directory with expected name
+    trap 'rm -f "$FLATPAK_DIR/handy.deb"' EXIT
     cp "$deb_path" "$FLATPAK_DIR/handy.deb"
     log_info "Copied .deb to flatpak build directory"
 
@@ -148,16 +258,15 @@ main() {
     # Create single-file bundle
     local version
     version=$(grep -o '"version": "[^"]*"' "$PROJECT_ROOT/src-tauri/tauri.conf.json" | cut -d'"' -f4)
-    local bundle_name="handy_${version}_x86_64.flatpak"
+    local arch
+    arch=$(flatpak --default-arch)
+    local bundle_name="handy_${version}_${arch}.flatpak"
 
     log_info "Creating Flatpak bundle..."
     flatpak build-bundle \
         "$REPO_DIR" \
         "$PROJECT_ROOT/$bundle_name" \
         "$APP_ID"
-
-    # Cleanup temporary .deb copy
-    rm -f "$FLATPAK_DIR/handy.deb"
 
     echo ""
     log_info "Flatpak bundle created: $PROJECT_ROOT/$bundle_name"

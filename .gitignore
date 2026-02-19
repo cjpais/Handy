@@ -36,6 +36,7 @@ flatpak-repo/
 *.flatpak
 src-tauri/flatpak/.flatpak-builder/
 src-tauri/flatpak/handy.deb
+.flatpak-sdk-prefix/
 
 # Playwright
 playwright-report/

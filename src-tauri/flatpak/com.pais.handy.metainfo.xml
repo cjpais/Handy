@@ -82,7 +82,7 @@
   -->
 
   <releases>
-    <release version="0.6.10" date="2025-01-07">
+    <release version="0.7.6" date="2025-02-04">
       <description>
         <p>Initial Flatpak release</p>
       </description>
