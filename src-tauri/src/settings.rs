@@ -145,9 +145,10 @@ pub enum ClipboardHandling {
     CopyToClipboard,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AutoSubmitKey {
+    #[default]
     Enter,
     CtrlEnter,
     CmdEnter,
@@ -190,13 +191,6 @@ impl Default for PasteMethod {
         return PasteMethod::CtrlV;
     }
 }
-
-impl Default for AutoSubmitKey {
-    fn default() -> Self {
-        AutoSubmitKey::Enter
-    }
-}
-
 
 impl ModelUnloadTimeout {
     pub fn to_minutes(self) -> Option<u64> {
@@ -248,21 +242,16 @@ impl SoundTheme {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum TypingTool {
+    #[default]
     Auto,
     Wtype,
     Kwtype,
     Dotool,
     Ydotool,
     Xdotool,
-}
-
-impl Default for TypingTool {
-    fn default() -> Self {
-        TypingTool::Auto
-    }
 }
 
 /* still handy for composing the initial JSON in the store ------------- */

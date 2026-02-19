@@ -491,7 +491,6 @@ impl TranscriptionManager {
                         LoadedEngine::Parakeet(parakeet_engine) => {
                             let params = ParakeetInferenceParams {
                                 timestamp_granularity: TimestampGranularity::Segment,
-                                ..Default::default()
                             };
                             parakeet_engine
                                 .transcribe_samples(audio, Some(params))
