@@ -551,6 +551,48 @@ impl HistoryManager {
         Ok(())
     }
 
+    /// Restore a previous version or the original transcription.
+    /// If `version_id` is Some, restores that version's text and prompt.
+    /// If `version_id` is None, restores the original (sets post_processed_text to NULL).
+    /// The transcription_versions table is never modified — it's append-only history.
+    pub fn restore_version(&self, entry_id: i64, version_id: Option<i64>) -> Result<()> {
+        let conn = self.get_connection()?;
+
+        match version_id {
+            None => {
+                // Restore to original: clear post-processed text
+                conn.execute(
+                    "UPDATE transcription_history SET post_processed_text = NULL, post_process_prompt = NULL WHERE id = ?1",
+                    params![entry_id],
+                )?;
+            }
+            Some(vid) => {
+                // Look up the version
+                let (text, prompt): (String, Option<String>) = conn
+                    .query_row(
+                        "SELECT text, prompt FROM transcription_versions WHERE id = ?1 AND history_entry_id = ?2",
+                        params![vid, entry_id],
+                        |row| Ok((row.get("text")?, row.get("prompt")?)),
+                    )
+                    .map_err(|_| anyhow::anyhow!("VERSION_NOT_FOUND"))?;
+
+                conn.execute(
+                    "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
+                    params![text, prompt, entry_id],
+                )?;
+            }
+        }
+
+        debug!("Restored version {:?} for entry {}", version_id, entry_id);
+
+        // Emit history updated event
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
+    }
+
     /// Get all post-processing versions for a history entry
     pub fn get_versions(&self, history_entry_id: i64) -> Result<Vec<TranscriptionVersion>> {
         let conn = self.get_connection()?;
@@ -751,6 +793,153 @@ mod tests {
         assert_eq!(versions[0].prompt.as_deref(), Some("prompt 1"));
         assert_eq!(versions[1].text, "version 2");
         assert_eq!(versions[1].prompt.as_deref(), Some("prompt 2"));
+    }
+
+    #[test]
+    fn restore_to_specific_version() {
+        let conn = setup_migrated_conn();
+        insert_entry(&conn, 100, "raw text", None);
+
+        // Create two versions
+        conn.execute(
+            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![1, "version 1 text", "prompt 1", 200],
+        )
+        .expect("insert version 1");
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
+            params!["version 1 text", "prompt 1", 1],
+        )
+        .expect("update entry for v1");
+
+        conn.execute(
+            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![1, "version 2 text", "prompt 2", 300],
+        )
+        .expect("insert version 2");
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
+            params!["version 2 text", "prompt 2", 1],
+        )
+        .expect("update entry for v2");
+
+        // Restore to version 1 (id=1 in versions table)
+        let (v1_text, v1_prompt): (String, Option<String>) = conn
+            .query_row(
+                "SELECT text, prompt FROM transcription_versions WHERE id = 1",
+                [],
+                |row| Ok((row.get("text")?, row.get("prompt")?)),
+            )
+            .expect("get version 1");
+
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1, post_process_prompt = ?2 WHERE id = ?3",
+            params![v1_text, v1_prompt, 1],
+        )
+        .expect("restore to v1");
+
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch entry")
+            .expect("entry exists");
+
+        assert_eq!(entry.post_processed_text.as_deref(), Some("version 1 text"));
+        assert_eq!(entry.post_process_prompt.as_deref(), Some("prompt 1"));
+        // Original transcription preserved
+        assert_eq!(entry.transcription_text, "raw text");
+    }
+
+    #[test]
+    fn restore_to_original() {
+        let conn = setup_migrated_conn();
+        insert_entry(&conn, 100, "raw text", Some("enhanced"));
+
+        // Restore to original: set post_processed_text to NULL
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = NULL, post_process_prompt = NULL WHERE id = ?1",
+            params![1],
+        )
+        .expect("restore to original");
+
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch entry")
+            .expect("entry exists");
+
+        assert!(entry.post_processed_text.is_none());
+        assert!(entry.post_process_prompt.is_none());
+        assert_eq!(entry.transcription_text, "raw text");
+    }
+
+    #[test]
+    fn versions_preserved_after_restore() {
+        let conn = setup_migrated_conn();
+        insert_entry(&conn, 100, "raw text", None);
+
+        // Create two versions
+        conn.execute(
+            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![1, "version 1", "prompt 1", 200],
+        )
+        .expect("insert version 1");
+        conn.execute(
+            "INSERT INTO transcription_versions (history_entry_id, text, prompt, timestamp) VALUES (?1, ?2, ?3, ?4)",
+            params![1, "version 2", "prompt 2", 300],
+        )
+        .expect("insert version 2");
+
+        // Restore to original
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = NULL, post_process_prompt = NULL WHERE id = ?1",
+            params![1],
+        )
+        .expect("restore to original");
+
+        // Versions should still be there
+        let version_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM transcription_versions WHERE history_entry_id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .expect("count versions");
+        assert_eq!(version_count, 2);
+
+        // Restore to version 1 — versions still intact
+        let v1_text: String = conn
+            .query_row(
+                "SELECT text FROM transcription_versions WHERE id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .expect("get v1 text");
+        conn.execute(
+            "UPDATE transcription_history SET post_processed_text = ?1 WHERE id = ?2",
+            params![v1_text, 1],
+        )
+        .expect("restore to v1");
+
+        let version_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM transcription_versions WHERE history_entry_id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .expect("count versions again");
+        assert_eq!(version_count, 2);
+    }
+
+    #[test]
+    fn restore_nonexistent_version_fails() {
+        let conn = setup_migrated_conn();
+        insert_entry(&conn, 100, "raw text", None);
+
+        // Try to look up a version that doesn't exist
+        let result = conn.query_row(
+            "SELECT text, prompt FROM transcription_versions WHERE id = ?1 AND history_entry_id = ?2",
+            params![999, 1],
+            |row| Ok((row.get::<_, String>("text")?, row.get::<_, Option<String>>("prompt")?)),
+        );
+
+        assert!(result.is_err());
     }
 
     #[test]

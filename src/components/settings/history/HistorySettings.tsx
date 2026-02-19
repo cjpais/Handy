@@ -19,6 +19,7 @@ import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
 import { toast } from "sonner";
 import { useSettings } from "@/hooks/useSettings";
+import { VersionHistory } from "./VersionHistory";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -392,6 +393,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
         {displayText}
       </p>
+      {hasEnhancedText && <VersionHistory entry={entry} />}
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );

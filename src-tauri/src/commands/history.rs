@@ -168,6 +168,35 @@ pub async fn post_process_history_entry(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn restore_version(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    entry_id: i64,
+    version_id: Option<i64>,
+) -> Result<(), String> {
+    // Enforce three-level feature gate on the backend
+    let settings = crate::settings::get_settings(&app);
+    if !settings.experimental_enabled
+        || !settings.post_process_enabled
+        || !settings.history_post_process_enabled
+    {
+        return Err("HISTORY_POST_PROCESS_DISABLED".to_string());
+    }
+
+    history_manager
+        .restore_version(entry_id, version_id)
+        .map_err(|e| {
+            let msg = e.to_string();
+            if msg.contains("VERSION_NOT_FOUND") {
+                "VERSION_NOT_FOUND".to_string()
+            } else {
+                msg
+            }
+        })
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn get_transcription_versions(
     _app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,

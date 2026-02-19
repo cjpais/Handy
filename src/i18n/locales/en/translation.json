@@ -395,7 +395,15 @@
       "postProcessEmptyText": "Transcription text is empty.",
       "postProcessNotConfigured": "Set up post-processing in settings first",
       "showOriginal": "Show original",
-      "showEnhanced": "Show enhanced"
+      "showEnhanced": "Show enhanced",
+      "versionHistory": "Version History",
+      "versionCount": "({{count}} versions)",
+      "activeVersion": "Active",
+      "originalVersion": "Original transcription",
+      "restore": "Restore",
+      "confirmRestore": "Confirm restore?",
+      "restoreError": "Failed to restore version",
+      "versionNotFound": "Version not found"
     },
     "debug": {
       "title": "Debug",

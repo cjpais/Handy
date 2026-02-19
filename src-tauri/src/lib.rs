@@ -347,6 +347,7 @@ pub fn run(cli_args: CliArgs) {
         commands::history::change_history_post_process_enabled_setting,
         commands::history::post_process_history_entry,
         commands::history::get_transcription_versions,
+        commands::history::restore_version,
         helpers::clamshell::is_laptop,
     ]);
 
