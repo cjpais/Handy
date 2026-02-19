@@ -261,6 +261,7 @@ impl SoundTheme {
 #[serde(rename_all = "snake_case")]
 pub enum TypingTool {
     Auto,
+    RemoteDesktop,
     Wtype,
     Kwtype,
     Dotool,
@@ -358,6 +359,8 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default)]
+    pub remote_desktop_token: Option<String>,
 }
 
 fn default_model() -> String {
@@ -721,7 +724,18 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
+        remote_desktop_token: None,
     }
+}
+
+pub fn get_remote_desktop_token(app: &AppHandle) -> Option<String> {
+    get_settings(app).remote_desktop_token
+}
+
+pub fn set_remote_desktop_token(app: &AppHandle, token: Option<String>) {
+    let mut settings = get_settings(app);
+    settings.remote_desktop_token = token;
+    write_settings(app, settings);
 }
 
 impl AppSettings {

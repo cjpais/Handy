@@ -262,6 +262,18 @@
           "clipboardShiftInsert": "Clipboard (Shift+Insert)",
           "direct": "Trực tiếp",
           "none": "Không có"
+        },
+        "portal": {
+          "description": "Trên Wayland, chế độ Trực tiếp cần quyền “Máy tính từ xa”. Quyền này chỉ cho phép Handy chèn văn bản đã đọc vào cửa sổ đang hoạt động. Không tạo kết nối từ xa nào.",
+          "authorized": "Quyền đang hoạt động: Handy có thể chèn văn bản đã đọc vào cửa sổ đang hoạt động qua “Máy tính từ xa”.",
+          "authorizedRappel": "Lưu ý: quyền này không tạo kết nối từ xa.",
+          "button": "Yêu cầu quyền",
+          "buttonRequesting": "Đang yêu cầu…",
+          "buttonRevoke": "Xóa quyền",
+          "errors": {
+            "requestFailed": "Yêu cầu quyền thất bại.",
+            "revokeFailed": "Xóa quyền thất bại."
+          }
         }
       },
       "typingTool": {

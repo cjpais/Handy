@@ -11,6 +11,8 @@ mod input;
 mod llm_client;
 mod managers;
 mod overlay;
+#[cfg(target_os = "linux")]
+mod remote_desktop;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -109,6 +111,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
+
+    #[cfg(target_os = "linux")]
+    {
+        crate::remote_desktop::init_authorization(app_handle);
+    }
 
     // Initialize the managers
     let recording_manager = Arc::new(
@@ -311,6 +318,10 @@ pub fn run(cli_args: CliArgs) {
         commands::check_apple_intelligence_available,
         commands::initialize_enigo,
         commands::initialize_shortcuts,
+        commands::is_wayland_active,
+        commands::request_remote_desktop_authorization,
+        commands::delete_remote_desktop_authorization,
+        commands::get_remote_desktop_authorization,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,

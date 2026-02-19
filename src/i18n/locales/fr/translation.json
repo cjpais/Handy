@@ -262,6 +262,18 @@
           "clipboardShiftInsert": "Presse-papiers (Shift+Insert)",
           "direct": "Direct",
           "none": "Aucun"
+        },
+        "portal": {
+          "description": "Sous Wayland, le mode Direct nécessite une autorisation « Bureau à distance ». Elle permet uniquement à Handy d’insérer le texte dicté dans la fenêtre active. Aucune connexion à distance n’est créée.",
+          "authorized": "Autorisation active : Handy peut insérer le texte dicté dans la fenêtre active via « Bureau à distance ».",
+          "authorizedRappel": "Rappel : cette autorisation ne crée aucune connexion distante.",
+          "button": "Demander l'autorisation",
+          "buttonRequesting": "Demande en cours…",
+          "buttonRevoke": "Supprimer l’autorisation",
+          "errors": {
+            "requestFailed": "La demande d'autorisation a échoué.",
+            "revokeFailed": "La suppression de l’autorisation a échoué."
+          }
         }
       },
       "typingTool": {

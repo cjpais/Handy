@@ -262,6 +262,18 @@
           "clipboardShiftInsert": "Portapapeles (Shift+Insert)",
           "direct": "Directo",
           "none": "Ninguno"
+        },
+        "portal": {
+          "description": "En Wayland, el modo Directo necesita un permiso de «Escritorio remoto». Solo permite que Handy inserte el texto dictado en la ventana activa. No se crea ninguna conexión remota.",
+          "authorized": "Permiso activo: Handy puede insertar el texto dictado en la ventana activa a través de «Escritorio remoto».",
+          "authorizedRappel": "Recordatorio: este permiso no crea ninguna conexión remota.",
+          "button": "Solicitar permiso",
+          "buttonRequesting": "Solicitando…",
+          "buttonRevoke": "Eliminar permiso",
+          "errors": {
+            "requestFailed": "La solicitud de permiso falló.",
+            "revokeFailed": "La eliminación del permiso falló."
+          }
         }
       },
       "typingTool": {

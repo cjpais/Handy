@@ -262,6 +262,18 @@
           "clipboardShiftInsert": "Zwischenablage (Umschalt+Einfg)",
           "direct": "Direkt",
           "none": "Keine"
+        },
+        "portal": {
+          "description": "Unter Wayland benötigt der Direkt-Modus eine „Remote-Desktop“-Berechtigung. Sie erlaubt Handy nur, den diktierten Text in das aktive Fenster einzufügen. Es wird keine Remote-Verbindung erstellt.",
+          "authorized": "Aktive Berechtigung: Handy kann den diktierten Text über „Remote Desktop“ in das aktive Fenster einfügen.",
+          "authorizedRappel": "Hinweis: Diese Berechtigung erstellt keine Remote-Verbindung.",
+          "button": "Berechtigung anfordern",
+          "buttonRequesting": "Wird angefordert…",
+          "buttonRevoke": "Berechtigung entfernen",
+          "errors": {
+            "requestFailed": "Berechtigungsanfrage fehlgeschlagen.",
+            "revokeFailed": "Entfernen der Berechtigung fehlgeschlagen."
+          }
         }
       },
       "typingTool": {

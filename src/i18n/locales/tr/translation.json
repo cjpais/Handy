@@ -262,6 +262,18 @@
           "clipboardShiftInsert": "Pano (Shift+Insert)",
           "direct": "Doğrudan",
           "none": "Yok"
+        },
+        "portal": {
+          "description": "Wayland’da Doğrudan mod için “Uzak Masaüstü” izni gerekir. Bu izin, Handy’nin yalnızca dikte edilen metni etkin pencereye eklemesine izin verir. Herhangi bir uzak bağlantı oluşturulmaz.",
+          "authorized": "İzin etkin: Handy, dikte edilen metni “Uzak Masaüstü” üzerinden etkin pencereye ekleyebilir.",
+          "authorizedRappel": "Hatırlatma: Bu izin uzak bağlantı oluşturmaz.",
+          "button": "İzin iste",
+          "buttonRequesting": "İsteniyor…",
+          "buttonRevoke": "İzni kaldır",
+          "errors": {
+            "requestFailed": "İzin isteği başarısız.",
+            "revokeFailed": "İzin kaldırma başarısız."
+          }
         }
       },
       "typingTool": {

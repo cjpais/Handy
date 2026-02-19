@@ -262,6 +262,18 @@
           "clipboardShiftInsert": "Schowek (Shift+Insert)",
           "direct": "Bezpośrednio",
           "none": "Brak"
+        },
+        "portal": {
+          "description": "W Wayland tryb Bezpośredni wymaga uprawnienia „Pulpit zdalny”. Pozwala ono tylko na wstawienie dyktowanego tekstu do aktywnego okna. Nie tworzy się żadne zdalne połączenie.",
+          "authorized": "Aktywne uprawnienie: Handy może wstawiać dyktowany tekst do aktywnego okna przez „Pulpit zdalny”.",
+          "authorizedRappel": "Przypomnienie: to uprawnienie nie tworzy zdalnego połączenia.",
+          "button": "Poprosić o uprawnienie",
+          "buttonRequesting": "Żądanie…",
+          "buttonRevoke": "Usunąć uprawnienie",
+          "errors": {
+            "requestFailed": "Żądanie uprawnienia nie powiodło się.",
+            "revokeFailed": "Usunięcie uprawnienia nie powiodło się."
+          }
         }
       },
       "typingTool": {

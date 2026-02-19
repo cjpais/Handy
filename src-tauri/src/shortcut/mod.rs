@@ -697,6 +697,7 @@ pub fn change_typing_tool_setting(app: AppHandle, tool: String) -> Result<(), St
     let mut settings = settings::get_settings(&app);
     let parsed = match tool.as_str() {
         "auto" => TypingTool::Auto,
+        "remote_desktop" => TypingTool::RemoteDesktop,
         "wtype" => TypingTool::Wtype,
         "kwtype" => TypingTool::Kwtype,
         "dotool" => TypingTool::Dotool,

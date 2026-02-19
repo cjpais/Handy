@@ -262,6 +262,18 @@
           "clipboardShiftInsert": "クリップボード (Shift+Insert)",
           "direct": "直接",
           "none": "なし"
+        },
+        "portal": {
+          "description": "Wayland では、ダイレクトモードに「リモートデスクトップ」の権限が必要です。この権限は、Handy がアクティブウィンドウに音声入力したテキストを挿入するためだけのものです。リモート接続は作成されません。",
+          "authorized": "権限が有効です: Handy は「リモートデスクトップ」を通してアクティブウィンドウに音声入力したテキストを挿入できます。",
+          "authorizedRappel": "注意: この権限でリモート接続は作成されません。",
+          "button": "権限をリクエスト",
+          "buttonRequesting": "リクエスト中…",
+          "buttonRevoke": "権限を削除",
+          "errors": {
+            "requestFailed": "権限のリクエストに失敗しました。",
+            "revokeFailed": "権限の削除に失敗しました。"
+          }
         }
       },
       "typingTool": {

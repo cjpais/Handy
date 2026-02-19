@@ -59,6 +59,7 @@ vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 enigo = "0.6.1"
 rodio = { git = "https://github.com/cjpais/rodio.git" }
 reqwest = { version = "0.12", features = ["json", "stream"] }
+unicode-normalization = "0.1.23"
 futures-util = "0.3"
 rustfft = "6.4.0"
 strsim = "0.11.0"
@@ -99,6 +100,7 @@ windows = { version = "0.61.3", features = [
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+ashpd = "0.12.1"
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 
