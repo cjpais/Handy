@@ -285,17 +285,12 @@ const VersionCard: React.FC<VersionCardProps> = ({
         <ExpandableText text={version.text} limit={200} />
       </p>
       {version.prompt && (
-        <div className="rounded bg-text/5 border border-text/10 px-2.5 py-2">
-          <div className="flex items-center gap-1 mb-1">
-            <Sparkles width={10} height={10} className="text-text/30" />
-            <span className="text-[10px] font-medium text-text/30 uppercase tracking-wide">
-              {t("settings.history.promptLabel")}
-            </span>
-          </div>
+        <div className="flex items-start gap-1">
+          <Sparkles width={10} height={10} className="text-text/30 mt-0.5 shrink-0" />
           <ExpandableText
             text={version.prompt}
             limit={80}
-            className="text-[11px] leading-relaxed text-text/40 italic whitespace-pre-wrap"
+            className="text-[11px] leading-relaxed text-text/30 whitespace-pre-wrap"
           />
         </div>
       )}
