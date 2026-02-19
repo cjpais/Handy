@@ -383,10 +383,30 @@
       "loading": "Завантаження історії...",
       "empty": "Транскрипцій поки немає. Почніть запис, щоб створити історію!",
       "copyToClipboard": "Копіювати транскрипцію в буфер обміну",
+      "copyOriginal": "Copy original transcription",
+      "copyEnhanced": "Copy enhanced transcription",
       "save": "Зберегти транскрипцію",
       "unsave": "Видалити зі збережених",
       "delete": "Видалити запис",
-      "deleteError": "Не вдалося видалити запис. Спробуйте ще раз."
+      "deleteError": "Не вдалося видалити запис. Спробуйте ще раз.",
+      "postProcess": "Enhance transcription",
+      "postProcessError": "Post-processing failed. Check your provider settings.",
+      "postProcessDisabled": "History post-processing is not enabled.",
+      "postProcessEmptyText": "Transcription text is empty.",
+      "postProcessNotConfigured": "Set up post-processing in settings first",
+      "showOriginal": "Show original",
+      "showEnhanced": "Show enhanced",
+      "versionHistory": "Version History",
+      "versionCount": "({{count}} versions)",
+      "activeVersion": "Active",
+      "originalVersion": "Original transcription",
+      "restore": "Restore",
+      "confirmRestore": "Confirm restore?",
+      "restoreError": "Failed to restore version",
+      "versionNotFound": "Version not found",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "promptLabel": "Prompt"
     },
     "debug": {
       "title": "Дебаг",
@@ -436,6 +456,10 @@
       "postProcessingToggle": {
         "label": "Постобробка",
         "description": "Увімкнути покращення тексту за допомогою AI після транскрипції"
+      },
+      "historyPostProcessToggle": {
+        "label": "Post-process History",
+        "description": "Add a button to enhance past transcriptions from the History tab"
       },
       "muteWhileRecording": {
         "label": "Вимкнути звук під час запису",

@@ -383,10 +383,30 @@
       "loading": "Загрузка истории...",
       "empty": "Транскрипций пока нет. Начните запись, чтобы создать свою историю!",
       "copyToClipboard": "Скопировать транскрипцию в буфер обмена",
+      "copyOriginal": "Copy original transcription",
+      "copyEnhanced": "Copy enhanced transcription",
       "save": "Сохранить транскрипцию",
       "unsave": "Удалить из сохраненных",
       "delete": "Удалить запись",
-      "deleteError": "Не удалось удалить запись. Пожалуйста, попробуйте еще раз."
+      "deleteError": "Не удалось удалить запись. Пожалуйста, попробуйте еще раз.",
+      "postProcess": "Enhance transcription",
+      "postProcessError": "Post-processing failed. Check your provider settings.",
+      "postProcessDisabled": "History post-processing is not enabled.",
+      "postProcessEmptyText": "Transcription text is empty.",
+      "postProcessNotConfigured": "Set up post-processing in settings first",
+      "showOriginal": "Show original",
+      "showEnhanced": "Show enhanced",
+      "versionHistory": "Version History",
+      "versionCount": "({{count}} versions)",
+      "activeVersion": "Active",
+      "originalVersion": "Original transcription",
+      "restore": "Restore",
+      "confirmRestore": "Confirm restore?",
+      "restoreError": "Failed to restore version",
+      "versionNotFound": "Version not found",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "promptLabel": "Prompt"
     },
     "debug": {
       "title": "Отлаживать",
@@ -436,6 +456,10 @@
       "postProcessingToggle": {
         "label": "Постобработка",
         "description": "Включить уточнение текста с помощью искусственного интеллекта после транскрипции"
+      },
+      "historyPostProcessToggle": {
+        "label": "Post-process History",
+        "description": "Add a button to enhance past transcriptions from the History tab"
       },
       "muteWhileRecording": {
         "label": "Отключить звук во время записи",

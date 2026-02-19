@@ -383,10 +383,30 @@
       "loading": "Carregando histórico...",
       "empty": "Nenhuma transcrição ainda. Comece a gravar para construir seu histórico!",
       "copyToClipboard": "Copiar transcrição para área de transferência",
+      "copyOriginal": "Copy original transcription",
+      "copyEnhanced": "Copy enhanced transcription",
       "save": "Salvar transcrição",
       "unsave": "Remover dos salvos",
       "delete": "Excluir entrada",
-      "deleteError": "Falha ao excluir entrada. Por favor, tente novamente."
+      "deleteError": "Falha ao excluir entrada. Por favor, tente novamente.",
+      "postProcess": "Enhance transcription",
+      "postProcessError": "Post-processing failed. Check your provider settings.",
+      "postProcessDisabled": "History post-processing is not enabled.",
+      "postProcessEmptyText": "Transcription text is empty.",
+      "postProcessNotConfigured": "Set up post-processing in settings first",
+      "showOriginal": "Show original",
+      "showEnhanced": "Show enhanced",
+      "versionHistory": "Version History",
+      "versionCount": "({{count}} versions)",
+      "activeVersion": "Active",
+      "originalVersion": "Original transcription",
+      "restore": "Restore",
+      "confirmRestore": "Confirm restore?",
+      "restoreError": "Failed to restore version",
+      "versionNotFound": "Version not found",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "promptLabel": "Prompt"
     },
     "debug": {
       "title": "Depuração",
@@ -436,6 +456,10 @@
       "postProcessingToggle": {
         "label": "Pós-Processamento",
         "description": "Habilitar refinamento de texto com IA após a transcrição"
+      },
+      "historyPostProcessToggle": {
+        "label": "Post-process History",
+        "description": "Add a button to enhance past transcriptions from the History tab"
       },
       "muteWhileRecording": {
         "label": "Silenciar Durante Gravação",
