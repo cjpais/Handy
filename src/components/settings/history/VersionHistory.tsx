@@ -295,7 +295,7 @@ const VersionCard: React.FC<VersionCardProps> = ({
           <ExpandableText
             text={version.prompt}
             limit={80}
-            className="text-[11px] leading-relaxed text-text/40 italic"
+            className="text-[11px] leading-relaxed text-text/40 italic whitespace-pre-wrap"
           />
         </div>
       )}
