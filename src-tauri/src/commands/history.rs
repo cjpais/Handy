@@ -1,4 +1,5 @@
-use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::actions::post_process_transcription;
+use crate::managers::history::{HistoryEntry, HistoryManager, TranscriptionVersion};
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -110,4 +111,66 @@ pub async fn change_history_post_process_enabled_setting(
     settings.history_post_process_enabled = enabled;
     crate::settings::write_settings(&app, settings);
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn post_process_history_entry(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+) -> Result<String, String> {
+    // Get the history entry
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    if entry.transcription_text.trim().is_empty() {
+        return Err("Transcription text is empty".to_string());
+    }
+
+    // Get current settings and run post-processing
+    let settings = crate::settings::get_settings(&app);
+    let processed_text = post_process_transcription(&settings, &entry.transcription_text)
+        .await
+        .ok_or_else(|| "Post-processing failed. Check your provider, API key, and prompt configuration.".to_string())?;
+
+    // Get the prompt that was used
+    let prompt_text = settings
+        .post_process_selected_prompt_id
+        .as_ref()
+        .and_then(|prompt_id| {
+            settings
+                .post_process_prompts
+                .iter()
+                .find(|p| &p.id == prompt_id)
+                .map(|p| p.prompt.clone())
+        })
+        .unwrap_or_default();
+
+    // Save version
+    history_manager
+        .save_version(id, &processed_text, Some(&prompt_text))
+        .map_err(|e| e.to_string())?;
+
+    // Update the entry's post_processed_text
+    history_manager
+        .update_post_processed_text(id, &processed_text, &prompt_text)
+        .map_err(|e| e.to_string())?;
+
+    Ok(processed_text)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_transcription_versions(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    entry_id: i64,
+) -> Result<Vec<TranscriptionVersion>, String> {
+    history_manager
+        .get_versions(entry_id)
+        .map_err(|e| e.to_string())
 }
