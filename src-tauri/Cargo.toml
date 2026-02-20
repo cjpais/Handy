@@ -103,6 +103,7 @@ gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 
 [patch.crates-io]
+handy-keys = { path = "vendor/handy-keys" }
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
 tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
 tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }

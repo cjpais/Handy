@@ -1,0 +1,45 @@
+[package]
+name = "handy-keys"
+version = "0.2.1"
+edition = "2021"
+description = "Cross-platform global keyboard shortcuts library"
+license = "MIT"
+repository = "https://github.com/handy-computer/handy-keys"
+documentation = "https://docs.rs/handy-keys"
+readme = "README.md"
+keywords = ["keyboard", "hotkey", "shortcuts", "global", "cross-platform"]
+categories = ["api-bindings", "os"]
+
+[lib]
+name = "handy_keys"
+path = "src/lib.rs"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "record_hotkey"
+path = "examples/record_hotkey.rs"
+
+[dependencies]
+bitflags = { version = "2", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-core-foundation = "0.3"
+objc2-core-graphics = { version = "0.3", features = ["CGEvent", "CGEventTypes", "CGEventSource", "CGRemoteOperation"] }
+objc2-app-kit = { version = "0.3", features = ["NSEvent", "NSApplication"] }
+objc2-foundation = "0.3"
+block2 = "0.6"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rdev = { version = "0.5.3", features = ["unstable_grab"] }
