@@ -17,7 +17,7 @@
       ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
       # Read version from Cargo.toml
-      cargoToml = builtins.fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
+      cargoToml = fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
       version = cargoToml.package.version;
     in
     {
@@ -51,7 +51,7 @@
 
             outputHashAlgo = "sha256";
             outputHashMode = "recursive";
-            outputHash = "sha256-6SvLw/8UBIHlcIY7jUJKv6DHPooP3aUz+4PvC7UNzv4=";
+            outputHash = "sha256-+hUANv0w3qnK5d2+4JW3XMazLRDhWCbOxUXQyTGta/0=";
           };
         in
         {
