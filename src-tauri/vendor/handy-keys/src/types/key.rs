@@ -434,6 +434,66 @@ impl FromStr for Key {
     }
 }
 
+impl Key {
+    pub fn from_layout_char(ch: char) -> Option<Self> {
+        let lowered = ch.to_lowercase().next()?;
+        match lowered {
+            'a' => Some(Key::A),
+            'b' => Some(Key::B),
+            'c' => Some(Key::C),
+            'd' => Some(Key::D),
+            'e' => Some(Key::E),
+            'f' => Some(Key::F),
+            'g' => Some(Key::G),
+            'h' => Some(Key::H),
+            'i' => Some(Key::I),
+            'j' => Some(Key::J),
+            'k' => Some(Key::K),
+            'l' => Some(Key::L),
+            'm' => Some(Key::M),
+            'n' => Some(Key::N),
+            'o' => Some(Key::O),
+            'p' => Some(Key::P),
+            'q' => Some(Key::Q),
+            'r' => Some(Key::R),
+            's' => Some(Key::S),
+            't' => Some(Key::T),
+            'u' => Some(Key::U),
+            'v' => Some(Key::V),
+            'w' => Some(Key::W),
+            'x' => Some(Key::X),
+            'y' => Some(Key::Y),
+            'z' => Some(Key::Z),
+            '0' => Some(Key::Num0),
+            '1' => Some(Key::Num1),
+            '2' => Some(Key::Num2),
+            '3' => Some(Key::Num3),
+            '4' => Some(Key::Num4),
+            '5' => Some(Key::Num5),
+            '6' => Some(Key::Num6),
+            '7' => Some(Key::Num7),
+            '8' => Some(Key::Num8),
+            '9' => Some(Key::Num9),
+            '-' => Some(Key::Minus),
+            '=' => Some(Key::Equal),
+            '[' => Some(Key::LeftBracket),
+            ']' => Some(Key::RightBracket),
+            '\\' => Some(Key::Backslash),
+            ';' => Some(Key::Semicolon),
+            '\'' => Some(Key::Quote),
+            ',' => Some(Key::Comma),
+            '.' => Some(Key::Period),
+            '/' => Some(Key::Slash),
+            '`' => Some(Key::Grave),
+            'ö' | 'é' => Some(Key::Semicolon),
+            'ä' | 'à' => Some(Key::Quote),
+            'ü' | 'è' => Some(Key::LeftBracket),
+            'ç' => Some(Key::RightBracket),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

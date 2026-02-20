@@ -6,6 +6,9 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 
 use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
+use windows::Win32::UI::Input::KeyboardAndMouse::{
+    GetKeyboardLayout, GetKeyboardState, MapVirtualKeyW, ToUnicodeEx, MAPVK_VSC_TO_VK_EX,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, PeekMessageW, SetWindowsHookExW, TranslateMessage,
     UnhookWindowsHookEx, KBDLLHOOKSTRUCT, LLKHF_EXTENDED, MSG, MSLLHOOKSTRUCT, PM_REMOVE,
@@ -19,6 +22,52 @@ use crate::platform::state::BlockingHotkeys;
 use crate::types::{Hotkey, Key, KeyEvent, Modifiers};
 
 use super::keycode::{vk_to_key, vk_to_modifier};
+
+fn vk_to_layout_key(vk_code: u16, scan_code: u32, modifiers: Modifiers) -> Option<Key> {
+    let mut keyboard_state = [0u8; 256];
+    unsafe {
+        let _ = GetKeyboardState(&mut keyboard_state);
+    }
+
+    if modifiers.intersects(Modifiers::SHIFT) {
+        keyboard_state[0x10] |= 0x80;
+    }
+    if modifiers.intersects(Modifiers::CTRL) {
+        keyboard_state[0x11] |= 0x80;
+    }
+    if modifiers.intersects(Modifiers::OPT) {
+        keyboard_state[0x12] |= 0x80;
+    }
+
+    let mut buffer = [0u16; 8];
+    let keyboard_layout = unsafe { GetKeyboardLayout(0) };
+    let translated = unsafe {
+        ToUnicodeEx(
+            u32::from(vk_code),
+            scan_code,
+            &keyboard_state,
+            &mut buffer,
+            0,
+            keyboard_layout,
+        )
+    };
+
+    if translated > 0 {
+        let translated_len = usize::try_from(translated).ok()?;
+        let text = String::from_utf16_lossy(&buffer[..translated_len]);
+        if let Some(ch) = text.chars().next() {
+            return Key::from_layout_char(ch);
+        }
+    }
+
+    let fallback_vk = unsafe { MapVirtualKeyW(scan_code, MAPVK_VSC_TO_VK_EX) };
+    if fallback_vk != 0 {
+        let mapped_vk = u16::try_from(fallback_vk).ok()?;
+        return vk_to_key(mapped_vk, false);
+    }
+
+    None
+}
 
 /// Thread-local state for the keyboard hook callback.
 ///
@@ -149,6 +198,7 @@ unsafe extern "system" fn keyboard_hook_proc(code: i32, wparam: WPARAM, lparam: 
             // Extract key information from KBDLLHOOKSTRUCT
             let kb_struct = &*(lparam.0 as *const KBDLLHOOKSTRUCT);
             let vk_code = kb_struct.vkCode as u16;
+            let scan_code = kb_struct.scanCode;
             let is_extended = (kb_struct.flags.0 & LLKHF_EXTENDED.0) != 0;
 
             let is_key_down = matches!(wparam.0 as u32, WM_KEYDOWN | WM_SYSKEYDOWN);
@@ -177,7 +227,9 @@ unsafe extern "system" fn keyboard_hook_proc(code: i32, wparam: WPARAM, lparam: 
                         changed_modifier: Some(modifier),
                     });
                 }
-            } else if let Some(key) = vk_to_key(vk_code, is_extended) {
+            } else if let Some(key) = vk_to_layout_key(vk_code, scan_code, ctx.current_modifiers)
+                .or_else(|| vk_to_key(vk_code, is_extended))
+            {
                 // Regular key event
                 should_block =
                     should_block_hotkey(&ctx.blocking_hotkeys, ctx.current_modifiers, Some(key));

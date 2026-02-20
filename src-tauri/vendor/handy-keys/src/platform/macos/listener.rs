@@ -21,6 +21,37 @@ use crate::types::{Key, KeyEvent, Modifiers};
 use super::keycode::{flags_have_alpha_shift, flags_have_fn, keycode_to_key, keycode_to_modifier};
 use super::permissions::check_accessibility;
 
+#[link(name = "ApplicationServices", kind = "framework")]
+unsafe extern "C" {
+    fn CGEventKeyboardGetUnicodeString(
+        event: *const std::ffi::c_void,
+        maxStringLength: usize,
+        actualStringLength: *mut usize,
+        unicodeString: *mut u16,
+    );
+}
+
+fn key_from_event_unicode(cg_event: &CGEvent) -> Option<Key> {
+    let mut chars = [0u16; 8];
+    let mut len: usize = 0;
+    unsafe {
+        CGEventKeyboardGetUnicodeString(
+            cg_event as *const _ as *const std::ffi::c_void,
+            chars.len(),
+            &mut len,
+            chars.as_mut_ptr(),
+        );
+    }
+
+    if len > 0 {
+        let text = String::from_utf16_lossy(&chars[..len.min(chars.len())]);
+        if let Some(ch) = text.chars().next() {
+            return Key::from_layout_char(ch);
+        }
+    }
+    None
+}
+
 /// Internal listener state returned to KeyboardListener
 pub(crate) struct MacOSListenerState {
     pub event_receiver: Receiver<KeyEvent>,
@@ -148,7 +179,7 @@ unsafe extern "C-unwind" fn event_tap_callback(
                     CGEventField::KeyboardEventKeycode,
                 ) as u16;
 
-                let key = keycode_to_key(keycode);
+                let key = key_from_event_unicode(cg_event).or_else(|| keycode_to_key(keycode));
 
                 // Skip special function key events (e.g., F3 triggering Mission Control).
                 // These have MaskSecondaryFn set but use special keycodes (like 0xA0)
@@ -174,7 +205,7 @@ unsafe extern "C-unwind" fn event_tap_callback(
                     CGEventField::KeyboardEventKeycode,
                 ) as u16;
 
-                let key = keycode_to_key(keycode);
+                let key = key_from_event_unicode(cg_event).or_else(|| keycode_to_key(keycode));
 
                 // Skip special function key events (same as KeyDown)
                 if key.is_none() && flags_have_fn(flags) {

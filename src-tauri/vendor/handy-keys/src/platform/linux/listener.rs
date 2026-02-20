@@ -64,7 +64,13 @@ pub(crate) fn spawn(blocking_hotkeys: Option<BlockingHotkeys>) -> Result<LinuxLi
                                     changed_modifier: Some(changed_modifier),
                                 });
                             }
-                        } else if let Some(key) = rdev_key_to_key(rdev_key) {
+                        } else if let Some(key) = event
+                            .name
+                            .as_ref()
+                            .and_then(|s| s.chars().next())
+                            .and_then(Key::from_layout_char)
+                            .or_else(|| rdev_key_to_key(rdev_key))
+                        {
                             // Check if this should be blocked
                             should_block = state.should_block(state.current_modifiers, Some(key));
 
@@ -91,7 +97,13 @@ pub(crate) fn spawn(blocking_hotkeys: Option<BlockingHotkeys>) -> Result<LinuxLi
                                     changed_modifier: Some(changed_modifier),
                                 });
                             }
-                        } else if let Some(key) = rdev_key_to_key(rdev_key) {
+                        } else if let Some(key) = event
+                            .name
+                            .as_ref()
+                            .and_then(|s| s.chars().next())
+                            .and_then(Key::from_layout_char)
+                            .or_else(|| rdev_key_to_key(rdev_key))
+                        {
                             // Block key up if we blocked key down (to be consistent)
                             should_block = state.should_block(state.current_modifiers, Some(key));
 
