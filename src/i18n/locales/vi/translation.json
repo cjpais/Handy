@@ -238,7 +238,8 @@
       },
       "autostart": {
         "label": "Khởi động cùng hệ thống",
-        "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."
+        "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính.",
+        "error": "Không thể cập nhật cài đặt khởi động tự động. Môi trường desktop của bạn có thể không hỗ trợ tính năng này."
       },
       "showTrayIcon": {
         "label": "Hiển thị biểu tượng khay",

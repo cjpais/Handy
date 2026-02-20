@@ -238,7 +238,8 @@
       },
       "autostart": {
         "label": "開機啟動",
-        "description": "登入電腦時自動啟動 Handy"
+        "description": "登入電腦時自動啟動 Handy",
+        "error": "無法更新開機啟動設定。你的桌面環境可能不支援此功能。"
       },
       "showTrayIcon": {
         "label": "顯示系統匣圖示",

@@ -238,7 +238,8 @@
       },
       "autostart": {
         "label": "Beim Start ausführen",
-        "description": "Handy automatisch beim Anmelden starten."
+        "description": "Handy automatisch beim Anmelden starten.",
+        "error": "Autostart-Einstellung konnte nicht aktualisiert werden. Ihre Desktop-Umgebung unterstützt diese Funktion möglicherweise nicht."
       },
       "showTrayIcon": {
         "label": "Taskleistensymbol anzeigen",

@@ -238,7 +238,8 @@
       },
       "autostart": {
         "label": "开机启动",
-        "description": "登录计算机时自动启动 Handy。"
+        "description": "登录计算机时自动启动 Handy。",
+        "error": "无法更新自动启动设置。您的桌面环境可能不支持此功能。"
       },
       "showTrayIcon": {
         "label": "显示托盘图标",

@@ -78,3 +78,11 @@ jobs:
       upload-artifacts: false
       release-id: ${{ needs.create-release.outputs.release-id }}
     secrets: inherit
+
+  build-flatpak:
+    needs: [create-release, publish-tauri]
+    uses: ./.github/workflows/build-flatpak.yml
+    with:
+      release-id: ${{ needs.create-release.outputs.release-id }}
+      version: ${{ needs.create-release.outputs.version }}
+    secrets: inherit

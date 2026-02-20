@@ -238,7 +238,8 @@
       },
       "autostart": {
         "label": "Avvia all'Accensione",
-        "description": "Avvia Handy automaticamente quando accedi al computer."
+        "description": "Avvia Handy automaticamente quando accedi al computer.",
+        "error": "Impossibile aggiornare l'impostazione di avvio automatico. Il tuo ambiente desktop potrebbe non supportare questa funzionalità."
       },
       "showTrayIcon": {
         "label": "Mostra icona nella barra di sistema",

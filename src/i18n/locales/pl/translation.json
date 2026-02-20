@@ -238,7 +238,8 @@
       },
       "autostart": {
         "label": "Uruchamiaj przy starcie",
-        "description": "Automatycznie uruchamiaj Handy po zalogowaniu."
+        "description": "Automatycznie uruchamiaj Handy po zalogowaniu.",
+        "error": "Nie udało się zaktualizować ustawienia automatycznego uruchamiania. Twoje środowisko graficzne może nie obsługiwać tej funkcji."
       },
       "showTrayIcon": {
         "label": "Pokaż ikonę w zasobniku",
