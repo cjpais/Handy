@@ -32,6 +32,10 @@ The process is entirely local:
   - **Parakeet V3** - CPU-optimized model with excellent performance and automatic language detection
 - Works on Windows, macOS, and Linux
 
+### Write After Silence
+
+Handy also supports an optional **Write After Silence** mode. When enabled, Handy writes partial transcription while you are still speaking, but only after a configurable period of silence (for example, 200 ms). This helps reduce interruptions during speech while still giving you near-real-time text output.
+
 ## Quick Start
 
 ### Installation
