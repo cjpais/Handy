@@ -8,15 +8,17 @@ use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID}
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
-    self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
+    self, emit_streaming_transcript, show_processing_overlay, show_recording_overlay,
+    show_transcribing_overlay,
 };
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::AppHandle;
 use tauri::Manager;
 
@@ -40,7 +42,11 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    streaming_active: Arc<AtomicBool>,
 }
+
+/// Interval between streaming transcription updates.
+const STREAMING_INTERVAL: Duration = Duration::from_millis(500);
 
 /// Field name for structured output JSON schema
 const TRANSCRIPTION_FIELD: &str = "transcription";
@@ -370,6 +376,33 @@ impl ShortcutAction for TranscribeAction {
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+
+            // Start streaming transcription loop
+            self.streaming_active.store(true, Ordering::Relaxed);
+            let streaming_flag = self.streaming_active.clone();
+            let app_clone = app.clone();
+            let rm_clone = Arc::clone(&rm);
+            let tm_clone = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
+            std::thread::spawn(move || {
+                // Wait a bit before starting to accumulate some audio
+                std::thread::sleep(STREAMING_INTERVAL);
+                while streaming_flag.load(Ordering::Relaxed) {
+                    if let Some(samples) = rm_clone.get_accumulated_samples() {
+                        if !samples.is_empty() && tm_clone.is_model_loaded() {
+                            match tm_clone.transcribe(samples) {
+                                Ok(text) if !text.is_empty() => {
+                                    emit_streaming_transcript(&app_clone, &text);
+                                }
+                                Ok(_) => {}
+                                Err(e) => {
+                                    debug!("Streaming transcription error: {}", e);
+                                }
+                            }
+                        }
+                    }
+                    std::thread::sleep(STREAMING_INTERVAL);
+                }
+            });
         }
 
         debug!(
@@ -379,6 +412,9 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        // Stop the streaming transcription loop
+        self.streaming_active.store(false, Ordering::Relaxed);
+
         // Unregister the cancel shortcut when transcription stops
         shortcut::unregister_cancel_shortcut(app);
 
@@ -574,11 +610,15 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            streaming_active: Arc::new(AtomicBool::new(false)),
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            streaming_active: Arc::new(AtomicBool::new(false)),
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),

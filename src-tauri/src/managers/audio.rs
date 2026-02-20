@@ -421,6 +421,19 @@ impl AudioRecordingManager {
         )
     }
 
+    /// Returns a clone of the accumulated audio samples without stopping recording.
+    /// Returns `None` if not currently recording or if the snapshot fails.
+    pub fn get_accumulated_samples(&self) -> Option<Vec<f32>> {
+        if !self.is_recording() {
+            return None;
+        }
+        if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+            rec.snapshot().ok()
+        } else {
+            None
+        }
+    }
+
     /// Cancel any ongoing recording without returning audio samples
     pub fn cancel_recording(&self) {
         let mut state = self.state.lock().unwrap();

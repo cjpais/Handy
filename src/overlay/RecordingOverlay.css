@@ -1,10 +1,11 @@
+
 .recording-overlay {
-  height: 36px;
-  width: 172px;
+  min-height: 52px;
+  width: 400px;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  align-items: center;
-  padding: 6px;
+  align-items: start;
+  padding: 12px 12px;
   background: #000000cc;
   border-radius: 18px;
   opacity: 0;
@@ -21,6 +22,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.recording-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .overlay-right {

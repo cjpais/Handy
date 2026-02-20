@@ -430,11 +430,6 @@ impl TranscriptionManager {
             while *is_loading {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }
-
-            let engine_guard = self.lock_engine();
-            if engine_guard.is_none() {
-                return Err(anyhow::anyhow!("Model is not loaded for transcription."));
-            }
         }
 
         // Get current settings for configuration
@@ -457,9 +452,6 @@ impl TranscriptionManager {
                     ));
                 }
             };
-
-            // Release the lock before transcribing — no mutex held during the engine call
-            drop(engine_guard);
 
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<transcribe_rs::TranscriptionResult> {
@@ -533,7 +525,6 @@ impl TranscriptionManager {
             match transcribe_result {
                 Ok(inner_result) => {
                     // Success or normal error — put the engine back
-                    let mut engine_guard = self.lock_engine();
                     *engine_guard = Some(engine);
                     inner_result?
                 }
