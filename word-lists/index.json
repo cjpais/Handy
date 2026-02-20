@@ -1,0 +1,23 @@
+[
+  {
+    "id": "medical",
+    "name": "Medical Terms",
+    "description": "Common medical terminology often misheard during transcription",
+    "file": "medical.txt",
+    "wordCount": 120
+  },
+  {
+    "id": "programming",
+    "name": "Programming Terms",
+    "description": "Technical programming and software development vocabulary",
+    "file": "programming.txt",
+    "wordCount": 100
+  },
+  {
+    "id": "legal",
+    "name": "Legal Terms",
+    "description": "Legal and judicial terminology for law professionals",
+    "file": "legal.txt",
+    "wordCount": 90
+  }
+]

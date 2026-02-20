@@ -648,6 +648,30 @@ pub fn update_custom_words(app: AppHandle, words: Vec<String>) -> Result<(), Str
 
 #[tauri::command]
 #[specta::specta]
+pub async fn fetch_word_list(url: String) -> Result<Vec<String>, String> {
+    let client = reqwest::Client::new();
+    let text = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .error_for_status()
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let words: Vec<String> = text
+        .split('\n')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty() && !s.starts_with('#'))
+        .collect();
+
+    Ok(words)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_word_correction_threshold_setting(
     app: AppHandle,
     threshold: f64,
