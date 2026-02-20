@@ -136,6 +136,10 @@ For reliable text input on Linux, install the appropriate tool for your display 
 
 Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
 
+### Keyboard Shortcut Display Notes
+
+The effective shortcut key can be correct at runtime even if the UI label appears as a different symbol/key name in some layouts.
+
 **Other Notes:**
 
 - **Runtime library dependency (`libgtk-layer-shell.so.0`)**:
