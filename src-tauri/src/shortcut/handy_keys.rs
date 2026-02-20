@@ -522,9 +522,9 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
 #[tauri::command]
 #[specta::specta]
 pub fn start_handy_keys_recording(app: AppHandle, binding_id: String) -> Result<(), String> {
-    let settings = get_settings(&app);
-    if settings.keyboard_implementation != settings::KeyboardImplementation::HandyKeys {
-        return Err("handy-keys is not the active keyboard implementation".into());
+    if app.try_state::<HandyKeysState>().is_none() {
+        let state = HandyKeysState::new(app.clone())?;
+        app.manage(state);
     }
 
     let state = app
@@ -537,13 +537,9 @@ pub fn start_handy_keys_recording(app: AppHandle, binding_id: String) -> Result<
 #[tauri::command]
 #[specta::specta]
 pub fn stop_handy_keys_recording(app: AppHandle) -> Result<(), String> {
-    let settings = get_settings(&app);
-    if settings.keyboard_implementation != settings::KeyboardImplementation::HandyKeys {
-        return Err("handy-keys is not the active keyboard implementation".into());
-    }
+    let Some(state) = app.try_state::<HandyKeysState>() else {
+        return Ok(());
+    };
 
-    let state = app
-        .try_state::<HandyKeysState>()
-        .ok_or("HandyKeysState not initialized")?;
     state.stop_recording()
 }
