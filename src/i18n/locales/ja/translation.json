@@ -318,6 +318,15 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "writeAfterSilence": {
+        "label": "無音が指定ms続いたら書き込む",
+        "description": "発話後に設定したミリ秒ぶん無音が続くと、文字起こし結果を書き込みます。"
+      },
+      "writeAfterSilenceDelay": {
+        "title": "書き込み前の無音遅延",
+        "description": "現在のカーソル位置に文字起こしを入力する前に必要な無音時間（ミリ秒）。",
+        "unit": "ms"
       }
     },
     "postProcessing": {

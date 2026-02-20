@@ -318,6 +318,15 @@
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
+      },
+      "writeAfterSilence": {
+        "label": "Zapsat po tichu (ms)",
+        "description": "Text se vloží po nastaveném počtu ms ticha po řeči."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "Prodleva ticha před zápisem",
+        "description": "Počet ms ticha po řeči, po kterých se přepis zapíše na aktuální pozici kurzoru.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

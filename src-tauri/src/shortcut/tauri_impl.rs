@@ -38,33 +38,14 @@ pub fn init_shortcuts(app: &AppHandle) {
 }
 
 /// Validate a shortcut string for the Tauri global-shortcut implementation.
-/// Tauri requires at least one non-modifier key and doesn't support the fn key.
+/// Validation here is intentionally permissive to support diverse keyboard
+/// layouts and key combinations. Final capability checks are performed by
+/// Tauri when parsing/registering the shortcut.
 pub fn validate_shortcut(raw: &str) -> Result<(), String> {
     if raw.trim().is_empty() {
         return Err("Shortcut cannot be empty".into());
     }
-
-    let modifiers = [
-        "ctrl", "control", "shift", "alt", "option", "meta", "command", "cmd", "super", "win",
-        "windows",
-    ];
-
-    // Check for fn key which Tauri doesn't support
-    let parts: Vec<String> = raw.split('+').map(|p| p.trim().to_lowercase()).collect();
-    for part in &parts {
-        if part == "fn" || part == "function" {
-            return Err("The 'fn' key is not supported by Tauri global shortcuts".into());
-        }
-    }
-
-    // Check for at least one non-modifier key
-    let has_non_modifier = parts.iter().any(|part| !modifiers.contains(&part.as_str()));
-
-    if has_non_modifier {
-        Ok(())
-    } else {
-        Err("Tauri shortcuts must include a main key (letter, number, F-key, etc.) in addition to modifiers".into())
-    }
+    Ok(())
 }
 
 /// Register a shortcut using Tauri's global-shortcut plugin

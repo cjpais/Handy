@@ -318,6 +318,24 @@
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
+      },
+      "writeWhileSpeech": {
+        "label": "Write While Speech",
+        "description": "Write transcription incrementally while you keep the shortcut pressed."
+      },
+      "writeDelay": {
+        "title": "Write Delay",
+        "description": "How often live transcription is written at the current cursor location.",
+        "unit": "ms"
+      },
+      "writeAfterSilence": {
+        "label": "Write after ms silence",
+        "description": "Writes transcribed text after the configured milliseconds of silence following speech."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "Silence delay before writing",
+        "description": "How many milliseconds of silence are required before writing transcription at the current cursor position.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

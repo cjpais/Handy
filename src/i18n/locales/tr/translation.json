@@ -318,6 +318,15 @@
         "add": "Ekle",
         "remove": "{{word}} Kaldır",
         "duplicate": "\"{{word}}\" zaten mevcut"
+      },
+      "writeAfterSilence": {
+        "label": "Sessizlikten sonra yaz (ms)",
+        "description": "Konuşmadan sonra ayarlanan ms kadar sessizlik algılandığında metni yazar."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "Yazmadan önce sessizlik gecikmesi",
+        "description": "Transkripsiyonun mevcut imleç konumuna yazılmadan önce gereken sessizlik süresi (ms).",
+        "unit": "ms"
       }
     },
     "postProcessing": {

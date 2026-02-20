@@ -15,8 +15,8 @@ use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::Instant;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use tauri::AppHandle;
 use tauri::Manager;
 
@@ -44,6 +44,12 @@ struct TranscribeAction {
 
 /// Field name for structured output JSON schema
 const TRANSCRIPTION_FIELD: &str = "transcription";
+const WRITE_WHILE_SPEECH_MIN_DELAY_MS: u64 = 50;
+const WRITE_WHILE_SPEECH_MAX_DELAY_MS: u64 = 5000;
+const WRITE_WHILE_SPEECH_POLL_MS: u64 = 50;
+
+static LAST_WRITTEN_TEXT_BY_BINDING: Lazy<Mutex<HashMap<String, String>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Strip invisible Unicode characters that some LLMs may insert
 fn strip_invisible_chars(s: &str) -> String {
@@ -54,6 +60,24 @@ fn strip_invisible_chars(s: &str) -> String {
 /// Removes `${output}` placeholder since the transcription is sent as the user message.
 fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
+}
+
+fn write_while_speech_enabled(settings: &AppSettings, post_process: bool) -> bool {
+    settings.write_while_speech && !post_process
+}
+
+fn write_while_speech_delay_ms(settings: &AppSettings) -> u64 {
+    settings
+        .write_delay_ms
+        .clamp(WRITE_WHILE_SPEECH_MIN_DELAY_MS, WRITE_WHILE_SPEECH_MAX_DELAY_MS)
+}
+
+fn get_incremental_delta(previous: &str, current: &str) -> Option<String> {
+    if !current.starts_with(previous) || current.len() <= previous.len() {
+        return None;
+    }
+
+    Some(current[previous.len()..].to_string())
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -327,6 +351,8 @@ impl ShortcutAction for TranscribeAction {
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
+        let write_while_speech_active = write_while_speech_enabled(&settings, self.post_process);
+        let write_delay_ms = write_while_speech_delay_ms(&settings);
 
         let mut recording_started = false;
         if is_always_on {
@@ -370,6 +396,99 @@ impl ShortcutAction for TranscribeAction {
         if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+
+            if write_while_speech_active {
+                if let Ok(mut state) = LAST_WRITTEN_TEXT_BY_BINDING.lock() {
+                    state.insert(binding_id.clone(), String::new());
+                }
+
+                let app_clone = app.clone();
+                let binding_id_clone = binding_id.clone();
+                let rm_clone = Arc::clone(&rm);
+                let tm_clone = Arc::clone(&tm);
+
+                tauri::async_runtime::spawn(async move {
+                    let mut last_samples_len = 0usize;
+                    let mut last_growth_at = Instant::now();
+                    let mut last_emitted_samples_len = 0usize;
+
+                    loop {
+                        tokio::time::sleep(Duration::from_millis(WRITE_WHILE_SPEECH_POLL_MS)).await;
+
+                        if !rm_clone.is_recording() {
+                            break;
+                        }
+
+                        let Some(samples) = rm_clone.get_recording_snapshot(&binding_id_clone)
+                        else {
+                            continue;
+                        };
+
+                        if samples.is_empty() {
+                            continue;
+                        }
+
+                        let current_samples_len = samples.len();
+                        if current_samples_len > last_samples_len {
+                            last_samples_len = current_samples_len;
+                            last_growth_at = Instant::now();
+                        }
+
+                        let silence_elapsed = Instant::now().duration_since(last_growth_at);
+                        if silence_elapsed < Duration::from_millis(write_delay_ms)
+                            || current_samples_len <= last_emitted_samples_len
+                        {
+                            continue;
+                        }
+
+                        let Ok(transcription) = tm_clone.transcribe(samples) else {
+                            continue;
+                        };
+
+                        if transcription.is_empty() {
+                            continue;
+                        }
+
+                        let live_settings = get_settings(&app_clone);
+                        let mut final_text = transcription;
+                        if let Some(converted_text) =
+                            maybe_convert_chinese_variant(&live_settings, &final_text).await
+                        {
+                            final_text = converted_text;
+                        }
+
+                        let delta = {
+                            let mut guard = match LAST_WRITTEN_TEXT_BY_BINDING.lock() {
+                                Ok(g) => g,
+                                Err(_) => continue,
+                            };
+
+                            let previous = guard
+                                .get(&binding_id_clone)
+                                .cloned()
+                                .unwrap_or_default();
+
+                            let Some(delta) = get_incremental_delta(&previous, &final_text) else {
+                                continue;
+                            };
+
+                            guard.insert(binding_id_clone.clone(), final_text);
+                            delta
+                        };
+
+                        let app_for_paste = app_clone.clone();
+                        if let Err(e) = app_clone.run_on_main_thread(move || {
+                            if let Err(err) = utils::paste_chunk(delta, app_for_paste.clone()) {
+                                error!("Failed to write live transcription chunk: {}", err);
+                            }
+                        }) {
+                            error!("Failed to dispatch live transcription chunk: {:?}", e);
+                        } else {
+                            last_emitted_samples_len = current_samples_len;
+                        }
+                    }
+                });
+            }
         }
 
         debug!(
@@ -429,6 +548,8 @@ impl ShortcutAction for TranscribeAction {
                         );
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
+                            let write_while_speech_active =
+                                write_while_speech_enabled(&settings, post_process);
                             let mut final_text = transcription.clone();
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
@@ -469,6 +590,22 @@ impl ShortcutAction for TranscribeAction {
                                 post_processed_text = Some(final_text.clone());
                             }
 
+                            let already_written = if write_while_speech_active {
+                                if let Ok(mut state) = LAST_WRITTEN_TEXT_BY_BINDING.lock() {
+                                    state.remove(&binding_id).unwrap_or_default()
+                                } else {
+                                    String::new()
+                                }
+                            } else {
+                                String::new()
+                            };
+
+                            let text_to_paste = if write_while_speech_active {
+                                get_incremental_delta(&already_written, &final_text)
+                            } else {
+                                Some(final_text.clone())
+                            };
+
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
@@ -487,25 +624,30 @@ impl ShortcutAction for TranscribeAction {
                             });
 
                             // Paste the final text (either processed or original)
-                            let ah_clone = ah.clone();
-                            let paste_time = Instant::now();
-                            ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
-                                }
-                                // Hide the overlay after transcription is complete
-                                utils::hide_recording_overlay(&ah_clone);
-                                change_tray_icon(&ah_clone, TrayIconState::Idle);
-                            })
-                            .unwrap_or_else(|e| {
-                                error!("Failed to run paste on main thread: {:?}", e);
+                            if let Some(text) = text_to_paste {
+                                let ah_clone = ah.clone();
+                                let paste_time = Instant::now();
+                                ah.run_on_main_thread(move || {
+                                    match utils::paste(text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    }
+                                    // Hide the overlay after transcription is complete
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            } else {
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
-                            });
+                            }
                         } else {
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);

@@ -13,6 +13,10 @@ export const getKeyName = (
   e: KeyboardEvent,
   osType: OSType = "unknown",
 ): string => {
+  if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+    return e.key.toLowerCase();
+  }
+
   // Handle special cases first
   if (e.code) {
     const code = e.code;

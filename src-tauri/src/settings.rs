@@ -171,12 +171,7 @@ pub enum KeyboardImplementation {
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
-        // Default to HandyKeys only on macOS where it's well-tested.
-        // Windows and Linux use Tauri by default (handy-keys not sufficiently tested yet).
-        #[cfg(target_os = "macos")]
-        return KeyboardImplementation::HandyKeys;
-        #[cfg(not(target_os = "macos"))]
-        return KeyboardImplementation::Tauri;
+        KeyboardImplementation::HandyKeys
     }
 }
 
@@ -357,6 +352,10 @@ pub struct AppSettings {
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
+    #[serde(default = "default_write_while_speech")]
+    pub write_while_speech: bool,
+    #[serde(default = "default_write_delay_ms")]
+    pub write_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
@@ -411,6 +410,14 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_write_while_speech() -> bool {
+    false
+}
+
+fn default_write_delay_ms() -> u64 {
+    200
 }
 
 fn default_auto_submit() -> bool {
@@ -628,6 +635,15 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
 
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
+fn ensure_keyboard_implementation_defaults(settings: &mut AppSettings) -> bool {
+    if settings.keyboard_implementation != KeyboardImplementation::HandyKeys {
+        settings.keyboard_implementation = KeyboardImplementation::HandyKeys;
+        return true;
+    }
+
+    false
+}
+
 pub fn get_default_settings() -> AppSettings {
     #[cfg(target_os = "windows")]
     let default_shortcut = "ctrl+space";
@@ -722,6 +738,8 @@ pub fn get_default_settings() -> AppSettings {
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
+        write_while_speech: default_write_while_speech(),
+        write_delay_ms: default_write_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
     }
@@ -794,7 +812,10 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let post_process_updated = ensure_post_process_defaults(&mut settings);
+    let keyboard_updated = ensure_keyboard_implementation_defaults(&mut settings);
+
+    if post_process_updated || keyboard_updated {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -818,7 +839,10 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let post_process_updated = ensure_post_process_defaults(&mut settings);
+    let keyboard_updated = ensure_keyboard_implementation_defaults(&mut settings);
+
+    if post_process_updated || keyboard_updated {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

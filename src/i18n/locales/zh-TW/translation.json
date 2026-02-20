@@ -318,6 +318,15 @@
         "add": "新增",
         "remove": "刪除 {{word}}",
         "duplicate": "「{{word}}」已存在"
+      },
+      "writeAfterSilence": {
+        "label": "靜音達到毫秒後寫入",
+        "description": "在說話後偵測到達到設定毫秒數的靜音時寫入轉寫文字。"
+      },
+      "writeAfterSilenceDelay": {
+        "title": "寫入前靜音延遲",
+        "description": "在目前游標位置寫入轉寫前所需的靜音毫秒數。",
+        "unit": "毫秒"
       }
     },
     "postProcessing": {

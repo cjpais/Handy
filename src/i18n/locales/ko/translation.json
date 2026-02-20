@@ -318,6 +318,15 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "writeAfterSilence": {
+        "label": "무음 ms 후 쓰기",
+        "description": "말한 뒤 설정한 밀리초 동안 무음이 감지되면 전사 텍스트를 입력합니다."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "쓰기 전 무음 지연",
+        "description": "현재 커서 위치에 전사 텍스트를 쓰기 전에 필요한 무음 시간(밀리초)입니다.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

@@ -318,6 +318,15 @@
         "add": "Dodaj",
         "remove": "Usuń {{word}}",
         "duplicate": "\"{{word}}\" już istnieje"
+      },
+      "writeAfterSilence": {
+        "label": "Pisz po ms ciszy",
+        "description": "Wpisuje transkrypcję po wykryciu ustawionej liczby ms ciszy po mowie."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "Opóźnienie ciszy przed wpisaniem",
+        "description": "Liczba ms ciszy wymagana przed wpisaniem transkrypcji w bieżącej pozycji kursora.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

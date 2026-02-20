@@ -318,6 +318,15 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "writeAfterSilence": {
+        "label": "Scrivi dopo ms di silenzio",
+        "description": "Scrive il testo trascritto dopo i millisecondi di silenzio configurati dopo aver parlato."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "Ritardo di silenzio prima della scrittura",
+        "description": "Quanti millisecondi di silenzio sono necessari prima di scrivere la trascrizione nella posizione corrente del cursore.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

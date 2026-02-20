@@ -662,6 +662,58 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+pub fn paste_chunk(text: String, app_handle: AppHandle) -> Result<(), String> {
+    let settings = get_settings(&app_handle);
+    let paste_method = settings.paste_method;
+    let paste_delay_ms = settings.paste_delay_ms;
+
+    info!(
+        "Using streaming paste method: {:?}, delay: {}ms",
+        paste_method, paste_delay_ms
+    );
+
+    let enigo_state = app_handle
+        .try_state::<EnigoState>()
+        .ok_or("Enigo state not initialized")?;
+    let mut enigo = enigo_state
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+
+    match paste_method {
+        PasteMethod::None => {
+            info!("PasteMethod::None selected - skipping streaming paste action");
+        }
+        PasteMethod::Direct => {
+            paste_direct(
+                &mut enigo,
+                &text,
+                #[cfg(target_os = "linux")]
+                settings.typing_tool,
+            )?;
+        }
+        PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            paste_via_clipboard(
+                &mut enigo,
+                &text,
+                &app_handle,
+                &paste_method,
+                paste_delay_ms,
+            )?
+        }
+        PasteMethod::ExternalScript => {
+            let script_path = settings
+                .external_script_path
+                .as_ref()
+                .filter(|p| !p.is_empty())
+                .ok_or("External script path is not configured")?;
+            paste_via_external_script(&text, script_path)?;
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

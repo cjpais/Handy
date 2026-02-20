@@ -318,6 +318,15 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "writeAfterSilence": {
+        "label": "Nach Stille (ms) schreiben",
+        "description": "Der Text wird geschrieben, sobald nach dem Sprechen die eingestellte Anzahl ms Stille erreicht ist."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "Stille-Verzögerung vor dem Schreiben",
+        "description": "Anzahl der ms Stille nach Sprache, bevor die Transkription an der aktuellen Cursor-Position geschrieben wird.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

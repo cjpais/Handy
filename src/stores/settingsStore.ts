@@ -129,6 +129,10 @@ const settingUpdaters: {
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
+  write_while_speech: (value) =>
+    commands.changeWriteWhileSpeechSetting(value as boolean),
+  write_delay_ms: (value) =>
+    commands.changeWriteDelaySetting(value as number),
   log_level: (value) => commands.setLogLevel(value as any),
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>

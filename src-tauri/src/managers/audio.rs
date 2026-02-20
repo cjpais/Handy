@@ -421,6 +421,25 @@ impl AudioRecordingManager {
         )
     }
 
+    pub fn get_recording_snapshot(&self, binding_id: &str) -> Option<Vec<f32>> {
+        let state = self.state.lock().unwrap();
+        let is_active = matches!(
+            *state,
+            RecordingState::Recording {
+                binding_id: ref active,
+            } if active == binding_id
+        );
+        drop(state);
+
+        if !is_active {
+            return None;
+        }
+
+        let recorder_guard = self.recorder.lock().unwrap();
+        let recorder = recorder_guard.as_ref()?;
+        recorder.snapshot().ok()
+    }
+
     /// Cancel any ongoing recording without returning audio samples
     pub fn cancel_recording(&self) {
         let mut state = self.state.lock().unwrap();

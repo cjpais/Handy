@@ -318,6 +318,15 @@
         "add": "Thêm",
         "remove": "Xóa {{word}}",
         "duplicate": "\"{{word}}\" đã tồn tại"
+      },
+      "writeAfterSilence": {
+        "label": "Ghi sau khi im lặng (ms)",
+        "description": "Ghi văn bản đã chuyển giọng nói sau số mili giây im lặng đã cấu hình sau khi nói."
+      },
+      "writeAfterSilenceDelay": {
+        "title": "Độ trễ im lặng trước khi ghi",
+        "description": "Số mili giây im lặng cần có trước khi ghi bản chép tại vị trí con trỏ hiện tại.",
+        "unit": "ms"
       }
     },
     "postProcessing": {
