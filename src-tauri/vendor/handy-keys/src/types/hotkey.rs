@@ -28,6 +28,32 @@ pub struct Hotkey {
 }
 
 impl Hotkey {
+    fn canonical_key_name(key: Key) -> String {
+        match key {
+            Key::Minus => "minus".to_string(),
+            Key::Equal => "equal".to_string(),
+            Key::LeftBracket => "leftbracket".to_string(),
+            Key::RightBracket => "rightbracket".to_string(),
+            Key::Backslash => "backslash".to_string(),
+            Key::Semicolon => "semicolon".to_string(),
+            Key::Quote => "quote".to_string(),
+            Key::Comma => "comma".to_string(),
+            Key::Period => "period".to_string(),
+            Key::Slash => "slash".to_string(),
+            Key::Grave => "grave".to_string(),
+            Key::IntlBackslash => "intlbackslash".to_string(),
+            Key::IntlRo => "intlro".to_string(),
+            Key::IntlYen => "intlyen".to_string(),
+            Key::KanaMode => "kanamode".to_string(),
+            Key::Lang1 => "lang1".to_string(),
+            Key::Lang2 => "lang2".to_string(),
+            Key::Lang3 => "lang3".to_string(),
+            Key::Lang4 => "lang4".to_string(),
+            Key::Lang5 => "lang5".to_string(),
+            _ => key.to_string().to_lowercase(),
+        }
+    }
+
     /// Create a hotkey with modifiers and/or a key
     ///
     /// At least one of modifiers or key must be provided.
@@ -169,7 +195,7 @@ impl Hotkey {
         }
 
         if let Some(key) = &self.key {
-            let key_str = key.to_string().to_lowercase();
+            let key_str = Self::canonical_key_name(*key);
             let mut result = parts.join("+");
             if !result.is_empty() {
                 result.push('+');

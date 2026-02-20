@@ -30,7 +30,17 @@ use crate::tray;
 
 /// Initialize shortcuts using the configured implementation
 pub fn init_shortcuts(app: &AppHandle) {
-    let user_settings = settings::load_or_create_app_settings(app);
+    let mut user_settings = settings::load_or_create_app_settings(app);
+
+    // Always prefer the HandyKeys backend for reliable non-US keyboard layouts.
+    // Existing users might still have the legacy Tauri backend persisted.
+    if user_settings.keyboard_implementation == KeyboardImplementation::Tauri {
+        warn!(
+            "Migrating keyboard backend from Tauri to HandyKeys for improved layout support"
+        );
+        user_settings.keyboard_implementation = KeyboardImplementation::HandyKeys;
+        settings::write_settings(app, user_settings.clone());
+    }
 
     // Check which implementation to use
     match user_settings.keyboard_implementation {
