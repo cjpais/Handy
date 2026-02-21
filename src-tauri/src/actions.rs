@@ -1,6 +1,10 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+#[cfg(target_os = "linux")]
+use crate::linux_ocr;
+#[cfg(target_os = "macos")]
+use crate::macos_ocr;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -10,11 +14,15 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
+#[cfg(target_os = "windows")]
+use crate::windows_ocr;
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
+#[cfg(target_os = "macos")]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 use tauri::AppHandle;
@@ -44,6 +52,13 @@ struct TranscribeAction {
 
 /// Field name for structured output JSON schema
 const TRANSCRIPTION_FIELD: &str = "transcription";
+const OUTPUT_TEMPLATE_VARIABLE: &str = "${output}";
+const OCR_TEMPLATE_VARIABLE_UPPER: &str = "${OCR}";
+const OCR_TEMPLATE_VARIABLE_LOWER: &str = "${ocr}";
+const MAX_OCR_TEXT_CHARS: usize = 8_000;
+
+#[cfg(target_os = "macos")]
+static SCREEN_CAPTURE_PERMISSION_REQUESTED: AtomicBool = AtomicBool::new(false);
 
 /// Strip invisible Unicode characters that some LLMs may insert
 fn strip_invisible_chars(s: &str) -> String {
@@ -53,7 +68,173 @@ fn strip_invisible_chars(s: &str) -> String {
 /// Build a system prompt from the user's prompt template.
 /// Removes `${output}` placeholder since the transcription is sent as the user message.
 fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template.replace("${output}", "").trim().to_string()
+    prompt_template
+        .replace(OUTPUT_TEMPLATE_VARIABLE, "")
+        .trim()
+        .to_string()
+}
+
+fn prompt_uses_ocr_variable(prompt_template: &str) -> bool {
+    prompt_template.contains(OCR_TEMPLATE_VARIABLE_UPPER)
+        || prompt_template.contains(OCR_TEMPLATE_VARIABLE_LOWER)
+}
+
+fn truncate_to_char_limit(text: &str, max_chars: usize) -> String {
+    text.chars().take(max_chars).collect()
+}
+
+fn replace_ocr_template_variables(prompt_template: &str, ocr_text: &str) -> String {
+    let with_upper = prompt_template.replace(OCR_TEMPLATE_VARIABLE_UPPER, ocr_text);
+    with_upper.replace(OCR_TEMPLATE_VARIABLE_LOWER, ocr_text)
+}
+
+fn expand_prompt_template(prompt_template: &str, transcription: &str, ocr_text: &str) -> String {
+    let with_output = prompt_template.replace(OUTPUT_TEMPLATE_VARIABLE, transcription);
+    replace_ocr_template_variables(&with_output, ocr_text)
+}
+
+fn resolve_ocr_template_value<F>(
+    prompt_template: &str,
+    experimental_enabled: bool,
+    fetch_ocr_text: F,
+) -> String
+where
+    F: FnOnce() -> String,
+{
+    if !prompt_uses_ocr_variable(prompt_template) {
+        return String::new();
+    }
+
+    if !experimental_enabled {
+        debug!(
+            "Prompt contains OCR template variable but experimental features are disabled; injecting empty OCR value"
+        );
+        return String::new();
+    }
+
+    fetch_ocr_text()
+}
+
+#[cfg(target_os = "macos")]
+fn fetch_ocr_template_value() -> String {
+    if !macos_ocr::has_screen_capture_access() {
+        if SCREEN_CAPTURE_PERMISSION_REQUESTED.swap(true, Ordering::Relaxed) {
+            debug!(
+                "Screen capture permission missing and request already attempted once; injecting empty OCR value"
+            );
+            return String::new();
+        }
+
+        debug!("Screen capture permission missing; requesting access for OCR");
+        if !macos_ocr::request_screen_capture_access() {
+            debug!("Screen capture permission request denied; injecting empty OCR value");
+            return String::new();
+        }
+    }
+
+    let ocr_start = Instant::now();
+    match macos_ocr::capture_frontmost_window_ocr_text() {
+        Ok(text) => {
+            debug!(
+                "Captured OCR context in {:?} ({} chars before truncation)",
+                ocr_start.elapsed(),
+                text.chars().count()
+            );
+            text
+        }
+        Err(err) => {
+            error!("Failed to capture OCR context: {}", err);
+            String::new()
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn fetch_ocr_template_value() -> String {
+    let ocr_start = Instant::now();
+    match windows_ocr::capture_frontmost_window_ocr_text() {
+        Ok(text) => {
+            debug!(
+                "Captured OCR context in {:?} ({} chars before truncation)",
+                ocr_start.elapsed(),
+                text.chars().count()
+            );
+            text
+        }
+        Err(err) => {
+            error!("Failed to capture OCR context: {}", err);
+            String::new()
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn fetch_ocr_template_value() -> String {
+    let ocr_start = Instant::now();
+    match linux_ocr::capture_frontmost_window_ocr_text() {
+        Ok(text) => {
+            debug!(
+                "Captured OCR context in {:?} ({} chars before truncation)",
+                ocr_start.elapsed(),
+                text.chars().count()
+            );
+            text
+        }
+        Err(err) => {
+            error!("Failed to capture OCR context: {}", err);
+            String::new()
+        }
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+fn fetch_ocr_template_value() -> String {
+    debug!(
+        "OCR template variable is only supported on macOS, Windows, and Linux; injecting empty OCR value"
+    );
+    String::new()
+}
+
+fn build_prompt_templates_with_fetcher<F>(
+    experimental_enabled: bool,
+    prompt_template: &str,
+    transcription: &str,
+    fetch_ocr_text: F,
+) -> (String, String)
+where
+    F: FnOnce() -> String,
+{
+    let ocr_text =
+        resolve_ocr_template_value(prompt_template, experimental_enabled, fetch_ocr_text);
+    let ocr_char_count = ocr_text.chars().count();
+    let truncated_ocr_text = truncate_to_char_limit(&ocr_text, MAX_OCR_TEXT_CHARS);
+    let truncated_char_count = truncated_ocr_text.chars().count();
+
+    if truncated_char_count < ocr_char_count {
+        debug!(
+            "Truncated OCR context from {} to {} chars",
+            ocr_char_count, truncated_char_count
+        );
+    }
+
+    let prompt_with_ocr = replace_ocr_template_variables(prompt_template, &truncated_ocr_text);
+    let processed_prompt =
+        expand_prompt_template(prompt_template, transcription, &truncated_ocr_text);
+    let system_prompt = build_system_prompt(&prompt_with_ocr);
+    (processed_prompt, system_prompt)
+}
+
+fn build_prompt_templates(
+    settings: &AppSettings,
+    prompt_template: &str,
+    transcription: &str,
+) -> (String, String) {
+    build_prompt_templates_with_fetcher(
+        settings.experimental_enabled,
+        prompt_template,
+        transcription,
+        fetch_ocr_template_value,
+    )
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -112,6 +293,9 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         provider.id, model
     );
 
+    let (processed_prompt, system_prompt) =
+        build_prompt_templates(settings, &prompt, transcription);
+    debug!("Processed prompt length: {} chars", processed_prompt.len());
     let api_key = settings
         .post_process_api_keys
         .get(&provider.id)
@@ -120,8 +304,6 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
 
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
-
-        let system_prompt = build_system_prompt(&prompt);
         let user_content = transcription.to_string();
 
         // Handle Apple Intelligence separately since it uses native Swift APIs
@@ -233,10 +415,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
     }
 
-    // Legacy mode: Replace ${output} variable in the prompt with the actual text
-    let processed_prompt = prompt.replace("${output}", transcription);
-    debug!("Processed prompt length: {} chars", processed_prompt.len());
-
+    // Legacy mode uses the prompt with resolved OCR/output template variables.
     match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
         .await
     {
@@ -590,3 +769,64 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cell::Cell;
+
+    #[test]
+    fn prompt_uses_ocr_variable_detects_supported_tokens() {
+        assert!(prompt_uses_ocr_variable("Use ${OCR} here"));
+        assert!(prompt_uses_ocr_variable("Use ${ocr} here"));
+        assert!(!prompt_uses_ocr_variable("No OCR variable"));
+    }
+
+    #[test]
+    fn resolve_ocr_template_value_skips_fetch_without_ocr_token() {
+        let called = Cell::new(false);
+        let value = resolve_ocr_template_value("Only ${output}", true, || {
+            called.set(true);
+            "ocr".to_string()
+        });
+
+        assert!(value.is_empty());
+        assert!(!called.get());
+    }
+
+    #[test]
+    fn resolve_ocr_template_value_skips_fetch_when_experimental_disabled() {
+        let called = Cell::new(false);
+        let value = resolve_ocr_template_value("Use ${OCR}", false, || {
+            called.set(true);
+            "ocr".to_string()
+        });
+
+        assert!(value.is_empty());
+        assert!(!called.get());
+    }
+
+    #[test]
+    fn build_processed_prompt_replaces_output_and_ocr_tokens() {
+        let prompt = "Transcript: ${output}\nContext:\n${OCR}\nAgain:\n${ocr}";
+        let (result, _system_prompt) =
+            build_prompt_templates_with_fetcher(true, prompt, "hello", || {
+                "window text".to_string()
+            });
+
+        assert_eq!(
+            result,
+            "Transcript: hello\nContext:\nwindow text\nAgain:\nwindow text"
+        );
+    }
+
+    #[test]
+    fn build_processed_prompt_truncates_ocr_text_to_char_limit() {
+        let long_text = "a".repeat(MAX_OCR_TEXT_CHARS + 42);
+        let (result, _system_prompt) =
+            build_prompt_templates_with_fetcher(true, "${OCR}", "ignored", || long_text);
+
+        assert_eq!(result.len(), MAX_OCR_TEXT_CHARS);
+        assert_eq!(result, "a".repeat(MAX_OCR_TEXT_CHARS));
+    }
+}

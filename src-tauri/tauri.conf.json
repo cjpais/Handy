@@ -57,7 +57,7 @@
     },
     "linux": {
       "deb": {
-        "depends": ["libgtk-layer-shell0"]
+        "depends": ["libgtk-layer-shell0", "tesseract-ocr"]
       },
       "rpm": {
         "compression": {
