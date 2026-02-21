@@ -418,6 +418,19 @@
         "description": "보관할 최대 히스토리 항목 수",
         "entries": "항목"
       },
+            "recordingsDirectory": {
+        "title": "Recordings Folder",
+        "description": "Choose where audio recordings are saved. When disabled, recordings are stored in the app data folder.",
+        "defaultPath": "Default (app data folder)",
+        "chooseFolder": "Choose Folder",
+        "confirmDisableTitle": "Revert to Default Folder?",
+        "confirmDisableMessage": "Recordings will be moved back to the default app data folder.",
+        "confirmDisableButton": "Revert",
+        "moveResult_moved": "Moved {{count}} recording(s) to new folder.",
+        "moveResult_skipped": "{{count}} file(s) skipped (already exist at destination).",
+        "moveResult_failed": "{{count}} file(s) could not be moved.",
+        "errorSetDir": "Failed to set recordings folder: {{error}}"
+      },
       "recordingRetention": {
         "title": "녹음 자동 삭제",
         "description": "공간을 절약하기 위해 오래된 녹음을 자동으로 삭제합니다",

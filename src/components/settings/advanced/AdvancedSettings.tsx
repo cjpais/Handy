@@ -15,6 +15,7 @@ import { PostProcessingToggle } from "../PostProcessingToggle";
 import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { HistoryLimit } from "../HistoryLimit";
 import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
+import { RecordingsDirectory } from "../RecordingsDirectory";
 import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
@@ -53,6 +54,7 @@ export const AdvancedSettings: React.FC = () => {
           descriptionMode="tooltip"
           grouped={true}
         />
+        <RecordingsDirectory descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
       {experimentalEnabled && (

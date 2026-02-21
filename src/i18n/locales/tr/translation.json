@@ -418,6 +418,19 @@
         "description": "Saklanacak maksimum geçmiş kaydı sayısı",
         "entries": "kayıt"
       },
+            "recordingsDirectory": {
+        "title": "Recordings Folder",
+        "description": "Choose where audio recordings are saved. When disabled, recordings are stored in the app data folder.",
+        "defaultPath": "Default (app data folder)",
+        "chooseFolder": "Choose Folder",
+        "confirmDisableTitle": "Revert to Default Folder?",
+        "confirmDisableMessage": "Recordings will be moved back to the default app data folder.",
+        "confirmDisableButton": "Revert",
+        "moveResult_moved": "Moved {{count}} recording(s) to new folder.",
+        "moveResult_skipped": "{{count}} file(s) skipped (already exist at destination).",
+        "moveResult_failed": "{{count}} file(s) could not be moved.",
+        "errorSetDir": "Failed to set recordings folder: {{error}}"
+      },
       "recordingRetention": {
         "title": "Kayıtları Otomatik Sil",
         "description": "Alan tasarrufu için eski kayıtları otomatik olarak siler",
