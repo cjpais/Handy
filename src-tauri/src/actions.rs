@@ -1,6 +1,8 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+#[cfg(target_os = "linux")]
+use crate::linux_ocr;
 #[cfg(target_os = "macos")]
 use crate::macos_ocr;
 use crate::managers::audio::AudioRecordingManager;
@@ -166,10 +168,29 @@ fn fetch_ocr_template_value() -> String {
     }
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(target_os = "linux")]
+fn fetch_ocr_template_value() -> String {
+    let ocr_start = Instant::now();
+    match linux_ocr::capture_frontmost_window_ocr_text() {
+        Ok(text) => {
+            debug!(
+                "Captured OCR context in {:?} ({} chars before truncation)",
+                ocr_start.elapsed(),
+                text.chars().count()
+            );
+            text
+        }
+        Err(err) => {
+            error!("Failed to capture OCR context: {}", err);
+            String::new()
+        }
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 fn fetch_ocr_template_value() -> String {
     debug!(
-        "OCR template variable is only supported on macOS and Windows; injecting empty OCR value"
+        "OCR template variable is only supported on macOS, Windows, and Linux; injecting empty OCR value"
     );
     String::new()
 }
@@ -788,9 +809,10 @@ mod tests {
     #[test]
     fn build_processed_prompt_replaces_output_and_ocr_tokens() {
         let prompt = "Transcript: ${output}\nContext:\n${OCR}\nAgain:\n${ocr}";
-        let result = build_processed_prompt_with_fetcher(true, prompt, "hello", || {
-            "window text".to_string()
-        });
+        let (result, _system_prompt) =
+            build_prompt_templates_with_fetcher(true, prompt, "hello", || {
+                "window text".to_string()
+            });
 
         assert_eq!(
             result,
@@ -801,7 +823,8 @@ mod tests {
     #[test]
     fn build_processed_prompt_truncates_ocr_text_to_char_limit() {
         let long_text = "a".repeat(MAX_OCR_TEXT_CHARS + 42);
-        let result = build_processed_prompt_with_fetcher(true, "${OCR}", "ignored", || long_text);
+        let (result, _system_prompt) =
+            build_prompt_templates_with_fetcher(true, "${OCR}", "ignored", || long_text);
 
         assert_eq!(result.len(), MAX_OCR_TEXT_CHARS);
         assert_eq!(result, "a".repeat(MAX_OCR_TEXT_CHARS));
