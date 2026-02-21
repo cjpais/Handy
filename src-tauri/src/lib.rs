@@ -20,6 +20,8 @@ mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
+#[cfg(target_os = "windows")]
+mod windows_ocr;
 
 pub use cli::CliArgs;
 use specta_typescript::{BigIntExportBehavior, Typescript};

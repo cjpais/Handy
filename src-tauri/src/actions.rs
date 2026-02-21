@@ -12,6 +12,8 @@ use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
 };
+#[cfg(target_os = "windows")]
+use crate::windows_ocr;
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
@@ -145,9 +147,30 @@ fn fetch_ocr_template_value() -> String {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
 fn fetch_ocr_template_value() -> String {
-    debug!("OCR template variable is only supported on macOS; injecting empty OCR value");
+    let ocr_start = Instant::now();
+    match windows_ocr::capture_frontmost_window_ocr_text() {
+        Ok(text) => {
+            debug!(
+                "Captured OCR context in {:?} ({} chars before truncation)",
+                ocr_start.elapsed(),
+                text.chars().count()
+            );
+            text
+        }
+        Err(err) => {
+            error!("Failed to capture OCR context: {}", err);
+            String::new()
+        }
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn fetch_ocr_template_value() -> String {
+    debug!(
+        "OCR template variable is only supported on macOS and Windows; injecting empty OCR value"
+    );
     String::new()
 }
 
@@ -174,7 +197,8 @@ where
     }
 
     let prompt_with_ocr = replace_ocr_template_variables(prompt_template, &truncated_ocr_text);
-    let processed_prompt = expand_prompt_template(prompt_template, transcription, &truncated_ocr_text);
+    let processed_prompt =
+        expand_prompt_template(prompt_template, transcription, &truncated_ocr_text);
     let system_prompt = build_system_prompt(&prompt_with_ocr);
     (processed_prompt, system_prompt)
 }
@@ -248,7 +272,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         provider.id, model
     );
 
-    let (processed_prompt, system_prompt) = build_prompt_templates(settings, &prompt, transcription);
+    let (processed_prompt, system_prompt) =
+        build_prompt_templates(settings, &prompt, transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
     let api_key = settings
         .post_process_api_keys
