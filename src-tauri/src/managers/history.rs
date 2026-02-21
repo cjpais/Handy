@@ -47,26 +47,16 @@ pub struct HistoryEntry {
 
 pub struct HistoryManager {
     app_handle: AppHandle,
-    recordings_dir: PathBuf,
     db_path: PathBuf,
 }
 
 impl HistoryManager {
     pub fn new(app_handle: &AppHandle) -> Result<Self> {
-        // Create recordings directory in app data dir
         let app_data_dir = app_handle.path().app_data_dir()?;
-        let recordings_dir = app_data_dir.join("recordings");
         let db_path = app_data_dir.join("history.db");
-
-        // Ensure recordings directory exists
-        if !recordings_dir.exists() {
-            fs::create_dir_all(&recordings_dir)?;
-            debug!("Created recordings directory: {:?}", recordings_dir);
-        }
 
         let manager = Self {
             app_handle: app_handle.clone(),
-            recordings_dir,
             db_path,
         };
 
@@ -176,6 +166,14 @@ impl HistoryManager {
         Ok(Connection::open(&self.db_path)?)
     }
 
+    /// Resolve the recordings directory fresh from settings on every call so
+    /// runtime directory changes (via `set_recordings_directory`) take effect
+    /// immediately without requiring a restart.
+    fn effective_recordings_dir(&self) -> Result<PathBuf> {
+        crate::settings::resolve_recordings_dir(&self.app_handle)
+            .map_err(|e| anyhow::anyhow!(e))
+    }
+
     /// Save a transcription to history (both database and WAV file)
     pub async fn save_transcription(
         &self,
@@ -189,7 +187,7 @@ impl HistoryManager {
         let title = self.format_timestamp_title(timestamp);
 
         // Save WAV file
-        let file_path = self.recordings_dir.join(&file_name);
+        let file_path = self.effective_recordings_dir()?.join(&file_name);
         save_wav_file(file_path, &audio_samples).await?;
 
         // Save to database
@@ -268,7 +266,7 @@ impl HistoryManager {
             )?;
 
             // Delete WAV file
-            let file_path = self.recordings_dir.join(file_name);
+            let file_path = self.effective_recordings_dir()?.join(file_name);
             if file_path.exists() {
                 if let Err(e) = fs::remove_file(&file_path) {
                     error!("Failed to delete WAV file {}: {}", file_name, e);
@@ -437,8 +435,8 @@ impl HistoryManager {
         Ok(())
     }
 
-    pub fn get_audio_file_path(&self, file_name: &str) -> PathBuf {
-        self.recordings_dir.join(file_name)
+    pub fn get_audio_file_path(&self, file_name: &str) -> Result<PathBuf> {
+        Ok(self.effective_recordings_dir()?.join(file_name))
     }
 
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
@@ -472,7 +470,7 @@ impl HistoryManager {
         // Get the entry to find the file name
         if let Some(entry) = self.get_entry_by_id(id).await? {
             // Delete the audio file first
-            let file_path = self.get_audio_file_path(&entry.file_name);
+            let file_path = self.get_audio_file_path(&entry.file_name)?;
             if file_path.exists() {
                 if let Err(e) = fs::remove_file(&file_path) {
                     error!("Failed to delete audio file {}: {}", entry.file_name, e);

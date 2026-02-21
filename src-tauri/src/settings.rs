@@ -3,7 +3,7 @@ use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use specta::Type;
 use std::collections::HashMap;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
@@ -360,6 +360,8 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
+    #[serde(default)]
+    pub recordings_custom_dir: Option<String>,
 }
 
 fn default_model() -> String {
@@ -724,7 +726,31 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        recordings_custom_dir: None,
     }
+}
+
+/// Resolve the effective recordings directory.
+/// Returns the custom path when one is set in settings; otherwise falls back to
+/// `<app_data_dir>/recordings`. Creates the directory if it does not exist.
+pub fn resolve_recordings_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let settings = get_settings(app);
+    let dir = if let Some(custom) = settings.recordings_custom_dir {
+        std::path::PathBuf::from(custom)
+    } else {
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+        app_data_dir.join("recordings")
+    };
+
+    if !dir.exists() {
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("Failed to create recordings directory: {}", e))?;
+    }
+
+    Ok(dir)
 }
 
 impl AppSettings {

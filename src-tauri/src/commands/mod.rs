@@ -69,14 +69,8 @@ pub fn set_log_level(app: AppHandle, level: LogLevel) -> Result<(), String> {
 #[specta::specta]
 #[tauri::command]
 pub fn open_recordings_folder(app: AppHandle) -> Result<(), String> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-
-    let recordings_dir = app_data_dir.join("recordings");
-
-    let path = recordings_dir.to_string_lossy().as_ref().to_string();
+    let recordings_dir = crate::settings::resolve_recordings_dir(&app)?;
+    let path = recordings_dir.to_string_lossy().into_owned();
     app.opener()
         .open_path(path, None::<String>)
         .map_err(|e| format!("Failed to open recordings folder: {}", e))?;
