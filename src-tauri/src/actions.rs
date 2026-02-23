@@ -517,7 +517,9 @@ impl ShortcutAction for TranscribeAction {
                         if settings.selected_model == "cloud" {
                             let hm_clone = Arc::clone(&hm);
                             tauri::async_runtime::spawn(async move {
-                                if let Err(e) = hm_clone.save_pending_transcription(samples_clone).await {
+                                if let Err(e) =
+                                    hm_clone.save_pending_transcription(samples_clone).await
+                                {
                                     error!("Failed to save pending cloud transcription: {}", e);
                                 }
                             });

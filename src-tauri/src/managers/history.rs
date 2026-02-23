@@ -504,10 +504,7 @@ impl HistoryManager {
     }
 
     /// Save an audio recording as a pending cloud transcription (failed after all retries).
-    pub async fn save_pending_transcription(
-        &self,
-        audio_samples: Vec<f32>,
-    ) -> Result<()> {
+    pub async fn save_pending_transcription(&self, audio_samples: Vec<f32>) -> Result<()> {
         let timestamp = Utc::now().timestamp();
         let file_name = format!("handy-{}.wav", timestamp);
         let title = self.format_timestamp_title(timestamp);
@@ -547,8 +544,8 @@ impl HistoryManager {
     pub fn get_audio_samples(&self, file_name: &str) -> Result<Vec<f32>> {
         use hound::WavReader;
         let path = self.recordings_dir.join(file_name);
-        let mut reader = WavReader::open(&path)
-            .map_err(|e| anyhow::anyhow!("Failed to open WAV: {}", e))?;
+        let mut reader =
+            WavReader::open(&path).map_err(|e| anyhow::anyhow!("Failed to open WAV: {}", e))?;
         let samples: Vec<f32> = reader
             .samples::<i16>()
             .map(|s| s.map(|v| v as f32 / i16::MAX as f32))
