@@ -346,6 +346,9 @@ impl TranscriptionManager {
                     })?;
                 LoadedEngine::SenseVoice(engine)
             }
+            EngineType::Cloud => {
+                return Err(anyhow::anyhow!("Cloud engine not yet implemented"));
+            }
         };
 
         // Update the current engine and model ID

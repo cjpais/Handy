@@ -23,6 +23,7 @@ pub enum EngineType {
     Moonshine,
     MoonshineStreaming,
     SenseVoice,
+    Cloud,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -393,6 +394,29 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "cloud".to_string(),
+            ModelInfo {
+                id: "cloud".to_string(),
+                name: "Cloud Transcription".to_string(),
+                description: "Transcribe using an OpenAI-compatible cloud API (e.g. Groq, OpenAI)".to_string(),
+                filename: String::new(),
+                url: None,
+                size_mb: 0,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Cloud,
+                accuracy_score: 0.9,
+                speed_score: 0.8,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec!["auto".to_string()],
                 is_custom: false,
             },
         );
