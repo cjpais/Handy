@@ -360,6 +360,12 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
+    #[serde(default = "default_cloud_transcription_base_url")]
+    pub cloud_transcription_base_url: String,
+    #[serde(default)]
+    pub cloud_transcription_api_key: String,
+    #[serde(default = "default_cloud_transcription_model")]
+    pub cloud_transcription_model: String,
 }
 
 fn default_model() -> String {
@@ -570,6 +576,14 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
+fn default_cloud_transcription_base_url() -> String {
+    "https://api.groq.com/openai/v1".to_string()
+}
+
+fn default_cloud_transcription_model() -> String {
+    "whisper-large-v3".to_string()
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
@@ -724,6 +738,9 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        cloud_transcription_base_url: default_cloud_transcription_base_url(),
+        cloud_transcription_api_key: String::new(),
+        cloud_transcription_model: default_cloud_transcription_model(),
     }
 }
 
