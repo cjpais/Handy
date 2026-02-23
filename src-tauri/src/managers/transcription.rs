@@ -42,8 +42,8 @@ fn samples_to_wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
     {
         // Cursor<&mut Vec<u8>> borrows buf; borrow released when writer is finalized and dropped.
         let cursor = Cursor::new(&mut buf);
-        let mut writer = WavWriter::new(cursor, spec)
-            .map_err(|e| anyhow::anyhow!("WavWriter init: {}", e))?;
+        let mut writer =
+            WavWriter::new(cursor, spec).map_err(|e| anyhow::anyhow!("WavWriter init: {}", e))?;
         for s in samples {
             writer
                 .write_sample((*s * i16::MAX as f32) as i16)

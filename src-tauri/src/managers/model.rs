@@ -417,7 +417,7 @@ impl ModelManager {
                 speed_score: 0.8,
                 supports_translation: false,
                 is_recommended: false,
-                supported_languages: vec![],  // Cloud supports all — no badge needed
+                supported_languages: vec![], // Cloud supports all — no badge needed
                 is_custom: false,
             },
         );
