@@ -17,8 +17,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use tauri::AppHandle;
-use tauri::Manager;
+use tauri::{AppHandle, Emitter, Manager};
 
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
 /// transcription pipeline finishes — whether it completes normally or panics.

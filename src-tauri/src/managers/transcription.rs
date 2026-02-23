@@ -38,15 +38,22 @@ fn samples_to_wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
         bits_per_sample: 16,
         sample_format: hound::SampleFormat::Int,
     };
-    let cursor = Cursor::new(Vec::new());
-    let mut writer = WavWriter::new(cursor, spec)?;
-    for s in samples {
-        writer.write_sample((*s * i16::MAX as f32) as i16)?;
+    let mut buf: Vec<u8> = Vec::new();
+    {
+        // Cursor<&mut Vec<u8>> borrows buf; borrow released when writer is finalized and dropped.
+        let cursor = Cursor::new(&mut buf);
+        let mut writer = WavWriter::new(cursor, spec)
+            .map_err(|e| anyhow::anyhow!("WavWriter init: {}", e))?;
+        for s in samples {
+            writer
+                .write_sample((*s * i16::MAX as f32) as i16)
+                .map_err(|e| anyhow::anyhow!("WAV write: {}", e))?;
+        }
+        writer
+            .finalize()
+            .map_err(|e| anyhow::anyhow!("WAV finalize: {}", e))?;
     }
-    let inner = writer
-        .into_inner()
-        .map_err(|e| anyhow::anyhow!("WAV finalize error: {}", e))?;
-    Ok(inner.into_inner())
+    Ok(buf)
 }
 
 /// POST audio to an OpenAI-compatible /audio/transcriptions endpoint.
@@ -667,7 +674,7 @@ impl TranscriptionManager {
                             match result {
                                 Some(text) => Ok(transcribe_rs::TranscriptionResult {
                                     text,
-                                    segments: vec![],
+                                    segments: None,
                                 }),
                                 None => Err(last_error),
                             }
