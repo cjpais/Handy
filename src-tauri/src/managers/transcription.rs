@@ -42,6 +42,11 @@ enum LoadedEngine {
     Moonshine(MoonshineEngine),
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
+    Cloud {
+        base_url: String,
+        api_key: String,
+        model_name: String,
+    },
 }
 
 #[derive(Clone)]
@@ -165,6 +170,7 @@ impl TranscriptionManager {
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
+                    LoadedEngine::Cloud { .. } => { /* nothing to unload */ }
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -347,7 +353,12 @@ impl TranscriptionManager {
                 LoadedEngine::SenseVoice(engine)
             }
             EngineType::Cloud => {
-                return Err(anyhow::anyhow!("Cloud engine not yet implemented"));
+                let settings = crate::settings::get_settings(&self.app_handle);
+                LoadedEngine::Cloud {
+                    base_url: settings.cloud_transcription_base_url.clone(),
+                    api_key: settings.cloud_transcription_api_key.clone(),
+                    model_name: settings.cloud_transcription_model.clone(),
+                }
             }
         };
 
@@ -528,6 +539,9 @@ impl TranscriptionManager {
                                 .map_err(|e| {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
+                        }
+                        LoadedEngine::Cloud { .. } => {
+                            Err(anyhow::anyhow!("Cloud transcription not yet implemented"))
                         }
                     }
                 },
