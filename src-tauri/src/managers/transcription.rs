@@ -4,6 +4,7 @@ use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
+use std::io::Cursor;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
@@ -27,6 +28,83 @@ use transcribe_rs::{
     },
     TranscriptionEngine,
 };
+
+/// Encode f32 audio samples (16 kHz mono) to WAV bytes in memory.
+fn samples_to_wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
+    use hound::{WavSpec, WavWriter};
+    let spec = WavSpec {
+        channels: 1,
+        sample_rate: 16000,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+    let cursor = Cursor::new(Vec::new());
+    let mut writer = WavWriter::new(cursor, spec)?;
+    for s in samples {
+        writer.write_sample((*s * i16::MAX as f32) as i16)?;
+    }
+    let inner = writer
+        .into_inner()
+        .map_err(|e| anyhow::anyhow!("WAV finalize error: {}", e))?;
+    Ok(inner.into_inner())
+}
+
+/// POST audio to an OpenAI-compatible /audio/transcriptions endpoint.
+async fn call_cloud_api(
+    base_url: &str,
+    api_key: &str,
+    model_name: &str,
+    wav_bytes: Vec<u8>,
+    language: Option<String>,
+) -> Result<String> {
+    use reqwest::multipart;
+    let client = reqwest::Client::new();
+
+    let file_part = multipart::Part::bytes(wav_bytes)
+        .file_name("audio.wav")
+        .mime_str("audio/wav")
+        .map_err(|e| anyhow::anyhow!("MIME error: {}", e))?;
+
+    let mut form = multipart::Form::new()
+        .part("file", file_part)
+        .text("model", model_name.to_string())
+        .text("response_format", "json");
+
+    if let Some(lang) = language {
+        form = form.text("language", lang);
+    }
+
+    let response = client
+        .post(format!(
+            "{}/audio/transcriptions",
+            base_url.trim_end_matches('/')
+        ))
+        .bearer_auth(api_key)
+        .multipart(form)
+        .send()
+        .await
+        .map_err(|e| anyhow::anyhow!("Network error: {}", e))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let error_text = response.text().await.unwrap_or_default();
+        return Err(anyhow::anyhow!(
+            "Cloud API {} error: {}",
+            status.as_u16(),
+            error_text
+        ));
+    }
+
+    let json: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to parse response: {}", e))?;
+
+    json["text"]
+        .as_str()
+        .ok_or_else(|| anyhow::anyhow!("No 'text' field in API response"))
+        .map(|s| s.to_string())
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -540,8 +618,69 @@ impl TranscriptionManager {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
-                        LoadedEngine::Cloud { .. } => {
-                            Err(anyhow::anyhow!("Cloud transcription not yet implemented"))
+                        LoadedEngine::Cloud {
+                            base_url,
+                            api_key,
+                            model_name,
+                        } => {
+                            let wav = samples_to_wav_bytes(&audio)
+                                .map_err(|e| anyhow::anyhow!("WAV encoding failed: {}", e))?;
+
+                            let language = if settings.selected_language == "auto" {
+                                None
+                            } else {
+                                Some(settings.selected_language.clone())
+                            };
+
+                            const MAX_ATTEMPTS: u32 = 3;
+                            const DELAYS_MS: [u64; 2] = [300, 800];
+
+                            let mut last_error =
+                                anyhow::anyhow!("Unknown cloud transcription error");
+                            let mut result: Option<String> = None;
+
+                            for attempt in 0..MAX_ATTEMPTS {
+                                if attempt > 0 {
+                                    let delay = DELAYS_MS[(attempt - 1) as usize];
+                                    debug!(
+                                        "Cloud transcription attempt {}/{}, retrying after {}ms",
+                                        attempt + 1,
+                                        MAX_ATTEMPTS,
+                                        delay
+                                    );
+                                    thread::sleep(Duration::from_millis(delay));
+                                }
+
+                                match tauri::async_runtime::block_on(call_cloud_api(
+                                    base_url,
+                                    api_key,
+                                    model_name,
+                                    wav.clone(),
+                                    language.clone(),
+                                )) {
+                                    Ok(text) => {
+                                        result = Some(text);
+                                        break;
+                                    }
+                                    Err(e) => {
+                                        warn!(
+                                            "Cloud transcription attempt {}/{} failed: {}",
+                                            attempt + 1,
+                                            MAX_ATTEMPTS,
+                                            e
+                                        );
+                                        last_error = e;
+                                    }
+                                }
+                            }
+
+                            match result {
+                                Some(text) => Ok(transcribe_rs::TranscriptionResult {
+                                    text,
+                                    segments: vec![],
+                                }),
+                                None => Err(last_error),
+                            }
                         }
                     }
                 },
