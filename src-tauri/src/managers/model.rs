@@ -403,7 +403,8 @@ impl ModelManager {
             ModelInfo {
                 id: "cloud".to_string(),
                 name: "Cloud Transcription".to_string(),
-                description: "Transcribe using an OpenAI-compatible cloud API (e.g. Groq, OpenAI)".to_string(),
+                description: "Transcribe using an OpenAI-compatible cloud API (e.g. Groq, OpenAI)"
+                    .to_string(),
                 filename: String::new(),
                 url: None,
                 size_mb: 0,
@@ -416,7 +417,7 @@ impl ModelManager {
                 speed_score: 0.8,
                 supports_translation: false,
                 is_recommended: false,
-                supported_languages: vec!["auto".to_string()],
+                supported_languages: vec![],  // Cloud supports all — no badge needed
                 is_custom: false,
             },
         );
