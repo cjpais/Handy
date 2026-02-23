@@ -194,7 +194,15 @@
         "translation": "Translation",
         "allLanguages": "All Languages"
       },
-      "noModelsMatch": "No models match this filter."
+      "noModelsMatch": "No models match this filter.",
+      "cloudTranscription": {
+        "baseUrlLabel": "Base URL",
+        "baseUrlPlaceholder": "https://api.groq.com/openai/v1",
+        "apiKeyLabel": "API Key",
+        "apiKeyPlaceholder": "Enter API key...",
+        "modelLabel": "Model",
+        "modelPlaceholder": "whisper-large-v3"
+      }
     },
     "sound": {
       "title": "Sound",
@@ -389,7 +397,12 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "cloudPending": {
+        "placeholder": "Transcription failed — tap Retry to try again",
+        "retryButton": "Retry",
+        "retrying": "Retrying..."
+      }
     },
     "debug": {
       "title": "Debug",
@@ -492,6 +505,9 @@
         }
       }
     }
+  },
+  "notifications": {
+    "cloudTranscriptionFailed": "Cloud transcription failed. Recording saved — retry from History."
   },
   "footer": {
     "downloadingModel": "Downloading {{model}}...",
