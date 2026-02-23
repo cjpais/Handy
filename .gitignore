@@ -37,3 +37,6 @@ blob-report/
 
 .direnv
 .envrc
+
+# Git worktrees
+.worktrees/
