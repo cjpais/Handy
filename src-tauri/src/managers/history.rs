@@ -520,6 +520,9 @@ impl HistoryManager {
             params![file_name, timestamp, false, title, "", true],
         )?;
 
+        // Clean up old entries
+        self.cleanup_old_entries()?;
+
         if let Err(e) = self.app_handle.emit("history-updated", ()) {
             error!("Failed to emit history-updated event: {}", e);
         }

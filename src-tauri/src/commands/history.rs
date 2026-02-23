@@ -110,14 +110,10 @@ pub async fn retranscribe_history_entry(
     id: i64,
 ) -> Result<(), String> {
     // Load the entry to get file_name
-    let entries = history_manager
-        .get_history_entries()
+    let entry = history_manager
+        .get_entry_by_id(id)
         .await
-        .map_err(|e| e.to_string())?;
-
-    let entry = entries
-        .iter()
-        .find(|e| e.id == id)
+        .map_err(|e| e.to_string())?
         .ok_or_else(|| format!("History entry {} not found", id))?;
 
     if !entry.cloud_pending {

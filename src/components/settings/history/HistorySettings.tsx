@@ -90,6 +90,9 @@ export const HistorySettings: React.FC = () => {
       const result = await commands.retranscribeHistoryEntry(id);
       if (result.status === "ok") {
         await loadHistoryEntries();
+      } else {
+        console.error("Retry failed:", result.error);
+        // The entry stays in history with cloud_pending=true, so user can try again
       }
     } catch (error) {
       console.error("Retry failed:", error);

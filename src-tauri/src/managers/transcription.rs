@@ -120,11 +120,7 @@ enum LoadedEngine {
     Moonshine(MoonshineEngine),
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
-    Cloud {
-        base_url: String,
-        api_key: String,
-        model_name: String,
-    },
+    Cloud,
 }
 
 #[derive(Clone)]
@@ -248,7 +244,7 @@ impl TranscriptionManager {
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
-                    LoadedEngine::Cloud { .. } => { /* nothing to unload */ }
+                    LoadedEngine::Cloud => { /* nothing to unload */ }
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -430,14 +426,7 @@ impl TranscriptionManager {
                     })?;
                 LoadedEngine::SenseVoice(engine)
             }
-            EngineType::Cloud => {
-                let settings = crate::settings::get_settings(&self.app_handle);
-                LoadedEngine::Cloud {
-                    base_url: settings.cloud_transcription_base_url.clone(),
-                    api_key: settings.cloud_transcription_api_key.clone(),
-                    model_name: settings.cloud_transcription_model.clone(),
-                }
-            }
+            EngineType::Cloud => LoadedEngine::Cloud,
         };
 
         // Update the current engine and model ID
@@ -618,11 +607,7 @@ impl TranscriptionManager {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
-                        LoadedEngine::Cloud {
-                            base_url,
-                            api_key,
-                            model_name,
-                        } => {
+                        LoadedEngine::Cloud => {
                             let wav = samples_to_wav_bytes(&audio)
                                 .map_err(|e| anyhow::anyhow!("WAV encoding failed: {}", e))?;
 
@@ -631,6 +616,11 @@ impl TranscriptionManager {
                             } else {
                                 Some(settings.selected_language.clone())
                             };
+
+                            // Re-read cloud credentials at call time (settings may have changed since load)
+                            let base_url = settings.cloud_transcription_base_url.clone();
+                            let api_key = settings.cloud_transcription_api_key.clone();
+                            let model_name = settings.cloud_transcription_model.clone();
 
                             const MAX_ATTEMPTS: u32 = 3;
                             const DELAYS_MS: [u64; 2] = [300, 800];
@@ -652,9 +642,9 @@ impl TranscriptionManager {
                                 }
 
                                 match tauri::async_runtime::block_on(call_cloud_api(
-                                    base_url,
-                                    api_key,
-                                    model_name,
+                                    &base_url,
+                                    &api_key,
+                                    &model_name,
                                     wav.clone(),
                                     language.clone(),
                                 )) {
