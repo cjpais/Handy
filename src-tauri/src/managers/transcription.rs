@@ -648,13 +648,18 @@ impl TranscriptionManager {
                                     thread::sleep(Duration::from_millis(delay));
                                 }
 
-                                match tauri::async_runtime::block_on(call_cloud_api(
-                                    &base_url,
-                                    &api_key,
-                                    &model_name,
-                                    wav.clone(),
-                                    language.clone(),
-                                )) {
+                                // block_in_place allows blocking inside a tokio async context
+                                // (transcribe() is called from within async_runtime::spawn in actions.rs)
+                                let api_result = tokio::task::block_in_place(|| {
+                                    tauri::async_runtime::block_on(call_cloud_api(
+                                        &base_url,
+                                        &api_key,
+                                        &model_name,
+                                        wav.clone(),
+                                        language.clone(),
+                                    ))
+                                });
+                                match api_result {
                                     Ok(text) => {
                                         result = Some(text);
                                         break;
