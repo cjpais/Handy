@@ -158,21 +158,40 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
             )
             .expect("failed to create menu")
         }
-        TrayIconState::Idle => Menu::with_items(
-            app,
-            &[
-                &version_i,
-                &separator(),
-                &copy_last_transcript_i,
-                &unload_model_i,
-                &separator(),
-                &settings_i,
-                &check_updates_i,
-                &separator(),
-                &quit_i,
-            ],
-        )
-        .expect("failed to create menu"),
+        TrayIconState::Idle => {
+            if settings.use_cloud_transcription {
+                Menu::with_items(
+                    app,
+                    &[
+                        &version_i,
+                        &separator(),
+                        &copy_last_transcript_i,
+                        &separator(),
+                        &settings_i,
+                        &check_updates_i,
+                        &separator(),
+                        &quit_i,
+                    ],
+                )
+                .expect("failed to create menu")
+            } else {
+                Menu::with_items(
+                    app,
+                    &[
+                        &version_i,
+                        &separator(),
+                        &copy_last_transcript_i,
+                        &unload_model_i,
+                        &separator(),
+                        &settings_i,
+                        &check_updates_i,
+                        &separator(),
+                        &quit_i,
+                    ],
+                )
+                .expect("failed to create menu")
+            }
+        }
     };
 
     let tray = app.state::<TrayIcon>();
