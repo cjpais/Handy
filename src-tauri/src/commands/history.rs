@@ -1,4 +1,5 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::managers::transcription::TranscriptionManager;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -95,6 +96,47 @@ pub async fn update_recording_retention_period(
 
     history_manager
         .cleanup_old_entries()
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn retranscribe_history_entry(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    id: i64,
+) -> Result<(), String> {
+    // Load the entry to get file_name
+    let entries = history_manager
+        .get_history_entries()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let entry = entries
+        .iter()
+        .find(|e| e.id == id)
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    if !entry.cloud_pending {
+        return Err("Entry is not a pending cloud transcription".to_string());
+    }
+
+    // Load audio from WAV file
+    let samples = history_manager
+        .get_audio_samples(&entry.file_name)
+        .map_err(|e| e.to_string())?;
+
+    // Retranscribe (includes retry logic)
+    let text = transcription_manager
+        .transcribe(samples)
+        .map_err(|e| e.to_string())?;
+
+    // Update history entry
+    history_manager
+        .update_transcription(id, &text)
         .map_err(|e| e.to_string())?;
 
     Ok(())

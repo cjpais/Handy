@@ -512,7 +512,17 @@ impl ShortcutAction for TranscribeAction {
                         }
                     }
                     Err(err) => {
-                        debug!("Global Shortcut Transcription error: {}", err);
+                        debug!("Transcription error: {}", err);
+                        let settings = get_settings(&ah);
+                        if settings.selected_model == "cloud" {
+                            let hm_clone = Arc::clone(&hm);
+                            tauri::async_runtime::spawn(async move {
+                                if let Err(e) = hm_clone.save_pending_transcription(samples_clone).await {
+                                    error!("Failed to save pending cloud transcription: {}", e);
+                                }
+                            });
+                            let _ = ah.emit("cloud-transcription-failed", ());
+                        }
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                     }

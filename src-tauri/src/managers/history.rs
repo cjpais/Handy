@@ -530,6 +530,33 @@ impl HistoryManager {
         Ok(())
     }
 
+    /// Update transcription text and clear cloud_pending for a history entry.
+    pub fn update_transcription(&self, id: i64, transcription_text: &str) -> Result<()> {
+        let conn = self.get_connection()?;
+        conn.execute(
+            "UPDATE transcription_history SET transcription_text = ?1, cloud_pending = 0 WHERE id = ?2",
+            params![transcription_text, id],
+        )?;
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated: {}", e);
+        }
+        Ok(())
+    }
+
+    /// Get audio samples for a history entry by loading its WAV file.
+    pub fn get_audio_samples(&self, file_name: &str) -> Result<Vec<f32>> {
+        use hound::WavReader;
+        let path = self.recordings_dir.join(file_name);
+        let mut reader = WavReader::open(&path)
+            .map_err(|e| anyhow::anyhow!("Failed to open WAV: {}", e))?;
+        let samples: Vec<f32> = reader
+            .samples::<i16>()
+            .map(|s| s.map(|v| v as f32 / i16::MAX as f32))
+            .collect::<std::result::Result<_, _>>()
+            .map_err(|e| anyhow::anyhow!("Failed to read WAV samples: {}", e))?;
+        Ok(samples)
+    }
+
     fn format_timestamp_title(&self, timestamp: i64) -> String {
         if let Some(utc_datetime) = DateTime::from_timestamp(timestamp, 0) {
             // Convert UTC to local timezone
