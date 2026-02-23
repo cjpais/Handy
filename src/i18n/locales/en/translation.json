@@ -195,13 +195,19 @@
         "allLanguages": "All Languages"
       },
       "noModelsMatch": "No models match this filter.",
+      "cloudProviders": "Cloud Transcription",
       "cloudTranscription": {
+        "title": "Cloud Transcription",
+        "description": "OpenAI-compatible API (Groq, OpenAI, custom)",
         "baseUrlLabel": "Base URL",
         "baseUrlPlaceholder": "https://api.groq.com/openai/v1",
         "apiKeyLabel": "API Key",
-        "apiKeyPlaceholder": "Enter API key...",
+        "apiKeyPlaceholder": "sk-••••••••",
         "modelLabel": "Model",
-        "modelPlaceholder": "whisper-large-v3"
+        "modelPlaceholder": "whisper-large-v3",
+        "configured": "Configured",
+        "notConfigured": "Not configured",
+        "selectButton": "Select"
       }
     },
     "sound": {
