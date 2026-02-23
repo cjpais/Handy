@@ -31,7 +31,7 @@ static MIGRATIONS: &[M] = &[
     ),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
-    // M4 (cloud_pending) applied idempotently below
+    M::up("ALTER TABLE transcription_history ADD COLUMN cloud_pending BOOLEAN NOT NULL DEFAULT 0;"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -113,16 +113,6 @@ impl HistoryManager {
             );
         } else {
             debug!("Database already at latest version {}", version_after);
-        }
-
-        // Idempotent: add cloud_pending column (safe to run multiple times)
-        if let Err(e) = conn.execute_batch(
-            "ALTER TABLE transcription_history ADD COLUMN cloud_pending BOOLEAN NOT NULL DEFAULT 0;",
-        ) {
-            if !e.to_string().contains("duplicate column name") {
-                return Err(anyhow::Error::from(e));
-            }
-            debug!("cloud_pending column already exists, skipping");
         }
 
         Ok(())
