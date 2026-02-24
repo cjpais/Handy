@@ -40,7 +40,7 @@ jobs:
 
   comment-on-pr:
     needs: build-test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ci]
     permissions:
       pull-requests: write
     steps:
