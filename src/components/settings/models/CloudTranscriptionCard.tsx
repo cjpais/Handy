@@ -223,11 +223,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                     value={extraParams}
                     onChange={(e) => setExtraParams(e.target.value)}
                     onBlur={(e) => saveField("cloud_transcription_extra_params", e.target.value)}
-                    placeholder={'{
-  "language": "ru",
-  "temperature": 0,
-  "prompt": ""
-}'}
+                    placeholder={`{\n  "language": "ru",\n  "temperature": 0,\n  "prompt": ""\n}`}
                     className="w-full rounded-lg border border-mid-gray/30 bg-background px-3 py-2 text-xs font-mono text-text/80 placeholder:text-text/30 focus:outline-none focus:ring-2 focus:ring-logo-primary/50 resize-none"
                     disabled={isSaving}
                     spellCheck={false}
