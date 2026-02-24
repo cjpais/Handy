@@ -1065,3 +1065,77 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_cloud_transcription_base_url(app: AppHandle, base_url: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.cloud_transcription_base_url = base_url;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_cloud_transcription_api_key(app: AppHandle, api_key: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.cloud_transcription_api_key = api_key;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_cloud_transcription_model(app: AppHandle, model: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.cloud_transcription_model = model;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn test_cloud_transcription_connection(app: AppHandle) -> Result<(), String> {
+    let settings = settings::get_settings(&app);
+    let base_url = settings
+        .cloud_transcription_base_url
+        .trim_end_matches('/')
+        .to_string();
+    let api_key = settings.cloud_transcription_api_key.clone();
+
+    if api_key.is_empty() {
+        return Err("API key is empty".to_string());
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(format!("{}/models", base_url))
+        .bearer_auth(&api_key)
+        .send()
+        .await
+        .map_err(|e| format!("Connection failed: {}", e))?;
+
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        Err(format!("API error {}: {}", status, body))
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_cloud_transcription_extra_params(
+    app: AppHandle,
+    params: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.cloud_transcription_extra_params = params;
+    settings::write_settings(&app, settings);
+    Ok(())
+}

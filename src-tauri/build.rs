@@ -145,11 +145,11 @@ fn build_apple_intelligence_bridge() {
         Path::new(&sdk_path).join("System/Library/Frameworks/FoundationModels.framework");
     let has_foundation_models = framework_path.exists();
 
-    let source_file = if has_foundation_models {
-        println!("cargo:warning=Building with Apple Intelligence support.");
-        REAL_SWIFT_FILE
-    } else {
-        println!("cargo:warning=Apple Intelligence SDK not found. Building with stubs.");
+    // Temporarily force stub on macOS 26.x due to FoundationModels API changes.
+    // Remove this override once apple_intelligence.swift is updated for the new API.
+    let _ = has_foundation_models;
+    let source_file = {
+        println!("cargo:warning=Apple Intelligence: forcing stub for macOS 26.x compatibility.");
         STUB_SWIFT_FILE
     };
 
