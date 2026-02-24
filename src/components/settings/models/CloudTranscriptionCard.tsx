@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, ChevronUp, Cloud } from "lucide-react";
+import { ChevronDown, ChevronUp, Cloud } from "lucide-react";
 import { commands } from "@/bindings";
 import Badge from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -26,6 +26,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testError, setTestError] = useState<string | null>(null);
   const loadedRef = useRef(false);
+  const okTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (loadedRef.current) return;
@@ -43,6 +44,8 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
   useEffect(() => {
     if (isActive) setIsExpanded(true);
   }, [isActive]);
+
+  useEffect(() => () => { if (okTimerRef.current) clearTimeout(okTimerRef.current); }, []);
 
   const isConfigured =
     baseUrl.trim() !== "" && apiKey.trim() !== "" && modelName.trim() !== "";
@@ -71,11 +74,13 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
   };
 
   const handleTest = async () => {
+    if (okTimerRef.current) clearTimeout(okTimerRef.current);
     setTestStatus("testing");
     setTestError(null);
     const result = await commands.testCloudTranscriptionConnection();
     if (result.status === "ok") {
       setTestStatus("ok");
+      okTimerRef.current = setTimeout(() => setTestStatus("idle"), 2000);
     } else {
       setTestStatus("error");
       setTestError(result.error ?? t("settings.models.cloudTranscription.testFailed"));
@@ -88,6 +93,13 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
       ? "border-logo-primary/50 bg-logo-primary/10"
       : "border-mid-gray/20 hover:border-logo-primary/30",
   ].join(" ");
+
+  const testLabel =
+    testStatus === "testing"
+      ? t("settings.models.cloudTranscription.testing")
+      : testStatus === "ok"
+        ? t("settings.models.cloudTranscription.testOk")
+        : t("settings.models.cloudTranscription.test");
 
   return (
     <div className={containerClasses}>
@@ -107,7 +119,6 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
             </div>
             {isActive ? (
               <Badge variant="primary">
-                <Check className="w-3 h-3 mr-1" />
                 {t("modelSelector.active")}
               </Badge>
             ) : isConfigured ? (
@@ -153,6 +164,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 disabled={isSaving}
               />
             </div>
+
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-text/60">
                 {t("settings.models.cloudTranscription.apiKeyLabel")}
@@ -167,15 +179,11 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 className="w-full"
                 disabled={isSaving}
               />
-              {testStatus === "ok" && (
-                <p className="text-xs text-green-500">
-                  {t("settings.models.cloudTranscription.testOk")}
-                </p>
-              )}
               {testStatus === "error" && (
                 <p className="text-xs text-red-400 break-all">{testError}</p>
               )}
             </div>
+
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-text/60">
                 {t("settings.models.cloudTranscription.modelLabel")}
@@ -192,26 +200,35 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
               />
             </div>
 
-            {/* Bottom row: Test + Select */}
-            <div className="flex justify-end gap-2">
+            {/* Bottom row: Test + Toggle */}
+            <div className="flex items-center justify-end gap-3">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => void handleTest()}
                 disabled={!apiKey.trim() || testStatus === "testing"}
+                className={[
+                  "w-16 justify-center shrink-0",
+                  testStatus === "ok" ? "!text-green-500" : "",
+                ].join(" ")}
               >
-                {testStatus === "testing"
-                  ? t("settings.models.cloudTranscription.testing")
-                  : t("settings.models.cloudTranscription.test")}
+                {testLabel}
               </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => { if (!isActive) onSelect("cloud"); }}
-                disabled={!isConfigured || isActive}
+
+              {/* Toggle switch */}
+              <label
+                className={`inline-flex items-center ${isConfigured ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`}
+                title={t("settings.models.cloudTranscription.selectButton")}
               >
-                {t("settings.models.cloudTranscription.selectButton")}
-              </Button>
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={isActive}
+                  disabled={!isConfigured}
+                  onChange={() => { if (isConfigured && !isActive) onSelect("cloud"); }}
+                />
+                <div className="relative w-11 h-6 bg-mid-gray/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-background-ui peer-disabled:opacity-50" />
+              </label>
             </div>
           </div>
         </>
