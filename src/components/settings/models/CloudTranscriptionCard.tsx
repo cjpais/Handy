@@ -51,7 +51,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
   useEffect(() => () => { if (okTimerRef.current) clearTimeout(okTimerRef.current); }, []);
 
   const isConfigured =
-    baseUrl.trim() !== "" && apiKey.trim() !== "" && modelName.trim() !== "";
+    baseUrl.trim() !== "" && modelName.trim() !== "";
 
   const saveField = async (
     field:
@@ -187,6 +187,9 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 className="w-full"
                 disabled={isSaving}
               />
+              <p className="text-xs text-text/30">
+                {t("settings.models.cloudTranscription.apiKeyOptional")}
+              </p>
               {testStatus === "error" && (
                 <p className="text-xs text-red-400 break-all">{testError}</p>
               )}
@@ -216,7 +219,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 onClick={() => setShowAdvanced((v) => !v)}
               >
                 <span>{showAdvanced ? "▾" : "▸"}</span>
-                <span>Advanced</span>
+                <span>{t("settings.models.cloudTranscription.advanced")}</span>
               </button>
               {showAdvanced && (
                 <div className="flex flex-col gap-1">
@@ -231,7 +234,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                     spellCheck={false}
                   />
                   <p className="text-xs text-text/30">
-                    JSON — passed as-is to /audio/transcriptions
+                    {t("settings.models.cloudTranscription.extraParamsHint")}
                   </p>
                 </div>
               )}
@@ -253,7 +256,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 variant="secondary"
                 size="sm"
                 onClick={() => void handleTest()}
-                disabled={!apiKey.trim() || testStatus === "testing"}
+                disabled={!baseUrl.trim() || testStatus === "testing"}
                 className={[
                   "w-16 justify-center shrink-0 transition-colors",
                   testStatus === "ok" ? "!text-green-500" : "",

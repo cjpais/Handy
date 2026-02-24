@@ -203,6 +203,7 @@
         "baseUrlPlaceholder": "http://localhost:8000/v1",
         "apiKeyLabel": "API Key",
         "apiKeyPlaceholder": "sk-••••••••",
+        "apiKeyOptional": "Optional — leave empty for servers without authentication",
         "modelLabel": "Model",
         "modelPlaceholder": "whisper-large-v3",
         "configured": "Configured",
@@ -212,7 +213,9 @@
         "testing": "Testing...",
         "testOk": "Connected",
         "testFailed": "Connection failed",
-        "hint": "Local servers (faster-whisper, LocalAI) or cloud APIs (Groq, OpenAI)."
+        "hint": "Local servers (faster-whisper, LocalAI, whisper.cpp) or remote APIs (Groq, OpenAI).",
+        "advanced": "Advanced",
+        "extraParamsHint": "JSON — additional fields sent to /audio/transcriptions"
       }
     },
     "sound": {
@@ -518,7 +521,7 @@
     }
   },
   "notifications": {
-    "cloudTranscriptionFailed": "Cloud transcription failed. Recording saved — retry from History."
+    "cloudTranscriptionFailed": "Server transcription failed. Recording saved — retry from History."
   },
   "footer": {
     "downloadingModel": "Downloading {{model}}...",
