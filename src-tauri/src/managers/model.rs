@@ -23,6 +23,7 @@ pub enum EngineType {
     Moonshine,
     MoonshineStreaming,
     SenseVoice,
+    Cloud,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -397,6 +398,29 @@ impl ModelManager {
             },
         );
 
+        available_models.insert(
+            "cloud".to_string(),
+            ModelInfo {
+                id: "cloud".to_string(),
+                name: "Local Server".to_string(),
+                description: "OpenAI-compatible server (whisper.cpp, Groq)".to_string(),
+                filename: String::new(),
+                url: None,
+                size_mb: 0,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Cloud,
+                accuracy_score: 0.9,
+                speed_score: 0.8,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec![], // Cloud supports all — no badge needed
+                is_custom: false,
+            },
+        );
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);
@@ -463,6 +487,11 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            // Cloud model is always available — no file to check.
+            if matches!(model.engine_type, EngineType::Cloud) {
+                continue;
+            }
+
             if model.is_directory {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);

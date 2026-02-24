@@ -297,6 +297,11 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
         shortcut::change_show_tray_icon_setting,
+        shortcut::change_cloud_transcription_base_url,
+        shortcut::change_cloud_transcription_api_key,
+        shortcut::change_cloud_transcription_model,
+        shortcut::test_cloud_transcription_connection,
+        shortcut::change_cloud_transcription_extra_params,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
@@ -345,6 +350,7 @@ pub fn run(cli_args: CliArgs) {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::history::retranscribe_history_entry,
         helpers::clamshell::is_laptop,
     ]);
 

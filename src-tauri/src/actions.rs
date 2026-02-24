@@ -17,8 +17,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
-use tauri::AppHandle;
-use tauri::Manager;
+use tauri::{AppHandle, Emitter, Manager};
 
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
 /// transcription pipeline finishes — whether it completes normally or panics.
@@ -512,7 +511,19 @@ impl ShortcutAction for TranscribeAction {
                         }
                     }
                     Err(err) => {
-                        debug!("Global Shortcut Transcription error: {}", err);
+                        debug!("Transcription error: {}", err);
+                        let settings = get_settings(&ah);
+                        if settings.selected_model == "cloud" {
+                            let hm_clone = Arc::clone(&hm);
+                            tauri::async_runtime::spawn(async move {
+                                if let Err(e) =
+                                    hm_clone.save_pending_transcription(samples_clone).await
+                                {
+                                    error!("Failed to save pending cloud transcription: {}", e);
+                                }
+                            });
+                            let _ = ah.emit("cloud-transcription-failed", ());
+                        }
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                     }

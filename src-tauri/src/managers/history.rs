@@ -31,6 +31,7 @@ static MIGRATIONS: &[M] = &[
     ),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN cloud_pending BOOLEAN NOT NULL DEFAULT 0;"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -43,6 +44,8 @@ pub struct HistoryEntry {
     pub transcription_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    #[serde(default)]
+    pub cloud_pending: bool,
 }
 
 pub struct HistoryManager {
@@ -355,7 +358,7 @@ impl HistoryManager {
     pub async fn get_history_entries(&self) -> Result<Vec<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt FROM transcription_history ORDER BY timestamp DESC"
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, cloud_pending FROM transcription_history ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -368,6 +371,7 @@ impl HistoryManager {
                 transcription_text: row.get("transcription_text")?,
                 post_processed_text: row.get("post_processed_text")?,
                 post_process_prompt: row.get("post_process_prompt")?,
+                cloud_pending: row.get("cloud_pending")?,
             })
         })?;
 
@@ -386,7 +390,7 @@ impl HistoryManager {
 
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, cloud_pending
              FROM transcription_history
              ORDER BY timestamp DESC
              LIMIT 1",
@@ -403,6 +407,7 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    cloud_pending: row.get("cloud_pending")?,
                 })
             })
             .optional()?;
@@ -444,7 +449,7 @@ impl HistoryManager {
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, cloud_pending
              FROM transcription_history WHERE id = ?1",
         )?;
 
@@ -459,6 +464,7 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    cloud_pending: row.get("cloud_pending")?,
                 })
             })
             .optional()?;
@@ -497,6 +503,60 @@ impl HistoryManager {
         Ok(())
     }
 
+    /// Save an audio recording as a pending cloud transcription (failed after all retries).
+    pub async fn save_pending_transcription(&self, audio_samples: Vec<f32>) -> Result<()> {
+        let timestamp = Utc::now().timestamp();
+        let file_name = format!("handy-{}.wav", timestamp);
+        let title = self.format_timestamp_title(timestamp);
+
+        // Save WAV file
+        let file_path = self.recordings_dir.join(&file_name);
+        save_wav_file(file_path, &audio_samples).await?;
+
+        // Save to database with cloud_pending = true, empty transcription
+        let conn = self.get_connection()?;
+        conn.execute(
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, cloud_pending) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![file_name, timestamp, false, title, "", true],
+        )?;
+
+        // Clean up old entries
+        self.cleanup_old_entries()?;
+
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
+    }
+
+    /// Update transcription text and clear cloud_pending for a history entry.
+    pub fn update_transcription(&self, id: i64, transcription_text: &str) -> Result<()> {
+        let conn = self.get_connection()?;
+        conn.execute(
+            "UPDATE transcription_history SET transcription_text = ?1, cloud_pending = 0 WHERE id = ?2",
+            params![transcription_text, id],
+        )?;
+        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+            error!("Failed to emit history-updated: {}", e);
+        }
+        Ok(())
+    }
+
+    /// Get audio samples for a history entry by loading its WAV file.
+    pub fn get_audio_samples(&self, file_name: &str) -> Result<Vec<f32>> {
+        use hound::WavReader;
+        let path = self.recordings_dir.join(file_name);
+        let mut reader =
+            WavReader::open(&path).map_err(|e| anyhow::anyhow!("Failed to open WAV: {}", e))?;
+        let samples: Vec<f32> = reader
+            .samples::<i16>()
+            .map(|s| s.map(|v| v as f32 / i16::MAX as f32))
+            .collect::<std::result::Result<_, _>>()
+            .map_err(|e| anyhow::anyhow!("Failed to read WAV samples: {}", e))?;
+        Ok(samples)
+    }
+
     fn format_timestamp_title(&self, timestamp: i64) -> String {
         if let Some(utc_datetime) = DateTime::from_timestamp(timestamp, 0) {
             // Convert UTC to local timezone
@@ -524,7 +584,8 @@ mod tests {
                 title TEXT NOT NULL,
                 transcription_text TEXT NOT NULL,
                 post_processed_text TEXT,
-                post_process_prompt TEXT
+                post_process_prompt TEXT,
+                cloud_pending BOOLEAN NOT NULL DEFAULT 0
             );",
         )
         .expect("create transcription_history table");
