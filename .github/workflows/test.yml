@@ -1,11 +1,19 @@
 name: "test"
-on: [pull_request]
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   rust-tests:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, ci]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install system dependencies
         run: |
