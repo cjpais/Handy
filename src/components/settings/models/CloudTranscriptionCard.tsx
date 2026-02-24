@@ -238,8 +238,18 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
               )}
             </div>
 
-            {/* Bottom row: Test + Toggle */}}
-            <div className="flex items-center justify-end gap-3">
+            {/* Bottom row: Activate + Test */}
+            <div className="flex items-center justify-end gap-2">
+              {!isActive && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => { if (isConfigured) onSelect("cloud"); }}
+                  disabled={!isConfigured}
+                >
+                  {t("settings.models.cloudTranscription.selectButton")}
+                </Button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -253,21 +263,6 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
               >
                 {testLabel}
               </Button>
-
-              {/* Toggle switch */}
-              <label
-                className={`inline-flex items-center ${isConfigured ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`}
-                title={t("settings.models.cloudTranscription.selectButton")}
-              >
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={isActive}
-                  disabled={!isConfigured}
-                  onChange={() => { if (isConfigured && !isActive) onSelect("cloud"); }}
-                />
-                <div className="relative w-11 h-6 bg-mid-gray/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-background-ui peer-disabled:opacity-50" />
-              </label>
             </div>
           </div>
         </>

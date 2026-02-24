@@ -212,7 +212,7 @@
         "testing": "Testing...",
         "testOk": "Connected",
         "testFailed": "Connection failed",
-        "hint": "Works with faster-whisper-server, LocalAI, and others. Cloud APIs (Groq, OpenAI) work too."
+        "hint": "Local servers (faster-whisper, LocalAI) or cloud APIs (Groq, OpenAI)."
       }
     },
     "sound": {

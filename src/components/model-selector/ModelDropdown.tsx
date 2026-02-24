@@ -18,7 +18,9 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   onModelSelect,
 }) => {
   const { t } = useTranslation();
-  const downloadedModels = models.filter((m) => m.is_downloaded);
+  const downloadedModels = models
+    .filter((m) => m.is_downloaded)
+    .sort((a, b) => (a.id === "cloud" ? 1 : b.id === "cloud" ? -1 : 0));
 
   const handleModelClick = (modelId: string) => {
     onModelSelect(modelId);
