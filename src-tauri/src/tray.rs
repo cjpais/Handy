@@ -159,7 +159,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
             .expect("failed to create menu")
         }
         TrayIconState::Idle => {
-            if settings.selected_model == "n" {
+            if settings.selected_model == "cloud" {
                 Menu::with_items(
                     app,
                     &[

@@ -91,6 +91,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
 
   return (
     <div className={containerClasses}>
+      {/* Header */}
       <button
         type="button"
         className="flex items-start justify-between w-full text-left"
@@ -132,6 +133,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
         </div>
       </button>
 
+      {/* Expanded config */}
       {isExpanded && (
         <>
           <hr className="w-full border-mid-gray/20" />
@@ -145,9 +147,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 variant="compact"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                onBlur={(e) =>
-                  saveField("cloud_transcription_base_url", e.target.value)
-                }
+                onBlur={(e) => saveField("cloud_transcription_base_url", e.target.value)}
                 placeholder={t("settings.models.cloudTranscription.baseUrlPlaceholder")}
                 className="w-full"
                 disabled={isSaving}
@@ -157,42 +157,23 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
               <label className="text-xs font-medium text-text/60">
                 {t("settings.models.cloudTranscription.apiKeyLabel")}
               </label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="password"
-                  variant="compact"
-                  value={apiKey}
-                  onChange={(e) => {
-                    setApiKey(e.target.value);
-                    setTestStatus("idle");
-                  }}
-                  onBlur={(e) =>
-                    saveField("cloud_transcription_api_key", e.target.value)
-                  }
-                  placeholder={t("settings.models.cloudTranscription.apiKeyPlaceholder")}
-                  className="flex-1"
-                  disabled={isSaving}
-                />
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void handleTest()}
-                  disabled={!apiKey.trim() || testStatus === "testing"}
-                >
-                  {testStatus === "testing"
-                    ? t("settings.models.cloudTranscription.testing")
-                    : t("settings.models.cloudTranscription.test")}
-                </Button>
-              </div>
+              <Input
+                type="password"
+                variant="compact"
+                value={apiKey}
+                onChange={(e) => { setApiKey(e.target.value); setTestStatus("idle"); }}
+                onBlur={(e) => saveField("cloud_transcription_api_key", e.target.value)}
+                placeholder={t("settings.models.cloudTranscription.apiKeyPlaceholder")}
+                className="w-full"
+                disabled={isSaving}
+              />
               {testStatus === "ok" && (
                 <p className="text-xs text-green-500">
                   {t("settings.models.cloudTranscription.testOk")}
                 </p>
               )}
               {testStatus === "error" && (
-                <p className="text-xs text-red-400 break-all">
-                  {testError}
-                </p>
+                <p className="text-xs text-red-400 break-all">{testError}</p>
               )}
             </div>
             <div className="flex flex-col gap-1">
@@ -204,25 +185,34 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 variant="compact"
                 value={modelName}
                 onChange={(e) => setModelName(e.target.value)}
-                onBlur={(e) =>
-                  saveField("cloud_transcription_model", e.target.value)
-                }
+                onBlur={(e) => saveField("cloud_transcription_model", e.target.value)}
                 placeholder={t("settings.models.cloudTranscription.modelPlaceholder")}
                 className="w-full"
                 disabled={isSaving}
               />
             </div>
-            {isConfigured && !isActive && (
-              <div className="flex justify-end">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => onSelect("n")}
-                >
-                  {t("settings.models.cloudTranscription.selectButton")}
-                </Button>
-              </div>
-            )}
+
+            {/* Bottom row: Test + Select */}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void handleTest()}
+                disabled={!apiKey.trim() || testStatus === "testing"}
+              >
+                {testStatus === "testing"
+                  ? t("settings.models.cloudTranscription.testing")
+                  : t("settings.models.cloudTranscription.test")}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => { if (!isActive) onSelect("cloud"); }}
+                disabled={!isConfigured || isActive}
+              >
+                {t("settings.models.cloudTranscription.selectButton")}
+              </Button>
+            </div>
           </div>
         </>
       )}
