@@ -362,6 +362,8 @@ pub struct AppSettings {
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub recordings_custom_dir: Option<String>,
+    #[serde(default)]
+    pub models_custom_dir: Option<String>,
 }
 
 fn default_model() -> String {
@@ -727,6 +729,7 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         recordings_custom_dir: None,
+        models_custom_dir: None,
     }
 }
 
@@ -748,6 +751,29 @@ pub fn resolve_recordings_dir(app: &AppHandle) -> Result<std::path::PathBuf, Str
     if !dir.exists() {
         std::fs::create_dir_all(&dir)
             .map_err(|e| format!("Failed to create recordings directory: {}", e))?;
+    }
+
+    Ok(dir)
+}
+
+/// Resolve the effective models directory.
+/// Returns the custom path when one is set in settings; otherwise falls back to
+/// `<app_data_dir>/models`. Creates the directory if it does not exist.
+pub fn resolve_models_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let settings = get_settings(app);
+    let dir = if let Some(custom) = settings.models_custom_dir {
+        std::path::PathBuf::from(custom)
+    } else {
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+        app_data_dir.join("models")
+    };
+
+    if !dir.exists() {
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("Failed to create models directory: {}", e))?;
     }
 
     Ok(dir)

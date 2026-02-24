@@ -113,7 +113,10 @@ pub struct SetRecordingsDirResult {
     pub failed: usize,
 }
 
-fn move_wav_files_between_dirs(old_dir: &Path, new_dir: &Path) -> Result<SetRecordingsDirResult, String> {
+fn move_wav_files_between_dirs(
+    old_dir: &Path,
+    new_dir: &Path,
+) -> Result<SetRecordingsDirResult, String> {
     let mut result = SetRecordingsDirResult {
         moved: 0,
         skipped: 0,
@@ -187,8 +190,7 @@ pub async fn set_recordings_directory(
 
         // Verify it is writable
         let test = candidate.join(".handy_write_test");
-        std::fs::write(&test, b"")
-            .map_err(|e| format!("Directory is not writable: {}", e))?;
+        std::fs::write(&test, b"").map_err(|e| format!("Directory is not writable: {}", e))?;
         std::fs::remove_file(&test).ok();
 
         candidate
@@ -243,8 +245,8 @@ mod tests {
         std::fs::write(&not_audio, b"t").expect("write notes.txt");
         std::fs::write(&conflict_target, b"existing").expect("write conflict file");
 
-        let result = move_wav_files_between_dirs(old_dir.path(), new_dir.path())
-            .expect("move wav files");
+        let result =
+            move_wav_files_between_dirs(old_dir.path(), new_dir.path()).expect("move wav files");
 
         assert_eq!(result.moved, 1);
         assert_eq!(result.skipped, 1);

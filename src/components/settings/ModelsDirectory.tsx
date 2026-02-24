@@ -6,20 +6,20 @@ import { commands } from "@/bindings";
 import { useSettings } from "../../hooks/useSettings";
 import { SettingContainer } from "../ui/SettingContainer";
 
-interface RecordingsDirectoryProps {
+interface ModelsDirectoryProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
 }
 
-export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
-  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+export const ModelsDirectory: React.FC<ModelsDirectoryProps> = React.memo(
+  ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, refreshSettings } = useSettings();
     const [isBusy, setIsBusy] = useState(false);
     const [defaultPath, setDefaultPath] = useState<string>("");
     const [loading, setLoading] = useState(true);
 
-    const rawCustomDir = getSetting("recordings_custom_dir");
+    const rawCustomDir = getSetting("models_custom_dir");
     const customDir: string | null =
       typeof rawCustomDir === "string" ? rawCustomDir : null;
     const isCustom = customDir !== null;
@@ -29,10 +29,10 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
         try {
           const result = await commands.getAppDirPath();
           if (result.status === "ok") {
-            setDefaultPath(`${result.data}\\recordings`);
+            setDefaultPath(`${result.data}\\models`);
           }
         } catch (err) {
-          console.error("Failed to load default recordings path:", err);
+          console.error("Failed to load default models path:", err);
         } finally {
           setLoading(false);
         }
@@ -43,10 +43,10 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
     const applyDirectoryChange = async (path: string | null) => {
       setIsBusy(true);
       try {
-        const result = await commands.setRecordingsDirectory(path, true);
+        const result = await commands.setModelsDirectory(path, true);
         if (result.status === "error") {
           toast.error(
-            t("settings.debug.recordingsDirectory.errorSetDir", {
+            t("settings.debug.modelsDirectory.errorSetDir", {
               error: result.error,
             }),
           );
@@ -58,28 +58,31 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
         const { moved, skipped, failed } = result.data;
         if (moved > 0) {
           toast.success(
-            t("settings.debug.recordingsDirectory.moveResult_moved", {
+            t("settings.debug.modelsDirectory.moveResult_moved", {
               count: moved,
             }),
           );
         }
         if (skipped > 0) {
           toast.info(
-            t("settings.debug.recordingsDirectory.moveResult_skipped", {
+            t("settings.debug.modelsDirectory.moveResult_skipped", {
               count: skipped,
             }),
           );
         }
         if (failed > 0) {
           toast.warning(
-            t("settings.debug.recordingsDirectory.moveResult_failed", {
+            t("settings.debug.modelsDirectory.moveResult_failed", {
               count: failed,
             }),
           );
         }
+        if (moved === 0 && skipped === 0 && failed === 0) {
+          toast.success(t("settings.debug.modelsDirectory.success"));
+        }
       } catch (error) {
         toast.error(
-          t("settings.debug.recordingsDirectory.errorSetDir", {
+          t("settings.debug.modelsDirectory.errorSetDir", {
             error: String(error),
           }),
         );
@@ -96,10 +99,10 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
 
     const handleRevert = async () => {
       const confirmed = await ask(
-        t("settings.debug.recordingsDirectory.confirmDisableMessage"),
+        t("settings.debug.modelsDirectory.confirmDisableMessage"),
         {
-          title: t("settings.debug.recordingsDirectory.confirmDisableTitle"),
-          okLabel: t("settings.debug.recordingsDirectory.confirmDisableButton"),
+          title: t("settings.debug.modelsDirectory.confirmDisableTitle"),
+          okLabel: t("common.revert"),
           cancelLabel: t("common.cancel"),
           kind: "warning",
         },
@@ -110,17 +113,17 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
 
     const handleOpen = async () => {
       try {
-        await commands.openRecordingsFolder();
+        await commands.openModelsFolder();
       } catch (openError) {
-        console.error("Failed to open recordings folder:", openError);
+        console.error("Failed to open models folder:", openError);
       }
     };
 
     if (loading) {
       return (
         <SettingContainer
-          title={t("settings.debug.recordingsDirectory.title")}
-          description={t("settings.debug.recordingsDirectory.description")}
+          title={t("settings.debug.modelsDirectory.title")}
+          description={t("settings.debug.modelsDirectory.description")}
           descriptionMode={descriptionMode}
           grouped={grouped}
           layout="stacked"
@@ -134,8 +137,8 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
 
     return (
       <SettingContainer
-        title={t("settings.debug.recordingsDirectory.title")}
-        description={t("settings.debug.recordingsDirectory.description")}
+        title={t("settings.debug.modelsDirectory.title")}
+        description={t("settings.debug.modelsDirectory.description")}
         descriptionMode={descriptionMode}
         grouped={grouped}
         layout="stacked"
@@ -209,4 +212,5 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
         </div>
       </SettingContainer>
     );
-  });
+  },
+);

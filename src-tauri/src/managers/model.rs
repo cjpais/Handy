@@ -64,16 +64,9 @@ pub struct ModelManager {
 
 impl ModelManager {
     pub fn new(app_handle: &AppHandle) -> Result<Self> {
-        // Create models directory in app data
-        let models_dir = app_handle
-            .path()
-            .app_data_dir()
-            .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?
-            .join("models");
-
-        if !models_dir.exists() {
-            fs::create_dir_all(&models_dir)?;
-        }
+        // Get models directory (supports custom path via settings)
+        let models_dir = crate::settings::resolve_models_dir(app_handle)
+            .map_err(|e| anyhow::anyhow!("Failed to resolve models directory: {}", e))?;
 
         let mut available_models = HashMap::new();
 

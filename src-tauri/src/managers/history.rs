@@ -170,8 +170,7 @@ impl HistoryManager {
     /// runtime directory changes (via `set_recordings_directory`) take effect
     /// immediately without requiring a restart.
     fn effective_recordings_dir(&self) -> Result<PathBuf> {
-        crate::settings::resolve_recordings_dir(&self.app_handle)
-            .map_err(|e| anyhow::anyhow!(e))
+        crate::settings::resolve_recordings_dir(&self.app_handle).map_err(|e| anyhow::anyhow!(e))
     }
 
     /// Save a transcription to history (both database and WAV file)
