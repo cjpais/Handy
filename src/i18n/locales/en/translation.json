@@ -195,10 +195,10 @@
         "allLanguages": "All Languages"
       },
       "noModelsMatch": "No models match this filter.",
-      "cloudProviders": "Custom API",
+      "cloudProviders": "Local Server",
       "cloudTranscription": {
-        "title": "Custom API",
-        "description": "OpenAI-compatible server — local or cloud",
+        "title": "Local Server",
+        "description": "Your own Whisper server or compatible endpoint",
         "baseUrlLabel": "Server URL",
         "baseUrlPlaceholder": "http://localhost:8000/v1",
         "apiKeyLabel": "API Key",
@@ -212,7 +212,7 @@
         "testing": "Testing...",
         "testOk": "Connected",
         "testFailed": "Connection failed",
-        "hint": "Works with local servers (faster-whisper-server, LocalAI) and cloud APIs (Groq, OpenAI) as a bonus."
+        "hint": "Works with faster-whisper-server, LocalAI, and others. Cloud APIs (Groq, OpenAI) work too."
       }
     },
     "sound": {
