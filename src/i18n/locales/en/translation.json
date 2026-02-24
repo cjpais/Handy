@@ -198,7 +198,7 @@
       "cloudProviders": "Cloud Transcription",
       "cloudTranscription": {
         "title": "Cloud Transcription",
-        "description": "OpenAI-compatible API (Groq, OpenAI, custom)",
+        "description": "Cloud API (Groq, OpenAI, custom)",
         "baseUrlLabel": "Base URL",
         "baseUrlPlaceholder": "https://api.groq.com/openai/v1",
         "apiKeyLabel": "API Key",
