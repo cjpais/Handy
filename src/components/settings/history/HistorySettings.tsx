@@ -36,6 +36,8 @@ export const HistorySettings: React.FC = () => {
   const osType = useOsType();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryingIds, setRetryingIds] = useState<Set<number>>(new Set());
+  const [showCloudFailedBanner, setShowCloudFailedBanner] = useState(false);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -53,27 +55,55 @@ export const HistorySettings: React.FC = () => {
   useEffect(() => {
     loadHistoryEntries();
 
-    // Listen for history update events
-    const setupListener = async () => {
+    // Listen for history update events and cloud transcription failures
+    const setupListeners = async () => {
       const unlisten = await listen("history-updated", () => {
         console.log("History updated, reloading entries...");
         loadHistoryEntries();
       });
 
-      // Return cleanup function
-      return unlisten;
+      const unlisten2 = await listen("cloud-transcription-failed", () => {
+        setShowCloudFailedBanner(true);
+        setTimeout(() => setShowCloudFailedBanner(false), 8000);
+      });
+
+      return () => {
+        unlisten();
+        unlisten2();
+      };
     };
 
-    let unlistenPromise = setupListener();
+    let cleanupPromise = setupListeners();
 
     return () => {
-      unlistenPromise.then((unlisten) => {
-        if (unlisten) {
-          unlisten();
+      cleanupPromise.then((cleanup) => {
+        if (cleanup) {
+          cleanup();
         }
       });
     };
   }, [loadHistoryEntries]);
+
+  const handleRetry = async (id: number) => {
+    setRetryingIds((prev) => new Set([...prev, id]));
+    try {
+      const result = await commands.retranscribeHistoryEntry(id);
+      if (result.status === "ok") {
+        await loadHistoryEntries();
+      } else {
+        console.error("Retry failed:", result.error);
+        // The entry stays in history with cloud_pending=true, so user can try again
+      }
+    } catch (error) {
+      console.error("Retry failed:", error);
+    } finally {
+      setRetryingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
 
   const toggleSaved = async (id: number) => {
     try {
@@ -196,6 +226,19 @@ export const HistorySettings: React.FC = () => {
             label={t("settings.history.openFolder")}
           />
         </div>
+        {showCloudFailedBanner && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+            <p className="text-sm text-red-500">
+              {t("notifications.cloudTranscriptionFailed")}
+            </p>
+            <button
+              onClick={() => setShowCloudFailedBanner(false)}
+              className="ml-2 text-red-400 hover:text-red-600 text-lg leading-none"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           <div className="divide-y divide-mid-gray/20">
             {historyEntries.map((entry) => (
@@ -206,6 +249,8 @@ export const HistorySettings: React.FC = () => {
                 onCopyText={() => copyToClipboard(entry.transcription_text)}
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
+                onRetry={() => handleRetry(entry.id)}
+                isRetrying={retryingIds.has(entry.id)}
               />
             ))}
           </div>
@@ -221,6 +266,8 @@ interface HistoryEntryProps {
   onCopyText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
+  onRetry: () => void;
+  isRetrying: boolean;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -229,6 +276,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onCopyText,
   getAudioUrl,
   deleteAudio,
+  onRetry,
+  isRetrying,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
@@ -299,9 +348,26 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
         </div>
       </div>
-      <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
-        {entry.transcription_text}
-      </p>
+      {entry.cloud_pending ? (
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-sm text-text/40 italic">
+            {t("settings.history.cloudPending.placeholder")}
+          </p>
+          <button
+            onClick={onRetry}
+            disabled={isRetrying}
+            className="shrink-0 px-3 py-1 text-xs font-medium bg-logo-primary text-white rounded-md hover:opacity-90 disabled:opacity-50"
+          >
+            {isRetrying
+              ? t("settings.history.cloudPending.retrying")
+              : t("settings.history.cloudPending.retryButton")}
+          </button>
+        </div>
+      ) : (
+        <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
+          {entry.transcription_text}
+        </p>
+      )}
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );

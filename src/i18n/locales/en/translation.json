@@ -194,7 +194,29 @@
         "translation": "Translation",
         "allLanguages": "All Languages"
       },
-      "noModelsMatch": "No models match this filter."
+      "noModelsMatch": "No models match this filter.",
+      "cloudProviders": "API",
+      "cloudTranscription": {
+        "title": "Local Server",
+        "description": "Your own Whisper server or compatible endpoint",
+        "baseUrlLabel": "Server URL",
+        "baseUrlPlaceholder": "http://localhost:8000/v1",
+        "apiKeyLabel": "API Key",
+        "apiKeyPlaceholder": "sk-••••••••",
+        "apiKeyOptional": "Optional — leave empty for servers without authentication",
+        "modelLabel": "Model",
+        "modelPlaceholder": "whisper-large-v3",
+        "configured": "Configured",
+        "notConfigured": "Not configured",
+        "selectButton": "Select",
+        "test": "Test",
+        "testing": "Testing...",
+        "testOk": "Connected",
+        "testFailed": "Connection failed",
+        "hint": "Local servers (faster-whisper, LocalAI, whisper.cpp) or remote APIs (Groq, OpenAI).",
+        "advanced": "Advanced",
+        "extraParamsHint": "JSON — additional fields sent to /audio/transcriptions"
+      }
     },
     "sound": {
       "title": "Sound",
@@ -389,7 +411,12 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "cloudPending": {
+        "placeholder": "Transcription failed — tap Retry to try again",
+        "retryButton": "Retry",
+        "retrying": "Retrying..."
+      }
     },
     "debug": {
       "title": "Debug",
@@ -492,6 +519,9 @@
         }
       }
     }
+  },
+  "notifications": {
+    "cloudTranscriptionFailed": "Server transcription failed. Recording saved — retry from History."
   },
   "footer": {
     "downloadingModel": "Downloading {{model}}...",

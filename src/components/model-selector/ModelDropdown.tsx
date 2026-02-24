@@ -18,14 +18,16 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   onModelSelect,
 }) => {
   const { t } = useTranslation();
-  const downloadedModels = models.filter((m) => m.is_downloaded);
+  const downloadedModels = models
+    .filter((m) => m.is_downloaded)
+    .sort((a, b) => (a.id === "cloud" ? 1 : b.id === "cloud" ? -1 : 0));
 
   const handleModelClick = (modelId: string) => {
     onModelSelect(modelId);
   };
 
   return (
-    <div className="absolute bottom-full start-0 mb-2 w-64 max-h-[60vh] overflow-y-auto bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
+    <div className="absolute bottom-full start-0 mb-2 w-64 max-h-[80vh] overflow-y-auto bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
       {downloadedModels.length > 0 ? (
         <div>
           {downloadedModels.map((model) => (
