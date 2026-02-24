@@ -15,6 +15,38 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
+use url::Url;
+
+/// Allowed hostnames for model downloads. Only models hosted on these domains
+/// can be downloaded, mitigating risks from compromised or malicious model servers.
+const ALLOWED_DOWNLOAD_HOSTS: &[&str] = &["huggingface.co"];
+
+/// Validates that a download URL points to an allowed host.
+fn validate_download_url(url: &str) -> Result<()> {
+    let parsed = Url::parse(url)
+        .map_err(|e| anyhow::anyhow!("Invalid download URL '{}': {}", url, e))?;
+
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| anyhow::anyhow!("Download URL has no host: {}", url))?;
+
+    if !ALLOWED_DOWNLOAD_HOSTS.iter().any(|allowed| host == *allowed) {
+        return Err(anyhow::anyhow!(
+            "Download from '{}' is not allowed. Only downloads from {} are permitted.",
+            host,
+            ALLOWED_DOWNLOAD_HOSTS.join(", ")
+        ));
+    }
+
+    if parsed.scheme() != "https" {
+        return Err(anyhow::anyhow!(
+            "Only HTTPS downloads are allowed, got: {}",
+            parsed.scheme()
+        ));
+    }
+
+    Ok(())
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
@@ -101,7 +133,7 @@ impl ModelManager {
                 name: "Whisper Small".to_string(),
                 description: "Fast and fairly accurate.".to_string(),
                 filename: "ggml-small.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-small.bin".to_string()),
+                url: Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin".to_string()),
                 size_mb: 487,
                 is_downloaded: false,
                 is_downloading: false,
@@ -125,7 +157,7 @@ impl ModelManager {
                 name: "Whisper Medium".to_string(),
                 description: "Good accuracy, medium speed".to_string(),
                 filename: "whisper-medium-q4_1.bin".to_string(),
-                url: Some("https://blob.handy.computer/whisper-medium-q4_1.bin".to_string()),
+                url: Some("https://huggingface.co/Pomni/whisper-medium-ggml-allquants/resolve/main/ggml-medium-q4_1.bin".to_string()),
                 size_mb: 492, // Approximate size
                 is_downloaded: false,
                 is_downloading: false,
@@ -148,7 +180,7 @@ impl ModelManager {
                 name: "Whisper Turbo".to_string(),
                 description: "Balanced accuracy and speed.".to_string(),
                 filename: "ggml-large-v3-turbo.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-large-v3-turbo.bin".to_string()),
+                url: Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin".to_string()),
                 size_mb: 1600, // Approximate size
                 is_downloaded: false,
                 is_downloading: false,
@@ -171,7 +203,7 @@ impl ModelManager {
                 name: "Whisper Large".to_string(),
                 description: "Good accuracy, but slow.".to_string(),
                 filename: "ggml-large-v3-q5_0.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-large-v3-q5_0.bin".to_string()),
+                url: Some("https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-q5_0.bin".to_string()),
                 size_mb: 1100, // Approximate size
                 is_downloaded: false,
                 is_downloading: false,
@@ -195,7 +227,7 @@ impl ModelManager {
                 description: "Optimized for Taiwanese Mandarin. Code-switching support."
                     .to_string(),
                 filename: "breeze-asr-q5_k.bin".to_string(),
-                url: Some("https://blob.handy.computer/breeze-asr-q5_k.bin".to_string()),
+                url: Some("https://huggingface.co/alan314159/Breeze-ASR-25-whispercpp/resolve/main/ggml-model-q5_k.bin".to_string()),
                 size_mb: 1080,
                 is_downloaded: false,
                 is_downloading: false,
@@ -219,7 +251,7 @@ impl ModelManager {
                 name: "Parakeet V2".to_string(),
                 description: "English only. The best model for English speakers.".to_string(),
                 filename: "parakeet-tdt-0.6b-v2-int8".to_string(), // Directory name
-                url: Some("https://blob.handy.computer/parakeet-v2-int8.tar.gz".to_string()),
+                url: Some("https://huggingface.co/smcleod/parakeet-tdt-0.6b-v2-int8/resolve/main/parakeet-tdt-0.6b-v2-int8.tar.gz".to_string()),
                 size_mb: 473, // Approximate size for int8 quantized model
                 is_downloaded: false,
                 is_downloading: false,
@@ -235,167 +267,10 @@ impl ModelManager {
             },
         );
 
-        // Parakeet V3 supported languages (25 EU languages + Russian/Ukrainian):
-        // bg, hr, cs, da, nl, en, et, fi, fr, de, el, hu, it, lv, lt, mt, pl, pt, ro, sk, sl, es, sv, ru, uk
-        let parakeet_v3_languages: Vec<String> = vec![
-            "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv",
-            "lt", "mt", "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
-
-        available_models.insert(
-            "parakeet-tdt-0.6b-v3".to_string(),
-            ModelInfo {
-                id: "parakeet-tdt-0.6b-v3".to_string(),
-                name: "Parakeet V3".to_string(),
-                description: "Fast and accurate. Supports 25 European languages.".to_string(),
-                filename: "parakeet-tdt-0.6b-v3-int8".to_string(), // Directory name
-                url: Some("https://blob.handy.computer/parakeet-v3-int8.tar.gz".to_string()),
-                size_mb: 478, // Approximate size for int8 quantized model
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Parakeet,
-                accuracy_score: 0.80,
-                speed_score: 0.85,
-                supports_translation: false,
-                is_recommended: true,
-                supported_languages: parakeet_v3_languages,
-                is_custom: false,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-base".to_string(),
-            ModelInfo {
-                id: "moonshine-base".to_string(),
-                name: "Moonshine Base".to_string(),
-                description: "Very fast, English only. Handles accents well.".to_string(),
-                filename: "moonshine-base".to_string(),
-                url: Some("https://blob.handy.computer/moonshine-base.tar.gz".to_string()),
-                size_mb: 58,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::Moonshine,
-                accuracy_score: 0.70,
-                speed_score: 0.90,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-tiny-streaming-en".to_string(),
-            ModelInfo {
-                id: "moonshine-tiny-streaming-en".to_string(),
-                name: "Moonshine V2 Tiny".to_string(),
-                description: "Ultra-fast, English only".to_string(),
-                filename: "moonshine-tiny-streaming-en".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/moonshine-tiny-streaming-en.tar.gz".to_string(),
-                ),
-                size_mb: 31,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::MoonshineStreaming,
-                accuracy_score: 0.55,
-                speed_score: 0.95,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-small-streaming-en".to_string(),
-            ModelInfo {
-                id: "moonshine-small-streaming-en".to_string(),
-                name: "Moonshine V2 Small".to_string(),
-                description: "Fast, English only. Good balance of speed and accuracy.".to_string(),
-                filename: "moonshine-small-streaming-en".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/moonshine-small-streaming-en.tar.gz".to_string(),
-                ),
-                size_mb: 100,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::MoonshineStreaming,
-                accuracy_score: 0.65,
-                speed_score: 0.90,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-            },
-        );
-
-        available_models.insert(
-            "moonshine-medium-streaming-en".to_string(),
-            ModelInfo {
-                id: "moonshine-medium-streaming-en".to_string(),
-                name: "Moonshine V2 Medium".to_string(),
-                description: "English only. High quality.".to_string(),
-                filename: "moonshine-medium-streaming-en".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/moonshine-medium-streaming-en.tar.gz".to_string(),
-                ),
-                size_mb: 192,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::MoonshineStreaming,
-                accuracy_score: 0.75,
-                speed_score: 0.80,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: vec!["en".to_string()],
-                is_custom: false,
-            },
-        );
-
-        // SenseVoice supported languages
-        let sense_voice_languages: Vec<String> =
-            vec!["zh", "zh-Hans", "zh-Hant", "en", "yue", "ja", "ko"]
-                .into_iter()
-                .map(String::from)
-                .collect();
-
-        available_models.insert(
-            "sense-voice-int8".to_string(),
-            ModelInfo {
-                id: "sense-voice-int8".to_string(),
-                name: "SenseVoice".to_string(),
-                description: "Very fast. Chinese, English, Japanese, Korean, Cantonese."
-                    .to_string(),
-                filename: "sense-voice-int8".to_string(),
-                url: Some("https://blob.handy.computer/sense-voice-int8.tar.gz".to_string()),
-                size_mb: 160,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: true,
-                engine_type: EngineType::SenseVoice,
-                accuracy_score: 0.65,
-                speed_score: 0.95,
-                supports_translation: false,
-                is_recommended: false,
-                supported_languages: sense_voice_languages,
-                is_custom: false,
-            },
-        );
+        // NOTE: Parakeet V3, Moonshine (Base, Tiny/Small/Medium Streaming), and SenseVoice
+        // models have been removed because they are not available as pre-packaged archives
+        // on Hugging Face. Only models with verified Hugging Face download URLs are included
+        // to ensure download integrity and security (see security assessment Finding #1).
 
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
@@ -684,6 +559,10 @@ impl ModelManager {
         let url = model_info
             .url
             .ok_or_else(|| anyhow::anyhow!("No download URL for model"))?;
+
+        // Validate the download URL against the allowlist before proceeding
+        validate_download_url(&url)?;
+
         let model_path = self.models_dir.join(&model_info.filename);
         let partial_path = self
             .models_dir
@@ -1272,5 +1151,34 @@ mod tests {
         let result = ModelManager::discover_custom_whisper_models(&models_dir, &mut models);
         assert!(result.is_ok());
         assert_eq!(models.len(), count_before);
+    }
+
+    #[test]
+    fn test_validate_download_url_allows_huggingface() {
+        assert!(validate_download_url(
+            "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+        )
+        .is_ok());
+    }
+
+    #[test]
+    fn test_validate_download_url_blocks_other_hosts() {
+        assert!(validate_download_url("https://blob.handy.computer/ggml-small.bin").is_err());
+        assert!(validate_download_url("https://example.com/model.bin").is_err());
+        assert!(validate_download_url("https://evil.huggingface.co/model.bin").is_err());
+    }
+
+    #[test]
+    fn test_validate_download_url_requires_https() {
+        assert!(validate_download_url(
+            "http://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn test_validate_download_url_rejects_invalid_urls() {
+        assert!(validate_download_url("not-a-url").is_err());
+        assert!(validate_download_url("").is_err());
     }
 }

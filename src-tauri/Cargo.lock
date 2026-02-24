@@ -2494,6 +2494,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "transcribe-rs",
+ "url",
  "vad-rs",
  "windows 0.61.3",
 ]
