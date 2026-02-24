@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp, Cloud } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { commands } from "@/bindings";
 import Badge from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -118,7 +118,6 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
         <div className="flex flex-col items-start flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <Cloud className="w-4 h-4 text-text/60 shrink-0" />
               <h3 className="text-base font-semibold text-text">
                 {t("settings.models.cloudTranscription.title")}
               </h3>
@@ -222,7 +221,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
               {showAdvanced && (
                 <div className="flex flex-col gap-1">
                   <textarea
-                    rows={4}
+                    rows={7}
                     value={extraParams}
                     onChange={(e) => setExtraParams(e.target.value)}
                     onBlur={(e) => saveField("cloud_transcription_extra_params", e.target.value)}
