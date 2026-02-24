@@ -579,7 +579,7 @@ fn default_typing_tool() -> TypingTool {
 }
 
 fn default_cloud_transcription_base_url() -> String {
-    "https://api.groq.com/openai/v1".to_string()
+    String::new()
 }
 
 fn default_cloud_transcription_model() -> String {

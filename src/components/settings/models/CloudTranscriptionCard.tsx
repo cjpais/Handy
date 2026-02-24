@@ -36,7 +36,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
     commands.getAppSettings().then((result) => {
       if (result.status === "ok") {
         const s = result.data;
-        setBaseUrl(s.cloud_transcription_base_url ?? "https://api.groq.com/openai/v1");
+        setBaseUrl(s.cloud_transcription_base_url ?? "");
         setApiKey(s.cloud_transcription_api_key ?? "");
         setModelName(s.cloud_transcription_model ?? "whisper-large-v3");
         setExtraParams(s.cloud_transcription_extra_params ?? "");
@@ -169,6 +169,9 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 className="w-full"
                 disabled={isSaving}
               />
+              <p className="text-xs text-text/30">
+                {t("settings.models.cloudTranscription.hint")}
+              </p>
             </div>
 
             <div className="flex flex-col gap-1">

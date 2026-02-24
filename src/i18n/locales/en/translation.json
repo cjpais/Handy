@@ -195,12 +195,12 @@
         "allLanguages": "All Languages"
       },
       "noModelsMatch": "No models match this filter.",
-      "cloudProviders": "Cloud Transcription",
+      "cloudProviders": "Custom API",
       "cloudTranscription": {
-        "title": "Cloud Transcription",
-        "description": "Cloud API (Groq, OpenAI, custom)",
-        "baseUrlLabel": "Base URL",
-        "baseUrlPlaceholder": "https://api.groq.com/openai/v1",
+        "title": "Custom API",
+        "description": "OpenAI-compatible server — local or cloud",
+        "baseUrlLabel": "Server URL",
+        "baseUrlPlaceholder": "http://localhost:8000/v1",
         "apiKeyLabel": "API Key",
         "apiKeyPlaceholder": "sk-••••••••",
         "modelLabel": "Model",
@@ -211,7 +211,8 @@
         "test": "Test",
         "testing": "Testing...",
         "testOk": "Connected",
-        "testFailed": "Connection failed"
+        "testFailed": "Connection failed",
+        "hint": "Works with local servers (faster-whisper-server, LocalAI) and cloud APIs (Groq, OpenAI) as a bonus."
       }
     },
     "sound": {
