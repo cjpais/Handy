@@ -38,55 +38,49 @@ fn samples_to_wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
         bits_per_sample: 16,
         sample_format: hound::SampleFormat::Int,
     };
-    let mut buf: Vec<u8> = Vec::new();
-    {
-        // Cursor<&mut Vec<u8>> borrows buf; borrow released when writer is finalized and dropped.
-        let cursor = Cursor::new(&mut buf);
-        let mut writer =
-            WavWriter::new(cursor, spec).map_err(|e| anyhow::anyhow!("WavWriter init: {}", e))?;
-        for s in samples {
-            writer
-                .write_sample((*s * i16::MAX as f32) as i16)
-                .map_err(|e| anyhow::anyhow!("WAV write: {}", e))?;
-        }
+    let mut buf = Vec::new();
+    let mut writer = WavWriter::new(Cursor::new(&mut buf), spec)
+        .map_err(|e| anyhow::anyhow!("WavWriter: {e}"))?;
+    for &s in samples {
         writer
-            .finalize()
-            .map_err(|e| anyhow::anyhow!("WAV finalize: {}", e))?;
+            .write_sample((s * i16::MAX as f32) as i16)
+            .map_err(|e| anyhow::anyhow!("WAV write: {e}"))?;
     }
+    writer
+        .finalize()
+        .map_err(|e| anyhow::anyhow!("WAV finalize: {e}"))?;
     Ok(buf)
 }
 
-/// POST audio to an OpenAI-compatible /audio/transcriptions endpoint.
 /// Parse a JSON string into a serde_json::Value object, ignoring invalid input.
 fn parse_extra_params(raw: &str) -> Option<serde_json::Value> {
-    let raw = raw.trim();
-    if raw.is_empty() {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
         return None;
     }
-    match serde_json::from_str(raw) {
+    match serde_json::from_str(trimmed) {
         Ok(v @ serde_json::Value::Object(_)) => Some(v),
         _ => {
-            log::warn!("cloud_transcription_extra_params is not a valid JSON object, ignoring");
+            warn!("cloud_transcription_extra_params is not a valid JSON object, ignoring");
             None
         }
     }
 }
 
+/// POST audio to an OpenAI-compatible `/audio/transcriptions` endpoint.
 async fn call_cloud_api(
     base_url: &str,
     api_key: &str,
     model_name: &str,
     wav_bytes: Vec<u8>,
-    language: Option<String>,
+    language: Option<&str>,
     extra_params: Option<serde_json::Value>,
 ) -> Result<String> {
     use reqwest::multipart;
-    let client = reqwest::Client::new();
 
     let file_part = multipart::Part::bytes(wav_bytes)
         .file_name("audio.wav")
-        .mime_str("audio/wav")
-        .map_err(|e| anyhow::anyhow!("MIME error: {}", e))?;
+        .mime_str("audio/wav")?;
 
     let mut form = multipart::Form::new()
         .part("file", file_part)
@@ -94,10 +88,10 @@ async fn call_cloud_api(
         .text("response_format", "json");
 
     if let Some(lang) = language {
-        form = form.text("language", lang);
+        form = form.text("language", lang.to_string());
     }
 
-    // Merge extra_params (JSON object) into form fields — override reserved keys is intentional
+    // Merge extra_params into form fields — overriding reserved keys is intentional
     if let Some(serde_json::Value::Object(map)) = extra_params {
         for (k, v) in map {
             let val = match v {
@@ -108,36 +102,30 @@ async fn call_cloud_api(
         }
     }
 
-    let response = client
-        .post(format!(
-            "{}/audio/transcriptions",
-            base_url.trim_end_matches('/')
-        ))
+    let url = format!("{}/audio/transcriptions", base_url.trim_end_matches('/'));
+    let response = reqwest::Client::new()
+        .post(&url)
         .bearer_auth(api_key)
         .multipart(form)
         .send()
         .await
-        .map_err(|e| anyhow::anyhow!("Network error: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Network error: {e}"))?;
 
     let status = response.status();
     if !status.is_success() {
-        let error_text = response.text().await.unwrap_or_default();
-        return Err(anyhow::anyhow!(
-            "Cloud API {} error: {}",
-            status.as_u16(),
-            error_text
-        ));
+        let body = response.text().await.unwrap_or_default();
+        return Err(anyhow::anyhow!("Cloud API {}: {body}", status.as_u16()));
     }
 
     let json: serde_json::Value = response
         .json()
         .await
-        .map_err(|e| anyhow::anyhow!("Failed to parse response: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Failed to parse response: {e}"))?;
 
     json["text"]
         .as_str()
+        .map(str::to_string)
         .ok_or_else(|| anyhow::anyhow!("No 'text' field in API response"))
-        .map(|s| s.to_string())
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -642,61 +630,54 @@ impl TranscriptionManager {
                                 })
                         }
                         LoadedEngine::Cloud => {
-                            let wav = samples_to_wav_bytes(&audio)
-                                .map_err(|e| anyhow::anyhow!("WAV encoding failed: {}", e))?;
+                            let wav = samples_to_wav_bytes(&audio)?;
 
-                            let language = if settings.selected_language == "auto" {
-                                None
-                            } else {
-                                Some(settings.selected_language.clone())
+                            let language = match settings.selected_language.as_str() {
+                                "auto" => None,
+                                lang => Some(lang),
                             };
+                            let extra =
+                                parse_extra_params(&settings.cloud_transcription_extra_params);
 
-                            // Re-read cloud credentials at call time (settings may have changed since load)
-                            let base_url = settings.cloud_transcription_base_url.clone();
-                            let api_key = settings.cloud_transcription_api_key.clone();
-                            let model_name = settings.cloud_transcription_model.clone();
-
-                            const MAX_ATTEMPTS: u32 = 3;
-                            const DELAYS_MS: [u64; 2] = [300, 800];
+                            const RETRY_DELAYS_MS: &[u64] = &[0, 300, 800];
 
                             let mut last_error =
                                 anyhow::anyhow!("Unknown cloud transcription error");
-                            let mut result: Option<String> = None;
 
-                            for attempt in 0..MAX_ATTEMPTS {
-                                if attempt > 0 {
-                                    let delay = DELAYS_MS[(attempt - 1) as usize];
+                            for (attempt, &delay) in RETRY_DELAYS_MS.iter().enumerate() {
+                                if delay > 0 {
                                     debug!(
-                                        "Cloud transcription attempt {}/{}, retrying after {}ms",
+                                        "Cloud transcription retry {}/{}, waiting {}ms",
                                         attempt + 1,
-                                        MAX_ATTEMPTS,
+                                        RETRY_DELAYS_MS.len(),
                                         delay
                                     );
                                     thread::sleep(Duration::from_millis(delay));
                                 }
 
-                                // block_in_place allows blocking inside a tokio async context
-                                // (transcribe() is called from within async_runtime::spawn in actions.rs)
+                                // block_in_place: transcribe() runs inside tokio via async_runtime::spawn
                                 let api_result = tokio::task::block_in_place(|| {
                                     tauri::async_runtime::block_on(call_cloud_api(
-                                        &base_url,
-                                        &api_key,
-                                        &model_name,
+                                        &settings.cloud_transcription_base_url,
+                                        &settings.cloud_transcription_api_key,
+                                        &settings.cloud_transcription_model,
                                         wav.clone(),
-                                        language.clone(),
-                                        parse_extra_params(&settings.cloud_transcription_extra_params),
+                                        language,
+                                        extra.clone(),
                                     ))
                                 });
                                 match api_result {
                                     Ok(text) => {
-                                        result = Some(text);
-                                        break;
+                                        return Ok(transcribe_rs::TranscriptionResult {
+                                            text,
+                                            segments: None,
+                                        });
                                     }
                                     Err(e) => {
                                         warn!(
                                             "Cloud transcription attempt {}/{} failed: {}",
                                             attempt + 1,
-                                            MAX_ATTEMPTS,
+                                            RETRY_DELAYS_MS.len(),
                                             e
                                         );
                                         last_error = e;
@@ -704,13 +685,7 @@ impl TranscriptionManager {
                                 }
                             }
 
-                            match result {
-                                Some(text) => Ok(transcribe_rs::TranscriptionResult {
-                                    text,
-                                    segments: None,
-                                }),
-                                None => Err(last_error),
-                            }
+                            Err(last_error)
                         }
                     }
                 },

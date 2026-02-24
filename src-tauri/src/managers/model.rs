@@ -403,8 +403,7 @@ impl ModelManager {
             ModelInfo {
                 id: "cloud".to_string(),
                 name: "Cloud Transcription".to_string(),
-                description: "Cloud API (Groq, OpenAI, custom)"
-                    .to_string(),
+                description: "Cloud API (Groq, OpenAI, custom)".to_string(),
                 filename: String::new(),
                 url: None,
                 size_mb: 0,
@@ -489,7 +488,7 @@ impl ModelManager {
 
         for model in models.values_mut() {
             // Cloud model is always available — no file to check.
-            if let EngineType::Cloud = model.engine_type {
+            if matches!(model.engine_type, EngineType::Cloud) {
                 continue;
             }
 

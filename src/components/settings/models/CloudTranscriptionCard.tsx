@@ -8,6 +8,19 @@ import { Input } from "@/components/ui/Input";
 
 type TestStatus = "idle" | "testing" | "ok" | "error";
 
+type CloudField =
+  | "cloud_transcription_base_url"
+  | "cloud_transcription_api_key"
+  | "cloud_transcription_model"
+  | "cloud_transcription_extra_params";
+
+const FIELD_COMMANDS: Record<CloudField, (value: string) => Promise<unknown>> = {
+  cloud_transcription_base_url: commands.changeCloudTranscriptionBaseUrl,
+  cloud_transcription_api_key: commands.changeCloudTranscriptionApiKey,
+  cloud_transcription_model: commands.changeCloudTranscriptionModel,
+  cloud_transcription_extra_params: commands.changeCloudTranscriptionExtraParams,
+};
+
 interface CloudTranscriptionCardProps {
   isActive: boolean;
   onSelect: (modelId: string) => void;
@@ -48,30 +61,19 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
     if (isActive) setIsExpanded(true);
   }, [isActive]);
 
-  useEffect(() => () => { if (okTimerRef.current) clearTimeout(okTimerRef.current); }, []);
+  useEffect(
+    () => () => {
+      if (okTimerRef.current) clearTimeout(okTimerRef.current);
+    },
+    [],
+  );
 
-  const isConfigured =
-    baseUrl.trim() !== "" && modelName.trim() !== "";
+  const isConfigured = baseUrl.trim() !== "" && modelName.trim() !== "";
 
-  const saveField = async (
-    field:
-      | "cloud_transcription_base_url"
-      | "cloud_transcription_api_key"
-      | "cloud_transcription_model"
-      | "cloud_transcription_extra_params",
-    value: string,
-  ) => {
+  const saveField = async (field: CloudField, value: string) => {
     setIsSaving(true);
     try {
-      if (field === "cloud_transcription_base_url") {
-        await commands.changeCloudTranscriptionBaseUrl(value);
-      } else if (field === "cloud_transcription_api_key") {
-        await commands.changeCloudTranscriptionApiKey(value);
-      } else if (field === "cloud_transcription_extra_params") {
-        await commands.changeCloudTranscriptionExtraParams(value);
-      } else {
-        await commands.changeCloudTranscriptionModel(value);
-      }
+      await FIELD_COMMANDS[field](value);
     } catch (e) {
       console.error("Failed to save cloud setting:", e);
     } finally {
@@ -93,22 +95,35 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
     }
   };
 
-  const containerClasses = [
-    "flex flex-col rounded-xl px-4 py-3 gap-2 border-2 transition-all duration-200",
-    isActive
-      ? "border-logo-primary/50 bg-logo-primary/10"
-      : "border-mid-gray/20 hover:border-logo-primary/30",
-  ].join(" ");
+  function getTestLabel(): string {
+    switch (testStatus) {
+      case "ok":
+        return "\u2713";
+      case "error":
+        return "\u2717";
+      default:
+        return t("settings.models.cloudTranscription.test");
+    }
+  }
 
-  const testLabel =
-    testStatus === "ok"
-      ? "✓"
-      : testStatus === "error"
-        ? "✗"
-        : t("settings.models.cloudTranscription.test");
+  function renderBadge() {
+    if (isActive) {
+      return <Badge variant="primary">{t("modelSelector.active")}</Badge>;
+    }
+    const labelKey = isConfigured
+      ? "settings.models.cloudTranscription.configured"
+      : "settings.models.cloudTranscription.notConfigured";
+    return <Badge variant="secondary">{t(labelKey)}</Badge>;
+  }
+
+  const borderClass = isActive
+    ? "border-logo-primary/50 bg-logo-primary/10"
+    : "border-mid-gray/20 hover:border-logo-primary/30";
 
   return (
-    <div className={containerClasses}>
+    <div
+      className={`flex flex-col rounded-xl px-4 py-3 gap-2 border-2 transition-all duration-200 ${borderClass}`}
+    >
       {/* Header */}
       <button
         type="button"
@@ -117,24 +132,10 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
       >
         <div className="flex flex-col items-start flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-base font-semibold text-text">
-                {t("settings.models.cloudTranscription.title")}
-              </h3>
-            </div>
-            {isActive ? (
-              <Badge variant="primary">
-                {t("modelSelector.active")}
-              </Badge>
-            ) : isConfigured ? (
-              <Badge variant="secondary">
-                {t("settings.models.cloudTranscription.configured")}
-              </Badge>
-            ) : (
-              <Badge variant="secondary">
-                {t("settings.models.cloudTranscription.notConfigured")}
-              </Badge>
-            )}
+            <h3 className="text-base font-semibold text-text">
+              {t("settings.models.cloudTranscription.title")}
+            </h3>
+            {renderBadge()}
           </div>
           <p className="text-sm text-text/60 leading-relaxed">
             {t("settings.models.cloudTranscription.description")}
@@ -181,7 +182,10 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 type="password"
                 variant="compact"
                 value={apiKey}
-                onChange={(e) => { setApiKey(e.target.value); setTestStatus("idle"); }}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setTestStatus("idle");
+                }}
                 onBlur={(e) => saveField("cloud_transcription_api_key", e.target.value)}
                 placeholder={t("settings.models.cloudTranscription.apiKeyPlaceholder")}
                 className="w-full"
@@ -218,7 +222,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 className="flex items-center gap-1 text-xs text-text/40 hover:text-text/60 transition-colors w-fit"
                 onClick={() => setShowAdvanced((v) => !v)}
               >
-                <span>{showAdvanced ? "▾" : "▸"}</span>
+                <span>{showAdvanced ? "\u25BE" : "\u25B8"}</span>
                 <span>{t("settings.models.cloudTranscription.advanced")}</span>
               </button>
               {showAdvanced && (
@@ -227,7 +231,9 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                     rows={7}
                     value={extraParams}
                     onChange={(e) => setExtraParams(e.target.value)}
-                    onBlur={(e) => saveField("cloud_transcription_extra_params", e.target.value)}
+                    onBlur={(e) =>
+                      saveField("cloud_transcription_extra_params", e.target.value)
+                    }
                     placeholder={`{\n  "language": "en",\n  "temperature": 0,\n  "prompt": ""\n}`}
                     className="w-full rounded-lg border border-mid-gray/30 bg-background px-3 py-2 text-xs font-mono text-text/80 placeholder:text-text/30 focus:outline-none focus:ring-2 focus:ring-logo-primary/50 resize-none"
                     disabled={isSaving}
@@ -246,7 +252,9 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => { if (isConfigured) onSelect("cloud"); }}
+                  onClick={() => {
+                    if (isConfigured) onSelect("cloud");
+                  }}
                   disabled={!isConfigured}
                 >
                   {t("settings.models.cloudTranscription.selectButton")}
@@ -263,7 +271,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                   testStatus === "error" ? "!text-red-400" : "",
                 ].join(" ")}
               >
-                {testLabel}
+                {getTestLabel()}
               </Button>
             </div>
           </div>

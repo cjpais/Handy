@@ -1097,7 +1097,10 @@ pub fn change_cloud_transcription_model(app: AppHandle, model: String) -> Result
 #[specta::specta]
 pub async fn test_cloud_transcription_connection(app: AppHandle) -> Result<(), String> {
     let settings = settings::get_settings(&app);
-    let base_url = settings.cloud_transcription_base_url.trim_end_matches('/').to_string();
+    let base_url = settings
+        .cloud_transcription_base_url
+        .trim_end_matches('/')
+        .to_string();
     let api_key = settings.cloud_transcription_api_key.clone();
 
     if api_key.is_empty() {
@@ -1127,7 +1130,10 @@ pub async fn test_cloud_transcription_connection(app: AppHandle) -> Result<(), S
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_cloud_transcription_extra_params(app: AppHandle, params: String) -> Result<(), String> {
+pub fn change_cloud_transcription_extra_params(
+    app: AppHandle,
+    params: String,
+) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.cloud_transcription_extra_params = params;
     settings::write_settings(&app, settings);
