@@ -6,6 +6,8 @@ import Badge from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+type TestStatus = "idle" | "testing" | "ok" | "error";
+
 interface CloudTranscriptionCardProps {
   isActive: boolean;
   onSelect: (modelId: string) => void;
@@ -21,9 +23,10 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
   const [apiKey, setApiKey] = useState("");
   const [modelName, setModelName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [testStatus, setTestStatus] = useState<TestStatus>("idle");
+  const [testError, setTestError] = useState<string | null>(null);
   const loadedRef = useRef(false);
 
-  // Load initial values once
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;
@@ -37,7 +40,6 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
     });
   }, []);
 
-  // Auto-expand when active so user can see/edit config
   useEffect(() => {
     if (isActive) setIsExpanded(true);
   }, [isActive]);
@@ -68,6 +70,18 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
     }
   };
 
+  const handleTest = async () => {
+    setTestStatus("testing");
+    setTestError(null);
+    const result = await commands.testCloudTranscriptionConnection();
+    if (result.status === "ok") {
+      setTestStatus("ok");
+    } else {
+      setTestStatus("error");
+      setTestError(result.error ?? t("settings.models.cloudTranscription.testFailed"));
+    }
+  };
+
   const containerClasses = [
     "flex flex-col rounded-xl px-4 py-3 gap-2 border-2 transition-all duration-200",
     isActive
@@ -77,7 +91,6 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
 
   return (
     <div className={containerClasses}>
-      {/* Header row — always visible, click toggles expand */}
       <button
         type="button"
         className="flex items-start justify-between w-full text-left"
@@ -119,7 +132,6 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
         </div>
       </button>
 
-      {/* Expanded config */}
       {isExpanded && (
         <>
           <hr className="w-full border-mid-gray/20" />
@@ -136,9 +148,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 onBlur={(e) =>
                   saveField("cloud_transcription_base_url", e.target.value)
                 }
-                placeholder={t(
-                  "settings.models.cloudTranscription.baseUrlPlaceholder",
-                )}
+                placeholder={t("settings.models.cloudTranscription.baseUrlPlaceholder")}
                 className="w-full"
                 disabled={isSaving}
               />
@@ -147,20 +157,43 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
               <label className="text-xs font-medium text-text/60">
                 {t("settings.models.cloudTranscription.apiKeyLabel")}
               </label>
-              <Input
-                type="password"
-                variant="compact"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                onBlur={(e) =>
-                  saveField("cloud_transcription_api_key", e.target.value)
-                }
-                placeholder={t(
-                  "settings.models.cloudTranscription.apiKeyPlaceholder",
-                )}
-                className="w-full"
-                disabled={isSaving}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="password"
+                  variant="compact"
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    setTestStatus("idle");
+                  }}
+                  onBlur={(e) =>
+                    saveField("cloud_transcription_api_key", e.target.value)
+                  }
+                  placeholder={t("settings.models.cloudTranscription.apiKeyPlaceholder")}
+                  className="flex-1"
+                  disabled={isSaving}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void handleTest()}
+                  disabled={!apiKey.trim() || testStatus === "testing"}
+                >
+                  {testStatus === "testing"
+                    ? t("settings.models.cloudTranscription.testing")
+                    : t("settings.models.cloudTranscription.test")}
+                </Button>
+              </div>
+              {testStatus === "ok" && (
+                <p className="text-xs text-green-500">
+                  {t("settings.models.cloudTranscription.testOk")}
+                </p>
+              )}
+              {testStatus === "error" && (
+                <p className="text-xs text-red-400 break-all">
+                  {testError}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-text/60">
@@ -174,9 +207,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 onBlur={(e) =>
                   saveField("cloud_transcription_model", e.target.value)
                 }
-                placeholder={t(
-                  "settings.models.cloudTranscription.modelPlaceholder",
-                )}
+                placeholder={t("settings.models.cloudTranscription.modelPlaceholder")}
                 className="w-full"
                 disabled={isSaving}
               />
@@ -186,7 +217,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => onSelect("cloud")}
+                  onClick={() => onSelect("n")}
                 >
                   {t("settings.models.cloudTranscription.selectButton")}
                 </Button>

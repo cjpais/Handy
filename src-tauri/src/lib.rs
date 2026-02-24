@@ -300,6 +300,7 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_cloud_transcription_base_url,
         shortcut::change_cloud_transcription_api_key,
         shortcut::change_cloud_transcription_model,
+        shortcut::test_cloud_transcription_connection,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,

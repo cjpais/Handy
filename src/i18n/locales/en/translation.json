@@ -207,7 +207,11 @@
         "modelPlaceholder": "whisper-large-v3",
         "configured": "Configured",
         "notConfigured": "Not configured",
-        "selectButton": "Select"
+        "selectButton": "Select",
+        "test": "Test",
+        "testing": "Testing...",
+        "testOk": "Connected",
+        "testFailed": "Connection failed"
       }
     },
     "sound": {
