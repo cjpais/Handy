@@ -57,12 +57,28 @@ fn samples_to_wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
 }
 
 /// POST audio to an OpenAI-compatible /audio/transcriptions endpoint.
+/// Parse a JSON string into a serde_json::Value object, ignoring invalid input.
+fn parse_extra_params(raw: &str) -> Option<serde_json::Value> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    match serde_json::from_str(raw) {
+        Ok(v @ serde_json::Value::Object(_)) => Some(v),
+        _ => {
+            log::warn!("cloud_transcription_extra_params is not a valid JSON object, ignoring");
+            None
+        }
+    }
+}
+
 async fn call_cloud_api(
     base_url: &str,
     api_key: &str,
     model_name: &str,
     wav_bytes: Vec<u8>,
     language: Option<String>,
+    extra_params: Option<serde_json::Value>,
 ) -> Result<String> {
     use reqwest::multipart;
     let client = reqwest::Client::new();
@@ -79,6 +95,17 @@ async fn call_cloud_api(
 
     if let Some(lang) = language {
         form = form.text("language", lang);
+    }
+
+    // Merge extra_params (JSON object) into form fields — override reserved keys is intentional
+    if let Some(serde_json::Value::Object(map)) = extra_params {
+        for (k, v) in map {
+            let val = match v {
+                serde_json::Value::String(s) => s,
+                other => other.to_string(),
+            };
+            form = form.text(k, val);
+        }
     }
 
     let response = client
@@ -657,6 +684,7 @@ impl TranscriptionManager {
                                         &model_name,
                                         wav.clone(),
                                         language.clone(),
+                                        parse_extra_params(&settings.cloud_transcription_extra_params),
                                     ))
                                 });
                                 match api_result {

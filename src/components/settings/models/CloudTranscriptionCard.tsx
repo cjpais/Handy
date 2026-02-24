@@ -22,6 +22,8 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [modelName, setModelName] = useState("");
+  const [extraParams, setExtraParams] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testError, setTestError] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
         setBaseUrl(s.cloud_transcription_base_url ?? "https://api.groq.com/openai/v1");
         setApiKey(s.cloud_transcription_api_key ?? "");
         setModelName(s.cloud_transcription_model ?? "whisper-large-v3");
+        setExtraParams(s.cloud_transcription_extra_params ?? "");
       }
     });
   }, []);
@@ -54,7 +57,8 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
     field:
       | "cloud_transcription_base_url"
       | "cloud_transcription_api_key"
-      | "cloud_transcription_model",
+      | "cloud_transcription_model"
+      | "cloud_transcription_extra_params",
     value: string,
   ) => {
     setIsSaving(true);
@@ -63,6 +67,8 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
         await commands.changeCloudTranscriptionBaseUrl(value);
       } else if (field === "cloud_transcription_api_key") {
         await commands.changeCloudTranscriptionApiKey(value);
+      } else if (field === "cloud_transcription_extra_params") {
+        await commands.changeCloudTranscriptionExtraParams(value);
       } else {
         await commands.changeCloudTranscriptionModel(value);
       }
@@ -200,7 +206,40 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
               />
             </div>
 
-            {/* Bottom row: Test + Toggle */}
+            {/* Advanced params */}
+            <div className="flex flex-col gap-1">
+              <button
+                type="button"
+                className="flex items-center gap-1 text-xs text-text/40 hover:text-text/60 transition-colors w-fit"
+                onClick={() => setShowAdvanced((v) => !v)}
+              >
+                <span>{showAdvanced ? "▾" : "▸"}</span>
+                <span>Advanced</span>
+              </button>
+              {showAdvanced && (
+                <div className="flex flex-col gap-1">
+                  <textarea
+                    rows={4}
+                    value={extraParams}
+                    onChange={(e) => setExtraParams(e.target.value)}
+                    onBlur={(e) => saveField("cloud_transcription_extra_params", e.target.value)}
+                    placeholder={'{
+  "language": "ru",
+  "temperature": 0,
+  "prompt": ""
+}'}
+                    className="w-full rounded-lg border border-mid-gray/30 bg-background px-3 py-2 text-xs font-mono text-text/80 placeholder:text-text/30 focus:outline-none focus:ring-2 focus:ring-logo-primary/50 resize-none"
+                    disabled={isSaving}
+                    spellCheck={false}
+                  />
+                  <p className="text-xs text-text/30">
+                    JSON — passed as-is to /audio/transcriptions
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom row: Test + Toggle */}}
             <div className="flex items-center justify-end gap-3">
               <Button
                 variant="secondary"

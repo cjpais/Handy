@@ -1124,3 +1124,12 @@ pub async fn test_cloud_transcription_connection(app: AppHandle) -> Result<(), S
         Err(format!("API error {}: {}", status, body))
     }
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_cloud_transcription_extra_params(app: AppHandle, params: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.cloud_transcription_extra_params = params;
+    settings::write_settings(&app, settings);
+    Ok(())
+}

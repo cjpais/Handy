@@ -366,6 +366,8 @@ pub struct AppSettings {
     pub cloud_transcription_api_key: String,
     #[serde(default = "default_cloud_transcription_model")]
     pub cloud_transcription_model: String,
+    #[serde(default)]
+    pub cloud_transcription_extra_params: String,
 }
 
 fn default_model() -> String {
@@ -741,6 +743,7 @@ pub fn get_default_settings() -> AppSettings {
         cloud_transcription_base_url: default_cloud_transcription_base_url(),
         cloud_transcription_api_key: String::new(),
         cloud_transcription_model: default_cloud_transcription_model(),
+        cloud_transcription_extra_params: String::new(),
     }
 }
 
