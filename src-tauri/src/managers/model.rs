@@ -403,7 +403,7 @@ impl ModelManager {
             ModelInfo {
                 id: "cloud".to_string(),
                 name: "Cloud Transcription".to_string(),
-                description: "Transcribe using an OpenAI-compatible cloud API (e.g. Groq, OpenAI)"
+                description: "Cloud API (Groq, OpenAI, custom)"
                     .to_string(),
                 filename: String::new(),
                 url: None,
