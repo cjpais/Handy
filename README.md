@@ -388,7 +388,7 @@ The goal is to create both a useful tool and a foundation for others to build up
     <img src="sponsor-images/epicenter.png" alt="Epicenter" width="120" height="120">
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://boltai.com">
+  <a href="https://boltai.com?utm_source=handy">
     <img src="sponsor-images/boltai.jpg" alt="Bolt AI" width="120" height="120">
   </a>
 </div>
