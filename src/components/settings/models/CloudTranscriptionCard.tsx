@@ -101,10 +101,10 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
   ].join(" ");
 
   const testLabel =
-    testStatus === "testing"
-      ? t("settings.models.cloudTranscription.testing")
-      : testStatus === "ok"
-        ? t("settings.models.cloudTranscription.testOk")
+    testStatus === "ok"
+      ? "✓"
+      : testStatus === "error"
+        ? "✗"
         : t("settings.models.cloudTranscription.test");
 
   return (
@@ -243,8 +243,9 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 onClick={() => void handleTest()}
                 disabled={!apiKey.trim() || testStatus === "testing"}
                 className={[
-                  "w-16 justify-center shrink-0",
+                  "w-16 justify-center shrink-0 transition-colors",
                   testStatus === "ok" ? "!text-green-500" : "",
+                  testStatus === "error" ? "!text-red-400" : "",
                 ].join(" ")}
               >
                 {testLabel}
