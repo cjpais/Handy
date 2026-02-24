@@ -359,8 +359,11 @@ export const ModelsSettings: React.FC = () => {
         </div>
       )}
 
-      {/* Local Server Section */}
+      {/* API Section */}
       <div className="space-y-3">
+        <h2 className="text-sm font-medium text-text/60">
+          {t("settings.models.cloudProviders")}
+        </h2>
         <CloudTranscriptionCard
           isActive={currentModel === "cloud"}
           onSelect={handleModelSelect}

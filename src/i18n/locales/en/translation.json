@@ -195,7 +195,7 @@
         "allLanguages": "All Languages"
       },
       "noModelsMatch": "No models match this filter.",
-      "cloudProviders": "Local Server",
+      "cloudProviders": "API",
       "cloudTranscription": {
         "title": "Local Server",
         "description": "Your own Whisper server or compatible endpoint",
