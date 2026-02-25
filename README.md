@@ -1,10 +1,19 @@
-# Handy
+# Handy Cloud
+
+> **Fork of [cjpais/Handy](https://github.com/cjpais/Handy)** with cloud transcription providers: **Google Gemini** and **OpenAI-compatible APIs** (Groq, local whisper.cpp server, etc.)
 
 [![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
 
-**A free, open source, and extensible speech-to-text application that works completely offline.**
+**A free, open source, and extensible speech-to-text application — local or cloud, your choice.**
 
-Handy is a cross-platform desktop application that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field. This happens on your own computer without sending any information to the cloud.
+Handy Cloud extends the original Handy with cloud transcription backends while keeping full offline support. Press a shortcut, speak, and get your text — using a local model, an OpenAI-compatible server, or Google Gemini.
+
+### What's new in Handy Cloud
+
+- **Google Gemini** — transcription + AI post-processing in a single API call via `generateContent`
+- **OpenAI-compatible API** — connect to Groq, a local whisper.cpp server, or any `/audio/transcriptions` endpoint
+- **`CloudProvider` trait** — clean architecture for adding new cloud providers with shared retry and error handling
+- All original local models (Whisper, Parakeet, Moonshine, SenseVoice) still work as before
 
 ## Why Handy?
 
