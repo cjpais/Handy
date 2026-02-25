@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { commands } from "@/bindings";
+import { MODEL_ID_CLOUD } from "@/lib/constants/models";
 import Badge from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -253,7 +254,7 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                   variant="primary"
                   size="sm"
                   onClick={() => {
-                    if (isConfigured) onSelect("cloud");
+                    if (isConfigured) onSelect(MODEL_ID_CLOUD);
                   }}
                   disabled={!isConfigured}
                 >

@@ -20,6 +20,7 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { ShortcutInput } from "../ShortcutInput";
+import { MODEL_ID_GEMINI } from "@/lib/constants/models";
 import { useSettings } from "../../../hooks/useSettings";
 import { useModelStore } from "../../../stores/modelStore";
 
@@ -151,7 +152,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   const { getSetting, updateSetting, isUpdating, refreshSettings } =
     useSettings();
   const { currentModel } = useModelStore();
-  const isGemini = currentModel === "gemini";
+  const isGemini = currentModel === MODEL_ID_GEMINI;
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftText, setDraftText] = useState("");
@@ -441,7 +442,7 @@ PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
   const { currentModel } = useModelStore();
-  const isGemini = currentModel === "gemini";
+  const isGemini = currentModel === MODEL_ID_GEMINI;
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">

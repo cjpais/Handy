@@ -1,3 +1,4 @@
+use crate::cloud_providers::{MODEL_ID_CLOUD, MODEL_ID_GEMINI};
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
@@ -427,9 +428,9 @@ impl ModelManager {
         );
 
         available_models.insert(
-            "cloud".to_string(),
+            MODEL_ID_CLOUD.to_string(),
             ModelInfo {
-                id: "cloud".to_string(),
+                id: MODEL_ID_CLOUD.to_string(),
                 name: "Local Server".to_string(),
                 description: "OpenAI-compatible server (whisper.cpp, Groq)".to_string(),
                 filename: String::new(),
@@ -450,9 +451,9 @@ impl ModelManager {
         );
 
         available_models.insert(
-            "gemini".to_string(),
+            MODEL_ID_GEMINI.to_string(),
             ModelInfo {
-                id: "gemini".to_string(),
+                id: MODEL_ID_GEMINI.to_string(),
                 name: "Google Gemini".to_string(),
                 description: "Transcription + AI processing in one step via Google Gemini API"
                     .to_string(),

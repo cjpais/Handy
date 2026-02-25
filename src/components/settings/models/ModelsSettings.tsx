@@ -8,6 +8,7 @@ import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
+import { MODEL_ID_CLOUD, MODEL_ID_GEMINI } from "@/lib/constants/models";
 import type { ModelInfo } from "@/bindings";
 
 // check if model supports a language based on its supported_languages list
@@ -154,7 +155,7 @@ export const ModelsSettings: React.FC = () => {
   // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
-      if (model.id === "cloud" || model.id === "gemini") return false; // handled in separate cloud section
+      if (model.id === MODEL_ID_CLOUD || model.id === MODEL_ID_GEMINI) return false; // handled in separate cloud section
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }
@@ -366,11 +367,11 @@ export const ModelsSettings: React.FC = () => {
           {t("settings.models.cloudProviders")}
         </h2>
         <CloudTranscriptionCard
-          isActive={currentModel === "cloud"}
+          isActive={currentModel === MODEL_ID_CLOUD}
           onSelect={handleModelSelect}
         />
         <GeminiTranscriptionCard
-          isActive={currentModel === "gemini"}
+          isActive={currentModel === MODEL_ID_GEMINI}
           onSelect={handleModelSelect}
         />
       </div>
