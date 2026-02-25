@@ -21,10 +21,9 @@ interface GeminiTranscriptionCardProps {
   onSelect: (modelId: string) => void;
 }
 
-export const GeminiTranscriptionCard: React.FC<GeminiTranscriptionCardProps> = ({
-  isActive,
-  onSelect,
-}) => {
+export const GeminiTranscriptionCard: React.FC<
+  GeminiTranscriptionCardProps
+> = ({ isActive, onSelect }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -180,7 +179,10 @@ export const GeminiTranscriptionCard: React.FC<GeminiTranscriptionCardProps> = (
               </label>
               <Select
                 value={model || null}
-                options={GEMINI_PRESET_MODELS.map((m) => ({ value: m, label: m }))}
+                options={GEMINI_PRESET_MODELS.map((m) => ({
+                  value: m,
+                  label: m,
+                }))}
                 onChange={(val) => {
                   const v = val ?? "";
                   setModel(v);

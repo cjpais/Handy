@@ -15,12 +15,14 @@ type CloudField =
   | "cloud_transcription_model"
   | "cloud_transcription_extra_params";
 
-const FIELD_COMMANDS: Record<CloudField, (value: string) => Promise<unknown>> = {
-  cloud_transcription_base_url: commands.changeCloudTranscriptionBaseUrl,
-  cloud_transcription_api_key: commands.changeCloudTranscriptionApiKey,
-  cloud_transcription_model: commands.changeCloudTranscriptionModel,
-  cloud_transcription_extra_params: commands.changeCloudTranscriptionExtraParams,
-};
+const FIELD_COMMANDS: Record<CloudField, (value: string) => Promise<unknown>> =
+  {
+    cloud_transcription_base_url: commands.changeCloudTranscriptionBaseUrl,
+    cloud_transcription_api_key: commands.changeCloudTranscriptionApiKey,
+    cloud_transcription_model: commands.changeCloudTranscriptionModel,
+    cloud_transcription_extra_params:
+      commands.changeCloudTranscriptionExtraParams,
+  };
 
 interface CloudTranscriptionCardProps {
   isActive: boolean;
@@ -92,7 +94,9 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
       okTimerRef.current = setTimeout(() => setTestStatus("idle"), 2000);
     } else {
       setTestStatus("error");
-      setTestError(result.error ?? t("settings.models.cloudTranscription.testFailed"));
+      setTestError(
+        result.error ?? t("settings.models.cloudTranscription.testFailed"),
+      );
     }
   };
 
@@ -165,8 +169,12 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 variant="compact"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                onBlur={(e) => saveField("cloud_transcription_base_url", e.target.value)}
-                placeholder={t("settings.models.cloudTranscription.baseUrlPlaceholder")}
+                onBlur={(e) =>
+                  saveField("cloud_transcription_base_url", e.target.value)
+                }
+                placeholder={t(
+                  "settings.models.cloudTranscription.baseUrlPlaceholder",
+                )}
                 className="w-full"
                 disabled={isSaving}
               />
@@ -187,8 +195,12 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                   setApiKey(e.target.value);
                   setTestStatus("idle");
                 }}
-                onBlur={(e) => saveField("cloud_transcription_api_key", e.target.value)}
-                placeholder={t("settings.models.cloudTranscription.apiKeyPlaceholder")}
+                onBlur={(e) =>
+                  saveField("cloud_transcription_api_key", e.target.value)
+                }
+                placeholder={t(
+                  "settings.models.cloudTranscription.apiKeyPlaceholder",
+                )}
                 className="w-full"
                 disabled={isSaving}
               />
@@ -209,8 +221,12 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                 variant="compact"
                 value={modelName}
                 onChange={(e) => setModelName(e.target.value)}
-                onBlur={(e) => saveField("cloud_transcription_model", e.target.value)}
-                placeholder={t("settings.models.cloudTranscription.modelPlaceholder")}
+                onBlur={(e) =>
+                  saveField("cloud_transcription_model", e.target.value)
+                }
+                placeholder={t(
+                  "settings.models.cloudTranscription.modelPlaceholder",
+                )}
                 className="w-full"
                 disabled={isSaving}
               />
@@ -233,7 +249,10 @@ export const CloudTranscriptionCard: React.FC<CloudTranscriptionCardProps> = ({
                     value={extraParams}
                     onChange={(e) => setExtraParams(e.target.value)}
                     onBlur={(e) =>
-                      saveField("cloud_transcription_extra_params", e.target.value)
+                      saveField(
+                        "cloud_transcription_extra_params",
+                        e.target.value,
+                      )
                     }
                     placeholder={`{\n  "language": "en",\n  "temperature": 0,\n  "prompt": ""\n}`}
                     className="w-full rounded-lg border border-mid-gray/30 bg-background px-3 py-2 text-xs font-mono text-text/80 placeholder:text-text/30 focus:outline-none focus:ring-2 focus:ring-logo-primary/50 resize-none"

@@ -347,7 +347,9 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 onClick={() => handleDeletePrompt(selectedPromptId)}
                 variant="secondary"
                 size="md"
-                disabled={!selectedPromptId || prompts.length <= 1 || isGeminiPrompt}
+                disabled={
+                  !selectedPromptId || prompts.length <= 1 || isGeminiPrompt
+                }
               >
                 {t("settings.postProcessing.prompts.deletePrompt")}
               </Button>

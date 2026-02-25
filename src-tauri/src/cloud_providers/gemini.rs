@@ -70,10 +70,7 @@ pub struct GeminiProvider;
 
 /// Strip the `${output}` placeholder from a prompt template to produce a system instruction.
 fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template
-        .replace("${output}", "")
-        .trim()
-        .to_string()
+    prompt_template.replace("${output}", "").trim().to_string()
 }
 
 /// Call Gemini generateContent API with audio bytes.
@@ -196,7 +193,13 @@ impl CloudProvider for GeminiProvider {
     }
 
     async fn test_connection(&self, settings: &AppSettings) -> Result<()> {
-        call_gemini_api(&settings.gemini_api_key, &settings.gemini_model, super::silent_wav(), None).await?;
+        call_gemini_api(
+            &settings.gemini_api_key,
+            &settings.gemini_model,
+            super::silent_wav(),
+            None,
+        )
+        .await?;
         Ok(())
     }
 

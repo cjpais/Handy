@@ -587,13 +587,23 @@ impl TranscriptionManager {
                             let provider_id = provider.id().to_string();
 
                             tokio::task::block_in_place(|| {
-                                tauri::async_runtime::block_on(
-                                    crate::cloud_providers::with_retry(&provider_id, || {
-                                        provider.transcribe(wav.clone(), post_process, &settings_clone)
-                                    })
-                                )
+                                tauri::async_runtime::block_on(crate::cloud_providers::with_retry(
+                                    &provider_id,
+                                    || {
+                                        provider.transcribe(
+                                            wav.clone(),
+                                            post_process,
+                                            &settings_clone,
+                                        )
+                                    },
+                                ))
                             })
-                            .map(|text| transcribe_rs::TranscriptionResult { text, segments: None })
+                            .map(|text| {
+                                transcribe_rs::TranscriptionResult {
+                                    text,
+                                    segments: None,
+                                }
+                            })
                         }
                     }
                 },

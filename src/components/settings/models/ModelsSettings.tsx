@@ -155,7 +155,8 @@ export const ModelsSettings: React.FC = () => {
   // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
-      if (model.id === MODEL_ID_CLOUD || model.id === MODEL_ID_GEMINI) return false; // handled in separate cloud section
+      if (model.id === MODEL_ID_CLOUD || model.id === MODEL_ID_GEMINI)
+        return false; // handled in separate cloud section
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }

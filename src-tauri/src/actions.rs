@@ -1,10 +1,10 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::cloud_providers::{MODEL_ID_CLOUD, MODEL_ID_GEMINI};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::cloud_providers::{MODEL_ID_CLOUD, MODEL_ID_GEMINI};
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
@@ -448,11 +448,12 @@ impl ShortcutAction for TranscribeAction {
                                 show_processing_overlay(&ah);
                             }
                             // Gemini already handled post-processing in the transcription step
-                            let processed = if post_process && settings.selected_model != MODEL_ID_GEMINI {
-                                post_process_transcription(&settings, &final_text).await
-                            } else {
-                                None
-                            };
+                            let processed =
+                                if post_process && settings.selected_model != MODEL_ID_GEMINI {
+                                    post_process_transcription(&settings, &final_text).await
+                                } else {
+                                    None
+                                };
                             if let Some(processed_text) = processed {
                                 post_processed_text = Some(processed_text.clone());
                                 final_text = processed_text;
@@ -520,15 +521,12 @@ impl ShortcutAction for TranscribeAction {
 
                         if settings.selected_model == MODEL_ID_GEMINI {
                             // Fallback: find any downloaded local model and retry
-                            let fallback = mm
-                                .get_available_models()
-                                .into_iter()
-                                .find(|m| {
-                                    m.is_downloaded
-                                        && m.id != MODEL_ID_CLOUD
-                                        && m.id != MODEL_ID_GEMINI
-                                        && !m.is_custom
-                                });
+                            let fallback = mm.get_available_models().into_iter().find(|m| {
+                                m.is_downloaded
+                                    && m.id != MODEL_ID_CLOUD
+                                    && m.id != MODEL_ID_GEMINI
+                                    && !m.is_custom
+                            });
                             if let Some(fallback_model) = fallback {
                                 warn!(
                                     "Gemini failed, falling back to local model: {}",
@@ -556,10 +554,7 @@ impl ShortcutAction for TranscribeAction {
                                             let _ = tm.load_model(MODEL_ID_GEMINI);
                                         }
                                         Err(e2) => {
-                                            error!(
-                                                "Fallback transcription also failed: {}",
-                                                e2
-                                            );
+                                            error!("Fallback transcription also failed: {}", e2);
                                             let _ = tm.load_model(MODEL_ID_GEMINI);
                                         }
                                     }
