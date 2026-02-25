@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::warn;
 
-use super::{with_retry, CloudProvider, MODEL_ID_CLOUD};
+use super::{CloudProvider, MODEL_ID_CLOUD};
 use crate::settings::AppSettings;
 
 pub struct OpenAiProvider;
@@ -99,51 +99,23 @@ impl CloudProvider for OpenAiProvider {
         };
         let extra = parse_extra_params(&settings.cloud_transcription_extra_params);
 
-        with_retry("Cloud", || {
-            let base_url = base_url.clone();
-            let api_key = api_key.clone();
-            let model = model.clone();
-            let wav = wav_bytes.clone();
-            let lang = language.clone();
-            let extra = extra.clone();
-            async move {
-                call_cloud_api(
-                    &base_url,
-                    &api_key,
-                    &model,
-                    wav,
-                    lang.as_deref(),
-                    extra,
-                )
-                .await
-            }
-        })
+        call_cloud_api(
+            &base_url,
+            &api_key,
+            &model,
+            wav_bytes,
+            language.as_deref(),
+            extra,
+        )
         .await
     }
 
     async fn test_connection(&self, settings: &AppSettings) -> Result<()> {
-        // Minimal valid 16kHz mono WAV with 0 samples (44-byte header only)
-        let silent_wav: Vec<u8> = vec![
-            0x52, 0x49, 0x46, 0x46, // "RIFF"
-            0x24, 0x00, 0x00, 0x00, // chunk size = 36
-            0x57, 0x41, 0x56, 0x45, // "WAVE"
-            0x66, 0x6D, 0x74, 0x20, // "fmt "
-            0x10, 0x00, 0x00, 0x00, // subchunk1 size = 16
-            0x01, 0x00, // PCM
-            0x01, 0x00, // 1 channel
-            0x80, 0x3E, 0x00, 0x00, // 16000 Hz
-            0x00, 0x7D, 0x00, 0x00, // byte rate
-            0x02, 0x00, // block align
-            0x10, 0x00, // bits per sample = 16
-            0x64, 0x61, 0x74, 0x61, // "data"
-            0x00, 0x00, 0x00, 0x00, // data size = 0
-        ];
-
         call_cloud_api(
             &settings.cloud_transcription_base_url,
             &settings.cloud_transcription_api_key,
             &settings.cloud_transcription_model,
-            silent_wav,
+            super::silent_wav(),
             None,
             None,
         )
