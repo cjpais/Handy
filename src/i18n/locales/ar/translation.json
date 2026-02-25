@@ -296,6 +296,23 @@
         "add": "إضافة",
         "remove": "إزالة {{word}}",
         "duplicate": "\"{{word}}\" موجود بالفعل"
+      },
+      "localApiEnabled": {
+        "label": "خدمة واجهة API المحلية",
+        "description": "توفير نقاط نهاية للنسخ لتستخدمها الأدوات المحلية (HTTP بأسلوب OpenAI + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "وصول الشبكة لواجهة API",
+        "description": "وضع الاسترجاع المحلي (Loopback) يجعل نقاط النهاية متاحة على هذا الجهاز فقط. الشبكة المحلية تسمح لأجهزة LAN الأخرى بالوصول.",
+        "options": {
+          "loopback": "هذا الجهاز فقط (127.0.0.1)",
+          "localNetwork": "الشبكة المحلية (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "رمز وصول API (اختياري)",
+        "description": "عند تعيينه، يجب على العملاء إرسال Authorization: Bearer <token> عند استدعاء واجهة HTTP API.",
+        "placeholder": "اتركه فارغاً لتعطيل المصادقة"
       }
     },
     "postProcessing": {

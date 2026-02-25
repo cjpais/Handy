@@ -318,6 +318,23 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "localApiEnabled": {
+        "label": "로컬 API 서비스",
+        "description": "로컬 도구에서 사용할 수 있도록 전사 엔드포인트를 노출합니다(OpenAI 스타일 HTTP + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "API 네트워크 접근",
+        "description": "루프백은 이 컴퓨터에서만 엔드포인트에 접근할 수 있습니다. 로컬 네트워크는 LAN의 다른 기기 접근을 허용합니다.",
+        "options": {
+          "loopback": "이 컴퓨터만 (127.0.0.1)",
+          "localNetwork": "로컬 네트워크 (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "API 접근 토큰(선택)",
+        "description": "설정하면 HTTP API 호출 시 Authorization: Bearer <token> 헤더가 필요합니다.",
+        "placeholder": "인증을 비활성화하려면 비워두세요"
       }
     },
     "postProcessing": {

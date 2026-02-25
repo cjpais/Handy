@@ -318,6 +318,23 @@
         "add": "Додати",
         "remove": "Видалити {{word}}",
         "duplicate": "\"{{word}}\" вже існує"
+      },
+      "localApiEnabled": {
+        "label": "Локальний API-сервіс",
+        "description": "Відкриває ендпойнти транскрипції для локальних інструментів (HTTP у стилі OpenAI + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "Мережевий доступ до API",
+        "description": "Loopback робить ендпойнти доступними лише на цьому комп’ютері. Локальна мережа дозволяє доступ з інших пристроїв у LAN.",
+        "options": {
+          "loopback": "Лише цей комп’ютер (127.0.0.1)",
+          "localNetwork": "Локальна мережа (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "Токен доступу API (необов’язково)",
+        "description": "Якщо встановлено, клієнти мають надсилати Authorization: Bearer <token> під час виклику HTTP API.",
+        "placeholder": "Залиште порожнім, щоб вимкнути автентифікацію"
       }
     },
     "postProcessing": {

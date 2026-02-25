@@ -318,6 +318,23 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "localApiEnabled": {
+        "label": "ローカルAPIサービス",
+        "description": "ローカルツール向けに文字起こしエンドポイントを公開します（OpenAI互換HTTP + Wyoming）。"
+      },
+      "localApiNetwork": {
+        "title": "APIネットワークアクセス",
+        "description": "Loopback はこのPCのみで利用可能。ローカルネットワークは LAN 上の他デバイスからのアクセスを許可します。",
+        "options": {
+          "loopback": "このPCのみ (127.0.0.1)",
+          "localNetwork": "ローカルネットワーク (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "APIアクセストークン（任意）",
+        "description": "設定すると、HTTP API 呼び出し時に Authorization: Bearer <token> が必要になります。",
+        "placeholder": "空欄で認証を無効化"
       }
     },
     "postProcessing": {

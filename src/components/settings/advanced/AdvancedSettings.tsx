@@ -16,6 +16,9 @@ import { AppendTrailingSpace } from "../AppendTrailingSpace";
 import { HistoryLimit } from "../HistoryLimit";
 import { RecordingRetentionPeriodSelector } from "../RecordingRetentionPeriod";
 import { ExperimentalToggle } from "../ExperimentalToggle";
+import { LocalApiEnabled } from "../LocalApiEnabled";
+import { LocalApiNetworkScope } from "../LocalApiNetworkScope";
+import { LocalApiToken } from "../LocalApiToken";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 
@@ -57,6 +60,9 @@ export const AdvancedSettings: React.FC = () => {
 
       {experimentalEnabled && (
         <SettingsGroup title={t("settings.advanced.groups.experimental")}>
+          <LocalApiEnabled descriptionMode="tooltip" grouped={true} />
+          <LocalApiNetworkScope descriptionMode="tooltip" grouped={true} />
+          <LocalApiToken descriptionMode="tooltip" grouped={true} />
           <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
           <KeyboardImplementationSelector
             descriptionMode="tooltip"

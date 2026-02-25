@@ -169,6 +169,19 @@ pub enum KeyboardImplementation {
     HandyKeys,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ApiNetworkScope {
+    Loopback,
+    LocalNetwork,
+}
+
+impl Default for ApiNetworkScope {
+    fn default() -> Self {
+        ApiNetworkScope::Loopback
+    }
+}
+
 impl Default for KeyboardImplementation {
     fn default() -> Self {
         // Default to HandyKeys only on macOS where it's well-tested.
@@ -351,6 +364,12 @@ pub struct AppSettings {
     pub app_language: String,
     #[serde(default)]
     pub experimental_enabled: bool,
+    #[serde(default)]
+    pub local_api_enabled: bool,
+    #[serde(default)]
+    pub local_api_network_scope: ApiNetworkScope,
+    #[serde(default)]
+    pub local_api_token: Option<String>,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
@@ -719,6 +738,9 @@ pub fn get_default_settings() -> AppSettings {
         append_trailing_space: false,
         app_language: default_app_language(),
         experimental_enabled: false,
+        local_api_enabled: false,
+        local_api_network_scope: ApiNetworkScope::Loopback,
+        local_api_token: None,
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),

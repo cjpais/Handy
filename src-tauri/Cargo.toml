@@ -47,6 +47,7 @@ rusqlite_migration = "2.3"
 tauri-plugin-fs = "2.4.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+base64 = "0.22"
 rdev = { git = "https://github.com/rustdesk-org/rdev" }
 cpal = "0.16.0"
 anyhow = "1.0.95"
@@ -76,6 +77,7 @@ specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 tauri-plugin-dialog = "2"
+tiny_http = "0.12"
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"

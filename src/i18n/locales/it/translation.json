@@ -318,6 +318,23 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "localApiEnabled": {
+        "label": "Servizio API locale",
+        "description": "Espone endpoint di trascrizione per strumenti locali (HTTP stile OpenAI + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "Accesso rete API",
+        "description": "Loopback rende gli endpoint accessibili solo su questo computer. Rete locale consente l’accesso agli altri dispositivi della LAN.",
+        "options": {
+          "loopback": "Solo questo computer (127.0.0.1)",
+          "localNetwork": "Rete locale (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "Token di accesso API (opzionale)",
+        "description": "Se impostato, i client devono inviare Authorization: Bearer <token> quando chiamano l’API HTTP.",
+        "placeholder": "Lascia vuoto per disattivare l’autenticazione"
       }
     },
     "postProcessing": {

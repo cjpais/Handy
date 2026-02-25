@@ -318,6 +318,23 @@
         "add": "Thêm",
         "remove": "Xóa {{word}}",
         "duplicate": "\"{{word}}\" đã tồn tại"
+      },
+      "localApiEnabled": {
+        "label": "Dịch vụ API cục bộ",
+        "description": "Mở các endpoint phiên âm cho công cụ cục bộ (HTTP kiểu OpenAI + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "Truy cập mạng API",
+        "description": "Loopback chỉ cho phép truy cập endpoint trên máy này. Mạng cục bộ cho phép các thiết bị khác trong LAN truy cập.",
+        "options": {
+          "loopback": "Chỉ máy này (127.0.0.1)",
+          "localNetwork": "Mạng cục bộ (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "Mã truy cập API (tùy chọn)",
+        "description": "Nếu đặt, client phải gửi Authorization: Bearer <token> khi gọi HTTP API.",
+        "placeholder": "Để trống để tắt xác thực"
       }
     },
     "postProcessing": {

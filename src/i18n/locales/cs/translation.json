@@ -318,6 +318,23 @@
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
+      },
+      "localApiEnabled": {
+        "label": "Lokální API služba",
+        "description": "Zpřístupní přepisovací endpointy pro lokální nástroje (OpenAI-style HTTP + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "Síťový přístup API",
+        "description": "Loopback zpřístupní endpointy jen na tomto počítači. Lokální síť je zpřístupní i ostatním zařízením v LAN.",
+        "options": {
+          "loopback": "Pouze tento počítač (127.0.0.1)",
+          "localNetwork": "Místní síť (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "API přístupový token (volitelné)",
+        "description": "Pokud je nastaven, klient musí při volání HTTP API poslat Authorization: Bearer <token>.",
+        "placeholder": "Ponechte prázdné pro vypnutí ověřování"
       }
     },
     "postProcessing": {

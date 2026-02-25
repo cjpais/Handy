@@ -20,11 +20,12 @@ use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::settings::{
-    self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    self, get_settings, ApiNetworkScope, AutoSubmitKey, ClipboardHandling, KeyboardImplementation,
+    LLMPrompt, OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
     APPLE_INTELLIGENCE_DEFAULT_MODEL_ID, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
+use crate::ApiServerManager;
 
 // Note: Commands are accessed via shortcut::handy_keys:: in lib.rs
 
@@ -801,6 +802,66 @@ pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Res
     let mut settings = settings::get_settings(&app);
     settings.experimental_enabled = enabled;
     settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_local_api_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.local_api_enabled = enabled;
+    settings::write_settings(&app, settings.clone());
+
+    app.state::<std::sync::Arc<ApiServerManager>>()
+        .apply_settings(&settings);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_local_api_network_scope_setting(app: AppHandle, scope: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match scope.as_str() {
+        "loopback" => ApiNetworkScope::Loopback,
+        "local_network" => ApiNetworkScope::LocalNetwork,
+        other => {
+            warn!(
+                "Invalid local API network scope '{}', defaulting to loopback",
+                other
+            );
+            ApiNetworkScope::Loopback
+        }
+    };
+
+    settings.local_api_network_scope = parsed;
+    settings::write_settings(&app, settings.clone());
+
+    app.state::<std::sync::Arc<ApiServerManager>>()
+        .apply_settings(&settings);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_local_api_token_setting(app: AppHandle, token: Option<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let normalized = token.and_then(|value| {
+        let trimmed = value.trim().to_string();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed)
+        }
+    });
+
+    settings.local_api_token = normalized;
+    settings::write_settings(&app, settings.clone());
+
+    app.state::<std::sync::Arc<ApiServerManager>>()
+        .apply_settings(&settings);
+
     Ok(())
 }
 

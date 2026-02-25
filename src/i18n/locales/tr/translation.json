@@ -318,6 +318,23 @@
         "add": "Ekle",
         "remove": "{{word}} Kaldır",
         "duplicate": "\"{{word}}\" zaten mevcut"
+      },
+      "localApiEnabled": {
+        "label": "Yerel API Hizmeti",
+        "description": "Yerel araçlar için transkripsiyon uç noktalarını açar (OpenAI tarzı HTTP + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "API Ağ Erişimi",
+        "description": "Loopback uç noktaları yalnızca bu bilgisayarda erişilebilir yapar. Yerel ağ, LAN içindeki diğer cihazlardan erişime izin verir.",
+        "options": {
+          "loopback": "Yalnızca bu bilgisayar (127.0.0.1)",
+          "localNetwork": "Yerel ağ (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "API Erişim Belirteci (Opsiyonel)",
+        "description": "Ayarlanırsa, istemciler HTTP API çağrısında Authorization: Bearer <token> göndermelidir.",
+        "placeholder": "Kimlik doğrulamayı kapatmak için boş bırakın"
       }
     },
     "postProcessing": {

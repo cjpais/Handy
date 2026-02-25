@@ -318,6 +318,23 @@
         "add": "新增",
         "remove": "刪除 {{word}}",
         "duplicate": "「{{word}}」已存在"
+      },
+      "localApiEnabled": {
+        "label": "本機 API 服務",
+        "description": "為本機工具提供轉錄端點（OpenAI 風格 HTTP + Wyoming）。"
+      },
+      "localApiNetwork": {
+        "title": "API 網路存取",
+        "description": "迴圈位址模式僅允許本機存取端點。區域網路模式允許 LAN 內其他裝置存取。",
+        "options": {
+          "loopback": "僅此電腦 (127.0.0.1)",
+          "localNetwork": "區域網路 (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "API 存取權杖（選用）",
+        "description": "若已設定，客戶端呼叫 HTTP API 時必須送出 Authorization: Bearer <token>。",
+        "placeholder": "留空以停用驗證"
       }
     },
     "postProcessing": {

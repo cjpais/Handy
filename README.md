@@ -101,6 +101,53 @@ handy --start-hidden --no-tray
 > /Applications/Handy.app/Contents/MacOS/Handy --toggle-transcription
 > ```
 
+### Local Programmatic STT APIs (Experimental)
+
+Handy can expose local speech-to-text endpoints so other tools can call the same model instance.
+
+Enable it in **Settings > Advanced > Experimental**:
+
+- Turn on **Experimental Features**
+- Turn on **Local API Service**
+- Choose **API Network Access**:
+  - `This computer only (127.0.0.1)` (recommended default)
+  - `Local network (0.0.0.0)`
+- Optional: set **API Access Token** to require `Authorization: Bearer <token>`
+
+Current default ports:
+
+- OpenAI-style HTTP API: `5500` (`/v1/audio/transcriptions`)
+- Wyoming TCP API: `10300`
+
+OpenAI-style endpoint (JSON mode):
+
+```bash
+curl -s http://127.0.0.1:5500/v1/audio/transcriptions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "audio_base64": "<BASE64_AUDIO>",
+    "encoding": "pcm_s16le",
+    "sample_rate": 16000
+  }'
+```
+
+OpenAI-style endpoint (multipart mode, compatible shape):
+
+```bash
+curl -s http://127.0.0.1:5500/v1/audio/transcriptions \
+  -H "Authorization: Bearer <token-if-configured>" \
+  -F "file=@sample.wav" \
+  -F "model=whisper-1" \
+  -F "response_format=json"
+```
+
+Wyoming flow:
+
+1. Send `{"type":"describe"}` to receive `info`
+2. Send `audio-start`
+3. Stream one or more `audio-chunk` events with `payload_length` + raw PCM16 payload
+4. Send `audio-stop` and read a `transcript` event response
+
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:

@@ -318,6 +318,23 @@
         "add": "添加",
         "remove": "删除 {{word}}",
         "duplicate": "\"{{word}}\" 已存在"
+      },
+      "localApiEnabled": {
+        "label": "本地 API 服务",
+        "description": "为本地工具暴露转录端点（OpenAI 风格 HTTP + Wyoming）。"
+      },
+      "localApiNetwork": {
+        "title": "API 网络访问",
+        "description": "回环模式仅允许本机访问端点。本地网络模式允许局域网中的其他设备访问。",
+        "options": {
+          "loopback": "仅本机 (127.0.0.1)",
+          "localNetwork": "本地网络 (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "API 访问令牌（可选）",
+        "description": "设置后，客户端调用 HTTP API 时必须发送 Authorization: Bearer <token>。",
+        "placeholder": "留空以禁用认证"
       }
     },
     "postProcessing": {

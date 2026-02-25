@@ -232,6 +232,23 @@
         "label": "Experimental Features",
         "description": "Enable experimental features that are still in development."
       },
+      "localApiEnabled": {
+        "label": "Local API Service",
+        "description": "Expose transcription endpoints for local tools (OpenAI-style HTTP + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "API Network Access",
+        "description": "Loopback keeps endpoints accessible only on this computer. Local Network allows other devices on your LAN to call them.",
+        "options": {
+          "loopback": "This computer only (127.0.0.1)",
+          "localNetwork": "Local network (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "API Access Token (Optional)",
+        "description": "If set, clients must send Authorization: Bearer <token> when calling the HTTP API.",
+        "placeholder": "Leave empty to disable auth"
+      },
       "startHidden": {
         "label": "Start Hidden",
         "description": "Launch to system tray without opening the window."

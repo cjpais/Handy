@@ -133,6 +133,12 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  local_api_enabled: (value) =>
+    commands.changeLocalApiEnabledSetting(value as boolean),
+  local_api_network_scope: (value) =>
+    commands.changeLocalApiNetworkScopeSetting(value as string),
+  local_api_token: (value) =>
+    commands.changeLocalApiTokenSetting((value as string | null) ?? null),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
 };

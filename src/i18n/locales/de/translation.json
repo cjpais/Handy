@@ -318,6 +318,23 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "localApiEnabled": {
+        "label": "Lokaler API-Dienst",
+        "description": "Stellt Transkriptions-Endpunkte für lokale Tools bereit (OpenAI-Style HTTP + Wyoming)."
+      },
+      "localApiNetwork": {
+        "title": "API-Netzwerkzugriff",
+        "description": "Loopback macht die Endpunkte nur auf diesem Computer erreichbar. Lokales Netzwerk erlaubt Zugriff von anderen Geräten im LAN.",
+        "options": {
+          "loopback": "Nur dieser Computer (127.0.0.1)",
+          "localNetwork": "Lokales Netzwerk (0.0.0.0)"
+        }
+      },
+      "localApiToken": {
+        "title": "API-Zugriffstoken (optional)",
+        "description": "Wenn gesetzt, müssen Clients beim HTTP-API-Aufruf Authorization: Bearer <token> senden.",
+        "placeholder": "Leer lassen, um Auth zu deaktivieren"
       }
     },
     "postProcessing": {
