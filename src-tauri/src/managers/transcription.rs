@@ -593,7 +593,7 @@ impl TranscriptionManager {
                                     })
                                 )
                             })
-                            .map(|text| transcribe_rs::TranscriptionResult { text, segments: None })?
+                            .map(|text| transcribe_rs::TranscriptionResult { text, segments: None })
                         }
                     }
                 },

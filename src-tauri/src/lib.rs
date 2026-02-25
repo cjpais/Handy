@@ -9,7 +9,6 @@ mod cloud_providers;
 mod commands;
 mod helpers;
 mod input;
-mod gemini_client;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -307,7 +306,6 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_cloud_transcription_extra_params,
         shortcut::change_gemini_api_key,
         shortcut::change_gemini_model,
-        shortcut::change_gemini_prompt,
         shortcut::test_gemini_connection,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,

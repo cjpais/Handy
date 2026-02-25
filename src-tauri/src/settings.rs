@@ -372,8 +372,6 @@ pub struct AppSettings {
     pub gemini_api_key: String,
     #[serde(default = "default_gemini_model")]
     pub gemini_model: String,
-    #[serde(default = "default_gemini_prompt")]
-    pub gemini_prompt: String,
 }
 
 fn default_model() -> String {
@@ -609,6 +607,10 @@ fn default_gemini_prompt() -> String {
     "You are a transcription assistant. Transcribe the audio accurately. Fix capitalization, punctuation, and remove filler words (um, uh, like). Return only the transcription text, nothing else.".to_string()
 }
 
+/// Default Gemini prompt (used by cloud_providers::gemini and post_process_prompts default).
+/// Kept as a standalone function so `default_post_process_prompts()` can reference it
+/// even though the field was removed from `AppSettings`.
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
@@ -782,7 +784,6 @@ pub fn get_default_settings() -> AppSettings {
         cloud_transcription_extra_params: String::new(),
         gemini_api_key: String::new(),
         gemini_model: default_gemini_model(),
-        gemini_prompt: default_gemini_prompt(),
     }
 }
 

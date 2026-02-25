@@ -1097,35 +1097,12 @@ pub fn change_cloud_transcription_model(app: AppHandle, model: String) -> Result
 #[specta::specta]
 pub async fn test_cloud_transcription_connection(app: AppHandle) -> Result<(), String> {
     let settings = settings::get_settings(&app);
-    let base_url = settings
-        .cloud_transcription_base_url
-        .trim_end_matches('/')
-        .to_string();
-    let api_key = settings.cloud_transcription_api_key.clone();
-
-    if api_key.is_empty() {
-        return Err("API key is empty".to_string());
-    }
-
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let response = client
-        .get(format!("{}/models", base_url))
-        .bearer_auth(&api_key)
-        .send()
+    use crate::cloud_providers::CloudProvider;
+    let provider = crate::cloud_providers::openai::OpenAiProvider;
+    provider
+        .test_connection(&settings)
         .await
-        .map_err(|e| format!("Connection failed: {}", e))?;
-
-    if response.status().is_success() {
-        Ok(())
-    } else {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        Err(format!("API error {}: {}", status, body))
-    }
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1160,21 +1137,12 @@ pub fn change_gemini_model(app: AppHandle, model: String) -> Result<(), String> 
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_gemini_prompt(app: AppHandle, prompt: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.gemini_prompt = prompt;
-    settings::write_settings(&app, settings);
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn test_gemini_connection(app: AppHandle) -> Result<(), String> {
     let settings = settings::get_settings(&app);
-    crate::gemini_client::test_gemini_connection(
-        &settings.gemini_api_key,
-        &settings.gemini_model,
-    )
-    .await
-    .map_err(|e| e.to_string())
+    use crate::cloud_providers::CloudProvider;
+    let provider = crate::cloud_providers::gemini::GeminiProvider;
+    provider
+        .test_connection(&settings)
+        .await
+        .map_err(|e| e.to_string())
 }
