@@ -6640,7 +6640,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime"
 version = "2.10.0"
-source = "git+https://github.com/parkghost/tauri.git?branch=handy-2.10.2#549941aaa0f59e7607d0a47437d30f66711595a1"
+source = "git+https://github.com/cjpais/tauri.git?branch=handy-2.10.2#ad9ba9448b82b1a1628333ae06459e4def470db3"
 dependencies = [
  "cookie",
  "dpi",
@@ -6664,7 +6664,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime-wry"
 version = "2.10.0"
-source = "git+https://github.com/parkghost/tauri.git?branch=handy-2.10.2#549941aaa0f59e7607d0a47437d30f66711595a1"
+source = "git+https://github.com/cjpais/tauri.git?branch=handy-2.10.2#ad9ba9448b82b1a1628333ae06459e4def470db3"
 dependencies = [
  "gtk",
  "http",
@@ -6718,7 +6718,7 @@ dependencies = [
 [[package]]
 name = "tauri-utils"
 version = "2.8.2"
-source = "git+https://github.com/parkghost/tauri.git?branch=handy-2.10.2#549941aaa0f59e7607d0a47437d30f66711595a1"
+source = "git+https://github.com/cjpais/tauri.git?branch=handy-2.10.2#ad9ba9448b82b1a1628333ae06459e4def470db3"
 dependencies = [
  "anyhow",
  "brotli",
