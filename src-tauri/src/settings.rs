@@ -368,6 +368,12 @@ pub struct AppSettings {
     pub cloud_transcription_model: String,
     #[serde(default)]
     pub cloud_transcription_extra_params: String,
+    #[serde(default)]
+    pub gemini_api_key: String,
+    #[serde(default = "default_gemini_model")]
+    pub gemini_model: String,
+    #[serde(default = "default_gemini_prompt")]
+    pub gemini_prompt: String,
 }
 
 fn default_model() -> String {
@@ -566,12 +572,21 @@ fn default_post_process_models() -> HashMap<String, String> {
     map
 }
 
+pub const GEMINI_PROMPT_ID: &str = "default_gemini_transcription";
+
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
-    vec![LLMPrompt {
-        id: "default_improve_transcriptions".to_string(),
-        name: "Improve Transcriptions".to_string(),
-        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
-    }]
+    vec![
+        LLMPrompt {
+            id: "default_improve_transcriptions".to_string(),
+            name: "Improve Transcriptions".to_string(),
+            prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+        },
+        LLMPrompt {
+            id: GEMINI_PROMPT_ID.to_string(),
+            name: "Gemini Transcription".to_string(),
+            prompt: default_gemini_prompt(),
+        },
+    ]
 }
 
 fn default_typing_tool() -> TypingTool {
@@ -584,6 +599,14 @@ fn default_cloud_transcription_base_url() -> String {
 
 fn default_cloud_transcription_model() -> String {
     "whisper-large-v3".to_string()
+}
+
+fn default_gemini_model() -> String {
+    "gemini-2.5-flash".to_string()
+}
+
+fn default_gemini_prompt() -> String {
+    "You are a transcription assistant. Transcribe the audio accurately. Fix capitalization, punctuation, and remove filler words (um, uh, like). Return only the transcription text, nothing else.".to_string()
 }
 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
@@ -636,6 +659,19 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                     .insert(provider.id.clone(), default_model);
                 changed = true;
             }
+        }
+    }
+
+    // Ensure default prompts exist (e.g. Gemini prompt for existing users)
+    for default_prompt in default_post_process_prompts() {
+        if !settings
+            .post_process_prompts
+            .iter()
+            .any(|p| p.id == default_prompt.id)
+        {
+            debug!("Adding missing prompt: {}", default_prompt.name);
+            settings.post_process_prompts.push(default_prompt);
+            changed = true;
         }
     }
 
@@ -744,6 +780,9 @@ pub fn get_default_settings() -> AppSettings {
         cloud_transcription_api_key: String::new(),
         cloud_transcription_model: default_cloud_transcription_model(),
         cloud_transcription_extra_params: String::new(),
+        gemini_api_key: String::new(),
+        gemini_model: default_gemini_model(),
+        gemini_prompt: default_gemini_prompt(),
     }
 }
 

@@ -127,7 +127,7 @@ pub async fn retranscribe_history_entry(
 
     // Retranscribe (includes retry logic)
     let text = transcription_manager
-        .transcribe(samples)
+        .transcribe(samples, None)
         .map_err(|e| e.to_string())?;
 
     // Update history entry

@@ -1139,3 +1139,42 @@ pub fn change_cloud_transcription_extra_params(
     settings::write_settings(&app, settings);
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_gemini_api_key(app: AppHandle, api_key: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.gemini_api_key = api_key;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_gemini_model(app: AppHandle, model: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.gemini_model = model;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_gemini_prompt(app: AppHandle, prompt: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.gemini_prompt = prompt;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn test_gemini_connection(app: AppHandle) -> Result<(), String> {
+    let settings = settings::get_settings(&app);
+    crate::gemini_client::test_gemini_connection(
+        &settings.gemini_api_key,
+        &settings.gemini_model,
+    )
+    .await
+    .map_err(|e| e.to_string())
+}

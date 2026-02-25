@@ -21,6 +21,7 @@ import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { ShortcutInput } from "../ShortcutInput";
 import { useSettings } from "../../../hooks/useSettings";
+import { useModelStore } from "../../../stores/modelStore";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
@@ -143,10 +144,14 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
   );
 };
 
+const GEMINI_PROMPT_ID = "default_gemini_transcription";
+
 const PostProcessingSettingsPromptsComponent: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating, refreshSettings } =
     useSettings();
+  const { currentModel } = useModelStore();
+  const isGemini = currentModel === "gemini";
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [draftText, setDraftText] = useState("");
@@ -242,6 +247,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
   };
 
   const hasPrompts = prompts.length > 0;
+  const isGeminiPrompt = selectedPromptId === GEMINI_PROMPT_ID;
   const isDirty =
     !!selectedPrompt &&
     (draftName.trim() !== selectedPrompt.name ||
@@ -300,6 +306,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                   "settings.postProcessing.prompts.promptLabelPlaceholder",
                 )}
                 variant="compact"
+                disabled={isGeminiPrompt}
               />
             </div>
 
@@ -317,7 +324,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               <p
                 className="text-xs text-mid-gray/70"
                 dangerouslySetInnerHTML={{
-                  __html: t("settings.postProcessing.prompts.promptTip"),
+                  __html: t(
+                    isGemini
+                      ? "settings.postProcessing.prompts.promptTipGemini"
+                      : "settings.postProcessing.prompts.promptTip",
+                  ),
                 }}
               />
             </div>
@@ -335,7 +346,7 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                 onClick={() => handleDeletePrompt(selectedPromptId)}
                 variant="secondary"
                 size="md"
-                disabled={!selectedPromptId || prompts.length <= 1}
+                disabled={!selectedPromptId || prompts.length <= 1 || isGeminiPrompt}
               >
                 {t("settings.postProcessing.prompts.deletePrompt")}
               </Button>
@@ -384,7 +395,11 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
               <p
                 className="text-xs text-mid-gray/70"
                 dangerouslySetInnerHTML={{
-                  __html: t("settings.postProcessing.prompts.promptTip"),
+                  __html: t(
+                    isGemini
+                      ? "settings.postProcessing.prompts.promptTipGemini"
+                      : "settings.postProcessing.prompts.promptTip",
+                  ),
                 }}
               />
             </div>
@@ -425,6 +440,8 @@ PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
 
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
+  const { currentModel } = useModelStore();
+  const isGemini = currentModel === "gemini";
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -436,9 +453,17 @@ export const PostProcessingSettings: React.FC = () => {
         />
       </SettingsGroup>
 
-      <SettingsGroup title={t("settings.postProcessing.api.title")}>
-        <PostProcessingSettingsApi />
-      </SettingsGroup>
+      {isGemini ? (
+        <SettingsGroup title={t("settings.postProcessing.api.title")}>
+          <Alert variant="info" contained>
+            {t("settings.postProcessing.gemini.activeNotice")}
+          </Alert>
+        </SettingsGroup>
+      ) : (
+        <SettingsGroup title={t("settings.postProcessing.api.title")}>
+          <PostProcessingSettingsApi />
+        </SettingsGroup>
+      )}
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
         <PostProcessingSettingsPrompts />

@@ -49,7 +49,7 @@ impl TranscriptionManager {
         None
     }
 
-    pub fn transcribe(&self, _audio: Vec<f32>) -> Result<String> {
+    pub fn transcribe(&self, _audio: Vec<f32>, _prompt: Option<String>) -> Result<String> {
         Ok(String::new())
     }
 }

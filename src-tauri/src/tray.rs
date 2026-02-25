@@ -124,7 +124,12 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         None::<&str>,
     )
     .expect("failed to create copy last transcript item");
-    let model_loaded = app.state::<Arc<TranscriptionManager>>().is_model_loaded();
+    let is_cloud_model = matches!(
+        settings.selected_model.as_str(),
+        "gemini" | "cloud"
+    );
+    let model_loaded = !is_cloud_model
+        && app.state::<Arc<TranscriptionManager>>().is_model_loaded();
     let unload_model_i = MenuItem::with_id(
         app,
         "unload_model",

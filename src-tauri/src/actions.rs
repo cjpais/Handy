@@ -388,6 +388,7 @@ impl ShortcutAction for TranscribeAction {
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        let mm = Arc::clone(&app.state::<Arc<crate::managers::model::ModelManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
@@ -417,9 +418,23 @@ impl ShortcutAction for TranscribeAction {
                     samples.len()
                 );
 
+                let settings = get_settings(&ah);
+
+                // For Gemini: always use the Gemini default prompt as system instruction
+                let gemini_prompt = if settings.selected_model == "gemini" {
+                    settings
+                        .post_process_prompts
+                        .iter()
+                        .find(|p| p.id == crate::settings::GEMINI_PROMPT_ID)
+                        .map(|p| build_system_prompt(&p.prompt))
+                        .filter(|p| !p.is_empty())
+                } else {
+                    None
+                };
+
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
+                match tm.transcribe(samples, gemini_prompt) {
                     Ok(transcription) => {
                         debug!(
                             "Transcription completed in {:?}: '{}'",
@@ -427,7 +442,6 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
@@ -444,7 +458,8 @@ impl ShortcutAction for TranscribeAction {
                             if post_process {
                                 show_processing_overlay(&ah);
                             }
-                            let processed = if post_process {
+                            // Gemini already handled post-processing in the transcription step
+                            let processed = if post_process && settings.selected_model != "gemini" {
                                 post_process_transcription(&settings, &final_text).await
                             } else {
                                 None
@@ -511,9 +526,59 @@ impl ShortcutAction for TranscribeAction {
                         }
                     }
                     Err(err) => {
-                        debug!("Transcription error: {}", err);
+                        warn!("Transcription error: {}", err);
                         let settings = get_settings(&ah);
-                        if settings.selected_model == "cloud" {
+
+                        if settings.selected_model == "gemini" {
+                            // Fallback: find any downloaded local model and retry
+                            let fallback = mm
+                                .get_available_models()
+                                .into_iter()
+                                .find(|m| {
+                                    m.is_downloaded
+                                        && m.id != "cloud"
+                                        && m.id != "gemini"
+                                        && !m.is_custom
+                                });
+                            if let Some(fallback_model) = fallback {
+                                warn!(
+                                    "Gemini failed, falling back to local model: {}",
+                                    fallback_model.id
+                                );
+                                if let Err(e) = tm.load_model(&fallback_model.id) {
+                                    error!(
+                                        "Failed to load fallback model {}: {}",
+                                        fallback_model.id, e
+                                    );
+                                } else {
+                                    match tm.transcribe(samples_clone.clone(), None) {
+                                        Ok(text) => {
+                                            warn!(
+                                                "Fallback transcription succeeded: {} chars",
+                                                text.len()
+                                            );
+                                            if !text.is_empty() {
+                                                let ah_clone = ah.clone();
+                                                let _ = ah.run_on_main_thread(move || {
+                                                    let _ = utils::paste(text, ah_clone);
+                                                });
+                                            }
+                                            // Reload Gemini for next time
+                                            let _ = tm.load_model("gemini");
+                                        }
+                                        Err(e2) => {
+                                            error!(
+                                                "Fallback transcription also failed: {}",
+                                                e2
+                                            );
+                                            let _ = tm.load_model("gemini");
+                                        }
+                                    }
+                                }
+                            } else {
+                                warn!("Gemini failed and no local model available for fallback");
+                            }
+                        } else if settings.selected_model == "cloud" {
                             let hm_clone = Arc::clone(&hm);
                             tauri::async_runtime::spawn(async move {
                                 if let Err(e) =

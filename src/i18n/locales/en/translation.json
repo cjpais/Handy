@@ -220,6 +220,24 @@
         "hint": "Local servers (faster-whisper, LocalAI, whisper.cpp) or remote APIs (Groq, OpenAI).",
         "advanced": "Advanced",
         "extraParamsHint": "JSON — additional fields sent to /audio/transcriptions"
+      },
+      "gemini": {
+        "title": "Google Gemini",
+        "description": "Transcription + AI processing in one step via Google Gemini API",
+        "apiKeyLabel": "API Key",
+        "apiKeyPlaceholder": "AIza...",
+        "apiKeyHint": "Get your key at aistudio.google.com",
+        "modelLabel": "Model",
+        "modelPlaceholder": "gemini-2.0-flash",
+        "promptLabel": "Post-Process Prompt",
+        "promptHint": "Used when pressing the Transcribe with Post-Processing shortcut",
+        "promptPlaceholder": "Transcribe the audio accurately. Fix capitalization and punctuation...",
+        "configured": "Configured",
+        "notConfigured": "Not configured",
+        "test": "Test",
+        "testFailed": "Connection test failed",
+        "selectButton": "Select",
+        "customModel": "Custom..."
       }
     },
     "sound": {
@@ -351,6 +369,13 @@
       "hotkey": {
         "title": "Hotkey"
       },
+      "gemini": {
+        "activeNotice": "Google Gemini is your active transcription model — transcription and post-processing happen in one step. Configure the prompt below.",
+        "promptName": "Gemini Transcription",
+        "promptDescription": "Sent as a system instruction alongside your audio when using Transcribe with Post-Processing.",
+        "promptPlaceholder": "Transcribe the audio accurately. Fix capitalization and punctuation...",
+        "resetPrompt": "Reset to Default"
+      },
       "api": {
         "title": "API (OpenAI Compatible)",
         "provider": {
@@ -398,6 +423,7 @@
         "promptInstructions": "Prompt Instructions",
         "promptInstructionsPlaceholder": "Write the instructions to run after transcription. Example: Improve grammar and clarity for the following text: ${output}",
         "promptTip": "Tip: Use <code>${output}</code> to insert the transcribed text in your prompt.",
+        "promptTipGemini": "Gemini mode: This prompt is sent as a system instruction alongside the audio. <code>${output}</code> is stripped automatically — Gemini receives the audio directly.",
         "updatePrompt": "Update Prompt",
         "deletePrompt": "Delete Prompt",
         "createPrompt": "Create Prompt",

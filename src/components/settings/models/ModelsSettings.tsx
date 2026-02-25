@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CloudTranscriptionCard } from "./CloudTranscriptionCard";
+import { GeminiTranscriptionCard } from "./GeminiTranscriptionCard";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { ChevronDown, Globe } from "lucide-react";
@@ -153,7 +154,7 @@ export const ModelsSettings: React.FC = () => {
   // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
-      if (model.id === "cloud") return false; // handled in separate cloud section
+      if (model.id === "cloud" || model.id === "gemini") return false; // handled in separate cloud section
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }
@@ -366,6 +367,10 @@ export const ModelsSettings: React.FC = () => {
         </h2>
         <CloudTranscriptionCard
           isActive={currentModel === "cloud"}
+          onSelect={handleModelSelect}
+        />
+        <GeminiTranscriptionCard
+          isActive={currentModel === "gemini"}
           onSelect={handleModelSelect}
         />
       </div>

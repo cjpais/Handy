@@ -25,6 +25,7 @@ pub enum EngineType {
     SenseVoice,
     GigaAM,
     Cloud,
+    Gemini,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -448,6 +449,30 @@ impl ModelManager {
             },
         );
 
+        available_models.insert(
+            "gemini".to_string(),
+            ModelInfo {
+                id: "gemini".to_string(),
+                name: "Google Gemini".to_string(),
+                description: "Transcription + AI processing in one step via Google Gemini API"
+                    .to_string(),
+                filename: String::new(),
+                url: None,
+                size_mb: 0,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Gemini,
+                accuracy_score: 0.95,
+                speed_score: 0.75,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec![],
+                is_custom: false,
+            },
+        );
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);
@@ -514,8 +539,8 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
-            // Cloud model is always available — no file to check.
-            if matches!(model.engine_type, EngineType::Cloud) {
+            // Cloud/Gemini models are always available — no file to check.
+            if matches!(model.engine_type, EngineType::Cloud | EngineType::Gemini) {
                 continue;
             }
 
