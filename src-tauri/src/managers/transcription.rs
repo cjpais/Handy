@@ -53,82 +53,6 @@ fn samples_to_wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
     Ok(buf)
 }
 
-/// Parse a JSON string into a serde_json::Value object, ignoring invalid input.
-fn parse_extra_params(raw: &str) -> Option<serde_json::Value> {
-    let trimmed = raw.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-    match serde_json::from_str(trimmed) {
-        Ok(v @ serde_json::Value::Object(_)) => Some(v),
-        _ => {
-            warn!("cloud_transcription_extra_params is not a valid JSON object, ignoring");
-            None
-        }
-    }
-}
-
-/// POST audio to an OpenAI-compatible `/audio/transcriptions` endpoint.
-async fn call_cloud_api(
-    base_url: &str,
-    api_key: &str,
-    model_name: &str,
-    wav_bytes: Vec<u8>,
-    language: Option<&str>,
-    extra_params: Option<serde_json::Value>,
-) -> Result<String> {
-    use reqwest::multipart;
-
-    let file_part = multipart::Part::bytes(wav_bytes)
-        .file_name("audio.wav")
-        .mime_str("audio/wav")?;
-
-    let mut form = multipart::Form::new()
-        .part("file", file_part)
-        .text("model", model_name.to_string())
-        .text("response_format", "json");
-
-    if let Some(lang) = language {
-        form = form.text("language", lang.to_string());
-    }
-
-    // Merge extra_params into form fields — overriding reserved keys is intentional
-    if let Some(serde_json::Value::Object(map)) = extra_params {
-        for (k, v) in map {
-            let val = match v {
-                serde_json::Value::String(s) => s,
-                other => other.to_string(),
-            };
-            form = form.text(k, val);
-        }
-    }
-
-    let url = format!("{}/audio/transcriptions", base_url.trim_end_matches('/'));
-    let response = reqwest::Client::new()
-        .post(&url)
-        .bearer_auth(api_key)
-        .multipart(form)
-        .send()
-        .await
-        .map_err(|e| anyhow::anyhow!("Network error: {e}"))?;
-
-    let status = response.status();
-    if !status.is_success() {
-        let body = response.text().await.unwrap_or_default();
-        return Err(anyhow::anyhow!("Cloud API {}: {body}", status.as_u16()));
-    }
-
-    let json: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to parse response: {e}"))?;
-
-    json["text"]
-        .as_str()
-        .map(str::to_string)
-        .ok_or_else(|| anyhow::anyhow!("No 'text' field in API response"))
-}
-
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
     pub event_type: String,
@@ -144,8 +68,7 @@ enum LoadedEngine {
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
     GigaAM(GigaAMEngine),
-    Cloud,
-    Gemini,
+    Cloud(Box<dyn crate::cloud_providers::CloudProvider>),
 }
 
 #[derive(Clone)]
@@ -270,8 +193,7 @@ impl TranscriptionManager {
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
                     LoadedEngine::GigaAM(ref mut e) => e.unload_model(),
-                    LoadedEngine::Cloud => { /* nothing to unload */ }
-                    LoadedEngine::Gemini => { /* nothing to unload */ }
+                    LoadedEngine::Cloud(_) => { /* nothing to unload */ }
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -470,8 +392,12 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::GigaAM(engine)
             }
-            EngineType::Cloud => LoadedEngine::Cloud,
-            EngineType::Gemini => LoadedEngine::Gemini,
+            EngineType::Cloud | EngineType::Gemini => {
+                match crate::cloud_providers::provider_for_model(model_id) {
+                    Some(provider) => LoadedEngine::Cloud(provider),
+                    None => return Err(anyhow::anyhow!("Unknown cloud provider: {}", model_id)),
+                }
+            }
         };
 
         // Update the current engine and model ID
@@ -529,7 +455,7 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>, prompt: Option<String>) -> Result<String> {
+    pub fn transcribe(&self, audio: Vec<f32>, post_process: bool) -> Result<String> {
         // Update last activity timestamp
         self.last_activity.store(
             SystemTime::now()
@@ -655,113 +581,19 @@ impl TranscriptionManager {
                         LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
                             .transcribe_samples(audio, None)
                             .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
-                        LoadedEngine::Cloud => {
+                        LoadedEngine::Cloud(ref provider) => {
                             let wav = samples_to_wav_bytes(&audio)?;
+                            let settings_clone = settings.clone();
+                            let provider_id = provider.id().to_string();
 
-                            let language = match settings.selected_language.as_str() {
-                                "auto" => None,
-                                lang => Some(lang),
-                            };
-                            let extra =
-                                parse_extra_params(&settings.cloud_transcription_extra_params);
-
-                            const RETRY_DELAYS_MS: &[u64] = &[0, 300, 800];
-
-                            let mut last_error =
-                                anyhow::anyhow!("Unknown cloud transcription error");
-
-                            for (attempt, &delay) in RETRY_DELAYS_MS.iter().enumerate() {
-                                if delay > 0 {
-                                    debug!(
-                                        "Cloud transcription retry {}/{}, waiting {}ms",
-                                        attempt + 1,
-                                        RETRY_DELAYS_MS.len(),
-                                        delay
-                                    );
-                                    thread::sleep(Duration::from_millis(delay));
-                                }
-
-                                // block_in_place: transcribe() runs inside tokio via async_runtime::spawn
-                                let api_result = tokio::task::block_in_place(|| {
-                                    tauri::async_runtime::block_on(call_cloud_api(
-                                        &settings.cloud_transcription_base_url,
-                                        &settings.cloud_transcription_api_key,
-                                        &settings.cloud_transcription_model,
-                                        wav.clone(),
-                                        language,
-                                        extra.clone(),
-                                    ))
-                                });
-                                match api_result {
-                                    Ok(text) => {
-                                        return Ok(transcribe_rs::TranscriptionResult {
-                                            text,
-                                            segments: None,
-                                        });
-                                    }
-                                    Err(e) => {
-                                        warn!(
-                                            "Cloud transcription attempt {}/{} failed: {}",
-                                            attempt + 1,
-                                            RETRY_DELAYS_MS.len(),
-                                            e
-                                        );
-                                        last_error = e;
-                                    }
-                                }
-                            }
-
-                            Err(last_error)
-                        }
-                        LoadedEngine::Gemini => {
-                            let wav = samples_to_wav_bytes(&audio)?;
-
-                            const RETRY_DELAYS_MS: &[u64] = &[0, 300, 800];
-                            let mut last_error =
-                                anyhow::anyhow!("Unknown Gemini transcription error");
-
-                            for (attempt, &delay) in RETRY_DELAYS_MS.iter().enumerate() {
-                                if delay > 0 {
-                                    debug!(
-                                        "Gemini transcription retry {}/{}, waiting {}ms",
-                                        attempt + 1,
-                                        RETRY_DELAYS_MS.len(),
-                                        delay
-                                    );
-                                    thread::sleep(Duration::from_millis(delay));
-                                }
-
-                                let api_result = tokio::task::block_in_place(|| {
-                                    tauri::async_runtime::block_on(
-                                        crate::gemini_client::call_gemini_api(
-                                            &settings.gemini_api_key,
-                                            &settings.gemini_model,
-                                            wav.clone(),
-                                            prompt.clone(),
-                                        ),
-                                    )
-                                });
-
-                                match api_result {
-                                    Ok(text) => {
-                                        return Ok(transcribe_rs::TranscriptionResult {
-                                            text,
-                                            segments: None,
-                                        });
-                                    }
-                                    Err(e) => {
-                                        warn!(
-                                            "Gemini transcription attempt {}/{} failed: {}",
-                                            attempt + 1,
-                                            RETRY_DELAYS_MS.len(),
-                                            e
-                                        );
-                                        last_error = e;
-                                    }
-                                }
-                            }
-
-                            Err(last_error)
+                            tokio::task::block_in_place(|| {
+                                tauri::async_runtime::block_on(
+                                    crate::cloud_providers::with_retry(&provider_id, || {
+                                        provider.transcribe(wav.clone(), post_process, &settings_clone)
+                                    })
+                                )
+                            })
+                            .map(|text| transcribe_rs::TranscriptionResult { text, segments: None })?
                         }
                     }
                 },
