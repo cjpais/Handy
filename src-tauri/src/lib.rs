@@ -5,6 +5,7 @@ mod audio_feedback;
 pub mod audio_toolkit;
 pub mod cli;
 mod clipboard;
+mod cloud_providers;
 mod commands;
 mod helpers;
 mod input;
