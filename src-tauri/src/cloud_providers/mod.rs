@@ -80,6 +80,16 @@ pub(crate) fn silent_wav() -> Vec<u8> {
     ]
 }
 
+/// Strip the `${output}` placeholder from a prompt template to produce a system instruction.
+pub(crate) fn build_system_prompt(prompt_template: &str) -> String {
+    prompt_template.replace("${output}", "").trim().to_string()
+}
+
+/// Returns true if the model ID corresponds to a cloud provider.
+pub fn is_cloud_model(model_id: &str) -> bool {
+    matches!(model_id, MODEL_ID_CLOUD | MODEL_ID_GEMINI)
+}
+
 /// Resolve a model ID to its CloudProvider implementation.
 /// Returns None for local model IDs.
 pub fn provider_for_model(model_id: &str) -> Option<Box<dyn CloudProvider>> {

@@ -68,10 +68,7 @@ struct PartResponse {
 
 pub struct GeminiProvider;
 
-/// Strip the `${output}` placeholder from a prompt template to produce a system instruction.
-fn build_system_prompt(prompt_template: &str) -> String {
-    prompt_template.replace("${output}", "").trim().to_string()
-}
+use super::build_system_prompt;
 
 /// Call Gemini generateContent API with audio bytes.
 async fn call_gemini_api(
