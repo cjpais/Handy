@@ -440,10 +440,24 @@ pub fn run(cli_args: CliArgs) {
             // Show main window only if not starting hidden
             // CLI --start-hidden flag overrides the setting
             let should_hide = settings.start_hidden || cli_args.start_hidden;
-            if !should_hide {
+
+            // Safety: if both start_hidden and tray icon are disabled, we must
+            // show the window — otherwise the app is completely invisible with
+            // no tray icon and no dock icon (macOS Accessory mode).
+            let tray_available = settings.show_tray_icon && !cli_args.no_tray;
+            if !should_hide || !tray_available {
                 if let Some(main_window) = app_handle.get_webview_window("main") {
                     main_window.show().unwrap();
                     main_window.set_focus().unwrap();
+                }
+
+                #[cfg(target_os = "macos")]
+                {
+                    // Ensure the dock icon is visible when we're forcing the window open
+                    if should_hide && !tray_available {
+                        let _ = app_handle
+                            .set_activation_policy(tauri::ActivationPolicy::Regular);
+                    }
                 }
             }
 
@@ -478,6 +492,13 @@ pub fn run(cli_args: CliArgs) {
             _ => {}
         })
         .invoke_handler(specta_builder.invoke_handler())
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = &event {
+                show_main_window(app);
+            }
+            let _ = (app, event); // suppress unused warnings on non-macOS
+        });
 }
