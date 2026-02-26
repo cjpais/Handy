@@ -455,8 +455,7 @@ pub fn run(cli_args: CliArgs) {
                 {
                     // Ensure the dock icon is visible when we're forcing the window open
                     if should_hide && !tray_available {
-                        let _ = app_handle
-                            .set_activation_policy(tauri::ActivationPolicy::Regular);
+                        let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Regular);
                     }
                 }
             }
