@@ -460,8 +460,8 @@ pub fn run(cli_args: CliArgs) {
                 let _res = window.hide();
 
                 let settings = get_settings(&window.app_handle());
-                let tray_visible = settings.show_tray_icon
-                    && !window.app_handle().state::<CliArgs>().no_tray;
+                let tray_visible =
+                    settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
 
                 #[cfg(target_os = "macos")]
                 {
