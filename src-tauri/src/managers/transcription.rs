@@ -42,6 +42,7 @@ enum LoadedEngine {
     Moonshine(MoonshineEngine),
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
+    GeminiApi,
 }
 
 #[derive(Clone)]
@@ -165,6 +166,7 @@ impl TranscriptionManager {
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
+                    LoadedEngine::GeminiApi => {}
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -240,7 +242,11 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        let model_path = self.model_manager.get_model_path(model_id)?;
+        let model_path = if matches!(model_info.engine_type, EngineType::GeminiApi) {
+            std::path::PathBuf::new()
+        } else {
+            self.model_manager.get_model_path(model_id)?
+        };
 
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
@@ -346,6 +352,28 @@ impl TranscriptionManager {
                     })?;
                 LoadedEngine::SenseVoice(engine)
             }
+            EngineType::GeminiApi => {
+                let settings = get_settings(&self.app_handle);
+                if settings.gemini_api_key.is_none()
+                    || settings
+                        .gemini_api_key
+                        .as_ref()
+                        .map_or(true, |k| k.is_empty())
+                {
+                    let error_msg = "Gemini API key not configured";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+                LoadedEngine::GeminiApi
+            }
         };
 
         // Update the current engine and model ID
@@ -440,6 +468,30 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
+        // Handle Gemini API separately (requires async HTTP call)
+        {
+            let engine_guard = self.lock_engine();
+            if let Some(LoadedEngine::GeminiApi) = engine_guard.as_ref() {
+                drop(engine_guard);
+                let api_key = settings
+                    .gemini_api_key
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Gemini API key not configured"))?
+                    .clone();
+                let gemini_model = settings.gemini_model.clone();
+
+                let rt = tokio::runtime::Handle::current();
+                let result = rt.block_on(crate::gemini_client::transcribe_audio(
+                    &api_key,
+                    &gemini_model,
+                    &audio,
+                ))?;
+
+                self.maybe_unload_immediately("gemini transcription");
+                return Ok(result);
+            }
+        }
+
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
@@ -525,6 +577,9 @@ impl TranscriptionManager {
                                 .map_err(|e| {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
+                        }
+                        LoadedEngine::GeminiApi => {
+                            unreachable!("GeminiApi handled before catch_unwind")
                         }
                     }
                 },

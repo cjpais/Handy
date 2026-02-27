@@ -23,6 +23,7 @@ pub enum EngineType {
     Moonshine,
     MoonshineStreaming,
     SenseVoice,
+    GeminiApi,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -206,7 +207,7 @@ impl ModelManager {
                 speed_score: 0.35,
                 supports_translation: false,
                 is_recommended: false,
-                supported_languages: whisper_languages,
+                supported_languages: whisper_languages.clone(),
                 is_custom: false,
             },
         );
@@ -397,6 +398,29 @@ impl ModelManager {
             },
         );
 
+        available_models.insert(
+            "gemini-api".to_string(),
+            ModelInfo {
+                id: "gemini-api".to_string(),
+                name: "Gemini API".to_string(),
+                description: "Cloud-based transcription via Google Gemini. Requires API key and internet.".to_string(),
+                filename: "".to_string(),
+                url: None,
+                size_mb: 0,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::GeminiApi,
+                accuracy_score: 0.9,
+                speed_score: 0.7,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: whisper_languages.clone(),
+                is_custom: false,
+            },
+        );
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);
@@ -463,6 +487,9 @@ impl ModelManager {
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
+            if matches!(model.engine_type, EngineType::GeminiApi) {
+                continue;
+            }
             if model.is_directory {
                 // For directory-based models, check if the directory exists
                 let model_path = self.models_dir.join(&model.filename);
@@ -680,6 +707,10 @@ impl ModelManager {
 
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
+
+        if matches!(model_info.engine_type, EngineType::GeminiApi) {
+            return Ok(());
+        }
 
         let url = model_info
             .url
@@ -1033,6 +1064,10 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
+        if matches!(model_info.engine_type, EngineType::GeminiApi) {
+            return Err(anyhow::anyhow!("Cannot delete cloud model"));
+        }
+
         debug!("ModelManager: Found model info: {:?}", model_info);
 
         let model_path = self.models_dir.join(&model_info.filename);
@@ -1096,6 +1131,10 @@ impl ModelManager {
         let model_info = self
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
+
+        if matches!(model_info.engine_type, EngineType::GeminiApi) {
+            return Err(anyhow::anyhow!("Cloud model has no local path: {}", model_id));
+        }
 
         if !model_info.is_downloaded {
             return Err(anyhow::anyhow!("Model not available: {}", model_id));

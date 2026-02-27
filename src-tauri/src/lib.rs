@@ -6,6 +6,7 @@ pub mod audio_toolkit;
 pub mod cli;
 mod clipboard;
 mod commands;
+pub mod gemini_client;
 mod helpers;
 mod input;
 mod llm_client;
@@ -298,6 +299,8 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
         shortcut::change_show_tray_icon_setting,
+        shortcut::change_long_audio_model_setting,
+        shortcut::change_long_audio_threshold_setting,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
@@ -346,6 +349,9 @@ pub fn run(cli_args: CliArgs) {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::history::reprocess_history_entry,
+        commands::gemini::change_gemini_api_key_setting,
+        commands::gemini::change_gemini_model_setting,
         helpers::clamshell::is_laptop,
     ]);
 

@@ -360,6 +360,14 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
+    #[serde(default)]
+    pub long_audio_model: Option<String>,
+    #[serde(default = "default_long_audio_threshold_seconds")]
+    pub long_audio_threshold_seconds: f32,
+    #[serde(default)]
+    pub gemini_api_key: Option<String>,
+    #[serde(default = "default_gemini_model")]
+    pub gemini_model: String,
 }
 
 fn default_model() -> String {
@@ -570,6 +578,14 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
+fn default_long_audio_threshold_seconds() -> f32 {
+    10.0
+}
+
+fn default_gemini_model() -> String {
+    "gemini-2.5-flash".to_string()
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
@@ -724,6 +740,10 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        long_audio_model: None,
+        long_audio_threshold_seconds: default_long_audio_threshold_seconds(),
+        gemini_api_key: None,
+        gemini_model: default_gemini_model(),
     }
 }
 

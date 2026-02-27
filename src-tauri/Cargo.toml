@@ -1,11 +1,11 @@
 [package]
-name = "handy"
+name = "speechlovy"
 version = "0.7.8"
-description = "Handy"
+description = "SpeechLovy"
 authors = ["cjpais"]
 edition = "2021"
 license = "MIT"
-default-run = "handy"
+default-run = "speechlovy"
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
@@ -16,7 +16,7 @@ incremental = true # Compile your binary in smaller steps.
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "handy_app_lib"
+name = "speechlovy_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 # [[bin]]
@@ -52,6 +52,7 @@ cpal = "0.16.0"
 anyhow = "1.0.95"
 rubato = "0.16.2"
 hound = "3.5.1"
+base64 = "0.22"
 log = "0.4.25"
 env_filter = "0.1.0"
 tokio = "1.43.0"

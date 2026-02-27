@@ -75,6 +75,10 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Very fast. Chinese, English, Japanese, Korean, Cantonese."
+      },
+      "gemini-api": {
+        "name": "Gemini API",
+        "description": "Cloud-based transcription via Google Gemini. Requires API key and internet."
       }
     },
     "errors": {
@@ -83,7 +87,7 @@
     },
     "permissions": {
       "title": "Permissions Required",
-      "description": "Handy needs a couple of permissions to work properly.",
+      "description": "SpeechLovy needs a couple of permissions to work properly.",
       "microphone": {
         "title": "Microphone Access",
         "description": "Required to hear your voice for transcription."
@@ -136,10 +140,20 @@
       "title": "{{model}} Settings",
       "noSettingsNeeded": "This model works automatically with no configuration needed."
     },
+    "longAudioModel": {
+      "title": "Long Audio Model",
+      "description": "Automatically switch to a different model when recording duration exceeds the threshold.",
+      "modelLabel": "Model for long recordings",
+      "modelDescription": "Select a model to use for recordings longer than the threshold.",
+      "thresholdLabel": "Duration threshold (seconds)",
+      "thresholdDescription": "Switch to the long audio model when recording exceeds this duration.",
+      "disabled": "Disabled",
+      "seconds": "{{value}}s"
+    },
     "general": {
       "title": "General",
       "shortcut": {
-        "title": "Handy Shortcuts",
+        "title": "SpeechLovy Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
@@ -226,7 +240,8 @@
         "output": "Output",
         "transcription": "Transcription",
         "history": "History",
-        "experimental": "Experimental"
+        "experimental": "Experimental",
+      "cloudModels": "Cloud Models"
       },
       "experimentalToggle": {
         "label": "Experimental Features",
@@ -238,11 +253,11 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start Handy when you log in to your computer."
+        "description": "Automatically start SpeechLovy when you log in to your computer."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
-        "description": "Display the Handy icon in the system tray."
+        "description": "Display the SpeechLovy icon in the system tray."
       },
       "overlay": {
         "title": "Overlay Position",
@@ -389,7 +404,18 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "reprocess": "Reprocess with different model",
+      "reprocessing": "Reprocessing...",
+      "selectModel": "Select model"
+    },
+    "gemini": {
+      "title": "Gemini API",
+      "description": "Use Google's Gemini API for cloud-based transcription. Requires an API key.",
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "Enter your Gemini API key",
+      "model": "Model",
+      "modelDescription": "Select which Gemini model to use for transcription"
     },
     "debug": {
       "title": "Debug",
@@ -403,7 +429,7 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of Handy"
+        "description": "Automatically check for new versions of SpeechLovy"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -467,11 +493,11 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of Handy"
+        "description": "Current version of SpeechLovy"
       },
       "appDataDirectory": {
         "title": "App Data Directory",
-        "description": "Location where Handy stores its data"
+        "description": "Location where SpeechLovy stores its data"
       },
       "sourceCode": {
         "title": "Source Code",
@@ -480,7 +506,7 @@
       },
       "supportDevelopment": {
         "title": "Support Development",
-        "description": "Help us continue building Handy",
+        "description": "Help us continue building SpeechLovy",
         "button": "Donate"
       },
       "acknowledgments": {
@@ -488,7 +514,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
-          "details": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+          "details": "SpeechLovy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
       }
     }
@@ -531,7 +557,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",
-    "permissionsDescription": "Handy needs accessibility permissions to type transcribed text.",
+    "permissionsDescription": "SpeechLovy needs accessibility permissions to type transcribed text.",
     "openSettings": "Open System Settings",
     "dismiss": "Dismiss"
   },
@@ -540,7 +566,7 @@
   },
   "appLanguage": {
     "title": "Application Language",
-    "description": "Change the language of the Handy interface"
+    "description": "Change the language of the SpeechLovy interface"
   },
   "overlay": {
     "transcribing": "Transcribing...",
