@@ -140,11 +140,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone(), signals);
 
-    // Apply macOS Accessory policy if starting hidden
+    // Apply macOS Accessory policy if starting hidden and tray is available.
+    // If the tray icon is disabled, keep the dock icon so the user can reopen.
     #[cfg(target_os = "macos")]
     {
         let settings = settings::get_settings(app_handle);
-        if settings.start_hidden {
+        if settings.start_hidden && settings.show_tray_icon {
             let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
         }
     }
@@ -440,7 +441,11 @@ pub fn run(cli_args: CliArgs) {
             // Show main window only if not starting hidden
             // CLI --start-hidden flag overrides the setting
             let should_hide = settings.start_hidden || cli_args.start_hidden;
-            if !should_hide {
+
+            // If start_hidden but tray is disabled, we must show the window
+            // anyway. Without a tray icon, the dock is the only way back in.
+            let tray_available = settings.show_tray_icon && !cli_args.no_tray;
+            if !should_hide || !tray_available {
                 if let Some(main_window) = app_handle.get_webview_window("main") {
                     main_window.show().unwrap();
                     main_window.set_focus().unwrap();
@@ -451,23 +456,25 @@ pub fn run(cli_args: CliArgs) {
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                let settings = get_settings(&window.app_handle());
-                let cli = window.app_handle().state::<CliArgs>();
-                // If tray icon is hidden (via setting or --no-tray flag), quit the app
-                if !settings.show_tray_icon || cli.no_tray {
-                    window.app_handle().exit(0);
-                    return;
-                }
                 api.prevent_close();
                 let _res = window.hide();
+
+                let settings = get_settings(&window.app_handle());
+                let tray_visible =
+                    settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
+
                 #[cfg(target_os = "macos")]
                 {
-                    let res = window
-                        .app_handle()
-                        .set_activation_policy(tauri::ActivationPolicy::Accessory);
-                    if let Err(e) = res {
-                        log::error!("Failed to set activation policy: {}", e);
+                    if tray_visible {
+                        // Tray is available: hide the dock icon, app lives in the tray
+                        let res = window
+                            .app_handle()
+                            .set_activation_policy(tauri::ActivationPolicy::Accessory);
+                        if let Err(e) = res {
+                            log::error!("Failed to set activation policy: {}", e);
+                        }
                     }
+                    // No tray: keep the dock icon visible so the user can reopen
                 }
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
@@ -478,6 +485,13 @@ pub fn run(cli_args: CliArgs) {
             _ => {}
         })
         .invoke_handler(specta_builder.invoke_handler())
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = &event {
+                show_main_window(app);
+            }
+            let _ = (app, event); // suppress unused warnings on non-macOS
+        });
 }
