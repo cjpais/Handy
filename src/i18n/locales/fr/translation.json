@@ -449,9 +449,9 @@
         "description": "Ajouter un espace après la transcription collée"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Gestion du clavier",
+        "description": "Choisissez le système des raccourcis clavier.",
+        "bindingsReset": "Raccourcis clavier étaient incompatibles et ont été réinitialisés aux valeurs par défaut"
       },
       "paths": {
         "appData": "Données de l'application :",
