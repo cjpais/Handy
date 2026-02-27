@@ -8,6 +8,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const CUSTOM_LLM_BASE_URL_ENV: &str = "HANDY_CUSTOM_LLM_BASE_URL";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -520,10 +521,15 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
     }
 
     // Custom provider always comes last
+    let custom_base_url = std::env::var(CUSTOM_LLM_BASE_URL_ENV)
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "http://localhost:11434/v1".to_string());
+
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
         label: "Custom".to_string(),
-        base_url: "http://localhost:11434/v1".to_string(),
+        base_url: custom_base_url,
         allow_base_url_edit: true,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: false,
