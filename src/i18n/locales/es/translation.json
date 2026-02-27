@@ -449,9 +449,9 @@
         "description": "Agregar un espacio después de la transcripción pegada"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Implementación del teclado",
+        "description": "Elige el sistema que gestiona los atajos de teclado.",
+        "bindingsReset": "Los atajos de teclado eran incompatibles y se restablecieron a los valores predeterminados"
       },
       "paths": {
         "appData": "Datos de la Aplicación:",
