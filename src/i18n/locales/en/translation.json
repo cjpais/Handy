@@ -87,7 +87,7 @@
     },
     "permissions": {
       "title": "Permissions Required",
-      "description": "SpeechLovy needs a couple of permissions to work properly.",
+      "description": "Parler needs a couple of permissions to work properly.",
       "microphone": {
         "title": "Microphone Access",
         "description": "Required to hear your voice for transcription."
@@ -153,7 +153,7 @@
     "general": {
       "title": "General",
       "shortcut": {
-        "title": "SpeechLovy Shortcuts",
+        "title": "Parler Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
         "loading": "Loading shortcuts...",
         "none": "No shortcuts configured",
@@ -253,11 +253,11 @@
       },
       "autostart": {
         "label": "Launch on Startup",
-        "description": "Automatically start SpeechLovy when you log in to your computer."
+        "description": "Automatically start Parler when you log in to your computer."
       },
       "showTrayIcon": {
         "label": "Show Tray Icon",
-        "description": "Display the SpeechLovy icon in the system tray."
+        "description": "Display the Parler icon in the system tray."
       },
       "overlay": {
         "title": "Overlay Position",
@@ -429,7 +429,7 @@
       },
       "updateChecks": {
         "label": "Check for Updates",
-        "description": "Automatically check for new versions of SpeechLovy"
+        "description": "Automatically check for new versions of Parler"
       },
       "soundTheme": {
         "label": "Sound Theme",
@@ -493,11 +493,11 @@
       "title": "About",
       "version": {
         "title": "Version",
-        "description": "Current version of SpeechLovy"
+        "description": "Current version of Parler"
       },
       "appDataDirectory": {
         "title": "App Data Directory",
-        "description": "Location where SpeechLovy stores its data"
+        "description": "Location where Parler stores its data"
       },
       "sourceCode": {
         "title": "Source Code",
@@ -506,7 +506,7 @@
       },
       "supportDevelopment": {
         "title": "Support Development",
-        "description": "Help us continue building SpeechLovy",
+        "description": "Help us continue building Parler",
         "button": "Donate"
       },
       "acknowledgments": {
@@ -514,7 +514,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
-          "details": "SpeechLovy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+          "details": "Parler uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
       }
     }
@@ -557,7 +557,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",
-    "permissionsDescription": "SpeechLovy needs accessibility permissions to type transcribed text.",
+    "permissionsDescription": "Parler needs accessibility permissions to type transcribed text.",
     "openSettings": "Open System Settings",
     "dismiss": "Dismiss"
   },
@@ -566,7 +566,7 @@
   },
   "appLanguage": {
     "title": "Application Language",
-    "description": "Change the language of the SpeechLovy interface"
+    "description": "Change the language of the Parler interface"
   },
   "overlay": {
     "transcribing": "Transcribing...",

@@ -480,15 +480,38 @@ impl TranscriptionManager {
                     .clone();
                 let gemini_model = settings.gemini_model.clone();
 
-                let rt = tokio::runtime::Handle::current();
-                let result = rt.block_on(crate::gemini_client::transcribe_audio(
-                    &api_key,
-                    &gemini_model,
-                    &audio,
-                ))?;
+                // Use block_in_place to safely run async code from a tokio worker thread.
+                // Handle::block_on() panics if called directly from an async context,
+                // so block_in_place tells tokio to move its work off this thread first.
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(
+                        crate::gemini_client::transcribe_audio(
+                            &api_key,
+                            &gemini_model,
+                            &audio,
+                        ),
+                    )
+                })?;
+
+                let corrected = if !settings.custom_words.is_empty() {
+                    apply_custom_words(
+                        &result,
+                        &settings.custom_words,
+                        settings.word_correction_threshold,
+                    )
+                } else {
+                    result
+                };
+                let final_result = filter_transcription_output(&corrected);
+
+                let et = std::time::Instant::now();
+                info!(
+                    "Gemini transcription completed in {}ms",
+                    (et - st).as_millis()
+                );
 
                 self.maybe_unload_immediately("gemini transcription");
-                return Ok(result);
+                return Ok(final_result);
             }
         }
 

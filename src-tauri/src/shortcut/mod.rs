@@ -1065,3 +1065,27 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_long_audio_model_setting(
+    app: AppHandle,
+    model_id: Option<String>,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.long_audio_model = model_id;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_long_audio_threshold_setting(
+    app: AppHandle,
+    threshold: f32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.long_audio_threshold_seconds = threshold;
+    settings::write_settings(&app, settings);
+    Ok(())
+}

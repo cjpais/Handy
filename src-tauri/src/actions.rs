@@ -418,6 +418,29 @@ impl ShortcutAction for TranscribeAction {
                     samples.len()
                 );
 
+                let duration_seconds = samples.len() as f32 / 16000.0;
+                let settings_for_model = get_settings(&ah);
+                let original_model = tm.get_current_model();
+                let mut switched_model = false;
+
+                if let Some(ref long_model_id) = settings_for_model.long_audio_model {
+                    if duration_seconds > settings_for_model.long_audio_threshold_seconds
+                        && original_model.as_deref() != Some(long_model_id.as_str())
+                    {
+                        debug!(
+                            "Audio duration {:.1}s exceeds threshold {:.1}s, switching to long audio model: {}",
+                            duration_seconds,
+                            settings_for_model.long_audio_threshold_seconds,
+                            long_model_id
+                        );
+                        if let Err(e) = tm.load_model(long_model_id) {
+                            warn!("Failed to load long audio model '{}': {}, using current model", long_model_id, e);
+                        } else {
+                            switched_model = true;
+                        }
+                    }
+                }
+
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
                 match tm.transcribe(samples) {
@@ -515,6 +538,16 @@ impl ShortcutAction for TranscribeAction {
                         debug!("Global Shortcut Transcription error: {}", err);
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
+                    }
+                }
+
+                // Restore original model if we switched for long audio
+                if switched_model {
+                    if let Some(ref orig_id) = original_model {
+                        debug!("Restoring original model: {}", orig_id);
+                        if let Err(e) = tm.load_model(orig_id) {
+                            warn!("Failed to restore original model '{}': {}", orig_id, e);
+                        }
                     }
                 }
             } else {

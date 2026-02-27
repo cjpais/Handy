@@ -86,7 +86,7 @@ pub async fn transcribe_audio(api_key: &str, model: &str, audio_samples: &[f32])
         audio_base64.len()
     );
 
-    let url = format!("{}{}:generateContent", GEMINI_API_BASE, model);
+    let url = format!("{}/{}:generateContent", GEMINI_API_BASE, model);
 
     let request = GenerateContentRequest {
         contents: vec![Content {

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Handy",
+  "productName": "Parler",
   "version": "0.7.8",
-  "identifier": "com.pais.handy",
+  "identifier": "com.melvynx.parler",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Handy",
+        "title": "Parler",
         "width": 680,
         "height": 570,
         "minWidth": 680,
@@ -75,9 +75,9 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJBQjcyMDk1MjA2NjAxRjkKUldUNUFXWWdsU0MzdXRRZi8zYzhqV2FaNUVDbDd2Rk5VM1IvWWowVXdmRFNKQ1BrMXF5RFFsLy8K",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IERBQTU3OTUyOTRCQ0VFRTAKUldUZzdyeVVVbm1sMm44Vm0wWG5CL0FTMmdsNEx5Y1hwQVFmV1RNMzVMT3VHSnhITWhoYkcwYjkK",
       "endpoints": [
-        "https://github.com/cjpais/Handy/releases/latest/download/latest.json"
+        "https://github.com/Melvynx/Parler/releases/latest/download/latest.json"
       ]
     }
   }
