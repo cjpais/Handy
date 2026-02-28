@@ -21,7 +21,12 @@ fn resolve_sound_path(
 ) -> Option<PathBuf> {
     let sound_file = get_sound_path(settings, sound_type);
     let base_dir = get_sound_base_dir(settings);
-    app.path().resolve(&sound_file, base_dir).ok()
+    match base_dir {
+        tauri::path::BaseDirectory::AppData => {
+            crate::portable::resolve_app_data(app, &sound_file).ok()
+        }
+        _ => app.path().resolve(&sound_file, base_dir).ok(),
+    }
 }
 
 fn get_sound_path(settings: &AppSettings, sound_type: SoundType) -> String {

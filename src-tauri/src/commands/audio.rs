@@ -15,11 +15,7 @@ pub struct CustomSounds {
 }
 
 fn custom_sound_exists(app: &AppHandle, sound_type: &str) -> bool {
-    app.path()
-        .resolve(
-            format!("custom_{}.wav", sound_type),
-            tauri::path::BaseDirectory::AppData,
-        )
+    crate::portable::resolve_app_data(app, &format!("custom_{}.wav", sound_type))
         .map_or(false, |path| path.exists())
 }
 
