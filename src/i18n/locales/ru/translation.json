@@ -449,9 +449,9 @@
         "description": "Добавить пробел после вставленной транскрипции"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Реализация клавиатуры",
+        "description": "Выберите бэкенд для клавиатурных сочетаний.",
+        "bindingsReset": "Клавиатурные сочетания были несовместимы и сброшены к значениям по умолчанию"
       },
       "paths": {
         "appData": "Данные приложения:",
