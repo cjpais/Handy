@@ -75,6 +75,10 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "سريع جداً. الصينية، الإنجليزية، اليابانية، الكورية، الكانتونية."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "التعرف على الكلام الروسي. سريع ودقيق."
       }
     },
     "errors": {
