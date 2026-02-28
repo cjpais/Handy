@@ -14,7 +14,7 @@ use crate::utils::{is_kde_wayland, is_wayland};
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
-    enigo: &mut Enigo,
+    enigo: Option<&mut Enigo>,
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
@@ -53,6 +53,7 @@ fn paste_via_clipboard(
 
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
+        let enigo = enigo.ok_or("Enigo not available for keyboard simulation")?;
         match paste_method {
             PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
             PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
@@ -229,6 +230,15 @@ fn is_wtype_available() -> bool {
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false)
+}
+
+/// Check if a native input tool is available on Linux.
+#[cfg(target_os = "linux")]
+pub fn has_native_input_tool() -> bool {
+    is_wtype_available()
+        || is_dotool_available()
+        || is_ydotool_available()
+        || is_xdotool_available()
 }
 
 /// Check if dotool is available (another Wayland text input tool)
@@ -526,7 +536,7 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
 
 /// Types text directly by simulating individual key presses.
 fn paste_direct(
-    enigo: &mut Enigo,
+    enigo: Option<&mut Enigo>,
     text: &str,
     #[cfg(target_os = "linux")] typing_tool: TypingTool,
 ) -> Result<(), String> {
@@ -538,6 +548,7 @@ fn paste_direct(
         info!("Falling back to enigo for direct text input");
     }
 
+    let enigo = enigo.ok_or("Enigo not available and native tools failed")?;
     input::paste_text_direct(enigo, text)
 }
 
@@ -605,31 +616,24 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         paste_method, paste_delay_ms
     );
 
-    // Get the managed Enigo instance
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+    // Get the managed Enigo instance (not available in Flatpak where native tools are used)
+    let enigo_state = app_handle.try_state::<EnigoState>();
+    let mut enigo_guard = enigo_state.as_ref().and_then(|state| state.0.lock().ok());
 
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
             info!("PasteMethod::None selected - skipping paste action");
         }
-        PasteMethod::Direct => {
-            paste_direct(
-                &mut enigo,
-                &text,
-                #[cfg(target_os = "linux")]
-                settings.typing_tool,
-            )?;
-        }
+        PasteMethod::Direct => paste_direct(
+            enigo_guard.as_deref_mut(),
+            &text,
+            #[cfg(target_os = "linux")]
+            settings.typing_tool,
+        )?,
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(
-                &mut enigo,
+                enigo_guard.as_deref_mut(),
                 &text,
                 &app_handle,
                 &paste_method,
@@ -647,8 +651,11 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     }
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
+        let enigo = enigo_guard
+            .as_deref_mut()
+            .ok_or("Enigo not available for auto-submit")?;
         std::thread::sleep(Duration::from_millis(50));
-        send_return_key(&mut enigo, settings.auto_submit_key)?;
+        send_return_key(enigo, settings.auto_submit_key)?;
     }
 
     // After pasting, optionally copy to clipboard based on settings

@@ -446,6 +446,7 @@ async checkAppleIntelligenceAvailable() : Promise<boolean> {
 /**
  * Try to initialize Enigo (keyboard/mouse simulation).
  * On macOS, this will return an error if accessibility permissions are not granted.
+ * On Linux, Enigo is skipped if native tools are available.
  */
 async initializeEnigo() : Promise<Result<null, string>> {
     try {

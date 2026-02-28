@@ -238,7 +238,8 @@
       },
       "autostart": {
         "label": "Iniciar na Inicialização",
-        "description": "Iniciar automaticamente o Handy quando você fizer login no seu computador."
+        "description": "Iniciar automaticamente o Handy quando você fizer login no seu computador.",
+        "error": "Erro ao atualizar a configuração de início automático. Seu ambiente de trabalho pode não suportar esta funcionalidade."
       },
       "showTrayIcon": {
         "label": "Mostrar ícone na bandeja",
