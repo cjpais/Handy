@@ -59,7 +59,6 @@ impl TranscriptionCoordinator {
                             push_to_talk,
                         } => {
                             // Debounce rapid-fire press events (key repeat / double-tap).
-                            // Releases always pass through for push-to-talk.
                             if is_pressed {
                                 let now = Instant::now();
                                 if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE) {
@@ -77,7 +76,7 @@ impl TranscriptionCoordinator {
                                 {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
                                 }
-                            } else if is_pressed {
+                            } else if !is_pressed {
                                 match &stage {
                                     Stage::Idle => {
                                         start(&app, &mut stage, &binding_id, &hotkey_string);
