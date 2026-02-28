@@ -8,7 +8,11 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
+#[cfg(target_os = "linux")]
+mod linux_ocr;
 mod llm_client;
+#[cfg(target_os = "macos")]
+mod macos_ocr;
 mod managers;
 mod overlay;
 mod settings;
@@ -18,6 +22,8 @@ mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
+#[cfg(target_os = "windows")]
+mod windows_ocr;
 
 pub use cli::CliArgs;
 use specta_typescript::{BigIntExportBehavior, Typescript};
@@ -105,6 +111,9 @@ fn show_main_window(app: &AppHandle) {
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
+    #[cfg(target_os = "linux")]
+    linux_ocr::initialize_capture_backend();
+
     // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
