@@ -23,6 +23,7 @@ pub enum EngineType {
     Moonshine,
     MoonshineStreaming,
     SenseVoice,
+    GigaAM,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -393,6 +394,35 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
+                is_custom: false,
+            },
+        );
+
+        // GigaAM v3 supported languages
+        let gigaam_languages: Vec<String> = vec!["ru"].into_iter().map(String::from).collect();
+
+        available_models.insert(
+            "gigaam-v3-e2e-ctc".to_string(),
+            ModelInfo {
+                id: "gigaam-v3-e2e-ctc".to_string(),
+                name: "GigaAM v3".to_string(),
+                description: "Russian speech recognition. Fast and accurate.".to_string(),
+                filename: "gigaam-v3-e2e-ctc-int8.onnx".to_string(),
+                url: Some(
+                    "https://huggingface.co/istupakov/gigaam-v3-onnx/resolve/main/v3_e2e_ctc.int8.onnx"
+                        .to_string(),
+                ),
+                size_mb: 225,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::GigaAM,
+                accuracy_score: 0.85,
+                speed_score: 0.75,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: gigaam_languages,
                 is_custom: false,
             },
         );
