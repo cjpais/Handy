@@ -8,6 +8,8 @@ import { Button } from "../../ui/Button";
 import { AppDataDirectory } from "../AppDataDirectory";
 import { AppLanguageSelector } from "../AppLanguageSelector";
 import { LogDirectory } from "../debug";
+import { RecordingsDirectory } from "../RecordingsDirectory";
+import { ModelsDirectory } from "../ModelsDirectory";
 
 export const AboutSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -74,6 +76,8 @@ export const AboutSettings: React.FC = () => {
 
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
         <LogDirectory grouped={true} />
+        <RecordingsDirectory descriptionMode="tooltip" grouped={true} />
+        <ModelsDirectory descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.about.acknowledgments.title")}>
