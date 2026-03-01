@@ -3,6 +3,7 @@ use anyhow::Result;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use log::{debug, info, warn};
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::{HashMap, HashSet};
@@ -53,6 +54,13 @@ pub struct DownloadProgress {
     pub downloaded: u64,
     pub total: u64,
     pub percentage: f64,
+}
+
+#[derive(Debug, Clone)]
+struct HuggingFaceModelSource {
+    repo_id: String,
+    revision: String,
+    file_path: String,
 }
 
 pub struct ModelManager {
@@ -512,6 +520,13 @@ impl ModelManager {
                 model.is_downloaded = model_path.exists() && model_path.is_dir();
                 model.is_downloading = false;
 
+                if model.is_custom && model_path.exists() {
+                    model.size_mb = model_path
+                        .metadata()
+                        .map(|m| m.len() / (1024 * 1024))
+                        .unwrap_or(model.size_mb);
+                }
+
                 // Get partial file size if it exists (for the .tar.gz being downloaded)
                 if partial_path.exists() {
                     model.partial_size = partial_path.metadata().map(|m| m.len()).unwrap_or(0);
@@ -525,6 +540,13 @@ impl ModelManager {
 
                 model.is_downloaded = model_path.exists();
                 model.is_downloading = false;
+
+                if model.is_custom && model_path.exists() {
+                    model.size_mb = model_path
+                        .metadata()
+                        .map(|m| m.len() / (1024 * 1024))
+                        .unwrap_or(model.size_mb);
+                }
 
                 // Get partial file size if it exists
                 if partial_path.exists() {
@@ -578,6 +600,178 @@ impl ModelManager {
         }
 
         Ok(())
+    }
+
+    pub fn add_hugging_face_model(&self, model_url: &str) -> Result<String> {
+        let source = Self::parse_hugging_face_model_url(model_url)?;
+        let storage_filename = Self::build_hugging_face_storage_filename(&source)?;
+        let model_id = storage_filename.trim_end_matches(".bin").to_string();
+
+        if model_id.is_empty() {
+            return Err(anyhow::anyhow!("Invalid model identifier"));
+        }
+
+        let model_path = self.models_dir.join(&storage_filename);
+        let partial_path = self
+            .models_dir
+            .join(format!("{}.partial", &storage_filename));
+
+        let is_downloaded = model_path.exists();
+        let size_mb = if is_downloaded {
+            model_path.metadata().map(|m| m.len() / (1024 * 1024)).unwrap_or(0)
+        } else {
+            0
+        };
+        let partial_size = if partial_path.exists() {
+            partial_path.metadata().map(|m| m.len()).unwrap_or(0)
+        } else {
+            0
+        };
+
+        let download_url = format!(
+            "https://huggingface.co/{}/resolve/{}/{}",
+            source.repo_id, source.revision, source.file_path
+        );
+        let display_filename = source
+            .file_path
+            .rsplit('/')
+            .next()
+            .unwrap_or("model.bin")
+            .to_string();
+        let display_name = format!("{} / {}", source.repo_id, display_filename);
+
+        {
+            let mut models = self.available_models.lock().unwrap();
+
+            if models.contains_key(&model_id) {
+                return Ok(model_id);
+            }
+
+            models.insert(
+                model_id.clone(),
+                ModelInfo {
+                    id: model_id.clone(),
+                    name: display_name,
+                    description: "Not officially supported".to_string(),
+                    filename: storage_filename,
+                    url: Some(download_url),
+                    size_mb,
+                    is_downloaded,
+                    is_downloading: false,
+                    partial_size,
+                    is_directory: false,
+                    engine_type: EngineType::Whisper,
+                    accuracy_score: 0.0,
+                    speed_score: 0.0,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: vec![],
+                    is_custom: true,
+                },
+            );
+        }
+
+        let _ = self.app_handle.emit("model-state-changed", ());
+
+        Ok(model_id)
+    }
+
+    fn parse_hugging_face_model_url(model_url: &str) -> Result<HuggingFaceModelSource> {
+        let parsed = Url::parse(model_url)
+            .map_err(|e| anyhow::anyhow!("Invalid URL '{}': {}", model_url, e))?;
+
+        let host = parsed
+            .host_str()
+            .ok_or_else(|| anyhow::anyhow!("Missing hostname in URL"))?;
+
+        if host != "huggingface.co" && host != "www.huggingface.co" {
+            return Err(anyhow::anyhow!(
+                "Only Hugging Face URLs are supported (expected huggingface.co)"
+            ));
+        }
+
+        let segments: Vec<&str> = parsed
+            .path_segments()
+            .map(|parts| parts.filter(|segment| !segment.is_empty()).collect())
+            .unwrap_or_default();
+
+        if segments.len() < 5 {
+            return Err(anyhow::anyhow!(
+                "Expected a model file URL like https://huggingface.co/<owner>/<repo>/blob/<revision>/<file>.bin"
+            ));
+        }
+
+        let owner = segments[0];
+        let repo = segments[1];
+        let route = segments[2];
+        let revision = segments[3];
+
+        if owner.is_empty() || repo.is_empty() || revision.is_empty() {
+            return Err(anyhow::anyhow!("Invalid Hugging Face model URL"));
+        }
+
+        if route != "blob" && route != "resolve" {
+            return Err(anyhow::anyhow!(
+                "URL must include /blob/<revision>/ or /resolve/<revision>/"
+            ));
+        }
+
+        let file_segments = &segments[4..];
+        if file_segments.is_empty() {
+            return Err(anyhow::anyhow!("Model file path is missing from URL"));
+        }
+
+        if file_segments
+            .iter()
+            .any(|segment| *segment == "." || *segment == "..")
+        {
+            return Err(anyhow::anyhow!("Invalid model path in URL"));
+        }
+
+        let file_path = file_segments.join("/");
+
+        if !file_path.ends_with(".bin") {
+            return Err(anyhow::anyhow!(
+                "Only Whisper GGML .bin files are supported"
+            ));
+        }
+
+        Ok(HuggingFaceModelSource {
+            repo_id: format!("{}/{}", owner, repo),
+            revision: revision.to_string(),
+            file_path,
+        })
+    }
+
+    fn build_hugging_face_storage_filename(source: &HuggingFaceModelSource) -> Result<String> {
+        let repo_slug = Self::sanitize_filename_component(&source.repo_id.replace('/', "--"));
+        let file_slug = source
+            .file_path
+            .split('/')
+            .map(Self::sanitize_filename_component)
+            .collect::<Vec<_>>()
+            .join("--");
+
+        let filename = format!("hf--{}--{}", repo_slug, file_slug);
+
+        if filename.is_empty() || !filename.ends_with(".bin") {
+            return Err(anyhow::anyhow!("Failed to build a valid model filename"));
+        }
+
+        Ok(filename)
+    }
+
+    fn sanitize_filename_component(component: &str) -> String {
+        component
+            .chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.') {
+                    ch
+                } else {
+                    '-'
+                }
+            })
+            .collect()
     }
 
     /// Discover custom Whisper models (.bin files) in the models directory.
@@ -1029,6 +1223,7 @@ impl ModelManager {
                 model.is_downloading = false;
                 model.is_downloaded = true;
                 model.partial_size = 0;
+                model.size_mb = downloaded / (1024 * 1024);
             }
         }
 
@@ -1299,5 +1494,50 @@ mod tests {
         let result = ModelManager::discover_custom_whisper_models(&models_dir, &mut models);
         assert!(result.is_ok());
         assert_eq!(models.len(), count_before);
+    }
+
+    #[test]
+    fn test_parse_hugging_face_blob_url() {
+        let source = ModelManager::parse_hugging_face_model_url(
+            "https://huggingface.co/org/model/blob/main/ggml-custom.bin",
+        )
+        .unwrap();
+
+        assert_eq!(source.repo_id, "org/model");
+        assert_eq!(source.revision, "main");
+        assert_eq!(source.file_path, "ggml-custom.bin");
+    }
+
+    #[test]
+    fn test_parse_hugging_face_resolve_url_with_nested_path() {
+        let source = ModelManager::parse_hugging_face_model_url(
+            "https://huggingface.co/org/model/resolve/main/models/ggml-base.bin",
+        )
+        .unwrap();
+
+        assert_eq!(source.repo_id, "org/model");
+        assert_eq!(source.revision, "main");
+        assert_eq!(source.file_path, "models/ggml-base.bin");
+    }
+
+    #[test]
+    fn test_parse_hugging_face_url_rejects_non_bin() {
+        let result = ModelManager::parse_hugging_face_model_url(
+            "https://huggingface.co/org/model/blob/main/README.md",
+        );
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_build_hugging_face_storage_filename() {
+        let source = HuggingFaceModelSource {
+            repo_id: "org/model".to_string(),
+            revision: "main".to_string(),
+            file_path: "nested/path/ggml-small.bin".to_string(),
+        };
+
+        let filename = ModelManager::build_hugging_face_storage_filename(&source).unwrap();
+        assert_eq!(filename, "hf--org--model--nested--path--ggml-small.bin");
     }
 }

@@ -352,6 +352,14 @@ Final structure should look like:
 
 Handy can auto-discover custom Whisper GGML models placed in the `models` directory. This is useful for users who want to use fine-tuned or community models not included in the default model list.
 
+**Download directly in Handy (recommended):**
+
+1. Open **Settings -> Models**
+2. In **Add custom model from Hugging Face**, paste a file URL like:
+   - `https://huggingface.co/<owner>/<repo>/blob/<revision>/<file>.bin`
+   - `https://huggingface.co/<owner>/<repo>/resolve/<revision>/<file>.bin`
+3. Click **Add and download**
+
 **How to use:**
 
 1. Obtain a Whisper model in GGML `.bin` format (e.g., from [Hugging Face](https://huggingface.co/models?search=whisper%20ggml))

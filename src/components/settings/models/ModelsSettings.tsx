@@ -2,11 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { ChevronDown, Globe } from "lucide-react";
+import { toast } from "sonner";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
+import { commands, type ModelInfo } from "@/bindings";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
-import type { ModelInfo } from "@/bindings";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -19,6 +22,8 @@ export const ModelsSettings: React.FC = () => {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
+  const [huggingFaceUrl, setHuggingFaceUrl] = useState("");
+  const [isAddingHuggingFaceModel, setIsAddingHuggingFaceModel] = useState(false);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -33,6 +38,7 @@ export const ModelsSettings: React.FC = () => {
     cancelDownload,
     selectModel,
     deleteModel,
+    loadModels,
   } = useModelStore();
 
   // click outside handler for language dropdown
@@ -149,6 +155,45 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
+  const handleAddHuggingFaceModel = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    const modelUrl = huggingFaceUrl.trim();
+    if (!modelUrl || isAddingHuggingFaceModel) {
+      return;
+    }
+
+    setIsAddingHuggingFaceModel(true);
+
+    try {
+      const addResult = await commands.addHuggingFaceModel(modelUrl);
+      if (addResult.status === "error") {
+        toast.error(String(addResult.error));
+        return;
+      }
+
+      setHuggingFaceUrl("");
+      await loadModels();
+
+      const modelInfoResult = await commands.getModelInfo(addResult.data);
+      if (
+        modelInfoResult.status === "ok" &&
+        modelInfoResult.data?.is_downloaded
+      ) {
+        return;
+      }
+
+      const downloadStarted = await downloadModel(addResult.data);
+      if (!downloadStarted) {
+        toast.error(t("settings.models.customHuggingFace.downloadStartFailed"));
+      }
+    } catch (error) {
+      toast.error(String(error));
+    } finally {
+      setIsAddingHuggingFaceModel(false);
+    }
+  };
+
   // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
@@ -166,7 +211,6 @@ export const ModelsSettings: React.FC = () => {
 
     for (const model of filteredModels) {
       if (
-        model.is_custom ||
         model.is_downloaded ||
         model.id in downloadingModels ||
         model.id in extractingModels
@@ -210,6 +254,36 @@ export const ModelsSettings: React.FC = () => {
         <p className="text-sm text-text/60">
           {t("settings.models.description")}
         </p>
+      </div>
+      <div className="rounded-xl border-2 border-mid-gray/20 px-4 py-3 space-y-2">
+        <h2 className="text-sm font-semibold text-text">
+          {t("settings.models.customHuggingFace.title")}
+        </h2>
+        <p className="text-xs text-text/60">
+          {t("settings.models.customHuggingFace.description")}
+        </p>
+        <form
+          onSubmit={handleAddHuggingFaceModel}
+          className="flex flex-col gap-2 sm:flex-row"
+        >
+          <Input
+            value={huggingFaceUrl}
+            onChange={(event) => setHuggingFaceUrl(event.target.value)}
+            placeholder={t("settings.models.customHuggingFace.placeholder")}
+            disabled={isAddingHuggingFaceModel}
+            className="flex-1"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!huggingFaceUrl.trim() || isAddingHuggingFaceModel}
+            className="whitespace-nowrap"
+          >
+            {isAddingHuggingFaceModel
+              ? t("settings.models.customHuggingFace.adding")
+              : t("settings.models.customHuggingFace.add")}
+          </Button>
+        </form>
       </div>
       {filteredModels.length > 0 ? (
         <div className="space-y-6">

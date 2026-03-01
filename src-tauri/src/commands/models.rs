@@ -23,6 +23,17 @@ pub async fn get_model_info(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn add_hugging_face_model(
+    model_manager: State<'_, Arc<ModelManager>>,
+    model_url: String,
+) -> Result<String, String> {
+    model_manager
+        .add_hugging_face_model(&model_url)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn download_model(
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
