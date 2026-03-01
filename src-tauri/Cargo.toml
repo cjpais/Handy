@@ -69,7 +69,7 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = { version = "0.2.7", features = ["whisper", "parakeet", "moonshine", "sense_voice", "gigaam"] }
-handy-keys = "0.2.1"
+handy-keys = "0.2.2"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
