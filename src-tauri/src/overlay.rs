@@ -134,33 +134,14 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
 }
 
 fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
-    if let Some(mouse_location) = input::get_cursor_position(app_handle) {
+    if let Some((mouse_x, mouse_y)) = input::get_cursor_position(app_handle) {
+        if let Ok(Some(monitor)) = app_handle.monitor_from_point(mouse_x as f64, mouse_y as f64) {
+            return Some(monitor);
+        }
+
         if let Ok(monitors) = app_handle.available_monitors() {
             for monitor in monitors {
-                // On macOS, enigo returns cursor position in logical coordinates (points)
-                // via CGEvent, but Tauri reports monitor bounds in physical pixels.
-                // Convert monitor bounds to logical for correct comparison on Retina displays.
-                #[cfg(target_os = "macos")]
-                let is_within = {
-                    let scale = monitor.scale_factor();
-                    let pos = monitor.position();
-                    let size = monitor.size();
-                    let logical_pos = PhysicalPosition {
-                        x: (pos.x as f64 / scale) as i32,
-                        y: (pos.y as f64 / scale) as i32,
-                    };
-                    let logical_size = PhysicalSize {
-                        width: (size.width as f64 / scale) as u32,
-                        height: (size.height as f64 / scale) as u32,
-                    };
-                    is_mouse_within_monitor(mouse_location, &logical_pos, &logical_size)
-                };
-
-                #[cfg(not(target_os = "macos"))]
-                let is_within =
-                    is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
-
-                if is_within {
+                if is_mouse_within_monitor((mouse_x, mouse_y), monitor.position(), monitor.size()) {
                     return Some(monitor);
                 }
             }

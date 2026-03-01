@@ -103,6 +103,9 @@ const RecordingOverlay: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+    let cleanupListeners: (() => void) | undefined;
+
     const setupEventListeners = async () => {
       const unlistenShow = await listen("show-overlay", async (event) => {
         await syncLanguageFromSettings();
@@ -118,19 +121,29 @@ const RecordingOverlay: React.FC = () => {
         setIsVisible(false);
       });
 
-      return () => {
+      if (!isMounted) {
+        unlistenShow();
+        unlistenHide();
+        return;
+      }
+
+      cleanupListeners = () => {
         unlistenShow();
         unlistenHide();
       };
     };
 
     setupEventListeners();
+    return () => {
+      isMounted = false;
+      cleanupListeners?.();
+    };
   }, []);
 
   return (
     <div
       dir={direction}
-      className={`recording-overlay ${isVisible ? "fade-in" : ""}`}
+      className={`recording-overlay state-${state} ${isVisible ? "is-visible" : "is-hidden"}`}
     >
       <div className="overlay-left">
         {state === "recording" ? <MicIcon /> : <DotsIcon />}
