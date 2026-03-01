@@ -100,6 +100,7 @@
       "granted": "Granted",
       "waiting": "Waiting...",
       "allGranted": "All set!",
+      "skip": "Skip for now",
       "errors": {
         "checkFailed": "Failed to check permissions. Please try again.",
         "requestFailed": "Failed to request permission. Please try again."
@@ -241,7 +242,7 @@
         "transcription": "Transcription",
         "history": "History",
         "experimental": "Experimental",
-      "cloudModels": "Cloud Models"
+        "cloudModels": "Cloud Models"
       },
       "experimentalToggle": {
         "label": "Experimental Features",

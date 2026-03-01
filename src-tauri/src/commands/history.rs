@@ -92,8 +92,7 @@ pub async fn reprocess_history_entry(
         return Err("Audio file not found".to_string());
     }
 
-    let samples =
-        crate::audio_toolkit::load_wav_file(&audio_path).map_err(|e| e.to_string())?;
+    let samples = crate::audio_toolkit::load_wav_file(&audio_path).map_err(|e| e.to_string())?;
 
     let previous_model = transcription_manager.get_current_model();
 

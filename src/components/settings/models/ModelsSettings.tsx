@@ -63,8 +63,6 @@ export const ModelsSettings: React.FC = () => {
     }
   }, [languageDropdownOpen]);
 
-
-
   // filtered languages for dropdown (exclude "auto")
   const filteredLanguages = useMemo(() => {
     return LANGUAGES.filter(
@@ -223,7 +221,13 @@ export const ModelsSettings: React.FC = () => {
       downloadedModels: downloaded,
       availableModels: available,
     };
-  }, [filteredModels, downloadingModels, extractingModels, currentModel, hasGeminiKey]);
+  }, [
+    filteredModels,
+    downloadingModels,
+    extractingModels,
+    currentModel,
+    hasGeminiKey,
+  ]);
 
   if (loading) {
     return (

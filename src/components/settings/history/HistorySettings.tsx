@@ -2,7 +2,15 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen, RefreshCw, Loader2 } from "lucide-react";
+import {
+  Copy,
+  Star,
+  Check,
+  Trash2,
+  FolderOpen,
+  RefreshCw,
+  Loader2,
+} from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -292,10 +300,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         <div className="flex items-center gap-1">
           <div className="relative" ref={pickerRef}>
             <button
-              onClick={() => !reprocessing && setShowModelPicker(!showModelPicker)}
+              onClick={() =>
+                !reprocessing && setShowModelPicker(!showModelPicker)
+              }
               disabled={reprocessing}
               className="p-2 rounded-md text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              title={reprocessing ? t("settings.history.reprocessing") : t("settings.history.reprocess")}
+              title={
+                reprocessing
+                  ? t("settings.history.reprocessing")
+                  : t("settings.history.reprocess")
+              }
             >
               {reprocessing ? (
                 <Loader2 width={16} height={16} className="animate-spin" />

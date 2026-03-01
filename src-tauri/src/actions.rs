@@ -434,7 +434,10 @@ impl ShortcutAction for TranscribeAction {
                             long_model_id
                         );
                         if let Err(e) = tm.load_model(long_model_id) {
-                            warn!("Failed to load long audio model '{}': {}, using current model", long_model_id, e);
+                            warn!(
+                                "Failed to load long audio model '{}': {}, using current model",
+                                long_model_id, e
+                            );
                         } else {
                             switched_model = true;
                         }

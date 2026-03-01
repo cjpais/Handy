@@ -403,7 +403,9 @@ impl ModelManager {
             ModelInfo {
                 id: "gemini-api".to_string(),
                 name: "Gemini API".to_string(),
-                description: "Cloud-based transcription via Google Gemini. Requires API key and internet.".to_string(),
+                description:
+                    "Cloud-based transcription via Google Gemini. Requires API key and internet."
+                        .to_string(),
                 filename: "".to_string(),
                 url: None,
                 size_mb: 0,
@@ -558,11 +560,13 @@ impl ModelManager {
             }
         }
 
-        // If no model is selected, pick the first downloaded one
+        // If no model is selected, pick the first downloaded local model.
+        // Gemini is cloud-only and should not be auto-selected.
         if settings.selected_model.is_empty() {
-            // Find the first available (downloaded) model
             let models = self.available_models.lock().unwrap();
-            if let Some(available_model) = models.values().find(|model| model.is_downloaded) {
+            if let Some(available_model) = models.values().find(|model| {
+                model.is_downloaded && !matches!(model.engine_type, EngineType::GeminiApi)
+            }) {
                 info!(
                     "Auto-selecting model: {} ({})",
                     available_model.id, available_model.name
@@ -1133,7 +1137,10 @@ impl ModelManager {
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
         if matches!(model_info.engine_type, EngineType::GeminiApi) {
-            return Err(anyhow::anyhow!("Cloud model has no local path: {}", model_id));
+            return Err(anyhow::anyhow!(
+                "Cloud model has no local path: {}",
+                model_id
+            ));
         }
 
         if !model_info.is_downloaded {

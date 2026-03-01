@@ -485,11 +485,7 @@ impl TranscriptionManager {
                 // so block_in_place tells tokio to move its work off this thread first.
                 let result = tokio::task::block_in_place(|| {
                     tokio::runtime::Handle::current().block_on(
-                        crate::gemini_client::transcribe_audio(
-                            &api_key,
-                            &gemini_model,
-                            &audio,
-                        ),
+                        crate::gemini_client::transcribe_audio(&api_key, &gemini_model, &audio),
                     )
                 })?;
 

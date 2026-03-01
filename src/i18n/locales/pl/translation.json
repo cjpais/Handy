@@ -96,6 +96,7 @@
       "granted": "Przyznano",
       "waiting": "Oczekiwanie...",
       "allGranted": "Wszystko gotowe!",
+      "skip": "Pomin na razie",
       "errors": {
         "checkFailed": "Nie udało się sprawdzić uprawnień. Spróbuj ponownie.",
         "requestFailed": "Nie udało się poprosić o uprawnienie. Spróbuj ponownie."

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getIdentifier } from "@tauri-apps/api/app";
 import { type } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
@@ -54,6 +55,11 @@ const AccessibilityPermissions: React.FC = () => {
     if (!isMacOS) return;
 
     const initialSetup = async (): Promise<void> => {
+      const appIdentifier = await getIdentifier();
+      if (appIdentifier.endsWith(".dev")) {
+        setHasAccessibility(true);
+        return;
+      }
       const hasPermissions: boolean = await checkAccessibilityPermission();
       setHasAccessibility(hasPermissions);
       setPermissionState(hasPermissions ? "granted" : "request");

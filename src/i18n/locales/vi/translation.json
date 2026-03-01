@@ -96,6 +96,7 @@
       "granted": "Đã cấp",
       "waiting": "Đang chờ...",
       "allGranted": "Hoàn tất!",
+      "skip": "Bo qua",
       "errors": {
         "checkFailed": "Không thể kiểm tra quyền. Vui lòng thử lại.",
         "requestFailed": "Không thể yêu cầu quyền. Vui lòng thử lại."

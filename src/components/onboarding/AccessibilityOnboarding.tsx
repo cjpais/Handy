@@ -313,6 +313,13 @@ const AccessibilityOnboarding: React.FC<AccessibilityOnboardingProps> = ({
             </div>
           </div>
         </div>
+
+        <button
+          onClick={onComplete}
+          className="text-sm text-text/40 hover:text-text/60 transition-colors mt-2"
+        >
+          {t("onboarding.permissions.skip")}
+        </button>
       </div>
     </div>
   );

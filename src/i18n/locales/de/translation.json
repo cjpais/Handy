@@ -96,6 +96,7 @@
       "granted": "Erteilt",
       "waiting": "Warten...",
       "allGranted": "Alles bereit!",
+      "skip": "Vorerst uberspringen",
       "errors": {
         "checkFailed": "Berechtigungsprüfung fehlgeschlagen. Bitte erneut versuchen.",
         "requestFailed": "Berechtigungsanfrage fehlgeschlagen. Bitte erneut versuchen."

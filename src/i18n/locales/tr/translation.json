@@ -96,6 +96,7 @@
       "granted": "Verildi",
       "waiting": "Bekleniyor...",
       "allGranted": "Her şey hazır!",
+      "skip": "Simdilik atla",
       "errors": {
         "checkFailed": "İzinler kontrol edilemedi. Lütfen tekrar deneyin.",
         "requestFailed": "İzin isteği başarısız oldu. Lütfen tekrar deneyin."

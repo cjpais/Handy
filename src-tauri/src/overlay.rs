@@ -232,28 +232,56 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
 
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
     if let Some(monitor) = get_monitor_with_cursor(app_handle) {
-        let work_area = monitor.work_area();
         let scale = monitor.scale_factor();
-        let work_area_width = work_area.size.width as f64 / scale;
-        let work_area_height = work_area.size.height as f64 / scale;
-        let work_area_x = work_area.position.x as f64 / scale;
-        let work_area_y = work_area.position.y as f64 / scale;
+        let monitor_x = monitor.position().x as f64 / scale;
+        let monitor_y = monitor.position().y as f64 / scale;
+        let monitor_width = monitor.size().width as f64 / scale;
+        let monitor_height = monitor.size().height as f64 / scale;
+
+        let work_area = monitor.work_area();
+        let wa_x = work_area.position.x as f64 / scale;
+        let wa_y = work_area.position.y as f64 / scale;
+        let wa_w = work_area.size.width as f64 / scale;
+        let wa_h = work_area.size.height as f64 / scale;
+
+        // Validate work_area: on macOS, work_area() can return bogus values
+        // for external monitors. Detect this by checking if work_area extends
+        // beyond the monitor bounds.
+        let wa_bottom = wa_y + wa_h;
+        let monitor_bottom = monitor_y + monitor_height;
+        let work_area_valid =
+            wa_y >= monitor_y && wa_bottom <= monitor_bottom + 1.0 && wa_w <= monitor_width + 1.0;
+
+        let (area_x, area_y, area_w, area_h) = if work_area_valid {
+            (wa_x, wa_y, wa_w, wa_h)
+        } else {
+            log::debug!(
+                "work_area invalid for monitor (wa_bottom={:.0} > monitor_bottom={:.0}), using monitor bounds with safe offset",
+                wa_bottom, monitor_bottom
+            );
+            // Use monitor bounds with a safe top offset for the macOS menu bar (~25px)
+            let menu_bar_offset = 25.0;
+            (
+                monitor_x,
+                monitor_y + menu_bar_offset,
+                monitor_width,
+                monitor_height - menu_bar_offset,
+            )
+        };
 
         let settings = settings::get_settings(app_handle);
 
-        let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
+        let x = area_x + (area_w - OVERLAY_WIDTH) / 2.0;
         let y = match settings.overlay_position {
-            OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
+            OverlayPosition::Top => area_y + OVERLAY_TOP_OFFSET,
             OverlayPosition::Bottom | OverlayPosition::None => {
-                work_area_y + work_area_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
+                area_y + area_h - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
             }
         };
 
         log::debug!(
-            "Overlay position: ({:.0}, {:.0}) on monitor (scale={}, work_area=({:.0},{:.0},{:.0},{:.0}))",
-            x, y,
-            scale,
-            work_area_x, work_area_y, work_area_width, work_area_height
+            "Overlay position: ({:.0}, {:.0}) on monitor (scale={}, area=({:.0},{:.0},{:.0},{:.0}), wa_valid={})",
+            x, y, scale, area_x, area_y, area_w, area_h, work_area_valid
         );
 
         return Some((x, y));
@@ -356,7 +384,6 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 }
 
 fn show_overlay_state(app_handle: &AppHandle, state: &str) {
-    // Check if overlay should be shown based on position setting
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
         return;
@@ -367,7 +394,6 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
 
-        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 

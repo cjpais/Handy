@@ -96,6 +96,7 @@
       "granted": "Accordé",
       "waiting": "En attente...",
       "allGranted": "Tout est prêt !",
+      "skip": "Passer pour l'instant",
       "errors": {
         "checkFailed": "Échec de la vérification des autorisations. Veuillez réessayer.",
         "requestFailed": "Échec de la demande d'autorisation. Veuillez réessayer."

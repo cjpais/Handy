@@ -96,6 +96,7 @@
       "granted": "승인됨",
       "waiting": "대기 중...",
       "allGranted": "모두 설정 완료!",
+      "skip": "지금은 건너뛰기",
       "errors": {
         "checkFailed": "권한 확인에 실패했습니다. 다시 시도해주세요.",
         "requestFailed": "권한 요청에 실패했습니다. 다시 시도해주세요."

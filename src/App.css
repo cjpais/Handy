@@ -70,7 +70,8 @@
   stroke-width: 1;
 }
 
-html, body {
+html,
+body {
   overflow-x: hidden;
 }
 

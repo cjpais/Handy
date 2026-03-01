@@ -256,6 +256,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
             models={models}
             currentModelId={displayModelId}
             onModelSelect={handleModelSelect}
+            hasGeminiKey={
+              !!(getSetting("gemini_api_key") as string | undefined)
+            }
           />
         )}
       </div>

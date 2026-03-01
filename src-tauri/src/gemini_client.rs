@@ -113,8 +113,7 @@ pub async fn transcribe_audio(api_key: &str, model: &str, audio_samples: &[f32])
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert(
         "x-goog-api-key",
-        HeaderValue::from_str(api_key)
-            .map_err(|e| anyhow::anyhow!("Invalid API key: {}", e))?,
+        HeaderValue::from_str(api_key).map_err(|e| anyhow::anyhow!("Invalid API key: {}", e))?,
     );
 
     let client = reqwest::Client::new();

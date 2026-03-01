@@ -96,6 +96,7 @@
       "granted": "Concedido",
       "waiting": "Aguardando...",
       "allGranted": "Tudo pronto!",
+      "skip": "Pular por enquanto",
       "errors": {
         "checkFailed": "Erro ao verificar permissões. Por favor, tente novamente.",
         "requestFailed": "Erro ao solicitar permissão. Por favor, tente novamente."

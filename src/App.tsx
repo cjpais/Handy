@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { platform } from "@tauri-apps/plugin-os";
+import { getIdentifier } from "@tauri-apps/api/app";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -95,6 +96,9 @@ function App() {
 
   const checkOnboardingStatus = async () => {
     try {
+      const appIdentifier = await getIdentifier();
+      const isDevFlavor = appIdentifier.endsWith(".dev");
+
       // Check if they have any models available
       const result = await commands.hasAnyModelsAvailable();
       const hasModels = result.status === "ok" && result.data;
@@ -102,7 +106,7 @@ function App() {
       if (hasModels) {
         // Returning user - but check if they need to grant permissions on macOS
         setIsReturningUser(true);
-        if (platform() === "macos") {
+        if (platform() === "macos" && !isDevFlavor) {
           try {
             const [hasAccessibility, hasMicrophone] = await Promise.all([
               checkAccessibilityPermission(),
@@ -120,9 +124,9 @@ function App() {
         }
         setOnboardingStep("done");
       } else {
-        // New user - start full onboarding
+        // New user - dev flavor skips permissions (can't grant to debug binary)
         setIsReturningUser(false);
-        setOnboardingStep("accessibility");
+        setOnboardingStep(isDevFlavor ? "model" : "accessibility");
       }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);

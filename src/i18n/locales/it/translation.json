@@ -96,6 +96,7 @@
       "granted": "Concesso",
       "waiting": "In attesa...",
       "allGranted": "Tutto pronto!",
+      "skip": "Salta per ora",
       "errors": {
         "checkFailed": "Impossibile verificare i permessi. Riprova.",
         "requestFailed": "Impossibile richiedere il permesso. Riprova."

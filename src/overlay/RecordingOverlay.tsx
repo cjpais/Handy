@@ -9,7 +9,16 @@ import { getLanguageDirection } from "@/lib/utils/rtl";
 type OverlayState = "recording" | "transcribing" | "processing";
 
 const MicIcon: React.FC = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="rgba(255,255,255,0.8)"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
     <line x1="12" x2="12" y1="19" y2="22" />
@@ -17,13 +26,31 @@ const MicIcon: React.FC = () => (
 );
 
 const DotsIcon: React.FC = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="rgba(255,255,255,0.7)"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
 
 const XIcon: React.FC = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="rgba(255,255,255,0.5)"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="18" x2="6" y1="6" y2="18" />
     <line x1="6" x2="18" y1="6" y2="18" />
   </svg>
@@ -79,7 +106,9 @@ const AudioBars: React.FC = () => {
       });
     };
     setup();
-    return () => { unlisten?.(); };
+    return () => {
+      unlisten?.();
+    };
   }, []);
 
   return (

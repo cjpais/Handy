@@ -141,8 +141,7 @@ const settingUpdaters: {
     commands.changeLongAudioThresholdSetting(value as number),
   gemini_api_key: (value) =>
     commands.changeGeminiApiKeySetting((value as string | null) ?? ""),
-  gemini_model: (value) =>
-    commands.changeGeminiModelSetting(value as string),
+  gemini_model: (value) => commands.changeGeminiModelSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

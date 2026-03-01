@@ -32,10 +32,7 @@ export const LongAudioModelSettings: React.FC = () => {
   }));
 
   const handleModelSelect = async (value: string) => {
-    await updateSetting(
-      "long_audio_model",
-      value === "" ? null : value,
-    );
+    await updateSetting("long_audio_model", value === "" ? null : value);
   };
 
   const handleThresholdSelect = async (value: string) => {

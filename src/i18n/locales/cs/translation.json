@@ -96,6 +96,7 @@
       "granted": "Uděleno",
       "waiting": "Čekání...",
       "allGranted": "Vše připraveno!",
+      "skip": "Prozatim preskocit",
       "errors": {
         "checkFailed": "Nepodařilo se zkontrolovat oprávnění. Zkuste to prosím znovu.",
         "requestFailed": "Nepodařilo se požádat o oprávnění. Zkuste to prosím znovu."
