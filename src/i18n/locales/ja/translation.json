@@ -449,9 +449,9 @@
         "description": "貼り付けた文字起こしの後にスペースを追加"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "キーボード実装",
+        "description": "キーボードショートカットのバックエンドを選択してください。",
+        "bindingsReset": "キーボードショートカットに互換性がなかったため、デフォルトにリセットされました"
       },
       "paths": {
         "appData": "アプリデータ:",

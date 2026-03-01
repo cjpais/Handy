@@ -449,9 +449,9 @@
         "description": "在粘贴的转录后添加空格"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "键盘实现",
+        "description": "选择键盘快捷键的后端。",
+        "bindingsReset": "键盘快捷键不兼容，已重置为默认值"
       },
       "paths": {
         "appData": "应用数据:",

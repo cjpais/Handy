@@ -449,9 +449,9 @@
         "description": "Leerzeichen nach eingefügter Transkription hinzufügen"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Tastatur-Implementierung",
+        "description": "Wähle das Backend für Tastaturkürzel.",
+        "bindingsReset": "Tastaturkürzel waren inkompatibel und wurden auf die Standardwerte zurückgesetzt"
       },
       "paths": {
         "appData": "App-Daten:",

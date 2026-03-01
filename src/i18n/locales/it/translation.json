@@ -449,9 +449,9 @@
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Implementazione tastiera",
+        "description": "Scegli il backend per le scorciatoie da tastiera.",
+        "bindingsReset": "Le scorciatoie da tastiera erano incompatibili e sono state ripristinate ai valori predefiniti"
       },
       "paths": {
         "appData": "Dati App:",

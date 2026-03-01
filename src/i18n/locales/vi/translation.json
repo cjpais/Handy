@@ -449,9 +449,9 @@
         "description": "Thêm một dấu cách sau bản ghi đã dán"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Triển khai bàn phím",
+        "description": "Chọn hệ thống xử lý phím tắt.",
+        "bindingsReset": "Các phím tắt không tương thích và đã được đặt lại về mặc định"
       },
       "paths": {
         "appData": "Dữ liệu ứng dụng:",

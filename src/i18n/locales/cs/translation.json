@@ -449,9 +449,9 @@
         "description": "Přidat mezeru po vloženém přepisu"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Implementace klávesnice",
+        "description": "Zvolte backend pro klávesové zkratky.",
+        "bindingsReset": "Klávesové zkratky byly nekompatibilní a byly obnoveny na výchozí hodnoty"
       },
       "paths": {
         "appData": "Data aplikace:",

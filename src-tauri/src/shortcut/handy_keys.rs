@@ -111,7 +111,7 @@ impl HandyKeysState {
         info!("handy-keys manager thread started");
 
         // Create the HotkeyManager in this thread
-        let manager = match HotkeyManager::new() {
+        let manager = match HotkeyManager::new_with_blocking() {
             Ok(m) => m,
             Err(e) => {
                 error!("Failed to create HotkeyManager: {}", e);

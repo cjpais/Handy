@@ -449,9 +449,9 @@
         "description": "Dodaj spację po wklejonej transkrypcji"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Implementacja klawiatury",
+        "description": "Wybierz backend dla skrótów klawiaturowych.",
+        "bindingsReset": "Skróty klawiaturowe były niekompatybilne i zostały zresetowane do wartości domyślnych"
       },
       "paths": {
         "appData": "Dane aplikacji:",
