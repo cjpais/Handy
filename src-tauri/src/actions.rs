@@ -361,7 +361,9 @@ async fn process_action(
         .cloned()
         .unwrap_or_default();
 
-    match crate::llm_client::send_chat_completion(&provider, api_key, &model, full_prompt).await {
+    let system_prompt = "You are a text processing assistant. Output ONLY the final processed text. Do not add any explanation, commentary, preamble, or formatting such as markdown code blocks. Just output the raw result text, nothing else.".to_string();
+
+    match crate::llm_client::send_chat_completion_with_schema(&provider, api_key, &model, full_prompt, Some(system_prompt), None).await {
         Ok(Some(content)) if !content.is_empty() => {
             let result = strip_invisible_chars(&content);
             debug!(
