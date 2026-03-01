@@ -1,6 +1,6 @@
 [package]
 name = "parler"
-version = "0.7.11"
+version = "0.7.12"
 description = "Parler"
 authors = ["cjpais"]
 edition = "2021"
