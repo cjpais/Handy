@@ -1,4 +1,4 @@
-use crate::settings::{CustomHuggingFaceModel, get_settings, write_settings};
+use crate::settings::{get_settings, write_settings, CustomHuggingFaceModel};
 use anyhow::Result;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -7,6 +7,7 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write as FmtWrite;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -656,7 +657,10 @@ impl ModelManager {
 
         let is_downloaded = model_path.exists();
         let size_mb = if is_downloaded {
-            model_path.metadata().map(|m| m.len() / (1024 * 1024)).unwrap_or(0)
+            model_path
+                .metadata()
+                .map(|m| m.len() / (1024 * 1024))
+                .unwrap_or(0)
         } else {
             0
         };
@@ -721,8 +725,8 @@ impl ModelManager {
         let mut settings = get_settings(&self.app_handle);
         let initial_len = settings.custom_hugging_face_models.len();
 
-        settings.custom_hugging_face_models.retain(|source| {
-            match Self::build_hugging_face_model_id(source) {
+        settings.custom_hugging_face_models.retain(
+            |source| match Self::build_hugging_face_model_id(source) {
                 Ok(source_model_id) => source_model_id != model_id,
                 Err(err) => {
                     warn!(
@@ -731,8 +735,8 @@ impl ModelManager {
                     );
                     true
                 }
-            }
-        });
+            },
+        );
 
         if settings.custom_hugging_face_models.len() != initial_len {
             write_settings(&self.app_handle, settings);
@@ -807,16 +811,25 @@ impl ModelManager {
     }
 
     fn build_hugging_face_storage_filename(source: &HuggingFaceModelSource) -> Result<String> {
-        let repo_slug = Self::sanitize_filename_component(&source.repo_id.replace('/', "--"));
-        let revision_slug = Self::sanitize_filename_component(&source.revision);
-        let file_slug = source
-            .file_path
-            .split('/')
-            .map(Self::sanitize_filename_component)
-            .collect::<Vec<_>>()
-            .join("--");
+        if source.repo_id.is_empty() || source.revision.is_empty() || source.file_path.is_empty() {
+            return Err(anyhow::anyhow!("Invalid Hugging Face model source"));
+        }
 
-        let filename = format!("hf--{}--{}--{}", repo_slug, revision_slug, file_slug);
+        if !source.file_path.ends_with(".bin") {
+            return Err(anyhow::anyhow!(
+                "Only Whisper GGML .bin files are supported"
+            ));
+        }
+
+        let repo_component = Self::encode_hugging_face_filename_component(&source.repo_id);
+        let revision_component = Self::encode_hugging_face_filename_component(&source.revision);
+        let file_component = Self::encode_hugging_face_filename_component(&source.file_path);
+
+        // `!` is not emitted by the encoder, so component boundaries are unambiguous.
+        let filename = format!(
+            "hf!{}!{}!{}",
+            repo_component, revision_component, file_component
+        );
 
         if filename.is_empty() || !filename.ends_with(".bin") {
             return Err(anyhow::anyhow!("Failed to build a valid model filename"));
@@ -827,7 +840,10 @@ impl ModelManager {
 
     fn build_hugging_face_model_id(source: &HuggingFaceModelSource) -> Result<String> {
         let filename = Self::build_hugging_face_storage_filename(source)?;
-        let model_id = filename.trim_end_matches(".bin").to_string();
+        let model_id = filename
+            .strip_suffix(".bin")
+            .ok_or_else(|| anyhow::anyhow!("Invalid model filename"))?
+            .to_string();
 
         if model_id.is_empty() {
             return Err(anyhow::anyhow!("Invalid model identifier"));
@@ -836,17 +852,27 @@ impl ModelManager {
         Ok(model_id)
     }
 
-    fn sanitize_filename_component(component: &str) -> String {
-        component
-            .chars()
-            .map(|ch| {
-                if ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.') {
-                    ch
-                } else {
-                    '-'
-                }
-            })
-            .collect()
+    fn encode_hugging_face_filename_component(component: &str) -> String {
+        let mut encoded = String::with_capacity(component.len());
+
+        for byte in component.bytes() {
+            if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.') {
+                encoded.push(byte as char);
+            } else {
+                encoded.push('~');
+                FmtWrite::write_fmt(&mut encoded, format_args!("{:02X}", byte))
+                    .expect("writing to a String should not fail");
+            }
+        }
+
+        encoded
+    }
+
+    fn should_fail_delete_without_local_files(
+        model_info: &ModelInfo,
+        deleted_something: bool,
+    ) -> bool {
+        !deleted_something && !model_info.is_custom
     }
 
     /// Discover custom Whisper models (.bin files) in the models directory.
@@ -1367,8 +1393,15 @@ impl ModelManager {
             deleted_something = true;
         }
 
-        if !deleted_something {
+        if Self::should_fail_delete_without_local_files(&model_info, deleted_something) {
             return Err(anyhow::anyhow!("No model files found to delete"));
+        }
+
+        if !deleted_something && model_info.is_custom {
+            info!(
+                "No local files found for custom model '{}'; removing metadata only",
+                model_id
+            );
         }
 
         // Custom models should be removed from the list entirely.
@@ -1474,6 +1507,28 @@ mod tests {
     use super::*;
     use std::io::Write;
     use tempfile::TempDir;
+
+    fn make_test_model_info(is_custom: bool) -> ModelInfo {
+        ModelInfo {
+            id: "test-model".to_string(),
+            name: "Test Model".to_string(),
+            description: "Test".to_string(),
+            filename: "test-model.bin".to_string(),
+            url: None,
+            size_mb: 0,
+            is_downloaded: false,
+            is_downloading: false,
+            partial_size: 0,
+            is_directory: false,
+            engine_type: EngineType::Whisper,
+            accuracy_score: 0.0,
+            speed_score: 0.0,
+            supports_translation: false,
+            is_recommended: false,
+            supported_languages: vec![],
+            is_custom,
+        }
+    }
 
     #[test]
     fn test_discover_custom_whisper_models() {
@@ -1615,7 +1670,10 @@ mod tests {
         };
 
         let filename = ModelManager::build_hugging_face_storage_filename(&source).unwrap();
-        assert_eq!(filename, "hf--org--model--main--nested--path--ggml-small.bin");
+        assert_eq!(
+            filename,
+            "hf!org~2Fmodel!main!nested~2Fpath~2Fggml-small.bin"
+        );
     }
 
     #[test]
@@ -1635,5 +1693,52 @@ mod tests {
         let v2_id = ModelManager::build_hugging_face_model_id(&source_v2).unwrap();
 
         assert_ne!(main_id, v2_id);
+    }
+
+    #[test]
+    fn test_build_hugging_face_model_id_avoids_path_separator_collisions() {
+        let nested_path_source = HuggingFaceModelSource {
+            repo_id: "org/model".to_string(),
+            revision: "main".to_string(),
+            file_path: "a/b.bin".to_string(),
+        };
+        let flat_path_source = HuggingFaceModelSource {
+            repo_id: "org/model".to_string(),
+            revision: "main".to_string(),
+            file_path: "a--b.bin".to_string(),
+        };
+
+        let nested_id = ModelManager::build_hugging_face_model_id(&nested_path_source).unwrap();
+        let flat_id = ModelManager::build_hugging_face_model_id(&flat_path_source).unwrap();
+
+        assert_ne!(nested_id, flat_id);
+    }
+
+    #[test]
+    fn test_delete_without_local_files_fails_for_non_custom_models() {
+        let model_info = make_test_model_info(false);
+
+        assert!(ModelManager::should_fail_delete_without_local_files(
+            &model_info,
+            false
+        ));
+        assert!(!ModelManager::should_fail_delete_without_local_files(
+            &model_info,
+            true
+        ));
+    }
+
+    #[test]
+    fn test_delete_without_local_files_allows_custom_models() {
+        let model_info = make_test_model_info(true);
+
+        assert!(!ModelManager::should_fail_delete_without_local_files(
+            &model_info,
+            false
+        ));
+        assert!(!ModelManager::should_fail_delete_without_local_files(
+            &model_info,
+            true
+        ));
     }
 }
