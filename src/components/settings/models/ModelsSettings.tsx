@@ -357,7 +357,7 @@ export const ModelsSettings: React.FC = () => {
                 onCancel={handleModelCancel}
                 downloadProgress={getDownloadProgress(model.id)}
                 downloadSpeed={getDownloadSpeed(model.id)}
-                showRecommended={false}
+                showRecommended={true}
               />
             ))}
           </div>
@@ -379,7 +379,7 @@ export const ModelsSettings: React.FC = () => {
                   onCancel={handleModelCancel}
                   downloadProgress={getDownloadProgress(model.id)}
                   downloadSpeed={getDownloadSpeed(model.id)}
-                  showRecommended={false}
+                  showRecommended={true}
                 />
               ))}
             </div>

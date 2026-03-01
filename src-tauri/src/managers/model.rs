@@ -159,7 +159,7 @@ impl ModelManager {
                 accuracy_score: 0.80,
                 speed_score: 0.40,
                 supports_translation: false, // Turbo doesn't support translation
-                is_recommended: false,
+                is_recommended: true,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
             },
