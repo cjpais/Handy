@@ -197,11 +197,13 @@ export const ModelsSettings: React.FC = () => {
     const available: ModelInfo[] = [];
 
     for (const model of filteredModels) {
+      const isGeminiWithoutKey = model.id === "gemini-api" && !hasGeminiKey;
       if (
-        model.is_custom ||
-        model.is_downloaded ||
-        model.id in downloadingModels ||
-        model.id in extractingModels
+        !isGeminiWithoutKey &&
+        (model.is_custom ||
+          model.is_downloaded ||
+          model.id in downloadingModels ||
+          model.id in extractingModels)
       ) {
         downloaded.push(model);
       } else {
@@ -221,7 +223,7 @@ export const ModelsSettings: React.FC = () => {
       downloadedModels: downloaded,
       availableModels: available,
     };
-  }, [filteredModels, downloadingModels, extractingModels, currentModel]);
+  }, [filteredModels, downloadingModels, extractingModels, currentModel, hasGeminiKey]);
 
   if (loading) {
     return (
