@@ -75,6 +75,10 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "速度極快。支援中文、英語、日語、韓語、粵語。"
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "俄語語音辨識。快速且準確。"
       }
     },
     "errors": {

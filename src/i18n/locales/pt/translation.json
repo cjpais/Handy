@@ -75,6 +75,10 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Muito rápido. Chinês, inglês, japonês, coreano, cantonês."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Reconhecimento de voz em russo. Rápido e preciso."
       }
     },
     "errors": {

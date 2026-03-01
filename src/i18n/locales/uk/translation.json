@@ -75,6 +75,10 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Дуже швидкий. Китайська, англійська, японська, корейська, кантонська."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Розпізнавання російського мовлення. Швидко і точно."
       }
     },
     "errors": {
