@@ -408,9 +408,7 @@ impl ModelManager {
                 name: "GigaAM v3".to_string(),
                 description: "Russian speech recognition. Fast and accurate.".to_string(),
                 filename: "gigaam-v3-e2e-ctc-int8.onnx".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/giga-am-v3.int8.onnx".to_string(),
-                ),
+                url: Some("https://blob.handy.computer/giga-am-v3.int8.onnx".to_string()),
                 size_mb: 225,
                 is_downloaded: false,
                 is_downloading: false,

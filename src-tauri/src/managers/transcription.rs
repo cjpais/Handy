@@ -548,9 +548,7 @@ impl TranscriptionManager {
                         }
                         LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
                             .transcribe_samples(audio, None)
-                            .map_err(|e| {
-                                anyhow::anyhow!("GigaAM transcription failed: {}", e)
-                            }),
+                            .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
                     }
                 },
             ));
