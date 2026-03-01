@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { RefreshCcw } from "lucide-react";
 import { commands } from "@/bindings";
 
-import { Alert } from "../../ui/Alert";
 import {
   Dropdown,
   SettingContainer,
@@ -11,437 +9,306 @@ import {
   Textarea,
 } from "@/components/ui";
 import { Button } from "../../ui/Button";
-import { ResetButton } from "../../ui/ResetButton";
 import { Input } from "../../ui/Input";
-
-import { ProviderSelect } from "../PostProcessingSettingsApi/ProviderSelect";
-import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
-import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
-import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
-import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
-import { ShortcutInput } from "../ShortcutInput";
 import { useSettings } from "../../../hooks/useSettings";
 
-const PostProcessingSettingsApiComponent: React.FC = () => {
+const PostProcessingActionsComponent: React.FC = () => {
   const { t } = useTranslation();
-  const state = usePostProcessProviderState();
+  const { getSetting, refreshSettings } = useSettings();
+  const [editingAction, setEditingAction] = useState<{
+    key: number;
+    name: string;
+    prompt: string;
+    savedModelId: string;
+    isNew: boolean;
+  } | null>(null);
 
-  return (
-    <>
-      <SettingContainer
-        title={t("settings.postProcessing.api.provider.title")}
-        description={t("settings.postProcessing.api.provider.description")}
-        descriptionMode="tooltip"
-        layout="horizontal"
-        grouped={true}
-      >
-        <div className="flex items-center gap-2">
-          <ProviderSelect
-            options={state.providerOptions}
-            value={state.selectedProviderId}
-            onChange={state.handleProviderSelect}
-          />
-        </div>
-      </SettingContainer>
+  const actions = getSetting("post_process_actions") || [];
+  const savedModels = getSetting("saved_processing_models") || [];
 
-      {state.isAppleProvider ? (
-        state.appleIntelligenceUnavailable ? (
-          <Alert variant="error" contained>
-            {t("settings.postProcessing.api.appleIntelligence.unavailable")}
-          </Alert>
-        ) : null
-      ) : (
-        <>
-          {state.selectedProvider?.id === "custom" && (
-            <SettingContainer
-              title={t("settings.postProcessing.api.baseUrl.title")}
-              description={t("settings.postProcessing.api.baseUrl.description")}
-              descriptionMode="tooltip"
-              layout="horizontal"
-              grouped={true}
-            >
-              <div className="flex items-center gap-2">
-                <BaseUrlField
-                  value={state.baseUrl}
-                  onBlur={state.handleBaseUrlChange}
-                  placeholder={t(
-                    "settings.postProcessing.api.baseUrl.placeholder",
-                  )}
-                  disabled={state.isBaseUrlUpdating}
-                  className="min-w-[380px]"
-                />
-              </div>
-            </SettingContainer>
-          )}
+  const modelDropdownOptions = [
+    {
+      value: "__default__",
+      label: t("settings.postProcessing.actions.defaultModel"),
+    },
+    ...savedModels.map((m) => ({
+      value: m.id,
+      label: m.label,
+    })),
+  ];
 
-          <SettingContainer
-            title={t("settings.postProcessing.api.apiKey.title")}
-            description={t("settings.postProcessing.api.apiKey.description")}
-            descriptionMode="tooltip"
-            layout="horizontal"
-            grouped={true}
-          >
-            <div className="flex items-center gap-2">
-              <ApiKeyField
-                value={state.apiKey}
-                onBlur={state.handleApiKeyChange}
-                placeholder={t(
-                  "settings.postProcessing.api.apiKey.placeholder",
-                )}
-                disabled={state.isApiKeyUpdating}
-                className="min-w-[320px]"
-              />
-            </div>
-          </SettingContainer>
-        </>
-      )}
-
-      {!state.isAppleProvider && (
-        <SettingContainer
-          title={t("settings.postProcessing.api.model.title")}
-          description={
-            state.isCustomProvider
-              ? t("settings.postProcessing.api.model.descriptionCustom")
-              : t("settings.postProcessing.api.model.descriptionDefault")
-          }
-          descriptionMode="tooltip"
-          layout="stacked"
-          grouped={true}
-        >
-          <div className="flex items-center gap-2">
-            <ModelSelect
-              value={state.model}
-              options={state.modelOptions}
-              disabled={state.isModelUpdating}
-              isLoading={state.isFetchingModels}
-              placeholder={
-                state.modelOptions.length > 0
-                  ? t(
-                      "settings.postProcessing.api.model.placeholderWithOptions",
-                    )
-                  : t("settings.postProcessing.api.model.placeholderNoOptions")
-              }
-              onSelect={state.handleModelSelect}
-              onCreate={state.handleModelCreate}
-              onBlur={() => {}}
-              className="flex-1 min-w-[380px]"
-            />
-            <ResetButton
-              onClick={state.handleRefreshModels}
-              disabled={state.isFetchingModels}
-              ariaLabel={t("settings.postProcessing.api.model.refreshModels")}
-              className="flex h-10 w-10 items-center justify-center"
-            >
-              <RefreshCcw
-                className={`h-4 w-4 ${state.isFetchingModels ? "animate-spin" : ""}`}
-              />
-            </ResetButton>
-          </div>
-        </SettingContainer>
-      )}
-    </>
+  const usedKeys = new Set(actions.map((a) => a.key));
+  const nextAvailableKey = Array.from({ length: 9 }, (_, i) => i + 1).find(
+    (k) => !usedKeys.has(k),
   );
-};
-
-const PostProcessingSettingsPromptsComponent: React.FC = () => {
-  const { t } = useTranslation();
-  const { getSetting, updateSetting, isUpdating, refreshSettings } =
-    useSettings();
-  const [isCreating, setIsCreating] = useState(false);
-  const [draftName, setDraftName] = useState("");
-  const [draftText, setDraftText] = useState("");
-
-  const prompts = getSetting("post_process_prompts") || [];
-  const selectedPromptId = getSetting("post_process_selected_prompt_id") || "";
-  const selectedPrompt =
-    prompts.find((prompt) => prompt.id === selectedPromptId) || null;
-
-  useEffect(() => {
-    if (isCreating) return;
-
-    if (selectedPrompt) {
-      setDraftName(selectedPrompt.name);
-      setDraftText(selectedPrompt.prompt);
-    } else {
-      setDraftName("");
-      setDraftText("");
-    }
-  }, [
-    isCreating,
-    selectedPromptId,
-    selectedPrompt?.name,
-    selectedPrompt?.prompt,
-  ]);
-
-  const handlePromptSelect = (promptId: string | null) => {
-    if (!promptId) return;
-    updateSetting("post_process_selected_prompt_id", promptId);
-    setIsCreating(false);
-  };
-
-  const handleCreatePrompt = async () => {
-    if (!draftName.trim() || !draftText.trim()) return;
-
-    try {
-      const result = await commands.addPostProcessPrompt(
-        draftName.trim(),
-        draftText.trim(),
-      );
-      if (result.status === "ok") {
-        await refreshSettings();
-        updateSetting("post_process_selected_prompt_id", result.data.id);
-        setIsCreating(false);
-      }
-    } catch (error) {
-      console.error("Failed to create prompt:", error);
-    }
-  };
-
-  const handleUpdatePrompt = async () => {
-    if (!selectedPromptId || !draftName.trim() || !draftText.trim()) return;
-
-    try {
-      await commands.updatePostProcessPrompt(
-        selectedPromptId,
-        draftName.trim(),
-        draftText.trim(),
-      );
-      await refreshSettings();
-    } catch (error) {
-      console.error("Failed to update prompt:", error);
-    }
-  };
-
-  const handleDeletePrompt = async (promptId: string) => {
-    if (!promptId) return;
-
-    try {
-      await commands.deletePostProcessPrompt(promptId);
-      await refreshSettings();
-      setIsCreating(false);
-    } catch (error) {
-      console.error("Failed to delete prompt:", error);
-    }
-  };
-
-  const handleCancelCreate = () => {
-    setIsCreating(false);
-    if (selectedPrompt) {
-      setDraftName(selectedPrompt.name);
-      setDraftText(selectedPrompt.prompt);
-    } else {
-      setDraftName("");
-      setDraftText("");
-    }
-  };
 
   const handleStartCreate = () => {
-    setIsCreating(true);
-    setDraftName("");
-    setDraftText("");
+    if (!nextAvailableKey) return;
+    setEditingAction({
+      key: nextAvailableKey,
+      name: "",
+      prompt: "",
+      savedModelId: "",
+      isNew: true,
+    });
   };
 
-  const hasPrompts = prompts.length > 0;
-  const isDirty =
-    !!selectedPrompt &&
-    (draftName.trim() !== selectedPrompt.name ||
-      draftText.trim() !== selectedPrompt.prompt.trim());
+  const handleStartEdit = (action: {
+    key: number;
+    name: string;
+    prompt: string;
+    model?: string | null;
+    provider_id?: string | null;
+  }) => {
+    let savedModelId = "";
+    if (action.provider_id && action.model) {
+      const id = `${action.provider_id}:${action.model}`;
+      if (savedModels.some((m) => m.id === id)) {
+        savedModelId = id;
+      }
+    }
+    setEditingAction({ key: action.key, name: action.name, prompt: action.prompt, savedModelId, isNew: false });
+  };
+
+  const handleSave = async () => {
+    if (!editingAction || !editingAction.name.trim() || !editingAction.prompt.trim())
+      return;
+
+    try {
+      let model: string | null = null;
+      let providerId: string | null = null;
+      if (editingAction.savedModelId) {
+        const saved = savedModels.find((m) => m.id === editingAction.savedModelId);
+        if (saved) {
+          model = saved.model_id;
+          providerId = saved.provider_id;
+        }
+      }
+      if (editingAction.isNew) {
+        await commands.addPostProcessAction(
+          editingAction.key,
+          editingAction.name.trim(),
+          editingAction.prompt.trim(),
+          model,
+          providerId,
+        );
+      } else {
+        await commands.updatePostProcessAction(
+          editingAction.key,
+          editingAction.name.trim(),
+          editingAction.prompt.trim(),
+          model,
+          providerId,
+        );
+      }
+      await refreshSettings();
+      setEditingAction(null);
+    } catch (error) {
+      console.error("Failed to save action:", error);
+    }
+  };
+
+  const handleDelete = async (key: number) => {
+    try {
+      await commands.deletePostProcessAction(key);
+      await refreshSettings();
+      if (editingAction?.key === key) {
+        setEditingAction(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete action:", error);
+    }
+  };
 
   return (
     <SettingContainer
-      title={t("settings.postProcessing.prompts.selectedPrompt.title")}
-      description={t(
-        "settings.postProcessing.prompts.selectedPrompt.description",
-      )}
+      title={t("settings.postProcessing.actions.title")}
+      description={t("settings.postProcessing.actions.description")}
       descriptionMode="tooltip"
       layout="stacked"
       grouped={true}
     >
       <div className="space-y-3">
-        <div className="flex gap-2">
-          <Dropdown
-            selectedValue={selectedPromptId || null}
-            options={prompts.map((p) => ({
-              value: p.id,
-              label: p.name,
-            }))}
-            onSelect={(value) => handlePromptSelect(value)}
-            placeholder={
-              prompts.length === 0
-                ? t("settings.postProcessing.prompts.noPrompts")
-                : t("settings.postProcessing.prompts.selectPrompt")
-            }
-            disabled={
-              isUpdating("post_process_selected_prompt_id") || isCreating
-            }
-            className="flex-1"
-          />
-          <Button
-            onClick={handleStartCreate}
-            variant="primary"
-            size="md"
-            disabled={isCreating}
-          >
-            {t("settings.postProcessing.prompts.createNew")}
-          </Button>
-        </div>
-
-        {!isCreating && hasPrompts && selectedPrompt && (
-          <div className="space-y-3">
-            <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold">
-                {t("settings.postProcessing.prompts.promptLabel")}
-              </label>
-              <Input
-                type="text"
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                placeholder={t(
-                  "settings.postProcessing.prompts.promptLabelPlaceholder",
-                )}
-                variant="compact"
-              />
-            </div>
-
-            <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold">
-                {t("settings.postProcessing.prompts.promptInstructions")}
-              </label>
-              <Textarea
-                value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
-                placeholder={t(
-                  "settings.postProcessing.prompts.promptInstructionsPlaceholder",
-                )}
-              />
-              <p
-                className="text-xs text-mid-gray/70"
-                dangerouslySetInnerHTML={{
-                  __html: t("settings.postProcessing.prompts.promptTip"),
-                }}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <Button
-                onClick={handleUpdatePrompt}
-                variant="primary"
-                size="md"
-                disabled={!draftName.trim() || !draftText.trim() || !isDirty}
-              >
-                {t("settings.postProcessing.prompts.updatePrompt")}
-              </Button>
-              <Button
-                onClick={() => handleDeletePrompt(selectedPromptId)}
-                variant="secondary"
-                size="md"
-                disabled={!selectedPromptId || prompts.length <= 1}
-              >
-                {t("settings.postProcessing.prompts.deletePrompt")}
-              </Button>
-            </div>
+        {actions.length > 0 && (
+          <div className="space-y-1">
+            {[...actions]
+              .sort((a, b) => a.key - b.key)
+              .map((action) => (
+                <div
+                  key={action.key}
+                  className="flex items-center gap-3 p-2 rounded-md hover:bg-mid-gray/5 cursor-pointer group"
+                  onClick={() => handleStartEdit(action)}
+                >
+                  <span className="flex items-center justify-center w-6 h-6 rounded bg-blue-500/15 text-blue-400 text-xs font-bold font-mono flex-shrink-0">
+                    {action.key}
+                  </span>
+                  <span className="text-sm text-text flex-1 truncate">
+                    {action.name}
+                    {action.provider_id && action.model && (
+                      <span className="text-xs text-mid-gray/60 ml-2">
+                        {savedModels.find(
+                          (m) => m.id === `${action.provider_id}:${action.model}`,
+                        )?.label || action.model}
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    className="text-xs text-mid-gray/60 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity px-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(action.key);
+                    }}
+                  >
+                    {t("settings.postProcessing.actions.delete")}
+                  </button>
+                </div>
+              ))}
           </div>
         )}
 
-        {!isCreating && !selectedPrompt && (
+        {actions.length === 0 && !editingAction && (
           <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/20">
             <p className="text-sm text-mid-gray">
-              {hasPrompts
-                ? t("settings.postProcessing.prompts.selectToEdit")
-                : t("settings.postProcessing.prompts.createFirst")}
+              {t("settings.postProcessing.actions.createFirst")}
             </p>
           </div>
         )}
 
-        {isCreating && (
-          <div className="space-y-3">
-            <div className="space-y-2 block flex flex-col">
-              <label className="text-sm font-semibold text-text">
-                {t("settings.postProcessing.prompts.promptLabel")}
-              </label>
-              <Input
-                type="text"
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                placeholder={t(
-                  "settings.postProcessing.prompts.promptLabelPlaceholder",
-                )}
-                variant="compact"
-              />
+        {editingAction && (
+          <div className="space-y-3 p-3 rounded-md border border-mid-gray/20 bg-mid-gray/5">
+            <div className="flex gap-3">
+              <div className="space-y-1 flex flex-col">
+                <label className="text-sm font-semibold">
+                  {t("settings.postProcessing.actions.key")}
+                </label>
+                <div className="flex items-center justify-center w-8 h-8 rounded bg-blue-500/15 text-blue-400 text-sm font-bold font-mono">
+                  {editingAction.key}
+                </div>
+              </div>
+              <div className="space-y-1 flex flex-col flex-1">
+                <label className="text-sm font-semibold">
+                  {t("settings.postProcessing.actions.name")}
+                </label>
+                <Input
+                  type="text"
+                  value={editingAction.name}
+                  onChange={(e) =>
+                    setEditingAction({ ...editingAction, name: e.target.value })
+                  }
+                  placeholder={t(
+                    "settings.postProcessing.actions.namePlaceholder",
+                  )}
+                  variant="compact"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2 flex flex-col">
+            <div className="space-y-1 flex flex-col">
               <label className="text-sm font-semibold">
-                {t("settings.postProcessing.prompts.promptInstructions")}
+                {t("settings.postProcessing.actions.prompt")}
               </label>
               <Textarea
-                value={draftText}
-                onChange={(e) => setDraftText(e.target.value)}
+                value={editingAction.prompt}
+                onChange={(e) =>
+                  setEditingAction({ ...editingAction, prompt: e.target.value })
+                }
                 placeholder={t(
-                  "settings.postProcessing.prompts.promptInstructionsPlaceholder",
+                  "settings.postProcessing.actions.promptPlaceholder",
                 )}
               />
               <p
                 className="text-xs text-mid-gray/70"
                 dangerouslySetInnerHTML={{
-                  __html: t("settings.postProcessing.prompts.promptTip"),
+                  __html: t("settings.postProcessing.actions.promptTip"),
                 }}
               />
             </div>
 
-            <div className="flex gap-2 pt-2">
+            <div className="space-y-1 flex flex-col">
+              <label className="text-sm font-semibold">
+                {t("settings.postProcessing.actions.model")}
+              </label>
+              <Dropdown
+                selectedValue={editingAction.savedModelId || null}
+                options={modelDropdownOptions}
+                onSelect={(value) =>
+                  setEditingAction({
+                    ...editingAction,
+                    savedModelId: value === "__default__" ? "" : value,
+                  })
+                }
+                placeholder={t(
+                  "settings.postProcessing.actions.modelPlaceholder",
+                )}
+              />
+              <p className="text-xs text-mid-gray/70">
+                {t("settings.postProcessing.actions.modelTip")}
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-1">
               <Button
-                onClick={handleCreatePrompt}
+                onClick={handleSave}
                 variant="primary"
                 size="md"
-                disabled={!draftName.trim() || !draftText.trim()}
+                disabled={
+                  !editingAction.name.trim() || !editingAction.prompt.trim()
+                }
               >
-                {t("settings.postProcessing.prompts.createPrompt")}
+                {t("settings.postProcessing.actions.save")}
               </Button>
               <Button
-                onClick={handleCancelCreate}
+                onClick={() => setEditingAction(null)}
                 variant="secondary"
                 size="md"
               >
-                {t("settings.postProcessing.prompts.cancel")}
+                {t("settings.postProcessing.actions.cancel")}
               </Button>
+              {!editingAction.isNew && (
+                <Button
+                  onClick={() => handleDelete(editingAction.key)}
+                  variant="secondary"
+                  size="md"
+                >
+                  {t("settings.postProcessing.actions.delete")}
+                </Button>
+              )}
             </div>
           </div>
+        )}
+
+        {!editingAction && actions.length < 9 && (
+          <Button
+            onClick={handleStartCreate}
+            variant="primary"
+            size="md"
+          >
+            {t("settings.postProcessing.actions.addAction")}
+          </Button>
+        )}
+
+        {actions.length >= 9 && !editingAction && (
+          <p className="text-xs text-mid-gray/60">
+            {t("settings.postProcessing.actions.maxActionsReached")}
+          </p>
         )}
       </div>
     </SettingContainer>
   );
 };
 
-export const PostProcessingSettingsApi = React.memo(
-  PostProcessingSettingsApiComponent,
+export const PostProcessingActions = React.memo(
+  PostProcessingActionsComponent,
 );
-PostProcessingSettingsApi.displayName = "PostProcessingSettingsApi";
-
-export const PostProcessingSettingsPrompts = React.memo(
-  PostProcessingSettingsPromptsComponent,
-);
-PostProcessingSettingsPrompts.displayName = "PostProcessingSettingsPrompts";
+PostProcessingActions.displayName = "PostProcessingActions";
 
 export const PostProcessingSettings: React.FC = () => {
   const { t } = useTranslation();
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.postProcessing.hotkey.title")}>
-        <ShortcutInput
-          shortcutId="transcribe_with_post_process"
-          descriptionMode="tooltip"
-          grouped={true}
-        />
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.postProcessing.api.title")}>
-        <PostProcessingSettingsApi />
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
-        <PostProcessingSettingsPrompts />
+      <SettingsGroup title={t("settings.postProcessing.actions.title")}>
+        <PostProcessingActions />
       </SettingsGroup>
     </div>
   );

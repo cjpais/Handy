@@ -93,6 +93,25 @@ pub struct LLMPrompt {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct PostProcessAction {
+    pub key: u8,
+    pub name: String,
+    pub prompt: String,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub provider_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct SavedProcessingModel {
+    pub id: String,
+    pub provider_id: String,
+    pub model_id: String,
+    pub label: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct PostProcessProvider {
     pub id: String,
     pub label: String,
@@ -368,6 +387,10 @@ pub struct AppSettings {
     pub gemini_api_key: Option<String>,
     #[serde(default = "default_gemini_model")]
     pub gemini_model: String,
+    #[serde(default)]
+    pub post_process_actions: Vec<PostProcessAction>,
+    #[serde(default)]
+    pub saved_processing_models: Vec<SavedProcessingModel>,
 }
 
 fn default_model() -> String {
@@ -526,6 +549,15 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             supports_structured_output: true,
         });
     }
+
+    providers.push(PostProcessProvider {
+        id: "gemini".to_string(),
+        label: "Gemini".to_string(),
+        base_url: "https://generativelanguage.googleapis.com/v1beta".to_string(),
+        allow_base_url_edit: false,
+        models_endpoint: None,
+        supports_structured_output: false,
+    });
 
     // Custom provider always comes last
     providers.push(PostProcessProvider {
@@ -744,6 +776,8 @@ pub fn get_default_settings() -> AppSettings {
         long_audio_threshold_seconds: default_long_audio_threshold_seconds(),
         gemini_api_key: None,
         gemini_model: default_gemini_model(),
+        post_process_actions: Vec::new(),
+        saved_processing_models: Vec::new(),
     }
 }
 

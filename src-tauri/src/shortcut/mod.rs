@@ -72,6 +72,55 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     }
 }
 
+/// Register action shortcuts for configured actions (called when recording starts)
+pub fn register_action_shortcuts(app: &AppHandle) {
+    let settings = get_settings(app);
+    for action in &settings.post_process_actions {
+        if action.key < 1 || action.key > 9 {
+            continue;
+        }
+        let shortcut_str = format!("ctrl+{}", action.key);
+        let binding = ShortcutBinding {
+            id: format!("action_{}", action.key),
+            name: action.name.clone(),
+            description: format!("Action {}", action.key),
+            default_binding: shortcut_str.clone(),
+            current_binding: shortcut_str,
+        };
+        match settings.keyboard_implementation {
+            KeyboardImplementation::Tauri => {
+                tauri_impl::register_action_shortcut(app, binding);
+            }
+            KeyboardImplementation::HandyKeys => {
+                handy_keys::register_action_shortcut(app, binding);
+            }
+        }
+    }
+}
+
+/// Unregister all action shortcuts (called when recording stops)
+pub fn unregister_action_shortcuts(app: &AppHandle) {
+    let settings = get_settings(app);
+    for key in 1..=9u8 {
+        let shortcut_str = format!("ctrl+{}", key);
+        let binding = ShortcutBinding {
+            id: format!("action_{}", key),
+            name: String::new(),
+            description: String::new(),
+            default_binding: shortcut_str.clone(),
+            current_binding: shortcut_str,
+        };
+        match settings.keyboard_implementation {
+            KeyboardImplementation::Tauri => {
+                tauri_impl::unregister_action_shortcut(app, binding);
+            }
+            KeyboardImplementation::HandyKeys => {
+                handy_keys::unregister_action_shortcut(app, binding);
+            }
+        }
+    }
+}
+
 /// Register a shortcut using the appropriate implementation
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     let settings = get_settings(app);
@@ -956,6 +1005,134 @@ pub fn delete_post_process_prompt(app: AppHandle, id: String) -> Result<(), Stri
     if settings.post_process_selected_prompt_id.as_ref() == Some(&id) {
         settings.post_process_selected_prompt_id =
             settings.post_process_prompts.first().map(|p| p.id.clone());
+    }
+
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn add_post_process_action(
+    app: AppHandle,
+    key: u8,
+    name: String,
+    prompt: String,
+    model: Option<String>,
+    provider_id: Option<String>,
+) -> Result<settings::PostProcessAction, String> {
+    if key < 1 || key > 9 {
+        return Err("Action key must be between 1 and 9".to_string());
+    }
+
+    let mut settings = settings::get_settings(&app);
+
+    if settings.post_process_actions.iter().any(|a| a.key == key) {
+        return Err(format!("Action with key {} already exists", key));
+    }
+
+    let action = settings::PostProcessAction {
+        key,
+        name,
+        prompt,
+        model: model.filter(|m| !m.trim().is_empty()),
+        provider_id: provider_id.filter(|p| !p.trim().is_empty()),
+    };
+
+    settings.post_process_actions.push(action.clone());
+    settings::write_settings(&app, settings);
+    Ok(action)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn update_post_process_action(
+    app: AppHandle,
+    key: u8,
+    name: String,
+    prompt: String,
+    model: Option<String>,
+    provider_id: Option<String>,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if let Some(action) = settings
+        .post_process_actions
+        .iter_mut()
+        .find(|a| a.key == key)
+    {
+        action.name = name;
+        action.prompt = prompt;
+        action.model = model.filter(|m| !m.trim().is_empty());
+        action.provider_id = provider_id.filter(|p| !p.trim().is_empty());
+        settings::write_settings(&app, settings);
+        Ok(())
+    } else {
+        Err(format!("Action with key {} not found", key))
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_post_process_action(app: AppHandle, key: u8) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    let original_len = settings.post_process_actions.len();
+    settings.post_process_actions.retain(|a| a.key != key);
+
+    if settings.post_process_actions.len() == original_len {
+        return Err(format!("Action with key {} not found", key));
+    }
+
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn add_saved_processing_model(
+    app: AppHandle,
+    provider_id: String,
+    model_id: String,
+    label: String,
+) -> Result<settings::SavedProcessingModel, String> {
+    let mut settings = settings::get_settings(&app);
+    let id = format!("{}:{}", provider_id, model_id);
+
+    if settings.saved_processing_models.iter().any(|m| m.id == id) {
+        return Err(format!("Model '{}' is already saved", label));
+    }
+
+    let model = settings::SavedProcessingModel {
+        id,
+        provider_id,
+        model_id,
+        label,
+    };
+
+    settings.saved_processing_models.push(model.clone());
+    settings::write_settings(&app, settings);
+    Ok(model)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_saved_processing_model(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let original_len = settings.saved_processing_models.len();
+    settings.saved_processing_models.retain(|m| m.id != id);
+
+    if settings.saved_processing_models.len() == original_len {
+        return Err(format!("Saved model '{}' not found", id));
+    }
+
+    for action in &mut settings.post_process_actions {
+        let matches = action.provider_id.as_deref() == Some(id.split(':').next().unwrap_or(""))
+            && action.model.as_deref() == id.split(':').nth(1);
+        if matches {
+            action.model = None;
+            action.provider_id = None;
+        }
     }
 
     settings::write_settings(&app, settings);

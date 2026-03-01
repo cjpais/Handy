@@ -447,6 +447,21 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+pub fn emit_action_selected(app_handle: &AppHandle, key: u8, name: &str) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit(
+            "action-selected",
+            serde_json::json!({ "key": key, "name": name }),
+        );
+    }
+}
+
+pub fn emit_action_deselected(app_handle: &AppHandle) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("action-deselected", ());
+    }
+}
+
 pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
     // emit levels to main app
     let _ = app_handle.emit("mic-level", levels);

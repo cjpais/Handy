@@ -29,8 +29,16 @@ struct Content {
 }
 
 #[derive(Serialize)]
+struct SystemInstruction {
+    parts: Vec<Part>,
+}
+
+#[derive(Serialize)]
 struct GenerateContentRequest {
     contents: Vec<Content>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "systemInstruction")]
+    system_instruction: Option<SystemInstruction>,
 }
 
 #[derive(Deserialize)]
@@ -107,6 +115,7 @@ pub async fn transcribe_audio(api_key: &str, model: &str, audio_samples: &[f32])
                 },
             ],
         }],
+        system_instruction: None,
     };
 
     let mut headers = HeaderMap::new();
@@ -153,5 +162,82 @@ pub async fn transcribe_audio(api_key: &str, model: &str, audio_samples: &[f32])
         .unwrap_or_default();
 
     debug!("Gemini transcription result: {}", text);
+    Ok(text.trim().to_string())
+}
+
+pub async fn generate_text(
+    api_key: &str,
+    model: &str,
+    system_prompt: &str,
+    user_text: &str,
+) -> Result<String> {
+    debug!(
+        "Gemini generate_text: model={}, prompt_len={}, text_len={}",
+        model,
+        system_prompt.len(),
+        user_text.len()
+    );
+
+    let url = format!("{}/{}:generateContent", GEMINI_API_BASE, model);
+
+    let request = GenerateContentRequest {
+        contents: vec![Content {
+            parts: vec![Part {
+                text: Some(user_text.to_string()),
+                inline_data: None,
+            }],
+        }],
+        system_instruction: Some(SystemInstruction {
+            parts: vec![Part {
+                text: Some(system_prompt.to_string()),
+                inline_data: None,
+            }],
+        }),
+    };
+
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.insert(
+        "x-goog-api-key",
+        HeaderValue::from_str(api_key).map_err(|e| anyhow::anyhow!("Invalid API key: {}", e))?,
+    );
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(&url)
+        .headers(headers)
+        .json(&request)
+        .send()
+        .await
+        .map_err(|e| anyhow::anyhow!("Gemini text generation request failed: {}", e))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Failed to read error response".to_string());
+        return Err(anyhow::anyhow!(
+            "Gemini API error ({}): {}",
+            status,
+            error_text
+        ));
+    }
+
+    let resp: GenerateContentResponse = response
+        .json()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to parse Gemini response: {}", e))?;
+
+    let text = resp
+        .candidates
+        .and_then(|c| c.into_iter().next())
+        .and_then(|c| c.content)
+        .and_then(|c| c.parts)
+        .and_then(|p| p.into_iter().next())
+        .and_then(|p| p.text)
+        .unwrap_or_default();
+
+    debug!("Gemini text generation result length: {}", text.len());
     Ok(text.trim().to_string())
 }

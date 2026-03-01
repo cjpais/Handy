@@ -289,6 +289,11 @@ pub fn run(cli_args: CliArgs) {
         shortcut::update_post_process_prompt,
         shortcut::delete_post_process_prompt,
         shortcut::set_post_process_selected_prompt,
+        shortcut::add_post_process_action,
+        shortcut::update_post_process_action,
+        shortcut::delete_post_process_action,
+        shortcut::add_saved_processing_model,
+        shortcut::delete_saved_processing_model,
         shortcut::update_custom_words,
         shortcut::suspend_binding,
         shortcut::resume_binding,
@@ -436,6 +441,7 @@ pub fn run(cli_args: CliArgs) {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
+            app.manage(actions::ActiveActionState(std::sync::Mutex::new(None)));
 
             initialize_core_logic(&app_handle);
 

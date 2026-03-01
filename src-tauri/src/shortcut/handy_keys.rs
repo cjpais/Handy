@@ -502,6 +502,48 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     }
 }
 
+/// Register an action shortcut (bare digit key, called when recording starts)
+pub fn register_action_shortcut(app: &AppHandle, binding: ShortcutBinding) {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = (app, binding);
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let app_clone = app.clone();
+        let binding_clone = binding;
+        tauri::async_runtime::spawn(async move {
+            if let Some(state) = app_clone.try_state::<HandyKeysState>() {
+                if let Err(e) = state.register(&binding_clone) {
+                    error!("Failed to register action shortcut '{}': {}", binding_clone.id, e);
+                }
+            }
+        });
+    }
+}
+
+/// Unregister an action shortcut (called when recording stops)
+pub fn unregister_action_shortcut(app: &AppHandle, binding: ShortcutBinding) {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = (app, binding);
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let app_clone = app.clone();
+        let binding_clone = binding;
+        tauri::async_runtime::spawn(async move {
+            if let Some(state) = app_clone.try_state::<HandyKeysState>() {
+                let _ = state.unregister(&binding_clone);
+            }
+        });
+    }
+}
+
 /// Register a shortcut
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
     let state = app

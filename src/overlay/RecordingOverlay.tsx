@@ -8,6 +8,11 @@ import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "transcribing" | "processing";
 
+interface ActionInfo {
+  key: number;
+  name: string;
+}
+
 const MicIcon: React.FC = () => (
   <svg
     width="14"
@@ -125,6 +130,7 @@ const RecordingOverlay: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [timerStart, setTimerStart] = useState(0);
+  const [selectedAction, setSelectedAction] = useState<ActionInfo | null>(null);
   const direction = getLanguageDirection(i18n.language);
 
   const handleCancel = useCallback(() => {
@@ -143,22 +149,39 @@ const RecordingOverlay: React.FC = () => {
         setIsVisible(true);
         if (overlayState === "recording") {
           setTimerStart(Date.now());
+          setSelectedAction(null);
         }
       });
 
       const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
+        setSelectedAction(null);
+      });
+
+      const unlistenAction = await listen<ActionInfo>(
+        "action-selected",
+        (event) => {
+          setSelectedAction(event.payload);
+        },
+      );
+
+      const unlistenDeselect = await listen("action-deselected", () => {
+        setSelectedAction(null);
       });
 
       if (!isMounted) {
         unlistenShow();
         unlistenHide();
+        unlistenAction();
+        unlistenDeselect();
         return;
       }
 
       cleanupListeners = () => {
         unlistenShow();
         unlistenHide();
+        unlistenAction();
+        unlistenDeselect();
       };
     };
 
@@ -177,6 +200,10 @@ const RecordingOverlay: React.FC = () => {
       <div className="overlay-left">
         {state === "recording" ? <MicIcon /> : <DotsIcon />}
       </div>
+
+      {selectedAction && state === "recording" && (
+        <div className="action-badge">{selectedAction.key}</div>
+      )}
 
       <div className="overlay-middle">
         {state === "recording" && (

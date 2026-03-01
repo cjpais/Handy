@@ -194,3 +194,39 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
         });
     }
 }
+
+/// Register an action shortcut (ctrl+digit, called when recording starts)
+pub fn register_action_shortcut(app: &AppHandle, binding: ShortcutBinding) {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = (app, binding);
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            if let Err(e) = register_shortcut(&app_clone, binding) {
+                error!("Failed to register action shortcut: {}", e);
+            }
+        });
+    }
+}
+
+/// Unregister an action shortcut (called when recording stops)
+pub fn unregister_action_shortcut(app: &AppHandle, binding: ShortcutBinding) {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = (app, binding);
+        return;
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            let _ = unregister_shortcut(&app_clone, binding);
+        });
+    }
+}
