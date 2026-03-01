@@ -133,25 +133,7 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     });
 }
 
-fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
-    if let Some((mouse_x, mouse_y)) = input::get_cursor_position(app_handle) {
-        if let Ok(Some(monitor)) = app_handle.monitor_from_point(mouse_x as f64, mouse_y as f64) {
-            return Some(monitor);
-        }
-
-        if let Ok(monitors) = app_handle.available_monitors() {
-            for monitor in monitors {
-                if is_mouse_within_monitor((mouse_x, mouse_y), monitor.position(), monitor.size()) {
-                    return Some(monitor);
-                }
-            }
-        }
-    }
-
-    app_handle.primary_monitor().ok().flatten()
-}
-
-fn is_mouse_within_monitor(
+fn is_point_within_monitor(
     mouse_pos: (i32, i32),
     monitor_pos: &PhysicalPosition<i32>,
     monitor_size: &PhysicalSize<u32>,
@@ -170,6 +152,82 @@ fn is_mouse_within_monitor(
         && mouse_x < (monitor_x + monitor_width as i32)
         && mouse_y >= monitor_y
         && mouse_y < (monitor_y + monitor_height as i32)
+}
+
+fn get_fallback_monitor(
+    app_handle: &AppHandle,
+    monitors: &[tauri::Monitor],
+) -> Option<tauri::Monitor> {
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        if let Ok(Some(monitor)) = main_window.current_monitor() {
+            return Some(monitor);
+        }
+    }
+
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        if let Ok(Some(monitor)) = overlay_window.current_monitor() {
+            return Some(monitor);
+        }
+    }
+
+    if let Some(monitor) = monitors.iter().max_by_key(|m| {
+        let area = m.work_area();
+        area.size.width as u64 * area.size.height as u64
+    }) {
+        return Some(monitor.clone());
+    }
+
+    app_handle.primary_monitor().ok().flatten()
+}
+
+fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
+    let monitors = app_handle.available_monitors().unwrap_or_default();
+
+    if let Some((mouse_x, mouse_y)) = input::get_cursor_position(app_handle) {
+        if let Ok(Some(monitor)) = app_handle.monitor_from_point(mouse_x as f64, mouse_y as f64) {
+            return Some(monitor);
+        }
+
+        for monitor in &monitors {
+            if is_point_within_monitor((mouse_x, mouse_y), monitor.position(), monitor.size()) {
+                return Some(monitor.clone());
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            // Fallback for mixed-DPI setups where cursor and monitor coordinates may differ
+            // between logical and physical spaces depending on backend reporting.
+            for monitor in &monitors {
+                let scale = monitor.scale_factor();
+                let pos = monitor.position();
+                let size = monitor.size();
+
+                let logical_pos = PhysicalPosition {
+                    x: (pos.x as f64 / scale).round() as i32,
+                    y: (pos.y as f64 / scale).round() as i32,
+                };
+                let logical_size = PhysicalSize {
+                    width: (size.width as f64 / scale).round() as u32,
+                    height: (size.height as f64 / scale).round() as u32,
+                };
+
+                if is_point_within_monitor((mouse_x, mouse_y), &logical_pos, &logical_size) {
+                    return Some(monitor.clone());
+                }
+
+                let scaled_cursor = (
+                    (mouse_x as f64 * scale).round() as i32,
+                    (mouse_y as f64 * scale).round() as i32,
+                );
+                if is_point_within_monitor(scaled_cursor, monitor.position(), monitor.size()) {
+                    return Some(monitor.clone());
+                }
+            }
+        }
+    }
+
+    get_fallback_monitor(app_handle, &monitors)
 }
 
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
