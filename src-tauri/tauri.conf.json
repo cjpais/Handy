@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Parler",
-  "version": "0.7.10",
+  "version": "0.7.11",
   "identifier": "com.melvynx.parler",
   "build": {
     "beforeDevCommand": "bun run dev",
