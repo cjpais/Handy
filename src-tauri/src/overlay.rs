@@ -137,8 +137,29 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     if let Some(mouse_location) = input::get_cursor_position(app_handle) {
         if let Ok(monitors) = app_handle.available_monitors() {
             for monitor in monitors {
+                // On macOS, enigo returns cursor position in logical coordinates (points)
+                // via CGEvent, but Tauri reports monitor bounds in physical pixels.
+                // Convert monitor bounds to logical for correct comparison on Retina displays.
+                #[cfg(target_os = "macos")]
+                let is_within = {
+                    let scale = monitor.scale_factor();
+                    let pos = monitor.position();
+                    let size = monitor.size();
+                    let logical_pos = PhysicalPosition {
+                        x: (pos.x as f64 / scale) as i32,
+                        y: (pos.y as f64 / scale) as i32,
+                    };
+                    let logical_size = PhysicalSize {
+                        width: (size.width as f64 / scale) as u32,
+                        height: (size.height as f64 / scale) as u32,
+                    };
+                    is_mouse_within_monitor(mouse_location, &logical_pos, &logical_size)
+                };
+
+                #[cfg(not(target_os = "macos"))]
                 let is_within =
                     is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
+
                 if is_within {
                     return Some(monitor);
                 }
@@ -188,6 +209,13 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
                 work_area_y + work_area_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
             }
         };
+
+        log::debug!(
+            "Overlay position: ({:.0}, {:.0}) on monitor (scale={}, work_area=({:.0},{:.0},{:.0},{:.0}))",
+            x, y,
+            scale,
+            work_area_x, work_area_y, work_area_width, work_area_height
+        );
 
         return Some((x, y));
     }

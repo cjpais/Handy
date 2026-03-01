@@ -5,8 +5,11 @@ import { ChevronDown, Globe } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
+import { useSettings } from "@/hooks/useSettings";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -19,8 +22,11 @@ export const ModelsSettings: React.FC = () => {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
+  const [showGeminiKeyDialog, setShowGeminiKeyDialog] = useState(false);
+  const [geminiKeyInput, setGeminiKeyInput] = useState("");
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
+  const { getSetting, updateSetting } = useSettings();
   const {
     models,
     currentModel,
@@ -57,6 +63,8 @@ export const ModelsSettings: React.FC = () => {
     }
   }, [languageDropdownOpen]);
 
+
+
   // filtered languages for dropdown (exclude "auto")
   const filteredLanguages = useMemo(() => {
     return LANGUAGES.filter(
@@ -74,6 +82,9 @@ export const ModelsSettings: React.FC = () => {
     return LANGUAGES.find((lang) => lang.value === languageFilter)?.label || "";
   }, [languageFilter, t]);
 
+  const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
+  const hasGeminiKey = !!geminiApiKey && geminiApiKey.length > 0;
+
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) {
       return "extracting";
@@ -85,6 +96,9 @@ export const ModelsSettings: React.FC = () => {
       return "switching";
     }
     if (modelId === currentModel) {
+      if (modelId === "gemini-api" && !hasGeminiKey) {
+        return "available";
+      }
       return "active";
     }
     const model = models.find((m: ModelInfo) => m.id === modelId);
@@ -105,9 +119,27 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const handleModelSelect = async (modelId: string) => {
+    if (modelId === "gemini-api" && !hasGeminiKey) {
+      setGeminiKeyInput("");
+      setShowGeminiKeyDialog(true);
+      return;
+    }
     setSwitchingModelId(modelId);
     try {
       await selectModel(modelId);
+    } finally {
+      setSwitchingModelId(null);
+    }
+  };
+
+  const handleGeminiKeySave = async () => {
+    const key = geminiKeyInput.trim();
+    if (!key) return;
+    await updateSetting("gemini_api_key", key);
+    setShowGeminiKeyDialog(false);
+    setSwitchingModelId("gemini-api");
+    try {
+      await selectModel("gemini-api");
     } finally {
       setSwitchingModelId(null);
     }
@@ -354,6 +386,58 @@ export const ModelsSettings: React.FC = () => {
       ) : (
         <div className="text-center py-8 text-text/50">
           {t("settings.models.noModelsMatch")}
+        </div>
+      )}
+
+      {showGeminiKeyDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setShowGeminiKeyDialog(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setShowGeminiKeyDialog(false);
+          }}
+        >
+          <div
+            className="bg-background border border-mid-gray/40 rounded-xl p-5 w-96 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-base font-semibold">
+                {t("settings.gemini.apiKeyRequired")}
+              </h3>
+              <p className="text-sm text-text/60 mt-1">
+                {t("settings.gemini.apiKeyRequiredDescription")}
+              </p>
+            </div>
+            <Input
+              autoFocus
+              type="password"
+              value={geminiKeyInput}
+              onChange={(e) => setGeminiKeyInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleGeminiKeySave();
+              }}
+              placeholder={t("settings.gemini.apiKeyPlaceholder")}
+              className="w-full"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowGeminiKeyDialog(false)}
+              >
+                {t("settings.gemini.cancel")}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleGeminiKeySave}
+                disabled={!geminiKeyInput.trim()}
+              >
+                {t("settings.gemini.save")}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

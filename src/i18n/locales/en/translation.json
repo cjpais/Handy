@@ -415,7 +415,11 @@
       "apiKey": "API Key",
       "apiKeyPlaceholder": "Enter your Gemini API key",
       "model": "Model",
-      "modelDescription": "Select which Gemini model to use for transcription"
+      "modelDescription": "Select which Gemini model to use for transcription",
+      "apiKeyRequired": "API Key Required",
+      "apiKeyRequiredDescription": "Enter your Google Gemini API key to use cloud transcription.",
+      "save": "Save",
+      "cancel": "Cancel"
     },
     "debug": {
       "title": "Debug",
