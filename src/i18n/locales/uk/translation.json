@@ -190,6 +190,14 @@
       "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
       "deleteActiveConfirm": "{{modelName}} — ваша активна модель. Видалення зупинить транскрипцію, доки ви не оберете нову модель. Ви впевнені?",
       "deleteTitle": "Видалити модель",
+      "customHuggingFace": {
+        "title": "Add custom model from Hugging Face",
+        "description": "Paste a Hugging Face file URL using /blob/ or /resolve/ that ends in .bin. Handy will add it and start downloading immediately.",
+        "placeholder": "https://huggingface.co/.../blob/main/model.bin",
+        "add": "Add and download",
+        "adding": "Adding...",
+        "downloadStartFailed": "Model was added, but download could not be started."
+      },
       "filters": {
         "all": "Усі",
         "multiLanguage": "Багатомовні",

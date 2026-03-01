@@ -148,6 +148,14 @@
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
       "deleteActiveConfirm": "{{modelName}} est votre modèle actif. Le supprimer arrêtera les transcriptions jusqu'à ce que vous sélectionniez un nouveau modèle. Êtes-vous sûr ?",
       "deleteTitle": "Supprimer le modèle",
+      "customHuggingFace": {
+        "title": "Add custom model from Hugging Face",
+        "description": "Paste a Hugging Face file URL using /blob/ or /resolve/ that ends in .bin. Handy will add it and start downloading immediately.",
+        "placeholder": "https://huggingface.co/.../blob/main/model.bin",
+        "add": "Add and download",
+        "adding": "Adding...",
+        "downloadStartFailed": "Model was added, but download could not be started."
+      },
       "filters": {
         "all": "Tous",
         "multiLanguage": "Multilingue",

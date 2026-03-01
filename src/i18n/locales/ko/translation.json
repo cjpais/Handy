@@ -215,6 +215,14 @@
       "deleteConfirm": "{{modelName}}을(를) 삭제하시겠습니까? 다시 사용하려면 다운로드해야 합니다.",
       "deleteActiveConfirm": "{{modelName}}은(는) 현재 활성 모델입니다. 삭제하면 새 모델을 선택할 때까지 전사가 중지됩니다. 정말 삭제하시겠습니까?",
       "deleteTitle": "모델 삭제",
+      "customHuggingFace": {
+        "title": "Add custom model from Hugging Face",
+        "description": "Paste a Hugging Face file URL using /blob/ or /resolve/ that ends in .bin. Handy will add it and start downloading immediately.",
+        "placeholder": "https://huggingface.co/.../blob/main/model.bin",
+        "add": "Add and download",
+        "adding": "Adding...",
+        "downloadStartFailed": "Model was added, but download could not be started."
+      },
       "filters": {
         "all": "전체",
         "multiLanguage": "다국어",

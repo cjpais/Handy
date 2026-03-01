@@ -1,4 +1,4 @@
-use crate::settings::{get_settings, write_settings};
+use crate::settings::{CustomHuggingFaceModel, get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -56,12 +56,7 @@ pub struct DownloadProgress {
     pub percentage: f64,
 }
 
-#[derive(Debug, Clone)]
-struct HuggingFaceModelSource {
-    repo_id: String,
-    revision: String,
-    file_path: String,
-}
+type HuggingFaceModelSource = CustomHuggingFaceModel;
 
 pub struct ModelManager {
     app_handle: AppHandle,
@@ -432,6 +427,15 @@ impl ModelManager {
             },
         );
 
+        let settings = get_settings(app_handle);
+
+        // Register persisted Hugging Face model sources so they are still available after restart.
+        Self::register_hugging_face_model_sources(
+            &models_dir,
+            &mut available_models,
+            &settings.custom_hugging_face_models,
+        );
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);
@@ -604,17 +608,51 @@ impl ModelManager {
 
     pub fn add_hugging_face_model(&self, model_url: &str) -> Result<String> {
         let source = Self::parse_hugging_face_model_url(model_url)?;
-        let storage_filename = Self::build_hugging_face_storage_filename(&source)?;
-        let model_id = storage_filename.trim_end_matches(".bin").to_string();
+        let model_info = Self::build_hugging_face_model_info(&source, &self.models_dir)?;
+        let model_id = model_info.id.clone();
 
-        if model_id.is_empty() {
-            return Err(anyhow::anyhow!("Invalid model identifier"));
+        self.persist_hugging_face_source(&source)?;
+
+        {
+            let mut models = self.available_models.lock().unwrap();
+            models.insert(model_id.clone(), model_info);
         }
 
-        let model_path = self.models_dir.join(&storage_filename);
-        let partial_path = self
-            .models_dir
-            .join(format!("{}.partial", &storage_filename));
+        let _ = self.app_handle.emit("model-state-changed", ());
+
+        Ok(model_id)
+    }
+
+    fn register_hugging_face_model_sources(
+        models_dir: &Path,
+        available_models: &mut HashMap<String, ModelInfo>,
+        sources: &[HuggingFaceModelSource],
+    ) {
+        for source in sources {
+            match Self::build_hugging_face_model_info(source, models_dir) {
+                Ok(model_info) => {
+                    available_models
+                        .entry(model_info.id.clone())
+                        .or_insert(model_info);
+                }
+                Err(err) => {
+                    warn!(
+                        "Failed to register persisted Hugging Face model source '{}/{}': {}",
+                        source.repo_id, source.file_path, err
+                    );
+                }
+            }
+        }
+    }
+
+    fn build_hugging_face_model_info(
+        source: &HuggingFaceModelSource,
+        models_dir: &Path,
+    ) -> Result<ModelInfo> {
+        let storage_filename = Self::build_hugging_face_storage_filename(source)?;
+        let model_id = Self::build_hugging_face_model_id(source)?;
+        let model_path = models_dir.join(&storage_filename);
+        let partial_path = models_dir.join(format!("{}.partial", &storage_filename));
 
         let is_downloaded = model_path.exists();
         let size_mb = if is_downloaded {
@@ -622,6 +660,7 @@ impl ModelManager {
         } else {
             0
         };
+
         let partial_size = if partial_path.exists() {
             partial_path.metadata().map(|m| m.len()).unwrap_or(0)
         } else {
@@ -632,6 +671,7 @@ impl ModelManager {
             "https://huggingface.co/{}/resolve/{}/{}",
             source.repo_id, source.revision, source.file_path
         );
+
         let display_filename = source
             .file_path
             .rsplit('/')
@@ -640,40 +680,63 @@ impl ModelManager {
             .to_string();
         let display_name = format!("{} / {}", source.repo_id, display_filename);
 
+        Ok(ModelInfo {
+            id: model_id,
+            name: display_name,
+            description: "Not officially supported".to_string(),
+            filename: storage_filename,
+            url: Some(download_url),
+            size_mb,
+            is_downloaded,
+            is_downloading: false,
+            partial_size,
+            is_directory: false,
+            engine_type: EngineType::Whisper,
+            accuracy_score: 0.0,
+            speed_score: 0.0,
+            supports_translation: false,
+            is_recommended: false,
+            supported_languages: vec![],
+            is_custom: true,
+        })
+    }
+
+    fn persist_hugging_face_source(&self, source: &HuggingFaceModelSource) -> Result<()> {
+        let mut settings = get_settings(&self.app_handle);
+
+        if settings
+            .custom_hugging_face_models
+            .iter()
+            .any(|existing| existing == source)
         {
-            let mut models = self.available_models.lock().unwrap();
-
-            if models.contains_key(&model_id) {
-                return Ok(model_id);
-            }
-
-            models.insert(
-                model_id.clone(),
-                ModelInfo {
-                    id: model_id.clone(),
-                    name: display_name,
-                    description: "Not officially supported".to_string(),
-                    filename: storage_filename,
-                    url: Some(download_url),
-                    size_mb,
-                    is_downloaded,
-                    is_downloading: false,
-                    partial_size,
-                    is_directory: false,
-                    engine_type: EngineType::Whisper,
-                    accuracy_score: 0.0,
-                    speed_score: 0.0,
-                    supports_translation: false,
-                    is_recommended: false,
-                    supported_languages: vec![],
-                    is_custom: true,
-                },
-            );
+            return Ok(());
         }
 
-        let _ = self.app_handle.emit("model-state-changed", ());
+        settings.custom_hugging_face_models.push(source.clone());
+        write_settings(&self.app_handle, settings);
+        Ok(())
+    }
 
-        Ok(model_id)
+    fn remove_hugging_face_source_by_model_id(&self, model_id: &str) {
+        let mut settings = get_settings(&self.app_handle);
+        let initial_len = settings.custom_hugging_face_models.len();
+
+        settings.custom_hugging_face_models.retain(|source| {
+            match Self::build_hugging_face_model_id(source) {
+                Ok(source_model_id) => source_model_id != model_id,
+                Err(err) => {
+                    warn!(
+                        "Failed to compute model id for stored Hugging Face source '{}/{}': {}",
+                        source.repo_id, source.file_path, err
+                    );
+                    true
+                }
+            }
+        });
+
+        if settings.custom_hugging_face_models.len() != initial_len {
+            write_settings(&self.app_handle, settings);
+        }
     }
 
     fn parse_hugging_face_model_url(model_url: &str) -> Result<HuggingFaceModelSource> {
@@ -745,6 +808,7 @@ impl ModelManager {
 
     fn build_hugging_face_storage_filename(source: &HuggingFaceModelSource) -> Result<String> {
         let repo_slug = Self::sanitize_filename_component(&source.repo_id.replace('/', "--"));
+        let revision_slug = Self::sanitize_filename_component(&source.revision);
         let file_slug = source
             .file_path
             .split('/')
@@ -752,13 +816,24 @@ impl ModelManager {
             .collect::<Vec<_>>()
             .join("--");
 
-        let filename = format!("hf--{}--{}", repo_slug, file_slug);
+        let filename = format!("hf--{}--{}--{}", repo_slug, revision_slug, file_slug);
 
         if filename.is_empty() || !filename.ends_with(".bin") {
             return Err(anyhow::anyhow!("Failed to build a valid model filename"));
         }
 
         Ok(filename)
+    }
+
+    fn build_hugging_face_model_id(source: &HuggingFaceModelSource) -> Result<String> {
+        let filename = Self::build_hugging_face_storage_filename(source)?;
+        let model_id = filename.trim_end_matches(".bin").to_string();
+
+        if model_id.is_empty() {
+            return Err(anyhow::anyhow!("Invalid model identifier"));
+        }
+
+        Ok(model_id)
     }
 
     fn sanitize_filename_component(component: &str) -> String {
@@ -1296,12 +1371,14 @@ impl ModelManager {
             return Err(anyhow::anyhow!("No model files found to delete"));
         }
 
-        // Custom models should be removed from the list entirely since they
-        // have no download URL and can't be re-downloaded
+        // Custom models should be removed from the list entirely.
         if model_info.is_custom {
             let mut models = self.available_models.lock().unwrap();
             models.remove(model_id);
             debug!("ModelManager: removed custom model from available models");
+            drop(models);
+
+            self.remove_hugging_face_source_by_model_id(model_id);
         } else {
             // Update download status (marks predefined models as not downloaded)
             self.update_download_status()?;
@@ -1538,6 +1615,25 @@ mod tests {
         };
 
         let filename = ModelManager::build_hugging_face_storage_filename(&source).unwrap();
-        assert_eq!(filename, "hf--org--model--nested--path--ggml-small.bin");
+        assert_eq!(filename, "hf--org--model--main--nested--path--ggml-small.bin");
+    }
+
+    #[test]
+    fn test_build_hugging_face_model_id_uses_revision() {
+        let source_main = HuggingFaceModelSource {
+            repo_id: "org/model".to_string(),
+            revision: "main".to_string(),
+            file_path: "ggml-small.bin".to_string(),
+        };
+        let source_v2 = HuggingFaceModelSource {
+            repo_id: "org/model".to_string(),
+            revision: "v2".to_string(),
+            file_path: "ggml-small.bin".to_string(),
+        };
+
+        let main_id = ModelManager::build_hugging_face_model_id(&source_main).unwrap();
+        let v2_id = ModelManager::build_hugging_face_model_id(&source_v2).unwrap();
+
+        assert_ne!(main_id, v2_id);
     }
 }

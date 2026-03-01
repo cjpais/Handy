@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { ChevronDown, Globe } from "lucide-react";
 import { toast } from "sonner";
@@ -166,16 +167,14 @@ export const ModelsSettings: React.FC = () => {
     setIsAddingHuggingFaceModel(true);
 
     try {
-      const addResult = await commands.addHuggingFaceModel(modelUrl);
-      if (addResult.status === "error") {
-        toast.error(String(addResult.error));
-        return;
-      }
+      const modelId = await invoke<string>("add_hugging_face_model", {
+        modelUrl,
+      });
 
       setHuggingFaceUrl("");
       await loadModels();
 
-      const modelInfoResult = await commands.getModelInfo(addResult.data);
+      const modelInfoResult = await commands.getModelInfo(modelId);
       if (
         modelInfoResult.status === "ok" &&
         modelInfoResult.data?.is_downloaded
@@ -183,7 +182,7 @@ export const ModelsSettings: React.FC = () => {
         return;
       }
 
-      const downloadStarted = await downloadModel(addResult.data);
+      const downloadStarted = await downloadModel(modelId);
       if (!downloadStarted) {
         toast.error(t("settings.models.customHuggingFace.downloadStartFailed"));
       }

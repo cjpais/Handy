@@ -105,6 +105,13 @@ pub struct PostProcessProvider {
     pub supports_structured_output: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Type)]
+pub struct CustomHuggingFaceModel {
+    pub repo_id: String,
+    pub revision: String,
+    pub file_path: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
@@ -339,6 +346,8 @@ pub struct AppSettings {
     pub post_process_api_keys: HashMap<String, String>,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
+    #[serde(default)]
+    pub custom_hugging_face_models: Vec<CustomHuggingFaceModel>,
     #[serde(default = "default_post_process_prompts")]
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
@@ -713,6 +722,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_providers: default_post_process_providers(),
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
+        custom_hugging_face_models: Vec::new(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
