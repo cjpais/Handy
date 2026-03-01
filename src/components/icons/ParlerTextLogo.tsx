@@ -1,8 +1,5 @@
-import React from "react";
-
 const ParlerTextLogo = ({
   width,
-  height,
   className,
 }: {
   width?: number;
@@ -10,27 +7,18 @@ const ParlerTextLogo = ({
   className?: string;
 }) => {
   return (
-    <svg
-      width={width}
-      height={height}
+    <div
       className={className}
-      viewBox="0 0 400 80"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      style={{
+        fontFamily: "'Geist Pixel Circle', monospace",
+        fontSize: width ? width / 4.2 : 28,
+        fontWeight: "normal",
+        letterSpacing: "2px",
+        width,
+      }}
     >
-      <text
-        x="200"
-        y="58"
-        textAnchor="middle"
-        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-        fontSize="52"
-        fontWeight="bold"
-        className="logo-primary"
-        style={{ letterSpacing: "-1px" }}
-      >
-        Parler
-      </text>
-    </svg>
+      <span className="text-logo-primary">PARLER</span>
+    </div>
   );
 };
 
