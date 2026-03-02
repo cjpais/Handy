@@ -96,21 +96,24 @@ impl ModelManager {
 
         // TODO this should be read from a JSON file or something..
         available_models.insert(
-            "small".to_string(),
+            "base-q8".to_string(),
             ModelInfo {
-                id: "small".to_string(),
-                name: "Whisper Small".to_string(),
-                description: "Fast and fairly accurate.".to_string(),
-                filename: "ggml-small.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-small.bin".to_string()),
-                size_mb: 487,
+                id: "base-q8".to_string(),
+                name: "Whisper Base Q8".to_string(),
+                description: "Ultra-fast, smallest model. Great for quick dictation.".to_string(),
+                filename: "ggml-base-q8_0.bin".to_string(),
+                url: Some(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q8_0.bin"
+                        .to_string(),
+                ),
+                size_mb: 82,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
                 engine_type: EngineType::Whisper,
-                accuracy_score: 0.60,
-                speed_score: 0.85,
+                accuracy_score: 0.40,
+                speed_score: 0.98,
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
@@ -118,16 +121,44 @@ impl ModelManager {
             },
         );
 
-        // Add downloadable models
         available_models.insert(
-            "medium".to_string(),
+            "small-q8".to_string(),
             ModelInfo {
-                id: "medium".to_string(),
-                name: "Whisper Medium".to_string(),
-                description: "Good accuracy, medium speed".to_string(),
-                filename: "whisper-medium-q4_1.bin".to_string(),
-                url: Some("https://blob.handy.computer/whisper-medium-q4_1.bin".to_string()),
-                size_mb: 492, // Approximate size
+                id: "small-q8".to_string(),
+                name: "Whisper Small Q8".to_string(),
+                description: "Fast with good accuracy. Great for 8 GB Macs.".to_string(),
+                filename: "ggml-small-q8_0.bin".to_string(),
+                url: Some(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q8_0.bin"
+                        .to_string(),
+                ),
+                size_mb: 200,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Whisper,
+                accuracy_score: 0.58,
+                speed_score: 0.90,
+                supports_translation: true,
+                is_recommended: false,
+                supported_languages: whisper_languages.clone(),
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "medium-q5".to_string(),
+            ModelInfo {
+                id: "medium-q5".to_string(),
+                name: "Whisper Medium Q5".to_string(),
+                description: "Good accuracy, medium speed.".to_string(),
+                filename: "ggml-medium-q5_0.bin".to_string(),
+                url: Some(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium-q5_0.bin"
+                        .to_string(),
+                ),
+                size_mb: 539,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -143,23 +174,26 @@ impl ModelManager {
         );
 
         available_models.insert(
-            "turbo".to_string(),
+            "turbo-q5".to_string(),
             ModelInfo {
-                id: "turbo".to_string(),
-                name: "Whisper Turbo".to_string(),
-                description: "Balanced accuracy and speed.".to_string(),
-                filename: "ggml-large-v3-turbo.bin".to_string(),
-                url: Some("https://blob.handy.computer/ggml-large-v3-turbo.bin".to_string()),
-                size_mb: 1600, // Approximate size
+                id: "turbo-q5".to_string(),
+                name: "Whisper Turbo Q5".to_string(),
+                description: "Best speed/accuracy ratio. Recommended for most users.".to_string(),
+                filename: "ggml-large-v3-turbo-q5_0.bin".to_string(),
+                url: Some(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin"
+                        .to_string(),
+                ),
+                size_mb: 600,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
                 engine_type: EngineType::Whisper,
-                accuracy_score: 0.80,
-                speed_score: 0.40,
-                supports_translation: false, // Turbo doesn't support translation
-                is_recommended: false,
+                accuracy_score: 0.78,
+                speed_score: 0.70,
+                supports_translation: false,
+                is_recommended: true,
                 supported_languages: whisper_languages.clone(),
                 is_custom: false,
             },
@@ -1218,18 +1252,18 @@ mod tests {
         // Create files that should be ignored
         File::create(models_dir.join(".hidden-model.bin")).unwrap(); // Hidden file
         File::create(models_dir.join("readme.txt")).unwrap(); // Non-.bin file
-        File::create(models_dir.join("ggml-small.bin")).unwrap(); // Predefined filename
+        File::create(models_dir.join("ggml-small-q8_0.bin")).unwrap(); // Predefined filename
         fs::create_dir(models_dir.join("some-directory.bin")).unwrap(); // Directory
 
         // Set up available_models with a predefined Whisper model
         let mut models = HashMap::new();
         models.insert(
-            "small".to_string(),
+            "small-q8".to_string(),
             ModelInfo {
-                id: "small".to_string(),
-                name: "Whisper Small".to_string(),
+                id: "small-q8".to_string(),
+                name: "Whisper Small Q8".to_string(),
                 description: "Test".to_string(),
-                filename: "ggml-small.bin".to_string(),
+                filename: "ggml-small-q8_0.bin".to_string(),
                 url: Some("https://example.com".to_string()),
                 size_mb: 100,
                 is_downloaded: false,

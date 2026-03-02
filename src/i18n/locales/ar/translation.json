@@ -28,17 +28,9 @@
       "speed": "السرعة"
     },
     "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": ".سريع ودقيق إلى حد ما"
-      },
-      "medium": {
-        "name": "Whisper Medium",
+      "medium-q5": {
+        "name": "Whisper Medium Q5",
         "description": ".دقة جيدة، سرعة متوسطة"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": ".توازن بين الدقة والسرعة"
       },
       "large": {
         "name": "Whisper Large",
