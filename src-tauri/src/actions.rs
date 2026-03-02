@@ -277,7 +277,10 @@ async fn process_action(
         match settings.post_process_provider(pid).cloned() {
             Some(p) => p,
             None => {
-                debug!("Action provider '{}' not found, falling back to active provider", pid);
+                debug!(
+                    "Action provider '{}' not found, falling back to active provider",
+                    pid
+                );
                 settings.active_post_process_provider().cloned()?
             }
         }
@@ -326,7 +329,10 @@ async fn process_action(
             ) {
                 Ok(result) if !result.trim().is_empty() => {
                     let result = strip_invisible_chars(&result);
-                    debug!("Apple Intelligence action processing succeeded. Output length: {} chars", result.len());
+                    debug!(
+                        "Apple Intelligence action processing succeeded. Output length: {} chars",
+                        result.len()
+                    );
                     Some(result)
                 }
                 Ok(_) => {
@@ -363,7 +369,16 @@ async fn process_action(
 
     let system_prompt = "You are a text processing assistant. Output ONLY the final processed text. Do not add any explanation, commentary, preamble, or formatting such as markdown code blocks. Just output the raw result text, nothing else.".to_string();
 
-    match crate::llm_client::send_chat_completion_with_schema(&provider, api_key, &model, full_prompt, Some(system_prompt), None).await {
+    match crate::llm_client::send_chat_completion_with_schema(
+        &provider,
+        api_key,
+        &model,
+        full_prompt,
+        Some(system_prompt),
+        None,
+    )
+    .await
+    {
         Ok(Some(content)) if !content.is_empty() => {
             let result = strip_invisible_chars(&content);
             debug!(
@@ -378,7 +393,10 @@ async fn process_action(
             None
         }
         Err(e) => {
-            error!("Action processing failed for provider '{}': {}", provider.id, e);
+            error!(
+                "Action processing failed for provider '{}': {}",
+                provider.id, e
+            );
             None
         }
     }
@@ -526,15 +544,15 @@ impl ShortcutAction for TranscribeAction {
         let post_process = self.post_process;
 
         // Read and clear the selected action before spawning the async task
-        let selected_action_key = app
-            .try_state::<ActiveActionState>()
-            .and_then(|s| match s.0.lock() {
-                Ok(mut guard) => guard.take(),
-                Err(poisoned) => {
-                    error!("ActiveActionState mutex poisoned, recovering");
-                    poisoned.into_inner().take()
-                }
-            });
+        let selected_action_key =
+            app.try_state::<ActiveActionState>()
+                .and_then(|s| match s.0.lock() {
+                    Ok(mut guard) => guard.take(),
+                    Err(poisoned) => {
+                        error!("ActiveActionState mutex poisoned, recovering");
+                        poisoned.into_inner().take()
+                    }
+                });
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
@@ -614,7 +632,14 @@ impl ShortcutAction for TranscribeAction {
 
                             // Action processing takes priority over default post-processing
                             let processed = if let Some(ref action) = selected_action {
-                                process_action(&settings, &final_text, &action.prompt, action.model.as_deref(), action.provider_id.as_deref()).await
+                                process_action(
+                                    &settings,
+                                    &final_text,
+                                    &action.prompt,
+                                    action.model.as_deref(),
+                                    action.provider_id.as_deref(),
+                                )
+                                .await
                             } else if post_process {
                                 post_process_transcription(&settings, &final_text).await
                             } else {
@@ -627,7 +652,9 @@ impl ShortcutAction for TranscribeAction {
 
                                 if let Some(action) = selected_action {
                                     post_process_prompt = Some(action.prompt);
-                                } else if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                                } else if let Some(prompt_id) =
+                                    &settings.post_process_selected_prompt_id
+                                {
                                     if let Some(prompt) = settings
                                         .post_process_prompts
                                         .iter()
@@ -644,6 +671,11 @@ impl ShortcutAction for TranscribeAction {
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
+                            let action_key_for_history = if post_processed_text.is_some() {
+                                selected_action_key
+                            } else {
+                                None
+                            };
                             tauri::async_runtime::spawn(async move {
                                 if let Err(e) = hm_clone
                                     .save_transcription(
@@ -651,6 +683,7 @@ impl ShortcutAction for TranscribeAction {
                                         transcription_for_history,
                                         post_processed_text,
                                         post_process_prompt,
+                                        action_key_for_history,
                                     )
                                     .await
                                 {

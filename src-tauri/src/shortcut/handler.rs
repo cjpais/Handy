@@ -10,7 +10,9 @@ use tauri::{AppHandle, Manager};
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use crate::settings::get_settings;
-use crate::transcription_coordinator::{is_action_binding, is_transcribe_binding, parse_action_key};
+use crate::transcription_coordinator::{
+    is_action_binding, is_transcribe_binding, parse_action_key,
+};
 use crate::TranscriptionCoordinator;
 
 /// Handle a shortcut event from either implementation.

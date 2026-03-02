@@ -31,6 +31,7 @@ static MIGRATIONS: &[M] = &[
     ),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN post_process_action_key INTEGER;"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -43,6 +44,7 @@ pub struct HistoryEntry {
     pub transcription_text: String,
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
+    pub post_process_action_key: Option<u8>,
 }
 
 pub struct HistoryManager {
@@ -183,6 +185,7 @@ impl HistoryManager {
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
+        post_process_action_key: Option<u8>,
     ) -> Result<()> {
         let timestamp = Utc::now().timestamp();
         let file_name = format!("handy-{}.wav", timestamp);
@@ -200,6 +203,7 @@ impl HistoryManager {
             transcription_text,
             post_processed_text,
             post_process_prompt,
+            post_process_action_key,
         )?;
 
         // Clean up old entries
@@ -221,11 +225,12 @@ impl HistoryManager {
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
+        post_process_action_key: Option<u8>,
     ) -> Result<()> {
         let conn = self.get_connection()?;
         conn.execute(
-            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt],
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_action_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt, post_process_action_key.map(|k| k as i64)],
         )?;
 
         debug!("Saved transcription to database");
@@ -355,7 +360,7 @@ impl HistoryManager {
     pub async fn get_history_entries(&self) -> Result<Vec<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt FROM transcription_history ORDER BY timestamp DESC"
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_action_key FROM transcription_history ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -368,6 +373,9 @@ impl HistoryManager {
                 transcription_text: row.get("transcription_text")?,
                 post_processed_text: row.get("post_processed_text")?,
                 post_process_prompt: row.get("post_process_prompt")?,
+                post_process_action_key: row
+                    .get::<_, Option<i64>>("post_process_action_key")?
+                    .and_then(|v| u8::try_from(v).ok()),
             })
         })?;
 
@@ -386,7 +394,7 @@ impl HistoryManager {
 
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_action_key
              FROM transcription_history
              ORDER BY timestamp DESC
              LIMIT 1",
@@ -403,6 +411,9 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    post_process_action_key: row
+                        .get::<_, Option<i64>>("post_process_action_key")?
+                        .and_then(|v| u8::try_from(v).ok()),
                 })
             })
             .optional()?;
@@ -460,7 +471,7 @@ impl HistoryManager {
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+            "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_action_key
              FROM transcription_history WHERE id = ?1",
         )?;
 
@@ -475,6 +486,9 @@ impl HistoryManager {
                     transcription_text: row.get("transcription_text")?,
                     post_processed_text: row.get("post_processed_text")?,
                     post_process_prompt: row.get("post_process_prompt")?,
+                    post_process_action_key: row
+                        .get::<_, Option<i64>>("post_process_action_key")?
+                        .and_then(|v| u8::try_from(v).ok()),
                 })
             })
             .optional()?;
@@ -540,7 +554,8 @@ mod tests {
                 title TEXT NOT NULL,
                 transcription_text TEXT NOT NULL,
                 post_processed_text TEXT,
-                post_process_prompt TEXT
+                post_process_prompt TEXT,
+                post_process_action_key INTEGER
             );",
         )
         .expect("create transcription_history table");
@@ -549,8 +564,8 @@ mod tests {
 
     fn insert_entry(conn: &Connection, timestamp: i64, text: &str, post_processed: Option<&str>) {
         conn.execute(
-            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_action_key)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 format!("handy-{}.wav", timestamp),
                 timestamp,
@@ -558,7 +573,8 @@ mod tests {
                 format!("Recording {}", timestamp),
                 text,
                 post_processed,
-                Option::<String>::None
+                Option::<String>::None,
+                Option::<i64>::None
             ],
         )
         .expect("insert history entry");

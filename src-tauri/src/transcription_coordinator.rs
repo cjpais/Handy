@@ -89,7 +89,11 @@ impl TranscriptionCoordinator {
                                 if is_pressed && matches!(stage, Stage::Idle) {
                                     start(&app, &mut stage, &binding_id, &hotkey_string);
                                 } else if !is_pressed {
-                                    if let Stage::Recording { binding_id: ref bid, .. } = stage {
+                                    if let Stage::Recording {
+                                        binding_id: ref bid,
+                                        ..
+                                    } = stage
+                                    {
                                         if bid == &binding_id {
                                             stop(&app, &mut stage, &binding_id, &hotkey_string);
                                         }
@@ -100,7 +104,10 @@ impl TranscriptionCoordinator {
                                     Stage::Idle => {
                                         start(&app, &mut stage, &binding_id, &hotkey_string);
                                     }
-                                    Stage::Recording { binding_id: ref bid, .. } if bid == &binding_id => {
+                                    Stage::Recording {
+                                        binding_id: ref bid,
+                                        ..
+                                    } if bid == &binding_id => {
                                         stop(&app, &mut stage, &binding_id, &hotkey_string);
                                     }
                                     _ => {
@@ -114,7 +121,8 @@ impl TranscriptionCoordinator {
                         } => {
                             // Don't reset during processing - wait for the pipeline to finish.
                             if !matches!(stage, Stage::Processing)
-                                && (recording_was_active || matches!(stage, Stage::Recording { .. }))
+                                && (recording_was_active
+                                    || matches!(stage, Stage::Recording { .. }))
                             {
                                 stage = Stage::Idle;
                             }
@@ -123,7 +131,11 @@ impl TranscriptionCoordinator {
                             stage = Stage::Idle;
                         }
                         Command::SelectAction { key } => {
-                            if let Stage::Recording { ref mut selected_action, .. } = stage {
+                            if let Stage::Recording {
+                                ref mut selected_action,
+                                ..
+                            } = stage
+                            {
                                 if *selected_action == Some(key) {
                                     *selected_action = None;
                                     emit_action_deselected(&app);
@@ -131,7 +143,9 @@ impl TranscriptionCoordinator {
                                 } else {
                                     *selected_action = Some(key);
                                     let settings = get_settings(&app);
-                                    if let Some(action) = settings.post_process_actions.iter().find(|a| a.key == key) {
+                                    if let Some(action) =
+                                        settings.post_process_actions.iter().find(|a| a.key == key)
+                                    {
                                         emit_action_selected(&app, key, &action.name);
                                     }
                                     debug!("Action {} selected during recording", key);
@@ -221,7 +235,10 @@ fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &s
 
 fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
     // Store selected action in managed state before calling stop
-    if let Stage::Recording { selected_action, .. } = &stage {
+    if let Stage::Recording {
+        selected_action, ..
+    } = &stage
+    {
         if let Some(state) = app.try_state::<ActiveActionState>() {
             *state.0.lock().unwrap() = *selected_action;
         }

@@ -450,7 +450,10 @@
       "deleteError": "Failed to delete entry. Please try again.",
       "reprocess": "Reprocess with different model",
       "reprocessing": "Reprocessing...",
-      "selectModel": "Select model"
+      "selectModel": "Select model",
+      "originalTranscript": "Original",
+      "postProcessed": "Post-processed",
+      "action": "Action {{key}}"
     },
     "gemini": {
       "title": "Gemini API",

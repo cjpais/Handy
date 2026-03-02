@@ -517,7 +517,10 @@ pub fn register_action_shortcut(app: &AppHandle, binding: ShortcutBinding) {
         tauri::async_runtime::spawn(async move {
             if let Some(state) = app_clone.try_state::<HandyKeysState>() {
                 if let Err(e) = state.register(&binding_clone) {
-                    error!("Failed to register action shortcut '{}': {}", binding_clone.id, e);
+                    error!(
+                        "Failed to register action shortcut '{}': {}",
+                        binding_clone.id, e
+                    );
                 }
             }
         });

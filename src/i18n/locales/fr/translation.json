@@ -390,7 +390,10 @@
       "save": "Enregistrer la transcription",
       "unsave": "Retirer des favoris",
       "delete": "Supprimer l'entrée",
-      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer."
+      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
+      "originalTranscript": "Original",
+      "postProcessed": "Post-traitement",
+      "action": "Action {{key}}"
     },
     "debug": {
       "title": "Débogage",
