@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Geist Pixel Circle";
+  src: url("../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Circle.woff2")
+    format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
