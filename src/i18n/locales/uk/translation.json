@@ -28,17 +28,9 @@
       "speed": "швидкість"
     },
     "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "Швидка та досить точна"
-      },
-      "medium": {
-        "name": "Whisper Medium",
+      "medium-q5": {
+        "name": "Whisper Medium Q5",
         "description": "Хороша точність, середня швидкість"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "Збалансована точність та швидкість"
       },
       "large": {
         "name": "Whisper Large",

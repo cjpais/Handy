@@ -23,15 +23,15 @@ Add Google Gemini as a native transcription provider. Unlike existing Cloud (Ope
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
-| `src-tauri/src/settings.rs` | Add `gemini_api_key`, `gemini_model`, `gemini_prompt` to `AppSettings` + defaults |
-| `src-tauri/src/managers/model.rs` | Add `EngineType::Gemini` |
-| `src-tauri/src/managers/transcription.rs` | Add `LoadedEngine::Gemini`, dispatch to `gemini_client`, accept `prompt: Option<String>` param |
-| `src-tauri/src/actions.rs` | Pass `Some(gemini_prompt)` when `post_process && selected_model == "gemini"`; skip LLM post-process for Gemini |
-| `src-tauri/src/commands/` | New commands: `change_gemini_api_key`, `change_gemini_model`, `change_gemini_prompt`, `test_gemini_connection` |
-| `src/components/settings/models/ModelsSettings.tsx` | Render `GeminiTranscriptionCard` in cloud providers section |
-| `src/i18n/locales/en/translation.json` | New i18n keys for Gemini UI |
+| File                                                | Change                                                                                                         |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src-tauri/src/settings.rs`                         | Add `gemini_api_key`, `gemini_model`, `gemini_prompt` to `AppSettings` + defaults                              |
+| `src-tauri/src/managers/model.rs`                   | Add `EngineType::Gemini`                                                                                       |
+| `src-tauri/src/managers/transcription.rs`           | Add `LoadedEngine::Gemini`, dispatch to `gemini_client`, accept `prompt: Option<String>` param                 |
+| `src-tauri/src/actions.rs`                          | Pass `Some(gemini_prompt)` when `post_process && selected_model == "gemini"`; skip LLM post-process for Gemini |
+| `src-tauri/src/commands/`                           | New commands: `change_gemini_api_key`, `change_gemini_model`, `change_gemini_prompt`, `test_gemini_connection` |
+| `src/components/settings/models/ModelsSettings.tsx` | Render `GeminiTranscriptionCard` in cloud providers section                                                    |
+| `src/i18n/locales/en/translation.json`              | New i18n keys for Gemini UI                                                                                    |
 
 ### New Frontend Files
 
@@ -86,6 +86,7 @@ Content-Type: application/json
 ```
 
 Notes:
+
 - `system_instruction` only included when `prompt` is `Some`
 - Uses `inline_data` (no Files API) — typical recordings are well under the 20MB request limit
 - WAV bytes reuse existing `samples_to_wav_bytes()` from `transcription.rs`
@@ -100,6 +101,7 @@ pub gemini_prompt: String,    // system instruction for transcribe_with_post_pro
 ```
 
 **Default gemini_prompt:**
+
 ```
 You are a transcription assistant. Transcribe the audio accurately.
 Fix capitalization, punctuation, and remove filler words.

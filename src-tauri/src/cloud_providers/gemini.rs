@@ -224,7 +224,10 @@ mod tests {
         } else {
             None
         };
-        assert!(prompt.is_none(), "post_process=false must not produce a prompt");
+        assert!(
+            prompt.is_none(),
+            "post_process=false must not produce a prompt"
+        );
     }
 
     /// Verify that post_process=true resolves the Gemini prompt as system instruction.
@@ -243,8 +246,14 @@ mod tests {
         };
         assert!(prompt.is_some(), "post_process=true must produce a prompt");
         let text = prompt.unwrap();
-        assert!(!text.contains("${output}"), "prompt must strip ${{output}} placeholder");
-        assert!(text.contains("transcription"), "prompt should mention transcription");
+        assert!(
+            !text.contains("${output}"),
+            "prompt must strip ${{output}} placeholder"
+        );
+        assert!(
+            text.contains("transcription"),
+            "prompt should mention transcription"
+        );
     }
 
     /// Verify that post_process=true with empty prompts produces None (no crash).
@@ -263,7 +272,10 @@ mod tests {
         } else {
             None
         };
-        assert!(prompt.is_none(), "missing prompt should produce None, not crash");
+        assert!(
+            prompt.is_none(),
+            "missing prompt should produce None, not crash"
+        );
     }
 
     /// Verify that post_process=true with empty prompt text produces None.
@@ -271,7 +283,11 @@ mod tests {
     fn prompt_is_none_when_gemini_prompt_empty() {
         let mut settings = get_default_settings();
         // Replace Gemini prompt with empty text
-        if let Some(p) = settings.post_process_prompts.iter_mut().find(|p| p.id == GEMINI_PROMPT_ID) {
+        if let Some(p) = settings
+            .post_process_prompts
+            .iter_mut()
+            .find(|p| p.id == GEMINI_PROMPT_ID)
+        {
             p.prompt = String::new();
         }
         let prompt = if true {

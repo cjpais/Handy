@@ -15,6 +15,7 @@
 ### Task 1: Settings — add Gemini fields
 
 **Files:**
+
 - Modify: `src-tauri/src/settings.rs`
 
 **Step 1: Add fields to `AppSettings` struct**
@@ -55,6 +56,7 @@ gemini_prompt: default_gemini_prompt(),
 ```bash
 cd src-tauri && cargo check 2>&1 | head -30
 ```
+
 Expected: no errors related to AppSettings
 
 **Step 5: Commit**
@@ -69,6 +71,7 @@ git commit -m "feat: add Gemini settings fields to AppSettings"
 ### Task 2: Model Manager — add Gemini engine type and model entry
 
 **Files:**
+
 - Modify: `src-tauri/src/managers/model.rs`
 
 **Step 1: Add `Gemini` to `EngineType` enum** (around line 20)
@@ -115,13 +118,17 @@ available_models.insert(
 **Step 3: Handle Gemini in `is_cloud_engine` / filtering** — search for `EngineType::Cloud` usage in model.rs and add matching `EngineType::Gemini` cases where needed:
 
 Look for line ~491:
+
 ```rust
 if matches!(model.engine_type, EngineType::Cloud) {
 ```
+
 Change to:
+
 ```rust
 if matches!(model.engine_type, EngineType::Cloud | EngineType::Gemini) {
 ```
+
 (This ensures Gemini isn't treated as a downloadable model)
 
 **Step 4: Verify it compiles**
@@ -142,6 +149,7 @@ git commit -m "feat: add EngineType::Gemini and Gemini model entry"
 ### Task 3: gemini_client.rs — HTTP client for Gemini API
 
 **Files:**
+
 - Create: `src-tauri/src/gemini_client.rs`
 
 **Step 1: Create the module**
@@ -321,6 +329,7 @@ grep "base64" src-tauri/Cargo.toml
 ```
 
 If not present, add to `src-tauri/Cargo.toml`:
+
 ```toml
 base64 = "0.22"
 ```
@@ -349,6 +358,7 @@ git commit -m "feat: add gemini_client module with generateContent API"
 ### Task 4: TranscriptionManager — add Gemini engine and prompt param
 
 **Files:**
+
 - Modify: `src-tauri/src/managers/transcription.rs`
 
 **Step 1: Add `Gemini` to `LoadedEngine` enum** (around line 146)
@@ -461,6 +471,7 @@ git commit -m "feat: add LoadedEngine::Gemini with prompt support in transcribe(
 ### Task 5: Commands — Gemini settings commands
 
 **Files:**
+
 - Modify: `src-tauri/src/shortcut/mod.rs`
 - Modify: `src-tauri/src/lib.rs`
 
@@ -529,6 +540,7 @@ cd src-tauri && cargo test export_bindings 2>&1 | tail -5
 ```
 
 Or run the dev build briefly to trigger specta export:
+
 ```bash
 bun run tauri dev --no-watch 2>&1 | head -5  # just to trigger export, then Ctrl+C
 ```
@@ -547,6 +559,7 @@ git commit -m "feat: add Gemini settings commands and regenerate bindings"
 ### Task 6: actions.rs — wire Gemini prompt into transcription
 
 **Files:**
+
 - Modify: `src-tauri/src/actions.rs`
 
 **Step 1: Pass prompt to `tm.transcribe()`** — find the `tm.transcribe(samples)` call (around line 422) and replace with:
@@ -607,6 +620,7 @@ git commit -m "feat: wire Gemini prompt into transcribe(), skip LLM post-process
 ### Task 7: i18n — translation keys
 
 **Files:**
+
 - Modify: `src/i18n/locales/en/translation.json`
 
 **Step 1: Find where cloudTranscription keys live and add Gemini keys after them**
@@ -649,6 +663,7 @@ git commit -m "feat: add Gemini i18n keys"
 ### Task 8: Frontend — GeminiTranscriptionCard component
 
 **Files:**
+
 - Create: `src/components/settings/models/GeminiTranscriptionCard.tsx`
 - Modify: `src/components/settings/models/ModelsSettings.tsx`
 
@@ -670,10 +685,9 @@ interface GeminiTranscriptionCardProps {
   onSelect: (modelId: string) => void;
 }
 
-export const GeminiTranscriptionCard: React.FC<GeminiTranscriptionCardProps> = ({
-  isActive,
-  onSelect,
-}) => {
+export const GeminiTranscriptionCard: React.FC<
+  GeminiTranscriptionCardProps
+> = ({ isActive, onSelect }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -912,11 +926,13 @@ export const GeminiTranscriptionCard: React.FC<GeminiTranscriptionCardProps> = (
 **Step 2: Add GeminiTranscriptionCard to ModelsSettings** — in `ModelsSettings.tsx`:
 
 Import at the top:
+
 ```tsx
 import { GeminiTranscriptionCard } from "./GeminiTranscriptionCard";
 ```
 
 In the `{/* API Section */}` block (around line 362), add after `<CloudTranscriptionCard .../>`:
+
 ```tsx
 <GeminiTranscriptionCard
   isActive={currentModel === "gemini"}
@@ -982,6 +998,7 @@ CMAKE_POLICY_VERSION_MINIMUM=3.5 bun run tauri dev
 ```
 
 **Step 2: Configure Gemini**
+
 1. Open Settings → Models
 2. Find Google Gemini card — verify it appears
 3. Enter API key
@@ -990,12 +1007,14 @@ CMAKE_POLICY_VERSION_MINIMUM=3.5 bun run tauri dev
 6. Click "Use Gemini" — verify "Active" badge appears
 
 **Step 3: Test plain transcription**
+
 1. Press `option+space` (transcribe)
 2. Say: "hello world this is a test"
 3. Verify text appears in clipboard/focused app
 4. Check logs: `debug: Calling Gemini API: model=gemini-2.0-flash`
 
 **Step 4: Test transcription with post-processing**
+
 1. Expand the Prompt section
 2. Set prompt: "Transcribe the audio. Make everything UPPERCASE."
 3. Press `option+shift+space` (transcribe_with_post_process)
@@ -1003,6 +1022,7 @@ CMAKE_POLICY_VERSION_MINIMUM=3.5 bun run tauri dev
 5. Verify output is "HELLO WORLD" (or similar uppercase result)
 
 **Step 5: Test fallback — verify old post-process still works with non-Gemini model**
+
 1. Switch to a local model
 2. Enable post-processing with an OpenAI provider
 3. Verify `option+shift+space` still works as before
@@ -1018,16 +1038,16 @@ git commit -m "fix: manual testing fixes"
 
 ## Summary of Changes
 
-| File | Type | Change |
-|------|------|--------|
-| `src-tauri/src/settings.rs` | Modify | Add `gemini_api_key`, `gemini_model`, `gemini_prompt` |
-| `src-tauri/src/managers/model.rs` | Modify | Add `EngineType::Gemini`, add "gemini" ModelInfo |
-| `src-tauri/src/gemini_client.rs` | Create | Gemini REST API client |
-| `src-tauri/src/managers/transcription.rs` | Modify | Add `LoadedEngine::Gemini`, `prompt` param to `transcribe()` |
-| `src-tauri/src/shortcut/mod.rs` | Modify | Add 4 Gemini commands |
-| `src-tauri/src/lib.rs` | Modify | Register module + commands |
-| `src-tauri/src/actions.rs` | Modify | Pass Gemini prompt, skip LLM post-process for Gemini |
-| `src/bindings.ts` | Regenerate | New Gemini commands |
-| `src/components/settings/models/GeminiTranscriptionCard.tsx` | Create | Settings UI component |
-| `src/components/settings/models/ModelsSettings.tsx` | Modify | Add GeminiTranscriptionCard |
-| `src/i18n/locales/en/translation.json` | Modify | Gemini i18n keys |
+| File                                                         | Type       | Change                                                       |
+| ------------------------------------------------------------ | ---------- | ------------------------------------------------------------ |
+| `src-tauri/src/settings.rs`                                  | Modify     | Add `gemini_api_key`, `gemini_model`, `gemini_prompt`        |
+| `src-tauri/src/managers/model.rs`                            | Modify     | Add `EngineType::Gemini`, add "gemini" ModelInfo             |
+| `src-tauri/src/gemini_client.rs`                             | Create     | Gemini REST API client                                       |
+| `src-tauri/src/managers/transcription.rs`                    | Modify     | Add `LoadedEngine::Gemini`, `prompt` param to `transcribe()` |
+| `src-tauri/src/shortcut/mod.rs`                              | Modify     | Add 4 Gemini commands                                        |
+| `src-tauri/src/lib.rs`                                       | Modify     | Register module + commands                                   |
+| `src-tauri/src/actions.rs`                                   | Modify     | Pass Gemini prompt, skip LLM post-process for Gemini         |
+| `src/bindings.ts`                                            | Regenerate | New Gemini commands                                          |
+| `src/components/settings/models/GeminiTranscriptionCard.tsx` | Create     | Settings UI component                                        |
+| `src/components/settings/models/ModelsSettings.tsx`          | Modify     | Add GeminiTranscriptionCard                                  |
+| `src/i18n/locales/en/translation.json`                       | Modify     | Gemini i18n keys                                             |

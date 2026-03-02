@@ -11,6 +11,7 @@ Refactor the Cloud and Gemini transcription backends into a clean `CloudProvider
 ## Problem
 
 Current implementation has:
+
 - Duplicated 3-attempt retry blocks for Cloud and Gemini in `transcription.rs`
 - `prompt: Option<String>` on `transcribe()` leaking Gemini-only concern into the general interface
 - Redundant `settings.gemini_prompt` field (actual prompt read from `post_process_prompts[GEMINI_PROMPT_ID]`)
@@ -99,6 +100,7 @@ fn transcribe(&self, audio: Vec<f32>, post_process: bool) -> Result<String>
 ```
 
 Cloud dispatch reduces from ~100 lines (two separate branches) to ~5 lines:
+
 ```rust
 LoadedEngine::Cloud(provider) => {
     let wav = samples_to_wav_bytes(&audio)?;
@@ -120,10 +122,12 @@ LoadedEngine::Cloud(provider) => {
 ### settings.rs
 
 **Remove:**
+
 - `gemini_prompt: String` field from `AppSettings`
 - `default_gemini_prompt()` function
 
 **Keep:**
+
 - `gemini_api_key`, `gemini_model` — still needed for GeminiProvider
 - `GEMINI_PROMPT_ID` prompt in `post_process_prompts` as single source of truth
 
@@ -139,6 +143,7 @@ LoadedEngine::Cloud(provider) => {
 ### Constants
 
 All occurrences of `"cloud"` / `"gemini"` as model IDs replaced with `MODEL_ID_CLOUD` / `MODEL_ID_GEMINI`:
+
 - `model.rs`, `actions.rs`, `transcription.rs`, `tray.rs`
 - Frontend: constants file or exported via bindings
 

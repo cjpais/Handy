@@ -28,17 +28,9 @@
       "speed": "hız"
     },
     "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "Hızlı ve oldukça doğru."
-      },
-      "medium": {
-        "name": "Whisper Medium",
+      "medium-q5": {
+        "name": "Whisper Medium Q5",
         "description": "İyi doğruluk, orta hız."
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "Dengeli doğruluk ve hız."
       },
       "large": {
         "name": "Whisper Large",

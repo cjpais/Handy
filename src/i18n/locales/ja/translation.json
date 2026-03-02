@@ -28,17 +28,9 @@
       "speed": "速度"
     },
     "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "高速でそこそこ正確。"
-      },
-      "medium": {
-        "name": "Whisper Medium",
+      "medium-q5": {
+        "name": "Whisper Medium Q5",
         "description": "良好な精度、中程度の速度"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "精度と速度のバランスが良い。"
       },
       "large": {
         "name": "Whisper Large",

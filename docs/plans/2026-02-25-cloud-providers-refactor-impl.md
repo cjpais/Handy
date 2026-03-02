@@ -13,6 +13,7 @@
 ### Task 1: Create `cloud_providers` Module with Trait and Retry Helper
 
 **Files:**
+
 - Create: `src-tauri/src/cloud_providers/mod.rs`
 
 **Step 1: Create the module file**
@@ -125,6 +126,7 @@ git commit -m "refactor: add cloud_providers module with trait and retry helper"
 ### Task 2: Create OpenAI Provider
 
 **Files:**
+
 - Create: `src-tauri/src/cloud_providers/openai.rs`
 - Reference: `src-tauri/src/managers/transcription.rs:71-129` (existing `call_cloud_api`)
 
@@ -268,6 +270,7 @@ git commit -m "refactor: extract OpenAI provider into cloud_providers module"
 ### Task 3: Create Gemini Provider
 
 **Files:**
+
 - Create: `src-tauri/src/cloud_providers/gemini.rs`
 - Reference: `src-tauri/src/gemini_client.rs` (existing implementation)
 
@@ -503,6 +506,7 @@ git commit -m "refactor: extract Gemini provider into cloud_providers module"
 ### Task 4: Wire `LoadedEngine::Cloud` into `transcription.rs`
 
 **Files:**
+
 - Modify: `src-tauri/src/managers/transcription.rs`
 
 **Step 1: Update `LoadedEngine` enum**
@@ -518,10 +522,13 @@ Remove: `LoadedEngine::Cloud` and `LoadedEngine::Gemini`.
 **Step 2: Update `transcribe()` signature**
 
 Change from:
+
 ```rust
 pub fn transcribe(&self, audio: Vec<f32>, prompt: Option<String>) -> Result<String>
 ```
+
 to:
+
 ```rust
 pub fn transcribe(&self, audio: Vec<f32>, post_process: bool) -> Result<String>
 ```
@@ -564,20 +571,25 @@ Note: The exact retry closure may need adjustment since `provider` is behind `&m
 **Step 4: Remove old helper functions from `transcription.rs`**
 
 Remove:
+
 - `parse_extra_params()` function (moved to `openai.rs`)
 - `call_cloud_api()` function (moved to `openai.rs`)
 
 Keep:
+
 - `samples_to_wav_bytes()` (still needed — called before passing to provider)
 
 **Step 5: Update `unload_model()` match arm**
 
 Replace:
+
 ```rust
 LoadedEngine::Cloud => { /* nothing to unload */ }
 LoadedEngine::Gemini => { /* nothing to unload */ }
 ```
+
 With:
+
 ```rust
 LoadedEngine::Cloud(_) => { /* nothing to unload */ }
 ```
@@ -585,11 +597,14 @@ LoadedEngine::Cloud(_) => { /* nothing to unload */ }
 **Step 6: Update `load_model()` match arm**
 
 Replace:
+
 ```rust
 EngineType::Cloud => LoadedEngine::Cloud,
 EngineType::Gemini => LoadedEngine::Gemini,
 ```
+
 With:
+
 ```rust
 EngineType::Cloud | EngineType::Gemini => {
     match crate::cloud_providers::provider_for_model(model_id) {
@@ -615,6 +630,7 @@ git commit -m "refactor: wire CloudProvider trait into TranscriptionManager"
 ### Task 5: Update `actions.rs` — Remove Gemini Prompt Logic, Simplify Call
 
 **Files:**
+
 - Modify: `src-tauri/src/actions.rs`
 
 **Step 1: Remove gemini_prompt computation**
@@ -624,10 +640,13 @@ Remove lines 424-433 (the `let gemini_prompt = if settings.selected_model == "ge
 **Step 2: Update transcribe call**
 
 Change:
+
 ```rust
 match tm.transcribe(samples, gemini_prompt) {
 ```
+
 to:
+
 ```rust
 match tm.transcribe(samples, post_process) {
 ```
@@ -635,6 +654,7 @@ match tm.transcribe(samples, post_process) {
 **Step 3: Simplify post-processing guard**
 
 Change:
+
 ```rust
 let processed = if post_process && settings.selected_model != "gemini" {
     post_process_transcription(&settings, &final_text).await
@@ -642,7 +662,9 @@ let processed = if post_process && settings.selected_model != "gemini" {
     None
 };
 ```
+
 to:
+
 ```rust
 let processed = if post_process && crate::cloud_providers::provider_for_model(&settings.selected_model).is_none() {
     post_process_transcription(&settings, &final_text).await
@@ -654,6 +676,7 @@ let processed = if post_process && crate::cloud_providers::provider_for_model(&s
 This way, ANY cloud provider that handles its own post-processing is automatically excluded. No need to hardcode `"gemini"`.
 
 Alternatively, simpler: use `MODEL_ID_GEMINI` constant instead of the string:
+
 ```rust
 use crate::cloud_providers::MODEL_ID_GEMINI;
 let processed = if post_process && settings.selected_model != MODEL_ID_GEMINI {
@@ -698,15 +721,19 @@ git commit -m "refactor: simplify actions.rs with CloudProvider constants"
 ### Task 6: Update `tray.rs` — Replace Magic Strings
 
 **Files:**
+
 - Modify: `src-tauri/src/tray.rs:162`
 
 **Step 1: Replace magic string**
 
 Change:
+
 ```rust
 if settings.selected_model == "cloud" {
 ```
+
 to:
+
 ```rust
 use crate::cloud_providers::MODEL_ID_CLOUD;
 // Hide "Unload Model" for cloud providers — nothing to unload
@@ -731,6 +758,7 @@ git commit -m "refactor: use cloud provider check in tray menu"
 ### Task 7: Update Commands — Wire Through `CloudProvider`
 
 **Files:**
+
 - Modify: `src-tauri/src/shortcut/mod.rs:1163-1180`
 - Modify: `src-tauri/src/lib.rs:308`
 
@@ -739,6 +767,7 @@ git commit -m "refactor: use cloud provider check in tray menu"
 Delete the `change_gemini_prompt` function from `src-tauri/src/shortcut/mod.rs` (lines 1161-1168).
 
 Remove it from the command registration in `src-tauri/src/lib.rs:308`:
+
 ```rust
 // Remove this line:
 shortcut::change_gemini_prompt,
@@ -792,11 +821,13 @@ git commit -m "refactor: wire test commands through CloudProvider trait"
 ### Task 8: Clean Up Settings — Remove `gemini_prompt` Field
 
 **Files:**
+
 - Modify: `src-tauri/src/settings.rs`
 
 **Step 1: Remove `gemini_prompt` field and default function**
 
 In `AppSettings` struct, remove:
+
 ```rust
 #[serde(default = "default_gemini_prompt")]
 pub gemini_prompt: String,
@@ -823,6 +854,7 @@ git commit -m "refactor: remove redundant gemini_prompt setting field"
 ### Task 9: Delete Old `gemini_client.rs`
 
 **Files:**
+
 - Delete: `src-tauri/src/gemini_client.rs`
 - Modify: `src-tauri/src/lib.rs` — remove `mod gemini_client;`
 
@@ -853,6 +885,7 @@ git commit -m "refactor: delete old gemini_client.rs (moved to cloud_providers)"
 ### Task 10: Replace Frontend Magic Strings with Constants
 
 **Files:**
+
 - Modify: `src/components/settings/models/ModelsSettings.tsx:157,369,373`
 - Modify: `src/components/settings/models/GeminiTranscriptionCard.tsx:207`
 - Modify: `src/components/settings/models/CloudTranscriptionCard.tsx:256`
@@ -864,6 +897,7 @@ git commit -m "refactor: delete old gemini_client.rs (moved to cloud_providers)"
 Check if `MODEL_ID_CLOUD` and `MODEL_ID_GEMINI` are already exported via `bindings.ts` (specta auto-generation). If not, create a small constants file:
 
 Create `src/lib/constants/models.ts` if not generated:
+
 ```typescript
 export const MODEL_ID_CLOUD = "cloud";
 export const MODEL_ID_GEMINI = "gemini";
@@ -933,6 +967,7 @@ git commit -m "chore: regenerate bindings and fix lint"
 ### Task 12: Model Registry Constants
 
 **Files:**
+
 - Modify: `src-tauri/src/managers/model.rs:402-445`
 
 **Step 1: Replace hardcoded model ID strings in model registry**
@@ -988,6 +1023,7 @@ CMAKE_POLICY_VERSION_MINIMUM=3.5 bun run tauri dev
 ```
 
 Verify:
+
 - Settings → Models page loads, shows Cloud and Gemini cards
 - Cloud card: can configure and test
 - Gemini card: can configure and test

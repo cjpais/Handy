@@ -28,17 +28,9 @@
       "speed": "vitesse"
     },
     "models": {
-      "small": {
-        "name": "Whisper Small",
-        "description": "Rapide et assez précis."
-      },
-      "medium": {
-        "name": "Whisper Medium",
+      "medium-q5": {
+        "name": "Whisper Medium Q5",
         "description": "Bonne précision, vitesse moyenne"
-      },
-      "turbo": {
-        "name": "Whisper Turbo",
-        "description": "Équilibre entre précision et vitesse."
       },
       "large": {
         "name": "Whisper Large",
