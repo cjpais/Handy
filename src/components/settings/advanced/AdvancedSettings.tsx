@@ -60,9 +60,10 @@ export const AdvancedSettings: React.FC = () => {
         />
       </SettingsGroup>
 
+      <PostProcessingToggle descriptionMode="tooltip" grouped={false} />
+
       {experimentalEnabled && (
         <SettingsGroup title={t("settings.advanced.groups.experimental")}>
-          <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
           <KeyboardImplementationSelector
             descriptionMode="tooltip"
             grouped={true}
