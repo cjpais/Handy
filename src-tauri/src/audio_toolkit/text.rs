@@ -196,8 +196,7 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
 
 /// Filler words to remove from transcriptions
 const FILLER_WORDS: &[&str] = &[
-    "uh", "um", "uhm", "umm", "uhh", "uhhh", "ah", "eh", "hmm", "hm", "mmm", "mm", "mh", "ha",
-    "ehh",
+    "uh", "uhm", "umm", "uhh", "uhhh", "ah", "hmm", "hm", "mmm", "mm", "mh", "ehh",
 ];
 
 static MULTI_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
@@ -327,21 +326,21 @@ mod tests {
 
     #[test]
     fn test_filter_filler_words() {
-        let text = "So um I was thinking uh about this";
+        let text = "So uhm I was thinking uh about this";
         let result = filter_transcription_output(text);
         assert_eq!(result, "So I was thinking about this");
     }
 
     #[test]
     fn test_filter_filler_words_case_insensitive() {
-        let text = "UM this is UH a test";
+        let text = "UHM this is UH a test";
         let result = filter_transcription_output(text);
         assert_eq!(result, "this is a test");
     }
 
     #[test]
     fn test_filter_filler_words_with_punctuation() {
-        let text = "Well, um, I think, uh. that's right";
+        let text = "Well, uhm, I think, uh. that's right";
         let result = filter_transcription_output(text);
         assert_eq!(result, "Well, I think, that's right");
     }
@@ -362,7 +361,7 @@ mod tests {
 
     #[test]
     fn test_filter_combined() {
-        let text = "  Um, so I was, uh, thinking about this  ";
+        let text = "  Uhm, so I was, uh, thinking about this  ";
         let result = filter_transcription_output(text);
         assert_eq!(result, "so I was, thinking about this");
     }
