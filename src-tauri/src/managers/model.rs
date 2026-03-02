@@ -96,32 +96,6 @@ impl ModelManager {
 
         // TODO this should be read from a JSON file or something..
         available_models.insert(
-            "base-q8".to_string(),
-            ModelInfo {
-                id: "base-q8".to_string(),
-                name: "Whisper Base Q8".to_string(),
-                description: "Ultra-fast, smallest model. Great for quick dictation.".to_string(),
-                filename: "ggml-base-q8_0.bin".to_string(),
-                url: Some(
-                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base-q8_0.bin"
-                        .to_string(),
-                ),
-                size_mb: 82,
-                is_downloaded: false,
-                is_downloading: false,
-                partial_size: 0,
-                is_directory: false,
-                engine_type: EngineType::Whisper,
-                accuracy_score: 0.40,
-                speed_score: 0.98,
-                supports_translation: true,
-                is_recommended: false,
-                supported_languages: whisper_languages.clone(),
-                is_custom: false,
-            },
-        );
-
-        available_models.insert(
             "small-q8".to_string(),
             ModelInfo {
                 id: "small-q8".to_string(),
