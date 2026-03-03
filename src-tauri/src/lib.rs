@@ -45,6 +45,7 @@ use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKi
 use crate::settings::get_settings;
 use anyhow::{anyhow, Context, Result};
 use transcribe_rs::engines::parakeet::{ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams};
+use transcribe_rs::engines::whisper::{WhisperEngine, WhisperInferenceParams};
 use transcribe_rs::TranscriptionEngine;
 
 // Global atomic to store the file log level filter
@@ -57,55 +58,144 @@ pub fn run_headless_transcription(cli_args: &CliArgs) -> Result<()> {
         .as_ref()
         .ok_or_else(|| anyhow!("missing --transcribe-file"))?;
 
-    let model_dir = resolve_parakeet_v3_dir()?;
+    let models_dir = resolve_models_dir()?;
+    let selected_model = cli_args
+        .model_id
+        .clone()
+        .or_else(load_selected_model_id)
+        .unwrap_or_else(|| "parakeet-tdt-0.6b-v3".to_string());
+
+    let (engine_kind, model_path) = resolve_model_path_for_id(&models_dir, &selected_model)?;
     let samples = decode_audio_to_f32_16k_mono(audio_path)?;
 
-    let mut engine = ParakeetEngine::new().context("failed to initialize Parakeet engine")?;
-    engine
-        .load_model_with_params(&model_dir, ParakeetModelParams::int8())
-        .context("failed to load Parakeet v3 int8 model")?;
-
-    let result = engine
-        .transcribe_samples(samples, Some(ParakeetInferenceParams::default()))
-        .context("parakeet transcription failed")?;
+    let text = match engine_kind.as_str() {
+        "parakeet" => {
+            let mut engine = ParakeetEngine::new();
+            engine
+                .load_model_with_params(&model_path, ParakeetModelParams::int8())
+                .map_err(|e| anyhow!("failed to load parakeet model '{selected_model}': {e}"))?;
+            engine
+                .transcribe_samples(samples, Some(ParakeetInferenceParams::default()))
+                .map_err(|e| anyhow!("parakeet transcription failed: {e}"))?
+                .text
+        }
+        "whisper" => {
+            let mut engine = WhisperEngine::new();
+            engine
+                .load_model(&model_path)
+                .map_err(|e| anyhow!("failed to load whisper model '{selected_model}': {e}"))?;
+            engine
+                .transcribe_samples(samples, Some(WhisperInferenceParams::default()))
+                .map_err(|e| anyhow!("whisper transcription failed: {e}"))?
+                .text
+        }
+        _ => {
+            return Err(anyhow!("unsupported model engine: {engine_kind}"));
+        }
+    };
 
     match cli_args.format.as_str() {
         "json" => {
-            let payload = serde_json::json!({ "text": result.text });
+            let payload = serde_json::json!({ "text": text, "model_id": selected_model });
             println!("{}", serde_json::to_string(&payload)?);
         }
         _ => {
-            println!("{}", result.text);
+            println!("{}", text);
         }
     }
 
     Ok(())
 }
 
-fn resolve_parakeet_v3_dir() -> Result<std::path::PathBuf> {
+fn resolve_models_dir() -> Result<std::path::PathBuf> {
     let home = std::env::var("HOME").context("HOME is not set")?;
+
     #[cfg(target_os = "macos")]
-    let model_dir = std::path::PathBuf::from(home)
-        .join("Library/Application Support/com.pais.handy/models/parakeet-tdt-0.6b-v3-int8");
+    let models_dir = std::path::PathBuf::from(home)
+        .join("Library/Application Support/com.pais.handy/models");
 
     #[cfg(target_os = "linux")]
-    let model_dir = std::path::PathBuf::from(home)
-        .join(".config/com.pais.handy/models/parakeet-tdt-0.6b-v3-int8");
+    let models_dir = std::path::PathBuf::from(home).join(".config/com.pais.handy/models");
 
     #[cfg(target_os = "windows")]
-    let model_dir = {
+    let models_dir = {
         let appdata = std::env::var("APPDATA").context("APPDATA is not set")?;
-        std::path::PathBuf::from(appdata).join("com.pais.handy/models/parakeet-tdt-0.6b-v3-int8")
+        std::path::PathBuf::from(appdata).join("com.pais.handy/models")
     };
 
-    if !model_dir.exists() {
+    if !models_dir.exists() {
+        return Err(anyhow!("models directory not found: {}", models_dir.display()));
+    }
+    Ok(models_dir)
+}
+
+fn load_selected_model_id() -> Option<String> {
+    let settings_path = resolve_settings_store_path().ok()?;
+    let raw = std::fs::read_to_string(settings_path).ok()?;
+    let v: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    v.get("settings")?
+        .get("selected_model")?
+        .as_str()
+        .map(|s| s.to_string())
+}
+
+fn resolve_settings_store_path() -> Result<std::path::PathBuf> {
+    let home = std::env::var("HOME").context("HOME is not set")?;
+
+    #[cfg(target_os = "macos")]
+    let p = std::path::PathBuf::from(home)
+        .join("Library/Application Support/com.pais.handy/settings_store.json");
+
+    #[cfg(target_os = "linux")]
+    let p = std::path::PathBuf::from(home).join(".config/com.pais.handy/settings_store.json");
+
+    #[cfg(target_os = "windows")]
+    let p = {
+        let appdata = std::env::var("APPDATA").context("APPDATA is not set")?;
+        std::path::PathBuf::from(appdata).join("com.pais.handy/settings_store.json")
+    };
+
+    Ok(p)
+}
+
+fn resolve_model_path_for_id(models_dir: &std::path::Path, model_id: &str) -> Result<(String, std::path::PathBuf)> {
+    let known = match model_id {
+        "parakeet-tdt-0.6b-v2" => Some(("parakeet", "parakeet-tdt-0.6b-v2-int8")),
+        "parakeet-tdt-0.6b-v3" => Some(("parakeet", "parakeet-tdt-0.6b-v3-int8")),
+        "small" => Some(("whisper", "ggml-small.bin")),
+        "medium" => Some(("whisper", "whisper-medium-q4_1.bin")),
+        "turbo" => Some(("whisper", "ggml-large-v3-turbo.bin")),
+        "large" => Some(("whisper", "ggml-large-v3-q5_0.bin")),
+        "breeze-asr" => Some(("whisper", "breeze-asr-q5_k.bin")),
+        _ => None,
+    };
+
+    if let Some((engine, filename)) = known {
+        let p = models_dir.join(filename);
+        if p.exists() {
+            return Ok((engine.to_string(), p));
+        }
         return Err(anyhow!(
-            "parakeet model directory not found: {}",
-            model_dir.display()
+            "selected model '{model_id}' was not found at {}",
+            p.display()
         ));
     }
 
-    Ok(model_dir)
+    // Best effort for custom whisper models: id.bin
+    let custom_whisper = models_dir.join(format!("{model_id}.bin"));
+    if custom_whisper.exists() {
+        return Ok(("whisper".to_string(), custom_whisper));
+    }
+
+    // Best effort for custom directory model
+    let custom_dir = models_dir.join(model_id);
+    if custom_dir.is_dir() {
+        return Err(anyhow!(
+            "model '{model_id}' is a directory model, but headless currently supports only parakeet v2/v3 and whisper file models"
+        ));
+    }
+
+    Err(anyhow!("unknown or unavailable model id: {model_id}"))
 }
 
 fn decode_audio_to_f32_16k_mono(path: &str) -> Result<Vec<f32>> {

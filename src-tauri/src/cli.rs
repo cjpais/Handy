@@ -15,6 +15,10 @@ pub struct CliArgs {
     #[arg(long, default_value = "text", value_parser = ["text", "json"])]
     pub format: String,
 
+    /// Optional model id override (defaults to selected model in Handy settings)
+    #[arg(long)]
+    pub model_id: Option<String>,
+
     /// Disable the system tray icon
     #[arg(long)]
     pub no_tray: bool,
