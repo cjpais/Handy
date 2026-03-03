@@ -43,10 +43,109 @@ use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
 use crate::settings::get_settings;
+use anyhow::{anyhow, Context, Result};
+use transcribe_rs::engines::parakeet::{ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams};
+use transcribe_rs::TranscriptionEngine;
 
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+
+pub fn run_headless_transcription(cli_args: &CliArgs) -> Result<()> {
+    let audio_path = cli_args
+        .transcribe_file
+        .as_ref()
+        .ok_or_else(|| anyhow!("missing --transcribe-file"))?;
+
+    let model_dir = resolve_parakeet_v3_dir()?;
+    let samples = decode_audio_to_f32_16k_mono(audio_path)?;
+
+    let mut engine = ParakeetEngine::new().context("failed to initialize Parakeet engine")?;
+    engine
+        .load_model_with_params(&model_dir, ParakeetModelParams::int8())
+        .context("failed to load Parakeet v3 int8 model")?;
+
+    let result = engine
+        .transcribe_samples(samples, Some(ParakeetInferenceParams::default()))
+        .context("parakeet transcription failed")?;
+
+    match cli_args.format.as_str() {
+        "json" => {
+            let payload = serde_json::json!({ "text": result.text });
+            println!("{}", serde_json::to_string(&payload)?);
+        }
+        _ => {
+            println!("{}", result.text);
+        }
+    }
+
+    Ok(())
+}
+
+fn resolve_parakeet_v3_dir() -> Result<std::path::PathBuf> {
+    let home = std::env::var("HOME").context("HOME is not set")?;
+    #[cfg(target_os = "macos")]
+    let model_dir = std::path::PathBuf::from(home)
+        .join("Library/Application Support/com.pais.handy/models/parakeet-tdt-0.6b-v3-int8");
+
+    #[cfg(target_os = "linux")]
+    let model_dir = std::path::PathBuf::from(home)
+        .join(".config/com.pais.handy/models/parakeet-tdt-0.6b-v3-int8");
+
+    #[cfg(target_os = "windows")]
+    let model_dir = {
+        let appdata = std::env::var("APPDATA").context("APPDATA is not set")?;
+        std::path::PathBuf::from(appdata).join("com.pais.handy/models/parakeet-tdt-0.6b-v3-int8")
+    };
+
+    if !model_dir.exists() {
+        return Err(anyhow!(
+            "parakeet model directory not found: {}",
+            model_dir.display()
+        ));
+    }
+
+    Ok(model_dir)
+}
+
+fn decode_audio_to_f32_16k_mono(path: &str) -> Result<Vec<f32>> {
+    let output = std::process::Command::new("ffmpeg")
+        .args([
+            "-v",
+            "error",
+            "-i",
+            path,
+            "-f",
+            "f32le",
+            "-acodec",
+            "pcm_f32le",
+            "-ac",
+            "1",
+            "-ar",
+            "16000",
+            "-",
+        ])
+        .output()
+        .context("failed to execute ffmpeg")?;
+
+    if !output.status.success() {
+        return Err(anyhow!(
+            "ffmpeg decode failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    if output.stdout.is_empty() {
+        return Err(anyhow!("decoded audio is empty"));
+    }
+
+    let mut samples = Vec::with_capacity(output.stdout.len() / 4);
+    for chunk in output.stdout.chunks_exact(4) {
+        samples.push(f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+    }
+
+    Ok(samples)
+}
 
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     match value {

@@ -7,6 +7,14 @@ use handy_app_lib::CliArgs;
 fn main() {
     let cli_args = CliArgs::parse();
 
+    if cli_args.transcribe_file.is_some() {
+        if let Err(e) = handy_app_lib::run_headless_transcription(&cli_args) {
+            eprintln!("headless transcription failed: {e}");
+            std::process::exit(1);
+        }
+        return;
+    }
+
     #[cfg(target_os = "linux")]
     {
         // DMABUF renderer causes crashes on various GPU/display server configurations

@@ -7,6 +7,14 @@ pub struct CliArgs {
     #[arg(long)]
     pub start_hidden: bool,
 
+    /// Headless mode: transcribe a local audio file and print result to stdout
+    #[arg(long, value_name = "PATH")]
+    pub transcribe_file: Option<String>,
+
+    /// Output format for --transcribe-file (text|json)
+    #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+    pub format: String,
+
     /// Disable the system tray icon
     #[arg(long)]
     pub no_tray: bool,
