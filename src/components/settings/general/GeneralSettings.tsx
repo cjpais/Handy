@@ -1,14 +1,15 @@
-import React from "react";
+import type React from "react";
 import { useTranslation } from "react-i18next";
-import { MicrophoneSelector } from "../MicrophoneSelector";
-import { ShortcutInput } from "../ShortcutInput";
+import { useSettings } from "../../../hooks/useSettings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
+import { AudioFeedback } from "../AudioFeedback";
+import { MicrophoneSelector } from "../MicrophoneSelector";
+import { MuteWhileRecording } from "../MuteWhileRecording";
 import { OutputDeviceSelector } from "../OutputDeviceSelector";
 import { PushToTalk } from "../PushToTalk";
-import { AudioFeedback } from "../AudioFeedback";
-import { useSettings } from "../../../hooks/useSettings";
+import { ShortcutInput } from "../ShortcutInput";
 import { VolumeSlider } from "../VolumeSlider";
-import { MuteWhileRecording } from "../MuteWhileRecording";
+import { MidiSettings } from "./MidiSettings";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 
 export const GeneralSettings: React.FC = () => {
@@ -18,6 +19,7 @@ export const GeneralSettings: React.FC = () => {
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.general.title")}>
         <ShortcutInput shortcutId="transcribe" grouped={true} />
+        <MidiSettings />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
       <ModelSettingsCard />

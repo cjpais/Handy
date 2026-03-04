@@ -495,6 +495,20 @@
           "details": "Handy używa Whisper.cpp do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "Urządzenie MIDI",
+        "description": "Wybierz preferowane urządzenie wejściowe MIDI",
+        "select": "Wybierz urządzenie MIDI...",
+        "noDevices": "Nie wykryto urządzeń wejściowych MIDI"
+      },
+      "trigger": {
+        "title": "Wyzwalacz MIDI",
+        "description": "Powiąż kontroler MIDI jako dodatkowy skrót transkrypcji",
+        "binding": "Nasłuchiwanie...",
+        "bind": "Ucz"
+      }
     }
   },
   "footer": {

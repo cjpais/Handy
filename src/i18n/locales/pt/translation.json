@@ -495,6 +495,20 @@
           "details": "O Handy usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "Dispositivo MIDI",
+        "description": "Selecione seu dispositivo de entrada MIDI preferido",
+        "select": "Selecionar dispositivo MIDI...",
+        "noDevices": "Nenhum dispositivo de entrada MIDI detectado"
+      },
+      "trigger": {
+        "title": "Gatilho MIDI",
+        "description": "Vincule um controle MIDI para usar como atalho adicional de transcrição",
+        "binding": "Escutando...",
+        "bind": "Aprender"
+      }
     }
   },
   "footer": {

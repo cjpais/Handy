@@ -495,6 +495,20 @@
           "details": "Handy sử dụng Whisper.cpp để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "Thiết bị MIDI",
+        "description": "Chọn thiết bị đầu vào MIDI ưu tiên của bạn",
+        "select": "Chọn thiết bị MIDI...",
+        "noDevices": "Không phát hiện thiết bị đầu vào MIDI"
+      },
+      "trigger": {
+        "title": "Kích hoạt MIDI",
+        "description": "Gán một điều khiển MIDI để dùng làm phím tắt phiên âm bổ sung",
+        "binding": "Đang lắng nghe...",
+        "bind": "Học"
+      }
     }
   },
   "footer": {

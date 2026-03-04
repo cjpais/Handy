@@ -495,6 +495,20 @@
         "allLanguages": "جميع اللغات"
       },
       "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+    },
+    "midi": {
+      "device": {
+        "title": "جهاز MIDI",
+        "description": "اختر جهاز إدخال MIDI المفضل لديك",
+        "select": "اختر جهاز MIDI...",
+        "noDevices": "لم يتم اكتشاف أجهزة إدخال MIDI"
+      },
+      "trigger": {
+        "title": "مشغل MIDI",
+        "description": "اربط عنصر تحكم MIDI لاستخدامه كاختصار إضافي للنسخ",
+        "binding": "جارٍ الاستماع...",
+        "bind": "تعلّم"
+      }
     }
   },
   "footer": {

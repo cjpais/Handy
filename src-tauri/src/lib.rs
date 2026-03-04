@@ -20,12 +20,14 @@ mod tray_i18n;
 mod utils;
 
 pub use cli::CliArgs;
+#[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
+use managers::midi::{MidiManager, MidiRuntimeConfig};
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
@@ -122,12 +124,33 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+    let midi_manager = MidiManager::new(app_handle.clone());
+
+    let settings = settings::get_settings(app_handle);
+    midi_manager.update_runtime_config(MidiRuntimeConfig {
+        enabled: settings.midi_enabled,
+        trigger: settings.midi_trigger.clone(),
+        push_to_talk: settings.push_to_talk,
+    });
+
+    if settings.midi_enabled {
+        if let Some(device_name) = settings.midi_device_name.clone() {
+            if let Err(err) = midi_manager.connect(&device_name) {
+                log::warn!(
+                    "Failed to connect MIDI device '{}' during startup: {}",
+                    device_name,
+                    err
+                );
+            }
+        }
+    }
 
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(midi_manager);
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -135,7 +158,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // This matches the pattern used for Enigo initialization.
 
     #[cfg(unix)]
-    let signals = Signals::new(&[SIGUSR1, SIGUSR2]).unwrap();
+    let signals = Signals::new([SIGUSR1, SIGUSR2]).unwrap();
     // Set up signal handlers for toggling transcription
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone(), signals);
@@ -224,7 +247,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Get the autostart manager and configure based on user setting
     let autostart_manager = app_handle.autolaunch();
-    let settings = settings::get_settings(&app_handle);
+    let settings = settings::get_settings(app_handle);
 
     if settings.autostart_enabled {
         // Enable autostart if user has opted in
@@ -313,6 +336,9 @@ pub fn run(cli_args: CliArgs) {
         commands::check_apple_intelligence_available,
         commands::initialize_enigo,
         commands::initialize_shortcuts,
+        commands::midi::get_midi_ports,
+        commands::midi::set_midi_binding_mode,
+        commands::midi::update_midi_settings,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,
@@ -416,7 +442,7 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
-            let mut settings = get_settings(&app.handle());
+            let mut settings = get_settings(app.handle());
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
             if cli_args.debug {
@@ -459,7 +485,7 @@ pub fn run(cli_args: CliArgs) {
                 api.prevent_close();
                 let _res = window.hide();
 
-                let settings = get_settings(&window.app_handle());
+                let settings = get_settings(window.app_handle());
                 let tray_visible =
                     settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
 
@@ -480,7 +506,7 @@ pub fn run(cli_args: CliArgs) {
             tauri::WindowEvent::ThemeChanged(theme) => {
                 log::info!("Theme changed to: {:?}", theme);
                 // Update tray icon to match new theme, maintaining idle state
-                utils::change_tray_icon(&window.app_handle(), utils::TrayIconState::Idle);
+                utils::change_tray_icon(window.app_handle(), utils::TrayIconState::Idle);
             }
             _ => {}
         })

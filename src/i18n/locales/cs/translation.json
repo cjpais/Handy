@@ -495,6 +495,20 @@
           "details": "Handy používá Whisper.cpp pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "MIDI zařízení",
+        "description": "Vyberte preferované vstupní MIDI zařízení",
+        "select": "Vyberte zařízení MIDI...",
+        "noDevices": "Nebyla nalezena žádná vstupní MIDI zařízení"
+      },
+      "trigger": {
+        "title": "MIDI spoušť",
+        "description": "Navažte MIDI ovladač jako další zkratku pro přepis",
+        "binding": "Naslouchám...",
+        "bind": "Naučit"
+      }
     }
   },
   "footer": {

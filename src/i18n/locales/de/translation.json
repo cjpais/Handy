@@ -495,6 +495,20 @@
           "details": "Handy verwendet Whisper.cpp für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "MIDI-Gerät",
+        "description": "Wählen Sie Ihr bevorzugtes MIDI-Eingabegerät",
+        "select": "MIDI-Gerät auswählen...",
+        "noDevices": "Keine MIDI-Eingabegeräte erkannt"
+      },
+      "trigger": {
+        "title": "MIDI-Auslöser",
+        "description": "Binden Sie ein MIDI-Steuerelement als zusätzliche Transkriptions-Tastenkombination",
+        "binding": "Höre zu...",
+        "bind": "Lernen"
+      }
     }
   },
   "footer": {

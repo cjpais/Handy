@@ -495,6 +495,20 @@
           "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için Whisper.cpp kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "MIDI Cihazı",
+        "description": "Tercih ettiğiniz MIDI giriş cihazını seçin",
+        "select": "MIDI cihazı seç...",
+        "noDevices": "MIDI giriş cihazı algılanmadı"
+      },
+      "trigger": {
+        "title": "MIDI Tetikleyici",
+        "description": "Ek bir transkripsiyon kısayolu olarak bir MIDI kontrolü bağlayın",
+        "binding": "Dinleniyor...",
+        "bind": "Öğren"
+      }
     }
   },
   "footer": {

@@ -495,6 +495,20 @@
           "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "MIDI 장치",
+        "description": "선호하는 MIDI 입력 장치를 선택하세요",
+        "select": "MIDI 장치 선택...",
+        "noDevices": "감지된 MIDI 입력 장치가 없습니다"
+      },
+      "trigger": {
+        "title": "MIDI 트리거",
+        "description": "추가 전사 단축키로 사용할 MIDI 컨트롤을 바인딩하세요",
+        "binding": "수신 대기 중...",
+        "bind": "학습"
+      }
     }
   },
   "footer": {

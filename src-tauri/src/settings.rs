@@ -280,6 +280,12 @@ impl Default for TypingTool {
 pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
+    #[serde(default)]
+    pub midi_enabled: bool,
+    #[serde(default)]
+    pub midi_device_name: Option<String>,
+    #[serde(default)]
+    pub midi_trigger: Option<Vec<u8>>,
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
     pub audio_feedback_volume: f32,
@@ -683,6 +689,9 @@ pub fn get_default_settings() -> AppSettings {
     AppSettings {
         bindings,
         push_to_talk: true,
+        midi_enabled: false,
+        midi_device_name: None,
+        midi_trigger: None,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),

@@ -495,6 +495,20 @@
           "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "MIDIデバイス",
+        "description": "使用するMIDI入力デバイスを選択してください",
+        "select": "MIDIデバイスを選択...",
+        "noDevices": "MIDI入力デバイスが見つかりません"
+      },
+      "trigger": {
+        "title": "MIDIトリガー",
+        "description": "追加の文字起こしショートカットとしてMIDIコントロールを割り当てます",
+        "binding": "待機中...",
+        "bind": "学習"
+      }
     }
   },
   "footer": {

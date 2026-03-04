@@ -495,6 +495,20 @@
           "details": "Handy 使用 Whisper.cpp 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "MIDI 裝置",
+        "description": "選擇你偏好的 MIDI 輸入裝置",
+        "select": "選擇 MIDI 裝置...",
+        "noDevices": "未偵測到 MIDI 輸入裝置"
+      },
+      "trigger": {
+        "title": "MIDI 觸發器",
+        "description": "綁定一個 MIDI 控制作為額外的轉錄快捷鍵",
+        "binding": "監聽中...",
+        "bind": "學習"
+      }
     }
   },
   "footer": {

@@ -495,6 +495,20 @@
           "details": "Handy usa Whisper.cpp per il riconoscimento vocale veloce in locale. Grazie a Georgi Gerganov e collaboratori per il fantastico lavoro."
         }
       }
+    },
+    "midi": {
+      "device": {
+        "title": "Dispositivo MIDI",
+        "description": "Seleziona il dispositivo di input MIDI preferito",
+        "select": "Seleziona dispositivo MIDI...",
+        "noDevices": "Nessun dispositivo di input MIDI rilevato"
+      },
+      "trigger": {
+        "title": "Trigger MIDI",
+        "description": "Associa un controllo MIDI da usare come scorciatoia di trascrizione aggiuntiva",
+        "binding": "In ascolto...",
+        "bind": "Impara"
+      }
     }
   },
   "footer": {
