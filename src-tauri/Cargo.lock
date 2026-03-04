@@ -1444,7 +1444,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330c60081dcc4c72131f8eb70510f1ac07223e5d4163db481a04a0befcffa412"
 dependencies = [
- "libloading 0.8.9",
+ "libloading 0.7.4",
 ]
 
 [[package]]
@@ -4100,6 +4100,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2aba9f5c7c479925205799216e7e5d07cc1d4fa76ea8058c60a9a30f6a4e890"
 dependencies = [
  "flate2",
+ "glob",
  "pkg-config",
  "sha2",
  "tar",
@@ -4125,7 +4126,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -7084,9 +7085,8 @@ dependencies = [
 
 [[package]]
 name = "transcribe-rs"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23e3bf6e1dd4909268796bdf3794fb6fda70f4a0e5a80e2e56cd3fc213a11586"
+version = "0.2.8"
+source = "git+https://github.com/andrewleech/transcribe-rs?branch=feat%2Fgpu-providers#a0fe403ed68d74720c41a6f9f4ad1c05bf1f3fc6"
 dependencies = [
  "base64 0.22.1",
  "derive_builder",
@@ -7801,7 +7801,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
