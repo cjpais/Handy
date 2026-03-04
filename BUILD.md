@@ -19,9 +19,11 @@ This guide covers how to set up the development environment and build Handy from
 
 #### Windows
 
-- Microsoft C++ Build Tools
-- Visual Studio 2019/2022 with C++ development tools
-- Or Visual Studio Build Tools 2019/2022
+- Microsoft C++ Build Tools:
+  - Visual Studio 2019/2022 with C++ development tools
+  - Or Visual Studio Build Tools 2019/2022
+- [LLVM](https://github.com/llvm/llvm-project/releases) — required by `whisper-rs-sys` for bindgen (`libclang.dll`)
+- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home#windows) — required by `whisper-rs-sys` for GPU acceleration
 
 #### Linux
 

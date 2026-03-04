@@ -310,6 +310,9 @@ pub fn run(cli_args: CliArgs) {
         commands::open_recordings_folder,
         commands::open_log_dir,
         commands::open_app_data_dir,
+        commands::get_models_dir_path,
+        commands::open_models_folder,
+        commands::set_models_directory,
         commands::check_apple_intelligence_available,
         commands::initialize_enigo,
         commands::initialize_shortcuts,
@@ -346,6 +349,7 @@ pub fn run(cli_args: CliArgs) {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::history::set_recordings_directory,
         helpers::clamshell::is_laptop,
     ]);
 
