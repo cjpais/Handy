@@ -68,7 +68,7 @@ chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = { version = "0.2.5", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
+transcribe-rs = { version = "0.2.8", features = ["whisper", "parakeet", "moonshine", "sense_voice"] }
 handy-keys = "0.2.0"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
@@ -106,6 +106,12 @@ gtk = "0.18"
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
 tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
 tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.9.1" }
+
+[features]
+gpu-directml = ["transcribe-rs/directml"]
+gpu-cuda = ["transcribe-rs/cuda"]
+gpu-coreml = ["transcribe-rs/coreml"]
+webgpu = ["transcribe-rs/webgpu"]
 
 [dev-dependencies]
 tempfile = "3"

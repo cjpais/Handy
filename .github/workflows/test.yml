@@ -19,9 +19,12 @@ jobs:
       - name: Use mock TranscriptionManager (CI only)
         working-directory: src-tauri
         run: |
-          # Swap to mock adapter - avoids compiling whisper/Vulkan
+          # Swap to mock adapters - avoids compiling whisper/Vulkan/transcribe-rs
           cp src/managers/transcription_mock.rs src/managers/transcription.rs
+          cp src/commands/gpu_mock.rs src/commands/gpu.rs
+          # Remove transcribe-rs dependency and feature forwarding lines
           sed -i '/^transcribe-rs/d' Cargo.toml
+          sed -i '/^gpu-\|^webgpu/{ /transcribe-rs/d; }' Cargo.toml
 
       - name: Run Rust tests
         working-directory: src-tauri

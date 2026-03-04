@@ -315,6 +315,19 @@
         "placeholder": "Add a word",
         "add": "Add",
         "remove": "Remove {{word}}"
+      },
+      "gpuProvider": {
+        "title": "GPU Acceleration",
+        "description": "Select which GPU execution provider to use for ORT-based models (Parakeet, Moonshine, SenseVoice). Changing this reloads any loaded models.",
+        "busyError": "Cannot change GPU provider while a model is loading or transcription is in progress. Try again when idle.",
+        "options": {
+          "auto": "Auto",
+          "cpu": "CPU Only",
+          "directml": "DirectML",
+          "cuda": "CUDA",
+          "coreml": "CoreML",
+          "webgpu": "WebGPU"
+        }
       }
     },
     "postProcessing": {

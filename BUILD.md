@@ -67,3 +67,26 @@ bun install
 ```bash
 bun tauri dev
 ```
+
+## GPU Acceleration (Optional)
+
+GPU acceleration for ORT-based models (Parakeet, Moonshine, SenseVoice) is opt-in at compile time via Cargo features.
+
+| Feature | Platform | Notes |
+|---|---|---|
+| `gpu-directml` | Windows | No extra SDK — bundled in ORT's prebuilt binary |
+| `gpu-cuda` | Linux | Requires CUDA toolkit installed |
+| `gpu-coreml` | macOS | Uses system CoreML framework |
+| `webgpu` | Cross-platform | Requires Dawn/WebGPU runtime libraries |
+
+### Build Examples
+
+```bash
+# Production build with DirectML
+bun run tauri build -- -- --features gpu-directml
+
+# Dev mode with DirectML
+bun run tauri dev -- -- --features gpu-directml
+```
+
+Without any GPU feature, the app builds and runs on CPU. The GPU provider setting in Settings > Advanced is hidden unless a GPU feature is compiled in.

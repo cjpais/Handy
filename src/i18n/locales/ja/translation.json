@@ -315,6 +315,18 @@
         "placeholder": "単語を追加",
         "add": "追加",
         "remove": "{{word}}を削除"
+      },
+      "gpuProvider": {
+        "title": "GPU Acceleration",
+        "description": "Select which GPU execution provider to use for ORT-based models (Parakeet, Moonshine, SenseVoice). Changing this reloads any loaded models.",
+        "options": {
+          "auto": "Auto",
+          "cpu": "CPU Only",
+          "directml": "DirectML",
+          "cuda": "CUDA",
+          "coreml": "CoreML",
+          "webgpu": "WebGPU"
+        }
       }
     },
     "postProcessing": {

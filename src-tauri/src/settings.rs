@@ -274,6 +274,27 @@ impl Default for TypingTool {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum GpuProvider {
+    Auto,
+    #[serde(rename = "cpu")]
+    CpuOnly,
+    #[serde(rename = "directml")]
+    DirectMl,
+    Cuda,
+    #[serde(rename = "coreml")]
+    CoreMl,
+    #[serde(rename = "webgpu")]
+    WebGpu,
+}
+
+impl Default for GpuProvider {
+    fn default() -> Self {
+        GpuProvider::Auto
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -358,6 +379,8 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default)]
+    pub gpu_provider: GpuProvider,
 }
 
 fn default_model() -> String {
@@ -713,6 +736,7 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
+        gpu_provider: GpuProvider::default(),
     }
 }
 
@@ -855,5 +879,11 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_gpu_provider_is_auto() {
+        let settings = get_default_settings();
+        assert_eq!(settings.gpu_provider, GpuProvider::Auto);
     }
 }

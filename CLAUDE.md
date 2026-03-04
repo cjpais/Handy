@@ -154,6 +154,8 @@ Access debug features: `Cmd+Shift+D` (macOS) or `Ctrl+Shift+D` (Windows/Linux)
 
 ## Platform Notes
 
-- **macOS**: Metal acceleration, accessibility permissions required
-- **Windows**: Vulkan acceleration, code signing
-- **Linux**: OpenBLAS + Vulkan, limited Wayland support, overlay disabled by default
+- **macOS**: CoreML GPU via `gpu-coreml` feature, accessibility permissions required
+- **Windows**: DirectML GPU via `gpu-directml` feature, code signing
+- **Linux**: CUDA GPU via `gpu-cuda` feature, limited Wayland support, overlay disabled by default
+
+See `BUILD.md` for GPU build instructions.
