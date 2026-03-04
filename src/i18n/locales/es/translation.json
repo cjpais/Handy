@@ -3,6 +3,7 @@
     "settings": "Configuración...",
     "checkUpdates": "Buscar actualizaciones...",
     "copyLastTranscript": "Copiar la última transcripción",
+    "importAudioFile": "Importar archivo de audio...",
     "unloadModel": "Descargar modelo",
     "quit": "Salir",
     "cancel": "Cancelar"
@@ -393,7 +394,13 @@
       "save": "Guardar transcripción",
       "unsave": "Eliminar de guardados",
       "delete": "Eliminar entrada",
-      "deleteError": "Error al eliminar la entrada. Por favor, intenta de nuevo."
+      "deleteError": "Error al eliminar la entrada. Por favor, intenta de nuevo.",
+      "import": {
+        "inProgress": "Importando {{file}}...",
+        "failedTitle": "Error de importación",
+        "failedDescription": "No se pudo transcribir el archivo de audio.",
+        "audioFileFallback": "archivo de audio"
+      }
     },
     "debug": {
       "title": "Depuración",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "Transcribiendo...",
     "processing": "Procesando..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "La transcripción del archivo ya está en curso.",
+      "preparing": "Preparando transcripción...",
+      "processing": "Procesando...",
+      "completed": "Transcripción completada.",
+      "failedImport": "No se pudo importar el archivo de audio",
+      "failedGeneric": "Error en la transcripción del archivo.",
+      "loadingModel": "Cargando modelo...",
+      "decoding": "Decodificando archivo de audio...",
+      "transcribing": "Ejecutando reconocimiento de voz...",
+      "saving": "Guardando entrada en el historial...",
+      "finalizing": "Finalizando resultado..."
+    }
   }
 }

@@ -3,6 +3,7 @@
     "settings": "Ayarlar...",
     "checkUpdates": "Güncellemeleri Kontrol Et...",
     "copyLastTranscript": "Son transkripti kopyala",
+    "importAudioFile": "Ses dosyası içe aktar...",
     "unloadModel": "Modeli boşalt",
     "quit": "Çıkış",
     "cancel": "İptal"
@@ -393,7 +394,13 @@
       "save": "Transkripsiyonu kaydet",
       "unsave": "Kaydedilenlerden kaldır",
       "delete": "Kaydı sil",
-      "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin."
+      "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
+      "import": {
+        "inProgress": "{{file}} içe aktarılıyor...",
+        "failedTitle": "İçe aktarma başarısız",
+        "failedDescription": "Ses dosyası yazıya dökülemedi.",
+        "audioFileFallback": "ses dosyası"
+      }
     },
     "debug": {
       "title": "Hata Ayıklama",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
     "processing": "İşleniyor..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "Dosya transkripsiyonu zaten sürüyor.",
+      "preparing": "Transkripsiyon hazırlanıyor...",
+      "processing": "İşleniyor...",
+      "completed": "Transkripsiyon tamamlandı.",
+      "failedImport": "Ses dosyası içe aktarılamadı",
+      "failedGeneric": "Dosya transkripsiyonu başarısız.",
+      "loadingModel": "Model yükleniyor...",
+      "decoding": "Ses dosyası çözümleniyor...",
+      "transcribing": "Konuşma tanıma çalışıyor...",
+      "saving": "Geçmiş kaydı kaydediliyor...",
+      "finalizing": "Sonuç tamamlanıyor..."
+    }
   }
 }

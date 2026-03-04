@@ -3,6 +3,7 @@
     "settings": "设置...",
     "checkUpdates": "检查更新...",
     "copyLastTranscript": "复制最新转录",
+    "importAudioFile": "导入音频文件...",
     "unloadModel": "卸载模型",
     "quit": "退出",
     "cancel": "取消"
@@ -393,7 +394,13 @@
       "save": "保存转录",
       "unsave": "从已保存中移除",
       "delete": "删除条目",
-      "deleteError": "删除条目失败，请重试。"
+      "deleteError": "删除条目失败，请重试。",
+      "import": {
+        "inProgress": "正在导入 {{file}}...",
+        "failedTitle": "导入失败",
+        "failedDescription": "无法转写音频文件。",
+        "audioFileFallback": "音频文件"
+      }
     },
     "debug": {
       "title": "调试",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "正在转录...",
     "processing": "处理中..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "文件转写已在进行中。",
+      "preparing": "正在准备转写...",
+      "processing": "处理中...",
+      "completed": "转写完成。",
+      "failedImport": "无法导入音频文件",
+      "failedGeneric": "文件转写失败。",
+      "loadingModel": "正在加载模型...",
+      "decoding": "正在解码音频文件...",
+      "transcribing": "正在进行语音识别...",
+      "saving": "正在保存到历史记录...",
+      "finalizing": "正在完成结果..."
+    }
   }
 }

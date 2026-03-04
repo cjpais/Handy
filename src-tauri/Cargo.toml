@@ -71,6 +71,7 @@ flate2 = "1.0"
 transcribe-rs = { version = "0.2.8", features = ["whisper", "parakeet", "moonshine", "sense_voice", "gigaam"] }
 handy-keys = "0.2.2"
 ferrous-opencc = "0.2.3"
+symphonia = { version = "0.5.5", features = ["aac", "flac", "isomp4", "mp3", "ogg", "pcm", "vorbis", "wav"] }
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"

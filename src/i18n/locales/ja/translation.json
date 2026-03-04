@@ -3,6 +3,7 @@
     "settings": "設定...",
     "checkUpdates": "アップデートを確認...",
     "copyLastTranscript": "最新の文字起こしをコピー",
+    "importAudioFile": "音声ファイルをインポート...",
     "unloadModel": "モデルをアンロード",
     "quit": "終了",
     "cancel": "キャンセル"
@@ -393,7 +394,13 @@
       "save": "文字起こしを保存",
       "unsave": "保存から削除",
       "delete": "エントリーを削除",
-      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。"
+      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。",
+      "import": {
+        "inProgress": "{{file}} をインポート中...",
+        "failedTitle": "インポートに失敗しました",
+        "failedDescription": "音声ファイルを文字起こしできませんでした。",
+        "audioFileFallback": "音声ファイル"
+      }
     },
     "debug": {
       "title": "デバッグ",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "文字起こし中...",
     "processing": "処理中..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "ファイルの文字起こしはすでに実行中です。",
+      "preparing": "文字起こしを準備しています...",
+      "processing": "処理中...",
+      "completed": "文字起こしが完了しました。",
+      "failedImport": "音声ファイルのインポートに失敗しました",
+      "failedGeneric": "ファイルの文字起こしに失敗しました。",
+      "loadingModel": "モデルを読み込んでいます...",
+      "decoding": "音声ファイルをデコードしています...",
+      "transcribing": "音声認識を実行しています...",
+      "saving": "履歴に保存しています...",
+      "finalizing": "結果を確定しています..."
+    }
   }
 }

@@ -3,6 +3,7 @@
     "settings": "Einstellungen...",
     "checkUpdates": "Nach Updates suchen...",
     "copyLastTranscript": "Letzte Transkription kopieren",
+    "importAudioFile": "Audiodatei importieren...",
     "unloadModel": "Modell entladen",
     "quit": "Beenden",
     "cancel": "Abbrechen"
@@ -393,7 +394,13 @@
       "save": "Transkription speichern",
       "unsave": "Aus Gespeicherten entfernen",
       "delete": "Eintrag löschen",
-      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut."
+      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
+      "import": {
+        "inProgress": "{{file}} wird importiert...",
+        "failedTitle": "Import fehlgeschlagen",
+        "failedDescription": "Audiodatei konnte nicht transkribiert werden.",
+        "audioFileFallback": "Audiodatei"
+      }
     },
     "debug": {
       "title": "Debug",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "Transkribiere...",
     "processing": "Verarbeite..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "Die Dateitranskription läuft bereits.",
+      "preparing": "Transkription wird vorbereitet...",
+      "processing": "Wird verarbeitet...",
+      "completed": "Transkription abgeschlossen.",
+      "failedImport": "Audiodatei konnte nicht importiert werden",
+      "failedGeneric": "Dateitranskription fehlgeschlagen.",
+      "loadingModel": "Modell wird geladen...",
+      "decoding": "Audiodatei wird dekodiert...",
+      "transcribing": "Spracherkennung läuft...",
+      "saving": "Verlaufseintrag wird gespeichert...",
+      "finalizing": "Ergebnis wird finalisiert..."
+    }
   }
 }

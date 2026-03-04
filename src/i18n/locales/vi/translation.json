@@ -3,6 +3,7 @@
     "settings": "Cài đặt...",
     "checkUpdates": "Kiểm tra cập nhật...",
     "copyLastTranscript": "Sao chép bản chép lời mới nhất",
+    "importAudioFile": "Nhập tệp âm thanh...",
     "unloadModel": "Dỡ mô hình",
     "quit": "Thoát",
     "cancel": "Hủy"
@@ -393,7 +394,13 @@
       "save": "Lưu bản ghi",
       "unsave": "Xóa khỏi đã lưu",
       "delete": "Xóa mục",
-      "deleteError": "Không thể xóa mục. Vui lòng thử lại."
+      "deleteError": "Không thể xóa mục. Vui lòng thử lại.",
+      "import": {
+        "inProgress": "Đang nhập {{file}}...",
+        "failedTitle": "Nhập thất bại",
+        "failedDescription": "Không thể phiên âm tệp âm thanh.",
+        "audioFileFallback": "tệp âm thanh"
+      }
     },
     "debug": {
       "title": "Gỡ lỗi",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
     "processing": "Đang xử lý..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "Quá trình phiên âm tệp đang chạy.",
+      "preparing": "Đang chuẩn bị phiên âm...",
+      "processing": "Đang xử lý...",
+      "completed": "Phiên âm hoàn tất.",
+      "failedImport": "Không thể nhập tệp âm thanh",
+      "failedGeneric": "Phiên âm tệp thất bại.",
+      "loadingModel": "Đang tải mô hình...",
+      "decoding": "Đang giải mã tệp âm thanh...",
+      "transcribing": "Đang nhận dạng giọng nói...",
+      "saving": "Đang lưu vào lịch sử...",
+      "finalizing": "Đang hoàn tất kết quả..."
+    }
   }
 }

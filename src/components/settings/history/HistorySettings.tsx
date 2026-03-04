@@ -2,13 +2,23 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import {
+  AlertCircle,
+  Copy,
+  Star,
+  Check,
+  Trash2,
+  FolderOpen,
+  Loader2,
+  X,
+} from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
+import { useFileImportStore, STAGE_I18N_KEYS } from "@/stores/fileImportStore";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -36,6 +46,20 @@ export const HistorySettings: React.FC = () => {
   const osType = useOsType();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const importIsRunning = useFileImportStore((state) => state.isRunning);
+  const importFileName = useFileImportStore((state) => state.fileName);
+  const importStage = useFileImportStore((state) => state.stage);
+  const importMessage = useFileImportStore((state) => state.message);
+  const importPercent = useFileImportStore((state) => state.percent);
+  const importError = useFileImportStore((state) => state.error);
+  const importSourceSampleRate = useFileImportStore(
+    (state) => state.sourceSampleRate,
+  );
+  const importSampleRate = useFileImportStore((state) => state.sampleRate);
+  const importChannels = useFileImportStore((state) => state.channels);
+  const importDurationSec = useFileImportStore((state) => state.durationSec);
+  const importBitrateKbps = useFileImportStore((state) => state.bitrateKbps);
+  const clearImportError = useFileImportStore((state) => state.clearError);
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -132,6 +156,90 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const showImportBanner = importIsRunning || !!importError;
+  const importFileLabel =
+    importFileName || t("settings.history.import.audioFileFallback");
+  const stageI18nKey = STAGE_I18N_KEYS[importStage || ""];
+  const importStageMessage = stageI18nKey
+    ? t(stageI18nKey)
+    : importMessage || t("toasts.fileImport.processing");
+  const importAudioMetaParts: string[] = [];
+  if (importBitrateKbps != null) {
+    importAudioMetaParts.push(`${importBitrateKbps} kbps`);
+  }
+  if (importSourceSampleRate) {
+    const khz = importSourceSampleRate / 1000;
+    const khzStr = Number.isInteger(khz) ? `${khz}` : khz.toFixed(1);
+    importAudioMetaParts.push(`${khzStr} kHz`);
+  }
+  if (importChannels) {
+    importAudioMetaParts.push(importChannels === 1 ? "mono" : "stereo");
+  }
+  if (importDurationSec != null) {
+    const totalSec = Math.round(importDurationSec);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const duration =
+      h > 0
+        ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+        : `${m}:${String(s).padStart(2, "0")}`;
+    importAudioMetaParts.push(duration);
+  }
+  const importAudioMeta = importAudioMetaParts.join(" · ");
+
+  const renderImportBanner = () => (
+    <div className="bg-background border border-mid-gray/20 rounded-lg px-4 py-3">
+      {importIsRunning ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Loader2 className="w-4 h-4 animate-spin text-logo-primary" />
+            <span>
+              {t("settings.history.import.inProgress", {
+                file: importFileLabel,
+              })}
+            </span>
+            {importAudioMeta && (
+              <span className="text-xs font-normal text-text/65">
+                {importAudioMeta}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-text/70">{importStageMessage}</p>
+          <div className="h-2 w-full rounded-full bg-mid-gray/20 overflow-hidden">
+            <div
+              className="h-full bg-logo-primary transition-all duration-200"
+              style={{ width: `${importPercent}%` }}
+            />
+          </div>
+          <p className="text-xs text-text/60">{importPercent}%</p>
+        </div>
+      ) : (
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 mt-0.5 text-red-500" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {t("settings.history.import.failedTitle")}
+              </p>
+              <p className="text-xs text-text/70">
+                {importError || t("settings.history.import.failedDescription")}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="text-text/50 hover:text-text transition-colors"
+            onClick={clearImportError}
+            title={t("accessibility.dismiss")}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -147,6 +255,7 @@ export const HistorySettings: React.FC = () => {
               label={t("settings.history.openFolder")}
             />
           </div>
+          {showImportBanner && renderImportBanner()}
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
               {t("settings.history.loading")}
@@ -172,6 +281,7 @@ export const HistorySettings: React.FC = () => {
               label={t("settings.history.openFolder")}
             />
           </div>
+          {showImportBanner && renderImportBanner()}
           <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
             <div className="px-4 py-3 text-center text-text/60">
               {t("settings.history.empty")}
@@ -196,6 +306,7 @@ export const HistorySettings: React.FC = () => {
             label={t("settings.history.openFolder")}
           />
         </div>
+        {showImportBanner && renderImportBanner()}
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           <div className="divide-y divide-mid-gray/20">
             {historyEntries.map((entry) => (

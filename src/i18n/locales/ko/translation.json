@@ -3,6 +3,7 @@
     "settings": "설정...",
     "checkUpdates": "업데이트 확인...",
     "copyLastTranscript": "마지막 녹음 내용 복사",
+    "importAudioFile": "오디오 파일 가져오기...",
     "unloadModel": "모델 언로드",
     "quit": "종료",
     "cancel": "취소"
@@ -393,7 +394,13 @@
       "save": "변환된 텍스트 저장",
       "unsave": "저장에서 제거",
       "delete": "항목 삭제",
-      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요."
+      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요.",
+      "import": {
+        "inProgress": "{{file}} 가져오는 중...",
+        "failedTitle": "가져오기 실패",
+        "failedDescription": "오디오 파일을 변환하지 못했습니다.",
+        "audioFileFallback": "오디오 파일"
+      }
     },
     "debug": {
       "title": "디버그",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "파일 변환이 이미 진행 중입니다.",
+      "preparing": "변환 준비 중...",
+      "processing": "처리 중...",
+      "completed": "변환이 완료되었습니다.",
+      "failedImport": "오디오 파일을 가져오지 못했습니다",
+      "failedGeneric": "파일 변환에 실패했습니다.",
+      "loadingModel": "모델 로딩 중...",
+      "decoding": "오디오 파일 디코딩 중...",
+      "transcribing": "음성 인식 실행 중...",
+      "saving": "히스토리에 저장 중...",
+      "finalizing": "결과 마무리 중..."
+    }
   }
 }

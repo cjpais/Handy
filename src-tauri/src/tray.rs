@@ -124,6 +124,14 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         None::<&str>,
     )
     .expect("failed to create copy last transcript item");
+    let import_audio_file_i = MenuItem::with_id(
+        app,
+        "import_audio_file",
+        &strings.import_audio_file,
+        true,
+        None::<&str>,
+    )
+    .expect("failed to create import audio file item");
     let model_loaded = app.state::<Arc<TranscriptionManager>>().is_model_loaded();
     let unload_model_i = MenuItem::with_id(
         app,
@@ -149,6 +157,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                     &cancel_i,
                     &separator(),
                     &copy_last_transcript_i,
+                    &import_audio_file_i,
                     &separator(),
                     &settings_i,
                     &check_updates_i,
@@ -164,6 +173,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                 &version_i,
                 &separator(),
                 &copy_last_transcript_i,
+                &import_audio_file_i,
                 &unload_model_i,
                 &separator(),
                 &settings_i,

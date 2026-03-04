@@ -3,6 +3,7 @@
     "settings": "Settings...",
     "checkUpdates": "Check for Updates...",
     "copyLastTranscript": "Copy Last Transcript",
+    "importAudioFile": "Import Audio File...",
     "unloadModel": "Unload Model",
     "quit": "Quit",
     "cancel": "Cancel"
@@ -393,7 +394,13 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "import": {
+        "inProgress": "Importing {{file}}...",
+        "failedTitle": "Import failed",
+        "failedDescription": "Failed to transcribe file.",
+        "audioFileFallback": "audio file"
+      }
     },
     "debug": {
       "title": "Debug",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "File transcription is already in progress.",
+      "preparing": "Preparing transcription...",
+      "processing": "Processing...",
+      "completed": "Transcription complete.",
+      "failedImport": "Failed to import audio file",
+      "failedGeneric": "File transcription failed.",
+      "loadingModel": "Loading model...",
+      "decoding": "Decoding audio file...",
+      "transcribing": "Running speech recognition...",
+      "saving": "Saving history entry...",
+      "finalizing": "Finalizing result..."
+    }
   }
 }

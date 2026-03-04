@@ -1,7 +1,9 @@
-import { useEffect, useState, useRef } from "react";
-import { Toaster } from "sonner";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { Toaster, toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { platform } from "@tauri-apps/plugin-os";
+import { open } from "@tauri-apps/plugin-dialog";
+import { listen } from "@tauri-apps/api/event";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -13,6 +15,11 @@ import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
+import {
+  useFileImportStore,
+  STAGE_I18N_KEYS,
+  type FileImportProgress,
+} from "./stores/fileImportStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
@@ -25,7 +32,7 @@ const renderSettingsContent = (section: SidebarSection) => {
 };
 
 function App() {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
     null,
   );
@@ -42,10 +49,89 @@ function App() {
   const refreshOutputDevices = useSettingsStore(
     (state) => state.refreshOutputDevices,
   );
+  const startFileImport = useFileImportStore((state) => state.start);
+  const updateImportProgress = useFileImportStore(
+    (state) => state.updateFromProgress,
+  );
+  const finishImportSuccess = useFileImportStore(
+    (state) => state.finishSuccess,
+  );
+  const finishImportError = useFileImportStore((state) => state.finishError);
   const hasCompletedPostOnboardingInit = useRef(false);
+  const progressToastIdRef = useRef<string | number | null>(null);
+  const lastToastStageRef = useRef<string | null>(null);
+
+  const importAudioFileFromDialog = useCallback(async () => {
+    if (useFileImportStore.getState().isRunning) {
+      toast.warning(t("toasts.fileImport.alreadyRunning"));
+      return;
+    }
+
+    const selected = await open({
+      multiple: false,
+      filters: [{ name: "Audio", extensions: ["wav", "mp3", "m4a", "opus"] }],
+    });
+
+    if (!selected || Array.isArray(selected)) {
+      return;
+    }
+
+    setCurrentSection("history");
+    startFileImport(selected);
+    progressToastIdRef.current = toast.loading(
+      t("toasts.fileImport.preparing"),
+    );
+    lastToastStageRef.current = "starting";
+
+    try {
+      const response = await commands.transcribeAudioFile(selected);
+      if (response.status === "error") {
+        const message = response.error;
+        if (useFileImportStore.getState().isRunning) {
+          finishImportError(message);
+          toast.error(message, {
+            id: progressToastIdRef.current ?? undefined,
+          });
+          progressToastIdRef.current = null;
+          lastToastStageRef.current = null;
+        }
+        return;
+      }
+
+      if (useFileImportStore.getState().isRunning) {
+        // Fallback completion path when no done-progress event was delivered.
+        finishImportSuccess();
+        toast.success(t("toasts.fileImport.completed"), {
+          id: progressToastIdRef.current ?? undefined,
+        });
+        progressToastIdRef.current = null;
+        lastToastStageRef.current = null;
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t("toasts.fileImport.failedImport");
+      if (useFileImportStore.getState().isRunning) {
+        finishImportError(message);
+        toast.error(message, {
+          id: progressToastIdRef.current ?? undefined,
+        });
+        progressToastIdRef.current = null;
+        lastToastStageRef.current = null;
+      }
+    }
+  }, [
+    finishImportError,
+    finishImportSuccess,
+    setCurrentSection,
+    startFileImport,
+    t,
+  ]);
 
   useEffect(() => {
     checkOnboardingStatus();
+    // Run only on initial mount.
   }, []);
 
   // Initialize RTL direction when language changes
@@ -92,6 +178,54 @@ function App() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [settings?.debug_mode, updateSetting]);
+
+  useEffect(() => {
+    const unlistenProgress = listen<FileImportProgress>(
+      "file-transcription-progress",
+      (event) => {
+        const payload = event.payload;
+        updateImportProgress(payload);
+
+        if (payload.done) {
+          if (payload.stage === "failed") {
+            toast.error(
+              payload.message || t("toasts.fileImport.failedGeneric"),
+              {
+                id: progressToastIdRef.current ?? undefined,
+              },
+            );
+          } else {
+            toast.success(t("toasts.fileImport.completed"), {
+              id: progressToastIdRef.current ?? undefined,
+            });
+          }
+          progressToastIdRef.current = null;
+          lastToastStageRef.current = null;
+          return;
+        }
+
+        if (lastToastStageRef.current !== payload.stage) {
+          const stageKey = STAGE_I18N_KEYS[payload.stage];
+          const message = stageKey
+            ? t(stageKey)
+            : payload.message || t("toasts.fileImport.processing");
+          toast.loading(message, {
+            id: progressToastIdRef.current ?? undefined,
+          });
+          lastToastStageRef.current = payload.stage;
+        }
+      },
+    );
+
+    const unlistenPromise = listen("tray-import-audio-file", () => {
+      importAudioFileFromDialog();
+    });
+
+    return () => {
+      unlistenProgress.then((unlisten) => unlisten()).catch(() => {});
+      unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
+    };
+  }, [importAudioFileFromDialog, t, updateImportProgress]);
 
   const checkOnboardingStatus = async () => {
     try {

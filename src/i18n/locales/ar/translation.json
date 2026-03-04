@@ -3,6 +3,7 @@
     "settings": "...الإعدادات",
     "checkUpdates": "...التحقق من وجود تحديثات",
     "copyLastTranscript": "نسخ آخر نص تم تفريغه",
+    "importAudioFile": "استيراد ملف صوتي...",
     "unloadModel": "تفريغ النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء"
@@ -371,7 +372,13 @@
       "save": "حفظ التفريغ",
       "unsave": "إزالة من المحفوظات",
       "delete": "حذف الإدخال",
-      "deleteError": ".فشل حذف الإدخال. يرجى المحاولة مرة أخرى"
+      "deleteError": ".فشل حذف الإدخال. يرجى المحاولة مرة أخرى",
+      "import": {
+        "inProgress": "جارٍ استيراد {{file}}...",
+        "failedTitle": "فشل الاستيراد",
+        "failedDescription": "تعذر نسخ الملف الصوتي.",
+        "audioFileFallback": "ملف صوتي"
+      }
     },
     "debug": {
       "title": "تصحيح الأخطاء",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "...جاري التفريغ",
     "processing": "...جاري المعالجة"
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "نسخ الملف جارٍ بالفعل.",
+      "preparing": "جارٍ تحضير النسخ...",
+      "processing": "جارٍ المعالجة...",
+      "completed": "اكتمل النسخ.",
+      "failedImport": "فشل استيراد الملف الصوتي",
+      "failedGeneric": "فشل نسخ الملف.",
+      "loadingModel": "جارٍ تحميل النموذج...",
+      "decoding": "جارٍ فك ترميز الملف الصوتي...",
+      "transcribing": "جارٍ التعرف على الكلام...",
+      "saving": "جارٍ حفظ الإدخال في السجل...",
+      "finalizing": "جارٍ إنهاء النتيجة..."
+    }
   }
 }

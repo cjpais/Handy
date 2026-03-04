@@ -3,6 +3,7 @@
     "settings": "Nastavení...",
     "checkUpdates": "Zkontrolovat aktualizace...",
     "copyLastTranscript": "Zkopírovat poslední přepis",
+    "importAudioFile": "Importovat zvukový soubor...",
     "unloadModel": "Uvolnit model",
     "quit": "Ukončit",
     "cancel": "Zrušit"
@@ -393,7 +394,13 @@
       "save": "Uložit přepis",
       "unsave": "Odebrat z uložených",
       "delete": "Smazat záznam",
-      "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu."
+      "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu.",
+      "import": {
+        "inProgress": "Importuji {{file}}...",
+        "failedTitle": "Import selhal",
+        "failedDescription": "Nepodařilo se přepsat audio soubor.",
+        "audioFileFallback": "audio soubor"
+      }
     },
     "debug": {
       "title": "Ladění",
@@ -549,5 +556,20 @@
   "overlay": {
     "transcribing": "Přepisuji...",
     "processing": "Zpracovávám..."
+  },
+  "toasts": {
+    "fileImport": {
+      "alreadyRunning": "Přepis souboru už běží.",
+      "preparing": "Příprava přepisu...",
+      "processing": "Zpracování...",
+      "completed": "Přepis dokončen.",
+      "failedImport": "Import audio souboru selhal",
+      "failedGeneric": "Přepis souboru selhal.",
+      "loadingModel": "Načítání modelu...",
+      "decoding": "Dekódování audio souboru...",
+      "transcribing": "Probíhá rozpoznávání řeči...",
+      "saving": "Ukládání záznamu do historie...",
+      "finalizing": "Dokončování výsledku..."
+    }
   }
 }
