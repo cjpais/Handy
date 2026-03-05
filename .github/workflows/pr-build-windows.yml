@@ -1,0 +1,37 @@
+name: "PR Build (Windows)"
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+      - "src/**"
+      - "package.json"
+      - "bun.lock"
+
+concurrency:
+  group: pr-windows-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "windows-latest"
+            args: ""
+            target: "x86_64-pc-windows-msvc"
+
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: ${{ matrix.platform }}
+      target: ${{ matrix.target }}
+      build-args: ${{ matrix.args }}
+      sign-binaries: false
+      asset-prefix: "handy-pr-${{ github.event.pull_request.number }}"
+      upload-artifacts: true
+      is-debug-build: false
+    secrets: inherit
