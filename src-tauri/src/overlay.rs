@@ -137,9 +137,23 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     if let Some(mouse_location) = input::get_cursor_position(app_handle) {
         if let Ok(monitors) = app_handle.available_monitors() {
             for monitor in monitors {
-                let is_within =
-                    is_mouse_within_monitor(mouse_location, monitor.position(), monitor.size());
-                if is_within {
+                // Tauri's monitor position/size are physical pixels, but enigo
+                // may return logical coordinates (confirmed on macOS via
+                // NSEvent::mouseLocation; on Windows, GetCursorPos behavior
+                // depends on the process DPI-awareness context). Dividing by
+                // scale_factor normalizes to logical, which is safe regardless:
+                // if enigo returns logical it matches directly, and if it returns
+                // physical on a scale=1 monitor the division is a no-op.
+                let scale = monitor.scale_factor();
+                let pos = PhysicalPosition::new(
+                    (monitor.position().x as f64 / scale) as i32,
+                    (monitor.position().y as f64 / scale) as i32,
+                );
+                let size = PhysicalSize::new(
+                    (monitor.size().width as f64 / scale) as u32,
+                    (monitor.size().height as f64 / scale) as u32,
+                );
+                if is_mouse_within_monitor(mouse_location, &pos, &size) {
                     return Some(monitor);
                 }
             }
@@ -170,28 +184,36 @@ fn is_mouse_within_monitor(
         && mouse_y < (monitor_y + monitor_height as i32)
 }
 
-fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
-    if let Some(monitor) = get_monitor_with_cursor(app_handle) {
-        let work_area = monitor.work_area();
-        let scale = monitor.scale_factor();
-        let work_area_width = work_area.size.width as f64 / scale;
-        let work_area_height = work_area.size.height as f64 / scale;
-        let work_area_x = work_area.position.x as f64 / scale;
-        let work_area_y = work_area.position.y as f64 / scale;
+/// Returns overlay position in physical pixels.
+///
+/// Uses monitor position/size directly rather than work_area(), which can
+/// return incorrect coordinates on macOS for monitors with negative positions.
+/// The per-platform OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants
+/// already account for system chrome (menu bar, taskbar).
+fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
+    let monitor = get_monitor_with_cursor(app_handle)?;
+    let scale = monitor.scale_factor();
+    let monitor_x = monitor.position().x as f64;
+    let monitor_y = monitor.position().y as f64;
+    let monitor_width = monitor.size().width as f64;
+    let monitor_height = monitor.size().height as f64;
 
-        let settings = settings::get_settings(app_handle);
+    let settings = settings::get_settings(app_handle);
 
-        let x = work_area_x + (work_area_width - OVERLAY_WIDTH) / 2.0;
-        let y = match settings.overlay_position {
-            OverlayPosition::Top => work_area_y + OVERLAY_TOP_OFFSET,
-            OverlayPosition::Bottom | OverlayPosition::None => {
-                work_area_y + work_area_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
-            }
-        };
+    let overlay_w = OVERLAY_WIDTH * scale;
+    let overlay_h = OVERLAY_HEIGHT * scale;
+    let top_offset = OVERLAY_TOP_OFFSET * scale;
+    let bottom_offset = OVERLAY_BOTTOM_OFFSET * scale;
 
-        return Some((x, y));
-    }
-    None
+    let x = monitor_x + (monitor_width - overlay_w) / 2.0;
+    let y = match settings.overlay_position {
+        OverlayPosition::Top => monitor_y + top_offset,
+        OverlayPosition::Bottom | OverlayPosition::None => {
+            monitor_y + monitor_height - overlay_h - bottom_offset
+        }
+    };
+
+    Some((x as i32, y as i32))
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
@@ -200,14 +222,16 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     let position = calculate_overlay_position(app_handle);
 
     // On Linux (Wayland), monitor detection often fails, but we don't need exact coordinates
-    // for Layer Shell as we use anchors. On other platforms, we require a position.
+    // for Layer Shell as we use anchors. On other platforms, we require a monitor.
     #[cfg(not(target_os = "linux"))]
     if position.is_none() {
         debug!("Failed to determine overlay position, not creating overlay window");
         return;
     }
 
-    let mut builder = WebviewWindowBuilder::new(
+    // Position starts unset — update_overlay_position() sets the correct
+    // PhysicalPosition before the overlay is shown.
+    let builder = WebviewWindowBuilder::new(
         app_handle,
         "recording_overlay",
         tauri::WebviewUrl::App("src/overlay/index.html".into()),
@@ -226,10 +250,6 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     .transparent(true)
     .focused(false)
     .visible(false);
-
-    if let Some((x, y)) = position {
-        builder = builder.position(x, y);
-    }
 
     match builder.build() {
         Ok(window) => {
@@ -260,7 +280,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         match PanelBuilder::<_, RecordingOverlayPanel>::new(app_handle, "recording_overlay")
             .url(WebviewUrl::App("src/overlay/index.html".into()))
             .title("Recording")
-            .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
+            .position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }))
             .level(PanelLevel::Status)
             .size(tauri::Size::Logical(tauri::LogicalSize {
                 width: OVERLAY_WIDTH,
@@ -333,7 +353,7 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
 
         if let Some((x, y)) = calculate_overlay_position(app_handle) {
             let _ = overlay_window
-                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+                .set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }));
         }
     }
 }
