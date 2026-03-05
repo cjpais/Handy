@@ -164,6 +164,7 @@
         "none": "No hay atajos configurados",
         "notFound": "Atajo no encontrado",
         "pressKeys": "Presiona teclas...",
+        "clickToSet": "Clic para configurar",
         "bindings": {
           "transcribe": {
             "name": "Atajo de Transcripción",

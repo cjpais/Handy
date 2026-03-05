@@ -164,6 +164,7 @@
         "none": "Aucun raccourci configuré",
         "notFound": "Raccourci non trouvé",
         "pressKeys": "Appuyez sur les touches...",
+        "clickToSet": "Cliquer pour definir",
         "bindings": {
           "transcribe": {
             "name": "Raccourci de Transcription",

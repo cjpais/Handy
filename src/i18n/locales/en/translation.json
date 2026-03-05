@@ -160,6 +160,7 @@
         "none": "No shortcuts configured",
         "notFound": "Shortcut not found",
         "pressKeys": "Press keys...",
+        "clickToSet": "Click to set",
         "bindings": {
           "transcribe": {
             "name": "Transcribe Shortcut",

@@ -164,6 +164,7 @@
         "none": "Chưa cấu hình phím tắt",
         "notFound": "Không tìm thấy phím tắt",
         "pressKeys": "Nhấn phím...",
+        "clickToSet": "Nhấn để cài đặt",
         "bindings": {
           "transcribe": {
             "name": "Phím tắt chuyển đổi",
