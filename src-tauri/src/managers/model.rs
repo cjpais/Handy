@@ -751,8 +751,19 @@ impl ModelManager {
             flags.insert(model_id.to_string(), cancel_flag.clone());
         }
 
-        // Create HTTP client with range request for resuming
-        let client = reqwest::Client::new();
+        // Create HTTP client with optional proxy and range request for resuming
+        let settings = get_settings(&self.app_handle);
+        let mut client_builder = reqwest::Client::builder();
+        if let Some(ref proxy_url) = settings.proxy_url {
+            if !proxy_url.is_empty() {
+                if let Ok(proxy) = reqwest::Proxy::all(proxy_url) {
+                    client_builder = client_builder.proxy(proxy);
+                } else {
+                    warn!("Invalid proxy URL '{}', downloading without proxy", proxy_url);
+                }
+            }
+        }
+        let client = client_builder.build().unwrap_or_else(|_| reqwest::Client::new());
         let mut request = client.get(&url);
 
         if resume_from > 0 {

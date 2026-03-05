@@ -135,6 +135,8 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
+  proxy_url: (value) =>
+    commands.changeProxyUrlSetting(value as string | null),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

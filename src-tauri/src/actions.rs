@@ -188,6 +188,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             user_content,
             Some(system_prompt),
             Some(json_schema),
+            settings.proxy_url.as_deref(),
         )
         .await
         {
@@ -237,8 +238,14 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     let processed_prompt = prompt.replace("${output}", transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
-    match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
-        .await
+    match crate::llm_client::send_chat_completion(
+        &provider,
+        api_key,
+        &model,
+        processed_prompt,
+        settings.proxy_url.as_deref(),
+    )
+    .await
     {
         Ok(Some(content)) => {
             let content = strip_invisible_chars(&content);

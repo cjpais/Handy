@@ -727,6 +727,15 @@ pub fn change_external_script_path_setting(
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_proxy_url_setting(app: AppHandle, url: Option<String>) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.proxy_url = url;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match handling.as_str() {
@@ -1004,7 +1013,7 @@ pub async fn fetch_post_process_models(
         ));
     }
 
-    crate::llm_client::fetch_models(provider, api_key).await
+    crate::llm_client::fetch_models(provider, api_key, settings.proxy_url.as_deref()).await
 }
 
 #[tauri::command]

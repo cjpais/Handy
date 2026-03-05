@@ -13,6 +13,7 @@
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
+    "network": "Network",
     "debug": "Debug",
     "about": "About"
   },
@@ -394,6 +395,16 @@
       "unsave": "Remove from saved",
       "delete": "Delete entry",
       "deleteError": "Failed to delete entry. Please try again."
+    },
+    "network": {
+      "title": "Network",
+      "proxy": {
+        "title": "Proxy",
+        "description": "Route all network traffic through a proxy server. Supports HTTP, HTTPS, and SOCKS5 protocols.",
+        "placeholder": "http://proxy:port or socks5://proxy:port",
+        "enabled": "Proxy Enabled",
+        "enabledDescription": "Enable or disable the proxy for all network requests."
+      }
     },
     "debug": {
       "title": "Debug",

@@ -84,11 +84,24 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     Ok(headers)
 }
 
-/// Create an HTTP client with provider-specific headers
-fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwest::Client, String> {
+/// Create an HTTP client with provider-specific headers and optional proxy
+fn create_client(
+    provider: &PostProcessProvider,
+    api_key: &str,
+    proxy_url: Option<&str>,
+) -> Result<reqwest::Client, String> {
     let headers = build_headers(provider, api_key)?;
-    reqwest::Client::builder()
-        .default_headers(headers)
+    let mut builder = reqwest::Client::builder().default_headers(headers);
+
+    if let Some(url) = proxy_url {
+        if !url.is_empty() {
+            let proxy = reqwest::Proxy::all(url)
+                .map_err(|e| format!("Invalid proxy URL '{}': {}", url, e))?;
+            builder = builder.proxy(proxy);
+        }
+    }
+
+    builder
         .build()
         .map_err(|e| format!("Failed to build HTTP client: {}", e))
 }
@@ -101,8 +114,9 @@ pub async fn send_chat_completion(
     api_key: String,
     model: &str,
     prompt: String,
+    proxy_url: Option<&str>,
 ) -> Result<Option<String>, String> {
-    send_chat_completion_with_schema(provider, api_key, model, prompt, None, None).await
+    send_chat_completion_with_schema(provider, api_key, model, prompt, None, None, proxy_url).await
 }
 
 /// Send a chat completion request with structured output support
@@ -115,13 +129,14 @@ pub async fn send_chat_completion_with_schema(
     user_content: String,
     system_prompt: Option<String>,
     json_schema: Option<Value>,
+    proxy_url: Option<&str>,
 ) -> Result<Option<String>, String> {
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/chat/completions", base_url);
 
     debug!("Sending chat completion request to: {}", url);
 
-    let client = create_client(provider, &api_key)?;
+    let client = create_client(provider, &api_key, proxy_url)?;
 
     // Build messages vector
     let mut messages = Vec::new();
@@ -191,13 +206,14 @@ pub async fn send_chat_completion_with_schema(
 pub async fn fetch_models(
     provider: &PostProcessProvider,
     api_key: String,
+    proxy_url: Option<&str>,
 ) -> Result<Vec<String>, String> {
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/models", base_url);
 
     debug!("Fetching models from: {}", url);
 
-    let client = create_client(provider, &api_key)?;
+    let client = create_client(provider, &api_key, proxy_url)?;
 
     let response = client
         .get(&url)

@@ -13,6 +13,7 @@
     "advanced": "Avancé",
     "postProcessing": "Post-traitement",
     "history": "Historique",
+    "network": "Réseau",
     "debug": "Débogage",
     "about": "À propos"
   },
@@ -394,6 +395,16 @@
       "unsave": "Retirer des favoris",
       "delete": "Supprimer l'entrée",
       "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer."
+    },
+    "network": {
+      "title": "Réseau",
+      "proxy": {
+        "title": "Proxy",
+        "description": "Acheminer tout le trafic réseau via un serveur proxy. Supporte les protocoles HTTP, HTTPS et SOCKS5.",
+        "placeholder": "http://proxy:port ou socks5://proxy:port",
+        "enabled": "Proxy activé",
+        "enabledDescription": "Activer ou désactiver le proxy pour toutes les requêtes réseau."
+      }
     },
     "debug": {
       "title": "Débogage",
