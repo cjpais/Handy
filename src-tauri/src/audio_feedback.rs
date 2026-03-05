@@ -45,6 +45,10 @@ pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
     if !settings.audio_feedback {
         return;
     }
+    if is_system_muted() {
+        debug!("System volume is muted, skipping audio feedback");
+        return;
+    }
     if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
         play_sound_async(app, path);
     }
@@ -53,6 +57,10 @@ pub fn play_feedback_sound(app: &AppHandle, sound_type: SoundType) {
 pub fn play_feedback_sound_blocking(app: &AppHandle, sound_type: SoundType) {
     let settings = settings::get_settings(app);
     if !settings.audio_feedback {
+        return;
+    }
+    if is_system_muted() {
+        debug!("System volume is muted, skipping audio feedback");
         return;
     }
     if let Some(path) = resolve_sound_path(app, &settings, sound_type) {
@@ -87,6 +95,40 @@ fn play_sound_at_path(app: &AppHandle, path: &Path) -> Result<(), Box<dyn std::e
     let volume = settings.audio_feedback_volume;
     let selected_device = settings.selected_output_device.clone();
     play_audio_file(path, selected_device, volume)
+}
+
+#[cfg(target_os = "macos")]
+fn is_system_muted() -> bool {
+    let result = std::process::Command::new("osascript")
+        .arg("-e")
+        .arg("set v to (get volume settings)\nreturn (output muted of v) as text & \",\" & (output volume of v) as text")
+        .output();
+
+    match result {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let parts: Vec<&str> = stdout.trim().split(',').collect();
+            if parts.len() == 2 {
+                let muted = parts[0].trim() == "true";
+                let volume_zero = parts[1].trim().parse::<i32>().unwrap_or(100) == 0;
+                return muted || volume_zero;
+            }
+            warn!(
+                "Unexpected osascript output for volume settings: {}",
+                stdout.trim()
+            );
+            false
+        }
+        Err(e) => {
+            warn!("Failed to check system volume: {}", e);
+            false
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn is_system_muted() -> bool {
+    false
 }
 
 fn play_audio_file(

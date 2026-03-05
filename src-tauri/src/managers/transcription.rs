@@ -431,6 +431,13 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
+    pub fn get_current_model_name(&self) -> Option<String> {
+        let model_id = self.get_current_model()?;
+        self.model_manager
+            .get_model_info(&model_id)
+            .map(|info| info.name)
+    }
+
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
         // Update last activity timestamp
         self.last_activity.store(

@@ -5,26 +5,50 @@
 
 ## Custom Additions
 
-- **Conditional model switching**: Automatically use a different (larger) model when audio recordings exceed a configurable duration threshold (default: 10 seconds). This lets you use a fast lightweight model for short recordings and a more accurate model for longer ones.
+### Rebranding
+
+- **Full Handy to Parler rebrand** - new name, new app icon, updated identifiers across the entire codebase
+- **Geist Pixel font logo** - app name rendered with Geist Pixel Circle font for a distinctive look
+- **ParlerDev development flavor** - separate `com.melvynx.parler.dev` identifier to run dev and production builds side-by-side
+
+### Multi-Provider Post-Processing System
+
+- **Unified provider system** - post-process transcriptions with AI using multiple providers: OpenAI, Groq, Cerebras, Anthropic, OpenRouter, Gemini, Apple Intelligence (macOS ARM64)
+- **Saved processing models** - save provider + model combinations for quick reuse
+- **Numbered actions (1-9)** - create up to 9 custom post-processing actions with their own prompt and model, triggered via keyboard shortcuts during recording
+- **Post-processing promoted to stable** - moved from experimental to a core feature with its own settings tab
+- **System prompt enforcement** - action processing outputs only the final processed text, no extra commentary
+
+### History Improvements
+
+- **Post-processing tracking in history** - stores which action was used, displays both original and post-processed text side by side
+- **Model name tracking** - history entries now record which transcription model was used
+- **History reprocessing** - re-transcribe previously recorded audio with a different model directly from history
+
+### Recording Overlay Redesign
+
+- **New minimal overlay UI** - redesigned recording overlay with border-based style instead of shadows
+- **Pause/Resume support** - pause and resume recording mid-session with dedicated shortcut (F6) and overlay button
+- **Double-press cancel confirmation** - cancel requires two presses within 1.5s to prevent accidental cancellations
+- **Improved multi-monitor support** - hardened overlay positioning with intelligent fallback across monitors, handles mixed-DPI setups on macOS
+
+### Audio & System Integration
+
+- **Mute-aware audio feedback** - skips feedback sounds when system volume is muted (macOS + Windows)
+- **Recommended model badges** - Parakeet V3 and Whisper Turbo marked as "Recommended" in the model selector
+
+### Cleanup & Fixes
+
+- **Removed standalone Gemini settings** - Gemini configuration moved into the unified provider system
+- **Removed Windows builds** from release workflow (macOS-only focus)
+- **Pinned Tauri NPM packages** to match Rust crate versions for build stability
+- **Various overlay fixes** - bubble visibility on external displays, cursor position detection
 
 ---
 
-[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/WVBeWsNXK4)
+**A free, open source, and extensible speech-to-text application.**
 
-**A free, open source, and extensible speech-to-text application that works completely offline.**
-
-Parler is a cross-platform desktop application that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field. This happens on your own computer without sending any information to the cloud.
-
-## Why Parler?
-
-Parler was created to fill the gap for a truly open source, extensible speech-to-text tool. As stated on [handy.computer](https://handy.computer):
-
-- **Free**: Accessibility tooling belongs in everyone's hands, not behind a paywall
-- **Open Source**: Together we can build further. Extend Parler for yourself and contribute to something bigger
-- **Private**: Your voice stays on your computer. Get transcriptions without sending audio to the cloud
-- **Simple**: One tool, one job. Transcribe what you say and put it into a text box
-
-Parler isn't trying to be the best speech-to-text app—it's trying to be the most forkable one.
+Parler is a cross-platform desktop application that provides speech transcription. Press a shortcut, speak, and have your words appear in any text field - locally or enhanced with cloud AI post-processing.
 
 ## How It Works
 
@@ -45,8 +69,7 @@ The process is entirely local:
 
 ### Installation
 
-1. Download the latest release from the [releases page](https://github.com/Melvynx/Parler/releases) or the [website](https://handy.computer)
-   - **macOS**: Also available via [Homebrew cask](https://formulae.brew.sh/cask/handy): `brew install --cask handy`
+1. Download the latest release from the [releases page](https://github.com/Melvynx/Parler/releases)
 2. Install the application
 3. Launch Parler and grant necessary system permissions (microphone, accessibility)
 4. Configure your preferred keyboard shortcuts in Settings
@@ -232,36 +255,6 @@ The following are recommendations for running Parler on your own machine. If you
 - **Performance**: ~5x real-time speed on mid-range hardware (tested on i5)
 - **Automatic language detection** - no manual language selection required
 
-## Roadmap & Active Development
-
-We're actively working on several features and improvements. Contributions and feedback are welcome!
-
-### In Progress
-
-**Debug Logging:**
-
-- Adding debug logging to a file to help diagnose issues
-
-**macOS Keyboard Improvements:**
-
-- Support for Globe key as transcription trigger
-- A rewrite of global shortcut handling for MacOS, and potentially other OS's too.
-
-**Opt-in Analytics:**
-
-- Collect anonymous usage data to help improve Parler
-- Privacy-first approach with clear opt-in
-
-**Settings Refactoring:**
-
-- Cleanup and refactor settings system which is becoming bloated and messy
-- Implement better abstractions for settings management
-
-**Tauri Commands Cleanup:**
-
-- Abstract and organize Tauri command patterns
-- Investigate tauri-specta for improved type safety and organization
-
 ## Troubleshooting
 
 ### Manual Model Installation (For Proxy Users or Network Restrictions)
@@ -374,51 +367,14 @@ Parler can auto-discover custom Whisper GGML models placed in the `models` direc
 - The model must be a valid Whisper GGML format (`.bin` file)
 - Model name is derived from the filename (e.g., `my-custom-model.bin` → "My Custom Model")
 
-### How to Contribute
-
-1. **Check existing issues** at [github.com/Melvynx/Parler/issues](https://github.com/Melvynx/Parler/issues)
-2. **Fork the repository** and create a feature branch
-3. **Test thoroughly** on your target platform
-4. **Submit a pull request** with clear description of changes
-5. **Join the discussion** - reach out at [contact@handy.computer](mailto:contact@handy.computer)
-
-The goal is to create both a useful tool and a foundation for others to build upon—a well-patterned, simple codebase that serves the community.
-
-## Sponsors
-
-<div align="center">
-  We're grateful for the support of our sponsors who help make Parler possible:
-  <br><br>
-  <a href="https://wordcab.com">
-    <img src="sponsor-images/wordcab.png" alt="Wordcab" width="120" height="120">
-  </a>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://github.com/epicenter-so/epicenter">
-    <img src="sponsor-images/epicenter.png" alt="Epicenter" width="120" height="120">
-  </a>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://boltai.com?utm_source=handy">
-    <img src="sponsor-images/boltai.jpg" alt="Bolt AI" width="120" height="120">
-  </a>
-</div>
-
-## Related Projects
-
-- **[Parler CLI](https://github.com/cjpais/handy-cli)** - The original Python command-line version
-- **[handy.computer](https://handy.computer)** - Project website with demos and documentation
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
+- **[cjpais/Handy](https://github.com/cjpais/Handy)** - the original project this fork is based on
 - **Whisper** by OpenAI for the speech recognition model
-- **whisper.cpp and ggml** for amazing cross-platform whisper inference/acceleration
-- **Silero** for great lightweight VAD
-- **Tauri** team for the excellent Rust-based app framework
-- **Community contributors** helping make Parler better
-
----
-
-_"Your search for the right speech-to-text tool can end here—not because Parler is perfect, but because you can make it perfect for you."_
+- **whisper.cpp and ggml** for cross-platform whisper inference/acceleration
+- **Silero** for lightweight VAD
+- **Tauri** for the Rust-based app framework

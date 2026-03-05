@@ -3,6 +3,7 @@ use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
@@ -96,6 +97,68 @@ fn set_mute(mute: bool) {
     }
 }
 
+/// Checks if the system is already muted by the user before we apply our own mute.
+/// Returns true if the system output is muted or volume is 0.
+#[cfg(target_os = "macos")]
+fn is_system_already_muted() -> bool {
+    use std::process::Command;
+
+    let result = Command::new("osascript")
+        .arg("-e")
+        .arg("set v to (get volume settings)\nreturn (output muted of v) as text & \",\" & (output volume of v) as text")
+        .output();
+
+    match result {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let parts: Vec<&str> = stdout.trim().split(',').collect();
+            if parts.len() == 2 {
+                let muted = parts[0].trim() == "true";
+                let volume_zero = parts[1].trim().parse::<i32>().unwrap_or(100) == 0;
+                return muted || volume_zero;
+            }
+            false
+        }
+        Err(_) => false,
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn is_system_already_muted() -> bool {
+    unsafe {
+        use windows::Win32::{
+            Media::Audio::{
+                eMultimedia, eRender, Endpoints::IAudioEndpointVolume, IMMDeviceEnumerator,
+                MMDeviceEnumerator,
+            },
+            System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED},
+        };
+
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        let enumerator: IMMDeviceEnumerator =
+            match CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL) {
+                Ok(e) => e,
+                Err(_) => return false,
+            };
+        let device = match enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia) {
+            Ok(d) => d,
+            Err(_) => return false,
+        };
+        let volume: IAudioEndpointVolume =
+            match device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None) {
+                Ok(v) => v,
+                Err(_) => return false,
+            };
+
+        volume.GetMute().unwrap_or(false.into()).as_bool()
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn is_system_already_muted() -> bool {
+    false
+}
+
 const WHISPER_SAMPLE_RATE: usize = 16000;
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -117,6 +180,7 @@ pub enum MicrophoneMode {
 fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
+    is_paused: Arc<AtomicBool>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let silero = SileroVad::new(vad_path, 0.3)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
@@ -127,10 +191,17 @@ fn create_audio_recorder(
     let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(Box::new(smoothed_vad))
+        .with_pause_flag(is_paused.clone())
         .with_level_callback({
             let app_handle = app_handle.clone();
+            let is_paused = is_paused.clone();
             move |levels| {
-                utils::emit_levels(&app_handle, &levels);
+                if is_paused.load(Ordering::Relaxed) {
+                    let zero_levels = vec![0.0f32; levels.len()];
+                    utils::emit_levels(&app_handle, &zero_levels);
+                } else {
+                    utils::emit_levels(&app_handle, &levels);
+                }
             }
         });
 
@@ -148,6 +219,7 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
+    is_paused: Arc<AtomicBool>,
     did_mute: Arc<Mutex<bool>>,
 }
 
@@ -170,6 +242,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
+            is_paused: Arc::new(AtomicBool::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
         };
 
@@ -212,12 +285,17 @@ impl AudioRecordingManager {
 
     /* ---------- microphone life-cycle -------------------------------------- */
 
-    /// Applies mute if mute_while_recording is enabled and stream is open
+    /// Applies mute if mute_while_recording is enabled and stream is open.
+    /// Skips muting (and later unmuting) if the system was already muted by the user.
     pub fn apply_mute(&self) {
         let settings = get_settings(&self.app_handle);
         let mut did_mute_guard = self.did_mute.lock().unwrap();
 
         if settings.mute_while_recording && *self.is_open.lock().unwrap() {
+            if is_system_already_muted() {
+                debug!("System already muted by user, skipping app mute");
+                return;
+            }
             set_mute(true);
             *did_mute_guard = true;
             debug!("Mute applied");
@@ -261,6 +339,7 @@ impl AudioRecordingManager {
             *recorder_opt = Some(create_audio_recorder(
                 vad_path.to_str().unwrap(),
                 &self.app_handle,
+                Arc::clone(&self.is_paused),
             )?);
         }
 
@@ -332,7 +411,19 @@ impl AudioRecordingManager {
 
     /* ---------- recording --------------------------------------------------- */
 
+    pub fn toggle_pause(&self) -> bool {
+        let prev = self.is_paused.fetch_xor(true, Ordering::Relaxed);
+        let new_state = !prev;
+        if new_state {
+            debug!("Recording paused");
+        } else {
+            debug!("Recording resumed");
+        }
+        new_state
+    }
+
     pub fn try_start_recording(&self, binding_id: &str) -> bool {
+        self.is_paused.store(false, Ordering::Relaxed);
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
@@ -371,6 +462,7 @@ impl AudioRecordingManager {
     }
 
     pub fn stop_recording(&self, binding_id: &str) -> Option<Vec<f32>> {
+        self.is_paused.store(false, Ordering::Relaxed);
         let mut state = self.state.lock().unwrap();
 
         match *state {
@@ -423,6 +515,7 @@ impl AudioRecordingManager {
 
     /// Cancel any ongoing recording without returning audio samples
     pub fn cancel_recording(&self) {
+        self.is_paused.store(false, Ordering::Relaxed);
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Recording { .. } = *state {

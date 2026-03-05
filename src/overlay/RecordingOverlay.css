@@ -29,10 +29,7 @@
 }
 
 .recording-overlay.state-recording {
-  border-color: rgba(255, 84, 84, 0.4);
-  box-shadow:
-    0 10px 26px rgba(255, 84, 84, 0.2),
-    0 2px 10px rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .overlay-left {
@@ -47,7 +44,7 @@
   position: absolute;
   inset: -4px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 90, 90, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   animation: record-pulse 1.8s ease-out infinite;
   pointer-events: none;
 }
@@ -64,6 +61,7 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  gap: 2px;
 }
 
 .timer-text {
@@ -151,6 +149,29 @@
   }
 }
 
+.cancel-confirm-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  font-weight: 500;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: cancel-flash 400ms ease-out;
+}
+
+@keyframes cancel-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .cancel-button {
   width: 20px;
   height: 20px;
@@ -165,5 +186,22 @@
 }
 
 .cancel-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pause-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+  flex-shrink: 0;
+}
+
+.pause-button:hover {
   background: rgba(255, 255, 255, 0.1);
 }

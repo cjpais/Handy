@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { ChevronDown, Globe, RefreshCcw, X } from "lucide-react";
@@ -52,8 +58,7 @@ const ProcessingModelsSection: React.FC = () => {
     (providerId: string) => {
       setSelectedProviderId(providerId);
       setSelectedModel("");
-      const existingKey =
-        settings?.post_process_api_keys?.[providerId] ?? "";
+      const existingKey = settings?.post_process_api_keys?.[providerId] ?? "";
       setApiKey(existingKey);
     },
     [settings],
@@ -70,7 +75,12 @@ const ProcessingModelsSection: React.FC = () => {
     } finally {
       setIsFetching(false);
     }
-  }, [selectedProviderId, apiKey, fetchPostProcessModels, updatePostProcessApiKey]);
+  }, [
+    selectedProviderId,
+    apiKey,
+    fetchPostProcessModels,
+    updatePostProcessApiKey,
+  ]);
 
   const handleSave = useCallback(async () => {
     if (!selectedProviderId || !selectedModel) return;

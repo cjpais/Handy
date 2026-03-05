@@ -506,9 +506,8 @@ impl ShortcutAction for TranscribeAction {
         }
 
         if recording_started {
-            // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
-            // Register action shortcuts (digit keys 1-9) for configured actions
+            shortcut::register_pause_shortcut(app);
             shortcut::register_action_shortcuts(app);
         }
 
@@ -519,8 +518,9 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
-        // Unregister the cancel shortcut and action shortcuts when transcription stops
+        crate::shortcut::handler::reset_cancel_confirmation();
         shortcut::unregister_cancel_shortcut(app);
+        shortcut::unregister_pause_shortcut(app);
         shortcut::unregister_action_shortcuts(app);
 
         let stop_time = Instant::now();
@@ -671,6 +671,7 @@ impl ShortcutAction for TranscribeAction {
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();
+                            let model_name_for_history = tm.get_current_model_name();
                             let action_key_for_history = if post_processed_text.is_some() {
                                 selected_action_key
                             } else {
@@ -684,6 +685,7 @@ impl ShortcutAction for TranscribeAction {
                                         post_processed_text,
                                         post_process_prompt,
                                         action_key_for_history,
+                                        model_name_for_history,
                                     )
                                     .await
                                 {

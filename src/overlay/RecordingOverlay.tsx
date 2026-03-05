@@ -61,17 +61,49 @@ const XIcon: React.FC = () => (
   </svg>
 );
 
+const PauseIcon: React.FC = () => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="rgba(255,255,255,0.6)"
+    stroke="none"
+  >
+    <rect x="6" y="4" width="4" height="16" rx="1" />
+    <rect x="14" y="4" width="4" height="16" rx="1" />
+  </svg>
+);
+
+const PlayIcon: React.FC = () => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="rgba(255,255,255,0.6)"
+    stroke="none"
+  >
+    <polygon points="6,4 20,12 6,20" />
+  </svg>
+);
+
 const formatTime = (s: number) => {
   const min = Math.floor(s / 60);
   const sec = s % 60;
   return `${min}:${sec.toString().padStart(2, "0")}`;
 };
 
-const TimerDisplay: React.FC<{ startTime: number }> = ({ startTime }) => {
+const TimerDisplay: React.FC<{ startTime: number; isPaused: boolean }> = ({
+  startTime,
+  isPaused,
+}) => {
   const [display, setDisplay] = useState("0:00");
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
+    if (isPaused) {
+      cancelAnimationFrame(rafRef.current);
+      return;
+    }
     const tick = () => {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       setDisplay(formatTime(elapsed));
@@ -79,7 +111,7 @@ const TimerDisplay: React.FC<{ startTime: number }> = ({ startTime }) => {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [startTime]);
+  }, [startTime, isPaused]);
 
   return <div className="timer-text">{display}</div>;
 };
@@ -131,10 +163,18 @@ const RecordingOverlay: React.FC = () => {
   const [state, setState] = useState<OverlayState>("recording");
   const [timerStart, setTimerStart] = useState(0);
   const [selectedAction, setSelectedAction] = useState<ActionInfo | null>(null);
+  const [cancelPending, setCancelPending] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const cancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pauseStartRef = useRef<number>(0);
   const direction = getLanguageDirection(i18n.language);
 
   const handleCancel = useCallback(() => {
     commands.cancelOperation();
+  }, []);
+
+  const handleTogglePause = useCallback(() => {
+    commands.togglePause();
   }, []);
 
   useEffect(() => {
@@ -147,6 +187,7 @@ const RecordingOverlay: React.FC = () => {
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
         setIsVisible(true);
+        setIsPaused(false);
         if (overlayState === "recording") {
           setTimerStart(Date.now());
           setSelectedAction(null);
@@ -156,6 +197,23 @@ const RecordingOverlay: React.FC = () => {
       const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
         setSelectedAction(null);
+        setCancelPending(false);
+        setIsPaused(false);
+        if (cancelTimerRef.current) {
+          clearTimeout(cancelTimerRef.current);
+          cancelTimerRef.current = null;
+        }
+      });
+
+      const unlistenCancelPending = await listen("cancel-pending", () => {
+        setCancelPending(true);
+        if (cancelTimerRef.current) {
+          clearTimeout(cancelTimerRef.current);
+        }
+        cancelTimerRef.current = setTimeout(() => {
+          setCancelPending(false);
+          cancelTimerRef.current = null;
+        }, 1700);
       });
 
       const unlistenAction = await listen<ActionInfo>(
@@ -169,19 +227,37 @@ const RecordingOverlay: React.FC = () => {
         setSelectedAction(null);
       });
 
+      const unlistenPause = await listen<boolean>(
+        "recording-paused",
+        (event) => {
+          const paused = event.payload;
+          setIsPaused(paused);
+          if (paused) {
+            pauseStartRef.current = Date.now();
+          } else {
+            const pauseDuration = Date.now() - pauseStartRef.current;
+            setTimerStart((prev) => prev + pauseDuration);
+          }
+        },
+      );
+
       if (!isMounted) {
         unlistenShow();
         unlistenHide();
+        unlistenCancelPending();
         unlistenAction();
         unlistenDeselect();
+        unlistenPause();
         return;
       }
 
       cleanupListeners = () => {
         unlistenShow();
         unlistenHide();
+        unlistenCancelPending();
         unlistenAction();
         unlistenDeselect();
+        unlistenPause();
       };
     };
 
@@ -189,6 +265,9 @@ const RecordingOverlay: React.FC = () => {
     return () => {
       isMounted = false;
       cleanupListeners?.();
+      if (cancelTimerRef.current) {
+        clearTimeout(cancelTimerRef.current);
+      }
     };
   }, []);
 
@@ -206,11 +285,16 @@ const RecordingOverlay: React.FC = () => {
       )}
 
       <div className="overlay-middle">
-        {state === "recording" && (
+        {state === "recording" && !cancelPending && (
           <>
-            <TimerDisplay startTime={timerStart} />
+            <TimerDisplay startTime={timerStart} isPaused={isPaused} />
             <AudioBars />
           </>
+        )}
+        {state === "recording" && cancelPending && (
+          <div className="cancel-confirm-text">
+            {t("overlay.cancelConfirm")}
+          </div>
         )}
         {state === "transcribing" && (
           <div className="transcribing-text">{t("overlay.transcribing")}</div>
@@ -222,9 +306,14 @@ const RecordingOverlay: React.FC = () => {
 
       <div className="overlay-right">
         {state === "recording" && (
-          <div className="cancel-button" onClick={handleCancel}>
-            <XIcon />
-          </div>
+          <>
+            <div className="pause-button" onClick={handleTogglePause}>
+              {isPaused ? <PlayIcon /> : <PauseIcon />}
+            </div>
+            <div className="cancel-button" onClick={handleCancel}>
+              <XIcon />
+            </div>
+          </>
         )}
       </div>
     </div>

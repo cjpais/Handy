@@ -462,6 +462,12 @@ pub fn emit_action_deselected(app_handle: &AppHandle) {
     }
 }
 
+pub fn emit_recording_paused(app_handle: &AppHandle, paused: bool) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("recording-paused", paused);
+    }
+}
+
 pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
     // emit levels to main app
     let _ = app_handle.emit("mic-level", levels);

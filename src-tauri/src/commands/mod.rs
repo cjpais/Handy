@@ -17,6 +17,19 @@ pub fn cancel_operation(app: AppHandle) {
 
 #[tauri::command]
 #[specta::specta]
+pub fn toggle_pause(app: AppHandle) -> bool {
+    let audio_manager =
+        app.state::<std::sync::Arc<crate::managers::audio::AudioRecordingManager>>();
+    if !audio_manager.is_recording() {
+        return false;
+    }
+    let paused = audio_manager.toggle_pause();
+    crate::overlay::emit_recording_paused(&app, paused);
+    paused
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn get_app_dir_path(app: AppHandle) -> Result<String, String> {
     let app_data_dir = app
         .path()

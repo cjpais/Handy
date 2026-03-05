@@ -17,6 +17,7 @@ const PostProcessingActionsComponent: React.FC = () => {
   const { getSetting, refreshSettings } = useSettings();
   const [editingAction, setEditingAction] = useState<{
     key: number;
+    originalKey?: number;
     name: string;
     prompt: string;
     savedModelId: string;
@@ -41,6 +42,15 @@ const PostProcessingActionsComponent: React.FC = () => {
   const nextAvailableKey = Array.from({ length: 9 }, (_, i) => i + 1).find(
     (k) => !usedKeys.has(k),
   );
+
+  const availableKeysForEditing = Array.from({ length: 9 }, (_, i) => i + 1)
+    .filter(
+      (k) =>
+        !usedKeys.has(k) ||
+        k === editingAction?.key ||
+        k === editingAction?.originalKey,
+    )
+    .map((k) => ({ value: String(k), label: String(k) }));
 
   const handleStartCreate = () => {
     if (!nextAvailableKey) return;
@@ -67,24 +77,49 @@ const PostProcessingActionsComponent: React.FC = () => {
         savedModelId = id;
       }
     }
-    setEditingAction({ key: action.key, name: action.name, prompt: action.prompt, savedModelId, isNew: false });
+    setEditingAction({
+      key: action.key,
+      originalKey: action.key,
+      name: action.name,
+      prompt: action.prompt,
+      savedModelId,
+      isNew: false,
+    });
   };
 
   const handleSave = async () => {
-    if (!editingAction || !editingAction.name.trim() || !editingAction.prompt.trim())
+    if (
+      !editingAction ||
+      !editingAction.name.trim() ||
+      !editingAction.prompt.trim()
+    )
       return;
 
     try {
       let model: string | null = null;
       let providerId: string | null = null;
       if (editingAction.savedModelId) {
-        const saved = savedModels.find((m) => m.id === editingAction.savedModelId);
+        const saved = savedModels.find(
+          (m) => m.id === editingAction.savedModelId,
+        );
         if (saved) {
           model = saved.model_id;
           providerId = saved.provider_id;
         }
       }
       if (editingAction.isNew) {
+        await commands.addPostProcessAction(
+          editingAction.key,
+          editingAction.name.trim(),
+          editingAction.prompt.trim(),
+          model,
+          providerId,
+        );
+      } else if (
+        editingAction.originalKey !== undefined &&
+        editingAction.originalKey !== editingAction.key
+      ) {
+        await commands.deletePostProcessAction(editingAction.originalKey);
         await commands.addPostProcessAction(
           editingAction.key,
           editingAction.name.trim(),
@@ -147,7 +182,8 @@ const PostProcessingActionsComponent: React.FC = () => {
                     {action.provider_id && action.model && (
                       <span className="text-xs text-mid-gray/60 ml-2">
                         {savedModels.find(
-                          (m) => m.id === `${action.provider_id}:${action.model}`,
+                          (m) =>
+                            m.id === `${action.provider_id}:${action.model}`,
                         )?.label || action.model}
                       </span>
                     )}
@@ -181,9 +217,22 @@ const PostProcessingActionsComponent: React.FC = () => {
                 <label className="text-sm font-semibold">
                   {t("settings.postProcessing.actions.key")}
                 </label>
-                <div className="flex items-center justify-center w-8 h-8 rounded bg-blue-500/15 text-blue-400 text-sm font-bold font-mono">
-                  {editingAction.key}
-                </div>
+                <select
+                  value={editingAction.key}
+                  onChange={(e) =>
+                    setEditingAction({
+                      ...editingAction,
+                      key: Number(e.target.value),
+                    })
+                  }
+                  className="w-10 h-8 rounded bg-blue-500/15 text-blue-400 text-sm font-bold font-mono text-center appearance-none cursor-pointer border border-transparent hover:border-blue-400/40 transition-colors"
+                >
+                  {availableKeysForEditing.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1 flex flex-col flex-1">
                 <label className="text-sm font-semibold">
@@ -266,7 +315,9 @@ const PostProcessingActionsComponent: React.FC = () => {
               </Button>
               {!editingAction.isNew && (
                 <Button
-                  onClick={() => handleDelete(editingAction.key)}
+                  onClick={() =>
+                    handleDelete(editingAction.originalKey ?? editingAction.key)
+                  }
                   variant="secondary"
                   size="md"
                 >
@@ -278,11 +329,7 @@ const PostProcessingActionsComponent: React.FC = () => {
         )}
 
         {!editingAction && actions.length < 9 && (
-          <Button
-            onClick={handleStartCreate}
-            variant="primary"
-            size="md"
-          >
+          <Button onClick={handleStartCreate} variant="primary" size="md">
             {t("settings.postProcessing.actions.addAction")}
           </Button>
         )}
@@ -297,9 +344,7 @@ const PostProcessingActionsComponent: React.FC = () => {
   );
 };
 
-export const PostProcessingActions = React.memo(
-  PostProcessingActionsComponent,
-);
+const PostProcessingActions = React.memo(PostProcessingActionsComponent);
 PostProcessingActions.displayName = "PostProcessingActions";
 
 export const PostProcessingSettings: React.FC = () => {

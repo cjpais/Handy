@@ -104,8 +104,9 @@ pub async fn reprocess_history_entry(
         .transcribe(samples)
         .map_err(|e| e.to_string())?;
 
+    let model_name = transcription_manager.get_current_model_name();
     history_manager
-        .update_transcription_text(id, &new_text)
+        .update_transcription_text(id, &new_text, model_name.as_deref())
         .map_err(|e| e.to_string())?;
 
     if let Some(prev_id) = previous_model {
