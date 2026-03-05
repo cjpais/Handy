@@ -176,6 +176,14 @@
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
+          },
+          "show_history": {
+            "name": "Hiển thị lịch sử",
+            "description": "Mở cửa sổ ứng dụng và điều hướng đến tab Lịch sử."
+          },
+          "copy_latest_history": {
+            "name": "Sao chép lịch sử mới nhất",
+            "description": "Sao chép bản chuyển đổi mới nhất vào bộ nhớ tạm."
           }
         },
         "errors": {
@@ -545,6 +553,7 @@
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
-    "processing": "Đang xử lý..."
+    "processing": "Đang xử lý...",
+    "cancelConfirm": "Esc de huy"
   }
 }

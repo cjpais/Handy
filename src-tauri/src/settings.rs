@@ -727,6 +727,36 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "escape".to_string(),
         },
     );
+    bindings.insert(
+        "pause".to_string(),
+        ShortcutBinding {
+            id: "pause".to_string(),
+            name: "Pause / Resume".to_string(),
+            description: "Pauses or resumes the current recording.".to_string(),
+            default_binding: "f6".to_string(),
+            current_binding: "f6".to_string(),
+        },
+    );
+    bindings.insert(
+        "show_history".to_string(),
+        ShortcutBinding {
+            id: "show_history".to_string(),
+            name: "Show History".to_string(),
+            description: "Opens the app window and navigates to the History tab.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
+    bindings.insert(
+        "copy_latest_history".to_string(),
+        ShortcutBinding {
+            id: "copy_latest_history".to_string(),
+            name: "Copy Latest History".to_string(),
+            description: "Copies the latest transcription entry to your clipboard.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,

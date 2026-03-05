@@ -9,7 +9,7 @@
 //! The active implementation is determined by the `keyboard_implementation`
 //! setting and can be changed at runtime.
 
-mod handler;
+pub mod handler;
 pub mod handy_keys;
 mod tauri_impl;
 
@@ -69,6 +69,28 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
         KeyboardImplementation::HandyKeys => handy_keys::unregister_cancel_shortcut(app),
+    }
+}
+
+/// Register the pause shortcut (called when recording starts)
+pub fn register_pause_shortcut(app: &AppHandle) {
+    let settings = get_settings(app);
+    if let Some(binding) = settings.bindings.get("pause").cloned() {
+        if binding.current_binding.is_empty() {
+            return;
+        }
+        let _ = register_shortcut(app, binding);
+    }
+}
+
+/// Unregister the pause shortcut (called when recording stops)
+pub fn unregister_pause_shortcut(app: &AppHandle) {
+    let settings = get_settings(app);
+    if let Some(binding) = settings.bindings.get("pause").cloned() {
+        if binding.current_binding.is_empty() {
+            return;
+        }
+        let _ = unregister_shortcut(app, binding);
     }
 }
 
@@ -191,9 +213,8 @@ pub fn change_binding(
         }
     };
 
-    // If this is the cancel binding, just update the settings and return
-    // It's managed dynamically, so we don't register/unregister here
-    if id == "cancel" {
+    // Dynamically registered bindings: just update settings, don't register/unregister here
+    if id == "cancel" || id == "pause" {
         if let Some(mut b) = settings.bindings.get(&id).cloned() {
             b.current_binding = binding;
             settings.bindings.insert(id.clone(), b.clone());
@@ -252,6 +273,25 @@ pub fn change_binding(
 #[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
     let binding = settings::get_stored_binding(&app, &id);
+
+    // If the default binding is empty, unregister and clear the shortcut
+    if binding.default_binding.trim().is_empty() {
+        if !binding.current_binding.trim().is_empty() {
+            let _ = unregister_shortcut(&app, binding.clone());
+        }
+        let mut settings = settings::get_settings(&app);
+        if let Some(b) = settings.bindings.get_mut(&id) {
+            b.current_binding = String::new();
+        }
+        let updated = settings.bindings.get(&id).cloned();
+        settings::write_settings(&app, settings);
+        return Ok(BindingResponse {
+            success: true,
+            binding: updated,
+            error: None,
+        });
+    }
+
     change_binding(app, id, binding.default_binding)
 }
 
@@ -261,6 +301,9 @@ pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, Stri
 #[specta::specta]
 pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
+        if b.current_binding.trim().is_empty() {
+            return Ok(());
+        }
         if let Err(e) = unregister_shortcut(&app, b) {
             error!("suspend_binding error for id '{}': {}", id, e);
             return Err(e);
@@ -274,6 +317,9 @@ pub fn suspend_binding(app: AppHandle, id: String) -> Result<(), String> {
 #[specta::specta]
 pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
     if let Some(b) = settings::get_bindings(&app).get(&id).cloned() {
+        if b.current_binding.trim().is_empty() {
+            return Ok(());
+        }
         if let Err(e) = register_shortcut(&app, b) {
             error!("resume_binding error for id '{}': {}", id, e);
             return Err(e);
@@ -407,8 +453,8 @@ fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementat
     let bindings = settings::get_bindings(app);
 
     for (id, binding) in bindings {
-        // Skip cancel shortcut as it's dynamically registered
-        if id == "cancel" {
+        // Skip dynamically registered shortcuts (only active during recording)
+        if id == "cancel" || id == "pause" {
             continue;
         }
 
@@ -436,8 +482,8 @@ fn register_all_shortcuts_for_implementation(
     let mut current_settings = settings::get_settings(app);
 
     for (id, default_binding) in &default_bindings {
-        // Skip cancel shortcut as it's dynamically registered
-        if id == "cancel" {
+        // Skip dynamically registered shortcuts (only active during recording)
+        if id == "cancel" || id == "pause" {
             continue;
         }
 

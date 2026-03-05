@@ -444,6 +444,10 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
             .cloned()
             .unwrap_or(default_binding);
 
+        if binding.current_binding.trim().is_empty() {
+            continue;
+        }
+
         if let Err(e) = state.register(&binding) {
             error!(
                 "Failed to register handy-keys shortcut {} during init: {}",

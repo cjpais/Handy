@@ -176,6 +176,14 @@
           "transcribe_with_post_process": {
             "name": "Raccourci de post-traitement",
             "description": "Facultatif : Un raccourci dédié qui applique toujours le post-traitement IA à votre transcription."
+          },
+          "show_history": {
+            "name": "Afficher l'historique",
+            "description": "Ouvre la fenêtre de l'application et navigue vers l'onglet Historique."
+          },
+          "copy_latest_history": {
+            "name": "Copier le dernier historique",
+            "description": "Copie la dernière transcription dans le presse-papiers."
           }
         },
         "errors": {
@@ -548,6 +556,7 @@
   },
   "overlay": {
     "transcribing": "Transcription...",
-    "processing": "Traitement..."
+    "processing": "Traitement...",
+    "cancelConfirm": "Esc pour annuler"
   }
 }

@@ -83,7 +83,7 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
-fn show_main_window(app: &AppHandle) {
+pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         // First, ensure the window is visible
         if let Err(e) = main_window.show() {
@@ -310,6 +310,7 @@ pub fn run(cli_args: CliArgs) {
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
         commands::cancel_operation,
+        commands::toggle_pause,
         commands::get_app_dir_path,
         commands::get_app_settings,
         commands::get_default_settings,

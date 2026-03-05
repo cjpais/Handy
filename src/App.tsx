@@ -7,6 +7,7 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
+import { listen } from "@tauri-apps/api/event";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -93,6 +94,19 @@ function App() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [settings?.debug_mode, updateSetting]);
+
+  // Listen for backend navigation events (e.g., "Show History" shortcut)
+  useEffect(() => {
+    const unlisten = listen<string>("navigate-to-section", (event) => {
+      const section = event.payload as SidebarSection;
+      if (section in SECTIONS_CONFIG) {
+        setCurrentSection(section);
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   const checkOnboardingStatus = async () => {
     try {

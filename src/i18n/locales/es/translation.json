@@ -176,6 +176,14 @@
           "transcribe_with_post_process": {
             "name": "Tecla de Post Procesamiento",
             "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
+          },
+          "show_history": {
+            "name": "Mostrar historial",
+            "description": "Abre la ventana de la aplicación y navega a la pestaña de Historial."
+          },
+          "copy_latest_history": {
+            "name": "Copiar último historial",
+            "description": "Copia la última transcripción al portapapeles."
           }
         },
         "errors": {
@@ -545,6 +553,7 @@
   },
   "overlay": {
     "transcribing": "Transcribiendo...",
-    "processing": "Procesando..."
+    "processing": "Procesando...",
+    "cancelConfirm": "Esc para cancelar"
   }
 }

@@ -172,6 +172,14 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "show_history": {
+            "name": "Show History",
+            "description": "Opens the app window and navigates to the History tab."
+          },
+          "copy_latest_history": {
+            "name": "Copy Latest History",
+            "description": "Copies the latest transcription entry to your clipboard."
           }
         },
         "errors": {
@@ -620,6 +628,7 @@
   },
   "overlay": {
     "transcribing": "Transcribing...",
-    "processing": "Processing..."
+    "processing": "Processing...",
+    "cancelConfirm": "Esc again to cancel"
   }
 }
