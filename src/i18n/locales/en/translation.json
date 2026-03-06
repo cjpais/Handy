@@ -79,6 +79,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Russian speech recognition. Fast and accurate."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Multilingual batch transcription with good accuracy-efficiency trade-off."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Multilingual batch transcription. Highest accuracy among open-source ASR models."
       }
     },
     "errors": {

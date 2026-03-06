@@ -20,6 +20,7 @@ use transcribe_rs::{
         parakeet::{
             ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
         },
+        qwen3::Qwen3Engine,
         sense_voice::{
             Language as SenseVoiceLanguage, SenseVoiceEngine, SenseVoiceInferenceParams,
             SenseVoiceModelParams,
@@ -44,6 +45,7 @@ enum LoadedEngine {
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
     GigaAM(GigaAMEngine),
+    Qwen3(Qwen3Engine),
 }
 
 #[derive(Clone)]
@@ -168,6 +170,7 @@ impl TranscriptionManager {
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
                     LoadedEngine::GigaAM(ref mut e) => e.unload_model(),
+                    LoadedEngine::Qwen3(ref mut e) => e.unload_model(),
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -366,6 +369,23 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::GigaAM(engine)
             }
+            EngineType::Qwen3 => {
+                let mut engine = Qwen3Engine::new();
+                engine.load_model(&model_path).map_err(|e| {
+                    let error_msg = format!("Failed to load Qwen3 model {}: {}", model_id, e);
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.clone()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::Qwen3(engine)
+            }
         };
 
         // Update the current engine and model ID
@@ -549,6 +569,9 @@ impl TranscriptionManager {
                         LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
                             .transcribe_samples(audio, None)
                             .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
+                        LoadedEngine::Qwen3(qwen3_engine) => qwen3_engine
+                            .transcribe_samples(audio, None)
+                            .map_err(|e| anyhow::anyhow!("Qwen3 transcription failed: {}", e)),
                     }
                 },
             ));
