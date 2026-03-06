@@ -1,0 +1,67 @@
+name: "Build Windows"
+
+on:
+  workflow_dispatch:
+    inputs:
+      create-release:
+        description: "Create a GitHub release with the built artifacts"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build-windows-x64:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: "windows-latest"
+      target: "x86_64-pc-windows-msvc"
+      build-args: "--bundles nsis,msi"
+      sign-binaries: false
+      asset-prefix: "parler"
+      upload-artifacts: true
+    secrets: inherit
+
+  release:
+    if: inputs.create-release
+    needs: build-windows-x64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from tauri.conf.json
+        id: get-version
+        shell: bash
+        run: |
+          VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: parler-x86_64-pc-windows-msvc
+          path: artifacts/
+
+      - name: List artifacts
+        run: find artifacts/ -type f
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        env:
+          APP_VERSION: ${{ steps.get-version.outputs.version }}
+        with:
+          tag_name: v${{ steps.get-version.outputs.version }}-windows
+          name: v${{ steps.get-version.outputs.version }} (Windows)
+          body: |
+            Windows build of Parler.
+
+            Built from upstream Melvynx/Parler.
+
+            Note: This is an unsigned build. Windows SmartScreen may show a warning on first launch. Click "More info" then "Run anyway".
+          files: artifacts/**/*
+          draft: false
+          prerelease: false
