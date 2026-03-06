@@ -11,17 +11,58 @@ on:
 
 jobs:
   build-windows-x64:
+    runs-on: windows-latest
     permissions:
       contents: write
-    uses: ./.github/workflows/build.yml
-    with:
-      platform: "windows-latest"
-      target: "x86_64-pc-windows-msvc"
-      build-args: "--bundles nsis,msi"
-      sign-binaries: false
-      asset-prefix: "parler"
-      upload-artifacts: true
-    secrets: inherit
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tauri.conf.json
+        id: get-version
+        shell: bash
+        run: |
+          VERSION=$(grep -o '"version": "[^"]*"' src-tauri/tauri.conf.json | cut -d'"' -f4)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          key: windows-latest-x86_64-pc-windows-msvc
+
+      - name: Install Vulkan SDK
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.4.309.0
+          cache: true
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build with Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: "--bundles nsis,msi"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: parler-windows-x64
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+          retention-days: 30
 
   release:
     if: inputs.create-release
@@ -43,7 +84,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: parler-x86_64-pc-windows-msvc
+          name: parler-windows-x64
           path: artifacts/
 
       - name: List artifacts
