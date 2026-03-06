@@ -184,36 +184,35 @@ fn is_mouse_within_monitor(
         && mouse_y < (monitor_y + monitor_height as i32)
 }
 
-/// Returns overlay position in physical pixels.
+/// Returns overlay position in logical coordinates (points on macOS).
 ///
 /// Uses monitor position/size directly rather than work_area(), which can
 /// return incorrect coordinates on macOS for monitors with negative positions.
 /// The per-platform OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants
 /// already account for system chrome (menu bar, taskbar).
-fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
+///
+/// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
+/// converts PhysicalPosition using the scale factor of the monitor the window
+/// is *currently* on, which is wrong when moving cross-monitor.
+fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
     let monitor = get_monitor_with_cursor(app_handle)?;
     let scale = monitor.scale_factor();
-    let monitor_x = monitor.position().x as f64;
-    let monitor_y = monitor.position().y as f64;
-    let monitor_width = monitor.size().width as f64;
-    let monitor_height = monitor.size().height as f64;
+    let monitor_x = monitor.position().x as f64 / scale;
+    let monitor_y = monitor.position().y as f64 / scale;
+    let monitor_width = monitor.size().width as f64 / scale;
+    let monitor_height = monitor.size().height as f64 / scale;
 
     let settings = settings::get_settings(app_handle);
 
-    let overlay_w = OVERLAY_WIDTH * scale;
-    let overlay_h = OVERLAY_HEIGHT * scale;
-    let top_offset = OVERLAY_TOP_OFFSET * scale;
-    let bottom_offset = OVERLAY_BOTTOM_OFFSET * scale;
-
-    let x = monitor_x + (monitor_width - overlay_w) / 2.0;
+    let x = monitor_x + (monitor_width - OVERLAY_WIDTH) / 2.0;
     let y = match settings.overlay_position {
-        OverlayPosition::Top => monitor_y + top_offset,
+        OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
         OverlayPosition::Bottom | OverlayPosition::None => {
-            monitor_y + monitor_height - overlay_h - bottom_offset
+            monitor_y + monitor_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
         }
     };
 
-    Some((x as i32, y as i32))
+    Some((x, y))
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
@@ -230,7 +229,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 
     // Position starts unset — update_overlay_position() sets the correct
-    // PhysicalPosition before the overlay is shown.
+    // LogicalPosition before the overlay is shown.
     let builder = WebviewWindowBuilder::new(
         app_handle,
         "recording_overlay",
@@ -280,7 +279,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         match PanelBuilder::<_, RecordingOverlayPanel>::new(app_handle, "recording_overlay")
             .url(WebviewUrl::App("src/overlay/index.html".into()))
             .title("Recording")
-            .position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }))
+            .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
             .level(PanelLevel::Status)
             .size(tauri::Size::Logical(tauri::LogicalSize {
                 width: OVERLAY_WIDTH,
@@ -353,7 +352,7 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
 
         if let Some((x, y)) = calculate_overlay_position(app_handle) {
             let _ = overlay_window
-                .set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }));
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
     }
 }
