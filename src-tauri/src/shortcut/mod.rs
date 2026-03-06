@@ -1283,6 +1283,9 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     settings.show_tray_icon = enabled;
     settings::write_settings(&app, settings);
 
+    // Update cached flag for close handler
+    crate::TRAY_ICON_ENABLED.store(enabled, std::sync::atomic::Ordering::Relaxed);
+
     // Apply change immediately
     tray::set_tray_visibility(&app, enabled);
 

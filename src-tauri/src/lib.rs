@@ -33,7 +33,7 @@ use managers::transcription::TranscriptionManager;
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tauri::image::Image;
 pub use transcription_coordinator::TranscriptionCoordinator;
@@ -48,6 +48,9 @@ use crate::settings::get_settings;
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+
+// Cached tray visibility flag to avoid store access in on_window_event (which can deadlock)
+pub static TRAY_ICON_ENABLED: AtomicBool = AtomicBool::new(true);
 
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     match value {
@@ -211,8 +214,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Initialize tray menu with idle state
     utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
 
-    // Apply show_tray_icon setting
+    // Apply show_tray_icon setting and cache it in the atomic flag
     let settings = settings::get_settings(app_handle);
+    TRAY_ICON_ENABLED.store(settings.show_tray_icon, Ordering::Relaxed);
     if !settings.show_tray_icon {
         tray::set_tray_visibility(app_handle, false);
     }
@@ -472,9 +476,9 @@ pub fn run(cli_args: CliArgs) {
                 api.prevent_close();
                 let _res = window.hide();
 
-                let settings = get_settings(&window.app_handle());
                 let tray_visible =
-                    settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
+                    TRAY_ICON_ENABLED.load(Ordering::Relaxed)
+                        && !window.app_handle().state::<CliArgs>().no_tray;
 
                 #[cfg(target_os = "macos")]
                 {

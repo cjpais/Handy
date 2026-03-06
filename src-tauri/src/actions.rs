@@ -12,7 +12,7 @@ use crate::utils::{
 };
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -600,16 +600,63 @@ impl ShortcutAction for TranscribeAction {
                 let samples_clone = samples.clone(); // Clone for history saving
                 match tm.transcribe(samples) {
                     Ok(transcription) => {
+                        let mut transcription = transcription;
                         debug!(
                             "Transcription completed in {:?}: '{}'",
                             transcription_time.elapsed(),
                             transcription
                         );
+
+                        // Fallback: if cheap model returned nothing on meaningful audio, retry with accurate model
+                        if transcription.is_empty()
+                            && duration_seconds > 1.0
+                            && !switched_model
+                        {
+                            if let Some(ref long_model_id) = settings_for_model.long_audio_model {
+                                let already_using_long = original_model.as_deref()
+                                    == Some(long_model_id.as_str());
+                                if !already_using_long {
+                                    info!(
+                                        "Transcription empty for {:.1}s audio, retrying with long audio model: {}",
+                                        duration_seconds, long_model_id
+                                    );
+                                    match tm.load_model(long_model_id) {
+                                        Ok(()) => {
+                                            switched_model = true;
+                                            match tm.transcribe(samples_clone.clone()) {
+                                                Ok(retry_result) => {
+                                                    if !retry_result.is_empty() {
+                                                        debug!(
+                                                            "Fallback transcription succeeded: '{}'",
+                                                            retry_result
+                                                        );
+                                                        transcription = retry_result;
+                                                    } else {
+                                                        debug!("Fallback transcription also returned empty");
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    warn!("Fallback transcription error: {}", e);
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            warn!(
+                                                "Failed to load long audio model for fallback: {}",
+                                                e
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        let mut post_processed_text: Option<String> = None;
+                        let mut post_process_prompt: Option<String> = None;
+
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
-                            let mut post_processed_text: Option<String> = None;
-                            let mut post_process_prompt: Option<String> = None;
 
                             // First, check if Chinese variant conversion is needed
                             if let Some(converted_text) =
@@ -668,31 +715,6 @@ impl ShortcutAction for TranscribeAction {
                                 post_processed_text = Some(final_text.clone());
                             }
 
-                            // Save to history with post-processed text and prompt
-                            let hm_clone = Arc::clone(&hm);
-                            let transcription_for_history = transcription.clone();
-                            let model_name_for_history = tm.get_current_model_name();
-                            let action_key_for_history = if post_processed_text.is_some() {
-                                selected_action_key
-                            } else {
-                                None
-                            };
-                            tauri::async_runtime::spawn(async move {
-                                if let Err(e) = hm_clone
-                                    .save_transcription(
-                                        samples_clone,
-                                        transcription_for_history,
-                                        post_processed_text,
-                                        post_process_prompt,
-                                        action_key_for_history,
-                                        model_name_for_history,
-                                    )
-                                    .await
-                                {
-                                    error!("Failed to save transcription to history: {}", e);
-                                }
-                            });
-
                             // Paste the final text (either processed or original)
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
@@ -716,6 +738,33 @@ impl ShortcutAction for TranscribeAction {
                         } else {
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
+                        }
+
+                        // Always save to history for non-empty results or meaningful audio duration
+                        if !transcription.is_empty() || duration_seconds > 1.0 {
+                            let hm_clone = Arc::clone(&hm);
+                            let transcription_for_history = transcription.clone();
+                            let model_name_for_history = tm.get_current_model_name();
+                            let action_key_for_history = if post_processed_text.is_some() {
+                                selected_action_key
+                            } else {
+                                None
+                            };
+                            tauri::async_runtime::spawn(async move {
+                                if let Err(e) = hm_clone
+                                    .save_transcription(
+                                        samples_clone,
+                                        transcription_for_history,
+                                        post_processed_text,
+                                        post_process_prompt,
+                                        action_key_for_history,
+                                        model_name_for_history,
+                                    )
+                                    .await
+                                {
+                                    error!("Failed to save transcription to history: {}", e);
+                                }
+                            });
                         }
                     }
                     Err(err) => {
