@@ -558,6 +558,14 @@
         "title": "App Data Directory",
         "description": "Location where Parler stores its data"
       },
+      "exportImport": {
+        "title": "Export / Import Settings",
+        "description": "Transfer your configuration to another computer",
+        "export": "Export",
+        "import": "Import",
+        "exportSuccess": "Settings exported successfully",
+        "importSuccess": "Settings imported successfully"
+      },
       "sourceCode": {
         "title": "Source Code",
         "description": "View source code and contribute",
