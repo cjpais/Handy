@@ -614,7 +614,11 @@ impl TranscriptionManager {
         };
 
         // Filter out filler words and hallucinations
-        let filtered_result = filter_transcription_output(&corrected_result);
+        let filtered_result = filter_transcription_output(
+            &corrected_result,
+            &settings.app_language,
+            &settings.custom_filler_words,
+        );
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {

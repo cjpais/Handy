@@ -360,6 +360,8 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
+    #[serde(default)]
+    pub custom_filler_words: Option<Vec<String>>,
 }
 
 fn default_model() -> String {
@@ -724,6 +726,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        custom_filler_words: None,
     }
 }
 
