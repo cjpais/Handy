@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import { Copy, Star, Check, Trash2, FolderOpen, Search } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
@@ -36,6 +36,7 @@ export const HistorySettings: React.FC = () => {
   const osType = useOsType();
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadHistoryEntries = useCallback(async () => {
     try {
@@ -182,6 +183,17 @@ export const HistorySettings: React.FC = () => {
     );
   }
 
+  const filteredEntries = searchQuery
+    ? historyEntries.filter((entry) => {
+        const query = searchQuery.toLowerCase();
+        return (
+          entry.transcription_text.toLowerCase().includes(query) ||
+          (entry.post_processed_text &&
+            entry.post_processed_text.toLowerCase().includes(query))
+        );
+      })
+    : historyEntries;
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <div className="space-y-2">
@@ -196,19 +208,35 @@ export const HistorySettings: React.FC = () => {
             label={t("settings.history.openFolder")}
           />
         </div>
+        <div className="px-4 relative">
+          <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-4 h-4 text-text/40" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("settings.history.search")}
+            className="w-full pl-9 pr-3 py-2 text-sm bg-mid-gray/10 border border-mid-gray/80 rounded-md text-start transition-all duration-150 hover:bg-logo-primary/10 hover:border-logo-primary focus:outline-none focus:bg-logo-primary/20 focus:border-logo-primary"
+          />
+        </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-          <div className="divide-y divide-mid-gray/20">
-            {historyEntries.map((entry) => (
-              <HistoryEntryComponent
-                key={entry.id}
-                entry={entry}
-                onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
-                getAudioUrl={getAudioUrl}
-                deleteAudio={deleteAudioEntry}
-              />
-            ))}
-          </div>
+          {filteredEntries.length === 0 ? (
+            <div className="px-4 py-3 text-center text-text/60">
+              {t("settings.history.noResults")}
+            </div>
+          ) : (
+            <div className="divide-y divide-mid-gray/20">
+              {filteredEntries.map((entry) => (
+                <HistoryEntryComponent
+                  key={entry.id}
+                  entry={entry}
+                  onToggleSaved={() => toggleSaved(entry.id)}
+                  onCopyText={() => copyToClipboard(entry.transcription_text)}
+                  getAudioUrl={getAudioUrl}
+                  deleteAudio={deleteAudioEntry}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

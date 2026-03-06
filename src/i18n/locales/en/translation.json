@@ -393,7 +393,9 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "search": "Search transcriptions...",
+      "noResults": "No matching transcriptions found"
     },
     "debug": {
       "title": "Debug",
