@@ -753,7 +753,7 @@ impl AppSettings {
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     // Initialize store
     let store = app
-        .store(SETTINGS_STORE_PATH)
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
@@ -803,7 +803,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 
 pub fn get_settings(app: &AppHandle) -> AppSettings {
     let store = app
-        .store(SETTINGS_STORE_PATH)
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
@@ -827,7 +827,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
     let store = app
-        .store(SETTINGS_STORE_PATH)
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
     store.set("settings", serde_json::to_value(&settings).unwrap());
