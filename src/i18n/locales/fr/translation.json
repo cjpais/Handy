@@ -486,6 +486,14 @@
         "title": "Emplacement des données de l'application",
         "description": "Emplacement où Parler stocke ses données"
       },
+      "exportImport": {
+        "title": "Exporter / Importer les paramètres",
+        "description": "Transférer votre configuration vers un autre ordinateur",
+        "export": "Exporter",
+        "import": "Importer",
+        "exportSuccess": "Paramètres exportés avec succès",
+        "importSuccess": "Paramètres importés avec succès"
+      },
       "sourceCode": {
         "title": "Code source",
         "description": "Voir le code source et contribuer",
