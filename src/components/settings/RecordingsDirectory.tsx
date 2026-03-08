@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { open, ask } from "@tauri-apps/plugin-dialog";
-import { toast } from "sonner";
 import { commands } from "@/bindings";
-import { useSettings } from "../../hooks/useSettings";
 import { SettingContainer } from "../ui/SettingContainer";
 
 interface RecordingsDirectoryProps {
@@ -14,15 +11,8 @@ interface RecordingsDirectoryProps {
 export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
   React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, refreshSettings } = useSettings();
-    const [isBusy, setIsBusy] = useState(false);
     const [defaultPath, setDefaultPath] = useState<string>("");
     const [loading, setLoading] = useState(true);
-
-    const rawCustomDir = getSetting("recordings_custom_dir");
-    const customDir: string | null =
-      typeof rawCustomDir === "string" ? rawCustomDir : null;
-    const isCustom = customDir !== null;
 
     useEffect(() => {
       const loadDefaultPath = async () => {
@@ -39,74 +29,6 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
       };
       loadDefaultPath();
     }, []);
-
-    const applyDirectoryChange = async (path: string | null) => {
-      setIsBusy(true);
-      try {
-        const result = await commands.setRecordingsDirectory(path, true);
-        if (result.status === "error") {
-          toast.error(
-            t("settings.debug.recordingsDirectory.errorSetDir", {
-              error: result.error,
-            }),
-          );
-          return;
-        }
-
-        await refreshSettings();
-
-        const { moved, skipped, failed } = result.data;
-        if (moved > 0) {
-          toast.success(
-            t("settings.debug.recordingsDirectory.moveResult_moved", {
-              count: moved,
-            }),
-          );
-        }
-        if (skipped > 0) {
-          toast.info(
-            t("settings.debug.recordingsDirectory.moveResult_skipped", {
-              count: skipped,
-            }),
-          );
-        }
-        if (failed > 0) {
-          toast.warning(
-            t("settings.debug.recordingsDirectory.moveResult_failed", {
-              count: failed,
-            }),
-          );
-        }
-      } catch (error) {
-        toast.error(
-          t("settings.debug.recordingsDirectory.errorSetDir", {
-            error: String(error),
-          }),
-        );
-      } finally {
-        setIsBusy(false);
-      }
-    };
-
-    const handleChange = async () => {
-      const selected = await open({ directory: true, multiple: false });
-      if (!selected) return;
-      await applyDirectoryChange(selected as string);
-    };
-
-    const handleRevert = async () => {
-      const confirmed = await ask(
-        t("settings.debug.recordingsDirectory.confirmDisableMessage"),
-        {
-          title: t("settings.debug.recordingsDirectory.confirmDisableTitle"),
-          okLabel: t("settings.debug.recordingsDirectory.confirmDisableButton"),
-          cancelLabel: t("common.cancel"),
-          kind: "warning",
-        },
-      );
-      if (!confirmed) return;
-      await applyDirectoryChange(null);
-    };
 
     const handleOpen = async () => {
       try {
@@ -141,13 +63,12 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
         layout="stacked"
       >
         <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 px-2 py-1.5 bg-mid-gray/10 border border-mid-gray/80 rounded-lg text-xs font-mono break-all select-text cursor-text">
-            {isCustom ? customDir : defaultPath}
+          <div className="flex-1 min-w-0 px-2 py-2 bg-mid-gray/10 border border-mid-gray/80 rounded-lg text-xs font-mono break-all select-text cursor-text">
+            {defaultPath}
           </div>
           <button
             onClick={handleOpen}
-            disabled={isBusy}
-            className="p-1.5 rounded-lg border border-mid-gray/80 hover:bg-mid-gray/20 text-text/70 hover:text-text transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-lg border border-mid-gray/80 hover:bg-mid-gray/20 text-text/70 hover:text-text transition-colors"
             title="Open this directory in your file manager"
           >
             <svg
@@ -164,48 +85,6 @@ export const RecordingsDirectory: React.FC<RecordingsDirectoryProps> =
               />
             </svg>
           </button>
-          <button
-            onClick={handleChange}
-            disabled={isBusy}
-            className="p-1.5 rounded-lg border border-mid-gray/80 hover:bg-mid-gray/20 text-text/70 hover:text-text transition-colors disabled:opacity-50"
-            title="Select a custom directory for this type of data"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-          </button>
-          {isCustom && (
-            <button
-              onClick={handleRevert}
-              disabled={isBusy}
-              className="p-1.5 rounded-lg border border-mid-gray/80 hover:bg-mid-gray/20 text-text/70 hover:text-text transition-colors disabled:opacity-50"
-              title="Reset this directory to its original default location"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                />
-              </svg>
-            </button>
-          )}
         </div>
       </SettingContainer>
     );
