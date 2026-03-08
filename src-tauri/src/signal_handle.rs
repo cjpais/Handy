@@ -1,6 +1,9 @@
 use crate::TranscriptionCoordinator;
-use log::{debug, warn};
+use log::warn;
 use tauri::{AppHandle, Manager};
+
+#[cfg(unix)]
+use log::debug;
 
 #[cfg(unix)]
 use signal_hook::consts::{SIGUSR1, SIGUSR2};

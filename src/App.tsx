@@ -125,31 +125,60 @@ function App() {
     };
   }, [t]);
 
+  const revealMainWindowForPermissions = async () => {
+    try {
+      await commands.showMainWindowCommand();
+    } catch (e) {
+      console.warn("Failed to show main window for permission onboarding:", e);
+    }
+  };
+
   const checkOnboardingStatus = async () => {
     try {
       // Check if they have any models available
       const result = await commands.hasAnyModelsAvailable();
       const hasModels = result.status === "ok" && result.data;
+      const currentPlatform = platform();
 
       if (hasModels) {
-        // Returning user - but check if they need to grant permissions on macOS
+        // Returning user - check if they need to grant permissions first
         setIsReturningUser(true);
-        if (platform() === "macos") {
+
+        if (currentPlatform === "macos") {
           try {
             const [hasAccessibility, hasMicrophone] = await Promise.all([
               checkAccessibilityPermission(),
               checkMicrophonePermission(),
             ]);
             if (!hasAccessibility || !hasMicrophone) {
-              // Missing permissions - show accessibility onboarding
+              await revealMainWindowForPermissions();
               setOnboardingStep("accessibility");
               return;
             }
           } catch (e) {
-            console.warn("Failed to check permissions:", e);
+            console.warn("Failed to check macOS permissions:", e);
             // If we can't check, proceed to main app and let them fix it there
           }
         }
+
+        if (currentPlatform === "windows") {
+          try {
+            const microphoneStatus =
+              await commands.getWindowsMicrophonePermissionStatus();
+            if (
+              microphoneStatus.supported &&
+              microphoneStatus.overall_access === "denied"
+            ) {
+              await revealMainWindowForPermissions();
+              setOnboardingStep("accessibility");
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed to check Windows microphone permissions:", e);
+            // If we can't check, proceed to main app and let them fix it there
+          }
+        }
+
         setOnboardingStep("done");
       } else {
         // New user - start full onboarding
