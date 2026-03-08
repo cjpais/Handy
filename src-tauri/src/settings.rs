@@ -450,7 +450,7 @@ fn default_show_tray_icon() -> bool {
 }
 
 fn default_post_process_provider_id() -> String {
-    "anthropic".to_string()
+    "openrouter".to_string()
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
@@ -919,8 +919,8 @@ mod tests {
     }
 
     #[test]
-    fn default_settings_use_anthropic_provider() {
+    fn default_settings_use_openrouter_provider() {
         let settings = get_default_settings();
-        assert_eq!(settings.post_process_provider_id, "anthropic");
+        assert_eq!(settings.post_process_provider_id, "openrouter");
     }
 }
