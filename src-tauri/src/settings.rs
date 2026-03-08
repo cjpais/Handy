@@ -365,7 +365,7 @@ pub struct AppSettings {
 }
 
 fn default_model() -> String {
-    "".to_string()
+    "parakeet-tdt-0.6b-v3".to_string()
 }
 
 fn default_always_on_microphone() -> bool {
@@ -450,7 +450,7 @@ fn default_show_tray_icon() -> bool {
 }
 
 fn default_post_process_provider_id() -> String {
-    "openai".to_string()
+    "anthropic".to_string()
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
@@ -691,7 +691,7 @@ pub fn get_default_settings() -> AppSettings {
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
-        selected_model: "".to_string(),
+        selected_model: default_model(),
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,
@@ -701,7 +701,39 @@ pub fn get_default_settings() -> AppSettings {
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
-        custom_words: Vec::new(),
+        custom_words: vec![
+            "TypeScript".to_string(),
+            "JavaScript".to_string(),
+            "Angular".to_string(),
+            "React".to_string(),
+            "Python".to_string(),
+            "Docker".to_string(),
+            "Kubernetes".to_string(),
+            "PostgreSQL".to_string(),
+            "MongoDB".to_string(),
+            "GitHub".to_string(),
+            "GitLab".to_string(),
+            "npm".to_string(),
+            "Tailwind".to_string(),
+            "Zustand".to_string(),
+            "Prisma".to_string(),
+            "GraphQL".to_string(),
+            "REST".to_string(),
+            "API".to_string(),
+            "JSON".to_string(),
+            "YAML".to_string(),
+            "TOML".to_string(),
+            "CI/CD".to_string(),
+            "DevOps".to_string(),
+            "microservices".to_string(),
+            "middleware".to_string(),
+            "refactoring".to_string(),
+            "commit".to_string(),
+            "branche".to_string(),
+            "pull request".to_string(),
+            "merge".to_string(),
+            "rebase".to_string(),
+        ],
         model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
@@ -869,5 +901,26 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_use_parakeet_v3_model() {
+        let settings = get_default_settings();
+        assert_eq!(settings.selected_model, "parakeet-tdt-0.6b-v3");
+    }
+
+    #[test]
+    fn default_settings_contain_custom_words() {
+        let settings = get_default_settings();
+        assert!(settings.custom_words.contains(&"TypeScript".to_string()));
+        assert!(settings.custom_words.contains(&"Docker".to_string()));
+        assert!(settings.custom_words.contains(&"Kubernetes".to_string()));
+        assert!(settings.custom_words.contains(&"pull request".to_string()));
+    }
+
+    #[test]
+    fn default_settings_use_anthropic_provider() {
+        let settings = get_default_settings();
+        assert_eq!(settings.post_process_provider_id, "anthropic");
     }
 }

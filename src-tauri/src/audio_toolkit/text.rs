@@ -209,7 +209,9 @@ fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
         ],
         "es" => &["ehm", "mmm", "hmm", "hm"],
         "pt" => &["ahm", "hmm", "mmm", "hm"],
-        "fr" => &["euh", "hmm", "hm", "mmm"],
+        "fr" => &[
+            "euh", "hmm", "hm", "mmm", "genre", "voilà", "bon", "bah", "ben",
+        ],
         "de" => &["äh", "ähm", "hmm", "hm", "mmm"],
         "it" => &["ehm", "hmm", "mmm", "hm"],
         "cs" => &["ehm", "hmm", "mmm", "hm"],
@@ -557,5 +559,32 @@ mod tests {
             "got double-counted result: {}",
             result
         );
+    }
+}
+
+#[cfg(test)]
+mod tests_french_filler_words {
+    use super::*;
+
+    #[test]
+    fn test_filter_french_removes_genre_voila_bon() {
+        let text = "genre je pense que voilà c'est bon comme ça";
+        let result = filter_transcription_output(text, "fr", &None);
+        assert_eq!(result, "je pense que c'est comme ça");
+    }
+
+    #[test]
+    fn test_filter_french_removes_bah_ben() {
+        let text = "bah je sais pas ben oui";
+        let result = filter_transcription_output(text, "fr", &None);
+        assert_eq!(result, "je sais pas oui");
+    }
+
+    #[test]
+    fn test_filter_french_filler_words_not_removed_in_english() {
+        // "genre", "bon" should NOT be removed in English
+        let text = "this genre is bon";
+        let result = filter_transcription_output(text, "en", &None);
+        assert_eq!(result, "this genre is bon");
     }
 }
