@@ -540,7 +540,8 @@
     "dismiss": "Dispensar"
   },
   "errors": {
-    "loadDirectory": "Erro ao carregar diretório: {{error}}"
+    "loadDirectory": "Erro ao carregar diretório: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",

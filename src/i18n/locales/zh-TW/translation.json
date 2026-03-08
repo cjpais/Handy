@@ -540,7 +540,8 @@
     "dismiss": "關閉"
   },
   "errors": {
-    "loadDirectory": "載入目錄時發生錯誤: {{error}}"
+    "loadDirectory": "載入目錄時發生錯誤: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "應用程式語言",
