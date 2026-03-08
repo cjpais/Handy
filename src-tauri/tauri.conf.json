@@ -37,7 +37,7 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": "v2",
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "resources": ["resources/**/*"],
     "license": "MIT",
