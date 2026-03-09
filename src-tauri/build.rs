@@ -83,12 +83,6 @@ fn generate_tray_translations() {
     out.push_str("    m\n});\n");
 
     fs::write(Path::new(&out_dir).join("tray_translations.rs"), out).unwrap();
-
-    println!(
-        "cargo:warning=Generated tray translations: {} languages, {} fields",
-        translations.len(),
-        fields.len()
-    );
 }
 
 fn camel_to_snake(s: &str) -> String {

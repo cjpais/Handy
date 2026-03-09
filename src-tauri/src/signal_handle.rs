@@ -1,5 +1,5 @@
 use crate::TranscriptionCoordinator;
-use log::{debug, warn};
+use log::warn;
 use tauri::{AppHandle, Manager};
 
 #[cfg(unix)]
@@ -21,7 +21,7 @@ pub fn send_transcription_input(app: &AppHandle, binding_id: &str, source: &str)
 
 #[cfg(unix)]
 pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
-    debug!("Signal handlers registered (SIGUSR1, SIGUSR2)");
+    log::debug!("Signal handlers registered (SIGUSR1, SIGUSR2)");
     thread::spawn(move || {
         for sig in signals.forever() {
             let (binding_id, signal_name) = match sig {
@@ -29,7 +29,7 @@ pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {
                 SIGUSR2 => ("transcribe", "SIGUSR2"),
                 _ => continue,
             };
-            debug!("Received {signal_name}");
+            log::debug!("Received {signal_name}");
             send_transcription_input(&app_handle, binding_id, signal_name);
         }
     });
