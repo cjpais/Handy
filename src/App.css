@@ -8,6 +8,8 @@
   --color-logo-stroke: #382731;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
+  --scrollbar-thumb: #faa2ca;
+  --scrollbar-thumb-hover: #da5893;
 }
 
 :root {
@@ -51,7 +53,38 @@
     --color-background: #2c2b29;
     --color-logo-primary: #f28cbb;
     --color-logo-stroke: #fad1ed;
+    --scrollbar-thumb: #f28cbb;
+    --scrollbar-thumb-hover: #da5893;
   }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  min-height: 32px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+  border-width: 2px;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 @layer utilities {
