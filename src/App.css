@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* Design tokens */
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
   --color-background-ui: #da5893;
@@ -8,8 +9,6 @@
   --color-logo-stroke: #382731;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
-  --scrollbar-thumb: #faa2ca;
-  --scrollbar-thumb-hover: #da5893;
 }
 
 :root {
@@ -32,6 +31,13 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
+  --scrollbar-thumb: color-mix(in srgb, var(--color-text), transparent 85%);
+  --scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--color-text),
+    transparent 70%
+  );
+
   /* Apply colors */
   color: var(--color-text);
   background-color: var(--color-background);
@@ -53,8 +59,12 @@
     --color-background: #2c2b29;
     --color-logo-primary: #f28cbb;
     --color-logo-stroke: #fad1ed;
-    --scrollbar-thumb: #f28cbb;
-    --scrollbar-thumb-hover: #da5893;
+    --scrollbar-thumb: color-mix(in srgb, var(--color-text), transparent 85%);
+    --scrollbar-thumb-hover: color-mix(
+      in srgb,
+      var(--color-text),
+      transparent 70%
+    );
   }
 }
 
@@ -78,13 +88,36 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--scrollbar-thumb-hover);
-  border-width: 2px;
+}
+
+::-webkit-scrollbar-button {
+  display: block;
+  height: 14px;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 6px;
+}
+
+::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4'%3E%3Cpath d='M3 0L6 4H0Z' fill='%23808080'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4'%3E%3Cpath d='M3 4L0 0H6Z' fill='%23808080'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar-button:single-button:vertical:decrement:hover,
+::-webkit-scrollbar-button:single-button:vertical:increment:hover {
+  background-color: color-mix(in srgb, var(--color-text), transparent 85%);
 }
 
 /* For Firefox */
-* {
-  scrollbar-width: auto;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
+@supports (-moz-appearance: none) {
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
 }
 
 @layer utilities {
