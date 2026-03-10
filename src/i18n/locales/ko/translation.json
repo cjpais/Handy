@@ -540,7 +540,8 @@
     "dismiss": "닫기"
   },
   "errors": {
-    "loadDirectory": "디렉토리 로딩 오류: {{error}}"
+    "loadDirectory": "디렉토리 로딩 오류: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "애플리케이션 언어",

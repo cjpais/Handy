@@ -540,7 +540,8 @@
     "dismiss": "تجاهل"
   },
   "errors": {
-    "loadDirectory": "خطأ في تحميل المجلد: {{error}}"
+    "loadDirectory": "خطأ في تحميل المجلد: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "لغة التطبيق",

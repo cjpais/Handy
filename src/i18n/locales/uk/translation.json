@@ -540,7 +540,8 @@
     "dismiss": "Закрити"
   },
   "errors": {
-    "loadDirectory": "Помилка завантаження папки: {{error}}"
+    "loadDirectory": "Помилка завантаження папки: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",
