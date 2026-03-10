@@ -540,7 +540,8 @@
     "dismiss": "Bỏ qua"
   },
   "errors": {
-    "loadDirectory": "Lỗi khi tải thư mục: {{error}}"
+    "loadDirectory": "Lỗi khi tải thư mục: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",

@@ -540,7 +540,8 @@
     "dismiss": "Dismiss"
   },
   "errors": {
-    "loadDirectory": "Error loading directory: {{error}}"
+    "loadDirectory": "Error loading directory: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "Application Language",

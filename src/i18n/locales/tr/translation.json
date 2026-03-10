@@ -540,7 +540,8 @@
     "dismiss": "Yoksay"
   },
   "errors": {
-    "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}"
+    "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "Uygulama Dili",

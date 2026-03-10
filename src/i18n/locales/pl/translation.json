@@ -540,7 +540,8 @@
     "dismiss": "Zamknij"
   },
   "errors": {
-    "loadDirectory": "Błąd wczytywania katalogu: {{error}}"
+    "loadDirectory": "Błąd wczytywania katalogu: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "Język aplikacji",

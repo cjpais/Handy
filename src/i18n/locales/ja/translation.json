@@ -540,7 +540,8 @@
     "dismiss": "閉じる"
   },
   "errors": {
-    "loadDirectory": "ディレクトリの読み込みエラー: {{error}}"
+    "loadDirectory": "ディレクトリの読み込みエラー: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "アプリケーション言語",
