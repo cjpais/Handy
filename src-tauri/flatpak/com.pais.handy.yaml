@@ -1,0 +1,109 @@
+id: com.pais.handy
+
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+
+command: handy
+
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+
+  # GPU access for Vulkan (Whisper acceleration)
+  - --device=dri
+
+  # Audio - use PipeWire
+  - --socket=pulseaudio
+  - --filesystem=xdg-run/pipewire-0:ro
+
+  # Tray icon temp directory - needed for libayatana-appindicator to work in Flatpak
+  # The host StatusNotifierWatcher needs to read icon files from this shared location
+  - --filesystem=xdg-run/tray-icon:create
+
+  # Network access for model downloads
+  - --share=network
+
+  # System tray support
+  - --talk-name=org.kde.StatusNotifierWatcher
+
+  # Notifications
+  - --talk-name=org.freedesktop.Notifications
+
+  # WebKit rendering fix for sandboxed environments (fixes white screen when opening)
+  - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
+
+  # Ensure bundled ayatana libraries are found at runtime
+  - --env=LD_LIBRARY_PATH=/app/lib:/app/lib64
+
+modules:
+  - name: wtype
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://github.com/atx/wtype/archive/refs/tags/v0.4.tar.gz
+        sha256: da91786d828b6a6e29b884bc510473939eda052658ebef87d7bdeafa6a8746f9
+
+  - name: gtk-layer-shell
+    buildsystem: meson
+    config-opts:
+      - -Dexamples=false
+      - -Ddocs=false
+      - -Dtests=false
+    sources:
+      - type: archive
+        url: https://github.com/wmww/gtk-layer-shell/archive/refs/tags/v0.10.0.tar.gz
+        sha256: ed9bb801d6d9252defba41104820ace595dac824dc8972a758ee2ad134e10505
+
+  # System tray support via flathub shared-modules
+  - shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json
+
+  - name: handy
+    buildsystem: simple
+
+    sources:
+      # Metainfo file for AppStream
+      - type: file
+        path: com.pais.handy.metainfo.xml
+
+      - type: file
+        path: ../../LICENSE
+
+      # The .deb file - for local builds, use a local path
+      # For CI builds, this will be replaced with the actual URL and sha256
+      - type: file
+        path: handy.deb
+        dest-filename: handy.deb
+
+    build-commands:
+      - set -e
+
+      # Extract the deb package
+      - mkdir -p deb-extract
+      - ar -x handy.deb --output deb-extract
+      - tar -C deb-extract -xf deb-extract/data.tar.gz
+
+      # Install binary
+      - install -Dm755 deb-extract/usr/bin/handy /app/bin/handy
+
+      # Install bundled resources (models, sounds, etc.)
+      - mkdir -p /app/lib/Handy
+      - cp -r deb-extract/usr/lib/Handy/. /app/lib/Handy/
+      - find /app/lib/Handy -type f -exec chmod 644 {} \;
+
+      # Install desktop file with correct icon reference
+      - sed -i 's/^Icon=.*/Icon=com.pais.handy/' deb-extract/usr/share/applications/Handy.desktop
+      - install -Dm644 deb-extract/usr/share/applications/Handy.desktop /app/share/applications/com.pais.handy.desktop
+
+      # Install icons
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/32x32/apps/handy.png /app/share/icons/hicolor/32x32/apps/com.pais.handy.png
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/64x64/apps/handy.png /app/share/icons/hicolor/64x64/apps/com.pais.handy.png
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/128x128/apps/handy.png /app/share/icons/hicolor/128x128/apps/com.pais.handy.png
+      - install -Dm644 deb-extract/usr/share/icons/hicolor/256x256@2x/apps/handy.png /app/share/icons/hicolor/256x256@2x/apps/com.pais.handy.png || true
+
+      # Install metainfo
+      - install -Dm644 com.pais.handy.metainfo.xml /app/share/metainfo/com.pais.handy.metainfo.xml
+
+      # Install license file
+      - install -Dm644 LICENSE /app/share/licenses/com.pais.handy/LICENSE

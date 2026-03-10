@@ -30,6 +30,14 @@ dist-ssr
 recording_*
 .crush/
 
+# Flatpak build artifacts
+flatpak-build/
+flatpak-repo/
+*.flatpak
+src-tauri/flatpak/.flatpak-builder/
+src-tauri/flatpak/handy.deb
+.flatpak-sdk-prefix/
+
 # Playwright
 playwright-report/
 test-results/

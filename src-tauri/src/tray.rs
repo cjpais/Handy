@@ -62,21 +62,30 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState) -> &'static str {
 }
 
 pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
-    let tray = app.state::<TrayIcon>();
     let theme = get_current_theme(app);
-
     let icon_path = get_icon_path(theme, icon.clone());
 
-    let _ = tray.set_icon(Some(
-        Image::from_path(
-            app.path()
-                .resolve(icon_path, tauri::path::BaseDirectory::Resource)
-                .expect("failed to resolve"),
-        )
-        .expect("failed to set icon"),
-    ));
+    let resolved_path = app
+        .path()
+        .resolve(icon_path, tauri::path::BaseDirectory::Resource)
+        .expect("failed to resolve icon path");
 
-    // Update menu based on state
+    let tray = app.state::<TrayIcon>();
+    match Image::from_path(&resolved_path) {
+        Ok(image) => {
+            if let Err(e) = tray.set_icon(Some(image)) {
+                log::error!("Failed to set tray icon: {:?}", e);
+            }
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to load icon image from {:?}: {:?}",
+                resolved_path,
+                e
+            );
+        }
+    }
+
     update_tray_menu(app, &icon, None);
 }
 
@@ -177,6 +186,8 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
 
     let tray = app.state::<TrayIcon>();
     let _ = tray.set_menu(Some(menu));
+    // Only set icon as template on macOS - on Linux this can cause icon display issues
+    #[cfg(target_os = "macos")]
     let _ = tray.set_icon_as_template(true);
 }
 
