@@ -74,6 +74,10 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
 
 /// Register a shortcut using the appropriate implementation
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if binding.current_binding_value().is_none() {
+        return Ok(());
+    }
+
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_shortcut(app, binding),
@@ -83,6 +87,10 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
 
 /// Unregister a shortcut using the appropriate implementation
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if binding.current_binding_value().is_none() {
+        return Ok(());
+    }
+
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_shortcut(app, binding),
@@ -106,12 +114,9 @@ pub struct BindingResponse {
 pub fn change_binding(
     app: AppHandle,
     id: String,
-    binding: String,
+    binding: Option<String>,
 ) -> Result<BindingResponse, String> {
-    // Reject empty bindings — every shortcut should have a value
-    if binding.trim().is_empty() {
-        return Err("Binding cannot be empty".to_string());
-    }
+    let binding = ShortcutBinding::normalize_binding_value(binding);
 
     let mut settings = settings::get_settings(&app);
 
@@ -142,6 +147,10 @@ pub fn change_binding(
         }
     };
 
+    if binding.is_none() && !binding_to_modify.allows_unset() {
+        return Err("Binding cannot be empty".to_string());
+    }
+
     // If this is the cancel binding, just update the settings and return
     // It's managed dynamically, so we don't register/unregister here
     if id == "cancel" {
@@ -163,16 +172,33 @@ pub fn change_binding(
         error!("change_binding error: {}", error_msg);
     }
 
-    // Validate the new shortcut for the current keyboard implementation
-    if let Err(e) = validate_shortcut_for_implementation(&binding, settings.keyboard_implementation)
-    {
-        warn!("change_binding validation error: {}", e);
-        return Err(e);
-    }
-
     // Create an updated binding
     let mut updated_binding = binding_to_modify;
     updated_binding.current_binding = binding;
+
+    if updated_binding.current_binding_value().is_none() {
+        settings.bindings.insert(id, updated_binding.clone());
+        settings::write_settings(&app, settings);
+
+        return Ok(BindingResponse {
+            success: true,
+            binding: Some(updated_binding),
+            error: None,
+        });
+    }
+
+    // Validate the new shortcut for the current keyboard implementation
+    let current_binding = updated_binding
+        .current_binding_value()
+        .ok_or_else(|| "Binding cannot be empty".to_string())?;
+
+    if let Err(e) = validate_shortcut_for_implementation(
+        current_binding,
+        settings.keyboard_implementation,
+    ) {
+        warn!("change_binding validation error: {}", e);
+        return Err(e);
+    }
 
     // Register the new binding
     if let Err(e) = register_shortcut(&app, updated_binding.clone()) {
@@ -403,13 +429,19 @@ fn register_all_shortcuts_for_implementation(
             .cloned()
             .unwrap_or_else(|| default_binding.clone());
 
+        if binding.current_binding_value().is_none() {
+            continue;
+        }
+
         // Validate the shortcut for the target implementation
-        if let Err(e) =
-            validate_shortcut_for_implementation(&binding.current_binding, implementation)
-        {
+        let Some(current_binding) = binding.current_binding_value().map(str::to_string) else {
+            continue;
+        };
+
+        if let Err(e) = validate_shortcut_for_implementation(&current_binding, implementation) {
             info!(
                 "Shortcut '{}' ({}) is invalid for {:?}: {}. Resetting to default.",
-                id, binding.current_binding, implementation, e
+                id, current_binding, implementation, e
             );
 
             // Reset to default

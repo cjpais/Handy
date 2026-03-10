@@ -23,7 +23,7 @@ interface UseSettingsReturn {
   refreshOutputDevices: () => Promise<void>;
 
   // Binding-specific actions
-  updateBinding: (id: string, binding: string) => Promise<void>;
+  updateBinding: (id: string, binding: string | null) => Promise<void>;
   resetBinding: (id: string) => Promise<void>;
 
   // Convenience getters

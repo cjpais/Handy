@@ -81,8 +81,33 @@ pub struct ShortcutBinding {
     pub id: String,
     pub name: String,
     pub description: String,
-    pub default_binding: String,
-    pub current_binding: String,
+    pub default_binding: Option<String>,
+    pub current_binding: Option<String>,
+}
+
+impl ShortcutBinding {
+    pub fn normalize_binding_value(binding: Option<String>) -> Option<String> {
+        binding.and_then(|binding| {
+            let trimmed = binding.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        })
+    }
+
+    pub fn default_binding_value(&self) -> Option<&str> {
+        self.default_binding.as_deref().filter(|binding| !binding.is_empty())
+    }
+
+    pub fn current_binding_value(&self) -> Option<&str> {
+        self.current_binding.as_deref().filter(|binding| !binding.is_empty())
+    }
+
+    pub fn allows_unset(&self) -> bool {
+        self.default_binding_value().is_none()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -628,6 +653,28 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+fn normalize_shortcut_bindings(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+
+    for binding in settings.bindings.values_mut() {
+        let previous_default = binding.default_binding.clone();
+        let normalized_default = ShortcutBinding::normalize_binding_value(previous_default.clone());
+        if previous_default != normalized_default {
+            binding.default_binding = normalized_default;
+            changed = true;
+        }
+
+        let previous_current = binding.current_binding.clone();
+        let normalized_current = ShortcutBinding::normalize_binding_value(previous_current.clone());
+        if previous_current != normalized_current {
+            binding.current_binding = normalized_current;
+            changed = true;
+        }
+    }
+
+    changed
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -647,19 +694,10 @@ pub fn get_default_settings() -> AppSettings {
             id: "transcribe".to_string(),
             name: "Transcribe".to_string(),
             description: "Converts your speech into text.".to_string(),
-            default_binding: default_shortcut.to_string(),
-            current_binding: default_shortcut.to_string(),
+            default_binding: Some(default_shortcut.to_string()),
+            current_binding: Some(default_shortcut.to_string()),
         },
     );
-    #[cfg(target_os = "windows")]
-    let default_post_process_shortcut = "ctrl+shift+space";
-    #[cfg(target_os = "macos")]
-    let default_post_process_shortcut = "option+shift+space";
-    #[cfg(target_os = "linux")]
-    let default_post_process_shortcut = "ctrl+shift+space";
-    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-    let default_post_process_shortcut = "alt+shift+space";
-
     bindings.insert(
         "transcribe_with_post_process".to_string(),
         ShortcutBinding {
@@ -667,8 +705,8 @@ pub fn get_default_settings() -> AppSettings {
             name: "Transcribe with Post-Processing".to_string(),
             description: "Converts your speech into text and applies AI post-processing."
                 .to_string(),
-            default_binding: default_post_process_shortcut.to_string(),
-            current_binding: default_post_process_shortcut.to_string(),
+            default_binding: None,
+            current_binding: None,
         },
     );
     bindings.insert(
@@ -677,8 +715,8 @@ pub fn get_default_settings() -> AppSettings {
             id: "cancel".to_string(),
             name: "Cancel".to_string(),
             description: "Cancels the current recording.".to_string(),
-            default_binding: "escape".to_string(),
-            current_binding: "escape".to_string(),
+            default_binding: Some("escape".to_string()),
+            current_binding: Some("escape".to_string()),
         },
     );
 
@@ -797,7 +835,11 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut updated = false;
+    updated |= normalize_shortcut_bindings(&mut settings);
+    updated |= ensure_post_process_defaults(&mut settings);
+
+    if updated {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -821,7 +863,11 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut updated = false;
+    updated |= normalize_shortcut_bindings(&mut settings);
+    updated |= ensure_post_process_defaults(&mut settings);
+
+    if updated {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

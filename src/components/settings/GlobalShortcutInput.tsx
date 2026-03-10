@@ -33,7 +33,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
   const [editingShortcutId, setEditingShortcutId] = useState<string | null>(
     null,
   );
-  const [originalBinding, setOriginalBinding] = useState<string>("");
+  const [originalBinding, setOriginalBinding] = useState<string | null>(null);
   const shortcutRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const osType = useOsType();
 
@@ -51,20 +51,18 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
       if (e.repeat) return; // ignore auto-repeat
       if (e.key === "Escape") {
         // Cancel recording and restore original binding
-        if (editingShortcutId && originalBinding) {
+        if (editingShortcutId) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
           } catch (error) {
             console.error("Failed to restore original binding:", error);
             toast.error(t("settings.general.shortcut.errors.restore"));
           }
-        } else if (editingShortcutId) {
-          await commands.resumeBinding(editingShortcutId).catch(console.error);
         }
         setEditingShortcutId(null);
         setKeyPressed([]);
         setRecordedKeys([]);
-        setOriginalBinding("");
+        setOriginalBinding(null);
         return;
       }
       e.preventDefault();
@@ -132,7 +130,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
             );
 
             // Reset to original binding on error
-            if (originalBinding) {
+            if (editingShortcutId) {
               try {
                 await updateBinding(editingShortcutId, originalBinding);
               } catch (resetError) {
@@ -146,7 +144,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
           setEditingShortcutId(null);
           setKeyPressed([]);
           setRecordedKeys([]);
-          setOriginalBinding("");
+          setOriginalBinding(null);
         }
       }
     };
@@ -157,20 +155,18 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
       const activeElement = shortcutRefs.current.get(editingShortcutId);
       if (activeElement && !activeElement.contains(e.target as Node)) {
         // Cancel shortcut recording and restore original binding
-        if (editingShortcutId && originalBinding) {
+        if (editingShortcutId) {
           try {
             await updateBinding(editingShortcutId, originalBinding);
           } catch (error) {
             console.error("Failed to restore original binding:", error);
             toast.error(t("settings.general.shortcut.errors.restore"));
           }
-        } else if (editingShortcutId) {
-          commands.resumeBinding(editingShortcutId).catch(console.error);
         }
         setEditingShortcutId(null);
         setKeyPressed([]);
         setRecordedKeys([]);
-        setOriginalBinding("");
+        setOriginalBinding(null);
       }
     };
 
@@ -202,7 +198,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
     await commands.suspendBinding(id).catch(console.error);
 
     // Store the original binding to restore if canceled
-    setOriginalBinding(bindings[id]?.current_binding || "");
+    setOriginalBinding(bindings[id]?.current_binding ?? null);
     setEditingShortcutId(id);
     setKeyPressed([]);
     setRecordedKeys([]);
@@ -279,6 +275,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
     `settings.general.shortcut.bindings.${shortcutId}.description`,
     binding.description,
   );
+  const currentBinding = binding.current_binding;
 
   return (
     <SettingContainer
@@ -302,7 +299,9 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={() => startRecording(shortcutId)}
           >
-            {formatKeyCombination(binding.current_binding, osType)}
+            {currentBinding !== null
+              ? formatKeyCombination(currentBinding, osType)
+              : t("settings.general.shortcut.none")}
           </div>
         )}
         <ResetButton

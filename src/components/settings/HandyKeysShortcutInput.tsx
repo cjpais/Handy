@@ -34,7 +34,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     useSettings();
   const [isRecording, setIsRecording] = useState(false);
   const [currentKeys, setCurrentKeys] = useState<string>("");
-  const [originalBinding, setOriginalBinding] = useState<string>("");
+  const [originalBinding, setOriginalBinding] = useState<string | null>(null);
   const shortcutRef = useRef<HTMLDivElement | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
   // Use a ref to track currentKeys for the event handler (avoids stale closure)
@@ -57,7 +57,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     await commands.stopHandyKeysRecording().catch(console.error);
 
     // Restore original binding
-    if (originalBinding) {
+    if (bindings[shortcutId]) {
       try {
         await updateBinding(shortcutId, originalBinding);
       } catch (error) {
@@ -69,8 +69,8 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     setIsRecording(false);
     setCurrentKeys("");
     currentKeysRef.current = "";
-    setOriginalBinding("");
-  }, [isRecording, originalBinding, shortcutId, updateBinding, t]);
+    setOriginalBinding(null);
+  }, [bindings, isRecording, originalBinding, shortcutId, updateBinding, t]);
 
   // Set up event listener for handy-keys events
   useEffect(() => {
@@ -105,7 +105,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
               );
 
               // Reset to original binding on error
-              if (originalBinding) {
+              if (bindings[shortcutId]) {
                 try {
                   await updateBinding(shortcutId, originalBinding);
                 } catch (resetError) {
@@ -124,7 +124,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
             setIsRecording(false);
             setCurrentKeys("");
             currentKeysRef.current = "";
-            setOriginalBinding("");
+            setOriginalBinding(null);
           }
         },
       );
@@ -185,7 +185,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     if (isRecording) return;
 
     // Store the original binding to restore if canceled
-    setOriginalBinding(bindings[shortcutId]?.current_binding || "");
+    setOriginalBinding(bindings[shortcutId]?.current_binding ?? null);
 
     // Start backend recording
     try {
@@ -264,6 +264,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     `settings.general.shortcut.bindings.${shortcutId}.description`,
     binding.description,
   );
+  const currentBinding = binding.current_binding;
 
   return (
     <SettingContainer
@@ -287,7 +288,9 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={startRecording}
           >
-            {formatKeyCombination(binding.current_binding, osType)}
+            {currentBinding !== null
+              ? formatKeyCombination(currentBinding, osType)
+              : t("settings.general.shortcut.none")}
           </div>
         )}
         <ResetButton

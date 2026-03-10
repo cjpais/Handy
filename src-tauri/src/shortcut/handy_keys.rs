@@ -228,13 +228,18 @@ impl HandyKeysState {
 
     /// Register a shortcut binding
     pub fn register(&self, binding: &ShortcutBinding) -> Result<(), String> {
+        let Some(current_binding) = binding.current_binding_value() else {
+            debug!("Skipping handy-keys registration for unset binding: {}", binding.id);
+            return Ok(());
+        };
+
         let (tx, rx) = mpsc::channel();
         self.command_sender
             .lock()
             .map_err(|_| "Failed to lock command_sender")?
             .send(ManagerCommand::Register {
                 binding_id: binding.id.clone(),
-                hotkey_string: binding.current_binding.clone(),
+                hotkey_string: current_binding.to_string(),
                 response: tx,
             })
             .map_err(|_| "Failed to send register command")?;
@@ -443,6 +448,10 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
             .get(&id)
             .cloned()
             .unwrap_or(default_binding);
+
+        if binding.current_binding_value().is_none() {
+            continue;
+        }
 
         if let Err(e) = state.register(&binding) {
             error!(
