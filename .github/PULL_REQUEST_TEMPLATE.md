@@ -1,5 +1,11 @@
 ## Before Submitting This PR
 
+<!--
+HANDY IS UNDERGOING A FEATURE FREEZE. IF YOU ARE SUBMITTING A PR WHICH IS A NEW FEATURE THAT THE COMMUNITY HAS NOT ASKED FOR: PREPARE TO BE REJECTED. IF THE COMMUNITY HAS ASKED FOR IT, OR YOU HAVE EXPLICITLY GATEHRED SUPPORT IT MAY STILL BE CONSIDERED.
+
+BUG FIXES ARE THE TOP PRIORITY. THERE ARE 60+ ISSUES TO FIX.
+-->
+
 **Please confirm you have done the following:**
 
 - [ ] I have searched [existing issues](https://github.com/cjpais/Handy/issues) and [pull requests](https://github.com/cjpais/Handy/pulls) (including closed ones) to ensure this isn't a duplicate

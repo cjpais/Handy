@@ -146,6 +146,9 @@ const ModelCard: React.FC<ModelCardProps> = ({
                 {t("modelSelector.active")}
               </Badge>
             )}
+            {model.is_custom && (
+              <Badge variant="secondary">{t("modelSelector.custom")}</Badge>
+            )}
             {status === "switching" && (
               <Badge variant="secondary">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
@@ -157,49 +160,53 @@ const ModelCard: React.FC<ModelCardProps> = ({
             {displayDescription}
           </p>
         </div>
-        <div className="hidden sm:flex items-center ml-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-text/60 w-14 text-right">
-                {t("onboarding.modelCard.accuracy")}
-              </p>
-              <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-logo-primary rounded-full"
-                  style={{ width: `${model.accuracy_score * 100}%` }}
-                />
+        {(model.accuracy_score > 0 || model.speed_score > 0) && (
+          <div className="hidden sm:flex items-center ml-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-text/60 w-14 text-right">
+                  {t("onboarding.modelCard.accuracy")}
+                </p>
+                <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-logo-primary rounded-full"
+                    style={{ width: `${model.accuracy_score * 100}%` }}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-text/60 w-14 text-right">
-                {t("onboarding.modelCard.speed")}
-              </p>
-              <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-logo-primary rounded-full"
-                  style={{ width: `${model.speed_score * 100}%` }}
-                />
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-text/60 w-14 text-right">
+                  {t("onboarding.modelCard.speed")}
+                </p>
+                <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-logo-primary rounded-full"
+                    style={{ width: `${model.speed_score * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       <hr className="w-full border-mid-gray/20" />
 
       {/* Bottom row: tags + action buttons (full width) */}
       <div className="flex items-center gap-3 w-full -mb-0.5 mt-0.5 h-5">
-        <div
-          className="flex items-center gap-1 text-xs text-text/50"
-          title={
-            model.supported_languages.length === 1
-              ? t("modelSelector.capabilities.singleLanguage")
-              : t("modelSelector.capabilities.languageSelection")
-          }
-        >
-          <Globe className="w-3.5 h-3.5" />
-          <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
-        </div>
+        {model.supported_languages.length > 0 && (
+          <div
+            className="flex items-center gap-1 text-xs text-text/50"
+            title={
+              model.supported_languages.length === 1
+                ? t("modelSelector.capabilities.singleLanguage")
+                : t("modelSelector.capabilities.languageSelection")
+            }
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
+          </div>
+        )}
         {model.supports_translation && (
           <div
             className="flex items-center gap-1 text-xs text-text/50"

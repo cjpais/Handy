@@ -56,8 +56,18 @@ const getSupportedLanguage = (
   langCode: string | null | undefined,
 ): SupportedLanguageCode | null => {
   if (!langCode) return null;
-  const code = langCode.split("-")[0].toLowerCase();
-  const supported = SUPPORTED_LANGUAGES.find((lang) => lang.code === code);
+  const normalized = langCode.toLowerCase();
+  // Try exact match first
+  let supported = SUPPORTED_LANGUAGES.find(
+    (lang) => lang.code.toLowerCase() === normalized,
+  );
+  if (!supported) {
+    // Fall back to prefix match (language only, without region)
+    const prefix = normalized.split("-")[0];
+    supported = SUPPORTED_LANGUAGES.find(
+      (lang) => lang.code.toLowerCase() === prefix,
+    );
+  }
   return supported ? supported.code : null;
 };
 

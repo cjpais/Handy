@@ -61,6 +61,7 @@ impl AudioRecorder {
 
         let (sample_tx, sample_rx) = mpsc::channel::<Vec<f32>>();
         let (cmd_tx, cmd_rx) = mpsc::channel::<Cmd>();
+        let (init_tx, init_rx) = mpsc::sync_channel::<Result<(), String>>(1);
 
         let host = crate::audio_toolkit::get_cpal_host();
         let device = match device {
@@ -76,56 +77,108 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
 
         let worker = std::thread::spawn(move || {
-            let config = AudioRecorder::get_preferred_config(&thread_device)
-                .expect("failed to fetch preferred config");
+            let init_result = (|| -> Result<(cpal::Stream, u32), String> {
+                let config = AudioRecorder::get_preferred_config(&thread_device)
+                    .map_err(|e| format!("Failed to fetch preferred config: {e}"))?;
 
-            let sample_rate = config.sample_rate().0;
-            let channels = config.channels() as usize;
+                let sample_rate = config.sample_rate().0;
+                let channels = config.channels() as usize;
 
-            log::info!(
-                "Using device: {:?}\nSample rate: {}\nChannels: {}\nFormat: {:?}",
-                thread_device.name(),
-                sample_rate,
-                channels,
-                config.sample_format()
-            );
+                log::info!(
+                    "Using device: {:?}\nSample rate: {}\nChannels: {}\nFormat: {:?}",
+                    thread_device.name(),
+                    sample_rate,
+                    channels,
+                    config.sample_format()
+                );
 
-            let stream = match config.sample_format() {
-                cpal::SampleFormat::U8 => {
-                    AudioRecorder::build_stream::<u8>(&thread_device, &config, sample_tx, channels)
-                        .unwrap()
-                }
-                cpal::SampleFormat::I8 => {
-                    AudioRecorder::build_stream::<i8>(&thread_device, &config, sample_tx, channels)
-                        .unwrap()
-                }
-                cpal::SampleFormat::I16 => {
-                    AudioRecorder::build_stream::<i16>(&thread_device, &config, sample_tx, channels)
-                        .unwrap()
-                }
-                cpal::SampleFormat::I32 => {
-                    AudioRecorder::build_stream::<i32>(&thread_device, &config, sample_tx, channels)
-                        .unwrap()
-                }
-                cpal::SampleFormat::F32 => {
-                    AudioRecorder::build_stream::<f32>(&thread_device, &config, sample_tx, channels)
-                        .unwrap()
-                }
-                _ => panic!("unsupported sample format"),
-            };
+                let stream = match config.sample_format() {
+                    cpal::SampleFormat::U8 => AudioRecorder::build_stream::<u8>(
+                        &thread_device,
+                        &config,
+                        sample_tx,
+                        channels,
+                    )
+                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    cpal::SampleFormat::I8 => AudioRecorder::build_stream::<i8>(
+                        &thread_device,
+                        &config,
+                        sample_tx,
+                        channels,
+                    )
+                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    cpal::SampleFormat::I16 => AudioRecorder::build_stream::<i16>(
+                        &thread_device,
+                        &config,
+                        sample_tx,
+                        channels,
+                    )
+                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
+                        &thread_device,
+                        &config,
+                        sample_tx,
+                        channels,
+                    )
+                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
+                        &thread_device,
+                        &config,
+                        sample_tx,
+                        channels,
+                    )
+                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    sample_format => {
+                        return Err(format!("Unsupported sample format: {sample_format:?}"));
+                    }
+                };
 
-            stream.play().expect("failed to start stream");
+                stream
+                    .play()
+                    .map_err(|e| format!("Failed to start microphone stream: {e}"))?;
 
-            // keep the stream alive while we process samples
-            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb);
-            // stream is dropped here, after run_consumer returns
+                Ok((stream, sample_rate))
+            })();
+
+            match init_result {
+                Ok((stream, sample_rate)) => {
+                    let _ = init_tx.send(Ok(()));
+                    // Keep the stream alive while we process samples.
+                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb);
+                    drop(stream);
+                }
+                Err(error_message) => {
+                    let normalized_error = normalize_microphone_error(error_message);
+                    log::error!("{normalized_error}");
+                    let _ = init_tx.send(Err(normalized_error));
+                }
+            }
         });
 
-        self.device = Some(device);
-        self.cmd_tx = Some(cmd_tx);
-        self.worker_handle = Some(worker);
-
-        Ok(())
+        match init_rx.recv() {
+            Ok(Ok(())) => {
+                self.device = Some(device);
+                self.cmd_tx = Some(cmd_tx);
+                self.worker_handle = Some(worker);
+                Ok(())
+            }
+            Ok(Err(error_message)) => {
+                let _ = worker.join();
+                let kind = if is_microphone_access_denied(&error_message) {
+                    std::io::ErrorKind::PermissionDenied
+                } else {
+                    std::io::ErrorKind::Other
+                };
+                Err(Box::new(Error::new(kind, error_message)))
+            }
+            Err(recv_error) => {
+                let _ = worker.join();
+                Err(Box::new(Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to initialize microphone worker: {recv_error}"),
+                )))
+            }
+        }
     }
 
     pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -239,6 +292,21 @@ impl AudioRecorder {
     }
 }
 
+fn is_microphone_access_denied(error_message: &str) -> bool {
+    let normalized = error_message.to_lowercase();
+    normalized.contains("access is denied")
+        || normalized.contains("permission denied")
+        || normalized.contains("0x80070005")
+}
+
+fn normalize_microphone_error(error_message: String) -> String {
+    if is_microphone_access_denied(&error_message) {
+        return "Microphone access was denied by the operating system. On Windows, enable Settings → Privacy & security → Microphone (including desktop app access), then restart Handy.".to_string();
+    }
+
+    error_message
+}
+
 fn run_consumer(
     in_sample_rate: u32,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
@@ -319,8 +387,14 @@ fn run_consumer(
                 Cmd::Stop(reply_tx) => {
                     recording = false;
 
+                    // Drain any audio chunks that were captured but not yet consumed
+                    while let Ok(remaining) = sample_rx.try_recv() {
+                        frame_resampler.push(&remaining, &mut |frame: &[f32]| {
+                            handle_frame(frame, true, &vad, &mut processed_samples)
+                        });
+                    }
+
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        // we still want to process the last few frames
                         handle_frame(frame, true, &vad, &mut processed_samples)
                     });
 

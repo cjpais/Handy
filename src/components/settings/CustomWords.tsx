@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useSettings } from "../../hooks/useSettings";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
@@ -23,9 +24,16 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
       if (
         sanitizedWord &&
         !sanitizedWord.includes(" ") &&
-        sanitizedWord.length <= 50 &&
-        !customWords.includes(sanitizedWord)
+        sanitizedWord.length <= 50
       ) {
+        if (customWords.includes(sanitizedWord)) {
+          toast.error(
+            t("settings.advanced.customWords.duplicate", {
+              word: sanitizedWord,
+            }),
+          );
+          return;
+        }
         updateSetting("custom_words", [...customWords, sanitizedWord]);
         setNewWord("");
       }

@@ -332,15 +332,16 @@ impl AudioRecordingManager {
 
     /* ---------- recording --------------------------------------------------- */
 
-    pub fn try_start_recording(&self, binding_id: &str) -> bool {
+    pub fn try_start_recording(&self, binding_id: &str) -> Result<(), String> {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
             // Ensure microphone is open in on-demand mode
             if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
                 if let Err(e) = self.start_microphone_stream() {
-                    error!("Failed to open microphone stream: {e}");
-                    return false;
+                    let msg = format!("{e}");
+                    error!("Failed to open microphone stream: {msg}");
+                    return Err(msg);
                 }
             }
 
@@ -351,13 +352,12 @@ impl AudioRecordingManager {
                         binding_id: binding_id.to_string(),
                     };
                     debug!("Recording started for binding {binding_id}");
-                    return true;
+                    return Ok(());
                 }
             }
-            error!("Recorder not available");
-            false
+            Err("Recorder not available".to_string())
         } else {
-            false
+            Err("Already recording".to_string())
         }
     }
 
