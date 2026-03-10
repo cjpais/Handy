@@ -308,6 +308,26 @@ async fn maybe_convert_chinese_variant(
     }
 }
 
+fn should_post_process(
+    settings: &AppSettings,
+    binding_id: &str,
+    requested_post_process: bool,
+) -> bool {
+    if requested_post_process {
+        return true;
+    }
+
+    if !settings.post_process_enabled || binding_id != "transcribe" {
+        return false;
+    }
+
+    settings
+        .bindings
+        .get("transcribe_with_post_process")
+        .and_then(|binding| binding.current_binding_value())
+        .is_none()
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -429,6 +449,8 @@ impl ShortcutAction for TranscribeAction {
                         );
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
+                            let should_post_process =
+                                should_post_process(&settings, &binding_id, post_process);
                             let mut final_text = transcription.clone();
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
@@ -442,10 +464,10 @@ impl ShortcutAction for TranscribeAction {
 
                             // Then apply LLM post-processing if this is the post-process hotkey
                             // Uses final_text which may already have Chinese conversion applied
-                            if post_process {
+                            if should_post_process {
                                 show_processing_overlay(&ah);
                             }
-                            let processed = if post_process {
+                            let processed = if should_post_process {
                                 post_process_transcription(&settings, &final_text).await
                             } else {
                                 None

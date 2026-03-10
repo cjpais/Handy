@@ -732,8 +732,9 @@ pub fn get_default_settings() -> AppSettings {
         ShortcutBinding {
             id: "transcribe_with_post_process".to_string(),
             name: "Transcribe with Post-Processing".to_string(),
-            description: "Converts your speech into text and applies AI post-processing."
-                .to_string(),
+            description:
+                "Optional dedicated hotkey for AI post-processing. If unset, the regular transcribe shortcut will post-process when the feature is enabled."
+                    .to_string(),
             default_binding: None,
             current_binding: None,
         },

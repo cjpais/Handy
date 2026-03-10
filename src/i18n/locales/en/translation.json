@@ -160,7 +160,7 @@
           },
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
-            "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+            "description": "Optional: A dedicated hotkey that always applies AI post-processing. If left unset, the regular transcribe shortcut post-processes whenever Post Processing is enabled."
           }
         },
         "errors": {
