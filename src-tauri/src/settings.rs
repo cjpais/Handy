@@ -675,6 +675,35 @@ fn normalize_shortcut_bindings(settings: &mut AppSettings) -> bool {
     changed
 }
 
+fn is_legacy_post_process_binding(binding: &str) -> bool {
+    matches!(
+        binding,
+        "ctrl+shift+space" | "option+shift+space" | "alt+shift+space"
+    )
+}
+
+fn migrate_post_process_binding(settings: &mut AppSettings) -> bool {
+    let Some(binding) = settings.bindings.get_mut("transcribe_with_post_process") else {
+        return false;
+    };
+
+    let mut changed = false;
+
+    if binding.default_binding.is_some() {
+        binding.default_binding = None;
+        changed = true;
+    }
+
+    if let Some(current_binding) = binding.current_binding_value() {
+        if is_legacy_post_process_binding(current_binding) {
+            binding.current_binding = None;
+            changed = true;
+        }
+    }
+
+    changed
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -837,6 +866,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 
     let mut updated = false;
     updated |= normalize_shortcut_bindings(&mut settings);
+    updated |= migrate_post_process_binding(&mut settings);
     updated |= ensure_post_process_defaults(&mut settings);
 
     if updated {
@@ -865,6 +895,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
 
     let mut updated = false;
     updated |= normalize_shortcut_bindings(&mut settings);
+    updated |= migrate_post_process_binding(&mut settings);
     updated |= ensure_post_process_defaults(&mut settings);
 
     if updated {
