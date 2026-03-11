@@ -542,8 +542,7 @@
   "errors": {
     "loadDirectory": "Lỗi khi tải thư mục: {{error}}",
     "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "{{error}}",
-    "modelLoadFailedGeneric": "Failed to load model"
+    "modelLoadFailed": "Không thể tải mô hình"
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",

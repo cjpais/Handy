@@ -542,8 +542,7 @@
   "errors": {
     "loadDirectory": "디렉토리 로딩 오류: {{error}}",
     "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "{{error}}",
-    "modelLoadFailedGeneric": "Failed to load model"
+    "modelLoadFailed": "모델을 불러오지 못했습니다"
   },
   "appLanguage": {
     "title": "애플리케이션 언어",

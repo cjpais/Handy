@@ -542,8 +542,7 @@
   "errors": {
     "loadDirectory": "خطأ في تحميل المجلد: {{error}}",
     "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "{{error}}",
-    "modelLoadFailedGeneric": "Failed to load model"
+    "modelLoadFailed": "فشل في تحميل النموذج"
   },
   "appLanguage": {
     "title": "لغة التطبيق",

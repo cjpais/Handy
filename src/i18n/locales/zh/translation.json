@@ -542,8 +542,7 @@
   "errors": {
     "loadDirectory": "加载目录时出错: {{error}}",
     "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "{{error}}",
-    "modelLoadFailedGeneric": "Failed to load model"
+    "modelLoadFailed": "加载模型失败"
   },
   "appLanguage": {
     "title": "应用语言",

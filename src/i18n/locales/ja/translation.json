@@ -542,8 +542,7 @@
   "errors": {
     "loadDirectory": "ディレクトリの読み込みエラー: {{error}}",
     "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "{{error}}",
-    "modelLoadFailedGeneric": "Failed to load model"
+    "modelLoadFailed": "モデルの読み込みに失敗しました"
   },
   "appLanguage": {
     "title": "アプリケーション言語",

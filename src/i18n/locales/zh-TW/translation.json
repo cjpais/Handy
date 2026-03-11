@@ -542,8 +542,7 @@
   "errors": {
     "loadDirectory": "載入目錄時發生錯誤: {{error}}",
     "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "{{error}}",
-    "modelLoadFailedGeneric": "Failed to load model"
+    "modelLoadFailed": "載入模型失敗"
   },
   "appLanguage": {
     "title": "應用程式語言",

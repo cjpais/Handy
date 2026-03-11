@@ -542,8 +542,7 @@
   "errors": {
     "loadDirectory": "Error loading directory: {{error}}",
     "recordingFailed": "Failed to start recording: {{error}}",
-    "modelLoadFailed": "{{error}}",
-    "modelLoadFailedGeneric": "Failed to load model"
+    "modelLoadFailed": "Failed to load model"
   },
   "appLanguage": {
     "title": "Application Language",

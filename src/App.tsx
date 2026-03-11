@@ -113,11 +113,7 @@ function App() {
       error?: string;
     }>("model-state-changed", (event) => {
       if (event.payload.event_type === "loading_failed") {
-        toast.error(
-          t("errors.modelLoadFailed", {
-            error: event.payload.error || t("errors.modelLoadFailedGeneric"),
-          }),
-        );
+        toast.error(event.payload.error || t("errors.modelLoadFailed"));
       }
     });
     return () => {
