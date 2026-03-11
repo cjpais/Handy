@@ -541,7 +541,7 @@
   },
   "errors": {
     "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}",
+    "recordingFailed": "Kayıt başlatılamadı: {{error}}",
     "modelLoadFailed": "Model yüklenemedi"
   },
   "appLanguage": {

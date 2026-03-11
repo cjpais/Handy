@@ -541,7 +541,7 @@
   },
   "errors": {
     "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}",
+    "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
     "modelLoadFailed": "Échec du chargement du modèle"
   },
   "appLanguage": {

@@ -541,7 +541,7 @@
   },
   "errors": {
     "loadDirectory": "Chyba při načítání adresáře: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}",
+    "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
     "modelLoadFailed": "Nepodařilo se načíst model"
   },
   "appLanguage": {

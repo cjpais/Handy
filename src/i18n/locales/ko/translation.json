@@ -541,7 +541,7 @@
   },
   "errors": {
     "loadDirectory": "디렉토리 로딩 오류: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}",
+    "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
     "modelLoadFailed": "모델을 불러오지 못했습니다"
   },
   "appLanguage": {

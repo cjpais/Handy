@@ -541,7 +541,7 @@
   },
   "errors": {
     "loadDirectory": "Ошибка загрузки каталога: {{error}}.",
-    "recordingFailed": "Failed to start recording: {{error}}",
+    "recordingFailed": "Не удалось начать запись: {{error}}",
     "modelLoadFailed": "Не удалось загрузить модель"
   },
   "appLanguage": {
