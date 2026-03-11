@@ -541,7 +541,9 @@
   },
   "errors": {
     "loadDirectory": "خطأ في تحميل المجلد: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}"
+    "recordingFailed": "فشل في بدء التسجيل: {{error}}",
+    "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
+    "modelLoadFailedUnknown": "نموذج غير معروف"
   },
   "appLanguage": {
     "title": "لغة التطبيق",

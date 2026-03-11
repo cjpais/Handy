@@ -541,7 +541,9 @@
   },
   "errors": {
     "loadDirectory": "加载目录时出错: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}"
+    "recordingFailed": "录音启动失败: {{error}}",
+    "modelLoadFailed": "加载模型失败: {{model}}",
+    "modelLoadFailedUnknown": "未知模型"
   },
   "appLanguage": {
     "title": "应用语言",

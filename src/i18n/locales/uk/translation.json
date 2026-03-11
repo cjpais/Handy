@@ -541,7 +541,9 @@
   },
   "errors": {
     "loadDirectory": "Помилка завантаження папки: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}"
+    "recordingFailed": "Не вдалося розпочати запис: {{error}}",
+    "modelLoadFailed": "Не вдалося завантажити модель: {{model}}",
+    "modelLoadFailedUnknown": "невідома модель"
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",

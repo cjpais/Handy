@@ -541,7 +541,9 @@
   },
   "errors": {
     "loadDirectory": "ディレクトリの読み込みエラー: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}"
+    "recordingFailed": "録音の開始に失敗しました: {{error}}",
+    "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
+    "modelLoadFailedUnknown": "不明なモデル"
   },
   "appLanguage": {
     "title": "アプリケーション言語",
