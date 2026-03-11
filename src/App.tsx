@@ -104,6 +104,27 @@ function App() {
     };
   }, [t]);
 
+  // Listen for model loading failures and show a toast
+  useEffect(() => {
+    const unlisten = listen<{
+      event_type: string;
+      model_id?: string;
+      model_name?: string;
+      error?: string;
+    }>("model-state-changed", (event) => {
+      if (event.payload.event_type === "loading_failed") {
+        toast.error(
+          t("errors.modelLoadFailed", {
+            error: event.payload.error || t("errors.modelLoadFailedGeneric"),
+          }),
+        );
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   const checkOnboardingStatus = async () => {
     try {
       // Check if they have any models available
