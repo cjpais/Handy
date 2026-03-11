@@ -111,7 +111,8 @@ function App() {
       if (event.payload.event_type === "loading_failed") {
         toast.error(
           t("errors.modelLoadFailed", {
-            model: event.payload.model_name || t("errors.modelLoadFailedUnknown"),
+            model:
+              event.payload.model_name || t("errors.modelLoadFailedUnknown"),
           }),
           {
             description: event.payload.error,
