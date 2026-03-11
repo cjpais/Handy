@@ -540,7 +540,8 @@
     "dismiss": "Zavřít"
   },
   "errors": {
-    "loadDirectory": "Chyba při načítání adresáře: {{error}}"
+    "loadDirectory": "Chyba při načítání adresáře: {{error}}",
+    "recordingFailed": "Failed to start recording: {{error}}"
   },
   "appLanguage": {
     "title": "Jazyk aplikace",
