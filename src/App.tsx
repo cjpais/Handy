@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Toaster } from "sonner";
+import { listen } from "@tauri-apps/api/event";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { platform } from "@tauri-apps/plugin-os";
 import {
@@ -47,6 +49,33 @@ function App() {
   useEffect(() => {
     checkOnboardingStatus();
   }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+
+    const setup = async () => {
+      unlisten = await listen<{ message?: string }>(
+        "rewrite-selected-error",
+        (event) => {
+          const message = event.payload?.message || "Unknown error";
+          toast.error(
+            i18n.t("errors.rewriteSelected", {
+              message,
+              defaultValue: `Rewrite failed: ${message}`,
+            }),
+          );
+        },
+      );
+    };
+
+    setup();
+
+    return () => {
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, [i18n]);
 
   // Initialize RTL direction when language changes
   useEffect(() => {

@@ -161,6 +161,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "rewrite_selected_with_voice_instruction": {
+            "name": "Rewrite Selected Text Hotkey",
+            "description": "Capture selected text, speak an editing instruction, and replace the selection with AI rewritten text."
           }
         },
         "errors": {
@@ -384,6 +388,57 @@
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
       }
     },
+    "rewrite": {
+      "hotkey": {
+        "title": "Rewrite Selected"
+      },
+      "api": {
+        "title": "Rewrite API (OpenAI Compatible)",
+        "provider": {
+          "title": "Provider",
+          "description": "Select an OpenAI-compatible provider for selected-text rewriting."
+        },
+        "baseUrl": {
+          "title": "Base URL",
+          "description": "API base URL for the selected provider. Only the custom provider can be edited.",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API Key",
+          "description": "API key for the selected rewrite provider.",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "Model",
+          "descriptionCustom": "Provide the model identifier expected by your custom endpoint.",
+          "descriptionDefault": "Choose a model exposed by the selected provider.",
+          "placeholderWithOptions": "Search or select a model",
+          "placeholderNoOptions": "Type a model name",
+          "refreshModels": "Refresh models"
+        }
+      },
+      "prompts": {
+        "title": "Rewrite Prompt",
+        "selectedPrompt": {
+          "title": "Selected Rewrite Prompt",
+          "description": "Select a template for selected-text rewriting. Use ${selected_text} for the captured selection and ${instruction} for the spoken instruction."
+        },
+        "noPrompts": "No prompts available",
+        "selectPrompt": "Select a prompt",
+        "createNew": "Create New Prompt",
+        "promptLabel": "Prompt Label",
+        "promptLabelPlaceholder": "Enter prompt name",
+        "promptInstructions": "Prompt Instructions",
+        "promptInstructionsPlaceholder": "Write rewrite instructions. Example: Rewrite ${selected_text} using this direction: ${instruction}",
+        "promptTip": "Tip: Use <code>${selected_text}</code> and <code>${instruction}</code> in your rewrite prompt.",
+        "updatePrompt": "Update Prompt",
+        "deletePrompt": "Delete Prompt",
+        "createPrompt": "Create Prompt",
+        "cancel": "Cancel",
+        "selectToEdit": "Select a prompt above to view and edit its details.",
+        "createFirst": "Click 'Create New Prompt' above to create your first rewrite prompt."
+      }
+    },
     "history": {
       "title": "History",
       "openFolder": "Open Recordings Folder",
@@ -540,7 +595,8 @@
     "dismiss": "Dismiss"
   },
   "errors": {
-    "loadDirectory": "Error loading directory: {{error}}"
+    "loadDirectory": "Error loading directory: {{error}}",
+    "rewriteSelected": "Rewrite failed: {{message}}"
   },
   "appLanguage": {
     "title": "Application Language",

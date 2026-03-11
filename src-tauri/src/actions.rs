@@ -15,10 +15,10 @@ use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::AppHandle;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
 /// transcription pipeline finishes — whether it completes normally or panics.
@@ -42,8 +42,13 @@ struct TranscribeAction {
     post_process: bool,
 }
 
+struct RewriteSelectedWithVoiceInstructionAction {
+    selection_snapshot: Mutex<Option<String>>,
+}
+
 /// Field name for structured output JSON schema
 const TRANSCRIPTION_FIELD: &str = "transcription";
+const REWRITE_FIELD: &str = "rewritten_text";
 
 /// Strip invisible Unicode characters that some LLMs may insert
 fn strip_invisible_chars(s: &str) -> String {
@@ -54,6 +59,173 @@ fn strip_invisible_chars(s: &str) -> String {
 /// Removes `${output}` placeholder since the transcription is sent as the user message.
 fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
+}
+
+fn send_rewrite_error(app: &AppHandle, message: impl Into<String>) {
+    let _ = app.emit(
+        "rewrite-selected-error",
+        serde_json::json!({ "message": message.into() }),
+    );
+}
+
+fn start_recording_flow(app: &AppHandle, binding_id: &str) {
+    let start_time = Instant::now();
+    debug!("Starting recording flow for binding: {}", binding_id);
+
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    tm.initiate_model_load();
+
+    let binding_id = binding_id.to_string();
+    change_tray_icon(app, TrayIconState::Recording);
+    show_recording_overlay(app);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    let settings = get_settings(app);
+    let is_always_on = settings.always_on_microphone;
+
+    let mut recording_started = false;
+    if is_always_on {
+        let rm_clone = Arc::clone(&rm);
+        let app_clone = app.clone();
+        std::thread::spawn(move || {
+            play_feedback_sound_blocking(&app_clone, SoundType::Start);
+            rm_clone.apply_mute();
+        });
+
+        recording_started = rm.try_start_recording(&binding_id);
+    } else if rm.try_start_recording(&binding_id) {
+        recording_started = true;
+        let app_clone = app.clone();
+        let rm_clone = Arc::clone(&rm);
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            play_feedback_sound_blocking(&app_clone, SoundType::Start);
+            rm_clone.apply_mute();
+        });
+    }
+
+    if recording_started {
+        shortcut::register_cancel_shortcut(app);
+    }
+
+    debug!(
+        "Recording flow start completed in {:?}",
+        start_time.elapsed()
+    );
+}
+
+async fn rewrite_selected_text(
+    settings: &AppSettings,
+    selected_text: &str,
+    instruction: &str,
+) -> Result<String, String> {
+    let provider = settings
+        .active_rewrite_provider()
+        .cloned()
+        .ok_or_else(|| "Rewrite provider is not configured".to_string())?;
+
+    let model = settings
+        .rewrite_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        return Err("Rewrite model is not configured".to_string());
+    }
+
+    let selected_prompt_id = settings
+        .rewrite_selected_prompt_id
+        .clone()
+        .or_else(|| settings.rewrite_prompts.first().map(|p| p.id.clone()))
+        .ok_or_else(|| "Rewrite prompt is not selected".to_string())?;
+
+    let prompt_template = settings
+        .rewrite_prompts
+        .iter()
+        .find(|prompt| prompt.id == selected_prompt_id)
+        .map(|prompt| prompt.prompt.clone())
+        .ok_or_else(|| format!("Rewrite prompt '{}' was not found", selected_prompt_id))?;
+
+    let processed_prompt = prompt_template
+        .replace("${selected_text}", selected_text)
+        .replace("${instruction}", instruction);
+
+    let api_key = settings
+        .rewrite_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            if !apple_intelligence::check_apple_intelligence_availability() {
+                return Err("Apple Intelligence is not available on this device".to_string());
+            }
+            let token_limit = model.trim().parse::<i32>().unwrap_or(0);
+            return apple_intelligence::process_text_with_system_prompt(
+                "You rewrite selected text using a spoken instruction and return only rewritten text.",
+                &processed_prompt,
+                token_limit,
+            )
+            .map(|result| strip_invisible_chars(&result))
+            .map_err(|err| format!("Apple Intelligence rewrite failed: {}", err));
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            return Err("Apple Intelligence provider selected on unsupported platform".to_string());
+        }
+    }
+
+    if provider.supports_structured_output {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                (REWRITE_FIELD): {
+                    "type": "string"
+                }
+            },
+            "required": [REWRITE_FIELD],
+            "additionalProperties": false
+        });
+
+        if let Ok(Some(content)) = crate::llm_client::send_chat_completion_with_schema(
+            &provider,
+            api_key.clone(),
+            &model,
+            processed_prompt.clone(),
+            None,
+            Some(schema),
+        )
+        .await
+        {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(rewritten) = json.get(REWRITE_FIELD).and_then(|v| v.as_str()) {
+                    let cleaned = strip_invisible_chars(rewritten).trim().to_string();
+                    if !cleaned.is_empty() {
+                        return Ok(cleaned);
+                    }
+                }
+            }
+        }
+    }
+
+    match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
+        .await
+    {
+        Ok(Some(content)) => {
+            let cleaned = strip_invisible_chars(&content).trim().to_string();
+            if cleaned.is_empty() {
+                Err("Rewrite response is empty".to_string())
+            } else {
+                Ok(cleaned)
+            }
+        }
+        Ok(None) => Err("Rewrite response has no content".to_string()),
+        Err(e) => Err(format!("Rewrite request failed: {}", e)),
+    }
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -310,72 +482,7 @@ async fn maybe_convert_chinese_variant(
 
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
-        let start_time = Instant::now();
-        debug!("TranscribeAction::start called for binding: {}", binding_id);
-
-        // Load model in the background
-        let tm = app.state::<Arc<TranscriptionManager>>();
-        tm.initiate_model_load();
-
-        let binding_id = binding_id.to_string();
-        change_tray_icon(app, TrayIconState::Recording);
-        show_recording_overlay(app);
-
-        let rm = app.state::<Arc<AudioRecordingManager>>();
-
-        // Get the microphone mode to determine audio feedback timing
-        let settings = get_settings(app);
-        let is_always_on = settings.always_on_microphone;
-        debug!("Microphone mode - always_on: {}", is_always_on);
-
-        let mut recording_started = false;
-        if is_always_on {
-            // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
-            debug!("Always-on mode: Playing audio feedback immediately");
-            let rm_clone = Arc::clone(&rm);
-            let app_clone = app.clone();
-            // The blocking helper exits immediately if audio feedback is disabled,
-            // so we can always reuse this thread to ensure mute happens right after playback.
-            std::thread::spawn(move || {
-                play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                rm_clone.apply_mute();
-            });
-
-            recording_started = rm.try_start_recording(&binding_id);
-            debug!("Recording started: {}", recording_started);
-        } else {
-            // On-demand mode: Start recording first, then play audio feedback, then apply mute
-            // This allows the microphone to be activated before playing the sound
-            debug!("On-demand mode: Starting recording first, then audio feedback");
-            let recording_start_time = Instant::now();
-            if rm.try_start_recording(&binding_id) {
-                recording_started = true;
-                debug!("Recording started in {:?}", recording_start_time.elapsed());
-                // Small delay to ensure microphone stream is active
-                let app_clone = app.clone();
-                let rm_clone = Arc::clone(&rm);
-                std::thread::spawn(move || {
-                    std::thread::sleep(std::time::Duration::from_millis(100));
-                    debug!("Handling delayed audio feedback/mute sequence");
-                    // Helper handles disabled audio feedback by returning early, so we reuse it
-                    // to keep mute sequencing consistent in every mode.
-                    play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                    rm_clone.apply_mute();
-                });
-            } else {
-                debug!("Failed to start recording");
-            }
-        }
-
-        if recording_started {
-            // Dynamically register the cancel shortcut in a separate task to avoid deadlock
-            shortcut::register_cancel_shortcut(app);
-        }
-
-        debug!(
-            "TranscribeAction::start completed in {:?}",
-            start_time.elapsed()
-        );
+        start_recording_flow(app, binding_id);
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
@@ -531,6 +638,108 @@ impl ShortcutAction for TranscribeAction {
     }
 }
 
+impl ShortcutAction for RewriteSelectedWithVoiceInstructionAction {
+    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        match utils::capture_selected_text_snapshot(app) {
+            Ok(selected_text) => {
+                if let Ok(mut snapshot) = self.selection_snapshot.lock() {
+                    *snapshot = Some(selected_text);
+                }
+                start_recording_flow(app, binding_id);
+            }
+            Err(err) => {
+                warn!("Failed to capture selected text: {}", err);
+                send_rewrite_error(app, "No selected text found.");
+            }
+        }
+    }
+
+    fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        shortcut::unregister_cancel_shortcut(app);
+
+        let selected_text = self
+            .selection_snapshot
+            .lock()
+            .ok()
+            .and_then(|mut s| s.take());
+        if selected_text.is_none() {
+            send_rewrite_error(app, "No selected text found.");
+            return;
+        }
+
+        let selected_text = selected_text.unwrap_or_default();
+        let ah = app.clone();
+        let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
+        let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
+
+        change_tray_icon(app, TrayIconState::Transcribing);
+        show_transcribing_overlay(app);
+
+        rm.remove_mute();
+        play_feedback_sound(app, SoundType::Stop);
+
+        let binding_id = binding_id.to_string();
+        tauri::async_runtime::spawn(async move {
+            let _guard = FinishGuard(ah.clone());
+
+            if let Some(samples) = rm.stop_recording(&binding_id) {
+                match tm.transcribe(samples) {
+                    Ok(instruction) => {
+                        let instruction = instruction.trim().to_string();
+                        if instruction.is_empty() {
+                            send_rewrite_error(&ah, "Voice instruction is empty.");
+                            utils::hide_recording_overlay(&ah);
+                            change_tray_icon(&ah, TrayIconState::Idle);
+                            return;
+                        }
+
+                        show_processing_overlay(&ah);
+                        let settings = get_settings(&ah);
+                        match rewrite_selected_text(&settings, &selected_text, &instruction).await {
+                            Ok(rewritten) => {
+                                let ah_clone = ah.clone();
+                                ah.run_on_main_thread(move || {
+                                    if let Err(err) = utils::paste(rewritten, ah_clone.clone()) {
+                                        error!("Failed to paste rewritten text: {}", err);
+                                        send_rewrite_error(
+                                            &ah_clone,
+                                            "Failed to replace selected text.",
+                                        );
+                                    }
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                })
+                                .unwrap_or_else(|err| {
+                                    error!("Failed to run rewrite paste on main thread: {:?}", err);
+                                    send_rewrite_error(&ah, "Failed to replace selected text.");
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            }
+                            Err(err) => {
+                                error!("Rewrite selected text failed: {}", err);
+                                send_rewrite_error(&ah, err);
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        error!("Failed to transcribe rewrite instruction: {}", err);
+                        send_rewrite_error(&ah, "Failed to transcribe voice instruction.");
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                    }
+                }
+            } else {
+                send_rewrite_error(&ah, "No audio captured for rewrite instruction.");
+                utils::hide_recording_overlay(&ah);
+                change_tray_icon(&ah, TrayIconState::Idle);
+            }
+        });
+    }
+}
+
 // Cancel Action
 struct CancelAction;
 
@@ -579,6 +788,12 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe_with_post_process".to_string(),
         Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "rewrite_selected_with_voice_instruction".to_string(),
+        Arc::new(RewriteSelectedWithVoiceInstructionAction {
+            selection_snapshot: Mutex::new(None),
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),

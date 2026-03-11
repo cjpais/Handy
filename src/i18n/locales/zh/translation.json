@@ -179,6 +179,10 @@
           "transcribe_with_post_process": {
             "name": "后处理快捷键",
             "description": "可选：一个专用快捷键，始终对您的转录应用 AI 后处理。"
+          },
+          "rewrite_selected_with_voice_instruction": {
+            "name": "改写选区快捷键",
+            "description": "先捕获高亮文本，再说编辑指令，并用 AI 改写结果替换选区。"
           }
         },
         "errors": {
@@ -384,6 +388,57 @@
         "createFirst": "点击上方的「创建新提示词」来创建您的第一个后处理提示词。"
       }
     },
+    "rewrite": {
+      "hotkey": {
+        "title": "改写选区"
+      },
+      "api": {
+        "title": "改写 API（兼容 OpenAI）",
+        "provider": {
+          "title": "提供商",
+          "description": "选择用于选区改写的兼容 OpenAI 提供商。"
+        },
+        "baseUrl": {
+          "title": "基础 URL",
+          "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
+          "placeholder": "https://api.openai.com/v1"
+        },
+        "apiKey": {
+          "title": "API 密钥",
+          "description": "所选改写提供商的 API 密钥。",
+          "placeholder": "sk-..."
+        },
+        "model": {
+          "title": "模型",
+          "descriptionCustom": "提供自定义端点期望的模型标识符。",
+          "descriptionDefault": "选择所选提供商提供的模型。",
+          "placeholderWithOptions": "搜索或选择模型",
+          "placeholderNoOptions": "输入模型名称",
+          "refreshModels": "刷新模型"
+        }
+      },
+      "prompts": {
+        "title": "改写提示词",
+        "selectedPrompt": {
+          "title": "已选改写提示词",
+          "description": "选择用于选区改写的模板。使用 ${selected_text} 引用选区文本，使用 ${instruction} 引用语音指令。"
+        },
+        "noPrompts": "没有可用的提示词",
+        "selectPrompt": "选择提示词",
+        "createNew": "创建新提示词",
+        "promptLabel": "提示词名称",
+        "promptLabelPlaceholder": "输入提示词名称",
+        "promptInstructions": "提示词指令",
+        "promptInstructionsPlaceholder": "编写改写规则。示例：根据 ${instruction} 改写 ${selected_text}",
+        "promptTip": "提示：在改写提示词中可使用 <code>${selected_text}</code> 和 <code>${instruction}</code>。",
+        "updatePrompt": "更新提示词",
+        "deletePrompt": "删除提示词",
+        "createPrompt": "创建提示词",
+        "cancel": "取消",
+        "selectToEdit": "选择上方的提示词以查看和编辑其详细信息。",
+        "createFirst": "点击上方的「创建新提示词」来创建您的第一个改写提示词。"
+      }
+    },
     "history": {
       "title": "历史记录",
       "openFolder": "打开录音文件夹",
@@ -540,7 +595,8 @@
     "dismiss": "关闭"
   },
   "errors": {
-    "loadDirectory": "加载目录时出错: {{error}}"
+    "loadDirectory": "加载目录时出错: {{error}}",
+    "rewriteSelected": "改写失败: {{message}}"
   },
   "appLanguage": {
     "title": "应用语言",

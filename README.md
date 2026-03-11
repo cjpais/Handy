@@ -43,6 +43,16 @@ The process is entirely local:
 4. Configure your preferred keyboard shortcuts in Settings
 5. Start transcribing!
 
+### Shortcut Actions
+
+Handy supports three separate shortcut actions that can be configured independently in Settings:
+
+- `transcribe`: Standard speech-to-text
+- `transcribe_with_post_process`: Speech-to-text with post-processing prompt/model
+- `rewrite_selected_with_voice_instruction`: Rewrite currently selected text using your spoken instruction
+
+For rewrite mode, Handy captures the selected text when you press the shortcut, then records your instruction until release.
+
 ### Development Setup
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).

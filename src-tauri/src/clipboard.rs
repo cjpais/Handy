@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -76,6 +76,68 @@ fn paste_via_clipboard(
     let _ = clipboard.write_text(&clipboard_content);
 
     Ok(())
+}
+
+fn write_clipboard_text(app_handle: &AppHandle, text: &str) -> Result<(), String> {
+    let clipboard = app_handle.clipboard();
+
+    #[cfg(target_os = "linux")]
+    {
+        if is_wayland() && is_wl_copy_available() {
+            return write_clipboard_via_wl_copy(text);
+        }
+    }
+
+    clipboard
+        .write_text(text)
+        .map_err(|e| format!("Failed to write to clipboard: {}", e))
+}
+
+/// Capture currently selected text by issuing a copy shortcut.
+/// Returns an error when no selection is available.
+pub fn capture_selected_text_snapshot(app_handle: &AppHandle) -> Result<String, String> {
+    let clipboard = app_handle.clipboard();
+    let original_clipboard = clipboard.read_text().unwrap_or_default();
+    let sentinel = format!(
+        "__HANDY_SELECTION_SENTINEL_{}_{}__",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    );
+
+    write_clipboard_text(app_handle, &sentinel)?;
+    std::thread::sleep(Duration::from_millis(40));
+
+    let result = (|| {
+        let enigo_state = app_handle
+            .try_state::<EnigoState>()
+            .ok_or("Enigo state not initialized")?;
+        let mut enigo = enigo_state
+            .0
+            .lock()
+            .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+
+        input::send_copy_shortcut(&mut enigo)?;
+        std::thread::sleep(Duration::from_millis(110));
+
+        let copied = clipboard.read_text().unwrap_or_default();
+        if copied == sentinel || copied.trim().is_empty() {
+            return Err("No selected text found".to_string());
+        }
+
+        Ok(copied)
+    })();
+
+    if let Err(err) = write_clipboard_text(app_handle, &original_clipboard) {
+        warn!(
+            "Failed to restore clipboard after selection capture: {}",
+            err
+        );
+    }
+
+    result
 }
 
 /// Attempts to send a key combination using Linux-native tools.

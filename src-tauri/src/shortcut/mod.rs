@@ -115,6 +115,16 @@ pub fn change_binding(
 
     let mut settings = settings::get_settings(&app);
 
+    if settings.bindings.iter().any(|(other_id, existing)| {
+        other_id != &id
+            && existing
+                .current_binding
+                .eq_ignore_ascii_case(binding.trim())
+            && !existing.current_binding.trim().is_empty()
+    }) {
+        return Err("Shortcut is already assigned to another action".to_string());
+    }
+
     // Get the binding to modify, or create it from defaults if it doesn't exist
     let binding_to_modify = match settings.bindings.get(&id) {
         Some(binding) => binding.clone(),
@@ -848,6 +858,20 @@ fn validate_provider_exists(
     Ok(())
 }
 
+fn validate_rewrite_provider_exists(
+    settings: &settings::AppSettings,
+    provider_id: &str,
+) -> Result<(), String> {
+    if !settings
+        .rewrite_providers
+        .iter()
+        .any(|provider| provider.id == provider_id)
+    {
+        return Err(format!("Rewrite provider '{}' not found", provider_id));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn change_post_process_api_key_setting(
@@ -1018,6 +1042,196 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
     }
 
     settings.post_process_selected_prompt_id = Some(id);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_rewrite_base_url_setting(
+    app: AppHandle,
+    provider_id: String,
+    base_url: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let label = settings
+        .rewrite_provider(&provider_id)
+        .map(|provider| provider.label.clone())
+        .ok_or_else(|| format!("Rewrite provider '{}' not found", provider_id))?;
+
+    let provider = settings
+        .rewrite_provider_mut(&provider_id)
+        .expect("Rewrite provider looked up above must exist");
+
+    if provider.id != "custom" {
+        return Err(format!(
+            "Rewrite provider '{}' does not allow editing the base URL",
+            label
+        ));
+    }
+
+    provider.base_url = base_url;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_rewrite_api_key_setting(
+    app: AppHandle,
+    provider_id: String,
+    api_key: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_rewrite_provider_exists(&settings, &provider_id)?;
+    settings.rewrite_api_keys.insert(provider_id, api_key);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_rewrite_model_setting(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_rewrite_provider_exists(&settings, &provider_id)?;
+    settings.rewrite_models.insert(provider_id, model);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_rewrite_provider(app: AppHandle, provider_id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_rewrite_provider_exists(&settings, &provider_id)?;
+    settings.rewrite_provider_id = provider_id;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn fetch_rewrite_models(
+    app: AppHandle,
+    provider_id: String,
+) -> Result<Vec<String>, String> {
+    let settings = settings::get_settings(&app);
+
+    let provider = settings
+        .rewrite_providers
+        .iter()
+        .find(|p| p.id == provider_id)
+        .ok_or_else(|| format!("Rewrite provider '{}' not found", provider_id))?;
+
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            return Ok(vec![APPLE_INTELLIGENCE_DEFAULT_MODEL_ID.to_string()]);
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            return Err("Apple Intelligence is only available on Apple silicon Macs running macOS 15 or later.".to_string());
+        }
+    }
+
+    let api_key = settings
+        .rewrite_api_keys
+        .get(&provider_id)
+        .cloned()
+        .unwrap_or_default();
+
+    if api_key.trim().is_empty() && provider.id != "custom" {
+        return Err(format!(
+            "API key is required for {}. Please add an API key to list available models.",
+            provider.label
+        ));
+    }
+
+    crate::llm_client::fetch_models(provider, api_key).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn add_rewrite_prompt(
+    app: AppHandle,
+    name: String,
+    prompt: String,
+) -> Result<LLMPrompt, String> {
+    let mut settings = settings::get_settings(&app);
+    let id = format!("rewrite_prompt_{}", chrono::Utc::now().timestamp_millis());
+
+    let new_prompt = LLMPrompt {
+        id: id.clone(),
+        name,
+        prompt,
+    };
+
+    settings.rewrite_prompts.push(new_prompt.clone());
+    settings::write_settings(&app, settings);
+
+    Ok(new_prompt)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn update_rewrite_prompt(
+    app: AppHandle,
+    id: String,
+    name: String,
+    prompt: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if let Some(existing_prompt) = settings.rewrite_prompts.iter_mut().find(|p| p.id == id) {
+        existing_prompt.name = name;
+        existing_prompt.prompt = prompt;
+        settings::write_settings(&app, settings);
+        Ok(())
+    } else {
+        Err(format!("Rewrite prompt with id '{}' not found", id))
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_rewrite_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if settings.rewrite_prompts.len() <= 1 {
+        return Err("Cannot delete the last rewrite prompt".to_string());
+    }
+
+    let original_len = settings.rewrite_prompts.len();
+    settings.rewrite_prompts.retain(|p| p.id != id);
+
+    if settings.rewrite_prompts.len() == original_len {
+        return Err(format!("Rewrite prompt with id '{}' not found", id));
+    }
+
+    if settings.rewrite_selected_prompt_id.as_ref() == Some(&id) {
+        settings.rewrite_selected_prompt_id =
+            settings.rewrite_prompts.first().map(|p| p.id.clone());
+    }
+
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_rewrite_selected_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if !settings.rewrite_prompts.iter().any(|p| p.id == id) {
+        return Err(format!("Rewrite prompt with id '{}' not found", id));
+    }
+
+    settings.rewrite_selected_prompt_id = Some(id);
     settings::write_settings(&app, settings);
     Ok(())
 }

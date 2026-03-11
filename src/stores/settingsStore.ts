@@ -31,7 +31,13 @@ interface SettingsStore {
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
+  setRewriteProvider: (providerId: string) => Promise<void>;
   updatePostProcessSetting: (
+    settingType: "base_url" | "api_key" | "model",
+    providerId: string,
+    value: string,
+  ) => Promise<void>;
+  updateRewriteSetting: (
     settingType: "base_url" | "api_key" | "model",
     providerId: string,
     value: string,
@@ -40,12 +46,16 @@ interface SettingsStore {
     providerId: string,
     baseUrl: string,
   ) => Promise<void>;
+  updateRewriteBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
   updatePostProcessApiKey: (
     providerId: string,
     apiKey: string,
   ) => Promise<void>;
+  updateRewriteApiKey: (providerId: string, apiKey: string) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  updateRewriteModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  fetchRewriteModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
 
   // Internal state setters
@@ -125,6 +135,8 @@ const settingUpdaters: {
     commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
+  rewrite_selected_prompt_id: (value) =>
+    commands.setRewriteSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
@@ -414,6 +426,45 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
+    setRewriteProvider: async (providerId) => {
+      const {
+        settings,
+        setUpdating,
+        refreshSettings,
+        setPostProcessModelOptions,
+      } = get();
+      const updateKey = "rewrite_provider_id";
+      const previousId = settings?.rewrite_provider_id ?? null;
+
+      setUpdating(updateKey, true);
+
+      if (settings) {
+        set((state) => ({
+          settings: state.settings
+            ? { ...state.settings, rewrite_provider_id: providerId }
+            : null,
+        }));
+      }
+
+      setPostProcessModelOptions(`rewrite:${providerId}`, []);
+
+      try {
+        await commands.setRewriteProvider(providerId);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to set rewrite provider:", error);
+        if (previousId !== null) {
+          set((state) => ({
+            settings: state.settings
+              ? { ...state.settings, rewrite_provider_id: previousId }
+              : null,
+          }));
+        }
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
     // Generic updater for post-processing provider settings
     updatePostProcessSetting: async (
       settingType: "base_url" | "api_key" | "model",
@@ -437,6 +488,35 @@ export const useSettingsStore = create<SettingsStore>()(
       } catch (error) {
         console.error(
           `Failed to update post-process ${settingType.replace("_", " ")}:`,
+          error,
+        );
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    updateRewriteSetting: async (
+      settingType: "base_url" | "api_key" | "model",
+      providerId: string,
+      value: string,
+    ) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `rewrite_${settingType}:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        if (settingType === "base_url") {
+          await commands.changeRewriteBaseUrlSetting(providerId, value);
+        } else if (settingType === "api_key") {
+          await commands.changeRewriteApiKeySetting(providerId, value);
+        } else if (settingType === "model") {
+          await commands.changeRewriteModelSetting(providerId, value);
+        }
+        await refreshSettings();
+      } catch (error) {
+        console.error(
+          `Failed to update rewrite ${settingType.replace("_", " ")}:`,
           error,
         );
       } finally {
@@ -490,6 +570,49 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
+    updateRewriteBaseUrl: async (providerId, baseUrl) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `rewrite_base_url:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        const urlResult = await commands.changeRewriteBaseUrlSetting(
+          providerId,
+          baseUrl,
+        );
+        if (urlResult.status === "error") {
+          console.error("Failed to persist rewrite base URL:", urlResult.error);
+          return;
+        }
+
+        const modelResult = await commands.changeRewriteModelSetting(
+          providerId,
+          "",
+        );
+        if (modelResult.status === "error") {
+          console.error(
+            "Failed to reset rewrite model setting:",
+            modelResult.error,
+          );
+          return;
+        }
+
+        set((state) => ({
+          postProcessModelOptions: {
+            ...state.postProcessModelOptions,
+            [`rewrite:${providerId}`]: [],
+          },
+        }));
+
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update rewrite base URL:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
     updatePostProcessApiKey: async (providerId, apiKey) => {
       // Clear cached models when API key changes - user should click refresh after
       set((state) => ({
@@ -501,8 +624,22 @@ export const useSettingsStore = create<SettingsStore>()(
       return get().updatePostProcessSetting("api_key", providerId, apiKey);
     },
 
+    updateRewriteApiKey: async (providerId, apiKey) => {
+      set((state) => ({
+        postProcessModelOptions: {
+          ...state.postProcessModelOptions,
+          [`rewrite:${providerId}`]: [],
+        },
+      }));
+      return get().updateRewriteSetting("api_key", providerId, apiKey);
+    },
+
     updatePostProcessModel: async (providerId, model) => {
       return get().updatePostProcessSetting("model", providerId, model);
+    },
+
+    updateRewriteModel: async (providerId, model) => {
+      return get().updateRewriteSetting("model", providerId, model);
     },
 
     fetchPostProcessModels: async (providerId) => {
@@ -524,6 +661,29 @@ export const useSettingsStore = create<SettingsStore>()(
       } catch (error) {
         console.error("Failed to fetch models:", error);
         // Don't cache empty array on error - let user retry
+        return [];
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
+
+    fetchRewriteModels: async (providerId) => {
+      const updateKey = `rewrite_models_fetch:${providerId}`;
+      const { setUpdating, setPostProcessModelOptions } = get();
+
+      setUpdating(updateKey, true);
+
+      try {
+        const result = await commands.fetchRewriteModels(providerId);
+        if (result.status === "ok") {
+          setPostProcessModelOptions(`rewrite:${providerId}`, result.data);
+          return result.data;
+        } else {
+          console.error("Failed to fetch rewrite models:", result.error);
+          return [];
+        }
+      } catch (error) {
+        console.error("Failed to fetch rewrite models:", error);
         return [];
       } finally {
         setUpdating(updateKey, false);

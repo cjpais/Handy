@@ -31,16 +31,21 @@ interface UseSettingsReturn {
 
   // Post-processing helpers
   setPostProcessProvider: (providerId: string) => Promise<void>;
+  setRewriteProvider: (providerId: string) => Promise<void>;
   updatePostProcessBaseUrl: (
     providerId: string,
     baseUrl: string,
   ) => Promise<void>;
+  updateRewriteBaseUrl: (providerId: string, baseUrl: string) => Promise<void>;
   updatePostProcessApiKey: (
     providerId: string,
     apiKey: string,
   ) => Promise<void>;
+  updateRewriteApiKey: (providerId: string, apiKey: string) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  updateRewriteModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  fetchRewriteModels: (providerId: string) => Promise<string[]>;
 }
 
 export const useSettings = (): UseSettingsReturn => {
@@ -70,9 +75,14 @@ export const useSettings = (): UseSettingsReturn => {
     resetBinding: store.resetBinding,
     getSetting: store.getSetting,
     setPostProcessProvider: store.setPostProcessProvider,
+    setRewriteProvider: store.setRewriteProvider,
     updatePostProcessBaseUrl: store.updatePostProcessBaseUrl,
+    updateRewriteBaseUrl: store.updateRewriteBaseUrl,
     updatePostProcessApiKey: store.updatePostProcessApiKey,
+    updateRewriteApiKey: store.updateRewriteApiKey,
     updatePostProcessModel: store.updatePostProcessModel,
+    updateRewriteModel: store.updateRewriteModel,
     fetchPostProcessModels: store.fetchPostProcessModels,
+    fetchRewriteModels: store.fetchRewriteModels,
   };
 };

@@ -343,6 +343,18 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    #[serde(default = "default_rewrite_provider_id")]
+    pub rewrite_provider_id: String,
+    #[serde(default = "default_rewrite_providers")]
+    pub rewrite_providers: Vec<PostProcessProvider>,
+    #[serde(default = "default_rewrite_api_keys")]
+    pub rewrite_api_keys: HashMap<String, String>,
+    #[serde(default = "default_rewrite_models")]
+    pub rewrite_models: HashMap<String, String>,
+    #[serde(default = "default_rewrite_prompts")]
+    pub rewrite_prompts: Vec<LLMPrompt>,
+    #[serde(default)]
+    pub rewrite_selected_prompt_id: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -453,6 +465,10 @@ fn default_post_process_provider_id() -> String {
     "openai".to_string()
 }
 
+fn default_rewrite_provider_id() -> String {
+    "openai".to_string()
+}
+
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
     let mut providers = vec![
         PostProcessProvider {
@@ -534,9 +550,21 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
     providers
 }
 
+fn default_rewrite_providers() -> Vec<PostProcessProvider> {
+    default_post_process_providers()
+}
+
 fn default_post_process_api_keys() -> HashMap<String, String> {
     let mut map = HashMap::new();
     for provider in default_post_process_providers() {
+        map.insert(provider.id, String::new());
+    }
+    map
+}
+
+fn default_rewrite_api_keys() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_rewrite_providers() {
         map.insert(provider.id, String::new());
     }
     map
@@ -560,11 +588,30 @@ fn default_post_process_models() -> HashMap<String, String> {
     map
 }
 
+fn default_rewrite_models() -> HashMap<String, String> {
+    let mut map = HashMap::new();
+    for provider in default_rewrite_providers() {
+        map.insert(
+            provider.id.clone(),
+            default_model_for_provider(&provider.id),
+        );
+    }
+    map
+}
+
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
     vec![LLMPrompt {
         id: "default_improve_transcriptions".to_string(),
         name: "Improve Transcriptions".to_string(),
         prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+    }]
+}
+
+fn default_rewrite_prompts() -> Vec<LLMPrompt> {
+    vec![LLMPrompt {
+        id: "default_selected_rewrite".to_string(),
+        name: "Rewrite Selected Text".to_string(),
+        prompt: "You are an expert text editor.\n\nSelected text:\n${selected_text}\n\nVoice instruction:\n${instruction}\n\nRewrite ONLY the selected text according to the voice instruction.\nPreserve intent and key facts unless explicitly changed by the instruction.\nReturn only the rewritten text without explanations.".to_string(),
     }]
 }
 
@@ -628,6 +675,79 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+fn ensure_rewrite_defaults(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+    for provider in default_rewrite_providers() {
+        match settings
+            .rewrite_providers
+            .iter_mut()
+            .find(|p| p.id == provider.id)
+        {
+            Some(existing) => {
+                if existing.supports_structured_output != provider.supports_structured_output {
+                    existing.supports_structured_output = provider.supports_structured_output;
+                    changed = true;
+                }
+            }
+            None => {
+                settings.rewrite_providers.push(provider.clone());
+                changed = true;
+            }
+        }
+
+        if !settings.rewrite_api_keys.contains_key(&provider.id) {
+            settings
+                .rewrite_api_keys
+                .insert(provider.id.clone(), String::new());
+            changed = true;
+        }
+
+        let default_model = default_model_for_provider(&provider.id);
+        match settings.rewrite_models.get_mut(&provider.id) {
+            Some(existing) => {
+                if existing.is_empty() && !default_model.is_empty() {
+                    *existing = default_model.clone();
+                    changed = true;
+                }
+            }
+            None => {
+                settings
+                    .rewrite_models
+                    .insert(provider.id.clone(), default_model);
+                changed = true;
+            }
+        }
+    }
+
+    if settings.rewrite_provider_id.is_empty()
+        || !settings
+            .rewrite_providers
+            .iter()
+            .any(|p| p.id == settings.rewrite_provider_id)
+    {
+        settings.rewrite_provider_id = default_rewrite_provider_id();
+        changed = true;
+    }
+
+    if settings.rewrite_prompts.is_empty() {
+        settings.rewrite_prompts = default_rewrite_prompts();
+        changed = true;
+    }
+
+    if settings.rewrite_selected_prompt_id.is_none()
+        || !settings
+            .rewrite_prompts
+            .iter()
+            .any(|p| Some(&p.id) == settings.rewrite_selected_prompt_id.as_ref())
+    {
+        settings.rewrite_selected_prompt_id =
+            settings.rewrite_prompts.first().map(|p| p.id.clone());
+        changed = true;
+    }
+
+    changed
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -669,6 +789,25 @@ pub fn get_default_settings() -> AppSettings {
                 .to_string(),
             default_binding: default_post_process_shortcut.to_string(),
             current_binding: default_post_process_shortcut.to_string(),
+        },
+    );
+    #[cfg(target_os = "windows")]
+    let default_rewrite_shortcut = "ctrl+alt+space";
+    #[cfg(target_os = "macos")]
+    let default_rewrite_shortcut = "option+command+space";
+    #[cfg(target_os = "linux")]
+    let default_rewrite_shortcut = "ctrl+alt+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_rewrite_shortcut = "alt+meta+space";
+
+    bindings.insert(
+        "rewrite_selected_with_voice_instruction".to_string(),
+        ShortcutBinding {
+            id: "rewrite_selected_with_voice_instruction".to_string(),
+            name: "Rewrite Selected Text With Voice Instruction".to_string(),
+            description: "Captures selected text, records your voice instruction, and replaces the selection with AI rewritten text.".to_string(),
+            default_binding: default_rewrite_shortcut.to_string(),
+            current_binding: default_rewrite_shortcut.to_string(),
         },
     );
     bindings.insert(
@@ -717,6 +856,12 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        rewrite_provider_id: default_rewrite_provider_id(),
+        rewrite_providers: default_rewrite_providers(),
+        rewrite_api_keys: default_rewrite_api_keys(),
+        rewrite_models: default_rewrite_models(),
+        rewrite_prompts: default_rewrite_prompts(),
+        rewrite_selected_prompt_id: None,
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -748,6 +893,24 @@ impl AppSettings {
         provider_id: &str,
     ) -> Option<&mut PostProcessProvider> {
         self.post_process_providers
+            .iter_mut()
+            .find(|provider| provider.id == provider_id)
+    }
+
+    pub fn active_rewrite_provider(&self) -> Option<&PostProcessProvider> {
+        self.rewrite_providers
+            .iter()
+            .find(|provider| provider.id == self.rewrite_provider_id)
+    }
+
+    pub fn rewrite_provider(&self, provider_id: &str) -> Option<&PostProcessProvider> {
+        self.rewrite_providers
+            .iter()
+            .find(|provider| provider.id == provider_id)
+    }
+
+    pub fn rewrite_provider_mut(&mut self, provider_id: &str) -> Option<&mut PostProcessProvider> {
+        self.rewrite_providers
             .iter_mut()
             .find(|provider| provider.id == provider_id)
     }
@@ -797,7 +960,9 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let post_changed = ensure_post_process_defaults(&mut settings);
+    let rewrite_changed = ensure_rewrite_defaults(&mut settings);
+    if post_changed || rewrite_changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -821,7 +986,9 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let post_changed = ensure_post_process_defaults(&mut settings);
+    let rewrite_changed = ensure_rewrite_defaults(&mut settings);
+    if post_changed || rewrite_changed {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 

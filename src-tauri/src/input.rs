@@ -112,6 +112,29 @@ pub fn send_paste_shift_insert(enigo: &mut Enigo) -> Result<(), String> {
     Ok(())
 }
 
+/// Sends a standard copy command (Cmd+C on macOS, Ctrl+C on other platforms).
+pub fn send_copy_shortcut(enigo: &mut Enigo) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let modifier_key = Key::Meta;
+    #[cfg(not(target_os = "macos"))]
+    let modifier_key = Key::Control;
+
+    enigo
+        .key(modifier_key, enigo::Direction::Press)
+        .map_err(|e| format!("Failed to press copy modifier key: {}", e))?;
+    enigo
+        .key(Key::Unicode('c'), enigo::Direction::Click)
+        .map_err(|e| format!("Failed to click C key: {}", e))?;
+
+    std::thread::sleep(std::time::Duration::from_millis(80));
+
+    enigo
+        .key(modifier_key, enigo::Direction::Release)
+        .map_err(|e| format!("Failed to release copy modifier key: {}", e))?;
+
+    Ok(())
+}
+
 /// Pastes text directly using the enigo text method.
 /// This tries to use system input methods if possible, otherwise simulates keystrokes one by one.
 pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
