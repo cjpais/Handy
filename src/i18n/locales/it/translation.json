@@ -541,7 +541,9 @@
   },
   "errors": {
     "loadDirectory": "Errore di caricamento cartella: {{error}}",
-    "recordingFailed": "Failed to start recording: {{error}}"
+    "recordingFailed": "Failed to start recording: {{error}}",
+    "modelLoadFailed": "{{error}}",
+    "modelLoadFailedGeneric": "Failed to load model"
   },
   "appLanguage": {
     "title": "Lingua Applicazione",
