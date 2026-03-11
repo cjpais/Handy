@@ -542,7 +542,8 @@
   "errors": {
     "loadDirectory": "Errore di caricamento cartella: {{error}}",
     "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
-    "modelLoadFailed": "Impossibile caricare il modello"
+    "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
+    "modelLoadFailedUnknown": "modello sconosciuto"
   },
   "appLanguage": {
     "title": "Lingua Applicazione",

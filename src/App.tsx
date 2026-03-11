@@ -7,6 +7,7 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
+import { ModelStateEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -106,14 +107,16 @@ function App() {
 
   // Listen for model loading failures and show a toast
   useEffect(() => {
-    const unlisten = listen<{
-      event_type: string;
-      model_id?: string;
-      model_name?: string;
-      error?: string;
-    }>("model-state-changed", (event) => {
+    const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
       if (event.payload.event_type === "loading_failed") {
-        toast.error(event.payload.error || t("errors.modelLoadFailed"));
+        toast.error(
+          t("errors.modelLoadFailed", {
+            model: event.payload.model_name || t("errors.modelLoadFailedUnknown"),
+          }),
+          {
+            description: event.payload.error,
+          },
+        );
       }
     });
     return () => {
