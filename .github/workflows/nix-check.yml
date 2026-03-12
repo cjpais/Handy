@@ -11,7 +11,7 @@ on: [pull_request]
 jobs:
   nix-build:
     runs-on: ubuntu-24.04
-    continue-on-error: true
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
 
