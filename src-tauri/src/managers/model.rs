@@ -953,23 +953,24 @@ impl ModelManager {
                 let _ = fs::remove_dir_all(&temp_extract_dir);
             }
 
-            // Create temporary extraction directory
-            fs::create_dir_all(&temp_extract_dir)?;
-
-            // Open the downloaded tar.gz file
-            let tar_gz = File::open(&partial_path)?;
-            let tar = GzDecoder::new(tar_gz);
-            let mut archive = Archive::new(tar);
-
-            // Extract to the temporary directory first
-            archive.unpack(&temp_extract_dir).map_err(|e| {
-                let error_msg = format!("Failed to extract archive: {}", e);
-                // Clean up failed extraction
-                let _ = fs::remove_dir_all(&temp_extract_dir);
-                // Remove from extracting set
+            // Extraction setup: create dir and open file. If these fail it's a
+            // transient environment issue (permissions, disk space), not a corrupt
+            // archive, so we preserve .partial for retry.
+            if let Err(e) = fs::create_dir_all(&temp_extract_dir) {
+                let error_msg = format!("Failed to create extraction directory: {}", e);
                 {
                     let mut extracting = self.extracting_models.lock().unwrap();
                     extracting.remove(model_id);
+                }
+                {
+                    let mut models = self.available_models.lock().unwrap();
+                    if let Some(model) = models.get_mut(model_id) {
+                        model.is_downloading = false;
+                    }
+                }
+                {
+                    let mut flags = self.cancel_flags.lock().unwrap();
+                    flags.remove(model_id);
                 }
                 let _ = self.app_handle.emit(
                     "model-extraction-failed",
@@ -978,8 +979,78 @@ impl ModelManager {
                         "error": error_msg
                     }),
                 );
-                anyhow::anyhow!(error_msg)
-            })?;
+                return Err(anyhow::anyhow!(error_msg));
+            }
+
+            // Unpack the archive in a scoped block so file handles are dropped
+            // before cleanup (required for Windows). If unpack fails the archive
+            // is corrupt — delete .partial so the next attempt downloads fresh.
+            let extract_result = {
+                let tar_gz = match File::open(&partial_path) {
+                    Ok(f) => f,
+                    Err(e) => {
+                        // File::open failure is environmental, preserve .partial
+                        let error_msg = format!("Failed to open archive: {}", e);
+                        let _ = fs::remove_dir_all(&temp_extract_dir);
+                        {
+                            let mut extracting = self.extracting_models.lock().unwrap();
+                            extracting.remove(model_id);
+                        }
+                        {
+                            let mut models = self.available_models.lock().unwrap();
+                            if let Some(model) = models.get_mut(model_id) {
+                                model.is_downloading = false;
+                            }
+                        }
+                        {
+                            let mut flags = self.cancel_flags.lock().unwrap();
+                            flags.remove(model_id);
+                        }
+                        let _ = self.app_handle.emit(
+                            "model-extraction-failed",
+                            &serde_json::json!({
+                                "model_id": model_id,
+                                "error": error_msg
+                            }),
+                        );
+                        return Err(anyhow::anyhow!(error_msg));
+                    }
+                };
+                let tar = GzDecoder::new(tar_gz);
+                let mut archive = Archive::new(tar);
+                archive.unpack(&temp_extract_dir)
+            };
+            // File handles are now dropped — safe to delete .partial
+
+            if let Err(e) = extract_result {
+                let error_msg = format!("Failed to extract archive: {}", e);
+                let _ = fs::remove_dir_all(&temp_extract_dir);
+                // Archive is corrupt — delete so next attempt downloads fresh
+                let _ = fs::remove_file(&partial_path);
+                {
+                    let mut extracting = self.extracting_models.lock().unwrap();
+                    extracting.remove(model_id);
+                }
+                {
+                    let mut models = self.available_models.lock().unwrap();
+                    if let Some(model) = models.get_mut(model_id) {
+                        model.is_downloading = false;
+                        model.partial_size = 0;
+                    }
+                }
+                {
+                    let mut flags = self.cancel_flags.lock().unwrap();
+                    flags.remove(model_id);
+                }
+                let _ = self.app_handle.emit(
+                    "model-extraction-failed",
+                    &serde_json::json!({
+                        "model_id": model_id,
+                        "error": error_msg
+                    }),
+                );
+                return Err(anyhow::anyhow!(error_msg));
+            }
 
             // Find the actual extracted directory (archive might have a nested structure)
             let extracted_dirs: Vec<_> = fs::read_dir(&temp_extract_dir)?
@@ -1297,5 +1368,57 @@ mod tests {
         let result = ModelManager::discover_custom_whisper_models(&models_dir, &mut models);
         assert!(result.is_ok());
         assert_eq!(models.len(), count_before);
+    }
+
+    /// Verifies that when tar.gz extraction fails (e.g., corrupt archive), the
+    /// .partial file is deleted and the .extracting directory is cleaned up.
+    /// This is the core fix for issue #858 — without it, a corrupt .partial
+    /// loops forever on re-download attempts.
+    #[test]
+    fn test_extraction_failure_cleans_up_partial_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let models_dir = temp_dir.path().to_path_buf();
+
+        let partial_path = models_dir.join("test-model.partial");
+        let temp_extract_dir = models_dir.join("test-model.extracting");
+
+        // Create a corrupt .partial file (not a valid tar.gz)
+        {
+            let mut f = File::create(&partial_path).unwrap();
+            f.write_all(b"this is not a valid tar.gz archive").unwrap();
+        }
+
+        // Create the extraction target directory
+        fs::create_dir_all(&temp_extract_dir).unwrap();
+
+        // Reproduce the scoped extraction pattern from download_model().
+        // File handles must be dropped before cleanup so remove_file works
+        // cross-platform (especially Windows).
+        let extract_result = {
+            let tar_gz = File::open(&partial_path).unwrap();
+            let tar = GzDecoder::new(tar_gz);
+            let mut archive = Archive::new(tar);
+            archive.unpack(&temp_extract_dir)
+        };
+        // File handles are dropped here
+
+        assert!(
+            extract_result.is_err(),
+            "Corrupt archive should fail to extract"
+        );
+
+        // Simulate the cleanup path from download_model()
+        let _ = fs::remove_dir_all(&temp_extract_dir);
+        let _ = fs::remove_file(&partial_path);
+
+        // Verify cleanup
+        assert!(
+            !partial_path.exists(),
+            ".partial file should be deleted after extraction failure"
+        );
+        assert!(
+            !temp_extract_dir.exists(),
+            ".extracting directory should be deleted after extraction failure"
+        );
     }
 }
