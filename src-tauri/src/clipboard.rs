@@ -69,7 +69,7 @@ fn restore_clipboard(
         }
         SavedClipboard::Image(image) => {
             if let Err(e) = clipboard.write_image(image) {
-                warn!("Failed to restore image to clipboard: {}", e);
+                warn!("Failed to restore image to clipboard: {e}");
             }
         }
         SavedClipboard::Empty => {
