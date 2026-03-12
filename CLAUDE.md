@@ -23,6 +23,7 @@ bun run lint              # ESLint for frontend
 bun run lint:fix          # ESLint with auto-fix
 bun run format            # Prettier + cargo fmt
 bun run format:check      # Check formatting without changes
+bun run storybook         # Preview UI components in isolation (http://localhost:1422)
 ```
 
 **Model Setup (Required for Development):**
