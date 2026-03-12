@@ -50,7 +50,9 @@ const storedHash = existsSync(hashFile)
 if (currentHash === storedHash) process.exit(0);
 
 // bun.lock has changed — regenerate the Nix dependency file
-console.log(`[check-nix-deps] bun.lock has changed, regenerating ${nixFile}...`);
+console.log(
+  `[check-nix-deps] bun.lock has changed, regenerating ${nixFile}...`,
+);
 
 const result = Bun.spawnSync(["bunx", "bun2nix", "-o", nixFile], {
   cwd: root,
@@ -58,11 +60,17 @@ const result = Bun.spawnSync(["bunx", "bun2nix", "-o", nixFile], {
 });
 
 if (result.exitCode !== 0) {
-  console.error("[check-nix-deps] Error: bunx bun2nix failed. bun.nix may be outdated.");
-  console.error(`[check-nix-deps] Try running manually: bunx bun2nix -o ${nixFile}`);
+  console.error(
+    "[check-nix-deps] Error: bunx bun2nix failed. bun.nix may be outdated.",
+  );
+  console.error(
+    `[check-nix-deps] Try running manually: bunx bun2nix -o ${nixFile}`,
+  );
   process.exit(1);
 }
 
 writeFileSync(hashFile, currentHash + "\n");
 console.log(`[check-nix-deps] Updated ${nixFile}`);
-console.log("[check-nix-deps] Don't forget to commit: .nix/bun.nix .nix/bun-lock-hash");
+console.log(
+  "[check-nix-deps] Don't forget to commit: .nix/bun.nix .nix/bun-lock-hash",
+);
