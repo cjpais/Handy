@@ -109,6 +109,7 @@ tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.1
 
 [dev-dependencies]
 tempfile = "3"
+arboard = "3.6"
 
 [profile.release]
 lto = true
