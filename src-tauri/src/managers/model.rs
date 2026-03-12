@@ -957,7 +957,7 @@ impl ModelManager {
             // transient environment issue (permissions, disk space), not a corrupt
             // archive, so we preserve .partial for retry.
             if let Err(e) = fs::create_dir_all(&temp_extract_dir) {
-                let error_msg = format!("Failed to create extraction directory: {}", e);
+                let error_msg = format!("Failed to create extraction directory: {e}");
                 {
                     let mut extracting = self.extracting_models.lock().unwrap();
                     extracting.remove(model_id);
@@ -990,7 +990,7 @@ impl ModelManager {
                     Ok(f) => f,
                     Err(e) => {
                         // File::open failure is environmental, preserve .partial
-                        let error_msg = format!("Failed to open archive: {}", e);
+                        let error_msg = format!("Failed to open archive: {e}");
                         let _ = fs::remove_dir_all(&temp_extract_dir);
                         {
                             let mut extracting = self.extracting_models.lock().unwrap();
