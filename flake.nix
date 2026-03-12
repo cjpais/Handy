@@ -51,7 +51,7 @@
 
             outputHashAlgo = "sha256";
             outputHashMode = "recursive";
-            outputHash = "sha256-+hUANv0w3qnK5d2+4JW3XMazLRDhWCbOxUXQyTGta/0=";
+            outputHash = "sha256-84Aw9E2+fEZT+lIb9k1bodessoex+YFr0im2GMVAPnw=";
           };
         in
         {
@@ -68,7 +68,7 @@
                 "rdev-0.5.0-2" = "sha256-0F7EaPF8Oa1nnSCAjzEAkitWVpMldL3nCp3c5DVFMe0=";
                 "rodio-0.20.1" = "sha256-wq72awTvN4fXZ9qZc5KLYS9oMxtNDZ4YGxfqz8msofs=";
                 "tauri-nspanel-2.1.0" = "sha256-gotQQ1DOhavdXU8lTEux0vdY880LLetk7VLvSm6/8TI=";
-                "tauri-runtime-2.9.1" = "sha256-sdneSI2kfRMgTkuqQoFPgtYvkqMPSuoyrffFwOph+ZM=";
+                "tauri-runtime-2.10.0" = "sha256-s1IBM9hOY+HRdl/E5r7BsRTE7aLaFCCMK/DdS+bvZRc=";
                 "vad-rs-0.1.5" = "sha256-Q9Dxq31npyUPY9wwi6OxqSJrEvFvG8/n0dbyT7XNcyI=";
               };
             };
