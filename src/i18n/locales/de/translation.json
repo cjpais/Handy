@@ -393,7 +393,13 @@
       "save": "Transkription speichern",
       "unsave": "Aus Gespeicherten entfernen",
       "delete": "Eintrag löschen",
-      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut."
+      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
+      "retry": "Erneut versuchen",
+      "retryError": "Der erneute Versuch der Transkription ist fehlgeschlagen. Bitte versuche es erneut.",
+      "retryHint": "Du kannst die Transkription erneut versuchen oder den Aufnahmeordner öffnen, um das Audio manuell wiederherzustellen.",
+      "statusPending": "Wird transkribiert",
+      "statusFailed": "Fehlgeschlagen",
+      "noTranscript": "Kein Transkript erzeugt."
     },
     "debug": {
       "title": "Debug",

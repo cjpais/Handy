@@ -393,7 +393,13 @@
       "save": "Enregistrer la transcription",
       "unsave": "Retirer des favoris",
       "delete": "Supprimer l'entrée",
-      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer."
+      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
+      "retry": "Réessayer",
+      "retryError": "Impossible de réessayer la transcription. Veuillez réessayer.",
+      "retryHint": "Vous pouvez réessayer la transcription ou ouvrir le dossier des enregistrements pour récupérer l’audio manuellement.",
+      "statusPending": "Transcription en cours",
+      "statusFailed": "Échec",
+      "noTranscript": "Aucune transcription générée."
     },
     "debug": {
       "title": "Débogage",

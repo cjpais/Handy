@@ -1,14 +1,23 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import { AudioPlayer } from "../../ui/AudioPlayer";
-import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
+import {
+  Check,
+  CircleAlert,
+  Copy,
+  FolderOpen,
+  LoaderCircle,
+  RefreshCcw,
+  Star,
+  Trash2,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { commands, type HistoryEntry } from "@/bindings";
-import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
+import { formatDateTime } from "@/utils/dateFormat";
+import { AudioPlayer } from "../../ui/AudioPlayer";
+import { Button } from "../../ui/Button";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -30,6 +39,32 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
     <span>{label}</span>
   </Button>
 );
+
+const HistoryStatusBadge: React.FC<
+  Pick<HistoryEntry, "transcription_status">
+> = ({ transcription_status }) => {
+  const { t } = useTranslation();
+
+  if (transcription_status === "completed") {
+    return null;
+  }
+
+  if (transcription_status === "pending") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-logo-primary/30 bg-logo-primary/10 px-2 py-0.5 text-[11px] font-medium text-logo-primary">
+        <LoaderCircle className="h-3 w-3 animate-spin" />
+        {t("settings.history.statusPending")}
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[11px] font-medium text-red-300">
+      <CircleAlert className="h-3 w-3" />
+      {t("settings.history.statusFailed")}
+    </span>
+  );
+};
 
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
@@ -53,18 +88,12 @@ export const HistorySettings: React.FC = () => {
   useEffect(() => {
     loadHistoryEntries();
 
-    // Listen for history update events
-    const setupListener = async () => {
-      const unlisten = await listen("history-updated", () => {
-        console.log("History updated, reloading entries...");
+    const setupListener = async () =>
+      listen("history-updated", () => {
         loadHistoryEntries();
       });
 
-      // Return cleanup function
-      return unlisten;
-    };
-
-    let unlistenPromise = setupListener();
+    const unlistenPromise = setupListener();
 
     return () => {
       unlistenPromise.then((unlisten) => {
@@ -77,8 +106,10 @@ export const HistorySettings: React.FC = () => {
 
   const toggleSaved = async (id: number) => {
     try {
-      await commands.toggleHistoryEntrySaved(id);
-      // No need to reload here - the event listener will handle it
+      const result = await commands.toggleHistoryEntrySaved(id);
+      if (result.status !== "ok") {
+        throw new Error(String(result.error));
+      }
     } catch (error) {
       console.error("Failed to toggle saved status:", error);
     }
@@ -117,67 +148,67 @@ export const HistorySettings: React.FC = () => {
 
   const deleteAudioEntry = async (id: number) => {
     try {
-      await commands.deleteHistoryEntry(id);
+      const result = await commands.deleteHistoryEntry(id);
+      if (result.status !== "ok") {
+        throw new Error(String(result.error));
+      }
     } catch (error) {
       console.error("Failed to delete audio entry:", error);
       throw error;
     }
   };
 
+  const retryHistoryEntry = async (id: number) => {
+    try {
+      const result = await commands.retryHistoryEntryTranscription(id);
+      if (result.status !== "ok") {
+        throw new Error(String(result.error));
+      }
+    } catch (error) {
+      console.error("Failed to retry history entry transcription:", error);
+      throw error;
+    }
+  };
+
   const openRecordingsFolder = async () => {
     try {
-      await commands.openRecordingsFolder();
+      const result = await commands.openRecordingsFolder();
+      if (result.status !== "ok") {
+        throw new Error(String(result.error));
+      }
     } catch (error) {
       console.error("Failed to open recordings folder:", error);
     }
   };
 
+  let content: React.ReactNode;
+
   if (loading) {
-    return (
-      <div className="max-w-3xl w-full mx-auto space-y-6">
-        <div className="space-y-2">
-          <div className="px-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-                {t("settings.history.title")}
-              </h2>
-            </div>
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
-          </div>
-          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-            <div className="px-4 py-3 text-center text-text/60">
-              {t("settings.history.loading")}
-            </div>
-          </div>
-        </div>
+    content = (
+      <div className="px-4 py-3 text-center text-text/60">
+        {t("settings.history.loading")}
       </div>
     );
-  }
-
-  if (historyEntries.length === 0) {
-    return (
-      <div className="max-w-3xl w-full mx-auto space-y-6">
-        <div className="space-y-2">
-          <div className="px-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-                {t("settings.history.title")}
-              </h2>
-            </div>
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
-          </div>
-          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-            <div className="px-4 py-3 text-center text-text/60">
-              {t("settings.history.empty")}
-            </div>
-          </div>
-        </div>
+  } else if (historyEntries.length === 0) {
+    content = (
+      <div className="px-4 py-3 text-center text-text/60">
+        {t("settings.history.empty")}
+      </div>
+    );
+  } else {
+    content = (
+      <div className="divide-y divide-mid-gray/20">
+        {historyEntries.map((entry) => (
+          <HistoryEntryComponent
+            key={entry.id}
+            entry={entry}
+            onToggleSaved={() => toggleSaved(entry.id)}
+            onCopyText={() => copyToClipboard(entry.transcription_text)}
+            getAudioUrl={getAudioUrl}
+            deleteAudio={deleteAudioEntry}
+            retryTranscription={retryHistoryEntry}
+          />
+        ))}
       </div>
     );
   }
@@ -197,18 +228,7 @@ export const HistorySettings: React.FC = () => {
           />
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-          <div className="divide-y divide-mid-gray/20">
-            {historyEntries.map((entry) => (
-              <HistoryEntryComponent
-                key={entry.id}
-                entry={entry}
-                onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
-                getAudioUrl={getAudioUrl}
-                deleteAudio={deleteAudioEntry}
-              />
-            ))}
-          </div>
+          {content}
         </div>
       </div>
     </div>
@@ -221,6 +241,7 @@ interface HistoryEntryProps {
   onCopyText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
+  retryTranscription: (id: number) => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -229,9 +250,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onCopyText,
   getAudioUrl,
   deleteAudio,
+  retryTranscription,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  const canCopy =
+    entry.transcription_status === "completed" &&
+    entry.transcription_text.trim().length > 0;
+  const showRetry = entry.transcription_status === "failed";
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -239,6 +267,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   );
 
   const handleCopyText = () => {
+    if (!canCopy) {
+      return;
+    }
+
     onCopyText();
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
@@ -249,7 +281,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert("Failed to delete entry. Please try again.");
+      alert(t("settings.history.deleteError"));
+    }
+  };
+
+  const handleRetry = async () => {
+    try {
+      setRetrying(true);
+      await retryTranscription(entry.id);
+    } catch (error) {
+      console.error("Failed to retry transcription:", error);
+      alert(t("settings.history.retryError"));
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -257,12 +301,18 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
-      <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
-        <div className="flex items-center gap-1">
+      <div className="flex justify-between items-start gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium">{formattedDate}</p>
+          <HistoryStatusBadge
+            transcription_status={entry.transcription_status}
+          />
+        </div>
+        <div className="flex items-center gap-1 flex-wrap justify-end">
           <button
             onClick={handleCopyText}
-            className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
+            disabled={!canCopy}
+            className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20"
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
@@ -290,6 +340,21 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               fill={entry.saved ? "currentColor" : "none"}
             />
           </button>
+          {showRetry ? (
+            <Button
+              onClick={handleRetry}
+              variant="secondary"
+              size="sm"
+              disabled={retrying}
+              className="flex items-center gap-1"
+              title={t("settings.history.retry")}
+            >
+              <RefreshCcw
+                className={`h-3.5 w-3.5 ${retrying ? "animate-spin" : ""}`}
+              />
+              <span>{t("settings.history.retry")}</span>
+            </Button>
+          ) : null}
           <button
             onClick={handleDeleteEntry}
             className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
@@ -299,9 +364,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
         </div>
       </div>
-      <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
-        {entry.transcription_text}
-      </p>
+
+      {entry.transcription_status === "failed" ? (
+        <p className="text-xs text-text/60 break-words pb-2">
+          {entry.transcription_error || t("settings.history.retryHint")}
+        </p>
+      ) : null}
+
+      {entry.transcription_status === "completed" ? (
+        <p className="italic text-text/90 text-sm pb-2 select-text cursor-text whitespace-pre-wrap break-words">
+          {entry.transcription_text || t("settings.history.noTranscript")}
+        </p>
+      ) : null}
+
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );
