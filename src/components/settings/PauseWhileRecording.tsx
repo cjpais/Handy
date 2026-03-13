@@ -34,9 +34,7 @@ export const PauseWhileRecording: React.FC<PauseWhileRecordingToggleProps> =
           }}
           isUpdating={isUpdating("pause_while_recording")}
           label={t("settings.sound.pauseWhileRecording.label")}
-          description={t("settings.sound.pauseWhileRecording.description", {
-            platform: osType === "macos" ? "macOS" : osType,
-          })}
+          description={t("settings.sound.pauseWhileRecording.description")}
           descriptionMode={descriptionMode}
           grouped={grouped}
         />
