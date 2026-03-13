@@ -7,8 +7,10 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::fs;
 use std::path::PathBuf;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 use tauri_specta::Event;
+
+use crate::audio_toolkit::save_wav_file;
 
 /// Database migrations for transcription history.
 /// Each migration is applied in order. The library tracks which migrations
