@@ -214,11 +214,11 @@
       },
       "pauseWhileRecording": {
         "label": "Pause While Recording",
-        "description": "Pause active media playback when recording starts. On macOS this uses the system's global media controls; on Windows and Linux Handy targets one active media session/player when possible."
+        "description": "Pause media playback while recording"
       },
       "playAfterRecording": {
         "label": "Resume After Recording",
-        "description": "Try to resume the media Handy paused when recording ends. If nothing was paused, nothing is resumed."
+        "description": "Resume media playback if Handy paused it"
       },
       "outputDevice": {
         "title": "Output Device",
