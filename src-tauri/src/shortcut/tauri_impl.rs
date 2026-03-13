@@ -155,6 +155,8 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
 /// Register the cancel shortcut (called when recording starts)
 pub fn register_cancel_shortcut(app: &AppHandle) {
     // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+    // in Tauri's shortcut backend. This is separate from pause/resume media control, which uses
+    // MPRIS and should be debugged independently if playback behavior regresses.
     #[cfg(target_os = "linux")]
     {
         let _ = app;
@@ -177,6 +179,8 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
 /// Unregister the cancel shortcut (called when recording stops)
 pub fn unregister_cancel_shortcut(app: &AppHandle) {
     // Cancel shortcut is disabled on Linux due to instability with dynamic shortcut registration
+    // in Tauri's shortcut backend. This is separate from pause/resume media control, which uses
+    // MPRIS and should be debugged independently if playback behavior regresses.
     #[cfg(target_os = "linux")]
     {
         let _ = app;

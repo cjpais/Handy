@@ -67,6 +67,16 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
   is_default: true,
 };
 
+const normalizeSettings = (settings: Settings): Settings => ({
+  ...settings,
+  always_on_microphone: settings.always_on_microphone ?? false,
+  selected_microphone: settings.selected_microphone ?? "Default",
+  clamshell_microphone: settings.clamshell_microphone ?? "Default",
+  selected_output_device: settings.selected_output_device ?? "Default",
+  pause_while_recording: settings.pause_while_recording ?? false,
+  play_after_recording: settings.play_after_recording ?? true,
+});
+
 const settingUpdaters: {
   [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
 } = {
@@ -127,6 +137,10 @@ const settingUpdaters: {
     commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
+  pause_while_recording: (value) =>
+    commands.changePauseWhileRecordingSetting(value as boolean),
+  play_after_recording: (value) =>
+    commands.changePlayAfterRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
@@ -169,16 +183,7 @@ export const useSettingsStore = create<SettingsStore>()(
       try {
         const result = await commands.getAppSettings();
         if (result.status === "ok") {
-          const settings = result.data;
-          const normalizedSettings: Settings = {
-            ...settings,
-            always_on_microphone: settings.always_on_microphone ?? false,
-            selected_microphone: settings.selected_microphone ?? "Default",
-            clamshell_microphone: settings.clamshell_microphone ?? "Default",
-            selected_output_device:
-              settings.selected_output_device ?? "Default",
-          };
-          set({ settings: normalizedSettings, isLoading: false });
+          set({ settings: normalizeSettings(result.data), isLoading: false });
         } else {
           console.error("Failed to load settings:", result.error);
           set({ isLoading: false });
@@ -261,9 +266,18 @@ export const useSettingsStore = create<SettingsStore>()(
       setUpdating(updateKey, true);
 
       try {
-        set((state) => ({
-          settings: state.settings ? { ...state.settings, [key]: value } : null,
-        }));
+        set((state) => {
+          if (!state.settings) {
+            return { settings: null };
+          }
+
+          const nextSettings: Settings = { ...state.settings, [key]: value };
+          if (key === "pause_while_recording" && value === false) {
+            nextSettings.play_after_recording = false;
+          }
+
+          return { settings: nextSettings };
+        });
 
         const updater = settingUpdaters[key];
         if (updater) {
@@ -543,7 +557,7 @@ export const useSettingsStore = create<SettingsStore>()(
       try {
         const result = await commands.getDefaultSettings();
         if (result.status === "ok") {
-          set({ defaultSettings: result.data });
+          set({ defaultSettings: normalizeSettings(result.data) });
         } else {
           console.error("Failed to load default settings:", result.error);
         }

@@ -1,5 +1,6 @@
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
+use crate::media_control::MediaControlManager;
 use crate::shortcut;
 use crate::TranscriptionCoordinator;
 use log::info;
@@ -24,6 +25,11 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     let recording_was_active = audio_manager.is_recording();
     audio_manager.cancel_recording();
+
+    let media_control_manager = app.state::<Arc<MediaControlManager>>();
+    // resume_after_recording() also invalidates any in-flight pause attempt, so cancellation
+    // cannot leave stale paused-playback state behind if recording stops before the pause thread finishes.
+    media_control_manager.resume_after_recording(app);
 
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
