@@ -292,6 +292,8 @@ impl AudioRecorder {
     }
 }
 
+const WINDOWS_MICROPHONE_ACCESS_DENIED_MESSAGE: &str = "Microphone access was denied by the operating system. Enable microphone access in Settings → Privacy & security → Microphone (including desktop app access).";
+
 fn is_microphone_access_denied(error_message: &str) -> bool {
     let normalized = error_message.to_lowercase();
     normalized.contains("access is denied")
@@ -300,8 +302,12 @@ fn is_microphone_access_denied(error_message: &str) -> bool {
 }
 
 fn normalize_microphone_error(error_message: String) -> String {
-    if is_microphone_access_denied(&error_message) {
-        return "Microphone access was denied by the operating system. On Windows, enable Settings → Privacy & security → Microphone (including desktop app access), then restart Handy.".to_string();
+    normalize_microphone_error_for_platform(error_message, cfg!(target_os = "windows"))
+}
+
+fn normalize_microphone_error_for_platform(error_message: String, is_windows: bool) -> String {
+    if is_windows && is_microphone_access_denied(&error_message) {
+        return WINDOWS_MICROPHONE_ACCESS_DENIED_MESSAGE.to_string();
     }
 
     error_message
@@ -403,5 +409,32 @@ fn run_consumer(
                 Cmd::Shutdown => return,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        normalize_microphone_error_for_platform, WINDOWS_MICROPHONE_ACCESS_DENIED_MESSAGE,
+    };
+
+    #[test]
+    fn windows_permission_errors_get_windows_guidance() {
+        let error_message = "permission denied".to_string();
+
+        assert_eq!(
+            normalize_microphone_error_for_platform(error_message, true),
+            WINDOWS_MICROPHONE_ACCESS_DENIED_MESSAGE
+        );
+    }
+
+    #[test]
+    fn non_windows_permission_errors_preserve_original_message() {
+        let error_message = "permission denied".to_string();
+
+        assert_eq!(
+            normalize_microphone_error_for_platform(error_message.clone(), false),
+            error_message
+        );
     }
 }
