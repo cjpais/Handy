@@ -72,3 +72,9 @@ jobs:
           echo ""
           cat eval_err.log
           exit 1
+
+      # Full build — catches runtime build errors (broken dependencies,
+      # sandbox issues, compilation failures) that flake eval alone misses.
+      - name: Build handy
+        if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true'
+        run: nix build .#handy -L --show-trace
