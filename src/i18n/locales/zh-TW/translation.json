@@ -79,6 +79,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "俄語語音辨識。快速且準確。"
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "多語言批次轉錄，精確度與效率平衡良好。"
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "多語言批次轉錄。開源ASR模型中精確度最高。"
       }
     },
     "errors": {

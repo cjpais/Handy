@@ -79,6 +79,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Rozpoznávání ruské řeči. Rychlé a přesné."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Vícejazyčný dávkový přepis s dobrým poměrem přesnosti a efektivity."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Vícejazyčný dávkový přepis. Nejvyšší přesnost mezi open-source ASR modely."
       }
     },
     "errors": {

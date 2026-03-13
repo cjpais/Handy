@@ -79,6 +79,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "التعرف على الكلام الروسي. سريع ودقيق."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "نسخ دفعي متعدد اللغات مع توازن جيد بين الدقة والكفاءة."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "نسخ دفعي متعدد اللغات. أعلى دقة بين نماذج ASR مفتوحة المصدر."
       }
     },
     "errors": {

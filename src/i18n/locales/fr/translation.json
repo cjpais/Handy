@@ -79,6 +79,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Reconnaissance vocale en russe. Rapide et précis."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Transcription par lots multilingue avec un bon rapport précision-efficacité."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Transcription par lots multilingue. Meilleure précision parmi les modèles ASR open source."
       }
     },
     "errors": {

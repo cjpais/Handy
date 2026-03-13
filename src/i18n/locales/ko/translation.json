@@ -79,6 +79,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "러시아어 음성 인식. 빠르고 정확함."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "다국어 일괄 전사. 정확도와 효율성의 균형이 우수합니다."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "다국어 일괄 전사. 오픈소스 ASR 모델 중 최고 정확도."
       }
     },
     "errors": {
