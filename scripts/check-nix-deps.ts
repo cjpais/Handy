@@ -60,13 +60,18 @@ const result = Bun.spawnSync(["bunx", "bun2nix", "-o", nixFile], {
 });
 
 if (result.exitCode !== 0) {
-  console.error(
-    "[check-nix-deps] Error: bunx bun2nix failed. bun.nix may be outdated.",
+  console.warn(
+    "[check-nix-deps] Warning: bunx bun2nix failed. .nix/bun.nix may be outdated.",
   );
-  console.error(
-    `[check-nix-deps] Try running manually: bunx bun2nix -o ${nixFile}`,
+  console.warn(
+    "[check-nix-deps] Nix users: run `bunx bun2nix -o .nix/bun.nix` manually.",
   );
-  process.exit(1);
+  console.warn(
+    "[check-nix-deps] Non-Nix users: this is safe to ignore, CI will catch it.",
+  );
+  // Exit 0 so that `bun install` is not blocked for non-Nix developers.
+  // CI validates bun.nix independently.
+  process.exit(0);
 }
 
 writeFileSync(hashFile, currentHash + "\n");

@@ -9,7 +9,7 @@
     # node_modules directory (that hash would break on bun version changes).
     # See: https://github.com/nix-community/bun2nix
     bun2nix = {
-      url = "github:nix-community/bun2nix?tag=2.0.1";
+      url = "github:nix-community/bun2nix/2.0.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -62,7 +62,7 @@
                 src-tauri/tauri.conf.json > $TMPDIR/tauri.conf.json
               cp $TMPDIR/tauri.conf.json src-tauri/tauri.conf.json
 
-              # Strip postinstall hook — it runs check-nix-deps.sh which is only
+              # Strip postinstall hook — it runs check-nix-deps.ts which is only
               # needed during local development, not inside the Nix sandbox.
               ${pkgs.jq}/bin/jq 'del(.scripts.postinstall)' \
                 package.json > $TMPDIR/package.json
