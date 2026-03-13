@@ -212,6 +212,14 @@
         "label": "Audio Feedback",
         "description": "Play sound when recording starts and stops"
       },
+      "pauseWhileRecording": {
+        "label": "Pause While Recording",
+        "description": "Pause active media playback when recording starts. On macOS this uses the system's global media controls; on Windows and Linux Handy targets one active media session/player when possible."
+      },
+      "playAfterRecording": {
+        "label": "Resume After Recording",
+        "description": "Try to resume the media Handy paused when recording ends. If nothing was paused, nothing is resumed."
+      },
       "outputDevice": {
         "title": "Output Device",
         "description": "Select your preferred audio output device for feedback sounds",
