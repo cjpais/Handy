@@ -11,6 +11,13 @@ mod helpers;
 mod input;
 mod llm_client;
 mod managers;
+mod media_control;
+#[cfg(target_os = "linux")]
+mod media_control_linux;
+#[cfg(target_os = "windows")]
+mod media_control_windows;
+#[cfg(target_os = "macos")]
+mod media_remote;
 mod overlay;
 pub mod portable;
 mod settings;
@@ -29,6 +36,7 @@ use tauri_specta::{collect_commands, collect_events, Builder};
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
+use media_control::MediaControlManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
@@ -167,6 +175,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+    let media_control_manager = Arc::new(MediaControlManager::new(app_handle.clone()));
 
     // Initialize the transcribe-cpp native backend (logging + backend module
     // registration) once, before any whisper model is loaded.
@@ -181,6 +190,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(tray::CurrentTrayIconState::new());
+    app_handle.manage(media_control_manager);
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -641,6 +651,8 @@ pub fn run(cli_args: CliArgs) {
             shortcut::suspend_binding,
             shortcut::resume_binding,
             shortcut::change_mute_while_recording_setting,
+            shortcut::change_pause_while_recording_setting,
+            shortcut::change_play_after_recording_setting,
             shortcut::change_append_trailing_space_setting,
             shortcut::change_lazy_stream_close_setting,
             shortcut::change_vad_enabled_setting,
