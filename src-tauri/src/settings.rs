@@ -103,6 +103,8 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
     #[serde(default)]
     pub supports_structured_output: bool,
+    #[serde(default)]
+    pub api_version: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -460,6 +462,16 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_version: None,
+        },
+        PostProcessProvider {
+            id: "azure_openai".to_string(),
+            label: "Azure OpenAI".to_string(),
+            base_url: "https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+            supports_structured_output: true,
+            api_version: Some("2025-01-01-preview".to_string()),
         },
         PostProcessProvider {
             id: "zai".to_string(),
@@ -468,6 +480,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_version: None,
         },
         PostProcessProvider {
             id: "openrouter".to_string(),
@@ -476,6 +489,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_version: None,
         },
         PostProcessProvider {
             id: "anthropic".to_string(),
@@ -484,6 +498,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
+            api_version: None,
         },
         PostProcessProvider {
             id: "groq".to_string(),
@@ -492,6 +507,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
+            api_version: None,
         },
         PostProcessProvider {
             id: "cerebras".to_string(),
@@ -500,6 +516,25 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
+            api_version: None,
+        },
+        PostProcessProvider {
+            id: "google_gemini".to_string(),
+            label: "Google Gemini".to_string(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta/openai".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+            supports_structured_output: true,
+            api_version: None,
+        },
+        PostProcessProvider {
+            id: "vertex_ai".to_string(),
+            label: "Vertex AI (gcloud)".to_string(),
+            base_url: "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/YOUR-PROJECT/locations/us-central1/endpoints/openapi".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: None,
+            supports_structured_output: true,
+            api_version: None,
         },
     ];
 
@@ -516,6 +551,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: None,
             supports_structured_output: true,
+            api_version: None,
         });
     }
 
@@ -527,6 +563,7 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         allow_base_url_edit: true,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: false,
+        api_version: None,
     });
 
     providers
@@ -559,11 +596,33 @@ fn default_post_process_models() -> HashMap<String, String> {
 }
 
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
-    vec![LLMPrompt {
-        id: "default_improve_transcriptions".to_string(),
-        name: "Improve Transcriptions".to_string(),
-        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
-    }]
+    vec![
+        LLMPrompt {
+            id: "default_clean_format".to_string(),
+            name: "Clean & Format".to_string(),
+            prompt: "Clean this speech transcript. Follow these rules strictly:\n1. Remove filler words (um, uh, like, you know, so, well, I mean, basically, actually)\n2. Fix grammar, spelling, and punctuation errors\n3. Add proper capitalization and punctuation\n4. Handle backtracking — if the speaker corrects themselves mid-sentence, keep only the correction (e.g. \"meet at 2 actually 3\" → \"meet at 3\")\n5. Format as a list when the speaker clearly enumerates items\n6. Convert spoken numbers to digits when appropriate (twenty-five → 25, ten percent → 10%)\n7. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n8. Keep the original language — do NOT translate\n9. Do NOT add information that was not spoken\n10. Do NOT paraphrase — preserve the speaker's exact meaning and word choice\n\nReturn ONLY the cleaned transcript, nothing else.\n\nTranscript:\n${output}".to_string(),
+        },
+        LLMPrompt {
+            id: "default_casual".to_string(),
+            name: "Casual".to_string(),
+            prompt: "Lightly clean up this voice transcript for a casual messaging context:\n1. Remove only obvious filler words (um, uh)\n2. Fix clear typos and basic punctuation\n3. Keep lowercase conversational style\n4. Preserve the casual, natural tone\n5. Keep the original language — do NOT translate\n\nReturn ONLY the cleaned text, nothing else.\n\nTranscript:\n${output}".to_string(),
+        },
+        LLMPrompt {
+            id: "default_professional".to_string(),
+            name: "Professional".to_string(),
+            prompt: "Clean and format this speech transcript for professional communication:\n1. Remove all filler words and verbal hesitations\n2. Use proper grammar, punctuation, and capitalization\n3. Structure into clear paragraphs when appropriate\n4. Use a professional, polished tone\n5. Handle backtracking corrections\n6. Convert numbers appropriately (twenty-five → 25)\n7. Keep the original language — do NOT translate\n8. Do NOT add information that was not spoken\n\nReturn ONLY the cleaned transcript, nothing else.\n\nTranscript:\n${output}".to_string(),
+        },
+        LLMPrompt {
+            id: "default_code".to_string(),
+            name: "Code".to_string(),
+            prompt: "Clean this speech transcript from a software developer:\n1. Remove filler words (um, uh, like)\n2. Preserve programming terms exactly: camelCase, snake_case, PascalCase, kebab-case\n3. Recognize common programming terms: function, variable, class, method, API, HTTP, JSON, SQL, etc.\n4. Keep technical abbreviations as-is (e.g., URL, API, CSS, HTML, JS, TS)\n5. Format code-related content appropriately\n6. Fix general grammar and punctuation\n7. Keep the original language — do NOT translate\n8. Do NOT add information that was not spoken\n\nReturn ONLY the cleaned transcript, nothing else.\n\nTranscript:\n${output}".to_string(),
+        },
+        LLMPrompt {
+            id: "default_dictation".to_string(),
+            name: "Dictation".to_string(),
+            prompt: "Minimally format this speech transcript:\n1. Add proper punctuation based on speech pauses and intonation\n2. Add proper capitalization (sentence starts, proper nouns)\n3. Convert spoken punctuation to symbols (period → ., comma → ,)\n4. Keep ALL spoken words exactly as they were said — do NOT remove any words\n5. Do NOT change sentence structure or word order\n6. Keep the original language — do NOT translate\n\nReturn ONLY the formatted transcript, nothing else.\n\nTranscript:\n${output}".to_string(),
+        },
+    ]
 }
 
 fn default_typing_tool() -> TypingTool {
@@ -580,7 +639,7 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
             .find(|p| p.id == provider.id)
         {
             Some(existing) => {
-                // Sync supports_structured_output field for existing providers (migration)
+                // Sync fields for existing providers (migration)
                 if existing.supports_structured_output != provider.supports_structured_output {
                     debug!(
                         "Updating supports_structured_output for provider '{}' from {} to {}",
@@ -589,6 +648,22 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                         provider.supports_structured_output
                     );
                     existing.supports_structured_output = provider.supports_structured_output;
+                    changed = true;
+                }
+                
+                if existing.allow_base_url_edit != provider.allow_base_url_edit {
+                    existing.allow_base_url_edit = provider.allow_base_url_edit;
+                    changed = true;
+                }
+
+                if existing.api_version != provider.api_version {
+                    existing.api_version = provider.api_version.clone();
+                    changed = true;
+                }
+
+                // If the provider doesn't allow editing the base URL, enforce the default
+                if !provider.allow_base_url_edit && existing.base_url != provider.base_url {
+                    existing.base_url = provider.base_url.clone();
                     changed = true;
                 }
             }
@@ -620,6 +695,45 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                     .insert(provider.id.clone(), default_model);
                 changed = true;
             }
+        }
+    }
+
+    // Ensure default prompt templates exist (migration for existing users)
+    changed |= ensure_default_prompts(settings);
+
+    changed
+}
+
+/// Ensure all built-in prompt templates exist in the user's settings.
+/// Appends any missing default prompts without overwriting user-created ones.
+/// If no prompt is selected, auto-selects "Clean & Format".
+fn ensure_default_prompts(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+    let defaults = default_post_process_prompts();
+
+    for default_prompt in &defaults {
+        let exists = settings
+            .post_process_prompts
+            .iter()
+            .any(|p| p.id == default_prompt.id);
+
+        if !exists {
+            debug!("Adding missing default prompt: '{}'", default_prompt.name);
+            settings.post_process_prompts.push(default_prompt.clone());
+            changed = true;
+        }
+    }
+
+    // Auto-select "Clean & Format" if no prompt is selected
+    if settings.post_process_selected_prompt_id.is_none() {
+        let clean_format_exists = settings
+            .post_process_prompts
+            .iter()
+            .any(|p| p.id == "default_clean_format");
+        if clean_format_exists {
+            settings.post_process_selected_prompt_id =
+                Some("default_clean_format".to_string());
+            changed = true;
         }
     }
 
@@ -714,7 +828,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: None,
+        post_process_selected_prompt_id: Some("default_clean_format".to_string()),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -867,5 +981,72 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_prompts_include_all_templates() {
+        let prompts = default_post_process_prompts();
+        assert_eq!(prompts.len(), 5);
+        let ids: Vec<&str> = prompts.iter().map(|p| p.id.as_str()).collect();
+        assert!(ids.contains(&"default_clean_format"));
+        assert!(ids.contains(&"default_casual"));
+        assert!(ids.contains(&"default_professional"));
+        assert!(ids.contains(&"default_code"));
+        assert!(ids.contains(&"default_dictation"));
+        // Verify each prompt has non-empty content
+        for prompt in &prompts {
+            assert!(!prompt.name.is_empty(), "Prompt {} has empty name", prompt.id);
+            assert!(
+                !prompt.prompt.is_empty(),
+                "Prompt {} has empty prompt",
+                prompt.id
+            );
+        }
+    }
+
+    #[test]
+    fn default_settings_select_clean_format_prompt() {
+        let settings = get_default_settings();
+        assert_eq!(
+            settings.post_process_selected_prompt_id,
+            Some("default_clean_format".to_string())
+        );
+    }
+
+    #[test]
+    fn ensure_default_prompts_adds_missing_templates() {
+        let mut settings = get_default_settings();
+        // Simulate existing user with only 1 custom prompt
+        settings.post_process_prompts = vec![LLMPrompt {
+            id: "user_custom".to_string(),
+            name: "My Custom Prompt".to_string(),
+            prompt: "Custom instructions".to_string(),
+        }];
+        settings.post_process_selected_prompt_id = Some("user_custom".to_string());
+
+        let changed = ensure_default_prompts(&mut settings);
+        assert!(changed);
+        // User keeps their custom prompt + gets 5 defaults
+        assert_eq!(settings.post_process_prompts.len(), 6);
+        // Selection is preserved (user already had one selected)
+        assert_eq!(
+            settings.post_process_selected_prompt_id,
+            Some("user_custom".to_string())
+        );
+    }
+
+    #[test]
+    fn ensure_default_prompts_auto_selects_when_none_selected() {
+        let mut settings = get_default_settings();
+        settings.post_process_prompts.clear();
+        settings.post_process_selected_prompt_id = None;
+
+        let changed = ensure_default_prompts(&mut settings);
+        assert!(changed);
+        assert_eq!(settings.post_process_prompts.len(), 5);
+        assert_eq!(
+            settings.post_process_selected_prompt_id,
+            Some("default_clean_format".to_string())
+        );
     }
 }

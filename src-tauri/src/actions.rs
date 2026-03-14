@@ -482,6 +482,10 @@ impl ShortcutAction for TranscribeAction {
                                 post_processed_text = Some(final_text.clone());
                             }
 
+                            if let Some(ref text) = post_processed_text {
+                                log::info!("Post-processing result: {}", text);
+                            }
+
                             // Save to history with post-processed text and prompt
                             let hm_clone = Arc::clone(&hm);
                             let transcription_for_history = transcription.clone();

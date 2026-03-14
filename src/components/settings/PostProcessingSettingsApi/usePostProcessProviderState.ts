@@ -118,7 +118,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   const handleBaseUrlChange = useCallback(
     (value: string) => {
-      if (!selectedProvider || selectedProvider.id !== "custom") {
+      if (!selectedProvider || !selectedProvider.allow_base_url_edit) {
         return;
       }
       const trimmed = value.trim();
