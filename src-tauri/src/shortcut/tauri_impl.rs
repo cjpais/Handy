@@ -7,9 +7,9 @@ use log::{error, warn};
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
-use crate::settings::{self, ShortcutBinding};
 #[cfg(not(target_os = "linux"))]
 use crate::settings::get_settings;
+use crate::settings::{self, ShortcutBinding};
 
 use super::handler::handle_shortcut_event;
 
