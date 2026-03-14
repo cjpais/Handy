@@ -501,6 +501,11 @@ impl TranscriptionManager {
                             let params = WhisperInferenceParams {
                                 language: whisper_language,
                                 translate: settings.translate_to_english,
+                                initial_prompt: if settings.custom_words.is_empty() {
+                                    None
+                                } else {
+                                    Some(settings.custom_words.join(", "))
+                                },
                                 ..Default::default()
                             };
 
@@ -602,8 +607,15 @@ impl TranscriptionManager {
             }
         };
 
-        // Apply word correction if custom words are configured
-        let corrected_result = if !settings.custom_words.is_empty() {
+        // Apply word correction if custom words are configured.
+        // Skip for Whisper models since custom words are already passed as initial_prompt.
+        let is_whisper = self
+            .model_manager
+            .get_model_info(&settings.selected_model)
+            .map(|info| matches!(info.engine_type, EngineType::Whisper))
+            .unwrap_or(false);
+
+        let corrected_result = if !settings.custom_words.is_empty() && !is_whisper {
             apply_custom_words(
                 &result.text,
                 &settings.custom_words,
