@@ -314,9 +314,7 @@ mod tests {
 
     #[test]
     fn detects_windows_error_code() {
-        assert!(is_microphone_access_denied(
-            "WASAPI error: 0x80070005"
-        ));
+        assert!(is_microphone_access_denied("WASAPI error: 0x80070005"));
     }
 
     #[test]

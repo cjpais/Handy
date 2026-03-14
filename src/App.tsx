@@ -102,8 +102,7 @@ function App() {
 
       if (error_type === "microphone_permission_denied") {
         const currentPlatform = platform();
-        const platformKey =
-          `errors.micPermissionDenied.${currentPlatform}`;
+        const platformKey = `errors.micPermissionDenied.${currentPlatform}`;
         const description = t(platformKey, {
           defaultValue: t("errors.micPermissionDenied.generic"),
         });
