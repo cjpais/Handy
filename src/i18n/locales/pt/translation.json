@@ -80,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Reconhecimento de voz em russo. Rápido e preciso."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Muito rápido. Inglês, alemão, espanhol, francês. Suporta tradução."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Multilíngue preciso. 25 idiomas europeus. Suporta tradução."
       }
     },
     "errors": {
