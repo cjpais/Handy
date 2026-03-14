@@ -287,14 +287,16 @@ impl TranscriptionManager {
                 LoadedEngine::Parakeet(engine)
             }
             EngineType::Moonshine => {
-                let engine =
-                    MoonshineModel::load(&model_path, MoonshineVariant::Base, &Quantization::default())
-                        .map_err(|e| {
-                            let error_msg =
-                                format!("Failed to load moonshine model {}: {}", model_id, e);
-                            emit_loading_failed(&error_msg);
-                            anyhow::anyhow!(error_msg)
-                        })?;
+                let engine = MoonshineModel::load(
+                    &model_path,
+                    MoonshineVariant::Base,
+                    &Quantization::default(),
+                )
+                .map_err(|e| {
+                    let error_msg = format!("Failed to load moonshine model {}: {}", model_id, e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
                 LoadedEngine::Moonshine(engine)
             }
             EngineType::MoonshineStreaming => {
@@ -323,8 +325,7 @@ impl TranscriptionManager {
             EngineType::GigaAM => {
                 let engine =
                     GigaAMModel::load(&model_path, &Quantization::default()).map_err(|e| {
-                        let error_msg =
-                            format!("Failed to load gigaam model {}: {}", model_id, e);
+                        let error_msg = format!("Failed to load gigaam model {}: {}", model_id, e);
                         emit_loading_failed(&error_msg);
                         anyhow::anyhow!(error_msg)
                     })?;
@@ -482,31 +483,27 @@ impl TranscriptionManager {
                                 language,
                                 translate: false,
                             };
-                            parakeet_engine
-                                .transcribe(&audio, &options)
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
-                                })
+                            parakeet_engine.transcribe(&audio, &options).map_err(|e| {
+                                anyhow::anyhow!("Parakeet transcription failed: {}", e)
+                            })
                         }
                         LoadedEngine::Moonshine(moonshine_engine) => {
                             let options = TranscribeOptions {
                                 language,
                                 translate: false,
                             };
-                            moonshine_engine
-                                .transcribe(&audio, &options)
-                                .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e))
+                            moonshine_engine.transcribe(&audio, &options).map_err(|e| {
+                                anyhow::anyhow!("Moonshine transcription failed: {}", e)
+                            })
                         }
                         LoadedEngine::MoonshineStreaming(streaming_engine) => {
                             let options = TranscribeOptions {
                                 language,
                                 translate: false,
                             };
-                            streaming_engine
-                                .transcribe(&audio, &options)
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
-                                })
+                            streaming_engine.transcribe(&audio, &options).map_err(|e| {
+                                anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
+                            })
                         }
                         LoadedEngine::SenseVoice(sense_voice_engine) => {
                             let options = TranscribeOptions {
