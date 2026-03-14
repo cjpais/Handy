@@ -61,19 +61,25 @@ fn paste_via_clipboard(
         }
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    // Restore original clipboard content after a generous delay in a background thread.
+    // This avoids blocking the main thread while giving the target application
+    // plenty of time to process the paste keystroke and read the clipboard.
+    let app_handle_for_restore = app_handle.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(200));
 
-    // Restore original clipboard content
-    // On Wayland, prefer wl-copy for better compatibility
-    #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
-    } else {
+        let clipboard = app_handle_for_restore.clipboard();
+
+        #[cfg(target_os = "linux")]
+        if is_wayland() && is_wl_copy_available() {
+            let _ = write_clipboard_via_wl_copy(&clipboard_content);
+        } else {
+            let _ = clipboard.write_text(&clipboard_content);
+        }
+
+        #[cfg(not(target_os = "linux"))]
         let _ = clipboard.write_text(&clipboard_content);
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    let _ = clipboard.write_text(&clipboard_content);
+    });
 
     Ok(())
 }
