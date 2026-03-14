@@ -4,16 +4,25 @@ use crate::settings::{get_settings, ModelUnloadTimeout};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter};
 use transcribe_rs::{
     engines::{
-        moonshine::{ModelVariant, MoonshineEngine, MoonshineModelParams},
+        gigaam::GigaAMEngine,
+        moonshine::{
+            ModelVariant, MoonshineEngine, MoonshineModelParams, MoonshineStreamingEngine,
+            StreamingModelParams,
+        },
         parakeet::{
             ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
+        },
+        sense_voice::{
+            Language as SenseVoiceLanguage, SenseVoiceEngine, SenseVoiceInferenceParams,
+            SenseVoiceModelParams,
         },
         whisper::{WhisperEngine, WhisperInferenceParams},
     },
@@ -52,6 +61,24 @@ enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetEngine),
     Moonshine(MoonshineEngine),
+    MoonshineStreaming(MoonshineStreamingEngine),
+    SenseVoice(SenseVoiceEngine),
+    GigaAM(GigaAMEngine),
+}
+
+/// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
+/// Ensures the loading flag is always reset, even on early returns or panics.
+pub struct LoadingGuard {
+    is_loading: Arc<Mutex<bool>>,
+    loading_condvar: Arc<Condvar>,
+}
+
+impl Drop for LoadingGuard {
+    fn drop(&mut self) {
+        let mut is_loading = self.is_loading.lock().unwrap();
+        *is_loading = false;
+        self.loading_condvar.notify_all();
+    }
 }
 
 #[derive(Clone)]
@@ -104,11 +131,6 @@ impl TranscriptionManager {
                     let timeout_seconds = settings.model_unload_timeout.to_seconds();
 
                     if let Some(limit_seconds) = timeout_seconds {
-                        // Skip polling-based unloading for immediate timeout since it's handled directly in transcribe()
-                        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
-                            continue;
-                        }
-
                         let last = manager_cloned.last_activity.load(Ordering::Relaxed);
                         let now_ms = SystemTime::now()
                             .duration_since(SystemTime::UNIX_EPOCH)
@@ -149,9 +171,33 @@ impl TranscriptionManager {
         Ok(manager)
     }
 
+    /// Lock the engine mutex, recovering from poison if a previous transcription panicked.
+    fn lock_engine(&self) -> MutexGuard<'_, Option<LoadedEngine>> {
+        self.engine.lock().unwrap_or_else(|poisoned| {
+            warn!("Engine mutex was poisoned by a previous panic, recovering");
+            poisoned.into_inner()
+        })
+    }
+
     pub fn is_model_loaded(&self) -> bool {
-        let engine = self.engine.lock().unwrap();
+        let engine = self.lock_engine();
         engine.is_some()
+    }
+
+    /// Atomically check whether a model load is in progress and, if not, mark
+    /// one as starting. Returns a [`LoadingGuard`] whose [`Drop`] impl will
+    /// clear the flag and wake waiters. Returns `None` if a load is already in
+    /// progress.
+    pub fn try_start_loading(&self) -> Option<LoadingGuard> {
+        let mut is_loading = self.is_loading.lock().unwrap();
+        if *is_loading {
+            return None;
+        }
+        *is_loading = true;
+        Some(LoadingGuard {
+            is_loading: self.is_loading.clone(),
+            loading_condvar: self.loading_condvar.clone(),
+        })
     }
 
     pub fn unload_model(&self) -> Result<()> {
@@ -159,12 +205,15 @@ impl TranscriptionManager {
         debug!("Starting to unload model");
 
         {
-            let mut engine = self.engine.lock().unwrap();
+            let mut engine = self.lock_engine();
             if let Some(ref mut loaded_engine) = *engine {
                 match loaded_engine {
                     LoadedEngine::Whisper(ref mut e) => e.unload_model(),
                     LoadedEngine::Parakeet(ref mut e) => e.unload_model(),
                     LoadedEngine::Moonshine(ref mut e) => e.unload_model(),
+                    LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
+                    LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
+                    LoadedEngine::GigaAM(ref mut e) => e.unload_model(),
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -304,11 +353,70 @@ impl TranscriptionManager {
                     })?;
                 LoadedEngine::Moonshine(engine)
             }
+            EngineType::MoonshineStreaming => {
+                let mut engine = MoonshineStreamingEngine::new();
+                engine
+                    .load_model_with_params(&model_path, StreamingModelParams::default())
+                    .map_err(|e| {
+                        let error_msg = format!(
+                            "Failed to load moonshine streaming model {}: {}",
+                            model_id, e
+                        );
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::MoonshineStreaming(engine)
+            }
+            EngineType::SenseVoice => {
+                let mut engine = SenseVoiceEngine::new();
+                engine
+                    .load_model_with_params(&model_path, SenseVoiceModelParams::int8())
+                    .map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load SenseVoice model {}: {}", model_id, e);
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::SenseVoice(engine)
+            }
+            EngineType::GigaAM => {
+                let mut engine = GigaAMEngine::new();
+                engine.load_model(&model_path).map_err(|e| {
+                    let error_msg = format!("Failed to load gigaam model {}: {}", model_id, e);
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.clone()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::GigaAM(engine)
+            }
         };
 
         // Update the current engine and model ID
         {
-            let mut engine = self.engine.lock().unwrap();
+            let mut engine = self.lock_engine();
             *engine = Some(loaded_engine);
         }
         {
@@ -402,7 +510,7 @@ impl TranscriptionManager {
                 is_loading = self.loading_condvar.wait(is_loading).unwrap();
             }
 
-            let engine_guard = self.engine.lock().unwrap();
+            let engine_guard = self.lock_engine();
             if engine_guard.is_none() {
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
@@ -411,59 +519,162 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
-        // Perform transcription with the appropriate engine
+        // Perform transcription with the appropriate engine.
+        // We use catch_unwind to prevent engine panics from poisoning the mutex,
+        // which would make the app hang indefinitely on subsequent operations.
         let result = {
-            let mut engine_guard = self.engine.lock().unwrap();
-            let engine = engine_guard.as_mut().ok_or_else(|| {
-                anyhow::anyhow!(
-                    "Model failed to load after auto-load attempt. Please check your model settings."
-                )
-            })?;
+            let mut engine_guard = self.lock_engine();
 
-            match engine {
-                LoadedEngine::Whisper(whisper_engine) => {
-                    // Normalize language code for Whisper
-                    // Convert zh-Hans and zh-Hant to zh since Whisper uses ISO 639-1 codes
-                    let whisper_language = if settings.selected_language == "auto" {
-                        None
+            // Take the engine out so we own it during transcription.
+            // If the engine panics, we simply don't put it back (effectively unloading it)
+            // instead of poisoning the mutex.
+            let mut engine = match engine_guard.take() {
+                Some(e) => e,
+                None => {
+                    return Err(anyhow::anyhow!(
+                        "Model failed to load after auto-load attempt. Please check your model settings."
+                    ));
+                }
+            };
+
+            // Release the lock before transcribing — no mutex held during the engine call
+            drop(engine_guard);
+
+            let transcribe_result = catch_unwind(AssertUnwindSafe(
+                || -> Result<transcribe_rs::TranscriptionResult> {
+                    match &mut engine {
+                        LoadedEngine::Whisper(whisper_engine) => {
+                            let whisper_language = if settings.selected_language == "auto" {
+                                None
+                            } else {
+                                let normalized = if settings.selected_language == "zh-Hans"
+                                    || settings.selected_language == "zh-Hant"
+                                {
+                                    "zh".to_string()
+                                } else {
+                                    settings.selected_language.clone()
+                                };
+                                Some(normalized)
+                            };
+
+                            let params = WhisperInferenceParams {
+                                language: whisper_language,
+                                translate: settings.translate_to_english,
+                                initial_prompt: if settings.custom_words.is_empty() {
+                                    None
+                                } else {
+                                    Some(settings.custom_words.join(", "))
+                                },
+                                ..Default::default()
+                            };
+
+                            whisper_engine
+                                .transcribe_samples(audio, Some(params))
+                                .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
+                        }
+                        LoadedEngine::Parakeet(parakeet_engine) => {
+                            let params = ParakeetInferenceParams {
+                                timestamp_granularity: TimestampGranularity::Segment,
+                                ..Default::default()
+                            };
+                            parakeet_engine
+                                .transcribe_samples(audio, Some(params))
+                                .map_err(|e| {
+                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
+                                })
+                        }
+                        LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
+                            .transcribe_samples(audio, None)
+                            .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
+                        LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
+                            .transcribe_samples(audio, None)
+                            .map_err(|e| {
+                                anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
+                            }),
+                        LoadedEngine::SenseVoice(sense_voice_engine) => {
+                            let language = match settings.selected_language.as_str() {
+                                "zh" | "zh-Hans" | "zh-Hant" => SenseVoiceLanguage::Chinese,
+                                "en" => SenseVoiceLanguage::English,
+                                "ja" => SenseVoiceLanguage::Japanese,
+                                "ko" => SenseVoiceLanguage::Korean,
+                                "yue" => SenseVoiceLanguage::Cantonese,
+                                _ => SenseVoiceLanguage::Auto,
+                            };
+                            let params = SenseVoiceInferenceParams {
+                                language,
+                                use_itn: true,
+                            };
+                            sense_voice_engine
+                                .transcribe_samples(audio, Some(params))
+                                .map_err(|e| {
+                                    anyhow::anyhow!("SenseVoice transcription failed: {}", e)
+                                })
+                        }
+                        LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
+                            .transcribe_samples(audio, None)
+                            .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
+                    }
+                },
+            ));
+
+            match transcribe_result {
+                Ok(inner_result) => {
+                    // Success or normal error — put the engine back
+                    let mut engine_guard = self.lock_engine();
+                    *engine_guard = Some(engine);
+                    inner_result?
+                }
+                Err(panic_payload) => {
+                    // Engine panicked — do NOT put it back (it's in an unknown state).
+                    // The engine is dropped here, effectively unloading it.
+                    let panic_msg = if let Some(s) = panic_payload.downcast_ref::<&str>() {
+                        s.to_string()
+                    } else if let Some(s) = panic_payload.downcast_ref::<String>() {
+                        s.clone()
                     } else {
-                        let normalized = if settings.selected_language == "zh-Hans"
-                            || settings.selected_language == "zh-Hant"
-                        {
-                            "zh".to_string()
-                        } else {
-                            settings.selected_language.clone()
-                        };
-                        Some(normalized)
+                        "unknown panic".to_string()
                     };
+                    error!(
+                        "Transcription engine panicked: {}. Model has been unloaded.",
+                        panic_msg
+                    );
 
-                    let params = WhisperInferenceParams {
-                        language: whisper_language,
-                        translate: settings.translate_to_english,
-                        ..Default::default()
-                    };
+                    // Clear the model ID so it will be reloaded on next attempt
+                    {
+                        let mut current_model = self
+                            .current_model_id
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner());
+                        *current_model = None;
+                    }
 
-                    whisper_engine
-                        .transcribe_samples(audio, Some(params))
-                        .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))?
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "unloaded".to_string(),
+                            model_id: None,
+                            model_name: None,
+                            error: Some(format!("Engine panicked: {}", panic_msg)),
+                        },
+                    );
+
+                    return Err(anyhow::anyhow!(
+                        "Transcription engine panicked: {}. The model has been unloaded and will reload on next attempt.",
+                        panic_msg
+                    ));
                 }
-                LoadedEngine::Parakeet(parakeet_engine) => {
-                    let params = ParakeetInferenceParams {
-                        timestamp_granularity: TimestampGranularity::Segment,
-                        ..Default::default()
-                    };
-                    parakeet_engine
-                        .transcribe_samples(audio, Some(params))
-                        .map_err(|e| anyhow::anyhow!("Parakeet transcription failed: {}", e))?
-                }
-                LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
-                    .transcribe_samples(audio, None)
-                    .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e))?,
             }
         };
 
-        // Apply word correction if custom words are configured
-        let corrected_text = if !settings.custom_words.is_empty() {
+        // Apply word correction if custom words are configured.
+        // Skip for Whisper models since custom words are already passed as initial_prompt.
+        let is_whisper = self
+            .model_manager
+            .get_model_info(&settings.selected_model)
+            .map(|info| matches!(info.engine_type, EngineType::Whisper))
+            .unwrap_or(false);
+
+        let corrected_result = if !settings.custom_words.is_empty() && !is_whisper {
             apply_custom_words(
                 &result.text,
                 &settings.custom_words,
@@ -474,7 +685,11 @@ impl TranscriptionManager {
         };
 
         // Filter out filler words and hallucinations
-        let filtered_result = filter_transcription_output(&corrected_text);
+        let filtered_result = filter_transcription_output(
+            &corrected_result,
+            &settings.app_language,
+            &settings.custom_filler_words,
+        );
 
         let et = std::time::Instant::now();
         let translation_note = if settings.translate_to_english {

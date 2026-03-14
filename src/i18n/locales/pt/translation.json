@@ -3,11 +3,14 @@
     "settings": "Configurações...",
     "checkUpdates": "Verificar Atualizações...",
     "copyLastTranscript": "Copiar última transcrição",
+    "unloadModel": "Descarregar modelo",
+    "model": "Modelo",
     "quit": "Sair",
     "cancel": "Cancelar"
   },
   "sidebar": {
     "general": "Geral",
+    "models": "Modelos",
     "advanced": "Avançado",
     "postProcessing": "Pós-Processamento",
     "history": "Histórico",
@@ -19,6 +22,8 @@
     "recommended": "Recomendado",
     "download": "Baixar",
     "downloading": "Baixando...",
+    "customModelDescription": "Não suportado oficialmente",
+    "downloadFailed": "Falha no download. Por favor, tente novamente.",
     "modelCard": {
       "accuracy": "precisão",
       "speed": "velocidade"
@@ -50,7 +55,31 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Muito rápido, apenas inglês. Lida bem com sotaques."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultrarrápido, apenas inglês"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Rápido, apenas inglês. Bom equilíbrio entre velocidade e precisão."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Apenas inglês. Alta qualidade."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Otimizado para mandarim taiwanês. Suporte para alternância de código."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Muito rápido. Chinês, inglês, japonês, coreano, cantonês."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Reconhecimento de voz em russo. Rápido e preciso."
       }
     },
     "errors": {
@@ -79,14 +108,8 @@
     }
   },
   "modelSelector": {
-    "welcome": "Bem-vindo ao Handy!",
-    "downloadPrompt": "Baixe um modelo abaixo para começar a transcrever.",
-    "availableModels": "Modelos Disponíveis",
-    "downloadModels": "Baixar Modelos",
-    "chooseModel": "Escolher um Modelo",
+    "custom": "Personalizado",
     "active": "Ativo",
-    "download": "Baixar",
-    "downloadSize": "Tamanho do download",
     "noModelsAvailable": "Nenhum modelo disponível",
     "extracting": "Extraindo {{modelName}}...",
     "extractingMultiple": "Extraindo {{count}} modelos...",
@@ -99,9 +122,25 @@
     "modelError": "Erro no Modelo",
     "modelUnloaded": "Modelo Descarregado",
     "noModelDownloadRequired": "Sem Modelo - Download Necessário",
-    "deleteModel": "Excluir {{modelName}}"
+    "deleteModel": "Excluir {{modelName}}",
+    "switching": "Alternando...",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Suporta vários idiomas de entrada",
+      "multiLanguage": "Multi-idioma",
+      "translation": "Pode traduzir para inglês",
+      "translate": "Traduzir para inglês",
+      "singleLanguage": "Suporta apenas este idioma",
+      "languageOnly": "Apenas {{language}}"
+    },
+    "cancel": "Cancelar",
+    "cancelDownload": "Cancelar download"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Configurações de {{model}}",
+      "noSettingsNeeded": "Este modelo funciona automaticamente sem necessidade de configuração."
+    },
     "general": {
       "title": "Geral",
       "shortcut": {
@@ -119,6 +158,10 @@
           "cancel": {
             "name": "Atalho de Cancelar",
             "description": "O atalho de teclado para cancelar a gravação atual."
+          },
+          "transcribe_with_post_process": {
+            "name": "Tecla de Pós-Processamento",
+            "description": "Opcional: Uma tecla de atalho dedicada que sempre aplica pós-processamento com IA à sua transcrição."
           }
         },
         "errors": {
@@ -139,6 +182,24 @@
         "label": "Pressionar para Falar",
         "description": "Segure para gravar, solte para parar"
       }
+    },
+    "models": {
+      "title": "Modelos de Transcrição",
+      "description": "Selecione um modelo de transcrição ou baixe modelos adicionais. Diferentes modelos oferecem diferentes níveis de precisão e velocidade.",
+      "downloaded": "Baixados",
+      "available": "Disponíveis para Download",
+      "deleteConfirm": "Tem certeza de que deseja excluir {{modelName}}? Você precisará baixá-lo novamente para usá-lo.",
+      "deleteActiveConfirm": "{{modelName}} é o seu modelo ativo. Excluí-lo interromperá as transcrições até que você selecione um novo modelo. Tem certeza?",
+      "deleteTitle": "Excluir Modelo",
+      "filters": {
+        "all": "Todos",
+        "multiLanguage": "Multi-idioma",
+        "translation": "Tradução",
+        "allLanguages": "Todos os Idiomas"
+      },
+      "noModelsMatch": "Nenhum modelo corresponde a este filtro.",
+      "yourModels": "Modelos baixados",
+      "availableModels": "Disponíveis para download"
     },
     "sound": {
       "title": "Som",
@@ -184,6 +245,10 @@
         "label": "Iniciar na Inicialização",
         "description": "Iniciar automaticamente o Handy quando você fizer login no seu computador."
       },
+      "showTrayIcon": {
+        "label": "Mostrar ícone na bandeja",
+        "description": "Exibir o ícone do Handy na bandeja do sistema."
+      },
       "overlay": {
         "title": "Posição da Sobreposição",
         "description": "Exibir sobreposição de feedback visual durante gravação e transcrição. No Linux, 'Nenhum' é recomendado.",
@@ -201,7 +266,16 @@
           "clipboardCtrlShiftV": "Área de Transferência (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Área de Transferência (Shift+Insert)",
           "direct": "Direto",
-          "none": "Nenhum"
+          "none": "Nenhum",
+          "externalScript": "Script externo"
+        },
+        "externalScriptPlaceholder": "/caminho/para/seu/script.sh"
+      },
+      "typingTool": {
+        "title": "Ferramenta de digitação",
+        "description": "Escolha qual ferramenta de digitação do Linux usar para o método de colagem direta. Auto detectará e usará automaticamente a melhor ferramenta disponível para o seu sistema.",
+        "options": {
+          "auto": "Auto (Recomendado)"
         }
       },
       "clipboardHandling": {
@@ -210,6 +284,17 @@
         "options": {
           "dontModify": "Não Modificar Área de Transferência",
           "copyToClipboard": "Copiar para Área de Transferência"
+        }
+      },
+      "autoSubmit": {
+        "title": "Envio automático",
+        "description": "Envia automaticamente a combinação de teclas selecionada após a inserção do texto. Cmd+Enter aplica-se no macOS, enquanto Windows/Linux usam Super+Enter.",
+        "options": {
+          "off": "Desativado",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -236,12 +321,15 @@
         "description": "Adicione palavras que são frequentemente mal ouvidas ou mal escritas durante a transcrição. O sistema irá automaticamente corrigir palavras semelhantes para corresponder à sua lista.",
         "placeholder": "Adicionar uma palavra",
         "add": "Adicionar",
-        "remove": "Remover {{word}}"
+        "remove": "Remover {{word}}",
+        "duplicate": "\"{{word}}\" já existe"
       }
     },
     "postProcessing": {
       "title": "Pós-Processamento",
-      "disabledNotice": "O pós-processamento está atualmente desabilitado. Habilite-o nas configurações de Depuração para configurar.",
+      "hotkey": {
+        "title": "Tecla de atalho"
+      },
       "api": {
         "title": "API (Compatível com OpenAI)",
         "provider": {
@@ -365,10 +453,19 @@
         "label": "Adicionar Espaço Final",
         "description": "Adicionar um espaço após a transcrição colada"
       },
+      "keyboardImplementation": {
+        "title": "Implementação do Teclado",
+        "description": "Escolha o sistema responsável pelos atalhos de teclado.",
+        "bindingsReset": "Os atalhos de teclado eram incompatíveis e foram redefinidos para os padrões"
+      },
       "paths": {
         "appData": "Dados do App:",
         "models": "Modelos:",
         "settings": "Configurações:"
+      },
+      "pasteDelay": {
+        "title": "Atraso de colagem",
+        "description": "Atraso antes de enviar a tecla de colar (em milissegundos). Aumente se o texto errado estiver sendo colado."
       }
     },
     "about": {
@@ -444,13 +541,17 @@
     "dismiss": "Dispensar"
   },
   "errors": {
-    "loadDirectory": "Erro ao carregar diretório: {{error}}"
+    "loadDirectory": "Erro ao carregar diretório: {{error}}",
+    "recordingFailed": "Falha ao iniciar a gravação: {{error}}",
+    "modelLoadFailed": "Falha ao carregar o modelo: {{model}}",
+    "modelLoadFailedUnknown": "modelo desconhecido"
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",
     "description": "Alterar o idioma da interface do Handy"
   },
   "overlay": {
-    "transcribing": "Transcrevendo..."
+    "transcribing": "Transcrevendo...",
+    "processing": "Processando..."
   }
 }

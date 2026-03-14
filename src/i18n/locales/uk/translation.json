@@ -3,11 +3,14 @@
     "settings": "Налаштування...",
     "checkUpdates": "Перевірити оновлення...",
     "copyLastTranscript": "Скопіювати останню транскрипцію",
+    "unloadModel": "Вивантажити модель",
+    "model": "Модель",
     "quit": "Вийти",
     "cancel": "Скасувати"
   },
   "sidebar": {
     "general": "Загальні",
+    "models": "Моделі",
     "advanced": "Розширені",
     "postProcessing": "Постобробка",
     "history": "Історія",
@@ -19,6 +22,8 @@
     "recommended": "Рекомендовано",
     "download": "Завантажити",
     "downloading": "Завантаження...",
+    "customModelDescription": "Офіційно не підтримується",
+    "downloadFailed": "Завантаження не вдалося. Будь ласка, спробуйте ще раз.",
     "modelCard": {
       "accuracy": "точність",
       "speed": "швидкість"
@@ -50,7 +55,31 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Дуже швидкий, лише англійська. Добре справляється з акцентами."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Надшвидкий, лише англійська"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Швидкий, лише англійська. Добрий баланс швидкості та точності."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Лише англійська. Висока якість."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Оптимізовано для тайванської мандаринської. Підтримка перемикання мов."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Дуже швидкий. Китайська, англійська, японська, корейська, кантонська."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Розпізнавання російського мовлення. Швидко і точно."
       }
     },
     "errors": {
@@ -71,18 +100,16 @@
       "grant": "Надати дозвіл",
       "granted": "Надано",
       "waiting": "Очікування...",
-      "allGranted": "Все готово!"
+      "allGranted": "Все готово!",
+      "errors": {
+        "checkFailed": "Не вдалося перевірити дозволи. Будь ласка, спробуйте ще раз.",
+        "requestFailed": "Не вдалося запросити дозвіл. Будь ласка, спробуйте ще раз."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "Ласкаво просимо до Handy!",
-    "downloadPrompt": "Завантажте модель нижче, щоб почати транскрипцію.",
-    "availableModels": "Доступні моделі",
-    "downloadModels": "Завантажити моделі",
-    "chooseModel": "Оберіть модель",
+    "custom": "Користувацька",
     "active": "Активна",
-    "download": "Завантажити",
-    "downloadSize": "Розмір завантаження",
     "noModelsAvailable": "Немає доступних моделей",
     "extracting": "Розпакування {{modelName}}...",
     "extractingMultiple": "Розпакування {{count}} моделей...",
@@ -95,9 +122,25 @@
     "modelError": "Помилка моделі",
     "modelUnloaded": "Модель вивантажена",
     "noModelDownloadRequired": "Немає моделі - потрібно завантажити",
-    "deleteModel": "Видалити {{modelName}}"
+    "deleteModel": "Видалити {{modelName}}",
+    "switching": "Перемикання...",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Підтримує кілька мов введення",
+      "multiLanguage": "Багатомовна",
+      "translation": "Може перекладати на англійську",
+      "translate": "Перекласти на англійську",
+      "singleLanguage": "Підтримує лише цю мову",
+      "languageOnly": "Лише {{language}}"
+    },
+    "cancel": "Скасувати",
+    "cancelDownload": "Скасувати завантаження"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Налаштування {{model}}",
+      "noSettingsNeeded": "Ця модель працює автоматично без потреби в налаштуванні."
+    },
     "general": {
       "title": "Загальні",
       "shortcut": {
@@ -115,6 +158,10 @@
           "cancel": {
             "name": "Гаряча клавіша скасування",
             "description": "Комбінація клавіш для скасування поточного запису."
+          },
+          "transcribe_with_post_process": {
+            "name": "Гаряча клавіша постобробки",
+            "description": "Необов'язково: Спеціальна гаряча клавіша, яка завжди застосовує AI-постобробку до вашої транскрипції."
           }
         },
         "errors": {
@@ -135,6 +182,24 @@
         "label": "Утримувати для запису (Push To Talk)",
         "description": "Утримуйте для запису, відпустіть для зупинки"
       }
+    },
+    "models": {
+      "title": "Моделі транскрипції",
+      "description": "Виберіть модель транскрипції або завантажте додаткові моделі. Різні моделі пропонують різні рівні точності та швидкості.",
+      "downloaded": "Завантажено",
+      "available": "Доступні для завантаження",
+      "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
+      "deleteActiveConfirm": "{{modelName}} — ваша активна модель. Видалення зупинить транскрипцію, доки ви не оберете нову модель. Ви впевнені?",
+      "deleteTitle": "Видалити модель",
+      "filters": {
+        "all": "Усі",
+        "multiLanguage": "Багатомовні",
+        "translation": "Переклад",
+        "allLanguages": "Усі мови"
+      },
+      "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
+      "yourModels": "Завантажені моделі",
+      "availableModels": "Доступні для завантаження"
     },
     "sound": {
       "title": "Звук",
@@ -180,6 +245,10 @@
         "label": "Запуск при старті системи",
         "description": "Автоматично запускати Handy при вході в систему"
       },
+      "showTrayIcon": {
+        "label": "Показати значок у треї",
+        "description": "Відображати значок Handy у системному треї."
+      },
       "overlay": {
         "title": "Позиція оверлею",
         "description": "Показувати візуальний оверлей під час запису та транскрипції. На Linux рекомендовано «Немає»",
@@ -197,7 +266,16 @@
           "clipboardCtrlShiftV": "Буфер обміну (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Буфер обміну (Shift+Insert)",
           "direct": "Прямий",
-          "none": "Немає"
+          "none": "Немає",
+          "externalScript": "Зовнішній скрипт"
+        },
+        "externalScriptPlaceholder": "/path/to/your/script.sh"
+      },
+      "typingTool": {
+        "title": "Інструмент введення",
+        "description": "Виберіть, який інструмент введення в Linux використовувати для методу прямого вставлення. Auto автоматично визначить і використає найкращий доступний інструмент для вашої системи.",
+        "options": {
+          "auto": "Auto (Рекомендовано)"
         }
       },
       "clipboardHandling": {
@@ -206,6 +284,17 @@
         "options": {
           "dontModify": "Не змінювати буфер обміну",
           "copyToClipboard": "Копіювати в буфер обміну"
+        }
+      },
+      "autoSubmit": {
+        "title": "Автоматичне надсилання",
+        "description": "Автоматично надсилає вибрану комбінацію клавіш після вставки тексту. Cmd+Enter застосовується на macOS, тоді як Windows/Linux використовують Super+Enter.",
+        "options": {
+          "off": "Вимк.",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -232,12 +321,15 @@
         "description": "Додайте слова, які часто неправильно розпізнаються під час транскрипції. Система автоматично виправлятиме схожі за звучанням слова відповідно до вашого списку.",
         "placeholder": "Додати слово",
         "add": "Додати",
-        "remove": "Видалити {{word}}"
+        "remove": "Видалити {{word}}",
+        "duplicate": "\"{{word}}\" вже існує"
       }
     },
     "postProcessing": {
       "title": "Постобробка",
-      "disabledNotice": "Постобробка наразі вимкнена. Увімкніть її в розділі Дебаг.",
+      "hotkey": {
+        "title": "Гаряча клавіша"
+      },
       "api": {
         "title": "API (сумісний з OpenAI)",
         "provider": {
@@ -361,10 +453,19 @@
         "label": "Додавати пробіл в кінці",
         "description": "Додавати пробіл після вставленої транскрипції"
       },
+      "keyboardImplementation": {
+        "title": "Реалізація клавіатури",
+        "description": "Оберіть бекенд для клавіатурних скорочень.",
+        "bindingsReset": "Клавіатурні скорочення були несумісні та скинуті до значень за замовчуванням"
+      },
       "paths": {
         "appData": "Дані програми:",
         "models": "Моделі:",
         "settings": "Налаштування:"
+      },
+      "pasteDelay": {
+        "title": "Затримка вставки",
+        "description": "Затримка перед надсиланням натискання клавіші вставки (у мілісекундах). Збільшіть, якщо вставляється неправильний текст."
       }
     },
     "about": {
@@ -440,13 +541,17 @@
     "dismiss": "Закрити"
   },
   "errors": {
-    "loadDirectory": "Помилка завантаження папки: {{error}}"
+    "loadDirectory": "Помилка завантаження папки: {{error}}",
+    "recordingFailed": "Не вдалося розпочати запис: {{error}}",
+    "modelLoadFailed": "Не вдалося завантажити модель: {{model}}",
+    "modelLoadFailedUnknown": "невідома модель"
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",
     "description": "Змінити мову інтерфейсу Handy"
   },
   "overlay": {
-    "transcribing": "Обробка..."
+    "transcribing": "Обробка...",
+    "processing": "Постобробка..."
   }
 }

@@ -5,7 +5,6 @@ import type { ModelOption } from "./types";
 import type { DropdownOption } from "../../ui/Dropdown";
 
 type PostProcessProviderState = {
-  enabled: boolean;
   providerOptions: DropdownOption[];
   selectedProviderId: string;
   selectedProvider: PostProcessProvider | undefined;
@@ -42,8 +41,6 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     fetchPostProcessModels,
     postProcessModelOptions,
   } = useSettings();
-
-  const enabled = settings?.post_process_enabled || false;
 
   // Settings are guaranteed to have providers after migration
   const providers = settings?.post_process_providers || [];
@@ -92,9 +89,31 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
         }
       }
 
-      void setPostProcessProvider(providerId);
+      await setPostProcessProvider(providerId);
+
+      // Auto-fetch available models for the new provider so the model dropdown
+      // reflects what's actually valid. Without this, a stale model value from
+      // a previous provider/base_url can persist and silently 404 at runtime.
+      // Skip when the provider isn't configured yet (no API key / empty base URL)
+      // to avoid unnecessary backend errors.
+      if (providerId !== APPLE_PROVIDER_ID) {
+        const provider = providers.find((p) => p.id === providerId);
+        const apiKey = settings?.post_process_api_keys?.[providerId] ?? "";
+        const hasBaseUrl = (provider?.base_url ?? "").trim() !== "";
+        const hasApiKey = apiKey.trim() !== "";
+
+        if (provider?.id === "custom" ? hasBaseUrl : hasApiKey) {
+          void fetchPostProcessModels(providerId);
+        }
+      }
     },
-    [selectedProviderId, setPostProcessProvider],
+    [
+      selectedProviderId,
+      setPostProcessProvider,
+      fetchPostProcessModels,
+      providers,
+      settings,
+    ],
   );
 
   const handleBaseUrlChange = useCallback(
@@ -191,7 +210,6 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   // No automatic fetching - user must click refresh button
 
   return {
-    enabled,
     providerOptions,
     selectedProviderId,
     selectedProvider,
