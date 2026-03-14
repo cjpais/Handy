@@ -7,7 +7,7 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent } from "./lib/types/events";
+import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -97,8 +97,21 @@ function App() {
 
   // Listen for recording errors from the backend and show a toast
   useEffect(() => {
-    const unlisten = listen<string>("recording-error", (event) => {
-      toast.error(t("errors.recordingFailed", { error: event.payload }));
+    const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
+      const { error_type, detail } = event.payload;
+
+      if (error_type === "microphone_permission_denied") {
+        const currentPlatform = platform();
+        const platformKey = `errors.micPermissionDenied.${currentPlatform}`;
+        const description = t(platformKey, {
+          defaultValue: t("errors.micPermissionDenied.generic"),
+        });
+        toast.error(t("errors.micPermissionDeniedTitle"), { description });
+      } else {
+        toast.error(
+          t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
+        );
+      }
     });
     return () => {
       unlisten.then((fn) => fn());
