@@ -349,6 +349,9 @@ export const useModelStore = create<ModelsStore>()(
           set(
             produce((state) => {
               delete state.extractingModels[modelId];
+              delete state.downloadingModels[modelId];
+              delete state.downloadProgress[modelId];
+              delete state.downloadStats[modelId];
               state.error = `Failed to extract model: ${event.payload.error}`;
             }),
           );
