@@ -86,14 +86,6 @@ jobs:
           # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
           targets: ${{ contains(inputs.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      # whisper-rs-sys CMake builds create deeply nested paths that exceed
-      # Windows MAX_PATH (260 chars). Use a short target dir so all build
-      # artifact paths stay under the limit.
-      - name: Shorten build path (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: echo "CARGO_TARGET_DIR=D:\t" >> $env:GITHUB_ENV
-
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
@@ -261,6 +253,15 @@ jobs:
             patched_platform="${{ inputs.asset-prefix }}_${patched_platform}"
           fi
           echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
+
+      # whisper-rs-sys CMake builds create deeply nested paths that exceed
+      # Windows MAX_PATH (260 chars). Use a short target dir so all build
+      # artifact paths stay under the limit. Set after cargo install steps
+      # so it only affects the main build.
+      - name: Shorten build path (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "CARGO_TARGET_DIR=D:\t" >> $env:GITHUB_ENV
 
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
