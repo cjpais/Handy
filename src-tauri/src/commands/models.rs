@@ -77,16 +77,15 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
         return Err(format!("Model not downloaded: {}", model_id));
     }
 
-    // Update settings
     let settings = get_settings(app);
     let unload_timeout = settings.model_unload_timeout;
-    let mut settings = settings;
-    settings.selected_model = model_id.to_string();
-    write_settings(app, settings);
 
     // Skip eager loading if unload is set to "Immediately" — the model
     // will be loaded on-demand during the next transcription.
     if unload_timeout == ModelUnloadTimeout::Immediately {
+        let mut settings = settings;
+        settings.selected_model = model_id.to_string();
+        write_settings(app, settings);
         log::info!(
             "Model selection changed to {} (not loading — unload set to Immediately).",
             model_id
@@ -94,10 +93,14 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
         return Ok(());
     }
 
-    // Load the model in the transcription manager
+    // Load the model first, only persist on success
     transcription_manager
         .load_model(model_id)
         .map_err(|e| e.to_string())?;
+
+    let mut settings = settings;
+    settings.selected_model = model_id.to_string();
+    write_settings(app, settings);
 
     Ok(())
 }
