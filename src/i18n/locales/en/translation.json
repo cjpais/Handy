@@ -513,6 +513,7 @@
     "checkForUpdates": "Check for updates"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
