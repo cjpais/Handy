@@ -92,6 +92,20 @@ jobs:
           workspaces: "./src-tauri -> target"
           key: ${{ inputs.platform }}-${{ inputs.target }}
 
+      # whisper-rs-sys CMake builds create deeply nested paths that exceed
+      # Windows MAX_PATH (260 chars). Junction the target dir to a short
+      # path so all build artifacts stay under the limit.
+      - name: Shorten build path (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path D:\t | Out-Null
+          if (Test-Path src-tauri\target) {
+            Copy-Item -Path src-tauri\target\* -Destination D:\t -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path src-tauri\target -Recurse -Force
+          }
+          cmd /c "mklink /J src-tauri\target D:\t"
+
       - name: install dependencies (ubuntu 24.04 x64)
         if: contains(inputs.platform, 'ubuntu-24.04') && !contains(inputs.platform, 'arm')
         run: |
