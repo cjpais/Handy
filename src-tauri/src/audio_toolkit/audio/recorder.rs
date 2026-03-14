@@ -264,7 +264,10 @@ impl AudioRecorder {
                 }
             }
 
-            if sample_tx.send(AudioChunk::Samples(output_buffer.clone())).is_err() {
+            if sample_tx
+                .send(AudioChunk::Samples(output_buffer.clone()))
+                .is_err()
+            {
                 log::error!("Failed to send samples");
             }
         };
@@ -432,9 +435,7 @@ fn run_consumer(
                             }
                             Ok(AudioChunk::EndOfStream) => break,
                             Err(_) => {
-                                log::warn!(
-                                    "Timed out waiting for EndOfStream from audio callback"
-                                );
+                                log::warn!("Timed out waiting for EndOfStream from audio callback");
                                 break;
                             }
                         }
