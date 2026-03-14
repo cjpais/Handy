@@ -80,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "俄語語音辨識。快速且準確。"
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "速度極快。支援英語、德語、西班牙語、法語。支援翻譯。"
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "準確的多語言模型。25種歐洲語言。支援翻譯。"
       }
     },
     "errors": {
