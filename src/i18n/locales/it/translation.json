@@ -541,6 +541,13 @@
   },
   "errors": {
     "loadDirectory": "Errore di caricamento cartella: {{error}}",
+    "micPermissionDeniedTitle": "Accesso al microfono negato",
+    "micPermissionDenied": {
+      "generic": "L'accesso al microfono è stato negato dal sistema operativo. Concedi l'autorizzazione al microfono nelle impostazioni di sistema.",
+      "windows": "Abilita l'accesso al microfono in Impostazioni → Privacy e sicurezza → Microfono (incluso l'accesso delle app desktop).",
+      "macos": "Concedi l'accesso al microfono in Impostazioni di Sistema → Privacy e sicurezza → Microfono.",
+      "linux": "Concedi l'accesso al microfono nelle impostazioni audio o sulla privacy del tuo sistema."
+    },
     "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
     "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
     "modelLoadFailedUnknown": "modello sconosciuto"

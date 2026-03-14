@@ -541,6 +541,13 @@
   },
   "errors": {
     "loadDirectory": "Błąd wczytywania katalogu: {{error}}",
+    "micPermissionDeniedTitle": "Odmowa dostępu do mikrofonu",
+    "micPermissionDenied": {
+      "generic": "System operacyjny odmówił dostępu do mikrofonu. Przyznaj uprawnienia do mikrofonu w ustawieniach systemowych.",
+      "windows": "Włącz dostęp do mikrofonu w Ustawienia → Prywatność i zabezpieczenia → Mikrofon (w tym dostęp aplikacji klasycznych).",
+      "macos": "Przyznaj dostęp do mikrofonu w Ustawienia systemowe → Prywatność i ochrona → Mikrofon.",
+      "linux": "Przyznaj dostęp do mikrofonu w ustawieniach dźwięku lub prywatności systemu."
+    },
     "recordingFailed": "Nie udało się rozpocząć nagrywania: {{error}}",
     "modelLoadFailed": "Nie udało się załadować modelu: {{model}}",
     "modelLoadFailedUnknown": "nieznany model"

@@ -541,6 +541,13 @@
   },
   "errors": {
     "loadDirectory": "Chyba při načítání adresáře: {{error}}",
+    "micPermissionDeniedTitle": "Přístup k mikrofonu byl odepřen",
+    "micPermissionDenied": {
+      "generic": "Přístup k mikrofonu byl odepřen operačním systémem. Povolte prosím přístup k mikrofonu v nastavení systému.",
+      "windows": "Povolte přístup k mikrofonu v Nastavení → Soukromí a zabezpečení → Mikrofon (včetně přístupu desktopových aplikací).",
+      "macos": "Povolte přístup k mikrofonu v Nastavení systému → Soukromí a zabezpečení → Mikrofon.",
+      "linux": "Povolte přístup k mikrofonu v nastavení zvuku nebo soukromí vašeho systému."
+    },
     "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
     "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
     "modelLoadFailedUnknown": "neznámý model"

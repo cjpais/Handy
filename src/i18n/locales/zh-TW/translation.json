@@ -541,6 +541,13 @@
   },
   "errors": {
     "loadDirectory": "載入目錄時發生錯誤: {{error}}",
+    "micPermissionDeniedTitle": "麥克風存取被拒絕",
+    "micPermissionDenied": {
+      "generic": "作業系統拒絕了麥克風存取。請在系統設定中授予麥克風權限。",
+      "windows": "在設定 → 隱私與安全性 → 麥克風（包括桌面應用程式存取）中啟用麥克風存取。",
+      "macos": "在系統設定 → 隱私與安全性 → 麥克風中授予麥克風存取權限。",
+      "linux": "在系統的聲音或隱私設定中授予麥克風存取權限。"
+    },
     "recordingFailed": "錄音啟動失敗: {{error}}",
     "modelLoadFailed": "載入模型失敗: {{model}}",
     "modelLoadFailedUnknown": "未知模型"

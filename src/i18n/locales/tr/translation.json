@@ -541,6 +541,13 @@
   },
   "errors": {
     "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}",
+    "micPermissionDeniedTitle": "Mikrofon erişimi reddedildi",
+    "micPermissionDenied": {
+      "generic": "Mikrofon erişimi işletim sistemi tarafından reddedildi. Lütfen sistem ayarlarından mikrofon iznini verin.",
+      "windows": "Ayarlar → Gizlilik ve güvenlik → Mikrofon (masaüstü uygulama erişimi dahil) bölümünden mikrofon erişimini etkinleştirin.",
+      "macos": "Sistem Ayarları → Gizlilik ve Güvenlik → Mikrofon bölümünden mikrofon erişimini verin.",
+      "linux": "Sisteminizin ses veya gizlilik ayarlarından mikrofon erişimini verin."
+    },
     "recordingFailed": "Kayıt başlatılamadı: {{error}}",
     "modelLoadFailed": "Model yüklenemedi: {{model}}",
     "modelLoadFailedUnknown": "bilinmeyen model"
