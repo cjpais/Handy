@@ -5,7 +5,7 @@ use crate::settings::{get_settings, write_settings};
 use log::warn;
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::{process::Command, sync::Arc};
+use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
 #[cfg(target_os = "windows")]
@@ -135,6 +135,7 @@ pub fn get_windows_microphone_permission_status() -> WindowsMicrophonePermission
 pub fn open_microphone_privacy_settings() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
+        use std::process::Command;
         Command::new("cmd")
             .args(["/C", "start", "", "ms-settings:privacy-microphone"])
             .spawn()

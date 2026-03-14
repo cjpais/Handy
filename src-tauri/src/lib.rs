@@ -21,6 +21,7 @@ mod tray_i18n;
 mod utils;
 
 pub use cli::CliArgs;
+#[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
@@ -110,6 +111,7 @@ fn show_main_window(app: &AppHandle) {
     );
 }
 
+#[allow(unused_variables)]
 fn should_force_show_permissions_window(app: &AppHandle) -> bool {
     #[cfg(target_os = "windows")]
     {
@@ -401,6 +403,7 @@ pub fn run(cli_args: CliArgs) {
         )
         .expect("Failed to export typescript bindings");
 
+    #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
         .device_event_filter(tauri::DeviceEventFilter::Always)
         .plugin(tauri_plugin_dialog::init())
@@ -526,12 +529,11 @@ pub fn run(cli_args: CliArgs) {
                 api.prevent_close();
                 let _res = window.hide();
 
-                let settings = get_settings(&window.app_handle());
-                let tray_visible =
-                    settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
-
                 #[cfg(target_os = "macos")]
                 {
+                    let settings = get_settings(&window.app_handle());
+                    let tray_visible =
+                        settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
                     if tray_visible {
                         // Tray is available: hide the dock icon, app lives in the tray
                         let res = window
