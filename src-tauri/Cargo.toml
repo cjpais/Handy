@@ -69,7 +69,7 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
 transcribe-rs = { git = "https://github.com/cjpais/transcribe-rs", branch = "whisper-rs-0.16.0", features = ["whisper", "onnx"] }
-handy-keys = "0.2.3"
+handy-keys = "0.2.4"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
