@@ -261,7 +261,7 @@ jobs:
       - name: Shorten build path (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: echo "CARGO_TARGET_DIR=D:\t" >> $env:GITHUB_ENV
+        run: echo "CARGO_TARGET_DIR=D:\a\ct" >> $env:GITHUB_ENV
 
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
@@ -374,6 +374,6 @@ jobs:
           # CARGO_TARGET_DIR is set to D:\t on Windows to avoid MAX_PATH issues.
           # Default Windows builds place bundles under release/, but cross-compiles (ARM64) nest under target/<triple>/release.
           path: |
-            D:\t\${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}\bundle\msi\*.msi
-            D:\t\${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}\bundle\nsis\*.exe
+            D:\a\ct\${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}\bundle\msi\*.msi
+            D:\a\ct\${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}\bundle\nsis\*.exe
           retention-days: 30
