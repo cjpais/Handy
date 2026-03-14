@@ -3,6 +3,7 @@ use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::process::Command;
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -47,6 +48,39 @@ struct ChatMessageResponse {
     content: Option<String>,
 }
 
+/// Fetch a fresh access token from gcloud CLI for Vertex AI authentication
+fn fetch_gcloud_access_token() -> Result<String, String> {
+    let output = Command::new("gcloud")
+        .args(["auth", "print-access-token"])
+        .output()
+        .map_err(|e| format!("Failed to run gcloud CLI: {}. Is gcloud installed?", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!(
+            "gcloud auth failed: {}. Run 'gcloud auth login' first.",
+            stderr.trim()
+        ));
+    }
+
+    let token = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if token.is_empty() {
+        return Err("gcloud returned empty token. Run 'gcloud auth login' first.".to_string());
+    }
+
+    Ok(token)
+}
+
+/// Resolve the API key for a provider. Vertex AI uses gcloud token instead of static key.
+fn resolve_api_key(provider: &PostProcessProvider, api_key: &str) -> Result<String, String> {
+    if provider.id == "vertex_ai" {
+        debug!("Fetching gcloud access token for Vertex AI");
+        fetch_gcloud_access_token()
+    } else {
+        Ok(api_key.to_string())
+    }
+}
+
 /// Build headers for API requests based on provider type
 fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<HeaderMap, String> {
     let mut headers = HeaderMap::new();
@@ -72,6 +106,13 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
                     .map_err(|e| format!("Invalid API key header value: {}", e))?,
             );
             headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
+        } else if provider.id == "azure_openai" {
+            // Azure OpenAI uses api-key header, not Bearer
+            headers.insert(
+                "api-key",
+                HeaderValue::from_str(api_key)
+                    .map_err(|e| format!("Invalid API key header value: {}", e))?,
+            );
         } else {
             headers.insert(
                 AUTHORIZATION,
@@ -116,12 +157,23 @@ pub async fn send_chat_completion_with_schema(
     system_prompt: Option<String>,
     json_schema: Option<Value>,
 ) -> Result<Option<String>, String> {
+    let resolved_key = resolve_api_key(provider, &api_key)?;
     let base_url = provider.base_url.trim_end_matches('/');
-    let url = format!("{}/chat/completions", base_url);
+
+    // Azure OpenAI uses a different URL format with api-version query param
+    let url = if provider.id == "azure_openai" {
+        format!(
+            "{}/chat/completions?api-version={}",
+            base_url,
+            provider.api_version.as_deref().unwrap_or("2025-01-01-preview")
+        )
+    } else {
+        format!("{}/chat/completions", base_url)
+    };
 
     debug!("Sending chat completion request to: {}", url);
 
-    let client = create_client(provider, &api_key)?;
+    let client = create_client(provider, &resolved_key)?;
 
     // Build messages vector
     let mut messages = Vec::new();
@@ -192,12 +244,23 @@ pub async fn fetch_models(
     provider: &PostProcessProvider,
     api_key: String,
 ) -> Result<Vec<String>, String> {
+    let resolved_key = resolve_api_key(provider, &api_key)?;
     let base_url = provider.base_url.trim_end_matches('/');
-    let url = format!("{}/models", base_url);
+
+    // Azure OpenAI uses a different URL format with api-version query param
+    let url = if provider.id == "azure_openai" {
+        format!(
+            "{}/models?api-version={}",
+            base_url,
+            provider.api_version.as_deref().unwrap_or("2025-01-01-preview")
+        )
+    } else {
+        format!("{}/models", base_url)
+    };
 
     debug!("Fetching models from: {}", url);
 
-    let client = create_client(provider, &api_key)?;
+    let client = create_client(provider, &resolved_key)?;
 
     let response = client
         .get(&url)
