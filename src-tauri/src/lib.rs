@@ -234,6 +234,25 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             "quit" => {
                 app.exit(0);
             }
+            id if id.starts_with("model_select:") => {
+                let model_id = id.strip_prefix("model_select:").unwrap().to_string();
+                let current_model = settings::get_settings(app).selected_model;
+                if model_id == current_model {
+                    return;
+                }
+                let app_clone = app.clone();
+                std::thread::spawn(move || {
+                    match commands::models::switch_active_model(&app_clone, &model_id) {
+                        Ok(()) => {
+                            log::info!("Model switched to {} via tray.", model_id);
+                        }
+                        Err(e) => {
+                            log::error!("Failed to switch model via tray: {}", e);
+                        }
+                    }
+                    tray::update_tray_menu(&app_clone, &tray::TrayIconState::Idle, None);
+                });
+            }
             _ => {}
         })
         .build(app_handle)

@@ -46,6 +46,21 @@ enum LoadedEngine {
     GigaAM(GigaAMEngine),
 }
 
+/// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
+/// Ensures the loading flag is always reset, even on early returns or panics.
+pub struct LoadingGuard {
+    is_loading: Arc<Mutex<bool>>,
+    loading_condvar: Arc<Condvar>,
+}
+
+impl Drop for LoadingGuard {
+    fn drop(&mut self) {
+        let mut is_loading = self.is_loading.lock().unwrap();
+        *is_loading = false;
+        self.loading_condvar.notify_all();
+    }
+}
+
 #[derive(Clone)]
 pub struct TranscriptionManager {
     engine: Arc<Mutex<Option<LoadedEngine>>>,
@@ -96,11 +111,6 @@ impl TranscriptionManager {
                     let timeout_seconds = settings.model_unload_timeout.to_seconds();
 
                     if let Some(limit_seconds) = timeout_seconds {
-                        // Skip polling-based unloading for immediate timeout since it's handled directly in transcribe()
-                        if settings.model_unload_timeout == ModelUnloadTimeout::Immediately {
-                            continue;
-                        }
-
                         let last = manager_cloned.last_activity.load(Ordering::Relaxed);
                         let now_ms = SystemTime::now()
                             .duration_since(SystemTime::UNIX_EPOCH)
@@ -152,6 +162,22 @@ impl TranscriptionManager {
     pub fn is_model_loaded(&self) -> bool {
         let engine = self.lock_engine();
         engine.is_some()
+    }
+
+    /// Atomically check whether a model load is in progress and, if not, mark
+    /// one as starting. Returns a [`LoadingGuard`] whose [`Drop`] impl will
+    /// clear the flag and wake waiters. Returns `None` if a load is already in
+    /// progress.
+    pub fn try_start_loading(&self) -> Option<LoadingGuard> {
+        let mut is_loading = self.is_loading.lock().unwrap();
+        if *is_loading {
+            return None;
+        }
+        *is_loading = true;
+        Some(LoadingGuard {
+            is_loading: self.is_loading.clone(),
+            loading_condvar: self.loading_condvar.clone(),
+        })
     }
 
     pub fn unload_model(&self) -> Result<()> {

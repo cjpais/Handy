@@ -4,6 +4,7 @@
     "checkUpdates": "Check for Updates...",
     "copyLastTranscript": "Copy Last Transcript",
     "unloadModel": "Unload Model",
+    "model": "Model",
     "quit": "Quit",
     "cancel": "Cancel"
   },
