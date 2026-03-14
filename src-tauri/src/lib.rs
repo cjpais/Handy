@@ -509,14 +509,21 @@ pub fn run(cli_args: CliArgs) {
 
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
-            let mut win_builder =
+            let win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                     .title("Handy")
                     .inner_size(680.0, 570.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)
-                    .maximizable(false)
                     .visible(false);
+
+            #[cfg(target_os = "macos")]
+            let win_builder = win_builder.maximizable(false);
+
+            #[cfg(target_os = "linux")]
+            let win_builder = win_builder.decorations(false);
+
+            let mut win_builder = win_builder;
 
             if let Some(data_dir) = portable::data_dir() {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));
