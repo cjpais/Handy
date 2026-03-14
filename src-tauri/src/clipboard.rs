@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -11,6 +11,74 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
+
+/// Represents the previous clipboard content so we can restore it after pasting.
+///
+/// Currently supports text and image formats. Other pasteboard types (files, HTML,
+/// rich text) cannot be preserved because the underlying `arboard` crate does not
+/// expose read APIs for those formats. When unsupported content is detected, the
+/// clipboard is cleared after pasting rather than leaving the transcript behind.
+enum SavedClipboard {
+    Text(String),
+    Image(tauri::image::Image<'static>),
+    /// Clipboard was empty or contained an unsupported format.
+    Empty,
+}
+
+/// Snapshot the current clipboard content for later restoration.
+///
+/// Tries text first, then image. Returns `Empty` when neither succeeds
+/// (empty clipboard, or an unsupported format like files/HTML).
+fn snapshot_clipboard(clipboard: &tauri_plugin_clipboard_manager::Clipboard<tauri::Wry>) -> SavedClipboard {
+    match clipboard.read_text() {
+        Ok(text_content) if !text_content.is_empty() => {
+            SavedClipboard::Text(text_content)
+        }
+        Ok(_empty) => {
+            // Empty text could mean the clipboard has non-text content (image, etc.)
+            if let Ok(image) = clipboard.read_image() {
+                SavedClipboard::Image(image.to_owned())
+            } else {
+                SavedClipboard::Empty
+            }
+        }
+        Err(_) => {
+            if let Ok(image) = clipboard.read_image() {
+                SavedClipboard::Image(image.to_owned())
+            } else {
+                SavedClipboard::Empty
+            }
+        }
+    }
+}
+
+/// Restore previously snapshotted clipboard content.
+fn restore_clipboard(
+    saved: &SavedClipboard,
+    clipboard: &tauri_plugin_clipboard_manager::Clipboard<tauri::Wry>,
+) {
+    match saved {
+        SavedClipboard::Text(text_content) => {
+            #[cfg(target_os = "linux")]
+            if is_wayland() && is_wl_copy_available() {
+                let _ = write_clipboard_via_wl_copy(text_content);
+                return;
+            }
+
+            let _ = clipboard.write_text(text_content.as_str());
+        }
+        SavedClipboard::Image(image) => {
+            if let Err(e) = clipboard.write_image(image) {
+                warn!("Failed to restore image to clipboard: {e}");
+            }
+        }
+        SavedClipboard::Empty => {
+            // Clipboard was empty or contained an unsupported format before
+            // pasting. Clear it so the transcript doesn't linger.
+            let _ = clipboard.clear();
+        }
+    }
+}
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
@@ -21,7 +89,11 @@ fn paste_via_clipboard(
     paste_delay_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
+
+    // Save current clipboard content, preserving non-text content (e.g. images).
+    // Partially addresses #921: text and image content is preserved; other formats
+    // (files, HTML) will be cleared rather than silently replaced with the transcript.
+    let saved = snapshot_clipboard(clipboard);
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
@@ -63,17 +135,8 @@ fn paste_via_clipboard(
 
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    // Restore original clipboard content
-    // On Wayland, prefer wl-copy for better compatibility
-    #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
-    } else {
-        let _ = clipboard.write_text(&clipboard_content);
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    let _ = clipboard.write_text(&clipboard_content);
+    // Restore original clipboard content, preserving the original format
+    restore_clipboard(&saved, clipboard);
 
     Ok(())
 }
@@ -683,5 +746,115 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    // The following tests exercise the clipboard save/restore contract using
+    // arboard directly (the same crate that tauri-plugin-clipboard-manager wraps).
+    //
+    // IMPORTANT: These tests share the system clipboard and will SIGSEGV if run
+    // in parallel (multiple arboard instances on macOS). Run them with:
+    //   cargo test --lib -- clipboard::tests::clipboard --test-threads=1 --ignored
+    //
+    // They also require a display server, so they are ignored by default for CI.
+
+    /// Verify that text clipboard content survives a simulated paste cycle.
+    #[test]
+    #[ignore = "requires system clipboard; run with --test-threads=1 --ignored"]
+    fn clipboard_text_round_trip() {
+        let mut cb = match arboard::Clipboard::new() {
+            Ok(cb) => cb,
+            Err(_) => return, // no display server (headless CI)
+        };
+
+        // Clear first to avoid interference from parallel tests sharing the clipboard
+        let _ = cb.clear();
+
+        let original = "original text before paste";
+        cb.set_text(original).unwrap();
+
+        // Simulate save
+        let saved_text = cb.get_text().unwrap();
+        assert_eq!(saved_text, original);
+
+        // Simulate paste: overwrite with transcript
+        cb.set_text("transcribed speech").unwrap();
+        assert_eq!(cb.get_text().unwrap(), "transcribed speech");
+
+        // Simulate restore
+        cb.set_text(saved_text).unwrap();
+        assert_eq!(cb.get_text().unwrap(), original);
+    }
+
+    /// Verify that image clipboard content survives a simulated paste cycle.
+    #[test]
+    #[ignore = "requires system clipboard; run with --test-threads=1 --ignored"]
+    fn clipboard_image_round_trip() {
+        let mut cb = match arboard::Clipboard::new() {
+            Ok(cb) => cb,
+            Err(_) => return, // no display server (headless CI)
+        };
+
+        let _ = cb.clear();
+
+        // Set a 2x2 red RGBA image
+        let rgba = vec![255u8, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255];
+        let original_img = arboard::ImageData {
+            width: 2,
+            height: 2,
+            bytes: rgba.into(),
+        };
+        cb.set_image(original_img.clone()).unwrap();
+
+        // Simulate save: read_text should fail or return empty, read_image should succeed
+        let text_result = cb.get_text();
+        let has_no_text = text_result.is_err()
+            || text_result.as_ref().map(|t| t.is_empty()).unwrap_or(false);
+        assert!(has_no_text, "clipboard with image should not have text");
+
+        let saved_img = cb.get_image().unwrap();
+        assert_eq!(saved_img.width, 2);
+        assert_eq!(saved_img.height, 2);
+
+        // Simulate paste: overwrite with transcript text
+        cb.set_text("transcribed speech").unwrap();
+        assert_eq!(cb.get_text().unwrap(), "transcribed speech");
+
+        // Simulate restore: write image back
+        cb.set_image(saved_img).unwrap();
+
+        // Verify image is restored (text should be gone or empty)
+        let restored = cb.get_image().unwrap();
+        assert_eq!(restored.width, 2);
+        assert_eq!(restored.height, 2);
+    }
+
+    /// Verify that an empty clipboard results in clear() after paste, not leftover transcript.
+    #[test]
+    #[ignore = "requires system clipboard; run with --test-threads=1 --ignored"]
+    fn clipboard_empty_clears_after_paste() {
+        let mut cb = match arboard::Clipboard::new() {
+            Ok(cb) => cb,
+            Err(_) => return, // no display server (headless CI)
+        };
+
+        // Start with empty clipboard
+        cb.clear().unwrap();
+
+        // Simulate save: both reads should fail
+        let has_text = cb.get_text().map(|t| !t.is_empty()).unwrap_or(false);
+        let has_image = cb.get_image().is_ok();
+        assert!(!has_text && !has_image, "clipboard should be empty");
+
+        // Simulate paste: write transcript
+        cb.set_text("transcribed speech").unwrap();
+
+        // Simulate restore: should clear, not leave transcript
+        cb.clear().unwrap();
+
+        // Verify clipboard is cleared
+        let text_after = cb.get_text();
+        let is_empty = text_after.is_err()
+            || text_after.as_ref().map(|t| t.is_empty()).unwrap_or(false);
+        assert!(is_empty, "clipboard should be empty after restore, not contain transcript");
     }
 }
