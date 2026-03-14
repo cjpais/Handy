@@ -102,6 +102,41 @@ handy --start-hidden --no-tray
 > /Applications/Handy.app/Contents/MacOS/Handy --toggle-transcription
 > ```
 
+
+### Transcription hook
+
+It is possble to modify transcription text by a script before Handy pastes it.
+To do that create an executable script `hooks/transcription` in the app's data folder.
+Handy will pass transcription text to it via standard input and paste its standard output.
+
+Example script to transform first letter to lowercase and remove trailing period:
+```bash
+# macOS/Linux
+mkdir ~/Library/Application\ Support/com.pais.handy/hooks/
+cat > ~/Library/Application\ Support/com.pais.handy/hooks/transcription << 'EOF'
+#!/usr/bin/env python3
+import sys
+text = sys.stdin.read().strip()
+text = text[:-1] if text.endswith('.') else text
+text = text[0].lower() + text[1:] if text else text
+sys.stdout.write(text)
+EOF
+
+chmod +x ~/Library/Application\ Support/com.pais.handy/hooks/transcription
+```
+
+Example using Apple Script to prefix transcription with `#` if active window is Terminal.app:
+```bash
+#!/bin/bash
+active_app=$(osascript -e 'tell application "System Events" to get name of first application process whose frontmost is true')
+
+if [ "$active_app" = "Terminal" ]; then
+    echo -n "# $(cat)"
+else
+    cat
+fi
+```
+
 ## Known Issues & Current Limitations
 
 This project is actively being developed and has some [known issues](https://github.com/cjpais/Handy/issues). We believe in transparency about the current state:
