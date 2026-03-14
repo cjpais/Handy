@@ -262,13 +262,18 @@ jobs:
           fi
           echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
 
-      # ggml requires clang for ARM - MSVC is not supported
-      - name: Use clang-cl for ARM64 (Windows)
+      # ggml requires clang for ARM. The VS generator determines the compiler
+      # via the toolset (-T flag) which can't be overridden from env vars.
+      # Use Ninja + clang-cl instead, which respects CMAKE_C_COMPILER.
+      - name: Configure cmake for ARM64 (Windows)
         if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
         shell: pwsh
         run: |
+          echo "CMAKE_GENERATOR=Ninja" >> $env:GITHUB_ENV
           echo "CMAKE_C_COMPILER=clang-cl" >> $env:GITHUB_ENV
           echo "CMAKE_CXX_COMPILER=clang-cl" >> $env:GITHUB_ENV
+          echo "CMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
 
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
