@@ -394,7 +394,13 @@
       "save": "Lưu bản ghi",
       "unsave": "Xóa khỏi đã lưu",
       "delete": "Xóa mục",
-      "deleteError": "Không thể xóa mục. Vui lòng thử lại."
+      "deleteError": "Không thể xóa mục. Vui lòng thử lại.",
+      "retry": "Thử lại",
+      "retryError": "Không thể thử lại bản phiên âm. Vui lòng thử lại.",
+      "retryHint": "Bạn có thể thử lại bản phiên âm hoặc mở thư mục bản ghi để khôi phục âm thanh theo cách thủ công.",
+      "statusPending": "Đang phiên âm",
+      "statusFailed": "Thất bại",
+      "noTranscript": "Không tạo được bản phiên âm."
     },
     "debug": {
       "title": "Gỡ lỗi",

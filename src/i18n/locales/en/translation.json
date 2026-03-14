@@ -394,7 +394,13 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "retry": "Retry",
+      "retryError": "Failed to retry transcription. Please try again.",
+      "retryHint": "You can retry transcription or open the recordings folder to recover the audio manually.",
+      "statusPending": "Transcribing",
+      "statusFailed": "Failed",
+      "noTranscript": "No transcript generated."
     },
     "debug": {
       "title": "Debug",

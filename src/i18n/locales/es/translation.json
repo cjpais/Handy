@@ -394,7 +394,13 @@
       "save": "Guardar transcripción",
       "unsave": "Eliminar de guardados",
       "delete": "Eliminar entrada",
-      "deleteError": "Error al eliminar la entrada. Por favor, intenta de nuevo."
+      "deleteError": "Error al eliminar la entrada. Por favor, intenta de nuevo.",
+      "retry": "Reintentar",
+      "retryError": "No se pudo reintentar la transcripción. Por favor, inténtalo de nuevo.",
+      "retryHint": "Puedes reintentar la transcripción o abrir la carpeta de grabaciones para recuperar el audio manualmente.",
+      "statusPending": "Transcribiendo",
+      "statusFailed": "Falló",
+      "noTranscript": "No se generó ninguna transcripción."
     },
     "debug": {
       "title": "Depuración",

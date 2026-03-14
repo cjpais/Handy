@@ -394,7 +394,13 @@
       "save": "변환된 텍스트 저장",
       "unsave": "저장에서 제거",
       "delete": "항목 삭제",
-      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요."
+      "deleteError": "항목 삭제에 실패했습니다. 다시 시도해주세요.",
+      "retry": "다시 시도",
+      "retryError": "전사 재시도에 실패했습니다. 다시 시도해주세요.",
+      "retryHint": "전사를 다시 시도하거나 녹음 폴더를 열어 오디오를 수동으로 복구할 수 있습니다.",
+      "statusPending": "전사 중",
+      "statusFailed": "실패",
+      "noTranscript": "생성된 전사가 없습니다."
     },
     "debug": {
       "title": "디버그",

@@ -394,7 +394,13 @@
       "save": "儲存轉錄",
       "unsave": "從已儲存中移除",
       "delete": "刪除條目",
-      "deleteError": "刪除條目失敗，請重試"
+      "deleteError": "刪除條目失敗，請重試",
+      "retry": "重試",
+      "retryError": "重新嘗試轉錄失敗，請重試。",
+      "retryHint": "您可以重新嘗試轉錄，或打開錄音資料夾手動還原音訊。",
+      "statusPending": "轉錄中",
+      "statusFailed": "失敗",
+      "noTranscript": "未產生轉錄內容。"
     },
     "debug": {
       "title": "偵錯",

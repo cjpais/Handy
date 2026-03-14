@@ -394,7 +394,13 @@
       "save": "Zapisz transkrypcję",
       "unsave": "Usuń z zapisanych",
       "delete": "Usuń wpis",
-      "deleteError": "Nie udało się usunąć wpisu. Spróbuj ponownie."
+      "deleteError": "Nie udało się usunąć wpisu. Spróbuj ponownie.",
+      "retry": "Ponów",
+      "retryError": "Nie udało się ponowić transkrypcji. Spróbuj ponownie.",
+      "retryHint": "Możesz ponowić transkrypcję lub otworzyć folder nagrań, aby ręcznie odzyskać dźwięk.",
+      "statusPending": "Trwa transkrypcja",
+      "statusFailed": "Nieudane",
+      "noTranscript": "Nie wygenerowano transkrypcji."
     },
     "debug": {
       "title": "Debugowanie",
