@@ -291,7 +291,7 @@ jobs:
         if: inputs.target == 'x86_64-apple-darwin'
         shell: bash
         run: |
-          ORT_VERSION="1.24.2"
+          ORT_VERSION="1.23.1"
           curl -L -o ort.tgz "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/onnxruntime-osx-x86_64-${ORT_VERSION}.tgz"
           tar xzf ort.tgz
           ORT_DIR="$(pwd)/onnxruntime-osx-x86_64-${ORT_VERSION}"
