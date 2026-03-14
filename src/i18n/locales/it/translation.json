@@ -323,6 +323,14 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "local_api": {
+        "label": "API Locale",
+        "description": "Esponi un'API di riconoscimento vocale locale compatibile con OpenAI sulla porta {{port}}.",
+        "port": {
+          "label": "Porta API Locale",
+          "description": "Porta su cui ascoltare. Modificare la porta riavvierà il server."
+        }
       }
     },
     "postProcessing": {

@@ -360,6 +360,10 @@ pub struct AppSettings {
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
+    #[serde(default = "default_local_api_enabled")]
+    pub local_api_enabled: bool,
+    #[serde(default = "default_local_api_port")]
+    pub local_api_port: u16,
 }
 
 fn default_model() -> String {
@@ -449,6 +453,14 @@ fn default_show_tray_icon() -> bool {
 
 fn default_post_process_provider_id() -> String {
     "openai".to_string()
+}
+
+fn default_local_api_enabled() -> bool {
+    false
+}
+
+fn default_local_api_port() -> u16 {
+    5500
 }
 
 fn default_post_process_providers() -> Vec<PostProcessProvider> {
@@ -725,6 +737,8 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
+        local_api_enabled: default_local_api_enabled(),
+        local_api_port: default_local_api_port(),
     }
 }
 

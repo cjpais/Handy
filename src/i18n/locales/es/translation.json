@@ -323,6 +323,14 @@
         "add": "Agregar",
         "remove": "Eliminar {{word}}",
         "duplicate": "\"{{word}}\" ya existe"
+      },
+      "local_api": {
+        "label": "API Local",
+        "description": "Expone una API de voz a texto local compatible con OpenAI en el puerto {{port}}.",
+        "port": {
+          "label": "Puerto de API Local",
+          "description": "Puerto para escuchar. Cambiar el puerto reiniciará el servidor."
+        }
       }
     },
     "postProcessing": {
