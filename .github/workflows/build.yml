@@ -302,6 +302,23 @@ jobs:
             '.bundle.macOS.frameworks = [$lib]' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      - name: Install ONNX Runtime (x86_64 Linux, Ubuntu 22.04)
+        if: contains(inputs.platform, 'ubuntu-22.04') && inputs.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          ORT_VERSION="1.24.2"
+          curl -L -o ort.tgz "https://blob.handy.computer/onnxruntime-linux-x86_64-${ORT_VERSION}.tgz"
+          tar xzf ort.tgz
+          ORT_DIR="$(pwd)/onnxruntime-linux-x86_64-${ORT_VERSION}"
+          echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
+          echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
+          # Add the shared libs to the deb package under /usr/lib
+          jq --arg so "$ORT_DIR/lib/libonnxruntime.so" \
+             --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
+             --arg sov "$ORT_DIR/lib/libonnxruntime.so.1.24.2" \
+            '.bundle.linux.deb.files[$so] = "/usr/lib/" | .bundle.linux.deb.files[$so1] = "/usr/lib/" | .bundle.linux.deb.files[$sov] = "/usr/lib/"' \
+            src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
