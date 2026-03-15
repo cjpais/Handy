@@ -148,9 +148,8 @@ impl AudioRecorder {
                     drop(stream);
                 }
                 Err(error_message) => {
-                    let normalized_error = normalize_microphone_error(error_message);
-                    log::error!("{normalized_error}");
-                    let _ = init_tx.send(Err(normalized_error));
+                    log::error!("{error_message}");
+                    let _ = init_tx.send(Err(error_message));
                 }
             }
         });
@@ -292,19 +291,36 @@ impl AudioRecorder {
     }
 }
 
-fn is_microphone_access_denied(error_message: &str) -> bool {
+pub fn is_microphone_access_denied(error_message: &str) -> bool {
     let normalized = error_message.to_lowercase();
     normalized.contains("access is denied")
         || normalized.contains("permission denied")
         || normalized.contains("0x80070005")
 }
 
-fn normalize_microphone_error(error_message: String) -> String {
-    if is_microphone_access_denied(&error_message) {
-        return "Microphone access was denied by the operating system. On Windows, enable Settings → Privacy & security → Microphone (including desktop app access), then restart Handy.".to_string();
+#[cfg(test)]
+mod tests {
+    use super::is_microphone_access_denied;
+
+    #[test]
+    fn detects_access_is_denied() {
+        assert!(is_microphone_access_denied("Access is denied"));
     }
 
-    error_message
+    #[test]
+    fn detects_permission_denied() {
+        assert!(is_microphone_access_denied("permission denied"));
+    }
+
+    #[test]
+    fn detects_windows_error_code() {
+        assert!(is_microphone_access_denied("WASAPI error: 0x80070005"));
+    }
+
+    #[test]
+    fn does_not_match_unrelated_errors() {
+        assert!(!is_microphone_access_denied("device not found"));
+    }
 }
 
 fn run_consumer(

@@ -542,6 +542,13 @@
   },
   "errors": {
     "loadDirectory": "Error al cargar el directorio: {{error}}",
+    "micPermissionDeniedTitle": "Acceso al micrófono denegado",
+    "micPermissionDenied": {
+      "generic": "El sistema operativo denegó el acceso al micrófono. Por favor, conceda el permiso del micrófono en la configuración del sistema.",
+      "windows": "Active el acceso al micrófono en Configuración → Privacidad y seguridad → Micrófono (incluido el acceso de aplicaciones de escritorio).",
+      "macos": "Conceda el acceso al micrófono en Ajustes del Sistema → Privacidad y seguridad → Micrófono.",
+      "linux": "Conceda el acceso al micrófono en la configuración de sonido o privacidad de su sistema."
+    },
     "recordingFailed": "Error al iniciar la grabación: {{error}}",
     "modelLoadFailed": "Error al cargar el modelo: {{model}}",
     "modelLoadFailedUnknown": "modelo desconocido"
