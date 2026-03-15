@@ -130,6 +130,15 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
 
+    // Auto-load the selected model in the background
+    {
+        let tm = transcription_manager.clone();
+        std::thread::spawn(move || {
+            log::info!("Auto-loading selected model...");
+            tm.initiate_model_load();
+        });
+    }
+
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
     // after permissions are confirmed (on macOS) or after onboarding completes.
@@ -285,6 +294,9 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_experimental_enabled_setting,
         shortcut::change_post_process_base_url_setting,
         shortcut::change_post_process_api_key_setting,
+        shortcut::change_openai_api_key_setting,
+        shortcut::change_openai_base_url_setting,
+        shortcut::change_openai_whisper_model_setting,
         shortcut::change_post_process_model_setting,
         shortcut::set_post_process_provider,
         shortcut::fetch_post_process_models,

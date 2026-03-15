@@ -24,6 +24,7 @@ pub enum EngineType {
     MoonshineStreaming,
     SenseVoice,
     GigaAM,
+    OpenAI,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -418,6 +419,44 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: gigaam_languages,
+                is_custom: false,
+            },
+        );
+
+        // OpenAI Whisper API (cloud-based, no download required)
+        let openai_languages: Vec<String> = vec![
+            "en", "zh", "zh-Hans", "zh-Hant", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl",
+            "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs",
+            "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy",
+            "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is",
+            "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo",
+            "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht",
+            "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln",
+            "ha", "ba", "jw", "su", "yue",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        available_models.insert(
+            "openai-whisper".to_string(),
+            ModelInfo {
+                id: "openai-whisper".to_string(),
+                name: "OpenAI Whisper API".to_string(),
+                description: "Cloud-based transcription via OpenAI API. Requires API key.".to_string(),
+                filename: String::new(),
+                url: None,
+                size_mb: 0,
+                is_downloaded: true,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::OpenAI,
+                accuracy_score: 0.95,
+                speed_score: 0.70,
+                supports_translation: true,
+                is_recommended: false,
+                supported_languages: openai_languages,
                 is_custom: false,
             },
         );

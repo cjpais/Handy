@@ -337,6 +337,12 @@ pub struct AppSettings {
     pub post_process_providers: Vec<PostProcessProvider>,
     #[serde(default = "default_post_process_api_keys")]
     pub post_process_api_keys: HashMap<String, String>,
+    #[serde(default)]
+    pub openai_api_key: String,
+    #[serde(default = "default_openai_whisper_model")]
+    pub openai_whisper_model: String,
+    #[serde(default = "default_openai_base_url")]
+    pub openai_base_url: String,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
     #[serde(default = "default_post_process_prompts")]
@@ -568,6 +574,14 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
+fn default_openai_whisper_model() -> String {
+    "whisper-1".to_string()
+}
+
+fn default_openai_base_url() -> String {
+    "https://api.openai.com/v1".to_string()
+}
+
 fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
@@ -717,6 +731,9 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        openai_api_key: String::new(),
+        openai_whisper_model: default_openai_whisper_model(),
+        openai_base_url: default_openai_base_url(),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),

@@ -46,18 +46,35 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
   // Check model status when currentModel changes
   useEffect(() => {
+    console.log("checkStatus effect triggered, currentModel:", currentModel, "modelStatus:", modelStatus);
     const checkStatus = async () => {
       if (currentModel) {
         try {
           const statusResult = await commands.getTranscriptionModelStatus();
+          console.log("getTranscriptionModelStatus result:", statusResult);
           if (statusResult.status === "ok") {
-            setModelStatus(
-              statusResult.data === currentModel ? "ready" : "unloaded",
-            );
+            // Only set to ready if the loaded model matches currentModel
+            // Otherwise keep the current status (e.g., "loading" from event listener)
+            if (statusResult.data === currentModel) {
+              console.log("Model matches, setting to ready");
+              setModelStatus("ready");
+            } else if (statusResult.data === null || statusResult.data === undefined) {
+              // No model loaded, keep current status or set to unloaded
+              console.log("No model loaded, current status:", modelStatus);
+              if (modelStatus !== "loading" && modelStatus !== "downloading") {
+                setModelStatus("unloaded");
+              }
+            } else {
+              console.log("Model mismatch:", statusResult.data, "vs", currentModel);
+            }
+            // If statusResult.data is different from currentModel, keep current status
           }
-        } catch {
-          setModelStatus("error");
-          setModelError("Failed to check model status");
+        } catch (err) {
+          console.error("Error checking model status:", err);
+          if (modelStatus !== "loading" && modelStatus !== "downloading") {
+            setModelStatus("error");
+            setModelError("Failed to check model status");
+          }
         }
       } else {
         setModelStatus("none");
@@ -71,23 +88,28 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     const modelStateUnlisten = listen<ModelStateEvent>(
       "model-state-changed",
       (event) => {
-        const { event_type, error } = event.payload;
+        console.log("model-state-changed event:", event.payload);
+        const { event_type, error, model_id } = event.payload;
         switch (event_type) {
           case "loading_started":
+            console.log("Setting status to loading");
             setModelStatus("loading");
             setModelError(null);
             break;
           case "loading_completed":
+            console.log("Setting status to ready for model:", model_id);
             setModelStatus("ready");
             setModelError(null);
             setPendingModelId(null);
             break;
           case "loading_failed":
+            console.log("Setting status to error:", error);
             setModelStatus("error");
             setModelError(error || "Failed to load model");
             setPendingModelId(null);
             break;
           case "unloaded":
+            console.log("Setting status to unloaded");
             setModelStatus("unloaded");
             setModelError(null);
             break;

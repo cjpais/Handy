@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { LanguageSelector } from "../LanguageSelector";
 import { TranslateToEnglish } from "../TranslateToEnglish";
+import { OpenAiWhisperApiKey } from "../OpenAiWhisperApiKey";
 import { useModelStore } from "../../../stores/modelStore";
 import type { ModelInfo } from "@/bindings";
 
@@ -16,7 +17,8 @@ export const ModelSettingsCard: React.FC = () => {
     currentModelInfo?.engine_type === "Whisper" ||
     currentModelInfo?.engine_type === "SenseVoice";
   const supportsTranslation = currentModelInfo?.supports_translation ?? false;
-  const hasAnySettings = supportsLanguageSelection || supportsTranslation;
+  const isOpenAI = currentModelInfo?.engine_type === "OpenAI";
+  const hasAnySettings = supportsLanguageSelection || supportsTranslation || isOpenAI;
 
   // Don't render anything if no model is selected or no settings available
   if (!currentModel || !currentModelInfo || !hasAnySettings) {
@@ -24,21 +26,24 @@ export const ModelSettingsCard: React.FC = () => {
   }
 
   return (
-    <SettingsGroup
-      title={t("settings.modelSettings.title", {
-        model: currentModelInfo.name,
-      })}
-    >
+    <>
+      {isOpenAI && <OpenAiWhisperApiKey />}
       {supportsLanguageSelection && (
-        <LanguageSelector
-          descriptionMode="tooltip"
-          grouped={true}
-          supportedLanguages={currentModelInfo.supported_languages}
-        />
+        <SettingsGroup
+          title={t("settings.modelSettings.title", {
+            model: currentModelInfo.name,
+          })}
+        >
+          <LanguageSelector
+            descriptionMode="tooltip"
+            grouped={true}
+            supportedLanguages={currentModelInfo.supported_languages}
+          />
+          {supportsTranslation && (
+            <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
+          )}
+        </SettingsGroup>
       )}
-      {supportsTranslation && (
-        <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
-      )}
-    </SettingsGroup>
+    </>
   );
 };

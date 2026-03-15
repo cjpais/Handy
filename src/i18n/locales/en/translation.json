@@ -140,6 +140,21 @@
       "title": "{{model}} Settings",
       "noSettingsNeeded": "This model works automatically with no configuration needed."
     },
+    "openaiWhisper": {
+      "title": "OpenAI Whisper API Key",
+      "description": "Enter your OpenAI API key to use cloud-based transcription via Whisper API",
+      "placeholder": "sk-...",
+      "modelTitle": "Model",
+      "modelDescription": "Select the Whisper model to use for transcription",
+      "baseUrlTitle": "API Base URL",
+      "baseUrlDescription": "Base URL for the OpenAI API (change if using a proxy or alternative endpoint)",
+      "show": "Show",
+      "clear": "Clear",
+      "saved": "Saved",
+      "useCustomModel": "Use custom model name",
+      "apply": "Apply",
+      "backToPresets": "Back to presets"
+    },
     "general": {
       "title": "General",
       "shortcut": {

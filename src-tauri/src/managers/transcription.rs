@@ -44,6 +44,7 @@ enum LoadedEngine {
     MoonshineStreaming(MoonshineStreamingEngine),
     SenseVoice(SenseVoiceEngine),
     GigaAM(GigaAMEngine),
+    OpenAI,
 }
 
 #[derive(Clone)]
@@ -168,6 +169,9 @@ impl TranscriptionManager {
                     LoadedEngine::MoonshineStreaming(ref mut e) => e.unload_model(),
                     LoadedEngine::SenseVoice(ref mut e) => e.unload_model(),
                     LoadedEngine::GigaAM(ref mut e) => e.unload_model(),
+                    LoadedEngine::OpenAI => {
+                        // OpenAI doesn't need unloading - no-op
+                    }
                 }
             }
             *engine = None; // Drop the engine to free memory
@@ -366,6 +370,12 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::GigaAM(engine)
             }
+            EngineType::OpenAI => {
+                log::info!("Loading OpenAI Whisper API model: {}", model_id);
+                // OpenAI doesn't need local model loading - it's cloud-based
+                // API key validation happens at transcription time
+                LoadedEngine::OpenAI
+            }
         };
 
         // Update the current engine and model ID
@@ -379,6 +389,7 @@ impl TranscriptionManager {
         }
 
         // Emit loading completed event
+        log::info!("Emitting loading_completed event for model: {}", model_id);
         let _ = self.app_handle.emit(
             "model-state-changed",
             ModelStateEvent {
@@ -420,7 +431,9 @@ impl TranscriptionManager {
 
     pub fn get_current_model(&self) -> Option<String> {
         let current_model = self.current_model_id.lock().unwrap();
-        current_model.clone()
+        let result = current_model.clone();
+        log::debug!("get_current_model() returned: {:?}", result);
+        result
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
@@ -549,6 +562,14 @@ impl TranscriptionManager {
                         LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
                             .transcribe_samples(audio, None)
                             .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
+                        LoadedEngine::OpenAI => {
+                            // OpenAI transcription via HTTP API
+                            return Self::transcribe_with_openai(
+                                &self.app_handle,
+                                audio,
+                                &settings.selected_language,
+                            );
+                        }
                     }
                 },
             ));
@@ -643,6 +664,152 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+
+    /// Transcribe audio using OpenAI Whisper API
+    fn transcribe_with_openai(
+        app_handle: &AppHandle,
+        audio: Vec<f32>,
+        language: &str,
+    ) -> Result<transcribe_rs::TranscriptionResult> {
+        let settings = get_settings(app_handle);
+        let api_key = settings.openai_api_key.clone();
+        let model = settings.openai_whisper_model.clone();
+        let base_url = settings.openai_base_url.clone();
+        let language = language.to_string();
+
+        let url = format!("{}/audio/transcriptions", base_url.trim_end_matches('/'));
+        info!("Transcribing with OpenAI Whisper API: {}", model);
+        info!("Using endpoint: {}", url);
+
+        // Convert f32 audio to the format expected by OpenAI (WAV bytes)
+        let wav_bytes = Self::audio_to_wav_bytes(&audio)?;
+
+        // Run async HTTP client in a blocking context
+        let result = std::thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new()
+                .map_err(|e| anyhow::anyhow!("Failed to create runtime: {}", e))?;
+            rt.block_on(async {
+                Self::transcribe_with_openai_async(&api_key, &model, &url, wav_bytes, &language).await
+            })
+        }).join();
+
+        match result {
+            Ok(r) => r,
+            Err(e) => Err(anyhow::anyhow!("Thread panicked: {:?}", e)),
+        }
+    }
+
+    /// Async OpenAI transcription
+    async fn transcribe_with_openai_async(
+        api_key: &str,
+        model: &str,
+        url: &str,
+        wav_bytes: Vec<u8>,
+        language: &str,
+    ) -> Result<transcribe_rs::TranscriptionResult> {
+        use reqwest::header::AUTHORIZATION;
+
+        // Create the HTTP client with timeout
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(120))
+            .build()
+            .map_err(|e| anyhow::anyhow!("Failed to create HTTP client: {}", e))?;
+
+        // Build multipart form
+        let mut form = reqwest::multipart::Form::new()
+            .part("file", reqwest::multipart::Part::bytes(wav_bytes)
+                .file_name("audio.wav")
+                .mime_str("audio/wav")
+                .map_err(|e| anyhow::anyhow!("Failed to set mime type: {}", e))?
+            )
+            .text("model", model.to_string())
+            .text("response_format", "text");
+
+        // Add language parameter if specified
+        if language != "auto" && !language.is_empty() {
+            form = form.text("language", language.to_string());
+        }
+
+        // Send the request
+        let response = client
+            .post(url)
+            .header(AUTHORIZATION, format!("Bearer {}", api_key))
+            .multipart(form)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("OpenAI API request failed: {}", e))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Failed to read error response".to_string());
+            return Err(anyhow::anyhow!(
+                "OpenAI API request failed with status {}: {}",
+                status,
+                error_text
+            ));
+        }
+
+        // Get the text response
+        let response_text = response
+            .text()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to read OpenAI API response: {}", e))?;
+
+        // Try to parse as JSON and extract the "text" field
+        // This handles custom endpoints that may return different formats
+        let text = if let Ok(json) = serde_json::from_str::<serde_json::Value>(&response_text) {
+            if let Some(text_value) = json.get("text").and_then(|v| v.as_str()) {
+                text_value.to_string()
+            } else {
+                // If no "text" field, return the full response as fallback
+                response_text.clone()
+            }
+        } else {
+            // If not JSON, return as-is (standard OpenAI API returns plain text)
+            response_text
+        };
+
+        Ok(transcribe_rs::TranscriptionResult {
+            text,
+            segments: None,
+        })
+    }
+
+    /// Convert f32 audio samples to WAV bytes
+    fn audio_to_wav_bytes(audio: &[f32]) -> Result<Vec<u8>> {
+        use std::io::Cursor;
+
+        let mut cursor = Cursor::new(Vec::new());
+        {
+            let mut writer = hound::WavWriter::new(
+                &mut cursor,
+                hound::WavSpec {
+                    channels: 1,
+                    sample_rate: 16000,
+                    bits_per_sample: 16,
+                    sample_format: hound::SampleFormat::Int,
+                },
+            )
+            .map_err(|e| anyhow::anyhow!("Failed to create WAV writer: {}", e))?;
+
+            for &sample in audio {
+                // Convert f32 [-1, 1] to i16 [-32768, 32767]
+                let i16_sample = (sample * 32768.0).clamp(-32768.0, 32767.0) as i16;
+                writer
+                    .write_sample(i16_sample)
+                    .map_err(|e| anyhow::anyhow!("Failed to write sample: {}", e))?;
+            }
+
+            writer
+                .finalize()
+                .map_err(|e| anyhow::anyhow!("Failed to finalize WAV: {}", e))?;
+        }
+
+        Ok(cursor.into_inner())
     }
 }
 

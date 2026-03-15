@@ -44,6 +44,7 @@ interface SettingsStore {
     providerId: string,
     apiKey: string,
   ) => Promise<void>;
+  updateOpenAiApiKey: (apiKey: string) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
@@ -113,6 +114,10 @@ const settingUpdaters: {
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
+  openai_base_url: (value) =>
+    commands.changeOpenaiBaseUrlSetting(value as string),
+  openai_whisper_model: (value) =>
+    commands.changeOpenaiWhisperModelSetting(value as string),
   external_script_path: (value) =>
     commands.changeExternalScriptPathSetting(value as string | null),
   clipboard_handling: (value) =>
@@ -499,6 +504,15 @@ export const useSettingsStore = create<SettingsStore>()(
         },
       }));
       return get().updatePostProcessSetting("api_key", providerId, apiKey);
+    },
+
+    updateOpenAiApiKey: async (apiKey) => {
+      try {
+        await commands.changeOpenaiApiKeySetting(apiKey);
+        await get().refreshSettings();
+      } catch (error) {
+        console.error("Failed to update OpenAI API key:", error);
+      }
     },
 
     updatePostProcessModel: async (providerId, model) => {
