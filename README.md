@@ -411,7 +411,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
 - **Community contributors** helping make Handy better
-
----
-
-_"Your search for the right speech-to-text tool can end here—not because Handy is perfect, but because you can make it perfect for you."_
