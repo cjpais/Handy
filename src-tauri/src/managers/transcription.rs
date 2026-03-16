@@ -1,6 +1,8 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::model::{EngineType, ModelManager};
-use crate::settings::{get_settings, ModelUnloadTimeout};
+use crate::settings::{
+    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
+};
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -715,6 +717,32 @@ impl TranscriptionManager {
 
         Ok(final_result)
     }
+}
+
+/// Apply the user's accelerator preferences to the transcribe-rs global atomics.
+/// Called on startup and whenever the user changes the setting.
+pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
+    use transcribe_rs::accel;
+
+    let settings = get_settings(app);
+
+    let whisper_pref = match settings.whisper_accelerator {
+        WhisperAcceleratorSetting::Auto => accel::WhisperAccelerator::Auto,
+        WhisperAcceleratorSetting::Cpu => accel::WhisperAccelerator::CpuOnly,
+        WhisperAcceleratorSetting::Gpu => accel::WhisperAccelerator::Gpu,
+    };
+    accel::set_whisper_accelerator(whisper_pref);
+    info!("Whisper accelerator set to: {}", whisper_pref);
+
+    let ort_pref = match settings.ort_accelerator {
+        OrtAcceleratorSetting::Auto => accel::OrtAccelerator::Auto,
+        OrtAcceleratorSetting::Cpu => accel::OrtAccelerator::CpuOnly,
+        OrtAcceleratorSetting::Cuda => accel::OrtAccelerator::Cuda,
+        OrtAcceleratorSetting::DirectMl => accel::OrtAccelerator::DirectMl,
+        OrtAcceleratorSetting::Rocm => accel::OrtAccelerator::Rocm,
+    };
+    accel::set_ort_accelerator(ort_pref);
+    info!("ORT accelerator set to: {}", ort_pref);
 }
 
 impl Drop for TranscriptionManager {

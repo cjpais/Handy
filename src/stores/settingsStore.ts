@@ -136,6 +136,10 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
+  whisper_accelerator: (value) =>
+    commands.changeWhisperAcceleratorSetting(value as string),
+  ort_accelerator: (value) =>
+    commands.changeOrtAcceleratorSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

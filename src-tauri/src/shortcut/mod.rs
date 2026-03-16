@@ -1067,3 +1067,61 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
 
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_whisper_accelerator_setting(
+    app: AppHandle,
+    accelerator: settings::WhisperAcceleratorSetting,
+) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.whisper_accelerator = accelerator;
+    settings::write_settings(&app, s);
+
+    // Apply immediately to the transcribe-rs global
+    crate::managers::transcription::apply_accelerator_settings(&app);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_ort_accelerator_setting(
+    app: AppHandle,
+    accelerator: settings::OrtAcceleratorSetting,
+) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.ort_accelerator = accelerator;
+    settings::write_settings(&app, s);
+
+    // Apply immediately to the transcribe-rs global
+    crate::managers::transcription::apply_accelerator_settings(&app);
+
+    Ok(())
+}
+
+/// Return which ORT accelerators are compiled into this build.
+#[tauri::command]
+#[specta::specta]
+pub fn get_available_accelerators() -> AvailableAccelerators {
+    use transcribe_rs::accel::OrtAccelerator;
+
+    let ort_options: Vec<String> = OrtAccelerator::available()
+        .into_iter()
+        .map(|a| a.to_string())
+        .collect();
+
+    // Whisper GPU backend is always compiled in (Metal on macOS, Vulkan on Win/Linux)
+    let whisper_options = vec!["auto".to_string(), "cpu".to_string(), "gpu".to_string()];
+
+    AvailableAccelerators {
+        whisper: whisper_options,
+        ort: ort_options,
+    }
+}
+
+#[derive(Serialize, Clone, Debug, specta::Type)]
+pub struct AvailableAccelerators {
+    pub whisper: Vec<String>,
+    pub ort: Vec<String>,
+}
