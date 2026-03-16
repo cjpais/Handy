@@ -245,6 +245,16 @@
         "label": "Экспериментальные функции",
         "description": "Включить экспериментальные функции, которые находятся в разработке."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Ускорение Whisper",
+          "description": "Аппаратное ускорение для моделей Whisper. Автоматический режим использует GPU при наличии (Metal на macOS, Vulkan на Windows/Linux)."
+        },
+        "ort": {
+          "title": "Ускорение ONNX",
+          "description": "Аппаратное ускорение для моделей ONNX (Parakeet, Canary, Moonshine и др.). DirectML на Windows является экспериментальным. Модели могут не выполнять транскрипцию."
+        }
+      },
       "startHidden": {
         "label": "Скрыть при запуске",
         "description": "Запускать в системный трей, не открывая окно."

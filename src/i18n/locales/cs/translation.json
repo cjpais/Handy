@@ -245,6 +245,16 @@
         "label": "Experimentální funkce",
         "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Akcelerace Whisper",
+          "description": "Hardwarová akcelerace pro modely Whisper. Automatický režim používá GPU, pokud je k dispozici (Metal na macOS, Vulkan na Windows/Linux)."
+        },
+        "ort": {
+          "title": "Akcelerace ONNX",
+          "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
+        }
+      },
       "startHidden": {
         "label": "Spouštět skrytě",
         "description": "Spustit do systémové lišty bez otevření okna."

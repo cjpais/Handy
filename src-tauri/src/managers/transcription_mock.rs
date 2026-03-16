@@ -5,6 +5,7 @@
 use crate::managers::model::ModelManager;
 use anyhow::Result;
 use serde::Serialize;
+use specta::Type;
 use std::sync::Arc;
 use tauri::AppHandle;
 
@@ -58,5 +59,22 @@ impl TranscriptionManager {
 
     pub fn transcribe(&self, _audio: Vec<f32>) -> Result<String> {
         Ok(String::new())
+    }
+}
+
+/// No-op in CI mock.
+pub fn apply_accelerator_settings(_app: &tauri::AppHandle) {}
+
+#[derive(Serialize, Clone, Debug, Type)]
+pub struct AvailableAccelerators {
+    pub whisper: Vec<String>,
+    pub ort: Vec<String>,
+}
+
+/// Returns empty lists in CI mock.
+pub fn get_available_accelerators() -> AvailableAccelerators {
+    AvailableAccelerators {
+        whisper: vec![],
+        ort: vec![],
     }
 }
