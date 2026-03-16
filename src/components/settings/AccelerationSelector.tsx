@@ -43,8 +43,7 @@ export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
       setWhisperOptions(
         available.whisper.map((v) => ({
           value: v,
-          label:
-            WHISPER_LABELS[v as WhisperAcceleratorSetting] ?? v,
+          label: WHISPER_LABELS[v as WhisperAcceleratorSetting] ?? v,
         })),
       );
       // Always include "auto" for ORT even though available() only returns compiled-in backends
@@ -96,10 +95,7 @@ export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
             options={ortOptions}
             selectedValue={currentOrt}
             onSelect={(value) =>
-              updateSetting(
-                "ort_accelerator",
-                value as OrtAcceleratorSetting,
-              )
+              updateSetting("ort_accelerator", value as OrtAcceleratorSetting)
             }
             disabled={isUpdating("ort_accelerator")}
           />
