@@ -80,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "俄语语音识别。快速且准确。"
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "非常快速。支持英语、德语、西班牙语、法语。支持翻译。"
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "准确的多语言模型。25种欧洲语言。支持翻译。"
       }
     },
     "errors": {

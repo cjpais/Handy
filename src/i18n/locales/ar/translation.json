@@ -80,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "التعرف على الكلام الروسي. سريع ودقيق."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "سريع جداً. الإنجليزية، الألمانية، الإسبانية، الفرنسية. يدعم الترجمة."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "متعدد اللغات ودقيق. 25 لغة أوروبية. يدعم الترجمة."
       }
     },
     "errors": {
