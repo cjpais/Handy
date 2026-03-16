@@ -312,6 +312,9 @@ jobs:
           ORT_DIR="$(pwd)/onnxruntime-linux-x86_64-${ORT_VERSION}"
           echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
           echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
+          # Resolve symlinks so the deb bundler gets real files (not broken symlinks)
+          cp -L "$ORT_DIR/lib/libonnxruntime.so" "$ORT_DIR/lib/libonnxruntime_real.so" && mv "$ORT_DIR/lib/libonnxruntime_real.so" "$ORT_DIR/lib/libonnxruntime.so"
+          cp -L "$ORT_DIR/lib/libonnxruntime.so.1" "$ORT_DIR/lib/libonnxruntime_real.so.1" && mv "$ORT_DIR/lib/libonnxruntime_real.so.1" "$ORT_DIR/lib/libonnxruntime.so.1"
           # Add the shared libs to the deb package under /usr/lib
           jq --arg so "$ORT_DIR/lib/libonnxruntime.so" \
              --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
