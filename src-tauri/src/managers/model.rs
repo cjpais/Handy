@@ -45,6 +45,7 @@ pub struct ModelInfo {
     pub supports_translation: bool, // Whether the model supports translating to English
     pub is_recommended: bool,       // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
+    pub supports_language_selection: bool, // Whether the user can explicitly pick a language
     pub is_custom: bool,            // Whether this is a user-provided custom model
 }
 
@@ -113,6 +114,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -137,6 +139,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -160,6 +163,7 @@ impl ModelManager {
                 supports_translation: false, // Turbo doesn't support translation
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -183,6 +187,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -207,6 +212,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: whisper_languages,
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -231,6 +237,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -264,6 +271,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages,
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -287,6 +295,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -312,6 +321,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -337,6 +347,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -362,6 +373,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -393,6 +405,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -419,6 +432,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: gigaam_languages,
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -451,6 +465,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: canary_flash_languages,
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -484,6 +499,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: canary_1b_languages,
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -755,6 +771,7 @@ impl ModelManager {
                     supports_translation: false,
                     is_recommended: false,
                     supported_languages: vec![],
+                    supports_language_selection: true,
                     is_custom: true,
                 },
             );
@@ -1306,6 +1323,7 @@ mod tests {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: true,
                 is_custom: false,
             },
         );

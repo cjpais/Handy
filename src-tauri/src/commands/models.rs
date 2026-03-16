@@ -92,6 +92,24 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     // when it reacts to events emitted by load_model.
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
+
+    // Reset language to auto if the new model doesn't support the currently selected language.
+    // This prevents stale language settings from causing errors (e.g. Canary receiving zh-Hans)
+    // and stops downstream processing (e.g. OpenCC) from running on an irrelevant language.
+    if settings.selected_language != "auto"
+        && !model_info.supported_languages.is_empty()
+        && !model_info
+            .supported_languages
+            .contains(&settings.selected_language)
+    {
+        log::info!(
+            "Resetting language from '{}' to 'auto' (not supported by {})",
+            settings.selected_language,
+            model_id
+        );
+        settings.selected_language = "auto".to_string();
+    }
+
     write_settings(app, settings);
 
     // Skip eager loading if unload is set to "Immediately" — the model
