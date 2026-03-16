@@ -80,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Rusça konuşma tanıma. Hızlı ve doğru."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Çok hızlı. İngilizce, Almanca, İspanyolca, Fransızca. Çeviri desteği."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Doğru çok dilli. 25 Avrupa dili. Çeviri desteği."
       }
     },
     "errors": {

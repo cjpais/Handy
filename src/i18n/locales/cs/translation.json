@@ -80,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Rozpoznávání ruské řeči. Rychlé a přesné."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Velmi rychlý. Angličtina, němčina, španělština, francouzština. Podporuje překlad."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Přesný vícejazyčný. 25 evropských jazyků. Podporuje překlad."
       }
     },
     "errors": {

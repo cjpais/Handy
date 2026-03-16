@@ -80,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Nhận dạng giọng nói tiếng Nga. Nhanh và chính xác."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Rất nhanh. Tiếng Anh, tiếng Đức, tiếng Tây Ban Nha, tiếng Pháp. Hỗ trợ dịch thuật."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Đa ngôn ngữ chính xác. 25 ngôn ngữ châu Âu. Hỗ trợ dịch thuật."
       }
     },
     "errors": {

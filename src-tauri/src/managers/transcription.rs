@@ -12,10 +12,11 @@ use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter};
 use transcribe_rs::{
     onnx::{
+        canary::CanaryModel,
         gigaam::GigaAMModel,
-        moonshine::{MoonshineModel, MoonshineVariant, StreamingModel as MoonshineStreamingModel},
-        parakeet::ParakeetModel,
-        sense_voice::SenseVoiceModel,
+        moonshine::{MoonshineModel, MoonshineVariant, StreamingModel},
+        parakeet::{ParakeetModel, ParakeetParams, TimestampGranularity},
+        sense_voice::{SenseVoiceModel, SenseVoiceParams},
         Quantization,
     },
     whisper_cpp::{WhisperEngine, WhisperInferenceParams},
@@ -34,9 +35,10 @@ enum LoadedEngine {
     Whisper(WhisperEngine),
     Parakeet(ParakeetModel),
     Moonshine(MoonshineModel),
-    MoonshineStreaming(MoonshineStreamingModel),
+    MoonshineStreaming(StreamingModel),
     SenseVoice(SenseVoiceModel),
     GigaAM(GigaAMModel),
+    Canary(CanaryModel),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -179,7 +181,8 @@ impl TranscriptionManager {
 
         {
             let mut engine = self.lock_engine();
-            *engine = None; // Drop the engine to free memory
+            // Dropping the engine frees all resources
+            *engine = None;
         }
         {
             let mut current_model = self.current_model_id.lock().unwrap();
@@ -300,16 +303,15 @@ impl TranscriptionManager {
                 LoadedEngine::Moonshine(engine)
             }
             EngineType::MoonshineStreaming => {
-                let engine =
-                    MoonshineStreamingModel::load(&model_path, 4, &Quantization::default())
-                        .map_err(|e| {
-                            let error_msg = format!(
-                                "Failed to load moonshine streaming model {}: {}",
-                                model_id, e
-                            );
-                            emit_loading_failed(&error_msg);
-                            anyhow::anyhow!(error_msg)
-                        })?;
+                let engine = StreamingModel::load(&model_path, 0, &Quantization::default())
+                    .map_err(|e| {
+                        let error_msg = format!(
+                            "Failed to load moonshine streaming model {}: {}",
+                            model_id, e
+                        );
+                        emit_loading_failed(&error_msg);
+                        anyhow::anyhow!(error_msg)
+                    })?;
                 LoadedEngine::MoonshineStreaming(engine)
             }
             EngineType::SenseVoice => {
@@ -323,13 +325,20 @@ impl TranscriptionManager {
                 LoadedEngine::SenseVoice(engine)
             }
             EngineType::GigaAM => {
-                let engine =
-                    GigaAMModel::load(&model_path, &Quantization::default()).map_err(|e| {
-                        let error_msg = format!("Failed to load gigaam model {}: {}", model_id, e);
-                        emit_loading_failed(&error_msg);
-                        anyhow::anyhow!(error_msg)
-                    })?;
+                let engine = GigaAMModel::load(&model_path, &Quantization::Int8).map_err(|e| {
+                    let error_msg = format!("Failed to load gigaam model {}: {}", model_id, e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
                 LoadedEngine::GigaAM(engine)
+            }
+            EngineType::Canary => {
+                let engine = CanaryModel::load(&model_path, &Quantization::Int8).map_err(|e| {
+                    let error_msg = format!("Failed to load canary model {}: {}", model_id, e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::Canary(engine)
             }
         };
 
@@ -425,6 +434,33 @@ impl TranscriptionManager {
         // Get current settings for configuration
         let settings = get_settings(&self.app_handle);
 
+        // Validate selected language against the model's supported languages.
+        // If the language isn't supported, fall back to "auto" to prevent errors.
+        let validated_language = if settings.selected_language == "auto" {
+            "auto".to_string()
+        } else {
+            let is_supported = self
+                .model_manager
+                .get_model_info(&settings.selected_model)
+                .map(|info| {
+                    info.supported_languages.is_empty()
+                        || info
+                            .supported_languages
+                            .contains(&settings.selected_language)
+                })
+                .unwrap_or(true);
+
+            if is_supported {
+                settings.selected_language.clone()
+            } else {
+                warn!(
+                    "Language '{}' not supported by current model, falling back to auto-detect",
+                    settings.selected_language
+                );
+                "auto".to_string()
+            }
+        };
+
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
         // which would make the app hang indefinitely on subsequent operations.
@@ -448,23 +484,23 @@ impl TranscriptionManager {
 
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<transcribe_rs::TranscriptionResult> {
-                    let language = if settings.selected_language == "auto" {
-                        None
-                    } else {
-                        let normalized = if settings.selected_language == "zh-Hans"
-                            || settings.selected_language == "zh-Hant"
-                        {
-                            "zh".to_string()
-                        } else {
-                            settings.selected_language.clone()
-                        };
-                        Some(normalized)
-                    };
-
                     match &mut engine {
                         LoadedEngine::Whisper(whisper_engine) => {
+                            let whisper_language = if validated_language == "auto" {
+                                None
+                            } else {
+                                let normalized = if validated_language == "zh-Hans"
+                                    || validated_language == "zh-Hant"
+                                {
+                                    "zh".to_string()
+                                } else {
+                                    validated_language.clone()
+                                };
+                                Some(normalized)
+                            };
+
                             let params = WhisperInferenceParams {
-                                language: language.clone(),
+                                language: whisper_language,
                                 translate: settings.translate_to_english,
                                 initial_prompt: if settings.custom_words.is_empty() {
                                     None
@@ -479,51 +515,59 @@ impl TranscriptionManager {
                                 .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
                         }
                         LoadedEngine::Parakeet(parakeet_engine) => {
-                            let options = TranscribeOptions {
-                                language,
-                                translate: false,
+                            let params = ParakeetParams {
+                                timestamp_granularity: Some(TimestampGranularity::Segment),
+                                ..Default::default()
                             };
-                            parakeet_engine.transcribe(&audio, &options).map_err(|e| {
-                                anyhow::anyhow!("Parakeet transcription failed: {}", e)
-                            })
+                            parakeet_engine
+                                .transcribe_with(&audio, &params)
+                                .map_err(|e| {
+                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
+                                })
                         }
-                        LoadedEngine::Moonshine(moonshine_engine) => {
-                            let options = TranscribeOptions {
-                                language,
-                                translate: false,
-                            };
-                            moonshine_engine.transcribe(&audio, &options).map_err(|e| {
-                                anyhow::anyhow!("Moonshine transcription failed: {}", e)
-                            })
-                        }
-                        LoadedEngine::MoonshineStreaming(streaming_engine) => {
-                            let options = TranscribeOptions {
-                                language,
-                                translate: false,
-                            };
-                            streaming_engine.transcribe(&audio, &options).map_err(|e| {
+                        LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
+                            .transcribe(&audio, &TranscribeOptions::default())
+                            .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
+                        LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
+                            .transcribe(&audio, &TranscribeOptions::default())
+                            .map_err(|e| {
                                 anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
-                            })
-                        }
+                            }),
                         LoadedEngine::SenseVoice(sense_voice_engine) => {
-                            let options = TranscribeOptions {
+                            let language = match validated_language.as_str() {
+                                "zh" | "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
+                                "en" => Some("en".to_string()),
+                                "ja" => Some("ja".to_string()),
+                                "ko" => Some("ko".to_string()),
+                                "yue" => Some("yue".to_string()),
+                                _ => None,
+                            };
+                            let params = SenseVoiceParams {
                                 language,
-                                translate: false,
+                                use_itn: Some(true),
                             };
                             sense_voice_engine
-                                .transcribe(&audio, &options)
+                                .transcribe_with(&audio, &params)
                                 .map_err(|e| {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
-                        LoadedEngine::GigaAM(gigaam_engine) => {
-                            let options = TranscribeOptions {
-                                language,
-                                translate: false,
+                        LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
+                            .transcribe(&audio, &TranscribeOptions::default())
+                            .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
+                        LoadedEngine::Canary(canary_engine) => {
+                            let lang = if validated_language == "auto" {
+                                None
+                            } else {
+                                Some(validated_language.clone())
                             };
-                            gigaam_engine
+                            let options = TranscribeOptions {
+                                language: lang,
+                                translate: settings.translate_to_english,
+                            };
+                            canary_engine
                                 .transcribe(&audio, &options)
-                                .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e))
+                                .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
                         }
                     }
                 },
