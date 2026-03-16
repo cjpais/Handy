@@ -49,6 +49,14 @@ The process is entirely local:
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
 
+## Integrations
+
+### ![Raycast](https://img.shields.io/badge/Raycast-FF6363?style=for-the-badge&logo=raycast&logoColor=white) Extension
+
+Control Handy from [Raycast](https://www.raycast.com) — start/stop recording, browse transcript history, manage dictionary, switch models.
+
+→ [github.com/mattiacolombomc/raycast-handy](https://github.com/mattiacolombomc/raycast-handy) *(pending Raycast Store review)*
+
 ## Architecture
 
 Handy is built as a Tauri application combining:
@@ -394,10 +402,6 @@ The goal is to create both a useful tool and a foundation for others to build up
     <img src="sponsor-images/boltai.jpg" alt="Bolt AI" width="120" height="120">
   </a>
 </div>
-
-## Integrations
-
-- **[Raycast Extension](https://github.com/mattiacolombomc/raycast-handy)** - Control Handy from Raycast: start/stop recording, browse transcript history, manage dictionary, switch models (pending Raycast Store review)
 
 ## Related Projects
 
