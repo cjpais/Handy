@@ -451,9 +451,7 @@ impl ModelManager {
                 description: "Very fast. English, German, Spanish, French. Supports translation."
                     .to_string(),
                 filename: "canary-180m-flash".to_string(),
-                url: Some(
-                    "https://blob.handy.computer/canary-180m-flash.tar.gz".to_string(),
-                ),
+                url: Some("https://blob.handy.computer/canary-180m-flash.tar.gz".to_string()),
                 size_mb: 146,
                 is_downloaded: false,
                 is_downloading: false,

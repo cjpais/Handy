@@ -300,8 +300,7 @@ impl TranscriptionManager {
                     &Quantization::default(),
                 )
                 .map_err(|e| {
-                    let error_msg =
-                        format!("Failed to load moonshine model {}: {}", model_id, e);
+                    let error_msg = format!("Failed to load moonshine model {}: {}", model_id, e);
                     let _ = self.app_handle.emit(
                         "model-state-changed",
                         ModelStateEvent {
@@ -316,25 +315,23 @@ impl TranscriptionManager {
                 LoadedEngine::Moonshine(engine)
             }
             EngineType::MoonshineStreaming => {
-                let engine =
-                    StreamingModel::load(&model_path, 0, &Quantization::default()).map_err(
-                        |e| {
-                            let error_msg = format!(
-                                "Failed to load moonshine streaming model {}: {}",
-                                model_id, e
-                            );
-                            let _ = self.app_handle.emit(
-                                "model-state-changed",
-                                ModelStateEvent {
-                                    event_type: "loading_failed".to_string(),
-                                    model_id: Some(model_id.to_string()),
-                                    model_name: Some(model_info.name.clone()),
-                                    error: Some(error_msg.clone()),
-                                },
-                            );
-                            anyhow::anyhow!(error_msg)
-                        },
-                    )?;
+                let engine = StreamingModel::load(&model_path, 0, &Quantization::default())
+                    .map_err(|e| {
+                        let error_msg = format!(
+                            "Failed to load moonshine streaming model {}: {}",
+                            model_id, e
+                        );
+                        let _ = self.app_handle.emit(
+                            "model-state-changed",
+                            ModelStateEvent {
+                                event_type: "loading_failed".to_string(),
+                                model_id: Some(model_id.to_string()),
+                                model_name: Some(model_info.name.clone()),
+                                error: Some(error_msg.clone()),
+                            },
+                        );
+                        anyhow::anyhow!(error_msg)
+                    })?;
                 LoadedEngine::MoonshineStreaming(engine)
             }
             EngineType::SenseVoice => {
@@ -356,39 +353,35 @@ impl TranscriptionManager {
                 LoadedEngine::SenseVoice(engine)
             }
             EngineType::GigaAM => {
-                let engine =
-                    GigaAMModel::load(&model_path, &Quantization::Int8).map_err(|e| {
-                        let error_msg =
-                            format!("Failed to load gigaam model {}: {}", model_id, e);
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        anyhow::anyhow!(error_msg)
-                    })?;
+                let engine = GigaAMModel::load(&model_path, &Quantization::Int8).map_err(|e| {
+                    let error_msg = format!("Failed to load gigaam model {}: {}", model_id, e);
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.clone()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
                 LoadedEngine::GigaAM(engine)
             }
             EngineType::Canary => {
-                let engine =
-                    CanaryModel::load(&model_path, &Quantization::Int8).map_err(|e| {
-                        let error_msg =
-                            format!("Failed to load canary model {}: {}", model_id, e);
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
-                        anyhow::anyhow!(error_msg)
-                    })?;
+                let engine = CanaryModel::load(&model_path, &Quantization::Int8).map_err(|e| {
+                    let error_msg = format!("Failed to load canary model {}: {}", model_id, e);
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.clone()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
                 LoadedEngine::Canary(engine)
             }
         };
@@ -495,7 +488,9 @@ impl TranscriptionManager {
                 .get_model_info(&settings.selected_model)
                 .map(|info| {
                     info.supported_languages.is_empty()
-                        || info.supported_languages.contains(&settings.selected_language)
+                        || info
+                            .supported_languages
+                            .contains(&settings.selected_language)
                 })
                 .unwrap_or(true);
 
@@ -616,9 +611,7 @@ impl TranscriptionManager {
                             };
                             canary_engine
                                 .transcribe(&audio, &options)
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Canary transcription failed: {}", e)
-                                })
+                                .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
                         }
                     }
                 },
