@@ -245,6 +245,16 @@
         "label": "Fonctionnalités Expérimentales",
         "description": "Activer les fonctionnalités expérimentales encore en développement."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Accélération Whisper",
+          "description": "Accélération matérielle pour les modèles Whisper. Auto utilise le GPU si disponible (Metal sur macOS, Vulkan sur Windows/Linux)."
+        },
+        "ort": {
+          "title": "Accélération ONNX",
+          "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). Nécessite un rechargement du modèle pour prendre effet."
+        }
+      },
       "startHidden": {
         "label": "Démarrer masqué",
         "description": "Lancer dans la barre système sans ouvrir la fenêtre."

@@ -245,6 +245,16 @@
         "label": "Експериментальні функції",
         "description": "Увімкнути експериментальні функції, які ще в розробці."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Прискорення Whisper",
+          "description": "Апаратне прискорення для моделей Whisper. Автоматичний режим використовує GPU за наявності (Metal на macOS, Vulkan на Windows/Linux)."
+        },
+        "ort": {
+          "title": "Прискорення ONNX",
+          "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). Потребує перезавантаження моделі для застосування."
+        }
+      },
       "startHidden": {
         "label": "Запуск у фоні",
         "description": "Запускати в системному треї без відкриття вікна"

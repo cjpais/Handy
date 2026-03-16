@@ -245,6 +245,16 @@
         "label": "Tính năng thử nghiệm",
         "description": "Bật các tính năng thử nghiệm đang trong quá trình phát triển."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Tăng tốc Whisper",
+          "description": "Tăng tốc phần cứng cho các mô hình Whisper. Chế độ tự động sử dụng GPU nếu có (Metal trên macOS, Vulkan trên Windows/Linux)."
+        },
+        "ort": {
+          "title": "Tăng tốc ONNX",
+          "description": "Tăng tốc phần cứng cho các mô hình ONNX (Parakeet, Canary, Moonshine, v.v.). Cần tải lại mô hình để có hiệu lực."
+        }
+      },
       "startHidden": {
         "label": "Khởi động ẩn",
         "description": "Khởi động vào khay hệ thống mà không mở cửa sổ."

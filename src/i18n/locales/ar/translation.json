@@ -223,6 +223,16 @@
         "label": "الميزات التجريبية",
         "description": ".تمكين الميزات التجريبية التي لا تزال قيد التطوير"
       },
+      "acceleration": {
+        "whisper": {
+          "title": "تسريع Whisper",
+          "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
+        },
+        "ort": {
+          "title": "تسريع ONNX",
+          "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). يتطلب إعادة تحميل النموذج ليصبح ساري المفعول."
+        }
+      },
       "startHidden": {
         "label": "بدء مخفي",
         "description": ".التشغيل في صينية النظام دون فتح النافذة"

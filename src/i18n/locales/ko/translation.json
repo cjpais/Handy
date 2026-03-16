@@ -245,6 +245,16 @@
         "label": "실험적 기능",
         "description": "개발 중인 실험적 기능을 활성화합니다."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper 가속",
+          "description": "Whisper 모델의 하드웨어 가속. 자동 모드는 GPU를 사용합니다 (macOS에서는 Metal, Windows/Linux에서는 Vulkan)."
+        },
+        "ort": {
+          "title": "ONNX 가속",
+          "description": "ONNX 모델의 하드웨어 가속 (Parakeet, Canary, Moonshine 등). 적용하려면 모델을 다시 로드해야 합니다."
+        }
+      },
       "startHidden": {
         "label": "숨김으로 시작",
         "description": "창을 열지 않고 시스템 트레이에서 실행합니다."

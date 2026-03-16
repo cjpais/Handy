@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { listen } from "@tauri-apps/api/event";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import type { AppSettings as Settings, AudioDevice, WhisperAcceleratorSetting, OrtAcceleratorSetting } from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
@@ -137,9 +137,9 @@ const settingUpdaters: {
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
   whisper_accelerator: (value) =>
-    commands.changeWhisperAcceleratorSetting(value as string),
+    commands.changeWhisperAcceleratorSetting(value as WhisperAcceleratorSetting),
   ort_accelerator: (value) =>
-    commands.changeOrtAcceleratorSetting(value as string),
+    commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

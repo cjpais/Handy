@@ -245,6 +245,16 @@
         "label": "Funzionalità Sperimentali",
         "description": "Abilita le funzionalità sperimentali ancora in fase di sviluppo."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Accelerazione Whisper",
+          "description": "Accelerazione hardware per i modelli Whisper. Auto utilizza la GPU se disponibile (Metal su macOS, Vulkan su Windows/Linux)."
+        },
+        "ort": {
+          "title": "Accelerazione ONNX",
+          "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). Richiede un ricaricamento del modello per avere effetto."
+        }
+      },
       "startHidden": {
         "label": "Avvia in Background",
         "description": "Avvia l'applicazione in background senza aprire la finestra."

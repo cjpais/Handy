@@ -245,6 +245,16 @@
         "label": "Deneysel Özellikler",
         "description": "Hala geliştirme aşamasında olan deneysel özellikleri etkinleştir."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper Hızlandırma",
+          "description": "Whisper modelleri için donanım hızlandırma. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
+        },
+        "ort": {
+          "title": "ONNX Hızlandırma",
+          "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Etkili olması için modelin yeniden yüklenmesi gerekir."
+        }
+      },
       "startHidden": {
         "label": "Gizli Başlat",
         "description": "Pencereyi açmadan sistem tepsisinde başlatır."

@@ -245,6 +245,16 @@
         "label": "Funkcje Eksperymentalne",
         "description": "Włącz funkcje eksperymentalne, które są jeszcze w fazie rozwoju."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Akceleracja Whisper",
+          "description": "Akceleracja sprzętowa dla modeli Whisper. Tryb automatyczny używa GPU, jeśli jest dostępny (Metal na macOS, Vulkan na Windows/Linux)."
+        },
+        "ort": {
+          "title": "Akceleracja ONNX",
+          "description": "Akceleracja sprzętowa dla modeli ONNX (Parakeet, Canary, Moonshine itp.). Wymaga ponownego załadowania modelu."
+        }
+      },
       "startHidden": {
         "label": "Uruchom ukryty",
         "description": "Uruchom w zasobniku systemowym bez otwierania okna."
