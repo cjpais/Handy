@@ -1078,8 +1078,12 @@ pub fn change_whisper_accelerator_setting(
     s.whisper_accelerator = accelerator;
     settings::write_settings(&app, s);
 
-    // Apply immediately to the transcribe-rs global
+    // Apply to transcribe-rs global and unload the model so it reloads with the new setting
     crate::managers::transcription::apply_accelerator_settings(&app);
+    let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
+    if tm.is_model_loaded() {
+        let _ = tm.unload_model();
+    }
 
     Ok(())
 }
@@ -1094,8 +1098,12 @@ pub fn change_ort_accelerator_setting(
     s.ort_accelerator = accelerator;
     settings::write_settings(&app, s);
 
-    // Apply immediately to the transcribe-rs global
+    // Apply to transcribe-rs global and unload the model so it reloads with the new setting
     crate::managers::transcription::apply_accelerator_settings(&app);
+    let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
+    if tm.is_model_loaded() {
+        let _ = tm.unload_model();
+    }
 
     Ok(())
 }
