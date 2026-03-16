@@ -36,7 +36,42 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ bun2nix.overlays.default ];
+            overlays = [
+              bun2nix.overlays.default
+              # TODO: Remove this overlay once nixpkgs ships onnxruntime ≥ 1.24.
+              # Tracking PR: https://github.com/NixOS/nixpkgs/pull/499389
+              # ort-sys 2.0.0-rc.12 requires ONNX Runtime 1.24 (API v24);
+              # nixpkgs only ships 1.23.2, so use MS prebuilt binaries.
+              (final: prev: {
+                onnxruntime = let
+                  version = "1.24.2";
+                  platform = {
+                    x86_64-linux = { name = "linux-x64"; hash = "sha256-Q3JUdLpWY2QuF2hHF5Rmk4UOIAXvvXJKxy2ieP6tJeY="; };
+                    aarch64-linux = { name = "linux-aarch64"; hash = "sha256-spla8PQ3xOAi/YAcV/tcJf0f5mDNM9JutHGUSQpbRsQ="; };
+                  }.${system};
+                in prev.stdenv.mkDerivation {
+                  pname = "onnxruntime";
+                  inherit version;
+                  src = prev.fetchurl {
+                    url = "https://github.com/microsoft/onnxruntime/releases/download/v${version}/onnxruntime-${platform.name}-${version}.tgz";
+                    hash = platform.hash;
+                  };
+                  sourceRoot = "onnxruntime-${platform.name}-${version}";
+                  nativeBuildInputs = [ prev.autoPatchelfHook ];
+                  buildInputs = [ prev.stdenv.cc.cc.lib ];
+                  installPhase = ''
+                    runHook preInstall
+                    mkdir -p $out/lib $out/include
+                    cp -r lib/* $out/lib/
+                    cp -r include/* $out/include/
+                    runHook postInstall
+                  '';
+                  meta = prev.onnxruntime.meta // {
+                    description = "ONNX Runtime ${version} (prebuilt by Microsoft)";
+                  };
+                };
+              })
+            ];
           };
           lib = pkgs.lib;
         in
