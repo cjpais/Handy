@@ -542,6 +542,13 @@
   },
   "errors": {
     "loadDirectory": "디렉토리 로딩 오류: {{error}}",
+    "micPermissionDeniedTitle": "마이크 접근이 거부되었습니다",
+    "micPermissionDenied": {
+      "generic": "운영 체제에서 마이크 접근을 거부했습니다. 시스템 설정에서 마이크 권한을 허용해 주세요.",
+      "windows": "설정 → 개인 정보 및 보안 → 마이크(데스크톱 앱 접근 포함)에서 마이크 접근을 활성화하세요.",
+      "macos": "시스템 설정 → 개인 정보 보호 및 보안 → 마이크에서 마이크 접근을 허용하세요.",
+      "linux": "시스템의 소리 또는 개인 정보 설정에서 마이크 접근을 허용하세요."
+    },
     "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
     "modelLoadFailed": "모델을 불러오지 못했습니다: {{model}}",
     "modelLoadFailedUnknown": "알 수 없는 모델"
