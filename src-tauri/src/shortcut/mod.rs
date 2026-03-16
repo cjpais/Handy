@@ -1111,25 +1111,6 @@ pub fn change_ort_accelerator_setting(
 /// Return which ORT accelerators are compiled into this build.
 #[tauri::command]
 #[specta::specta]
-pub fn get_available_accelerators() -> AvailableAccelerators {
-    use transcribe_rs::accel::OrtAccelerator;
-
-    let ort_options: Vec<String> = OrtAccelerator::available()
-        .into_iter()
-        .map(|a| a.to_string())
-        .collect();
-
-    // Whisper GPU backend is always compiled in (Metal on macOS, Vulkan on Win/Linux)
-    let whisper_options = vec!["auto".to_string(), "cpu".to_string(), "gpu".to_string()];
-
-    AvailableAccelerators {
-        whisper: whisper_options,
-        ort: ort_options,
-    }
-}
-
-#[derive(Serialize, Clone, Debug, specta::Type)]
-pub struct AvailableAccelerators {
-    pub whisper: Vec<String>,
-    pub ort: Vec<String>,
+pub fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
+    crate::managers::transcription::get_available_accelerators()
 }

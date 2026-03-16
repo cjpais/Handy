@@ -6,6 +6,7 @@ use crate::settings::{
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
+use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
@@ -743,6 +744,29 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
     };
     accel::set_ort_accelerator(ort_pref);
     info!("ORT accelerator set to: {}", ort_pref);
+}
+
+#[derive(Serialize, Clone, Debug, Type)]
+pub struct AvailableAccelerators {
+    pub whisper: Vec<String>,
+    pub ort: Vec<String>,
+}
+
+/// Return which accelerators are compiled into this build.
+pub fn get_available_accelerators() -> AvailableAccelerators {
+    use transcribe_rs::accel::OrtAccelerator;
+
+    let ort_options: Vec<String> = OrtAccelerator::available()
+        .into_iter()
+        .map(|a| a.to_string())
+        .collect();
+
+    let whisper_options = vec!["auto".to_string(), "cpu".to_string(), "gpu".to_string()];
+
+    AvailableAccelerators {
+        whisper: whisper_options,
+        ort: ort_options,
+    }
 }
 
 impl Drop for TranscriptionManager {
