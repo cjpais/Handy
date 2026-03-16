@@ -313,13 +313,17 @@ jobs:
           echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
           echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
           # Resolve symlinks so the deb bundler gets real files (not broken symlinks)
-          cp -L "$ORT_DIR/lib/libonnxruntime.so" "$ORT_DIR/lib/libonnxruntime_real.so" && mv "$ORT_DIR/lib/libonnxruntime_real.so" "$ORT_DIR/lib/libonnxruntime.so"
-          cp -L "$ORT_DIR/lib/libonnxruntime.so.1" "$ORT_DIR/lib/libonnxruntime_real.so.1" && mv "$ORT_DIR/lib/libonnxruntime_real.so.1" "$ORT_DIR/lib/libonnxruntime.so.1"
+          for f in "$ORT_DIR"/lib/libonnxruntime.so*; do
+            if [ -L "$f" ]; then
+              cp -L "$f" "$f.real" && mv "$f.real" "$f"
+            fi
+          done
           # Add the shared libs to the deb package under /usr/lib
+          # deb.files key = destination in package, value = source on disk
           jq --arg so "$ORT_DIR/lib/libonnxruntime.so" \
              --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
              --arg sov "$ORT_DIR/lib/libonnxruntime.so.1.24.2" \
-            '.bundle.linux.deb.files[$so] = "/usr/lib/" | .bundle.linux.deb.files[$so1] = "/usr/lib/" | .bundle.linux.deb.files[$sov] = "/usr/lib/"' \
+            '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
       - name: Build with Tauri
