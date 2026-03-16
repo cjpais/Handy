@@ -252,7 +252,7 @@
         },
         "ort": {
           "title": "Tăng tốc ONNX",
-          "description": "Tăng tốc phần cứng cho các mô hình ONNX (Parakeet, Canary, Moonshine, v.v.). Cần tải lại mô hình để có hiệu lực."
+          "description": "Tăng tốc phần cứng cho các mô hình ONNX (Parakeet, Canary, Moonshine, v.v.). DirectML trên Windows là thử nghiệm. Các mô hình có thể không chuyển đổi giọng nói được."
         }
       },
       "startHidden": {

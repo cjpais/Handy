@@ -252,7 +252,7 @@
         },
         "ort": {
           "title": "ONNX アクセラレーション",
-          "description": "ONNX モデルのハードウェアアクセラレーション（Parakeet、Canary、Moonshine など）。反映にはモデルの再読み込みが必要です。"
+          "description": "ONNX モデルのハードウェアアクセラレーション（Parakeet、Canary、Moonshine など）。Windows の DirectML は実験的です。モデルの文字起こしに失敗する場合があります。"
         }
       },
       "startHidden": {

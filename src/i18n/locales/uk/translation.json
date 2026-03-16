@@ -252,7 +252,7 @@
         },
         "ort": {
           "title": "Прискорення ONNX",
-          "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). Потребує перезавантаження моделі для застосування."
+          "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). DirectML на Windows є експериментальним. Моделі можуть не виконувати транскрипцію."
         }
       },
       "startHidden": {

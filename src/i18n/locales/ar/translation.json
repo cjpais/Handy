@@ -230,7 +230,7 @@
         },
         "ort": {
           "title": "تسريع ONNX",
-          "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). يتطلب إعادة تحميل النموذج ليصبح ساري المفعول."
+          "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
         }
       },
       "startHidden": {

@@ -252,7 +252,7 @@
         },
         "ort": {
           "title": "Accelerazione ONNX",
-          "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). Richiede un ricaricamento del modello per avere effetto."
+          "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). DirectML su Windows è sperimentale. I modelli potrebbero non riuscire a trascrivere."
         }
       },
       "startHidden": {

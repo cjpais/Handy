@@ -252,7 +252,7 @@
         },
         "ort": {
           "title": "ONNX 加速",
-          "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。需要重新加载模型才能生效。"
+          "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
         }
       },
       "startHidden": {

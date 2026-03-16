@@ -252,7 +252,7 @@
         },
         "ort": {
           "title": "ONNX Hızlandırma",
-          "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Etkili olması için modelin yeniden yüklenmesi gerekir."
+          "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Windows'ta DirectML deneyseldir. Modeller transkripsiyon yapamayabilir."
         }
       },
       "startHidden": {

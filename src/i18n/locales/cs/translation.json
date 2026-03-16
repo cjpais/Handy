@@ -252,7 +252,7 @@
         },
         "ort": {
           "title": "Akcelerace ONNX",
-          "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). Vyžaduje opětovné načtení modelu."
+          "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
         }
       },
       "startHidden": {
