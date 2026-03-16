@@ -245,6 +245,16 @@
         "label": "Experimental Features",
         "description": "Enable experimental features that are still in development."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper Acceleration",
+          "description": "Hardware acceleration for Whisper models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
+        },
+        "ort": {
+          "title": "ONNX Acceleration",
+          "description": "Hardware acceleration for ONNX models (Parakeet, Canary, Moonshine, etc.). DirectML on Windows is experimental. Models may fail to transcribe."
+        }
+      },
       "startHidden": {
         "label": "Start Hidden",
         "description": "Launch to system tray without opening the window."

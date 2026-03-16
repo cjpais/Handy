@@ -245,6 +245,16 @@
         "label": "Recursos Experimentais",
         "description": "Ativar recursos experimentais que ainda estão em desenvolvimento."
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Aceleração Whisper",
+          "description": "Aceleração por hardware para modelos Whisper. Auto usa GPU se disponível (Metal no macOS, Vulkan no Windows/Linux)."
+        },
+        "ort": {
+          "title": "Aceleração ONNX",
+          "description": "Aceleração por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML no Windows é experimental. Os modelos podem falhar na transcrição."
+        }
+      },
       "startHidden": {
         "label": "Iniciar Oculto",
         "description": "Iniciar na bandeja do sistema sem abrir a janela."

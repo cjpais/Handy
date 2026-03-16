@@ -1067,3 +1067,48 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
 
     Ok(())
 }
+
+/// Save accelerator settings, re-apply globals, and unload the model so it
+/// reloads with the new backend on next transcription.
+fn apply_and_reload_accelerator(app: &AppHandle, s: settings::AppSettings) {
+    settings::write_settings(app, s);
+    crate::managers::transcription::apply_accelerator_settings(app);
+
+    let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
+    if tm.is_model_loaded() {
+        if let Err(e) = tm.unload_model() {
+            log::warn!("Failed to unload model after accelerator change: {e}");
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_whisper_accelerator_setting(
+    app: AppHandle,
+    accelerator: settings::WhisperAcceleratorSetting,
+) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.whisper_accelerator = accelerator;
+    apply_and_reload_accelerator(&app, s);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_ort_accelerator_setting(
+    app: AppHandle,
+    accelerator: settings::OrtAcceleratorSetting,
+) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.ort_accelerator = accelerator;
+    apply_and_reload_accelerator(&app, s);
+    Ok(())
+}
+
+/// Return which ORT accelerators are compiled into this build.
+#[tauri::command]
+#[specta::specta]
+pub fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
+    crate::managers::transcription::get_available_accelerators()
+}

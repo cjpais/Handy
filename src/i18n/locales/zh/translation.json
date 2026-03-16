@@ -245,6 +245,16 @@
         "label": "实验性功能",
         "description": "启用仍在开发中的实验性功能。"
       },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper 加速",
+          "description": "Whisper 模型的硬件加速。自动模式在可用时使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
+        },
+        "ort": {
+          "title": "ONNX 加速",
+          "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
+        }
+      },
       "startHidden": {
         "label": "隐藏启动",
         "description": "启动到系统托盘而不打开窗口。"
