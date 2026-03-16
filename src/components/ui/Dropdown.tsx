@@ -1,23 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-export interface DropdownOption {
-  value: string;
+export interface DropdownOption<T extends string = string> {
+  value: T;
   label: string;
   disabled?: boolean;
 }
 
-interface DropdownProps {
-  options: DropdownOption[];
+interface DropdownProps<T extends string = string> {
+  options: DropdownOption<T>[];
   className?: string;
-  selectedValue: string | null;
-  onSelect: (value: string) => void;
+  selectedValue: T | null;
+  onSelect: (value: T) => void;
   placeholder?: string;
   disabled?: boolean;
   onRefresh?: () => void;
 }
 
-export const Dropdown: React.FC<DropdownProps> = ({
+export function Dropdown<T extends string = string>({
   options,
   selectedValue,
   onSelect,
@@ -25,7 +25,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   placeholder = "Select an option...",
   disabled = false,
   onRefresh,
-}) => {
+}: DropdownProps<T>) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -47,7 +47,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     (option) => option.value === selectedValue,
   );
 
-  const handleSelect = (value: string) => {
+  const handleSelect = (value: T) => {
     onSelect(value);
     setIsOpen(false);
   };
@@ -112,4 +112,4 @@ export const Dropdown: React.FC<DropdownProps> = ({
       )}
     </div>
   );
-};
+}

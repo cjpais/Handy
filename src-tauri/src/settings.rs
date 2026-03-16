@@ -114,7 +114,7 @@ pub enum OverlayPosition {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "lowercase")]
 pub enum ModelUnloadTimeout {
     Never,
     Immediately,
