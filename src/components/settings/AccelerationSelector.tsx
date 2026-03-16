@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Dropdown, type DropdownOption } from "../ui/Dropdown";
@@ -28,7 +28,7 @@ interface AccelerationSelectorProps {
   grouped?: boolean;
 }
 
-export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
+export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
 }) => {
