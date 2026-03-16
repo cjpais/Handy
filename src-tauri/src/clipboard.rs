@@ -19,6 +19,7 @@ fn paste_via_clipboard(
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
+    clipboard_restore_delay_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let clipboard_content = clipboard.read_text().unwrap_or_default();
@@ -61,7 +62,7 @@ fn paste_via_clipboard(
         }
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    std::thread::sleep(Duration::from_millis(clipboard_restore_delay_ms));
 
     // Restore original clipboard content
     // On Wayland, prefer wl-copy for better compatibility
@@ -592,6 +593,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
+    let clipboard_restore_delay_ms = settings.clipboard_restore_delay_ms;
 
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
@@ -634,6 +636,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &app_handle,
                 &paste_method,
                 paste_delay_ms,
+                clipboard_restore_delay_ms,
             )?
         }
         PasteMethod::ExternalScript => {

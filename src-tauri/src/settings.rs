@@ -355,6 +355,8 @@ pub struct AppSettings {
     pub show_tray_icon: bool,
     #[serde(default = "default_paste_delay_ms")]
     pub paste_delay_ms: u64,
+    #[serde(default = "default_clipboard_restore_delay_ms")]
+    pub clipboard_restore_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
@@ -411,6 +413,10 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_clipboard_restore_delay_ms() -> u64 {
+    150
 }
 
 fn default_auto_submit() -> bool {
