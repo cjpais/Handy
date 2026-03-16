@@ -395,6 +395,10 @@ The goal is to create both a useful tool and a foundation for others to build up
   </a>
 </div>
 
+## Integrations
+
+- **[Raycast Extension](https://github.com/mattiacolombomc/raycast-handy)** - Control Handy from Raycast: start/stop recording, browse transcript history, manage dictionary, switch models (pending Raycast Store review)
+
 ## Related Projects
 
 - **[Handy CLI](https://github.com/cjpais/handy-cli)** - The original Python command-line version
