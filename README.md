@@ -55,7 +55,7 @@ For detailed build instructions including platform-specific requirements, see [B
 
 Control Handy from [Raycast](https://www.raycast.com) — start/stop recording, browse transcript history, manage dictionary, switch models.
 
-→ [github.com/mattiacolombomc/raycast-handy](https://github.com/mattiacolombomc/raycast-handy) *(pending Raycast Store review)*
+→ [Raycast Store](https://www.raycast.com/mattiacolombomc/handy) *(pending review)* · [Source](https://github.com/mattiacolombomc/raycast-handy) · by [@mattiacolombomc](https://github.com/mattiacolombomc)
 
 ## Architecture
 
