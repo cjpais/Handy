@@ -51,7 +51,7 @@ For detailed build instructions including platform-specific requirements, see [B
 
 ## Integrations
 
-### ![Raycast](https://img.shields.io/badge/Raycast-FF6363?style=for-the-badge&logo=raycast&logoColor=white) Extension
+### ![Raycast](https://img.shields.io/badge/Raycast-FF6363?style=for-the-badge&logo=raycast&logoColor=white)
 
 Control Handy from [Raycast](https://www.raycast.com) — start/stop recording, browse transcript history, manage dictionary, switch models.
 
