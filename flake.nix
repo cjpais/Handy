@@ -29,6 +29,77 @@
       # Read version from Cargo.toml
       cargoToml = fromTOML (builtins.readFile ./src-tauri/Cargo.toml);
       version = cargoToml.package.version;
+
+      # Shared native library dependencies for both package build and dev shell.
+      # Keep in sync: if a native dep is needed for compilation, add it here.
+      commonNativeDeps = pkgs: with pkgs; [
+        webkitgtk_4_1
+        gtk3
+        glib
+        libsoup_3
+        alsa-lib
+        onnxruntime
+        libayatana-appindicator
+        libevdev
+        libxtst
+        gtk-layer-shell
+        openssl
+        vulkan-loader
+        vulkan-headers
+        shaderc
+      ];
+
+      # GStreamer plugins for WebKitGTK audio/video
+      gstPlugins = pkgs: with pkgs.gst_all_1; [
+        gstreamer
+        gst-plugins-base
+        gst-plugins-good
+        gst-plugins-bad
+        gst-plugins-ugly
+      ];
+
+      # Shared environment variables for Rust/native builds
+      commonEnv = pkgs: let lib = pkgs.lib; in {
+        LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+        BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${lib.getVersion pkgs.llvmPackages.libclang}/include -isystem ${pkgs.glibc.dev}/include";
+        ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
+        ORT_PREFER_DYNAMIC_LINK = "1";
+        GST_PLUGIN_SYSTEM_PATH_1_0 = "${lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (gstPlugins pkgs)}";
+      };
+
+      # TODO: Remove this overlay once nixpkgs ships onnxruntime ≥ 1.24.
+      # Tracking PR: https://github.com/NixOS/nixpkgs/pull/499389
+      # ort-sys 2.0.0-rc.12 requires ONNX Runtime 1.24 (API v24);
+      # nixpkgs only ships 1.23.2, so use MS prebuilt binaries.
+      onnxruntimeOverlay = (final: prev: {
+        onnxruntime = let
+          onnxVersion = "1.24.2";
+          platform = {
+            x86_64-linux = { name = "linux-x64"; hash = "sha256-Q3JUdLpWY2QuF2hHF5Rmk4UOIAXvvXJKxy2ieP6tJeY="; };
+            aarch64-linux = { name = "linux-aarch64"; hash = "sha256-spla8PQ3xOAi/YAcV/tcJf0f5mDNM9JutHGUSQpbRsQ="; };
+          }.${final.system};
+        in prev.stdenv.mkDerivation {
+          pname = "onnxruntime";
+          version = onnxVersion;
+          src = prev.fetchurl {
+            url = "https://github.com/microsoft/onnxruntime/releases/download/v${onnxVersion}/onnxruntime-${platform.name}-${onnxVersion}.tgz";
+            hash = platform.hash;
+          };
+          sourceRoot = "onnxruntime-${platform.name}-${onnxVersion}";
+          nativeBuildInputs = [ prev.autoPatchelfHook ];
+          buildInputs = [ prev.stdenv.cc.cc.lib ];
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out/lib $out/include
+            cp -r lib/* $out/lib/
+            cp -r include/* $out/include/
+            runHook postInstall
+          '';
+          meta = prev.onnxruntime.meta // {
+            description = "ONNX Runtime ${onnxVersion} (prebuilt by Microsoft)";
+          };
+        };
+      });
     in
     {
       packages = forAllSystems (
@@ -38,39 +109,7 @@
             inherit system;
             overlays = [
               bun2nix.overlays.default
-              # TODO: Remove this overlay once nixpkgs ships onnxruntime ≥ 1.24.
-              # Tracking PR: https://github.com/NixOS/nixpkgs/pull/499389
-              # ort-sys 2.0.0-rc.12 requires ONNX Runtime 1.24 (API v24);
-              # nixpkgs only ships 1.23.2, so use MS prebuilt binaries.
-              (final: prev: {
-                onnxruntime = let
-                  version = "1.24.2";
-                  platform = {
-                    x86_64-linux = { name = "linux-x64"; hash = "sha256-Q3JUdLpWY2QuF2hHF5Rmk4UOIAXvvXJKxy2ieP6tJeY="; };
-                    aarch64-linux = { name = "linux-aarch64"; hash = "sha256-spla8PQ3xOAi/YAcV/tcJf0f5mDNM9JutHGUSQpbRsQ="; };
-                  }.${system};
-                in prev.stdenv.mkDerivation {
-                  pname = "onnxruntime";
-                  inherit version;
-                  src = prev.fetchurl {
-                    url = "https://github.com/microsoft/onnxruntime/releases/download/v${version}/onnxruntime-${platform.name}-${version}.tgz";
-                    hash = platform.hash;
-                  };
-                  sourceRoot = "onnxruntime-${platform.name}-${version}";
-                  nativeBuildInputs = [ prev.autoPatchelfHook ];
-                  buildInputs = [ prev.stdenv.cc.cc.lib ];
-                  installPhase = ''
-                    runHook preInstall
-                    mkdir -p $out/lib $out/include
-                    cp -r lib/* $out/lib/
-                    cp -r include/* $out/include/
-                    runHook postInstall
-                  '';
-                  meta = prev.onnxruntime.meta // {
-                    description = "ONNX Runtime ${version} (prebuilt by Microsoft)";
-                  };
-                };
-              })
+              onnxruntimeOverlay
             ];
           };
           lib = pkgs.lib;
@@ -161,50 +200,13 @@
               runHook postInstall
             '';
 
-            buildInputs = with pkgs; [
-              webkitgtk_4_1
-              gtk3
-              glib
+            buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
               glib-networking
-              libsoup_3
-              alsa-lib
-              onnxruntime
-              libayatana-appindicator
-              libevdev
               libx11
-              libxtst
-              gtk-layer-shell
-              openssl
-              vulkan-loader
-              vulkan-headers
-              shaderc
+            ]) ++ gstPlugins pkgs;
 
-              # Required for WebKitGTK audio/video
-              gst_all_1.gstreamer
-              gst_all_1.gst-plugins-base
-              gst_all_1.gst-plugins-good
-              gst_all_1.gst-plugins-bad
-              gst_all_1.gst-plugins-ugly
-            ];
-
-            env = {
-              LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-              BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${lib.getVersion pkgs.llvmPackages.libclang}/include -isystem ${pkgs.glibc.dev}/include";
-              ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
-              ORT_PREFER_DYNAMIC_LINK = "1";
+            env = commonEnv pkgs // {
               OPENSSL_NO_VENDOR = "1";
-
-              # Tell Gstreamer where to find plugins
-              GST_PLUGIN_SYSTEM_PATH_1_0 = "${pkgs.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (
-                with pkgs.gst_all_1;
-                [
-                  gstreamer
-                  gst-plugins-base
-                  gst-plugins-good
-                  gst-plugins-bad
-                  gst-plugins-ugly
-                ]
-              )}";
             };
 
             preFixup = ''
@@ -238,12 +240,13 @@
         let
           pkgs = import nixpkgs {
             inherit system;
+            overlays = [ onnxruntimeOverlay ];
           };
         in
         {
           default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              # Rust
+            buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
+              # Rust toolchain
               rustc
               cargo
               rust-analyzer
@@ -251,39 +254,21 @@
               # Frontend
               nodejs
               bun
-              # Tauri CLI
+              # Build tools
               cargo-tauri
-              # Native deps
               pkg-config
-              openssl
-              alsa-lib
-              libsoup_3
-              webkitgtk_4_1
-              gtk3
-              gtk-layer-shell
-              glib
-              libxtst
-              libevdev
               llvmPackages.libclang
               cmake
-              vulkan-headers
-              vulkan-loader
-              shaderc
-              libappindicator
-            ];
+            ]);
 
-            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libappindicator ]}";
-            GST_PLUGIN_SYSTEM_PATH_1_0 = "${pkgs.lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (
-              with pkgs.gst_all_1;
-              [
-                gstreamer
-                gst-plugins-base
-                gst-plugins-good
-                gst-plugins-bad
-                gst-plugins-ugly
-              ]
-            )}";
+            inherit (commonEnv pkgs)
+              LIBCLANG_PATH
+              BINDGEN_EXTRA_CLANG_ARGS
+              ORT_LIB_LOCATION
+              ORT_PREFER_DYNAMIC_LINK
+              GST_PLUGIN_SYSTEM_PATH_1_0;
+
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.libayatana-appindicator pkgs.onnxruntime pkgs.vulkan-loader ]}";
 
             # Same as wrapGAppsHook4
             XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:${pkgs.hicolor-icon-theme}/share";
