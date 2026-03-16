@@ -4,14 +4,18 @@ import { SettingContainer } from "../ui/SettingContainer";
 import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { useSettings } from "../../hooks/useSettings";
 import { commands } from "@/bindings";
+import type {
+  WhisperAcceleratorSetting,
+  OrtAcceleratorSetting,
+} from "@/bindings";
 
-const WHISPER_LABELS: Record<string, string> = {
+const WHISPER_LABELS: Record<WhisperAcceleratorSetting, string> = {
   auto: "Auto",
   cpu: "CPU",
   gpu: "GPU",
 };
 
-const ORT_LABELS: Record<string, string> = {
+const ORT_LABELS: Record<OrtAcceleratorSetting, string> = {
   auto: "Auto",
   cpu: "CPU",
   cuda: "CUDA",
@@ -39,7 +43,8 @@ export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
       setWhisperOptions(
         available.whisper.map((v) => ({
           value: v,
-          label: WHISPER_LABELS[v] ?? v,
+          label:
+            WHISPER_LABELS[v as WhisperAcceleratorSetting] ?? v,
         })),
       );
       // Always include "auto" for ORT even though available() only returns compiled-in backends
@@ -49,7 +54,7 @@ export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
       setOrtOptions(
         ortVals.map((v) => ({
           value: v,
-          label: ORT_LABELS[v] ?? v,
+          label: ORT_LABELS[v as OrtAcceleratorSetting] ?? v,
         })),
       );
     });
@@ -57,12 +62,6 @@ export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
 
   const currentWhisper = getSetting("whisper_accelerator") ?? "auto";
   const currentOrt = getSetting("ort_accelerator") ?? "auto";
-
-  // Map between settings enum format (direct_ml) and transcribe-rs format (directml)
-  const ortSettingToValue = (setting: string) =>
-    setting === "direct_ml" ? "directml" : setting;
-  const ortValueToSetting = (value: string) =>
-    value === "directml" ? "direct_ml" : value;
 
   return (
     <>
@@ -77,7 +76,10 @@ export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
           options={whisperOptions}
           selectedValue={currentWhisper}
           onSelect={(value) =>
-            updateSetting("whisper_accelerator", value as any)
+            updateSetting(
+              "whisper_accelerator",
+              value as WhisperAcceleratorSetting,
+            )
           }
           disabled={isUpdating("whisper_accelerator")}
         />
@@ -92,9 +94,12 @@ export const AccelerationSelector: React.FC<AccelerationSelectorProps> = ({
         >
           <Dropdown
             options={ortOptions}
-            selectedValue={ortSettingToValue(currentOrt)}
+            selectedValue={currentOrt}
             onSelect={(value) =>
-              updateSetting("ort_accelerator", ortValueToSetting(value) as any)
+              updateSetting(
+                "ort_accelerator",
+                value as OrtAcceleratorSetting,
+              )
             }
             disabled={isUpdating("ort_accelerator")}
           />

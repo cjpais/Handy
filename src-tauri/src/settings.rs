@@ -293,7 +293,7 @@ pub enum OrtAcceleratorSetting {
     Auto,
     Cpu,
     Cuda,
-    #[serde(alias = "directml")]
+    #[serde(rename = "directml")]
     DirectMl,
     Rocm,
 }

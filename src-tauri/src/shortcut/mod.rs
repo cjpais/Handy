@@ -1068,6 +1068,20 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     Ok(())
 }
 
+/// Save accelerator settings, re-apply globals, and unload the model so it
+/// reloads with the new backend on next transcription.
+fn apply_and_reload_accelerator(app: &AppHandle, s: settings::AppSettings) {
+    settings::write_settings(app, s);
+    crate::managers::transcription::apply_accelerator_settings(app);
+
+    let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
+    if tm.is_model_loaded() {
+        if let Err(e) = tm.unload_model() {
+            log::warn!("Failed to unload model after accelerator change: {e}");
+        }
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn change_whisper_accelerator_setting(
@@ -1076,15 +1090,7 @@ pub fn change_whisper_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.whisper_accelerator = accelerator;
-    settings::write_settings(&app, s);
-
-    // Apply to transcribe-rs global and unload the model so it reloads with the new setting
-    crate::managers::transcription::apply_accelerator_settings(&app);
-    let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
-    if tm.is_model_loaded() {
-        let _ = tm.unload_model();
-    }
-
+    apply_and_reload_accelerator(&app, s);
     Ok(())
 }
 
@@ -1096,15 +1102,7 @@ pub fn change_ort_accelerator_setting(
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
     s.ort_accelerator = accelerator;
-    settings::write_settings(&app, s);
-
-    // Apply to transcribe-rs global and unload the model so it reloads with the new setting
-    crate::managers::transcription::apply_accelerator_settings(&app);
-    let tm = app.state::<std::sync::Arc<crate::managers::transcription::TranscriptionManager>>();
-    if tm.is_model_loaded() {
-        let _ = tm.unload_model();
-    }
-
+    apply_and_reload_accelerator(&app, s);
     Ok(())
 }
 
