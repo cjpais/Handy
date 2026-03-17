@@ -102,12 +102,37 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
             .supported_languages
             .contains(&settings.selected_language)
     {
+        let fallback = if model_info.supports_auto_detect {
+            "auto".to_string()
+        } else {
+            model_info
+                .supported_languages
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "en".to_string())
+        };
         log::info!(
-            "Resetting language from '{}' to 'auto' (not supported by {})",
+            "Resetting language from '{}' to '{}' (not supported by {})",
             settings.selected_language,
+            fallback,
             model_id
         );
-        settings.selected_language = "auto".to_string();
+        settings.selected_language = fallback;
+    }
+
+    // If auto-detect is selected but the new model doesn't support it, default to English
+    if settings.selected_language == "auto" && !model_info.supports_auto_detect {
+        let fallback = model_info
+            .supported_languages
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "en".to_string());
+        log::info!(
+            "Resetting language from 'auto' to '{}' (auto-detect not supported by {})",
+            fallback,
+            model_id
+        );
+        settings.selected_language = fallback;
     }
 
     write_settings(app, settings);

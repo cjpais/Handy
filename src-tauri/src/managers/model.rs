@@ -46,6 +46,7 @@ pub struct ModelInfo {
     pub is_recommended: bool,       // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
     pub supports_language_selection: bool, // Whether the user can explicitly pick a language
+    pub supports_auto_detect: bool, // Whether the model supports automatic language detection
     pub is_custom: bool,            // Whether this is a user-provided custom model
 }
 
@@ -115,6 +116,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -140,6 +142,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -164,6 +167,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -188,6 +192,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -213,6 +218,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: whisper_languages,
                 supports_language_selection: true,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -238,6 +244,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -272,6 +279,7 @@ impl ModelManager {
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages,
                 supports_language_selection: false,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -296,6 +304,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -322,6 +331,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -348,6 +358,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -374,6 +385,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -406,6 +418,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
                 supports_language_selection: true,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -433,6 +446,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: gigaam_languages,
                 supports_language_selection: false,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
@@ -464,6 +478,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: canary_flash_languages,
                 supports_language_selection: true,
+                supports_auto_detect: false,
                 is_custom: false,
             },
         );
@@ -498,6 +513,7 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: canary_1b_languages,
                 supports_language_selection: true,
+                supports_auto_detect: false,
                 is_custom: false,
             },
         );
@@ -770,6 +786,7 @@ impl ModelManager {
                     is_recommended: false,
                     supported_languages: vec![],
                     supports_language_selection: true,
+                    supports_auto_detect: true,
                     is_custom: true,
                 },
             );
@@ -1322,6 +1339,7 @@ mod tests {
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: true,
+                supports_auto_detect: true,
                 is_custom: false,
             },
         );
