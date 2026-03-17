@@ -290,7 +290,13 @@ impl AudioRecorder {
         let target_rate = default_config.sample_rate();
 
         // Try to find the best sample format at the device's default rate
-        let supported_configs = device.supported_input_configs()?;
+        let supported_configs = match device.supported_input_configs() {
+            Ok(configs) => configs,
+            Err(e) => {
+                log::warn!("Could not enumerate input configs ({e}), using device default");
+                return Ok(default_config);
+            }
+        };
         let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
 
         for config_range in supported_configs {
@@ -320,7 +326,11 @@ impl AudioRecorder {
             return Ok(config.with_sample_rate(target_rate));
         }
 
-        // Fall back to device default if no config matched (shouldn't happen)
+        // Fall back to device default if no config matched (exotic/virtual devices)
+        log::warn!(
+            "No supported config matched device default rate {:?}, using default config",
+            target_rate
+        );
         Ok(default_config)
     }
 }
