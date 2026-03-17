@@ -337,6 +337,7 @@ impl AudioRecordingManager {
             (MicrophoneMode::AlwaysOn, MicrophoneMode::OnDemand) => {
                 if matches!(*self.state.lock().unwrap(), RecordingState::Idle) {
                     drop(mode_guard);
+                    self.close_generation.fetch_add(1, Ordering::SeqCst);
                     self.stop_microphone_stream();
                 }
             }
@@ -473,9 +474,13 @@ impl AudioRecordingManager {
 
             *self.is_recording.lock().unwrap() = false;
 
-            // In on-demand mode, schedule a delayed close instead of closing immediately
+            // In on-demand mode, close the mic (lazily if the setting is enabled)
             if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
-                self.schedule_lazy_close();
+                if get_settings(&self.app_handle).lazy_stream_close {
+                    self.schedule_lazy_close();
+                } else {
+                    self.stop_microphone_stream();
+                }
             }
         }
     }
