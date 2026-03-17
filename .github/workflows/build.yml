@@ -297,8 +297,8 @@ jobs:
           ORT_DIR="$(pwd)/onnxruntime-osx-x86_64-${ORT_VERSION}"
           echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
           echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
-          # Add the dylib to Tauri's macOS frameworks so it gets bundled in the .app
-          jq --arg lib "$ORT_DIR/lib/libonnxruntime.dylib" \
+          # Bundle the versioned dylib (matches the install name @rpath/libonnxruntime.1.24.2.dylib)
+          jq --arg lib "$ORT_DIR/lib/libonnxruntime.${ORT_VERSION}.dylib" \
             '.bundle.macOS.frameworks = [$lib]' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
@@ -350,6 +350,27 @@ jobs:
           releaseId: ${{ inputs.release-id }}
           assetNamePattern: ${{ steps.patch-release-name.outputs.platform }}
           args: ${{ inputs.build-args }}
+
+      - name: Verify macOS dylib bundling
+        if: contains(inputs.platform, 'macos')
+        shell: bash
+        run: |
+          APP=$(find src-tauri/target -name "*.app" -type d | head -1)
+          echo "=== Frameworks contents ==="
+          ls -la "$APP/Contents/Frameworks/" | grep onnx || true
+          echo "=== Binary linked libs ==="
+          otool -L "$APP/Contents/MacOS/handy" | grep onnx || true
+          echo "=== Checking all @rpath deps are satisfied ==="
+          # Extract every @rpath lib the binary needs
+          otool -L "$APP/Contents/MacOS/handy" | grep '@rpath/' | awk '{print $1}' | while read dep; do
+            libname=$(basename "$dep")
+            if [ ! -f "$APP/Contents/Frameworks/$libname" ]; then
+              echo "MISSING: $libname not found in Frameworks/"
+              exit 1
+            else
+              echo "OK: $libname"
+            fi
+          done
 
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
