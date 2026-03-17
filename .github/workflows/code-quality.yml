@@ -11,6 +11,7 @@ on:
       - ".prettierrc*"
       - "tsconfig*"
       - "tailwind.config.*"
+      - ".github/workflows/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

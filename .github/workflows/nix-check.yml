@@ -17,6 +17,7 @@ on:
       - "bun.lock"
       - "src-tauri/**"
       - "src/**"
+      - ".github/workflows/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -99,7 +100,7 @@ jobs:
         id: nix-files
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE '^(flake\.(nix|lock)|\.nix/|bun\.lock|src-tauri/Cargo\.(toml|lock))'; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE '^(flake\.(nix|lock)|\.nix/|bun\.lock|src-tauri/(Cargo\.(toml|lock)|tauri\.conf\.json|build\.rs))'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
