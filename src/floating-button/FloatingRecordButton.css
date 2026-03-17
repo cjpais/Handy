@@ -1,0 +1,62 @@
+.floating-record-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #000000cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition:
+    background-color 150ms ease-out,
+    transform 100ms ease-out,
+    box-shadow 150ms ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  margin: 4px;
+}
+
+.floating-record-button svg {
+  fill: #ffe5ee;
+}
+
+.floating-record-button:hover {
+  background: #000000e6;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.floating-record-button:active {
+  transform: scale(0.95);
+}
+
+.floating-record-button.recording {
+  animation: recording-pulse 1.5s infinite ease-in-out;
+}
+
+.floating-record-button.processing {
+  opacity: 0.7;
+  cursor: default;
+  animation: processing-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes recording-pulse {
+  0%,
+  100% {
+    box-shadow: 0 2px 8px rgba(250, 162, 202, 0.4);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(250, 162, 202, 0.8);
+  }
+}
+
+@keyframes processing-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}

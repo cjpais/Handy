@@ -19,6 +19,8 @@ import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
+import { FloatingRecordButton } from "../FloatingRecordButton";
+import { FloatingButtonPosition } from "../FloatingButtonPosition";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -32,6 +34,10 @@ export const AdvancedSettings: React.FC = () => {
         <AutostartToggle descriptionMode="tooltip" grouped={true} />
         <ShowTrayIcon descriptionMode="tooltip" grouped={true} />
         <ShowOverlay descriptionMode="tooltip" grouped={true} />
+        <FloatingRecordButton descriptionMode="tooltip" grouped={true} />
+        {getSetting("show_floating_record_button") && (
+          <FloatingButtonPosition descriptionMode="tooltip" grouped={true} />
+        )}
         <ModelUnloadTimeoutSetting descriptionMode="tooltip" grouped={true} />
         <ExperimentalToggle descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>

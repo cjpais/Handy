@@ -6,7 +6,9 @@
     "unloadModel": "Unload Model",
     "model": "Model",
     "quit": "Quit",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "showRecordButton": "Show Record Button",
+    "hideRecordButton": "Hide Record Button"
   },
   "sidebar": {
     "general": "General",
@@ -274,6 +276,23 @@
           "none": "None",
           "bottom": "Bottom",
           "top": "Top"
+        }
+      },
+      "floatingButton": {
+        "title": "Floating Record Button",
+        "description": "Show a floating record button. Toggle visibility from the tray menu.",
+        "position": {
+          "title": "Button Position",
+          "description": "Where the floating record button appears on screen.",
+          "options": {
+            "bottom_center": "Bottom Center",
+            "top_left": "Top Left",
+            "top_right": "Top Right",
+            "bottom_left": "Bottom Left",
+            "bottom_right": "Bottom Right",
+            "center_left": "Center Left",
+            "center_right": "Center Right"
+          }
         }
       },
       "pasteMethod": {

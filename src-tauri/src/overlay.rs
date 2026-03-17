@@ -106,7 +106,7 @@ fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool 
 /// Forces a window to be topmost using Win32 API (Windows only)
 /// This is more reliable than Tauri's set_always_on_top which can be overridden
 #[cfg(target_os = "windows")]
-fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
+pub(crate) fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     use windows::Win32::UI::WindowsAndMessaging::{
         SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
     };
@@ -133,7 +133,7 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     });
 }
 
-fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
+pub(crate) fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     if let Some(mouse_location) = input::get_cursor_position(app_handle) {
         if let Ok(monitors) = app_handle.available_monitors() {
             for monitor in monitors {
@@ -163,7 +163,7 @@ fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
     app_handle.primary_monitor().ok().flatten()
 }
 
-fn is_mouse_within_monitor(
+pub(crate) fn is_mouse_within_monitor(
     mouse_pos: (i32, i32),
     monitor_pos: &PhysicalPosition<i32>,
     monitor_size: &PhysicalSize<u32>,
@@ -317,6 +317,8 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // Check if overlay should be shown based on position setting
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
+        // Still notify the floating button even if overlay is disabled
+        crate::floating_button::update_floating_button_state(app_handle, state);
         return;
     }
 
@@ -331,6 +333,9 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
 
         let _ = overlay_window.emit("show-overlay", state);
     }
+
+    // Also notify the floating record button of the state change
+    crate::floating_button::update_floating_button_state(app_handle, state);
 }
 
 /// Shows the recording overlay window with fade-in animation
@@ -377,6 +382,9 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
             let _ = window_clone.hide();
         });
     }
+
+    // Notify the floating button that we're back to idle
+    crate::floating_button::update_floating_button_state(app_handle, "idle");
 }
 
 pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {

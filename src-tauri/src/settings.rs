@@ -115,6 +115,24 @@ pub enum OverlayPosition {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
+pub enum FloatingButtonPosition {
+    BottomCenter,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    CenterLeft,
+    CenterRight,
+}
+
+impl Default for FloatingButtonPosition {
+    fn default() -> Self {
+        FloatingButtonPosition::BottomCenter
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum ModelUnloadTimeout {
     Never,
     Immediately,
@@ -395,6 +413,10 @@ pub struct AppSettings {
     pub whisper_accelerator: WhisperAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
+    #[serde(default)]
+    pub show_floating_record_button: bool,
+    #[serde(default)]
+    pub floating_button_position: FloatingButtonPosition,
 }
 
 fn default_model() -> String {
@@ -762,6 +784,8 @@ pub fn get_default_settings() -> AppSettings {
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
+        show_floating_record_button: false,
+        floating_button_position: FloatingButtonPosition::default(),
     }
 }
 

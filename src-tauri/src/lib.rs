@@ -6,6 +6,7 @@ pub mod audio_toolkit;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod floating_button;
 mod helpers;
 mod input;
 mod llm_client;
@@ -256,6 +257,15 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     tray::update_tray_menu(&app_clone, &tray::TrayIconState::Idle, None);
                 });
             }
+            "toggle_record_button" => {
+                if floating_button::is_floating_button_visible(app) {
+                    floating_button::hide_floating_button(app);
+                } else {
+                    floating_button::show_floating_button(app);
+                }
+                // Rebuild tray menu to reflect new visibility state
+                tray::update_tray_menu(app, &tray::TrayIconState::Idle, None);
+            }
             _ => {}
         })
         .build(app_handle)
@@ -291,6 +301,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    // Create the floating record button window (hidden by default)
+    floating_button::create_floating_button(app_handle);
 }
 
 #[tauri::command]
@@ -366,6 +379,8 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_whisper_accelerator_setting,
         shortcut::change_ort_accelerator_setting,
         shortcut::get_available_accelerators,
+        shortcut::change_show_floating_record_button_setting,
+        shortcut::change_floating_button_position_setting,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
@@ -382,6 +397,7 @@ pub fn run(cli_args: CliArgs) {
         commands::check_apple_intelligence_available,
         commands::initialize_enigo,
         commands::initialize_shortcuts,
+        commands::toggle_transcription_from_button,
         commands::models::get_available_models,
         commands::models::get_model_info,
         commands::models::download_model,

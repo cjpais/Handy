@@ -141,6 +141,10 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
+  show_floating_record_button: (value) =>
+    commands.changeShowFloatingRecordButtonSetting(value as boolean),
+  floating_button_position: (value) =>
+    commands.changeFloatingButtonPositionSetting(value as string),
   whisper_accelerator: (value) =>
     commands.changeWhisperAcceleratorSetting(
       value as WhisperAcceleratorSetting,

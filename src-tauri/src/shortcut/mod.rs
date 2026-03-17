@@ -22,9 +22,9 @@ use tauri_plugin_autostart::ManagerExt;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
-    self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AutoSubmitKey, ClipboardHandling, FloatingButtonPosition,
+    KeyboardImplementation, LLMPrompt, OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme,
+    TypingTool, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -1111,4 +1111,56 @@ pub fn change_ort_accelerator_setting(
 #[specta::specta]
 pub fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
     crate::managers::transcription::get_available_accelerators()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_show_floating_record_button_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.show_floating_record_button = enabled;
+    settings::write_settings(&app, settings);
+
+    // Hide the button if the feature is disabled
+    if !enabled {
+        crate::floating_button::hide_floating_button(&app);
+    }
+
+    // Rebuild tray menu to show/hide the toggle item
+    tray::update_tray_menu(&app, &tray::TrayIconState::Idle, None);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_floating_button_position_setting(
+    app: AppHandle,
+    position: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match position.as_str() {
+        "bottom_center" => FloatingButtonPosition::BottomCenter,
+        "top_left" => FloatingButtonPosition::TopLeft,
+        "top_right" => FloatingButtonPosition::TopRight,
+        "bottom_left" => FloatingButtonPosition::BottomLeft,
+        "bottom_right" => FloatingButtonPosition::BottomRight,
+        "center_left" => FloatingButtonPosition::CenterLeft,
+        "center_right" => FloatingButtonPosition::CenterRight,
+        other => {
+            warn!(
+                "Invalid floating button position '{}', defaulting to bottom_right",
+                other
+            );
+            FloatingButtonPosition::BottomRight
+        }
+    };
+    settings.floating_button_position = parsed;
+    settings::write_settings(&app, settings);
+
+    crate::floating_button::update_floating_button_position(&app);
+
+    Ok(())
 }

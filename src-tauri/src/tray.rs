@@ -190,23 +190,49 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
             )
             .expect("failed to create menu")
         }
-        TrayIconState::Idle => Menu::with_items(
-            app,
-            &[
+        TrayIconState::Idle => {
+            let sep0 = separator();
+            let sep1 = separator();
+            let sep2 = separator();
+            let sep3 = separator();
+
+            let mut items: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = vec![
                 &version_i,
-                &separator(),
+                &sep0,
                 &copy_last_transcript_i,
-                &separator(),
-                &model_submenu,
-                &unload_model_i,
-                &separator(),
-                &settings_i,
-                &check_updates_i,
-                &separator(),
-                &quit_i,
-            ],
-        )
-        .expect("failed to create menu"),
+            ];
+
+            // Add floating record button toggle if the feature is enabled
+            let toggle_btn_i;
+            if settings.show_floating_record_button {
+                let is_visible = crate::floating_button::is_floating_button_visible(app);
+                let label = if is_visible {
+                    &strings.hide_record_button
+                } else {
+                    &strings.show_record_button
+                };
+                toggle_btn_i = MenuItem::with_id(
+                    app,
+                    "toggle_record_button",
+                    label,
+                    true,
+                    None::<&str>,
+                )
+                .expect("failed to create toggle record button item");
+                items.push(&toggle_btn_i);
+            }
+
+            items.push(&sep1);
+            items.push(&model_submenu);
+            items.push(&unload_model_i);
+            items.push(&sep2);
+            items.push(&settings_i);
+            items.push(&check_updates_i);
+            items.push(&sep3);
+            items.push(&quit_i);
+
+            Menu::with_items(app, &items).expect("failed to create menu")
+        }
     };
 
     let tray = app.state::<TrayIcon>();
