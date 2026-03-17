@@ -352,7 +352,7 @@ jobs:
           args: ${{ inputs.build-args }}
 
       - name: Verify macOS dylib bundling
-        if: contains(inputs.platform, 'macos')
+        if: inputs.target == 'x86_64-apple-darwin'
         shell: bash
         run: |
           APP=$(find src-tauri/target -name "*.app" -type d | head -1)
