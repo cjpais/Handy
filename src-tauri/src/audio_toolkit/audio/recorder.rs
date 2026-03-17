@@ -78,60 +78,58 @@ impl AudioRecorder {
 
         let worker = std::thread::spawn(move || {
             let init_result = (|| -> Result<(cpal::Stream, u32), String> {
-                let config = AudioRecorder::get_preferred_config(&thread_device)
+                let configs = AudioRecorder::get_configs_by_preference(&thread_device)
                     .map_err(|e| format!("Failed to fetch preferred config: {e}"))?;
 
-                let sample_rate = config.sample_rate().0;
-                let channels = config.channels() as usize;
+                let mut stream_and_rate: Option<(cpal::Stream, u32)> = None;
 
-                log::info!(
-                    "Using device: {:?}\nSample rate: {}\nChannels: {}\nFormat: {:?}",
-                    thread_device.name(),
-                    sample_rate,
-                    channels,
-                    config.sample_format()
-                );
+                for config in configs {
+                    let sample_rate = config.sample_rate().0;
+                    let channels = config.channels() as usize;
 
-                let stream = match config.sample_format() {
-                    cpal::SampleFormat::U8 => AudioRecorder::build_stream::<u8>(
-                        &thread_device,
-                        &config,
-                        sample_tx,
+                    log::info!(
+                        "Trying device: {:?}\nSample rate: {}\nChannels: {}\nFormat: {:?}",
+                        thread_device.name(),
+                        sample_rate,
                         channels,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
-                    cpal::SampleFormat::I8 => AudioRecorder::build_stream::<i8>(
-                        &thread_device,
-                        &config,
-                        sample_tx,
-                        channels,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
-                    cpal::SampleFormat::I16 => AudioRecorder::build_stream::<i16>(
-                        &thread_device,
-                        &config,
-                        sample_tx,
-                        channels,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
-                    cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
-                        &thread_device,
-                        &config,
-                        sample_tx,
-                        channels,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
-                    cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
-                        &thread_device,
-                        &config,
-                        sample_tx,
-                        channels,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
-                    sample_format => {
-                        return Err(format!("Unsupported sample format: {sample_format:?}"));
+                        config.sample_format()
+                    );
+
+                    let result: Result<cpal::Stream, String> = match config.sample_format() {
+                        cpal::SampleFormat::U8 => AudioRecorder::build_stream::<u8>(
+                            &thread_device, &config, sample_tx.clone(), channels,
+                        ).map_err(|e| e.to_string()),
+                        cpal::SampleFormat::I8 => AudioRecorder::build_stream::<i8>(
+                            &thread_device, &config, sample_tx.clone(), channels,
+                        ).map_err(|e| e.to_string()),
+                        cpal::SampleFormat::I16 => AudioRecorder::build_stream::<i16>(
+                            &thread_device, &config, sample_tx.clone(), channels,
+                        ).map_err(|e| e.to_string()),
+                        cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
+                            &thread_device, &config, sample_tx.clone(), channels,
+                        ).map_err(|e| e.to_string()),
+                        cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
+                            &thread_device, &config, sample_tx.clone(), channels,
+                        ).map_err(|e| e.to_string()),
+                        fmt => Err(format!("Unsupported sample format: {fmt:?}")),
+                    };
+
+                    match result {
+                        Ok(stream) => {
+                            stream_and_rate = Some((stream, sample_rate));
+                            break;
+                        }
+                        Err(e) => {
+                            log::warn!(
+                                "Failed to open stream with format {:?}: {e}, trying next...",
+                                config.sample_format()
+                            );
+                        }
                     }
-                };
+                }
+
+                let (stream, sample_rate) = stream_and_rate
+                    .ok_or_else(|| "Failed to open microphone with any supported format".to_string())?;
 
                 stream
                     .play()
@@ -253,42 +251,36 @@ impl AudioRecorder {
         )
     }
 
-    fn get_preferred_config(
+    fn get_configs_by_preference(
         device: &cpal::Device,
-    ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
-        let supported_configs = device.supported_input_configs()?;
-        let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
+    ) -> Result<Vec<cpal::SupportedStreamConfig>, Box<dyn std::error::Error>> {
+        let score = |fmt: cpal::SampleFormat| match fmt {
+            cpal::SampleFormat::F32 => 4,
+            cpal::SampleFormat::I16 => 3,
+            cpal::SampleFormat::I32 => 2,
+            _ => 1,
+        };
 
-        // Try to find a config that supports 16kHz, prioritizing better formats
-        for config_range in supported_configs {
-            if config_range.min_sample_rate().0 <= constants::WHISPER_SAMPLE_RATE
-                && config_range.max_sample_rate().0 >= constants::WHISPER_SAMPLE_RATE
-            {
-                match best_config {
-                    None => best_config = Some(config_range),
-                    Some(ref current) => {
-                        // Prioritize F32 > I16 > I32 > others
-                        let score = |fmt: cpal::SampleFormat| match fmt {
-                            cpal::SampleFormat::F32 => 4,
-                            cpal::SampleFormat::I16 => 3,
-                            cpal::SampleFormat::I32 => 2,
-                            _ => 1,
-                        };
+        let mut configs: Vec<cpal::SupportedStreamConfigRange> = device
+            .supported_input_configs()?
+            .filter(|c| {
+                c.min_sample_rate().0 <= constants::WHISPER_SAMPLE_RATE
+                    && c.max_sample_rate().0 >= constants::WHISPER_SAMPLE_RATE
+            })
+            .collect();
 
-                        if score(config_range.sample_format()) > score(current.sample_format()) {
-                            best_config = Some(config_range);
-                        }
-                    }
-                }
-            }
+        // Sort descending by score: F32 first, then I16, I32, others
+        configs.sort_by(|a, b| score(b.sample_format()).cmp(&score(a.sample_format())));
+
+        if configs.is_empty() {
+            // No config supports 16kHz — fall back to device default
+            return Ok(vec![device.default_input_config()?]);
         }
 
-        if let Some(config) = best_config {
-            return Ok(config.with_sample_rate(cpal::SampleRate(constants::WHISPER_SAMPLE_RATE)));
-        }
-
-        // If no config supports 16kHz, fall back to default
-        Ok(device.default_input_config()?)
+        Ok(configs
+            .into_iter()
+            .map(|c| c.with_sample_rate(cpal::SampleRate(constants::WHISPER_SAMPLE_RATE)))
+            .collect())
     }
 }
 
