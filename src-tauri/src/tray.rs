@@ -63,7 +63,7 @@ pub fn get_icon_path(theme: AppTheme, state: TrayIconState) -> &'static str {
 }
 
 pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
-    let tray = app.state::<TrayIcon>();
+    let Some(tray) = app.try_state::<TrayIcon>() else { return };
     let theme = get_current_theme(app);
 
     let icon_path = get_icon_path(theme, icon.clone());
@@ -82,6 +82,7 @@ pub fn change_tray_icon(app: &AppHandle, icon: TrayIconState) {
 }
 
 pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
+    if app.try_state::<TrayIcon>().is_none() { return; }
     let settings = settings::get_settings(app);
 
     let locale = locale.unwrap_or(&settings.app_language);
@@ -222,7 +223,7 @@ fn last_transcript_text(entry: &HistoryEntry) -> &str {
 }
 
 pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
-    let tray = app.state::<TrayIcon>();
+    let Some(tray) = app.try_state::<TrayIcon>() else { return };
     if let Err(e) = tray.set_visible(visible) {
         error!("Failed to set tray visibility: {}", e);
     } else {

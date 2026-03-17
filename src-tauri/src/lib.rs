@@ -19,6 +19,8 @@ mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
 mod utils;
+#[cfg(target_os = "linux")]
+mod native_ui;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
@@ -138,10 +140,17 @@ fn should_force_show_permissions_window(app: &AppHandle) -> bool {
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
-    // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
+    // Note: Enigo (keyboard/mouse simulation) is NOT initialized here on macOS/Windows.
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
+    // On Linux with the native UI, the frontend never runs, so we init here.
+    #[cfg(target_os = "linux")]
+    {
+        if let Err(e) = commands::initialize_enigo(app_handle.clone()) {
+            log::error!("Failed to initialize Enigo on Linux: {}", e);
+        }
+    }
 
     // Initialize the managers
     let recording_manager = Arc::new(
@@ -165,10 +174,16 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
 
-    // Note: Shortcuts are NOT initialized here.
+    // Note: Shortcuts are NOT initialized here on macOS/Windows.
     // The frontend is responsible for calling the `initialize_shortcuts` command
     // after permissions are confirmed (on macOS) or after onboarding completes.
-    // This matches the pattern used for Enigo initialization.
+    // On Linux with the native UI, we init shortcuts directly.
+    #[cfg(target_os = "linux")]
+    {
+        if let Err(e) = commands::initialize_shortcuts(app_handle.clone()) {
+            log::error!("Failed to initialize shortcuts on Linux: {}", e);
+        }
+    }
 
     #[cfg(unix)]
     let signals = Signals::new(&[SIGUSR1, SIGUSR2]).unwrap();
@@ -185,97 +200,104 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
         }
     }
-    // Get the current theme to set the appropriate initial icon
-    let initial_theme = tray::get_current_theme(app_handle);
+    // On Linux, skip tray entirely — native egui UI replaces the WebView + tray pattern
+    #[cfg(not(target_os = "linux"))]
+    {
+        // Get the current theme to set the appropriate initial icon
+        let initial_theme = tray::get_current_theme(app_handle);
 
-    // Choose the appropriate initial icon based on theme
-    let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
+        // Choose the appropriate initial icon based on theme
+        let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
 
-    let tray = TrayIconBuilder::new()
-        .icon(
-            Image::from_path(
-                app_handle
-                    .path()
-                    .resolve(initial_icon_path, tauri::path::BaseDirectory::Resource)
-                    .unwrap(),
+        let tray = TrayIconBuilder::new()
+            .icon(
+                Image::from_path(
+                    app_handle
+                        .path()
+                        .resolve(initial_icon_path, tauri::path::BaseDirectory::Resource)
+                        .unwrap(),
+                )
+                .unwrap(),
             )
-            .unwrap(),
-        )
-        .show_menu_on_left_click(true)
-        .icon_as_template(true)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "settings" => {
-                show_main_window(app);
-            }
-            "check_updates" => {
-                let settings = settings::get_settings(app);
-                if settings.update_checks_enabled {
+            .show_menu_on_left_click(true)
+            .icon_as_template(true)
+            .on_menu_event(|app, event| match event.id.as_ref() {
+                "settings" => {
                     show_main_window(app);
-                    let _ = app.emit("check-for-updates", ());
                 }
-            }
-            "copy_last_transcript" => {
-                tray::copy_last_transcript(app);
-            }
-            "unload_model" => {
-                let transcription_manager = app.state::<Arc<TranscriptionManager>>();
-                if !transcription_manager.is_model_loaded() {
-                    log::warn!("No model is currently loaded.");
-                    return;
-                }
-                match transcription_manager.unload_model() {
-                    Ok(()) => log::info!("Model unloaded via tray."),
-                    Err(e) => log::error!("Failed to unload model via tray: {}", e),
-                }
-            }
-            "cancel" => {
-                use crate::utils::cancel_current_operation;
-
-                // Use centralized cancellation that handles all operations
-                cancel_current_operation(app);
-            }
-            "quit" => {
-                app.exit(0);
-            }
-            id if id.starts_with("model_select:") => {
-                let model_id = id.strip_prefix("model_select:").unwrap().to_string();
-                let current_model = settings::get_settings(app).selected_model;
-                if model_id == current_model {
-                    return;
-                }
-                let app_clone = app.clone();
-                std::thread::spawn(move || {
-                    match commands::models::switch_active_model(&app_clone, &model_id) {
-                        Ok(()) => {
-                            log::info!("Model switched to {} via tray.", model_id);
-                        }
-                        Err(e) => {
-                            log::error!("Failed to switch model via tray: {}", e);
-                        }
+                "check_updates" => {
+                    let settings = settings::get_settings(app);
+                    if settings.update_checks_enabled {
+                        show_main_window(app);
+                        let _ = app.emit("check-for-updates", ());
                     }
-                    tray::update_tray_menu(&app_clone, &tray::TrayIconState::Idle, None);
-                });
-            }
-            _ => {}
-        })
-        .build(app_handle)
-        .unwrap();
-    app_handle.manage(tray);
+                }
+                "copy_last_transcript" => {
+                    tray::copy_last_transcript(app);
+                }
+                "unload_model" => {
+                    let transcription_manager = app.state::<Arc<TranscriptionManager>>();
+                    if !transcription_manager.is_model_loaded() {
+                        log::warn!("No model is currently loaded.");
+                        return;
+                    }
+                    match transcription_manager.unload_model() {
+                        Ok(()) => log::info!("Model unloaded via tray."),
+                        Err(e) => log::error!("Failed to unload model via tray: {}", e),
+                    }
+                }
+                "cancel" => {
+                    use crate::utils::cancel_current_operation;
 
-    // Initialize tray menu with idle state
-    utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
+                    // Use centralized cancellation that handles all operations
+                    cancel_current_operation(app);
+                }
+                "quit" => {
+                    app.exit(0);
+                }
+                id if id.starts_with("model_select:") => {
+                    let model_id = id.strip_prefix("model_select:").unwrap().to_string();
+                    let current_model = settings::get_settings(app).selected_model;
+                    if model_id == current_model {
+                        return;
+                    }
+                    let app_clone = app.clone();
+                    std::thread::spawn(move || {
+                        match commands::models::switch_active_model(&app_clone, &model_id) {
+                            Ok(()) => {
+                                log::info!("Model switched to {} via tray.", model_id);
+                            }
+                            Err(e) => {
+                                log::error!("Failed to switch model via tray: {}", e);
+                            }
+                        }
+                        tray::update_tray_menu(&app_clone, &tray::TrayIconState::Idle, None);
+                    });
+                }
+                _ => {}
+            })
+            .build(app_handle)
+            .unwrap();
+        app_handle.manage(tray);
 
-    // Apply show_tray_icon setting
-    let settings = settings::get_settings(app_handle);
-    if !settings.show_tray_icon {
-        tray::set_tray_visibility(app_handle, false);
+        // Initialize tray menu with idle state
+        utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
     }
 
-    // Refresh tray menu when model state changes
-    let app_handle_for_listener = app_handle.clone();
-    app_handle.listen("model-state-changed", move |_| {
-        tray::update_tray_menu(&app_handle_for_listener, &tray::TrayIconState::Idle, None);
-    });
+    #[cfg(not(target_os = "linux"))]
+    {
+        // Apply show_tray_icon setting
+        let settings = settings::get_settings(app_handle);
+        if !settings.show_tray_icon {
+            tray::set_tray_visibility(app_handle, false);
+        }
+
+        // Refresh tray menu when model state changes
+        let app_handle_for_listener = app_handle.clone();
+        app_handle.listen("model-state-changed", move |_| {
+            tray::update_tray_menu(&app_handle_for_listener, &tray::TrayIconState::Idle, None);
+        });
+    }
 
     // Get the autostart manager and configure based on user setting
     let autostart_manager = app_handle.autolaunch();
@@ -497,20 +519,37 @@ pub fn run(cli_args: CliArgs) {
         .setup(move |app| {
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
-            let mut win_builder =
-                tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                    .title("Handy")
-                    .inner_size(680.0, 570.0)
-                    .min_inner_size(680.0, 570.0)
-                    .resizable(true)
-                    .maximizable(false)
-                    .visible(false);
-
-            if let Some(data_dir) = portable::data_dir() {
-                win_builder = win_builder.data_directory(data_dir.join("webview"));
+            // On Linux we skip the WebView entirely — the native egui UI is used instead.
+            // On Linux, create a minimal hidden WebView to keep the Tauri event loop
+            // alive (needed for managed state, single-instance, signals, etc.).
+            // The native egui window is the actual UI.
+            #[cfg(target_os = "linux")]
+            {
+                tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("about:blank".into()))
+                    .title("")
+                    .inner_size(1.0, 1.0)
+                    .visible(false)
+                    .skip_taskbar(true)
+                    .build()?;
             }
 
-            win_builder.build()?;
+            #[cfg(not(target_os = "linux"))]
+            {
+                let mut win_builder =
+                    tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
+                        .title("Handy")
+                        .inner_size(680.0, 570.0)
+                        .min_inner_size(680.0, 570.0)
+                        .resizable(true)
+                        .maximizable(false)
+                        .visible(false);
+
+                if let Some(data_dir) = portable::data_dir() {
+                    win_builder = win_builder.data_directory(data_dir.join("webview"));
+                }
+
+                win_builder.build()?;
+            }
 
             let mut settings = get_settings(&app.handle());
 
@@ -530,6 +569,7 @@ pub fn run(cli_args: CliArgs) {
             initialize_core_logic(&app_handle);
 
             // Hide tray icon if --no-tray was passed
+            #[cfg(not(target_os = "linux"))]
             if cli_args.no_tray {
                 tray::set_tray_visibility(&app_handle, false);
             }
@@ -543,6 +583,20 @@ pub fn run(cli_args: CliArgs) {
             // If start_hidden but tray is disabled, we must show the window
             // anyway. Without a tray icon, the dock is the only way back in.
             let tray_available = settings.show_tray_icon && !cli_args.no_tray;
+
+            #[cfg(target_os = "linux")]
+            {
+                let handle = app_handle.clone();
+                std::thread::spawn(move || {
+                    if let Err(e) = native_ui::run_settings_window(handle) {
+                        log::error!("Settings UI error: {}", e);
+                    }
+                    // egui window closed = quit the app
+                    std::process::exit(0);
+                });
+            }
+
+            #[cfg(not(target_os = "linux"))]
             if should_force_show || !should_hide || !tray_available {
                 show_main_window(&app_handle);
             }

@@ -45,9 +45,10 @@
     },
     "linux": {
       "deb": {
-        "depends": ["libgtk-layer-shell0"]
+        "depends": ["libgtk-layer-shell0", "wl-clipboard", "wtype | xdotool"]
       },
       "rpm": {
+        "requires": ["wl-clipboard", "wtype"],
         "compression": {
           "type": "none"
         }

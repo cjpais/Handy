@@ -46,6 +46,7 @@ impl TranscriptionCoordinator {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
+            debug!("Transcription coordinator thread started");
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let mut stage = Stage::Idle;
                 let mut last_press: Option<Instant> = None;
