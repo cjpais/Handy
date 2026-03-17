@@ -212,6 +212,7 @@
             preFixup = ''
               gappsWrapperArgs+=(
                 --set WEBKIT_DISABLE_DMABUF_RENDERER 1
+                --set ALSA_PLUGIN_DIR "${pkgs.pipewire}/lib/alsa-lib:${pkgs.alsa-plugins}/lib/alsa-lib"
                 --prefix LD_LIBRARY_PATH : "${
                   lib.makeLibraryPath [
                     pkgs.vulkan-loader
@@ -233,6 +234,22 @@
           default = self.packages.${system}.handy;
         }
       );
+
+      # NixOS module for system-level integration (udev, input group)
+      nixosModules.default =
+        { lib, pkgs, ... }:
+        {
+          imports = [ ./nix/module.nix ];
+          programs.handy.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.handy;
+        };
+
+      # Home-manager module for per-user service
+      homeManagerModules.default =
+        { lib, pkgs, ... }:
+        {
+          imports = [ ./nix/hm-module.nix ];
+          services.handy.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.handy;
+        };
 
       # Development shell for building from source
       devShells = forAllSystems (
