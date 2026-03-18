@@ -4,6 +4,7 @@
     "checkUpdates": "Rechercher des mises à jour...",
     "copyLastTranscript": "Copier la dernière transcription",
     "unloadModel": "Décharger le modèle",
+    "model": "Modèle",
     "quit": "Quitter",
     "cancel": "Annuler"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Très rapide. Chinois, anglais, japonais, coréen, cantonais."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Reconnaissance vocale en russe. Rapide et précis."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Très rapide. Anglais, allemand, espagnol, français. Supporte la traduction."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Multilingue précis. 25 langues européennes. Supporte la traduction."
       }
     },
     "errors": {
@@ -231,6 +244,16 @@
       "experimentalToggle": {
         "label": "Fonctionnalités Expérimentales",
         "description": "Activer les fonctionnalités expérimentales encore en développement."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Accélération Whisper",
+          "description": "Accélération matérielle pour les modèles Whisper. Auto utilise le GPU si disponible (Metal sur macOS, Vulkan sur Windows/Linux)."
+        },
+        "ort": {
+          "title": "Accélération ONNX",
+          "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
+        }
       },
       "startHidden": {
         "label": "Démarrer masqué",
@@ -449,13 +472,13 @@
         "description": "Couper le son du système pendant l'enregistrement"
       },
       "appendTrailingSpace": {
-        "label": "Ajouter un espace final",
-        "description": "Ajouter un espace après la transcription collée"
+        "label": "Ajouter une espace final",
+        "description": "Ajouter une espace après la transcription collée"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Gestion du clavier",
+        "description": "Choisissez le système des raccourcis clavier.",
+        "bindingsReset": "Raccourcis clavier étaient incompatibles et ont été réinitialisés aux valeurs par défaut"
       },
       "paths": {
         "appData": "Données de l'application :",
@@ -540,7 +563,17 @@
     "dismiss": "Ignorer"
   },
   "errors": {
-    "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}"
+    "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}",
+    "micPermissionDeniedTitle": "Accès au microphone refusé",
+    "micPermissionDenied": {
+      "generic": "L'accès au microphone a été refusé par le système d'exploitation. Veuillez accorder l'autorisation du microphone dans les paramètres système.",
+      "windows": "Activez l'accès au microphone dans Paramètres → Confidentialité et sécurité → Microphone (y compris l'accès des applications de bureau).",
+      "macos": "Accordez l'accès au microphone dans Réglages du système → Confidentialité et sécurité → Microphone.",
+      "linux": "Accordez l'accès au microphone dans les paramètres de son ou de confidentialité de votre système."
+    },
+    "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
+    "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
+    "modelLoadFailedUnknown": "modèle inconnu"
   },
   "appLanguage": {
     "title": "Langue de l'application",

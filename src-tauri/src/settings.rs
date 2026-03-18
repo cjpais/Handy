@@ -171,18 +171,16 @@ pub enum KeyboardImplementation {
 
 impl Default for KeyboardImplementation {
     fn default() -> Self {
-        // Default to HandyKeys only on macOS where it's well-tested.
-        // Windows and Linux use Tauri by default (handy-keys not sufficiently tested yet).
-        #[cfg(target_os = "macos")]
-        return KeyboardImplementation::HandyKeys;
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(target_os = "linux")]
         return KeyboardImplementation::Tauri;
+        #[cfg(not(target_os = "linux"))]
+        return KeyboardImplementation::HandyKeys;
     }
 }
 
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
-        ModelUnloadTimeout::Never
+        ModelUnloadTimeout::Min5
     }
 }
 
@@ -275,6 +273,37 @@ impl Default for TypingTool {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum WhisperAcceleratorSetting {
+    Auto,
+    Cpu,
+    Gpu,
+}
+
+impl Default for WhisperAcceleratorSetting {
+    fn default() -> Self {
+        WhisperAcceleratorSetting::Auto
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum OrtAcceleratorSetting {
+    Auto,
+    Cpu,
+    Cuda,
+    #[serde(rename = "directml")]
+    DirectMl,
+    Rocm,
+}
+
+impl Default for OrtAcceleratorSetting {
+    fn default() -> Self {
+        OrtAcceleratorSetting::Auto
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -362,6 +391,12 @@ pub struct AppSettings {
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub models_custom_dir: Option<String>,
+    #[serde(default)]
+    pub custom_filler_words: Option<Vec<String>>,
+    #[serde(default)]
+    pub whisper_accelerator: WhisperAcceleratorSetting,
+    #[serde(default)]
+    pub ort_accelerator: OrtAcceleratorSetting,
 }
 
 fn default_model() -> String {
@@ -702,7 +737,7 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
-        model_unload_timeout: ModelUnloadTimeout::Never,
+        model_unload_timeout: ModelUnloadTimeout::default(),
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),
@@ -727,6 +762,9 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         models_custom_dir: None,
+        custom_filler_words: None,
+        whisper_accelerator: WhisperAcceleratorSetting::default(),
+        ort_accelerator: OrtAcceleratorSetting::default(),
     }
 }
 
@@ -779,7 +817,7 @@ impl AppSettings {
 pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
     // Initialize store
     let store = app
-        .store(SETTINGS_STORE_PATH)
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
@@ -829,7 +867,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
 
 pub fn get_settings(app: &AppHandle) -> AppSettings {
     let store = app
-        .store(SETTINGS_STORE_PATH)
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
@@ -853,7 +891,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {
     let store = app
-        .store(SETTINGS_STORE_PATH)
+        .store(crate::portable::store_path(SETTINGS_STORE_PATH))
         .expect("Failed to initialize store");
 
     store.set("settings", serde_json::to_value(&settings).unwrap());

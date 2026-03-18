@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { RefreshCcw } from "lucide-react";
 import { commands } from "@/bindings";
 
@@ -314,12 +314,12 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                   "settings.postProcessing.prompts.promptInstructionsPlaceholder",
                 )}
               />
-              <p
-                className="text-xs text-mid-gray/70"
-                dangerouslySetInnerHTML={{
-                  __html: t("settings.postProcessing.prompts.promptTip"),
-                }}
-              />
+              <p className="text-xs text-mid-gray/70">
+                <Trans
+                  i18nKey="settings.postProcessing.prompts.promptTip"
+                  components={{ code: <code /> }}
+                />
+              </p>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -381,12 +381,12 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
                   "settings.postProcessing.prompts.promptInstructionsPlaceholder",
                 )}
               />
-              <p
-                className="text-xs text-mid-gray/70"
-                dangerouslySetInnerHTML={{
-                  __html: t("settings.postProcessing.prompts.promptTip"),
-                }}
-              />
+              <p className="text-xs text-mid-gray/70">
+                <Trans
+                  i18nKey="settings.postProcessing.prompts.promptTip"
+                  components={{ code: <code /> }}
+                />
+              </p>
             </div>
 
             <div className="flex gap-2 pt-2">

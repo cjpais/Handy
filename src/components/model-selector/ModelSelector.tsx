@@ -8,12 +8,7 @@ import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
 
-interface ModelStateEvent {
-  event_type: string;
-  model_id?: string;
-  model_name?: string;
-  error?: string;
-}
+import { ModelStateEvent } from "@/lib/types/events";
 
 type ModelStatus =
   | "ready"

@@ -4,6 +4,7 @@
     "checkUpdates": "Sprawdź aktualizacje...",
     "copyLastTranscript": "Kopiuj ostatnią transkrypcję",
     "unloadModel": "Zwolnij model",
+    "model": "Model",
     "quit": "Zamknij",
     "cancel": "Anuluj"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Bardzo szybki. Chiński, angielski, japoński, koreański, kantoński."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Rozpoznawanie mowy rosyjskiej. Szybkie i dokładne."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Bardzo szybki. Angielski, niemiecki, hiszpański, francuski. Obsługuje tłumaczenie."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Dokładny wielojęzyczny. 25 języków europejskich. Obsługuje tłumaczenie."
       }
     },
     "errors": {
@@ -231,6 +244,16 @@
       "experimentalToggle": {
         "label": "Funkcje Eksperymentalne",
         "description": "Włącz funkcje eksperymentalne, które są jeszcze w fazie rozwoju."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Akceleracja Whisper",
+          "description": "Akceleracja sprzętowa dla modeli Whisper. Tryb automatyczny używa GPU, jeśli jest dostępny (Metal na macOS, Vulkan na Windows/Linux)."
+        },
+        "ort": {
+          "title": "Akceleracja ONNX",
+          "description": "Akceleracja sprzętowa dla modeli ONNX (Parakeet, Canary, Moonshine itp.). DirectML na Windows jest eksperymentalne. Modele mogą nie transkrybować poprawnie."
+        }
       },
       "startHidden": {
         "label": "Uruchom ukryty",
@@ -453,9 +476,9 @@
         "description": "Dodaj spację po wklejonej transkrypcji"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Implementacja klawiatury",
+        "description": "Wybierz backend dla skrótów klawiaturowych.",
+        "bindingsReset": "Skróty klawiaturowe były niekompatybilne i zostały zresetowane do wartości domyślnych"
       },
       "paths": {
         "appData": "Dane aplikacji:",
@@ -540,7 +563,17 @@
     "dismiss": "Zamknij"
   },
   "errors": {
-    "loadDirectory": "Błąd wczytywania katalogu: {{error}}"
+    "loadDirectory": "Błąd wczytywania katalogu: {{error}}",
+    "micPermissionDeniedTitle": "Odmowa dostępu do mikrofonu",
+    "micPermissionDenied": {
+      "generic": "System operacyjny odmówił dostępu do mikrofonu. Przyznaj uprawnienia do mikrofonu w ustawieniach systemowych.",
+      "windows": "Włącz dostęp do mikrofonu w Ustawienia → Prywatność i zabezpieczenia → Mikrofon (w tym dostęp aplikacji klasycznych).",
+      "macos": "Przyznaj dostęp do mikrofonu w Ustawienia systemowe → Prywatność i ochrona → Mikrofon.",
+      "linux": "Przyznaj dostęp do mikrofonu w ustawieniach dźwięku lub prywatności systemu."
+    },
+    "recordingFailed": "Nie udało się rozpocząć nagrywania: {{error}}",
+    "modelLoadFailed": "Nie udało się załadować modelu: {{model}}",
+    "modelLoadFailedUnknown": "nieznany model"
   },
   "appLanguage": {
     "title": "Język aplikacji",

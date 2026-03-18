@@ -4,7 +4,7 @@
 
 **A free, open source, and extensible speech-to-text application that works completely offline.**
 
-Handy is a cross-platform desktop application built with Tauri (Rust + React/TypeScript) that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field—all without sending your voice to the cloud.
+Handy is a cross-platform desktop application that provides simple, privacy-focused speech transcription. Press a shortcut, speak, and have your words appear in any text field. This happens on your own computer without sending any information to the cloud.
 
 ## Why Handy?
 
@@ -38,6 +38,8 @@ The process is entirely local:
 
 1. Download the latest release from the [releases page](https://github.com/cjpais/Handy/releases) or the [website](https://handy.computer)
    - **macOS**: Also available via [Homebrew cask](https://formulae.brew.sh/cask/handy): `brew install --cask handy`
+   - **Windows**: Also available via [winget](https://github.com/microsoft/winget-pkgs): `winget install cjpais.Handy` \
+     **Note:** The Homebrew cask and winget package are not maintained by the Handy developers.
 2. Install the application
 3. Launch Handy and grant necessary system permissions (microphone, accessibility)
 4. Configure your preferred keyboard shortcuts in Settings
@@ -409,7 +411,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
 - **Community contributors** helping make Handy better
-
----
-
-_"Your search for the right speech-to-text tool can end here—not because Handy is perfect, but because you can make it perfect for you."_

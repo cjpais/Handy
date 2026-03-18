@@ -4,6 +4,7 @@
     "checkUpdates": "Перевірити оновлення...",
     "copyLastTranscript": "Скопіювати останню транскрипцію",
     "unloadModel": "Вивантажити модель",
+    "model": "Модель",
     "quit": "Вийти",
     "cancel": "Скасувати"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Дуже швидкий. Китайська, англійська, японська, корейська, кантонська."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Розпізнавання російського мовлення. Швидко і точно."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Дуже швидка. Англійська, німецька, іспанська, французька. Підтримує переклад."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Точна багатомовна. 25 європейських мов. Підтримує переклад."
       }
     },
     "errors": {
@@ -231,6 +244,16 @@
       "experimentalToggle": {
         "label": "Експериментальні функції",
         "description": "Увімкнути експериментальні функції, які ще в розробці."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Прискорення Whisper",
+          "description": "Апаратне прискорення для моделей Whisper. Автоматичний режим використовує GPU за наявності (Metal на macOS, Vulkan на Windows/Linux)."
+        },
+        "ort": {
+          "title": "Прискорення ONNX",
+          "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). DirectML на Windows є експериментальним. Моделі можуть не виконувати транскрипцію."
+        }
       },
       "startHidden": {
         "label": "Запуск у фоні",
@@ -453,9 +476,9 @@
         "description": "Додавати пробіл після вставленої транскрипції"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Реалізація клавіатури",
+        "description": "Оберіть бекенд для клавіатурних скорочень.",
+        "bindingsReset": "Клавіатурні скорочення були несумісні та скинуті до значень за замовчуванням"
       },
       "paths": {
         "appData": "Дані програми:",
@@ -540,7 +563,17 @@
     "dismiss": "Закрити"
   },
   "errors": {
-    "loadDirectory": "Помилка завантаження папки: {{error}}"
+    "loadDirectory": "Помилка завантаження папки: {{error}}",
+    "micPermissionDeniedTitle": "Доступ до мікрофона заборонено",
+    "micPermissionDenied": {
+      "generic": "Доступ до мікрофона було заборонено операційною системою. Надайте дозвіл на використання мікрофона в налаштуваннях системи.",
+      "windows": "Увімкніть доступ до мікрофона в Параметри → Конфіденційність і безпека → Мікрофон (включно з доступом класичних програм).",
+      "macos": "Надайте доступ до мікрофона в Системні налаштування → Конфіденційність і безпека → Мікрофон.",
+      "linux": "Надайте доступ до мікрофона в налаштуваннях звуку або конфіденційності вашої системи."
+    },
+    "recordingFailed": "Не вдалося розпочати запис: {{error}}",
+    "modelLoadFailed": "Не вдалося завантажити модель: {{model}}",
+    "modelLoadFailedUnknown": "невідома модель"
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",

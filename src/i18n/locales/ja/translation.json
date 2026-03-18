@@ -4,6 +4,7 @@
     "checkUpdates": "アップデートを確認...",
     "copyLastTranscript": "最新の文字起こしをコピー",
     "unloadModel": "モデルをアンロード",
+    "model": "モデル",
     "quit": "終了",
     "cancel": "キャンセル"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "非常に高速。中国語、英語、日本語、韓国語、広東語。"
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "ロシア語音声認識。高速かつ高精度。"
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "非常に高速。英語、ドイツ語、スペイン語、フランス語。翻訳対応。"
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "高精度な多言語対応。25のヨーロッパ言語。翻訳対応。"
       }
     },
     "errors": {
@@ -231,6 +244,16 @@
       "experimentalToggle": {
         "label": "実験的機能",
         "description": "まだ開発中の実験的機能を有効にします。"
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper アクセラレーション",
+          "description": "Whisper モデルのハードウェアアクセラレーション。自動モードでは利用可能な場合 GPU を使用します（macOS では Metal、Windows/Linux では Vulkan）。"
+        },
+        "ort": {
+          "title": "ONNX アクセラレーション",
+          "description": "ONNX モデルのハードウェアアクセラレーション（Parakeet、Canary、Moonshine など）。Windows の DirectML は実験的です。モデルの文字起こしに失敗する場合があります。"
+        }
       },
       "startHidden": {
         "label": "非表示で起動",
@@ -453,9 +476,9 @@
         "description": "貼り付けた文字起こしの後にスペースを追加"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "キーボード実装",
+        "description": "キーボードショートカットのバックエンドを選択してください。",
+        "bindingsReset": "キーボードショートカットに互換性がなかったため、デフォルトにリセットされました"
       },
       "paths": {
         "appData": "アプリデータ:",
@@ -540,7 +563,17 @@
     "dismiss": "閉じる"
   },
   "errors": {
-    "loadDirectory": "ディレクトリの読み込みエラー: {{error}}"
+    "loadDirectory": "ディレクトリの読み込みエラー: {{error}}",
+    "micPermissionDeniedTitle": "マイクへのアクセスが拒否されました",
+    "micPermissionDenied": {
+      "generic": "オペレーティングシステムによりマイクへのアクセスが拒否されました。システム設定でマイクの許可を付与してください。",
+      "windows": "設定 → プライバシーとセキュリティ → マイク（デスクトップアプリのアクセスを含む）でマイクへのアクセスを有効にしてください。",
+      "macos": "システム設定 → プライバシーとセキュリティ → マイクでマイクへのアクセスを許可してください。",
+      "linux": "システムのサウンドまたはプライバシー設定でマイクへのアクセスを許可してください。"
+    },
+    "recordingFailed": "録音の開始に失敗しました: {{error}}",
+    "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
+    "modelLoadFailedUnknown": "不明なモデル"
   },
   "appLanguage": {
     "title": "アプリケーション言語",

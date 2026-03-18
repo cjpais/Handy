@@ -11,6 +11,7 @@ mod input;
 mod llm_client;
 mod managers;
 mod overlay;
+pub mod portable;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -20,6 +21,7 @@ mod tray_i18n;
 mod utils;
 
 pub use cli::CliArgs;
+#[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, Builder};
 
@@ -84,24 +86,55 @@ fn build_console_filter() -> env_filter::Filter {
 
 fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
-        // First, ensure the window is visible
+        if let Err(e) = main_window.unminimize() {
+            log::error!("Failed to unminimize webview window: {}", e);
+        }
         if let Err(e) = main_window.show() {
-            log::error!("Failed to show window: {}", e);
+            log::error!("Failed to show webview window: {}", e);
         }
-        // Then, bring it to the front and give it focus
         if let Err(e) = main_window.set_focus() {
-            log::error!("Failed to focus window: {}", e);
+            log::error!("Failed to focus webview window: {}", e);
         }
-        // Optional: On macOS, ensure the app becomes active if it was an accessory
         #[cfg(target_os = "macos")]
         {
             if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
                 log::error!("Failed to set activation policy to Regular: {}", e);
             }
         }
-    } else {
-        log::error!("Main window not found.");
+        return;
     }
+
+    let webview_labels = app.webview_windows().keys().cloned().collect::<Vec<_>>();
+    log::error!(
+        "Main window not found. Webview labels: {:?}",
+        webview_labels
+    );
+}
+
+#[allow(unused_variables)]
+fn should_force_show_permissions_window(app: &AppHandle) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        let model_manager = app.state::<Arc<ModelManager>>();
+        let has_downloaded_models = model_manager
+            .get_available_models()
+            .iter()
+            .any(|model| model.is_downloaded);
+
+        if !has_downloaded_models {
+            return false;
+        }
+
+        let status = commands::audio::get_windows_microphone_permission_status();
+        if status.supported && status.overall_access == commands::audio::PermissionAccess::Denied {
+            log::info!(
+                "Windows microphone permissions are denied; forcing main window visible for onboarding"
+            );
+            return true;
+        }
+    }
+
+    false
 }
 
 fn initialize_core_logic(app_handle: &AppHandle) {
@@ -123,6 +156,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
+    // Apply accelerator preferences before any model loads
+    managers::transcription::apply_accelerator_settings(app_handle);
+
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
@@ -140,11 +176,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     #[cfg(unix)]
     signal_handle::setup_signal_handler(app_handle.clone(), signals);
 
-    // Apply macOS Accessory policy if starting hidden
+    // Apply macOS Accessory policy if starting hidden and tray is available.
+    // If the tray icon is disabled, keep the dock icon so the user can reopen.
     #[cfg(target_os = "macos")]
     {
         let settings = settings::get_settings(app_handle);
-        if settings.start_hidden {
+        if settings.start_hidden && settings.show_tray_icon {
             let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
         }
     }
@@ -200,6 +237,25 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             "quit" => {
                 app.exit(0);
             }
+            id if id.starts_with("model_select:") => {
+                let model_id = id.strip_prefix("model_select:").unwrap().to_string();
+                let current_model = settings::get_settings(app).selected_model;
+                if model_id == current_model {
+                    return;
+                }
+                let app_clone = app.clone();
+                std::thread::spawn(move || {
+                    match commands::models::switch_active_model(&app_clone, &model_id) {
+                        Ok(()) => {
+                            log::info!("Model switched to {} via tray.", model_id);
+                        }
+                        Err(e) => {
+                            log::error!("Failed to switch model via tray: {}", e);
+                        }
+                    }
+                    tray::update_tray_menu(&app_clone, &tray::TrayIconState::Idle, None);
+                });
+            }
             _ => {}
         })
         .build(app_handle)
@@ -249,8 +305,18 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+fn show_main_window_command(app: AppHandle) -> Result<(), String> {
+    show_main_window(&app);
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run(cli_args: CliArgs) {
+    // Detect portable mode before anything else
+    portable::init();
+
     // Parse console logging directives from RUST_LOG, falling back to info-level logging
     // when the variable is unset
     let console_filter = build_console_filter();
@@ -297,9 +363,13 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
         shortcut::change_show_tray_icon_setting,
+        shortcut::change_whisper_accelerator_setting,
+        shortcut::change_ort_accelerator_setting,
+        shortcut::get_available_accelerators,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
+        show_main_window_command,
         commands::cancel_operation,
         commands::get_app_dir_path,
         commands::get_app_settings,
@@ -328,6 +398,8 @@ pub fn run(cli_args: CliArgs) {
         commands::models::has_any_models_or_downloads,
         commands::audio::update_microphone_mode,
         commands::audio::get_microphone_mode,
+        commands::audio::get_windows_microphone_permission_status,
+        commands::audio::open_microphone_privacy_settings,
         commands::audio::get_available_microphones,
         commands::audio::set_selected_microphone,
         commands::audio::get_selected_microphone,
@@ -359,6 +431,7 @@ pub fn run(cli_args: CliArgs) {
         )
         .expect("Failed to export typescript bindings");
 
+    #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
         .device_event_filter(tauri::DeviceEventFilter::Always)
         .plugin(tauri_plugin_dialog::init())
@@ -375,8 +448,15 @@ pub fn run(cli_args: CliArgs) {
                         move |metadata| console_filter.enabled(metadata)
                     }),
                     // File logs respect the user's settings (stored in FILE_LOG_LEVEL atomic)
-                    Target::new(TargetKind::LogDir {
-                        file_name: Some("handy".into()),
+                    Target::new(if let Some(data_dir) = portable::data_dir() {
+                        TargetKind::Folder {
+                            path: data_dir.join("logs"),
+                            file_name: Some("handy".into()),
+                        }
+                    } else {
+                        TargetKind::LogDir {
+                            file_name: Some("handy".into()),
+                        }
                     })
                     .filter(|metadata| {
                         let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
@@ -418,6 +498,23 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
+            // Create main window programmatically so we can set data_directory
+            // for portable mode (redirects WebView2 cache to portable Data dir)
+            let mut win_builder =
+                tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
+                    .title("Handy")
+                    .inner_size(680.0, 570.0)
+                    .min_inner_size(680.0, 570.0)
+                    .resizable(true)
+                    .maximizable(false)
+                    .visible(false);
+
+            if let Some(data_dir) = portable::data_dir() {
+                win_builder = win_builder.data_directory(data_dir.join("webview"));
+            }
+
+            win_builder.build()?;
+
             let mut settings = get_settings(&app.handle());
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
@@ -440,37 +537,41 @@ pub fn run(cli_args: CliArgs) {
                 tray::set_tray_visibility(&app_handle, false);
             }
 
-            // Show main window only if not starting hidden
-            // CLI --start-hidden flag overrides the setting
+            // Show main window only if not starting hidden.
+            // CLI --start-hidden flag overrides the setting.
+            // But if permission onboarding is required, always show the window.
             let should_hide = settings.start_hidden || cli_args.start_hidden;
-            if !should_hide {
-                if let Some(main_window) = app_handle.get_webview_window("main") {
-                    main_window.show().unwrap();
-                    main_window.set_focus().unwrap();
-                }
+            let should_force_show = should_force_show_permissions_window(&app_handle);
+
+            // If start_hidden but tray is disabled, we must show the window
+            // anyway. Without a tray icon, the dock is the only way back in.
+            let tray_available = settings.show_tray_icon && !cli_args.no_tray;
+            if should_force_show || !should_hide || !tray_available {
+                show_main_window(&app_handle);
             }
 
             Ok(())
         })
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::CloseRequested { api, .. } => {
-                let settings = get_settings(&window.app_handle());
-                let cli = window.app_handle().state::<CliArgs>();
-                // If tray icon is hidden (via setting or --no-tray flag), quit the app
-                if !settings.show_tray_icon || cli.no_tray {
-                    window.app_handle().exit(0);
-                    return;
-                }
                 api.prevent_close();
                 let _res = window.hide();
+
                 #[cfg(target_os = "macos")]
                 {
-                    let res = window
-                        .app_handle()
-                        .set_activation_policy(tauri::ActivationPolicy::Accessory);
-                    if let Err(e) = res {
-                        log::error!("Failed to set activation policy: {}", e);
+                    let settings = get_settings(&window.app_handle());
+                    let tray_visible =
+                        settings.show_tray_icon && !window.app_handle().state::<CliArgs>().no_tray;
+                    if tray_visible {
+                        // Tray is available: hide the dock icon, app lives in the tray
+                        let res = window
+                            .app_handle()
+                            .set_activation_policy(tauri::ActivationPolicy::Accessory);
+                        if let Err(e) = res {
+                            log::error!("Failed to set activation policy: {}", e);
+                        }
                     }
+                    // No tray: keep the dock icon visible so the user can reopen
                 }
             }
             tauri::WindowEvent::ThemeChanged(theme) => {
@@ -481,6 +582,13 @@ pub fn run(cli_args: CliArgs) {
             _ => {}
         })
         .invoke_handler(specta_builder.invoke_handler())
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = &event {
+                show_main_window(app);
+            }
+            let _ = (app, event); // suppress unused warnings on non-macOS
+        });
 }

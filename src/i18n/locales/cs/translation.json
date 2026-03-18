@@ -4,6 +4,7 @@
     "checkUpdates": "Zkontrolovat aktualizace...",
     "copyLastTranscript": "Zkopírovat poslední přepis",
     "unloadModel": "Uvolnit model",
+    "model": "Model",
     "quit": "Ukončit",
     "cancel": "Zrušit"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Velmi rychlý. Čínština, angličtina, japonština, korejština, kantonština."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Rozpoznávání ruské řeči. Rychlé a přesné."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Velmi rychlý. Angličtina, němčina, španělština, francouzština. Podporuje překlad."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Přesný vícejazyčný. 25 evropských jazyků. Podporuje překlad."
       }
     },
     "errors": {
@@ -231,6 +244,16 @@
       "experimentalToggle": {
         "label": "Experimentální funkce",
         "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Akcelerace Whisper",
+          "description": "Hardwarová akcelerace pro modely Whisper. Automatický režim používá GPU, pokud je k dispozici (Metal na macOS, Vulkan na Windows/Linux)."
+        },
+        "ort": {
+          "title": "Akcelerace ONNX",
+          "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
+        }
       },
       "startHidden": {
         "label": "Spouštět skrytě",
@@ -453,9 +476,9 @@
         "description": "Přidat mezeru po vloženém přepisu"
       },
       "keyboardImplementation": {
-        "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
-        "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
+        "title": "Implementace klávesnice",
+        "description": "Zvolte backend pro klávesové zkratky.",
+        "bindingsReset": "Klávesové zkratky byly nekompatibilní a byly obnoveny na výchozí hodnoty"
       },
       "paths": {
         "appData": "Data aplikace:",
@@ -540,7 +563,17 @@
     "dismiss": "Zavřít"
   },
   "errors": {
-    "loadDirectory": "Chyba při načítání adresáře: {{error}}"
+    "loadDirectory": "Chyba při načítání adresáře: {{error}}",
+    "micPermissionDeniedTitle": "Přístup k mikrofonu byl odepřen",
+    "micPermissionDenied": {
+      "generic": "Přístup k mikrofonu byl odepřen operačním systémem. Povolte prosím přístup k mikrofonu v nastavení systému.",
+      "windows": "Povolte přístup k mikrofonu v Nastavení → Soukromí a zabezpečení → Mikrofon (včetně přístupu desktopových aplikací).",
+      "macos": "Povolte přístup k mikrofonu v Nastavení systému → Soukromí a zabezpečení → Mikrofon.",
+      "linux": "Povolte přístup k mikrofonu v nastavení zvuku nebo soukromí vašeho systému."
+    },
+    "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
+    "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
+    "modelLoadFailedUnknown": "neznámý model"
   },
   "appLanguage": {
     "title": "Jazyk aplikace",

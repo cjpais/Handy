@@ -4,6 +4,7 @@
     "checkUpdates": "Check for Updates...",
     "copyLastTranscript": "Copy Last Transcript",
     "unloadModel": "Unload Model",
+    "model": "Model",
     "quit": "Quit",
     "cancel": "Cancel"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "Very fast. Chinese, English, Japanese, Korean, Cantonese."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Russian speech recognition. Fast and accurate."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Very fast. English, German, Spanish, French. Supports translation."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Accurate multilingual. 25 European languages. Supports translation."
       }
     },
     "errors": {
@@ -231,6 +244,16 @@
       "experimentalToggle": {
         "label": "Experimental Features",
         "description": "Enable experimental features that are still in development."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper Acceleration",
+          "description": "Hardware acceleration for Whisper models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
+        },
+        "ort": {
+          "title": "ONNX Acceleration",
+          "description": "Hardware acceleration for ONNX models (Parakeet, Canary, Moonshine, etc.). DirectML on Windows is experimental. Models may fail to transcribe."
+        }
       },
       "startHidden": {
         "label": "Start Hidden",
@@ -553,7 +576,17 @@
     "dismiss": "Dismiss"
   },
   "errors": {
-    "loadDirectory": "Error loading directory: {{error}}"
+    "loadDirectory": "Error loading directory: {{error}}",
+    "micPermissionDeniedTitle": "Microphone Access Denied",
+    "micPermissionDenied": {
+      "generic": "Microphone access was denied by the operating system. Please grant microphone permission in your system settings.",
+      "windows": "Enable microphone access in Settings → Privacy & security → Microphone (including desktop app access).",
+      "macos": "Grant microphone access in System Settings → Privacy & Security → Microphone.",
+      "linux": "Grant microphone access in your system's sound or privacy settings."
+    },
+    "recordingFailed": "Failed to start recording: {{error}}",
+    "modelLoadFailed": "Failed to load model: {{model}}",
+    "modelLoadFailedUnknown": "unknown model"
   },
   "appLanguage": {
     "title": "Application Language",

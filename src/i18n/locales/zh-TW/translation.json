@@ -4,6 +4,7 @@
     "checkUpdates": "檢查更新...",
     "copyLastTranscript": "複製最新轉錄",
     "unloadModel": "卸載模型",
+    "model": "模型",
     "quit": "結束",
     "cancel": "取消"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "速度極快。支援中文、英語、日語、韓語、粵語。"
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "俄語語音辨識。快速且準確。"
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "速度極快。支援英語、德語、西班牙語、法語。支援翻譯。"
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "準確的多語言模型。25種歐洲語言。支援翻譯。"
       }
     },
     "errors": {
@@ -231,6 +244,16 @@
       "experimentalToggle": {
         "label": "實驗性功能",
         "description": "啟用仍在開發中的實驗性功能"
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper 加速",
+          "description": "Whisper 模型的硬體加速。自動模式在可用時使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
+        },
+        "ort": {
+          "title": "ONNX 加速",
+          "description": "ONNX 模型的硬體加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 為實驗性功能。模型可能無法正常轉錄。"
+        }
       },
       "startHidden": {
         "label": "隱藏啟動",
@@ -540,7 +563,17 @@
     "dismiss": "關閉"
   },
   "errors": {
-    "loadDirectory": "載入目錄時發生錯誤: {{error}}"
+    "loadDirectory": "載入目錄時發生錯誤: {{error}}",
+    "micPermissionDeniedTitle": "麥克風存取被拒絕",
+    "micPermissionDenied": {
+      "generic": "作業系統拒絕了麥克風存取。請在系統設定中授予麥克風權限。",
+      "windows": "在設定 → 隱私與安全性 → 麥克風（包括桌面應用程式存取）中啟用麥克風存取。",
+      "macos": "在系統設定 → 隱私與安全性 → 麥克風中授予麥克風存取權限。",
+      "linux": "在系統的聲音或隱私設定中授予麥克風存取權限。"
+    },
+    "recordingFailed": "錄音啟動失敗: {{error}}",
+    "modelLoadFailed": "載入模型失敗: {{model}}",
+    "modelLoadFailedUnknown": "未知模型"
   },
   "appLanguage": {
     "title": "應用程式語言",

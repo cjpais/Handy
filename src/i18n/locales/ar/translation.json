@@ -4,6 +4,7 @@
     "checkUpdates": "...التحقق من وجود تحديثات",
     "copyLastTranscript": "نسخ آخر نص تم تفريغه",
     "unloadModel": "تفريغ النموذج",
+    "model": "النموذج",
     "quit": "إنهاء",
     "cancel": "إلغاء"
   },
@@ -75,6 +76,18 @@
       "sense-voice-int8": {
         "name": "SenseVoice",
         "description": "سريع جداً. الصينية، الإنجليزية، اليابانية، الكورية، الكانتونية."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "التعرف على الكلام الروسي. سريع ودقيق."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "سريع جداً. الإنجليزية، الألمانية، الإسبانية، الفرنسية. يدعم الترجمة."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "متعدد اللغات ودقيق. 25 لغة أوروبية. يدعم الترجمة."
       }
     },
     "errors": {
@@ -209,6 +222,16 @@
       "experimentalToggle": {
         "label": "الميزات التجريبية",
         "description": ".تمكين الميزات التجريبية التي لا تزال قيد التطوير"
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "تسريع Whisper",
+          "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
+        },
+        "ort": {
+          "title": "تسريع ONNX",
+          "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
+        }
       },
       "startHidden": {
         "label": "بدء مخفي",
@@ -540,7 +563,17 @@
     "dismiss": "تجاهل"
   },
   "errors": {
-    "loadDirectory": "خطأ في تحميل المجلد: {{error}}"
+    "loadDirectory": "خطأ في تحميل المجلد: {{error}}",
+    "micPermissionDeniedTitle": "تم رفض الوصول إلى الميكروفون",
+    "micPermissionDenied": {
+      "generic": "تم رفض الوصول إلى الميكروفون من قبل نظام التشغيل. يرجى منح إذن الميكروفون في إعدادات النظام.",
+      "windows": "قم بتمكين الوصول إلى الميكروفون في الإعدادات ← الخصوصية والأمان ← الميكروفون (بما في ذلك وصول تطبيقات سطح المكتب).",
+      "macos": "امنح الوصول إلى الميكروفون في إعدادات النظام ← الخصوصية والأمان ← الميكروفون.",
+      "linux": "امنح الوصول إلى الميكروفون في إعدادات الصوت أو الخصوصية في نظامك."
+    },
+    "recordingFailed": "فشل في بدء التسجيل: {{error}}",
+    "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
+    "modelLoadFailedUnknown": "نموذج غير معروف"
   },
   "appLanguage": {
     "title": "لغة التطبيق",
