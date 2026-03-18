@@ -798,7 +798,7 @@ async updateRecordingRetentionPeriod(period: RecordingRetentionPeriod) : Promise
 },
 /**
  * Checks if the Mac is a laptop by detecting battery presence
- *
+ * 
  * This uses pmset to check for battery information.
  * Returns true if a battery is detected (laptop), false otherwise (desktop)
  */
@@ -841,7 +841,7 @@ export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { 
 /**
  * Result of changing keyboard implementation
  */
-export type ImplementationChangeResult = { success: boolean;
+export type ImplementationChangeResult = { success: boolean; 
 /**
  * List of binding IDs that were reset to defaults due to incompatibility
  */
@@ -851,7 +851,7 @@ export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; sha256: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
-export type ModelUnloadTimeout = "never" | "immediately" | "min2" | "min5" | "min10" | "min15" | "hour1" | "sec5"
+export type ModelUnloadTimeout = "never" | "immediately" | "min2" | "min5" | "min10" | "min15" | "hour1" | "sec15"
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
