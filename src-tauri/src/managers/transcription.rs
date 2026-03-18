@@ -107,9 +107,16 @@ impl TranscriptionManager {
                     }
 
                     let settings = get_settings(&app_handle_cloned);
-                    let timeout_seconds = settings.model_unload_timeout.to_seconds();
+                    let timeout = settings.model_unload_timeout;
 
-                    if let Some(limit_seconds) = timeout_seconds {
+                    // Skip Immediately — that variant is handled by
+                    // maybe_unload_immediately() after each transcription.
+                    // Treating it as 0s here would unload the model mid-recording.
+                    if timeout == ModelUnloadTimeout::Immediately {
+                        continue;
+                    }
+
+                    if let Some(limit_seconds) = timeout.to_seconds() {
                         let last = manager_cloned.last_activity.load(Ordering::Relaxed);
                         let now_ms = SystemTime::now()
                             .duration_since(SystemTime::UNIX_EPOCH)
