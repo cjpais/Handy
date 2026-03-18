@@ -441,10 +441,6 @@
         "description": "保持する履歴エントリーの最大数",
         "entries": "件"
       },
-      "recordingsDirectory": {
-        "title": "Recordings Folder",
-        "description": "Choose where audio recordings are saved. When disabled, recordings are stored in the app data folder."
-      },
       "recordingRetention": {
         "title": "録音の自動削除",
         "description": "古い録音を自動的に削除して容量を節約",

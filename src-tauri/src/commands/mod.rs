@@ -159,19 +159,49 @@ fn move_model_files_between_dirs(
             continue;
         }
 
-        let move_result = if source.is_dir() {
-            std::fs::rename(&source, &target)
-        } else {
-            std::fs::rename(&source, &target)
+        // Try rename first (fast, same-filesystem). If that fails (e.g.
+        // cross-filesystem), fall back to copy + delete.
+        let ok = std::fs::rename(&source, &target).is_ok() || {
+            let copied = if source.is_dir() {
+                copy_dir_recursive(&source, &target)
+            } else {
+                std::fs::copy(&source, &target).map(|_| ())
+            };
+            match copied {
+                Ok(()) => {
+                    if source.is_dir() {
+                        std::fs::remove_dir_all(&source).ok();
+                    } else {
+                        std::fs::remove_file(&source).ok();
+                    }
+                    true
+                }
+                Err(_) => false,
+            }
         };
 
-        match move_result {
-            Ok(_) => result.moved += 1,
-            Err(_) => result.failed += 1,
+        if ok {
+            result.moved += 1;
+        } else {
+            result.failed += 1;
         }
     }
 
     Ok(result)
+}
+
+fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> Result<(), std::io::Error> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let target = dst.join(entry.file_name());
+        if entry.file_type()?.is_dir() {
+            copy_dir_recursive(&entry.path(), &target)?;
+        } else {
+            std::fs::copy(entry.path(), target)?;
+        }
+    }
+    Ok(())
 }
 
 /// Set (or clear) the custom models directory.
@@ -228,6 +258,12 @@ pub async fn set_models_directory(
     if move_existing && old_dir != new_dir && old_dir.exists() {
         result = move_model_files_between_dirs(&old_dir, &new_dir)?;
     }
+
+    // Refresh the ModelManager so it picks up the new directory immediately
+    let model_manager = app.state::<std::sync::Arc<crate::managers::model::ModelManager>>();
+    model_manager
+        .update_models_dir(new_dir)
+        .map_err(|e| format!("Failed to refresh model manager: {}", e))?;
 
     Ok(result)
 }

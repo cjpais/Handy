@@ -441,10 +441,6 @@
         "description": "Massimo numero di elementi da conservare nella cronologia",
         "entries": "elementi"
       },
-      "recordingsDirectory": {
-        "title": "Recordings Folder",
-        "description": "Choose where audio recordings are saved. When disabled, recordings are stored in the app data folder."
-      },
       "recordingRetention": {
         "title": "Eliminazione Automatica Registrazioni",
         "description": "Elimina automaticamente le registrazioni vecchie per liberare spazio",

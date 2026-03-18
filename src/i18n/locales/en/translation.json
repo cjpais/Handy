@@ -441,21 +441,6 @@
         "description": "Maximum number of history entries to keep",
         "entries": "entries"
       },
-      "recordingsDirectory": {
-        "title": "Recordings Directory",
-        "description": "Choose where audio recordings are saved. When disabled, recordings are stored in the app data folder."
-      },
-      "modelsDirectory": {
-        "title": "Models Directory",
-        "description": "Choose where AI models are stored. When disabled, models are stored in the app data folder.",
-        "success": "Models directory updated.",
-        "confirmDisableTitle": "Revert to Default Directory?",
-        "confirmDisableMessage": "Models will be moved back to the default app data folder.",
-        "moveResult_moved": "Moved {{count}} model(s) to new directory.",
-        "moveResult_skipped": "{{count}} model file(s) skipped (already exist at destination).",
-        "moveResult_failed": "{{count}} model file(s) could not be moved.",
-        "errorSetDir": "Failed to set models directory: {{error}}"
-      },
       "recordingRetention": {
         "title": "Auto-Delete Recordings",
         "description": "Automatically delete old recordings to save space",
@@ -510,6 +495,17 @@
       "appDataDirectory": {
         "title": "App Data Directory",
         "description": "Location where Handy stores its data"
+      },
+      "modelsDirectory": {
+        "title": "Models Directory",
+        "description": "Location where AI models are stored",
+        "success": "Models directory updated.",
+        "confirmRevertTitle": "Revert to Default Directory?",
+        "confirmRevertMessage": "Models will be moved back to the default app data folder.",
+        "moveResult_moved": "Moved {{count}} model(s) to new directory.",
+        "moveResult_skipped": "{{count}} model(s) skipped (already exist at destination).",
+        "moveResult_failed": "{{count}} model(s) could not be moved.",
+        "errorSetDir": "Failed to set models directory: {{error}}"
       },
       "sourceCode": {
         "title": "Source Code",

@@ -441,10 +441,6 @@
         "description": "Maksymalna liczba wpisów w historii",
         "entries": "wpisy"
       },
-      "recordingsDirectory": {
-        "title": "Recordings Folder",
-        "description": "Choose where audio recordings are saved. When disabled, recordings are stored in the app data folder."
-      },
       "recordingRetention": {
         "title": "Automatyczne usuwanie nagrań",
         "description": "Automatycznie usuwaj stare nagrania, aby zaoszczędzić miejsce",

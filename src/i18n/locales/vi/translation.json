@@ -441,10 +441,6 @@
         "description": "Số lượng mục lịch sử tối đa cần giữ",
         "entries": "mục"
       },
-      "recordingsDirectory": {
-        "title": "Recordings Folder",
-        "description": "Choose where audio recordings are saved. When disabled, recordings are stored in the app data folder."
-      },
       "recordingRetention": {
         "title": "Tự động xóa ghi âm",
         "description": "Tự động xóa các bản ghi âm cũ để tiết kiệm dung lượng",

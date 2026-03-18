@@ -59,7 +59,7 @@ pub struct DownloadProgress {
 
 pub struct ModelManager {
     app_handle: AppHandle,
-    models_dir: PathBuf,
+    models_dir: Mutex<PathBuf>,
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
@@ -504,7 +504,7 @@ impl ModelManager {
 
         let manager = Self {
             app_handle: app_handle.clone(),
-            models_dir,
+            models_dir: Mutex::new(models_dir),
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             extracting_models: Arc::new(Mutex::new(HashSet::new())),
@@ -532,6 +532,29 @@ impl ModelManager {
         models.get(model_id).cloned()
     }
 
+    fn models_dir(&self) -> PathBuf {
+        self.models_dir.lock().unwrap().clone()
+    }
+
+    /// Update the models directory to a new path and re-scan for models.
+    pub fn update_models_dir(&self, new_dir: PathBuf) -> Result<()> {
+        {
+            let mut dir = self.models_dir.lock().unwrap();
+            *dir = new_dir;
+        }
+        // Re-discover custom models and refresh download status
+        let models_dir = self.models_dir();
+        let mut available_models = self.available_models.lock().unwrap();
+        // Remove old custom models before re-scanning
+        available_models.retain(|_, m| !m.is_custom);
+        if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
+            warn!("Failed to discover custom models after dir change: {}", e);
+        }
+        drop(available_models);
+        self.update_download_status()?;
+        Ok(())
+    }
+
     fn migrate_bundled_models(&self) -> Result<()> {
         // Check for bundled models and copy them to user directory
         let bundled_models = ["ggml-small.bin"]; // Add other bundled models here if any
@@ -544,7 +567,7 @@ impl ModelManager {
 
             if let Ok(bundled_path) = bundled_path {
                 if bundled_path.exists() {
-                    let user_path = self.models_dir.join(filename);
+                    let user_path = self.models_dir().join(filename);
 
                     // Only copy if user doesn't already have the model
                     if !user_path.exists() {
@@ -565,10 +588,12 @@ impl ModelManager {
         for model in models.values_mut() {
             if model.is_directory {
                 // For directory-based models, check if the directory exists
-                let model_path = self.models_dir.join(&model.filename);
-                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                let model_path = self.models_dir().join(&model.filename);
+                let partial_path = self
+                    .models_dir()
+                    .join(format!("{}.partial", &model.filename));
                 let extracting_path = self
-                    .models_dir
+                    .models_dir()
                     .join(format!("{}.extracting", &model.filename));
 
                 // Clean up any leftover .extracting directories from interrupted extractions
@@ -593,8 +618,10 @@ impl ModelManager {
                 }
             } else {
                 // For file-based models (existing logic)
-                let model_path = self.models_dir.join(&model.filename);
-                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                let model_path = self.models_dir().join(&model.filename);
+                let partial_path = self
+                    .models_dir()
+                    .join(format!("{}.partial", &model.filename));
 
                 model.is_downloaded = model_path.exists();
                 model.is_downloading = false;
@@ -785,9 +812,9 @@ impl ModelManager {
         let url = model_info
             .url
             .ok_or_else(|| anyhow::anyhow!("No download URL for model"))?;
-        let model_path = self.models_dir.join(&model_info.filename);
+        let model_path = self.models_dir().join(&model_info.filename);
         let partial_path = self
-            .models_dir
+            .models_dir()
             .join(format!("{}.partial", &model_info.filename));
 
         // Don't download if complete version already exists
@@ -1020,9 +1047,9 @@ impl ModelManager {
 
             // Use a temporary extraction directory to ensure atomic operations
             let temp_extract_dir = self
-                .models_dir
+                .models_dir()
                 .join(format!("{}.extracting", &model_info.filename));
-            let final_model_dir = self.models_dir.join(&model_info.filename);
+            let final_model_dir = self.models_dir().join(&model_info.filename);
 
             // Clean up any previous incomplete extraction
             if temp_extract_dir.exists() {
@@ -1136,9 +1163,9 @@ impl ModelManager {
 
         debug!("ModelManager: Found model info: {:?}", model_info);
 
-        let model_path = self.models_dir.join(&model_info.filename);
+        let model_path = self.models_dir().join(&model_info.filename);
         let partial_path = self
-            .models_dir
+            .models_dir()
             .join(format!("{}.partial", &model_info.filename));
         debug!("ModelManager: Model path: {:?}", model_path);
         debug!("ModelManager: Partial path: {:?}", partial_path);
@@ -1210,9 +1237,9 @@ impl ModelManager {
             ));
         }
 
-        let model_path = self.models_dir.join(&model_info.filename);
+        let model_path = self.models_dir().join(&model_info.filename);
         let partial_path = self
-            .models_dir
+            .models_dir()
             .join(format!("{}.partial", &model_info.filename));
 
         if model_info.is_directory {
