@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
@@ -74,6 +74,49 @@ export const HistorySettings: React.FC = () => {
       });
     };
   }, [loadHistoryEntries]);
+
+  const stats = useMemo(() => {
+    if (historyEntries.length === 0) return null;
+
+    const now = new Date();
+    const total = historyEntries.length;
+
+    // Start of current ISO week (Monday)
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    startOfWeek.setDate(startOfWeek.getDate() - diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+    const weekStart = Math.floor(startOfWeek.getTime() / 1000);
+
+    // Start of current month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStart = Math.floor(startOfMonth.getTime() / 1000);
+
+    let thisWeek = 0;
+    let thisMonth = 0;
+    let postProcessed = 0;
+    for (const e of historyEntries) {
+      if (e.timestamp >= monthStart) {
+        thisMonth++;
+        if (e.timestamp >= weekStart) thisWeek++;
+      }
+      if (e.post_processed_text !== null) postProcessed++;
+    }
+
+    // Daily average (include both first and current day)
+    const oldest = Math.min(...historyEntries.map((e) => e.timestamp));
+    const daysSinceFirst = Math.floor((now.getTime() / 1000 - oldest) / 86400);
+    const dailyAvg =
+      daysSinceFirst === 0
+        ? String(total)
+        : (total / (daysSinceFirst + 1)).toFixed(1);
+
+    // Post-processing rate
+    const postProcessRate = Math.round((postProcessed / total) * 100);
+
+    return { total, thisWeek, thisMonth, dailyAvg, postProcessRate };
+  }, [historyEntries]);
 
   const toggleSaved = async (id: number) => {
     try {
@@ -184,6 +227,48 @@ export const HistorySettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      {stats && (
+        <div className="space-y-2">
+          <div className="px-4">
+            <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
+              {t("settings.history.stats.title")}
+            </h2>
+          </div>
+          <div className="bg-background border border-mid-gray/20 rounded-lg divide-y divide-mid-gray/20">
+            <div className="flex items-center justify-between px-4 py-2">
+              <span className="text-sm">
+                {t("settings.history.stats.totalTranscriptions")}
+              </span>
+              <span className="text-sm font-medium">{stats.total}</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2">
+              <span className="text-sm">
+                {t("settings.history.stats.recentActivity")}
+              </span>
+              <span className="text-sm font-medium">
+                {t("settings.history.stats.recentActivityValue", {
+                  week: stats.thisWeek,
+                  month: stats.thisMonth,
+                })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2">
+              <span className="text-sm">
+                {t("settings.history.stats.dailyAverage")}
+              </span>
+              <span className="text-sm font-medium">{stats.dailyAvg}</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-2">
+              <span className="text-sm">
+                {t("settings.history.stats.postProcessingRate")}
+              </span>
+              <span className="text-sm font-medium">
+                {stats.postProcessRate}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="space-y-2">
         <div className="px-4 flex items-center justify-between">
           <div>

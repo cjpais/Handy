@@ -412,7 +412,15 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "stats": {
+        "title": "Usage Stats",
+        "totalTranscriptions": "Total transcriptions",
+        "recentActivity": "Recent activity",
+        "recentActivityValue": "{{week}} this week · {{month}} this month",
+        "dailyAverage": "Daily average",
+        "postProcessingRate": "Post-processing rate"
+      }
     },
     "debug": {
       "title": "Debug",
