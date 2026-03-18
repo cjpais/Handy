@@ -23,6 +23,9 @@ struct SessionState {
     generation: u64,
     pause_in_flight: bool,
     paused_playback: Option<PausedPlaybackState>,
+    /// Set when `resume_after_recording` is called while a pause is still in-flight.
+    /// Stores whether playback should be resumed once the in-flight pause result arrives.
+    stale_resume_play: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -98,6 +101,20 @@ impl MediaControlManager {
 
         if state.generation != generation {
             debug!("Discarding stale media pause result after recording session changed");
+            let should_resume = state.stale_resume_play;
+            state.stale_resume_play = false;
+            drop(state);
+            // The recording session already ended while we were pausing.  If we actually
+            // paused something and the caller wanted playback resumed, do it now so media
+            // doesn't stay stuck in the paused state.
+            if should_resume {
+                if let Ok(Some(paused_playback)) = pause_result {
+                    match self.backend.resume_playback(paused_playback) {
+                        Ok(()) => info!("Resumed media playback after stale recording pause"),
+                        Err(err) => warn!("Failed to resume stale media pause: {err}"),
+                    }
+                }
+            }
             return;
         }
 
@@ -119,6 +136,9 @@ impl MediaControlManager {
         let paused_playback = {
             let mut state = self.state.lock().unwrap();
             state.generation = state.generation.wrapping_add(1);
+            // If the pause backend call is still in-flight, record the user's preference so
+            // the pause thread can resume immediately when its result eventually arrives.
+            state.stale_resume_play = state.pause_in_flight && play_after_recording;
             state.pause_in_flight = false;
             state.paused_playback.take()
         };
@@ -173,11 +193,6 @@ fn platform_resume_playback(paused_playback: PausedPlaybackState) -> Result<(), 
         PausedPlaybackState::Global => {}
         #[cfg(test)]
         PausedPlaybackState::Session(_) => return Ok(()),
-    }
-
-    if crate::media_remote::any_application_is_playing()? {
-        info!("Skipping media resume because playback is already active");
-        return Ok(());
     }
 
     crate::media_remote::play()
@@ -354,7 +369,10 @@ mod tests {
     }
 
     #[test]
-    fn stale_pause_result_is_discarded_after_resume_happens_first() {
+    fn stale_pause_is_resumed_when_resume_happens_first() {
+        // The pause backend call is slow enough that resume_after_recording is called
+        // before pause_for_recording stores its result. The pause thread should still
+        // resume playback once the backend call returns, so media is never left stuck.
         let backend = TestBackend::with_pause_result(Ok(Some(paused_session())));
         backend.install_pause_delay(Duration::from_millis(100));
         let manager = Arc::new(MediaControlManager::with_backend(backend.clone()));
@@ -371,6 +389,28 @@ mod tests {
         manager.resume_after_recording_inner(true);
         handle.join().unwrap();
         manager.resume_after_recording_inner(true);
+
+        assert_eq!(backend.pause_calls(), 1);
+        assert_eq!(backend.resume_calls(), 1);
+    }
+
+    #[test]
+    fn stale_pause_is_not_resumed_when_play_after_recording_is_disabled() {
+        let backend = TestBackend::with_pause_result(Ok(Some(paused_session())));
+        backend.install_pause_delay(Duration::from_millis(100));
+        let manager = Arc::new(MediaControlManager::with_backend(backend.clone()));
+        let manager_for_thread = manager.clone();
+
+        let handle = std::thread::spawn(move || {
+            manager_for_thread.pause_for_recording_inner(true, true);
+        });
+
+        while backend.pause_calls() == 0 {
+            std::thread::yield_now();
+        }
+
+        manager.resume_after_recording_inner(false);
+        handle.join().unwrap();
 
         assert_eq!(backend.pause_calls(), 1);
         assert_eq!(backend.resume_calls(), 0);
