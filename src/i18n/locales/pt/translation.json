@@ -484,6 +484,10 @@
       "pasteDelay": {
         "title": "Atraso de colagem",
         "description": "Atraso antes de enviar a tecla de colar (em milissegundos). Aumente se o texto errado estiver sendo colado."
+      },
+      "recordingBuffer": {
+        "title": "Buffer de gravação extra",
+        "description": "Tempo extra (em milissegundos) para continuar gravando após soltar a tecla, para capturar áudio restante. 0 = sem buffer extra."
       }
     },
     "about": {
