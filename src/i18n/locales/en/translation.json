@@ -496,6 +496,17 @@
         "title": "App Data Directory",
         "description": "Location where Handy stores its data"
       },
+      "modelsDirectory": {
+        "title": "Models Directory",
+        "description": "Location where AI models are stored",
+        "success": "Models directory updated.",
+        "confirmRevertTitle": "Revert to Default Directory?",
+        "confirmRevertMessage": "Models will be moved back to the default app data folder.",
+        "moveResult_moved": "Moved {{count}} model(s) to new directory.",
+        "moveResult_skipped": "{{count}} model(s) skipped (already exist at destination).",
+        "moveResult_failed": "{{count}} model(s) could not be moved.",
+        "errorSetDir": "Failed to set models directory: {{error}}"
+      },
       "sourceCode": {
         "title": "Source Code",
         "description": "View source code and contribute",
@@ -550,7 +561,9 @@
     "off": "Off",
     "yes": "Yes",
     "no": "No",
-    "noOptionsFound": "No options found"
+    "noOptionsFound": "No options found",
+    "change": "Change",
+    "revert": "Revert"
   },
   "accessibility": {
     "permissionsRequired": "Accessibility Permissions Required",

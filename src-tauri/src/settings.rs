@@ -3,7 +3,7 @@ use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use specta::Type;
 use std::collections::HashMap;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
@@ -390,6 +390,8 @@ pub struct AppSettings {
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
     #[serde(default)]
+    pub models_custom_dir: Option<String>,
+    #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
     pub whisper_accelerator: WhisperAcceleratorSetting,
@@ -759,10 +761,34 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        models_custom_dir: None,
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
     }
+}
+
+/// Resolve the effective models directory.
+/// Returns the custom path when one is set in settings; otherwise falls back to
+/// `<app_data_dir>/models`. Creates the directory if it does not exist.
+pub fn resolve_models_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let settings = get_settings(app);
+    let dir = if let Some(custom) = settings.models_custom_dir {
+        std::path::PathBuf::from(custom)
+    } else {
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+        app_data_dir.join("models")
+    };
+
+    if !dir.exists() {
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("Failed to create models directory: {}", e))?;
+    }
+
+    Ok(dir)
 }
 
 impl AppSettings {
