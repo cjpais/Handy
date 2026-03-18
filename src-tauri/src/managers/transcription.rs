@@ -616,7 +616,7 @@ impl TranscriptionManager {
                         LoadedEngine::Canary(canary_engine) => {
                             // Canary doesn't support auto-detect; fall back to English
                             let lang = if validated_language == "auto" {
-                                warn!("Canary model received 'auto' language; defaulting to 'en'");
+                                debug!("Canary model received 'auto' language; defaulting to 'en'");
                                 Some("en".to_string())
                             } else {
                                 Some(validated_language.clone())

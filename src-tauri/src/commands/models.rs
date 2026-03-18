@@ -93,10 +93,16 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
 
+    // If the model doesn't support auto-detect, switch from "auto" to English.
+    if !model_info.supports_auto_detect && settings.selected_language == "auto" {
+        log::info!(
+            "Model {} doesn't support auto-detect; setting language to 'en'",
+            model_id
+        );
+        settings.selected_language = "en".to_string();
+    }
+
     // Reset language if the new model doesn't support the currently selected language.
-    // "auto" is always preserved — models that don't support auto-detect handle
-    // the fallback at transcription time, so the user's intent is kept across
-    // model switches (e.g. Whisper auto → Canary → back to Whisper stays auto).
     if settings.selected_language != "auto"
         && !model_info.supported_languages.is_empty()
         && !model_info
@@ -106,15 +112,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
         let fallback = if model_info.supports_auto_detect {
             "auto".to_string()
         } else {
-            if model_info.supported_languages.contains(&"en".to_string()) {
-                "en".to_string()
-            } else {
-                model_info
-                    .supported_languages
-                    .first()
-                    .cloned()
-                    .unwrap_or_else(|| "en".to_string())
-            }
+            "en".to_string()
         };
         log::info!(
             "Resetting language from '{}' to '{}' (not supported by {})",
