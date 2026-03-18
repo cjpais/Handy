@@ -232,8 +232,7 @@ impl TranscriptionManager {
 
     /// Reset the idle timer to now.
     fn touch_activity(&self) {
-        self.last_activity
-            .store(Self::now_ms(), Ordering::Relaxed);
+        self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
     }
 
     /// Unloads the model immediately if the setting is enabled and the model is loaded
