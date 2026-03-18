@@ -331,7 +331,7 @@
           "min10": "Po 10 minutach",
           "min15": "Po 15 minutach",
           "hour1": "Po 1 godzinie",
-          "sec5": "Po 5 sekundach (Debug)"
+          "sec15": "Po 15 sekundach (Debug)"
         }
       },
       "customWords": {

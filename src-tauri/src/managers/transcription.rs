@@ -1,4 +1,5 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
@@ -12,7 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
     onnx::{
         canary::CanaryModel,
@@ -113,6 +114,22 @@ impl TranscriptionManager {
                     // maybe_unload_immediately() after each transcription.
                     // Treating it as 0s here would unload the model mid-recording.
                     if timeout == ModelUnloadTimeout::Immediately {
+                        continue;
+                    }
+
+                    // While recording, keep the idle timer fresh so the
+                    // model is never unloaded mid-session.
+                    let is_recording = app_handle_cloned
+                        .try_state::<Arc<AudioRecordingManager>>()
+                        .map_or(false, |a| a.is_recording());
+                    if is_recording {
+                        manager_cloned.last_activity.store(
+                            SystemTime::now()
+                                .duration_since(SystemTime::UNIX_EPOCH)
+                                .unwrap()
+                                .as_millis() as u64,
+                            Ordering::Relaxed,
+                        );
                         continue;
                     }
 
