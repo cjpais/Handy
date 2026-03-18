@@ -76,8 +76,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     // When "auto" is persisted but the model doesn't support auto-detect,
     // show the effective fallback language so the UI isn't misleading.
     if (selectedLanguage === "auto" && !supportsAutoDetect) {
-      const fallback = supportedLanguages?.includes("en") ? "en" : supportedLanguages?.[0] ?? "en";
-      return LANGUAGES.find((lang) => lang.value === fallback)?.label ?? "English";
+      const fallback = supportedLanguages?.includes("en")
+        ? "en"
+        : (supportedLanguages?.[0] ?? "en");
+      return (
+        LANGUAGES.find((lang) => lang.value === fallback)?.label ?? "English"
+      );
     }
     return (
       LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
@@ -93,7 +97,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const handleReset = async () => {
     if (!supportsAutoDetect && supportedLanguages?.length) {
-      const fallback = supportedLanguages.includes("en") ? "en" : supportedLanguages[0];
+      const fallback = supportedLanguages.includes("en")
+        ? "en"
+        : supportedLanguages[0];
       await updateSetting("selected_language", fallback);
     } else {
       await resetSetting("selected_language");
