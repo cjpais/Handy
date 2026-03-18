@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { SUPPORTED_LANGUAGES, type SupportedLanguageCode } from "../../i18n";
 import { useSettings } from "@/hooks/useSettings";
@@ -15,13 +15,13 @@ export const AppLanguageSelector: React.FC<AppLanguageSelectorProps> =
     const { t, i18n } = useTranslation();
     const { settings, updateSetting } = useSettings();
 
-    const currentLanguage = (settings?.app_language ||
-      i18n.language) as SupportedLanguageCode;
+    const currentLanguage = settings?.app_language || i18n.language;
 
-    const languageOptions = SUPPORTED_LANGUAGES.map((lang) => ({
-      value: lang.code,
-      label: `${lang.nativeName} (${lang.name})`,
-    }));
+    const languageOptions: DropdownOption<SupportedLanguageCode>[] =
+      SUPPORTED_LANGUAGES.map((lang) => ({
+        value: lang.code,
+        label: `${lang.nativeName} (${lang.name})`,
+      }));
 
     const handleLanguageChange = (langCode: string) => {
       i18n.changeLanguage(langCode);

@@ -765,21 +765,29 @@ fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
 
 #[derive(Serialize, Clone, Debug, Type)]
 pub struct AvailableAccelerators {
-    pub whisper: Vec<String>,
-    pub ort: Vec<String>,
+    pub whisper: Vec<WhisperAcceleratorSetting>,
+    pub ort: Vec<OrtAcceleratorSetting>,
     pub gpu_devices: Vec<GpuDeviceOption>,
 }
 
 /// Return which accelerators are compiled into this build.
 pub fn get_available_accelerators() -> AvailableAccelerators {
-    use transcribe_rs::accel::OrtAccelerator;
-
-    let ort_options: Vec<String> = OrtAccelerator::available()
+    let ort_options: Vec<OrtAcceleratorSetting> = transcribe_rs::accel::OrtAccelerator::available()
         .into_iter()
-        .map(|a| a.to_string())
+        .map(|accelerator| match accelerator {
+            transcribe_rs::accel::OrtAccelerator::Auto => OrtAcceleratorSetting::Auto,
+            transcribe_rs::accel::OrtAccelerator::CpuOnly => OrtAcceleratorSetting::Cpu,
+            transcribe_rs::accel::OrtAccelerator::Cuda => OrtAcceleratorSetting::Cuda,
+            transcribe_rs::accel::OrtAccelerator::DirectMl => OrtAcceleratorSetting::DirectMl,
+            transcribe_rs::accel::OrtAccelerator::Rocm => OrtAcceleratorSetting::Rocm,
+        })
         .collect();
 
-    let whisper_options = vec!["auto".to_string(), "cpu".to_string(), "gpu".to_string()];
+    let whisper_options = vec![
+        WhisperAcceleratorSetting::Auto,
+        WhisperAcceleratorSetting::Cpu,
+        WhisperAcceleratorSetting::Gpu,
+    ];
 
     AvailableAccelerators {
         whisper: whisper_options,

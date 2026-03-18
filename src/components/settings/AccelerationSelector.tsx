@@ -57,13 +57,13 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
 
-  const [whisperOptions, setWhisperOptions] = useState<DropdownOption[]>([]);
-  const [ortOptions, setOrtOptions] = useState<DropdownOption[]>([]);
+  const [whisperOptions, setWhisperOptions] = useState<DropdownOption<string>[]>([]);
+  const [ortOptions, setOrtOptions] = useState<DropdownOption<OrtAcceleratorSetting>[]>([]);
 
   useEffect(() => {
     commands.getAvailableAccelerators().then((available) => {
       // Build combined Whisper options: Auto, [GPU devices...], CPU
-      const opts: DropdownOption[] = [
+      const opts: DropdownOption<string>[] = [
         {
           value: "auto",
           label: t("settings.advanced.acceleration.gpuDevice.auto"),
@@ -85,13 +85,14 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
       setWhisperOptions(opts);
 
       // ORT options (unchanged)
-      const ortVals = available.ort.includes("auto")
+      const ortVals: OrtAcceleratorSetting[] = available.ort.includes("auto")
         ? available.ort
         : ["auto", ...available.ort];
+
       setOrtOptions(
         ortVals.map((v) => ({
           value: v,
-          label: ORT_LABELS[v as OrtAcceleratorSetting] ?? v,
+          label: ORT_LABELS[v] ?? v,
         })),
       );
     });
@@ -141,9 +142,7 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
           <Dropdown
             options={ortOptions}
             selectedValue={currentOrt}
-            onSelect={(value) =>
-              updateSetting("ort_accelerator", value as OrtAcceleratorSetting)
-            }
+            onSelect={(value) => updateSetting("ort_accelerator", value)}
             disabled={isUpdating("ort_accelerator")}
           />
         </SettingContainer>

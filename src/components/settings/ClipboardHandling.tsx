@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import type { ClipboardHandling } from "@/bindings";
@@ -15,7 +15,7 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
-    const clipboardHandlingOptions = [
+    const clipboardHandlingOptions: DropdownOption<ClipboardHandling>[] = [
       {
         value: "dont_modify",
         label: t("settings.advanced.clipboardHandling.options.dontModify"),
@@ -26,8 +26,7 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
       },
     ];
 
-    const selectedHandling = (getSetting("clipboard_handling") ||
-      "dont_modify") as ClipboardHandling;
+    const selectedHandling = getSetting("clipboard_handling") || "dont_modify";
 
     return (
       <SettingContainer
@@ -39,9 +38,7 @@ export const ClipboardHandlingSetting: React.FC<ClipboardHandlingProps> =
         <Dropdown
           options={clipboardHandlingOptions}
           selectedValue={selectedHandling}
-          onSelect={(value) =>
-            updateSetting("clipboard_handling", value as ClipboardHandling)
-          }
+          onSelect={(value) => updateSetting("clipboard_handling", value)}
           disabled={isUpdating("clipboard_handling")}
         />
       </SettingContainer>

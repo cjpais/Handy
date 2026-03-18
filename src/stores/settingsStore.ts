@@ -6,6 +6,7 @@ import type {
   AudioDevice,
   WhisperAcceleratorSetting,
   OrtAcceleratorSetting,
+  ModelUnloadTimeout,
 } from "@/bindings";
 import { commands } from "@/bindings";
 
@@ -106,7 +107,9 @@ const settingUpdaters: {
         : (value as string),
     ),
   recording_retention_period: (value) =>
-    commands.updateRecordingRetentionPeriod(value as string),
+    commands.updateRecordingRetentionPeriod(value ?? "never"),
+  model_unload_timeout: (value) =>
+    commands.setModelUnloadTimeout(value ?? "min5"),
   translate_to_english: (value) =>
     commands.changeTranslateToEnglishSetting(value as boolean),
   selected_language: (value) =>
