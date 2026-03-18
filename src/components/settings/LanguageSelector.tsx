@@ -72,9 +72,18 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     [searchQuery, availableLanguages],
   );
 
-  const selectedLanguageName =
-    LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
-    t("settings.general.language.auto");
+  const selectedLanguageName = useMemo(() => {
+    // When "auto" is persisted but the model doesn't support auto-detect,
+    // show the effective fallback language so the UI isn't misleading.
+    if (selectedLanguage === "auto" && !supportsAutoDetect) {
+      const fallback = supportedLanguages?.includes("en") ? "en" : supportedLanguages?.[0] ?? "en";
+      return LANGUAGES.find((lang) => lang.value === fallback)?.label ?? "English";
+    }
+    return (
+      LANGUAGES.find((lang) => lang.value === selectedLanguage)?.label ||
+      t("settings.general.language.auto")
+    );
+  }, [selectedLanguage, supportsAutoDetect, supportedLanguages, t]);
 
   const handleLanguageSelect = async (languageCode: string) => {
     await updateSetting("selected_language", languageCode);
@@ -83,7 +92,12 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   const handleReset = async () => {
-    await resetSetting("selected_language");
+    if (!supportsAutoDetect && supportedLanguages?.length) {
+      const fallback = supportedLanguages.includes("en") ? "en" : supportedLanguages[0];
+      await updateSetting("selected_language", fallback);
+    } else {
+      await resetSetting("selected_language");
+    }
   };
 
   const handleToggle = () => {

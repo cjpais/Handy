@@ -93,9 +93,10 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
 
-    // Reset language to auto if the new model doesn't support the currently selected language.
-    // This prevents stale language settings from causing errors (e.g. Canary receiving zh-Hans)
-    // and stops downstream processing (e.g. OpenCC) from running on an irrelevant language.
+    // Reset language if the new model doesn't support the currently selected language.
+    // "auto" is always preserved — models that don't support auto-detect handle
+    // the fallback at transcription time, so the user's intent is kept across
+    // model switches (e.g. Whisper auto → Canary → back to Whisper stays auto).
     if settings.selected_language != "auto"
         && !model_info.supported_languages.is_empty()
         && !model_info
@@ -105,30 +106,19 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
         let fallback = if model_info.supports_auto_detect {
             "auto".to_string()
         } else {
-            model_info
-                .supported_languages
-                .first()
-                .cloned()
-                .unwrap_or_else(|| "en".to_string())
+            if model_info.supported_languages.contains(&"en".to_string()) {
+                "en".to_string()
+            } else {
+                model_info
+                    .supported_languages
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| "en".to_string())
+            }
         };
         log::info!(
             "Resetting language from '{}' to '{}' (not supported by {})",
             settings.selected_language,
-            fallback,
-            model_id
-        );
-        settings.selected_language = fallback;
-    }
-
-    // If auto-detect is selected but the new model doesn't support it, default to English
-    if settings.selected_language == "auto" && !model_info.supports_auto_detect {
-        let fallback = model_info
-            .supported_languages
-            .first()
-            .cloned()
-            .unwrap_or_else(|| "en".to_string());
-        log::info!(
-            "Resetting language from 'auto' to '{}' (auto-detect not supported by {})",
             fallback,
             model_id
         );
