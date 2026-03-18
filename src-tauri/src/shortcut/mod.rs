@@ -692,14 +692,14 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_available_typing_tools() -> Vec<String> {
+pub fn get_available_typing_tools() -> Vec<TypingTool> {
     #[cfg(target_os = "linux")]
     {
         crate::clipboard::get_available_typing_tools()
     }
     #[cfg(not(target_os = "linux"))]
     {
-        vec!["auto".to_string()]
+        vec![TypingTool::Auto]
     }
 }
 

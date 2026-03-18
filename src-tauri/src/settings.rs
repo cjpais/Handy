@@ -114,7 +114,7 @@ pub enum OverlayPosition {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "lowercase")]
 pub enum ModelUnloadTimeout {
     Never,
     Immediately,
@@ -153,9 +153,10 @@ pub enum AutoSubmitKey {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "lowercase")]
 pub enum RecordingRetentionPeriod {
     Never,
+    #[serde(rename = "preserve_limit")] // kept for backward compatibility
     PreserveLimit,
     Days3,
     Weeks2,

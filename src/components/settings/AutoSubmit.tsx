@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
@@ -28,7 +28,7 @@ export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
         ? t("settings.advanced.autoSubmit.options.cmdEnter")
         : t("settings.advanced.autoSubmit.options.superEnter");
 
-    const autoSubmitOptions = [
+    const autoSubmitOptions: DropdownOption<AutoSubmitOptionValue>[] = [
       {
         value: "off",
         label: t("settings.advanced.autoSubmit.options.off"),
@@ -47,15 +47,13 @@ export const AutoSubmit: React.FC<AutoSubmitProps> = React.memo(
       },
     ];
 
-    const handleAutoSubmitSelect = async (value: string) => {
-      const selected = value as AutoSubmitOptionValue;
-
-      if (selected === "off") {
+    const handleAutoSubmitSelect = async (value: AutoSubmitOptionValue) => {
+      if (value === "off") {
         await updateSetting("auto_submit", false);
         return;
       }
 
-      await updateSetting("auto_submit_key", selected as AutoSubmitKey);
+      await updateSetting("auto_submit_key", value);
       if (!enabled) {
         await updateSetting("auto_submit", true);
       }

@@ -1,10 +1,11 @@
 import React from "react";
 import { Button } from "../ui/Button";
-import { Dropdown, DropdownOption } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { PlayIcon } from "lucide-react";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useSettings } from "../../hooks/useSettings";
+import { type SoundTheme } from "@/bindings";
 
 interface SoundPickerProps {
   label: string;
@@ -21,7 +22,7 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
 
   const selectedTheme = getSetting("sound_theme") ?? "marimba";
 
-  const options: DropdownOption[] = [
+  const options: DropdownOption<SoundTheme>[] = [
     { value: "marimba", label: "Marimba" },
     { value: "pop", label: "Pop" },
   ];
@@ -46,9 +47,7 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
       <div className="flex items-center gap-2">
         <Dropdown
           selectedValue={selectedTheme}
-          onSelect={(value) =>
-            updateSetting("sound_theme", value as "marimba" | "pop" | "custom")
-          }
+          onSelect={(value) => updateSetting("sound_theme", value)}
           options={options}
         />
         <Button

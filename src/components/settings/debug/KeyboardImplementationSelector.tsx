@@ -3,13 +3,14 @@ import { useTranslation } from "react-i18next";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Dropdown, type DropdownOption } from "../../ui/Dropdown";
 import { useSettings } from "../../../hooks/useSettings";
-import { commands } from "@/bindings";
+import { commands, type KeyboardImplementation } from "@/bindings";
 import { toast } from "sonner";
 
-const KEYBOARD_IMPLEMENTATION_OPTIONS: DropdownOption[] = [
-  { value: "tauri", label: "Tauri Global Shortcut" },
-  { value: "handy_keys", label: "Handy Keys" },
-];
+const KEYBOARD_IMPLEMENTATION_OPTIONS: DropdownOption<KeyboardImplementation>[] =
+  [
+    { value: "tauri", label: "Tauri Global Shortcut" },
+    { value: "handy_keys", label: "Handy Keys" },
+  ];
 
 interface KeyboardImplementationSelectorProps {
   descriptionMode?: "tooltip" | "inline";

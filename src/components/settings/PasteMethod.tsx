@@ -1,11 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
+import { type OSType } from "@/lib/utils/keyboard";
 
 interface PasteMethodProps {
   descriptionMode?: "inline" | "tooltip";
@@ -18,10 +19,12 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const osType = useOsType();
 
-    const getPasteMethodOptions = (osType: string) => {
+    function getPasteMethodOptions(
+      osType: OSType,
+    ): DropdownOption<PasteMethod>[] {
       const mod = osType === "macos" ? "Cmd" : "Ctrl";
 
-      const options = [
+      const options: DropdownOption<PasteMethod>[] = [
         {
           value: "ctrl_v",
           label: t("settings.advanced.pasteMethod.options.clipboard", {
@@ -65,10 +68,9 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
       }
 
       return options;
-    };
+    }
 
-    const selectedMethod = (getSetting("paste_method") ||
-      "ctrl_v") as PasteMethod;
+    const selectedMethod = getSetting("paste_method") || "ctrl_v";
     const externalScriptPath = getSetting("external_script_path") || "";
 
     const pasteMethodOptions = getPasteMethodOptions(osType);
@@ -85,9 +87,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
           <Dropdown
             options={pasteMethodOptions}
             selectedValue={selectedMethod}
-            onSelect={(value) =>
-              updateSetting("paste_method", value as PasteMethod)
-            }
+            onSelect={(value) => updateSetting("paste_method", value)}
             disabled={isUpdating("paste_method")}
           />
           {selectedMethod === "external_script" && (

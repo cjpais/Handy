@@ -35,25 +35,29 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
 
-  const [whisperOptions, setWhisperOptions] = useState<DropdownOption[]>([]);
-  const [ortOptions, setOrtOptions] = useState<DropdownOption[]>([]);
+  const [whisperOptions, setWhisperOptions] = useState<
+    DropdownOption<WhisperAcceleratorSetting>[]
+  >([]);
+  const [ortOptions, setOrtOptions] = useState<
+    DropdownOption<OrtAcceleratorSetting>[]
+  >([]);
 
   useEffect(() => {
     commands.getAvailableAccelerators().then((available) => {
       setWhisperOptions(
         available.whisper.map((v) => ({
           value: v,
-          label: WHISPER_LABELS[v as WhisperAcceleratorSetting] ?? v,
+          label: WHISPER_LABELS[v] ?? v,
         })),
       );
       // Always include "auto" for ORT even though available() only returns compiled-in backends
-      const ortVals = available.ort.includes("auto")
+      const ortVals: OrtAcceleratorSetting[] = available.ort.includes("auto")
         ? available.ort
         : ["auto", ...available.ort];
       setOrtOptions(
         ortVals.map((v) => ({
           value: v,
-          label: ORT_LABELS[v as OrtAcceleratorSetting] ?? v,
+          label: ORT_LABELS[v] ?? v,
         })),
       );
     });
@@ -74,12 +78,7 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
         <Dropdown
           options={whisperOptions}
           selectedValue={currentWhisper}
-          onSelect={(value) =>
-            updateSetting(
-              "whisper_accelerator",
-              value as WhisperAcceleratorSetting,
-            )
-          }
+          onSelect={(value) => updateSetting("whisper_accelerator", value)}
           disabled={isUpdating("whisper_accelerator")}
         />
       </SettingContainer>
@@ -94,9 +93,7 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
           <Dropdown
             options={ortOptions}
             selectedValue={currentOrt}
-            onSelect={(value) =>
-              updateSetting("ort_accelerator", value as OrtAcceleratorSetting)
-            }
+            onSelect={(value) => updateSetting("ort_accelerator", value)}
             disabled={isUpdating("ort_accelerator")}
           />
         </SettingContainer>

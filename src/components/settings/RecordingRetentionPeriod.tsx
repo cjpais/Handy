@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { RecordingRetentionPeriod } from "@/bindings";
@@ -19,14 +19,13 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
       getSetting("recording_retention_period") || "never";
     const historyLimit = getSetting("history_limit") || 5;
 
-    const handleRetentionPeriodSelect = async (period: string) => {
-      await updateSetting(
-        "recording_retention_period",
-        period as RecordingRetentionPeriod,
-      );
+    const handleRetentionPeriodSelect = async (
+      period: RecordingRetentionPeriod,
+    ) => {
+      await updateSetting("recording_retention_period", period);
     };
 
-    const retentionOptions = [
+    const retentionOptions: DropdownOption<RecordingRetentionPeriod>[] = [
       { value: "never", label: t("settings.debug.recordingRetention.never") },
       {
         value: "preserve_limit",
@@ -34,8 +33,14 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
           count: Number(historyLimit),
         }),
       },
-      { value: "days3", label: t("settings.debug.recordingRetention.days3") },
-      { value: "weeks2", label: t("settings.debug.recordingRetention.weeks2") },
+      {
+        value: "days3",
+        label: t("settings.debug.recordingRetention.days3"),
+      },
+      {
+        value: "weeks2",
+        label: t("settings.debug.recordingRetention.weeks2"),
+      },
       {
         value: "months3",
         label: t("settings.debug.recordingRetention.months3"),
