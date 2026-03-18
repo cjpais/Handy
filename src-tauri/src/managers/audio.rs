@@ -4,7 +4,7 @@ use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tauri::Manager;
 
 fn set_mute(mute: bool) {
@@ -379,6 +379,16 @@ impl AudioRecordingManager {
             } if active == binding_id => {
                 *state = RecordingState::Idle;
                 drop(state);
+
+                // Optionally keep recording for a bit longer to capture trailing audio
+                let settings = get_settings(&self.app_handle);
+                if settings.extra_recording_buffer_ms > 0 {
+                    debug!(
+                        "Extra recording buffer: sleeping {}ms before stopping",
+                        settings.extra_recording_buffer_ms
+                    );
+                    std::thread::sleep(Duration::from_millis(settings.extra_recording_buffer_ms));
+                }
 
                 let samples = if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
                     match rec.stop() {
