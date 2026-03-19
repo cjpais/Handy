@@ -3,6 +3,8 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use strsim::levenshtein;
 
+use crate::settings::WordReplacement;
+
 /// Builds an n-gram string by cleaning and concatenating words
 ///
 /// Strips punctuation from each word, lowercases, and joins without spaces.
@@ -269,6 +271,28 @@ fn collapse_stutters(text: &str) -> String {
     }
 
     result.join(" ")
+}
+
+/// Applies exact word-boundary replacements to transcription text.
+///
+/// Unlike `apply_custom_words` which uses fuzzy/phonetic matching,
+/// this performs simple case-insensitive find-and-replace using
+/// user-defined from→to pairs.
+pub fn apply_word_replacements(text: &str, replacements: &[WordReplacement]) -> String {
+    if replacements.is_empty() {
+        return text.to_string();
+    }
+
+    let mut result = text.to_string();
+    for replacement in replacements {
+        let escaped = regex::escape(&replacement.from);
+        if let Ok(pattern) = Regex::new(&format!(r"(?i)\b{}\b", escaped)) {
+            result = pattern.replace_all(&result, replacement.to.as_str()).to_string();
+        }
+    }
+
+    // Clean up any double spaces from replacements
+    MULTI_SPACE_PATTERN.replace_all(&result, " ").trim().to_string()
 }
 
 /// Filters transcription output by removing filler words and stutter artifacts.
@@ -557,5 +581,87 @@ mod tests {
             "got double-counted result: {}",
             result
         );
+    }
+
+    #[test]
+    fn test_apply_word_replacements_basic() {
+        use crate::settings::WordReplacement;
+        let text = "I'm gonna do it";
+        let replacements = vec![WordReplacement {
+            from: "gonna".to_string(),
+            to: "going to".to_string(),
+        }];
+        let result = apply_word_replacements(text, &replacements);
+        assert_eq!(result, "I'm going to do it");
+    }
+
+    #[test]
+    fn test_apply_word_replacements_case_insensitive() {
+        use crate::settings::WordReplacement;
+        let text = "I'm Gonna do it";
+        let replacements = vec![WordReplacement {
+            from: "gonna".to_string(),
+            to: "going to".to_string(),
+        }];
+        let result = apply_word_replacements(text, &replacements);
+        assert_eq!(result, "I'm going to do it");
+    }
+
+    #[test]
+    fn test_apply_word_replacements_multiple() {
+        use crate::settings::WordReplacement;
+        let text = "I wanna go but I gotta stay";
+        let replacements = vec![
+            WordReplacement { from: "wanna".to_string(), to: "want to".to_string() },
+            WordReplacement { from: "gotta".to_string(), to: "got to".to_string() },
+        ];
+        let result = apply_word_replacements(text, &replacements);
+        assert_eq!(result, "I want to go but I got to stay");
+    }
+
+    #[test]
+    fn test_apply_word_replacements_empty() {
+        let text = "hello world";
+        let replacements: Vec<crate::settings::WordReplacement> = vec![];
+        let result = apply_word_replacements(text, &replacements);
+        assert_eq!(result, "hello world");
+    }
+
+    #[test]
+    fn test_apply_word_replacements_no_partial_match() {
+        use crate::settings::WordReplacement;
+        let text = "the megaphone is here";
+        let replacements = vec![WordReplacement {
+            from: "mega".to_string(),
+            to: "super".to_string(),
+        }];
+        let result = apply_word_replacements(text, &replacements);
+        assert_eq!(result, "the megaphone is here");
+    }
+
+    #[test]
+    fn test_apply_word_replacements_multi_word_from() {
+        use crate::settings::WordReplacement;
+        let text = "I need to sort of figure this out";
+        let replacements = vec![WordReplacement {
+            from: "sort of".to_string(),
+            to: "somewhat".to_string(),
+        }];
+        let result = apply_word_replacements(text, &replacements);
+        assert_eq!(result, "I need to somewhat figure this out");
+    }
+
+    #[test]
+    fn test_apply_word_replacements_special_chars_no_panic() {
+        use crate::settings::WordReplacement;
+        let text = "I use c++ daily";
+        let replacements = vec![WordReplacement {
+            from: "c++".to_string(),
+            to: "C plus plus".to_string(),
+        }];
+        let result = apply_word_replacements(text, &replacements);
+        // \b word boundaries don't match around non-word chars like +,
+        // so this won't replace — but regex::escape ensures no panic
+        assert_eq!(result, "I use c++ daily");
     }
 }
