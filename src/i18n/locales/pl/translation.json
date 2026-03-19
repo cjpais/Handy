@@ -245,6 +245,10 @@
         "label": "Funkcje Eksperymentalne",
         "description": "Włącz funkcje eksperymentalne, które są jeszcze w fazie rozwoju."
       },
+      "lazyStreamClose": {
+        "label": "Pozostaw mikrofon otwarty między transkrypcjami",
+        "description": "Utrzymuje strumień mikrofonu otwarty przez 30 sekund po zatrzymaniu nagrywania, zmniejszając opóźnienie przy kolejnych transkrypcjach. Może pogorszyć jakość dźwięku Bluetooth."
+      },
       "acceleration": {
         "whisper": {
           "title": "Akceleracja Whisper",
@@ -331,7 +335,7 @@
           "min10": "Po 10 minutach",
           "min15": "Po 15 minutach",
           "hour1": "Po 1 godzinie",
-          "sec5": "Po 5 sekundach (Debug)"
+          "sec15": "Po 15 sekundach (Debug)"
         }
       },
       "customWords": {
@@ -484,6 +488,10 @@
       "pasteDelay": {
         "title": "Opóźnienie wklejania",
         "description": "Opóźnienie przed wysłaniem klawisza wklejania (w milisekundach). Zwiększ, jeśli wklejany jest nieprawidłowy tekst."
+      },
+      "recordingBuffer": {
+        "title": "Dodatkowy bufor nagrywania",
+        "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."
       }
     },
     "about": {

@@ -245,6 +245,10 @@
         "label": "Experimental Features",
         "description": "Enable experimental features that are still in development."
       },
+      "lazyStreamClose": {
+        "label": "Keep Mic Open Between Transcriptions",
+        "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper Acceleration",
@@ -331,7 +335,7 @@
           "min10": "After 10 minutes",
           "min15": "After 15 minutes",
           "hour1": "After 1 hour",
-          "sec5": "After 5 seconds (Debug)"
+          "sec15": "After 15 seconds (Debug)"
         }
       },
       "customWords": {
@@ -484,6 +488,10 @@
       "pasteDelay": {
         "title": "Paste Delay",
         "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
+      },
+      "recordingBuffer": {
+        "title": "Extra Recording Buffer",
+        "description": "Extra time (in milliseconds) to keep recording after you release the key, to capture trailing audio. 0 = no extra buffer."
       }
     },
     "about": {

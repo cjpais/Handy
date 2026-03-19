@@ -1,0 +1,52 @@
+name: "code quality"
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "bun.lock"
+      - ".eslintrc*"
+      - "eslint.config.*"
+      - ".prettierrc*"
+      - "tsconfig*"
+      - "tailwind.config.*"
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "src/**"
+      - "package.json"
+      - "bun.lock"
+      - ".eslintrc*"
+      - "eslint.config.*"
+      - ".prettierrc*"
+      - "tsconfig*"
+      - "tailwind.config.*"
+      - ".github/workflows/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check translation consistency
+        run: bun run check:translations
+
+      - name: Run ESLint
+        run: bun run lint
+
+      - name: Run prettier
+        run: bun run format:check

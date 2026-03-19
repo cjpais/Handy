@@ -245,6 +245,10 @@
         "label": "Funciones Experimentales",
         "description": "Habilitar funciones experimentales que aún están en desarrollo."
       },
+      "lazyStreamClose": {
+        "label": "Mantener micrófono abierto entre transcripciones",
+        "description": "Mantiene el flujo del micrófono abierto durante 30 segundos después de detener la grabación, reduciendo la latencia en transcripciones consecutivas. Puede degradar la calidad del audio Bluetooth mientras está activo."
+      },
       "acceleration": {
         "whisper": {
           "title": "Aceleración de Whisper",
@@ -331,7 +335,7 @@
           "min10": "Después de 10 minutos",
           "min15": "Después de 15 minutos",
           "hour1": "Después de 1 hora",
-          "sec5": "Después de 5 segundos (Depuración)"
+          "sec15": "Después de 15 segundos (Depuración)"
         }
       },
       "customWords": {
@@ -484,6 +488,10 @@
       "pasteDelay": {
         "title": "Retraso de pegado",
         "description": "Retraso antes de enviar la pulsación de tecla de pegar (en milisegundos). Aumente si se está pegando texto incorrecto."
+      },
+      "recordingBuffer": {
+        "title": "Búfer de grabación adicional",
+        "description": "Tiempo adicional (en milisegundos) para seguir grabando después de soltar la tecla, para capturar el audio restante. 0 = sin búfer adicional."
       }
     },
     "about": {

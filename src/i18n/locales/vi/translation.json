@@ -245,6 +245,10 @@
         "label": "Tính năng thử nghiệm",
         "description": "Bật các tính năng thử nghiệm đang trong quá trình phát triển."
       },
+      "lazyStreamClose": {
+        "label": "Giữ micro mở giữa các lần phiên âm",
+        "description": "Giữ luồng micro mở trong 30 giây sau khi dừng ghi âm, giảm độ trễ khi phiên âm liên tiếp. Có thể làm giảm chất lượng âm thanh Bluetooth khi đang hoạt động."
+      },
       "acceleration": {
         "whisper": {
           "title": "Tăng tốc Whisper",
@@ -331,7 +335,7 @@
           "min10": "Sau 10 phút",
           "min15": "Sau 15 phút",
           "hour1": "Sau 1 giờ",
-          "sec5": "Sau 5 giây (Gỡ lỗi)"
+          "sec15": "Sau 15 giây (Gỡ lỗi)"
         }
       },
       "customWords": {
@@ -484,6 +488,10 @@
       "pasteDelay": {
         "title": "Độ trễ dán",
         "description": "Độ trễ trước khi gửi phím dán (tính bằng mili giây). Tăng nếu văn bản sai đang được dán."
+      },
+      "recordingBuffer": {
+        "title": "Bộ đệm ghi âm thêm",
+        "description": "Thời gian thêm (tính bằng mili giây) để tiếp tục ghi âm sau khi nhả phím, để thu âm thanh cuối. 0 = không có bộ đệm thêm."
       }
     },
     "about": {

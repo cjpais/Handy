@@ -245,6 +245,10 @@
         "label": "Deneysel Özellikler",
         "description": "Hala geliştirme aşamasında olan deneysel özellikleri etkinleştir."
       },
+      "lazyStreamClose": {
+        "label": "Transkripsiyonlar arasında mikrofonu açık tut",
+        "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper Hızlandırma",
@@ -331,7 +335,7 @@
           "min10": "10 dakika sonra",
           "min15": "15 dakika sonra",
           "hour1": "1 saat sonra",
-          "sec5": "5 saniye sonra (Debug)"
+          "sec15": "15 saniye sonra (Debug)"
         }
       },
       "customWords": {
@@ -484,6 +488,10 @@
       "pasteDelay": {
         "title": "Yapıştırma gecikmesi",
         "description": "Yapıştırma tuşu göndermeden önce gecikme (milisaniye cinsinden). Yanlış metin yapıştırılıyorsa artırın."
+      },
+      "recordingBuffer": {
+        "title": "Ekstra kayıt tamponu",
+        "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
       }
     },
     "about": {

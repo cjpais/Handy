@@ -419,13 +419,13 @@ impl ModelManager {
                 id: "gigaam-v3-e2e-ctc".to_string(),
                 name: "GigaAM v3".to_string(),
                 description: "Russian speech recognition. Fast and accurate.".to_string(),
-                filename: "giga-am-v3.int8.onnx".to_string(),
-                url: Some("https://blob.handy.computer/giga-am-v3.int8.onnx".to_string()),
-                size_mb: 225,
+                filename: "giga-am-v3-int8".to_string(),
+                url: Some("https://blob.handy.computer/giga-am-v3-int8.tar.gz".to_string()),
+                size_mb: 152,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
-                is_directory: false,
+                is_directory: true,
                 engine_type: EngineType::GigaAM,
                 accuracy_score: 0.85,
                 speed_score: 0.75,
@@ -518,6 +518,9 @@ impl ModelManager {
         // Migrate any bundled models to user directory
         manager.migrate_bundled_models()?;
 
+        // Migrate GigaAM from single-file to directory format
+        manager.migrate_gigaam_to_directory()?;
+
         // Check which models are already downloaded
         manager.update_download_status()?;
 
@@ -561,6 +564,50 @@ impl ModelManager {
             }
         }
 
+        Ok(())
+    }
+
+    /// Migrate GigaAM from the old single-file format (giga-am-v3.int8.onnx)
+    /// to the new directory format (giga-am-v3-int8/model.int8.onnx + vocab.txt).
+    /// This was required by the transcribe-rs 0.3.x upgrade.
+    fn migrate_gigaam_to_directory(&self) -> Result<()> {
+        let old_file = self.models_dir.join("giga-am-v3.int8.onnx");
+        let new_dir = self.models_dir.join("giga-am-v3-int8");
+
+        if !old_file.exists() || new_dir.exists() {
+            return Ok(());
+        }
+
+        info!("Migrating GigaAM from single-file to directory format");
+
+        let vocab_path = self
+            .app_handle
+            .path()
+            .resolve(
+                "resources/models/gigaam_vocab.txt",
+                tauri::path::BaseDirectory::Resource,
+            )
+            .map_err(|e| anyhow::anyhow!("Failed to resolve GigaAM vocab path: {}", e))?;
+
+        info!(
+            "Resolved vocab path: {:?} (exists: {})",
+            vocab_path,
+            vocab_path.exists()
+        );
+        info!("Old file: {:?} (exists: {})", old_file, old_file.exists());
+        info!("New dir: {:?} (exists: {})", new_dir, new_dir.exists());
+
+        fs::create_dir_all(&new_dir)?;
+        fs::rename(&old_file, new_dir.join("model.int8.onnx"))?;
+        fs::copy(&vocab_path, new_dir.join("vocab.txt"))?;
+
+        // Clean up old partial file if it exists
+        let old_partial = self.models_dir.join("giga-am-v3.int8.onnx.partial");
+        if old_partial.exists() {
+            let _ = fs::remove_file(&old_partial);
+        }
+
+        info!("GigaAM migration complete");
         Ok(())
     }
 

@@ -1,5 +1,17 @@
 name: "test"
-on: [pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+  pull_request:
+    paths:
+      - "src-tauri/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   rust-tests:

@@ -245,6 +245,10 @@
         "label": "实验性功能",
         "description": "启用仍在开发中的实验性功能。"
       },
+      "lazyStreamClose": {
+        "label": "在转录之间保持麦克风开启",
+        "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper 加速",
@@ -331,7 +335,7 @@
           "min10": "10 分钟后",
           "min15": "15 分钟后",
           "hour1": "1 小时后",
-          "sec5": "5 秒后（调试）"
+          "sec15": "15 秒后（调试）"
         }
       },
       "customWords": {
@@ -484,6 +488,10 @@
       "pasteDelay": {
         "title": "粘贴延迟",
         "description": "发送粘贴按键前的延迟（毫秒）。如果粘贴了错误的文本，请增加此值。"
+      },
+      "recordingBuffer": {
+        "title": "额外录音缓冲",
+        "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
       }
     },
     "about": {

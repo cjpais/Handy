@@ -1,12 +1,37 @@
-# Verify that Nix dependency files (.nix/bun.nix) are in sync with lockfiles
-# and that the flake evaluates successfully.
+# Nix CI — two tiers:
 #
-# This catches cases where a developer updated bun.lock but forgot to
-# regenerate .nix/bun.nix (e.g., committed without running bun install,
-# which triggers the postinstall hook).
+# 1. Quick checks (bun.nix sync, flake eval) run on ANY source change
+#    so compilation-breaking edits are caught by flake eval.
+# 2. Full nix build (~25 min) only runs when nix packaging files change.
+#
+# Setting up a Cachix binary cache would further reduce full-build times.
 
 name: "nix build check"
-on: [pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - ".nix/**"
+      - "bun.lock"
+      - "src-tauri/**"
+      - "src/**"
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - ".nix/**"
+      - "bun.lock"
+      - "src-tauri/**"
+      - "src/**"
+      - ".github/workflows/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   nix-build:
@@ -16,10 +41,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+
+      - uses: DeterminateSystems/magic-nix-cache-action@565684385bcd71bad329742eefe8d12f2e765b39 # v13
 
       # Regenerate .nix/bun.nix from bun.lock and check if it matches
       # what's committed. A diff means the developer forgot to run
@@ -73,8 +102,23 @@ jobs:
           cat eval_err.log
           exit 1
 
+      # Detect whether nix packaging files changed — if only source code
+      # changed, the quick checks above are sufficient.
+      # Skipped on workflow_dispatch (no base ref) — full build runs instead.
+      - name: Check if nix files changed
+        if: github.event_name == 'pull_request'
+        id: nix-files
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE '^(flake\.(nix|lock)|\.nix/|bun\.lock|src-tauri/(Cargo\.(toml|lock)|tauri\.conf\.json|build\.rs))'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # Full build — catches runtime build errors (broken dependencies,
       # sandbox issues, compilation failures) that flake eval alone misses.
+      # On PRs: only runs when nix packaging files change (~25 min with cold cache).
+      # On push to main and workflow_dispatch: always runs so every commit on
+      # main has a verified nix build before release.
       - name: Build handy
-        if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true'
+        if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true' && (steps.nix-files.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
         run: nix build .#handy -L --show-trace
