@@ -1,2 +1,0 @@
-[env]
-WHISPER_DONT_GENERATE_BINDINGS = { value = "1", force = true }
