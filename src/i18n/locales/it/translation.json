@@ -416,8 +416,6 @@
       "retry": "Riprova",
       "retryError": "Impossibile riprovare la trascrizione. Riprova.",
       "retryHint": "Puoi riprovare la trascrizione oppure aprire la cartella delle registrazioni per recuperare manualmente l'audio.",
-      "statusPending": "Trascrizione in corso",
-      "statusFailed": "Fallita",
       "noTranscript": "Nessuna trascrizione generata."
     },
     "debug": {

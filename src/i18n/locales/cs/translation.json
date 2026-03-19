@@ -416,8 +416,6 @@
       "retry": "Zkusit znovu",
       "retryError": "Opětovný pokus o přepis se nezdařil. Zkuste to prosím znovu.",
       "retryHint": "Můžete zkusit přepis znovu nebo otevřít složku s nahrávkami a obnovit zvuk ručně.",
-      "statusPending": "Přepisuje se",
-      "statusFailed": "Selhalo",
       "noTranscript": "Nebyl vygenerován žádný přepis."
     },
     "debug": {

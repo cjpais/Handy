@@ -416,8 +416,6 @@
       "retry": "Ponów",
       "retryError": "Nie udało się ponowić transkrypcji. Spróbuj ponownie.",
       "retryHint": "Możesz ponowić transkrypcję lub otworzyć folder nagrań, aby ręcznie odzyskać dźwięk.",
-      "statusPending": "Trwa transkrypcja",
-      "statusFailed": "Nieudane",
       "noTranscript": "Nie wygenerowano transkrypcji."
     },
     "debug": {

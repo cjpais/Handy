@@ -476,12 +476,11 @@ impl ShortcutAction for TranscribeAction {
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
 
-        let binding_id = binding_id.to_string(); // Clone binding_id for the async task
+        let binding_id = binding_id.to_string();
         let post_process = self.post_process;
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
-            let binding_id = binding_id.clone(); // Clone for the inner async task
             debug!(
                 "Starting async transcription task for binding: {}",
                 binding_id
@@ -500,16 +499,52 @@ impl ShortcutAction for TranscribeAction {
                     utils::hide_recording_overlay(&ah);
                     change_tray_icon(&ah, TrayIconState::Idle);
                 } else {
-                    let history_entry = match hm.create_pending_entry(&samples).await {
-                        Ok(entry) => Some(entry),
-                        Err(err) => {
-                            error!("Failed to persist recording before transcription: {}", err);
-                            None
+                    // Save WAV concurrently with transcription
+                    let sample_count = samples.len();
+                    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+                    let wav_path = hm.recordings_dir().join(&file_name);
+                    let wav_path_for_verify = wav_path.clone();
+                    let samples_for_wav = samples.clone();
+                    let wav_handle = tauri::async_runtime::spawn(async move {
+                        crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav).await
+                    });
+
+                    // Transcribe concurrently with WAV save
+                    let transcription_time = Instant::now();
+                    let transcription_result = tm.transcribe(samples);
+
+                    // Await WAV save and verify
+                    let wav_saved = match wav_handle.await {
+                        Ok(Ok(())) => {
+                            // Verify: 44-byte header + num_samples * 2 bytes (16-bit)
+                            let expected_size = 44 + (sample_count * 2) as u64;
+                            match std::fs::metadata(&wav_path_for_verify) {
+                                Ok(meta) if meta.len() == expected_size => true,
+                                Ok(meta) => {
+                                    error!(
+                                        "WAV file size mismatch: expected {}, got {}",
+                                        expected_size,
+                                        meta.len()
+                                    );
+                                    false
+                                }
+                                Err(e) => {
+                                    error!("Failed to verify WAV file: {}", e);
+                                    false
+                                }
+                            }
+                        }
+                        Ok(Err(e)) => {
+                            error!("Failed to save WAV file: {}", e);
+                            false
+                        }
+                        Err(e) => {
+                            error!("WAV save task panicked: {}", e);
+                            false
                         }
                     };
 
-                    let transcription_time = Instant::now();
-                    match tm.transcribe(samples) {
+                    match transcription_result {
                         Ok(transcription) => {
                             debug!(
                                 "Transcription completed in {:?}: '{}'",
@@ -524,20 +559,16 @@ impl ShortcutAction for TranscribeAction {
                                 process_transcription_output(&ah, &transcription, post_process)
                                     .await;
 
-                            if let Some(entry) = &history_entry {
-                                if let Err(err) = hm
-                                    .complete_transcription(
-                                        entry.id,
-                                        transcription.clone(),
-                                        processed.post_processed_text.clone(),
-                                        processed.post_process_prompt.clone(),
-                                    )
-                                    .await
-                                {
-                                    error!(
-                                        "Failed to finalize transcription history entry: {}",
-                                        err
-                                    );
+                            // Save to history if WAV was saved and transcription is non-empty
+                            if wav_saved && !transcription.is_empty() {
+                                if let Err(err) = hm.save_entry(
+                                    file_name,
+                                    transcription,
+                                    post_process,
+                                    processed.post_processed_text.clone(),
+                                    processed.post_process_prompt.clone(),
+                                ) {
+                                    error!("Failed to save history entry: {}", err);
                                 }
                             }
 
@@ -568,14 +599,16 @@ impl ShortcutAction for TranscribeAction {
                         }
                         Err(err) => {
                             debug!("Global Shortcut Transcription error: {}", err);
-                            if let Some(entry) = &history_entry {
-                                if let Err(update_err) =
-                                    hm.fail_transcription(entry.id, err.to_string()).await
-                                {
-                                    error!(
-                                        "Failed to mark history entry {} as failed: {}",
-                                        entry.id, update_err
-                                    );
+                            // Save entry with empty text so user can retry
+                            if wav_saved {
+                                if let Err(save_err) = hm.save_entry(
+                                    file_name,
+                                    String::new(),
+                                    post_process,
+                                    None,
+                                    None,
+                                ) {
+                                    error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
                             utils::hide_recording_overlay(&ah);

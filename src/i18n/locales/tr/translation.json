@@ -416,8 +416,6 @@
       "retry": "Tekrar dene",
       "retryError": "Transkripsiyon yeniden denenemedi. Lütfen tekrar deneyin.",
       "retryHint": "Transkripsiyonu yeniden deneyebilir veya sesi manuel olarak kurtarmak için kayıt klasörünü açabilirsiniz.",
-      "statusPending": "Yazıya dökülüyor",
-      "statusFailed": "Başarısız",
       "noTranscript": "Transkript oluşturulmadı."
     },
     "debug": {

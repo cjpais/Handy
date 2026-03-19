@@ -416,8 +416,6 @@
       "retry": "重试",
       "retryError": "重试转录失败。请重试。",
       "retryHint": "您可以重试转录，或打开录音文件夹手动恢复音频。",
-      "statusPending": "转录中",
-      "statusFailed": "失败",
       "noTranscript": "未生成转录内容。"
     },
     "debug": {

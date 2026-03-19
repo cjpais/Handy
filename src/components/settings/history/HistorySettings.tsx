@@ -4,10 +4,8 @@ import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
 import {
   Check,
-  CircleAlert,
   Copy,
   FolderOpen,
-  LoaderCircle,
   RefreshCcw,
   Star,
   Trash2,
@@ -39,32 +37,6 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
     <span>{label}</span>
   </Button>
 );
-
-const HistoryStatusBadge: React.FC<
-  Pick<HistoryEntry, "transcription_status">
-> = ({ transcription_status }) => {
-  const { t } = useTranslation();
-
-  if (transcription_status === "completed") {
-    return null;
-  }
-
-  if (transcription_status === "pending") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-logo-primary/30 bg-logo-primary/10 px-2 py-0.5 text-[11px] font-medium text-logo-primary">
-        <LoaderCircle className="h-3 w-3 animate-spin" />
-        {t("settings.history.statusPending")}
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-red-400/30 bg-red-400/10 px-2 py-0.5 text-[11px] font-medium text-red-300">
-      <CircleAlert className="h-3 w-3" />
-      {t("settings.history.statusFailed")}
-    </span>
-  );
-};
 
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
@@ -256,10 +228,8 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const [showCopied, setShowCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
-  const canCopy =
-    entry.transcription_status === "completed" &&
-    entry.transcription_text.trim().length > 0;
-  const showRetry = entry.transcription_status === "failed";
+  const hasTranscription = entry.transcription_text.trim().length > 0;
+  const showRetry = !hasTranscription;
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -267,7 +237,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   );
 
   const handleCopyText = () => {
-    if (!canCopy) {
+    if (!hasTranscription) {
       return;
     }
 
@@ -304,14 +274,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       <div className="flex justify-between items-start gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm font-medium">{formattedDate}</p>
-          <HistoryStatusBadge
-            transcription_status={entry.transcription_status}
-          />
         </div>
         <div className="flex items-center gap-1 flex-wrap justify-end">
           <button
             onClick={handleCopyText}
-            disabled={!canCopy}
+            disabled={!hasTranscription}
             className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20"
             title={t("settings.history.copyToClipboard")}
           >
@@ -365,15 +332,15 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         </div>
       </div>
 
-      {entry.transcription_status === "failed" ? (
+      {showRetry ? (
         <p className="text-xs text-text/60 break-words pb-2">
-          {entry.transcription_error || t("settings.history.retryHint")}
+          {t("settings.history.retryHint")}
         </p>
       ) : null}
 
-      {entry.transcription_status === "completed" ? (
+      {hasTranscription ? (
         <p className="italic text-text/90 text-sm pb-2 select-text cursor-text whitespace-pre-wrap break-words">
-          {entry.transcription_text || t("settings.history.noTranscript")}
+          {entry.transcription_text}
         </p>
       ) : null}
 
