@@ -26,6 +26,7 @@ pub enum EngineType {
     SenseVoice,
     GigaAM,
     Canary,
+    Qwen3,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -569,6 +570,120 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: canary_1b_languages,
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // Qwen3-ASR batch models
+        let qwen3_languages: Vec<String> = vec![
+            "en", "zh", "zh-Hans", "zh-Hant", "ja", "ko", "yue", "fr", "de", "es", "pt", "ru",
+            "it", "ar", "hi", "th", "vi", "id", "ms", "tr", "nl", "pl", "sv", "no", "da", "fi",
+            "cs", "ro", "hu", "el", "he", "uk", "bg", "hr", "sk", "sl", "lt", "lv", "et", "sr",
+            "tl", "my", "bo", "mn", "am", "sw", "kk", "uz", "az", "ka", "hy", "ne", "bn", "ta",
+            "te", "ur", "fa", "lo", "km", "ca", "gl", "eu", "af",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        available_models.insert(
+            "qwen3-0.6b".to_string(),
+            ModelInfo {
+                id: "qwen3-0.6b".to_string(),
+                name: "Qwen3 ASR 0.6B".to_string(),
+                description: "Multilingual batch transcription with good accuracy-efficiency trade-off.".to_string(),
+                filename: "qwen3-asr-0.6b".to_string(),
+                url: Some("https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/qwen3-asr-0.6b.tar.gz".to_string()),
+                sha256: None,
+                size_mb: 2750,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Qwen3,
+                accuracy_score: 0.75,
+                speed_score: 0.75,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: qwen3_languages.clone(),
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "qwen3-1.7b".to_string(),
+            ModelInfo {
+                id: "qwen3-1.7b".to_string(),
+                name: "Qwen3 ASR 1.7B".to_string(),
+                description: "Multilingual batch transcription. Highest accuracy among open-source ASR models.".to_string(),
+                filename: "qwen3-asr-1.7b".to_string(),
+                url: Some("https://huggingface.co/andrewleech/qwen3-asr-1.7b-onnx/resolve/main/qwen3-asr-1.7b.tar.gz".to_string()),
+                sha256: None,
+                size_mb: 7286,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Qwen3,
+                accuracy_score: 0.85,
+                speed_score: 0.45,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: qwen3_languages.clone(),
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "qwen3-0.6b-int4".to_string(),
+            ModelInfo {
+                id: "qwen3-0.6b-int4".to_string(),
+                name: "Qwen3 ASR 0.6B (Int4)".to_string(),
+                description: "Multilingual batch transcription. Quantized for smaller download."
+                    .to_string(),
+                filename: "qwen3-asr-0.6b-int4".to_string(),
+                url: Some("https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/qwen3-asr-0.6b-int4.tar.gz".to_string()),
+                sha256: None,
+                size_mb: 2100,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Qwen3,
+                accuracy_score: 0.73,
+                speed_score: 0.80,
+                supports_translation: false,
+                is_recommended: true,
+                supported_languages: qwen3_languages.clone(),
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "qwen3-1.7b-int4".to_string(),
+            ModelInfo {
+                id: "qwen3-1.7b-int4".to_string(),
+                name: "Qwen3 ASR 1.7B (Int4)".to_string(),
+                description: "Multilingual batch transcription. Quantized for smaller download."
+                    .to_string(),
+                filename: "qwen3-asr-1.7b-int4".to_string(),
+                url: Some("https://huggingface.co/andrewleech/qwen3-asr-1.7b-onnx/resolve/main/qwen3-asr-1.7b-int4.tar.gz".to_string()),
+                sha256: None,
+                size_mb: 4800,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Qwen3,
+                accuracy_score: 0.83,
+                speed_score: 0.55,
+                supports_translation: false,
+                is_recommended: true,
+                supported_languages: qwen3_languages,
                 supports_language_selection: true,
                 is_custom: false,
             },

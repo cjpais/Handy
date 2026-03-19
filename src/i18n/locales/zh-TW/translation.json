@@ -88,6 +88,22 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "準確的多語言模型。25種歐洲語言。支援翻譯。"
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "多語言批次轉錄，精確度與效率平衡良好。"
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "多語言批次轉錄。開源ASR模型中精確度最高。"
+      },
+      "qwen3-0.6b-int4": {
+        "name": "Qwen3 ASR 0.6B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
+      },
+      "qwen3-1.7b-int4": {
+        "name": "Qwen3 ASR 1.7B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
       }
     },
     "errors": {
