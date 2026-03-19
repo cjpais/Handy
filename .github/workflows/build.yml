@@ -19,7 +19,7 @@ on:
       asset-prefix:
         required: false
         type: string
-        default: "handy"
+        default: "parler"
       asset-name-pattern:
         required: false
         type: string

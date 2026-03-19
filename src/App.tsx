@@ -3,6 +3,7 @@ import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
+import { getIdentifier } from "@tauri-apps/api/app";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -102,7 +103,7 @@ function App() {
 
       if (error_type === "microphone_permission_denied") {
         const currentPlatform = platform();
-        const platformKey = `errors.micPermissionDenied.${currentPlatform}`;
+        const platformKey = \`errors.micPermissionDenied.\${currentPlatform}\`;
         const description = t(platformKey, {
           defaultValue: t("errors.micPermissionDenied.generic"),
         });
@@ -117,6 +118,19 @@ function App() {
       unlisten.then((fn) => fn());
     };
   }, [t]);
+
+  // Listen for backend navigation events (e.g., "Show History" shortcut)
+  useEffect(() => {
+    const unlisten = listen<string>("navigate-to-section", (event) => {
+      const section = event.payload as SidebarSection;
+      if (section in SECTIONS_CONFIG) {
+        setCurrentSection(section);
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   // Listen for model loading failures and show a toast
   useEffect(() => {
@@ -148,6 +162,9 @@ function App() {
 
   const checkOnboardingStatus = async () => {
     try {
+      const appIdentifier = await getIdentifier();
+      const isDevFlavor = appIdentifier.endsWith(".dev");
+
       // Check if they have any models available
       const result = await commands.hasAnyModelsAvailable();
       const hasModels = result.status === "ok" && result.data;
@@ -156,6 +173,7 @@ function App() {
       if (hasModels) {
         // Returning user - check if they need to grant permissions first
         setIsReturningUser(true);
+
 
         if (currentPlatform === "macos") {
           try {
@@ -194,9 +212,9 @@ function App() {
 
         setOnboardingStep("done");
       } else {
-        // New user - start full onboarding
+        // New user - dev flavor skips permissions (can't grant to debug binary)
         setIsReturningUser(false);
-        setOnboardingStep("accessibility");
+        setOnboardingStep(isDevFlavor ? "model" : "accessibility");
       }
     } catch (error) {
       console.error("Failed to check onboarding status:", error);

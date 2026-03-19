@@ -40,3 +40,5 @@ blob-report/
 
 # Nix build output
 result
+# Secrets
+secrets.env

@@ -1,26 +1,275 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { ChevronDown, Globe } from "lucide-react";
+import { ChevronDown, Globe, RefreshCcw, X } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
+import { useSettings } from "@/hooks/useSettings";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
+import { commands } from "@/bindings";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
   return model.supported_languages.includes(langCode);
 };
 
+const ProcessingModelsSection: React.FC = () => {
+  const { t } = useTranslation();
+  const {
+    getSetting,
+    settings,
+    refreshSettings,
+    fetchPostProcessModels,
+    updatePostProcessApiKey,
+    postProcessModelOptions,
+  } = useSettings();
+  const [isAdding, setIsAdding] = useState(false);
+  const [selectedProviderId, setSelectedProviderId] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [isFetching, setIsFetching] = useState(false);
+
+  const savedModels = getSetting("saved_processing_models") || [];
+  const providers = settings?.post_process_providers || [];
+
+  const providerOptions = useMemo(
+    () => providers.map((p) => ({ value: p.id, label: p.label })),
+    [providers],
+  );
+
+  const availableModels = postProcessModelOptions[selectedProviderId] || [];
+  const modelOptions = useMemo(
+    () => availableModels.map((m) => ({ value: m, label: m })),
+    [availableModels],
+  );
+
+  const handleProviderChange = useCallback(
+    (providerId: string) => {
+      setSelectedProviderId(providerId);
+      setSelectedModel("");
+      const existingKey = settings?.post_process_api_keys?.[providerId] ?? "";
+      setApiKey(existingKey);
+    },
+    [settings],
+  );
+
+  const handleFetchModels = useCallback(async () => {
+    if (!selectedProviderId) return;
+    if (apiKey.trim()) {
+      await updatePostProcessApiKey(selectedProviderId, apiKey.trim());
+    }
+    setIsFetching(true);
+    try {
+      await fetchPostProcessModels(selectedProviderId);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [
+    selectedProviderId,
+    apiKey,
+    fetchPostProcessModels,
+    updatePostProcessApiKey,
+  ]);
+
+  const handleSave = useCallback(async () => {
+    if (!selectedProviderId || !selectedModel) return;
+    const provider = providers.find((p) => p.id === selectedProviderId);
+    const label = `${provider?.label || selectedProviderId} / ${selectedModel}`;
+    try {
+      await commands.addSavedProcessingModel(
+        selectedProviderId,
+        selectedModel,
+        label,
+      );
+      await refreshSettings();
+      setIsAdding(false);
+      setSelectedProviderId("");
+      setSelectedModel("");
+      setApiKey("");
+    } catch (error) {
+      console.error("Failed to save processing model:", error);
+    }
+  }, [selectedProviderId, selectedModel, providers, refreshSettings]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        await commands.deleteSavedProcessingModel(id);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to delete processing model:", error);
+      }
+    },
+    [refreshSettings],
+  );
+
+  const handleStartAdd = useCallback(() => {
+    setIsAdding(true);
+    setSelectedProviderId("");
+    setSelectedModel("");
+    setApiKey("");
+  }, []);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-text/60">
+        {t("settings.models.processingModels.description")}
+      </p>
+
+      {savedModels.length > 0 && (
+        <div className="space-y-1">
+          {savedModels.map((model) => (
+            <div
+              key={model.id}
+              className="flex items-center justify-between p-2.5 rounded-lg bg-mid-gray/5 border border-mid-gray/10"
+            >
+              <span className="text-sm text-text">{model.label}</span>
+              <button
+                onClick={() => handleDelete(model.id)}
+                className="p-1 text-mid-gray/40 hover:text-red-400 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {savedModels.length === 0 && !isAdding && (
+        <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/10">
+          <p className="text-sm text-mid-gray">
+            {t("settings.models.processingModels.noModels")}
+          </p>
+        </div>
+      )}
+
+      {isAdding && (
+        <div className="space-y-3 p-3 rounded-lg border border-mid-gray/20 bg-mid-gray/5">
+          <div className="space-y-1">
+            <label className="text-sm font-semibold">
+              {t("settings.models.processingModels.provider")}
+            </label>
+            <Dropdown
+              selectedValue={selectedProviderId || null}
+              options={providerOptions}
+              onSelect={handleProviderChange}
+              placeholder={t("settings.models.processingModels.provider")}
+            />
+          </div>
+
+          {selectedProviderId && (
+            <>
+              <div className="space-y-1">
+                <label className="text-sm font-semibold">
+                  {t("settings.models.processingModels.apiKey")}
+                </label>
+                <Input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={t(
+                    "settings.models.processingModels.apiKeyPlaceholder",
+                  )}
+                  variant="compact"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-semibold">
+                  {t("settings.models.processingModels.model")}
+                </label>
+                <div className="flex items-center gap-2">
+                  {modelOptions.length > 0 ? (
+                    <Dropdown
+                      selectedValue={selectedModel || null}
+                      options={modelOptions}
+                      onSelect={setSelectedModel}
+                      placeholder={t(
+                        "settings.models.processingModels.modelPlaceholder",
+                      )}
+                      className="flex-1"
+                    />
+                  ) : (
+                    <Input
+                      type="text"
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      placeholder={t(
+                        "settings.models.processingModels.modelPlaceholder",
+                      )}
+                      variant="compact"
+                      className="flex-1"
+                    />
+                  )}
+                  <button
+                    onClick={handleFetchModels}
+                    disabled={isFetching || !apiKey.trim()}
+                    className="flex items-center justify-center h-8 w-8 rounded-md bg-mid-gray/10 hover:bg-mid-gray/20 transition-colors disabled:opacity-40"
+                    title={t("settings.models.processingModels.fetchModels")}
+                  >
+                    <RefreshCcw
+                      className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            <Button
+              onClick={handleSave}
+              variant="primary"
+              size="md"
+              disabled={!selectedProviderId || !selectedModel.trim()}
+            >
+              {t("settings.models.processingModels.save")}
+            </Button>
+            <Button
+              onClick={() => setIsAdding(false)}
+              variant="secondary"
+              size="md"
+            >
+              {t("settings.models.processingModels.cancel")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!isAdding && (
+        <Button onClick={handleStartAdd} variant="primary" size="md">
+          {t("settings.models.processingModels.addModel")}
+        </Button>
+      )}
+    </div>
+  );
+};
+
+type ModelsTab = "transcription" | "processing";
+
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<ModelsTab>("transcription");
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
+  const [showGeminiKeyDialog, setShowGeminiKeyDialog] = useState(false);
+  const [geminiKeyInput, setGeminiKeyInput] = useState("");
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
+  const { getSetting, updateSetting } = useSettings();
   const {
     models,
     currentModel,
@@ -74,6 +323,9 @@ export const ModelsSettings: React.FC = () => {
     return LANGUAGES.find((lang) => lang.value === languageFilter)?.label || "";
   }, [languageFilter, t]);
 
+  const geminiApiKey = getSetting("gemini_api_key") as string | undefined;
+  const hasGeminiKey = !!geminiApiKey && geminiApiKey.length > 0;
+
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) {
       return "extracting";
@@ -85,6 +337,9 @@ export const ModelsSettings: React.FC = () => {
       return "switching";
     }
     if (modelId === currentModel) {
+      if (modelId === "gemini-api" && !hasGeminiKey) {
+        return "available";
+      }
       return "active";
     }
     const model = models.find((m: ModelInfo) => m.id === modelId);
@@ -105,9 +360,27 @@ export const ModelsSettings: React.FC = () => {
   };
 
   const handleModelSelect = async (modelId: string) => {
+    if (modelId === "gemini-api" && !hasGeminiKey) {
+      setGeminiKeyInput("");
+      setShowGeminiKeyDialog(true);
+      return;
+    }
     setSwitchingModelId(modelId);
     try {
       await selectModel(modelId);
+    } finally {
+      setSwitchingModelId(null);
+    }
+  };
+
+  const handleGeminiKeySave = async () => {
+    const key = geminiKeyInput.trim();
+    if (!key) return;
+    await updateSetting("gemini_api_key", key);
+    setShowGeminiKeyDialog(false);
+    setSwitchingModelId("gemini-api");
+    try {
+      await selectModel("gemini-api");
     } finally {
       setSwitchingModelId(null);
     }
@@ -165,11 +438,13 @@ export const ModelsSettings: React.FC = () => {
     const available: ModelInfo[] = [];
 
     for (const model of filteredModels) {
+      const isGeminiWithoutKey = model.id === "gemini-api" && !hasGeminiKey;
       if (
-        model.is_custom ||
-        model.is_downloaded ||
-        model.id in downloadingModels ||
-        model.id in extractingModels
+        !isGeminiWithoutKey &&
+        (model.is_custom ||
+          model.is_downloaded ||
+          model.id in downloadingModels ||
+          model.id in extractingModels)
       ) {
         downloaded.push(model);
       } else {
@@ -189,7 +464,13 @@ export const ModelsSettings: React.FC = () => {
       downloadedModels: downloaded,
       availableModels: available,
     };
-  }, [filteredModels, downloadingModels, extractingModels, currentModel]);
+  }, [
+    filteredModels,
+    downloadingModels,
+    extractingModels,
+    currentModel,
+    hasGeminiKey,
+  ]);
 
   if (loading) {
     return (
@@ -207,11 +488,26 @@ export const ModelsSettings: React.FC = () => {
         <h1 className="text-xl font-semibold mb-2">
           {t("settings.models.title")}
         </h1>
-        <p className="text-sm text-text/60">
-          {t("settings.models.description")}
-        </p>
+        <div className="flex gap-1 mt-3 p-0.5 bg-mid-gray/10 rounded-lg w-fit">
+          {(["transcription", "processing"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === tab
+                  ? "bg-background text-text shadow-sm"
+                  : "text-text/50 hover:text-text/70"
+              }`}
+            >
+              {t(`settings.models.tabs.${tab}`)}
+            </button>
+          ))}
+        </div>
       </div>
-      {filteredModels.length > 0 ? (
+
+      {activeTab === "processing" && <ProcessingModelsSection />}
+
+      {activeTab === "transcription" && filteredModels.length > 0 ? (
         <div className="space-y-6">
           {/* Downloaded Models Section — header always visible so filter stays accessible */}
           <div className="space-y-3">
@@ -323,7 +619,7 @@ export const ModelsSettings: React.FC = () => {
                 onCancel={handleModelCancel}
                 downloadProgress={getDownloadProgress(model.id)}
                 downloadSpeed={getDownloadSpeed(model.id)}
-                showRecommended={false}
+                showRecommended={true}
               />
             ))}
           </div>
@@ -345,15 +641,67 @@ export const ModelsSettings: React.FC = () => {
                   onCancel={handleModelCancel}
                   downloadProgress={getDownloadProgress(model.id)}
                   downloadSpeed={getDownloadSpeed(model.id)}
-                  showRecommended={false}
+                  showRecommended={true}
                 />
               ))}
             </div>
           )}
         </div>
-      ) : (
+      ) : activeTab === "transcription" ? (
         <div className="text-center py-8 text-text/50">
           {t("settings.models.noModelsMatch")}
+        </div>
+      ) : null}
+
+      {showGeminiKeyDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setShowGeminiKeyDialog(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setShowGeminiKeyDialog(false);
+          }}
+        >
+          <div
+            className="bg-background border border-mid-gray/40 rounded-xl p-5 w-96 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-base font-semibold">
+                {t("settings.gemini.apiKeyRequired")}
+              </h3>
+              <p className="text-sm text-text/60 mt-1">
+                {t("settings.gemini.apiKeyRequiredDescription")}
+              </p>
+            </div>
+            <Input
+              autoFocus
+              type="password"
+              value={geminiKeyInput}
+              onChange={(e) => setGeminiKeyInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleGeminiKeySave();
+              }}
+              placeholder={t("settings.gemini.apiKeyPlaceholder")}
+              className="w-full"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowGeminiKeyDialog(false)}
+              >
+                {t("settings.gemini.cancel")}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleGeminiKeySave}
+                disabled={!geminiKeyInput.trim()}
+              >
+                {t("settings.gemini.save")}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

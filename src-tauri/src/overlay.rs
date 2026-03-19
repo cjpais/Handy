@@ -30,8 +30,8 @@ tauri_panel! {
     })
 }
 
-const OVERLAY_WIDTH: f64 = 172.0;
-const OVERLAY_HEIGHT: f64 = 36.0;
+const OVERLAY_WIDTH: f64 = 210.0;
+const OVERLAY_HEIGHT: f64 = 38.0;
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -133,37 +133,7 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     });
 }
 
-fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
-    if let Some(mouse_location) = input::get_cursor_position(app_handle) {
-        if let Ok(monitors) = app_handle.available_monitors() {
-            for monitor in monitors {
-                // Tauri's monitor position/size are physical pixels, but enigo
-                // may return logical coordinates (confirmed on macOS via
-                // NSEvent::mouseLocation; on Windows, GetCursorPos behavior
-                // depends on the process DPI-awareness context). Dividing by
-                // scale_factor normalizes to logical, which is safe regardless:
-                // if enigo returns logical it matches directly, and if it returns
-                // physical on a scale=1 monitor the division is a no-op.
-                let scale = monitor.scale_factor();
-                let pos = PhysicalPosition::new(
-                    (monitor.position().x as f64 / scale) as i32,
-                    (monitor.position().y as f64 / scale) as i32,
-                );
-                let size = PhysicalSize::new(
-                    (monitor.size().width as f64 / scale) as u32,
-                    (monitor.size().height as f64 / scale) as u32,
-                );
-                if is_mouse_within_monitor(mouse_location, &pos, &size) {
-                    return Some(monitor);
-                }
-            }
-        }
-    }
-
-    app_handle.primary_monitor().ok().flatten()
-}
-
-fn is_mouse_within_monitor(
+fn is_point_within_monitor(
     mouse_pos: (i32, i32),
     monitor_pos: &PhysicalPosition<i32>,
     monitor_size: &PhysicalSize<u32>,
@@ -184,35 +154,133 @@ fn is_mouse_within_monitor(
         && mouse_y < (monitor_y + monitor_height as i32)
 }
 
-/// Returns overlay position in logical coordinates (points on macOS).
-///
-/// Uses monitor position/size directly rather than work_area(), which can
-/// return incorrect coordinates on macOS for monitors with negative positions.
-/// The per-platform OVERLAY_TOP_OFFSET / OVERLAY_BOTTOM_OFFSET constants
-/// already account for system chrome (menu bar, taskbar).
-///
-/// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
-/// converts PhysicalPosition using the scale factor of the monitor the window
-/// is *currently* on, which is wrong when moving cross-monitor.
+fn get_fallback_monitor(
+    app_handle: &AppHandle,
+    monitors: &[tauri::Monitor],
+) -> Option<tauri::Monitor> {
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        if let Ok(Some(monitor)) = main_window.current_monitor() {
+            return Some(monitor);
+        }
+    }
+
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        if let Ok(Some(monitor)) = overlay_window.current_monitor() {
+            return Some(monitor);
+        }
+    }
+
+    if let Some(monitor) = monitors.iter().max_by_key(|m| {
+        let area = m.work_area();
+        area.size.width as u64 * area.size.height as u64
+    }) {
+        return Some(monitor.clone());
+    }
+
+    app_handle.primary_monitor().ok().flatten()
+}
+
+fn get_monitor_with_cursor(app_handle: &AppHandle) -> Option<tauri::Monitor> {
+    let monitors = app_handle.available_monitors().unwrap_or_default();
+
+    if let Some((mouse_x, mouse_y)) = input::get_cursor_position(app_handle) {
+        if let Ok(Some(monitor)) = app_handle.monitor_from_point(mouse_x as f64, mouse_y as f64) {
+            return Some(monitor);
+        }
+
+        for monitor in &monitors {
+            if is_point_within_monitor((mouse_x, mouse_y), monitor.position(), monitor.size()) {
+                return Some(monitor.clone());
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            for monitor in &monitors {
+                let scale = monitor.scale_factor();
+                let pos = monitor.position();
+                let size = monitor.size();
+
+                let logical_pos = PhysicalPosition {
+                    x: (pos.x as f64 / scale).round() as i32,
+                    y: (pos.y as f64 / scale).round() as i32,
+                };
+                let logical_size = PhysicalSize {
+                    width: (size.width as f64 / scale).round() as u32,
+                    height: (size.height as f64 / scale).round() as u32,
+                };
+
+                if is_point_within_monitor((mouse_x, mouse_y), &logical_pos, &logical_size) {
+                    return Some(monitor.clone());
+                }
+
+                let scaled_cursor = (
+                    (mouse_x as f64 * scale).round() as i32,
+                    (mouse_y as f64 * scale).round() as i32,
+                );
+                if is_point_within_monitor(scaled_cursor, monitor.position(), monitor.size()) {
+                    return Some(monitor.clone());
+                }
+            }
+        }
+    }
+
+    get_fallback_monitor(app_handle, &monitors)
+}
+
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
-    let monitor = get_monitor_with_cursor(app_handle)?;
-    let scale = monitor.scale_factor();
-    let monitor_x = monitor.position().x as f64 / scale;
-    let monitor_y = monitor.position().y as f64 / scale;
-    let monitor_width = monitor.size().width as f64 / scale;
-    let monitor_height = monitor.size().height as f64 / scale;
+    if let Some(monitor) = get_monitor_with_cursor(app_handle) {
+        let scale = monitor.scale_factor();
+        let monitor_x = monitor.position().x as f64 / scale;
+        let monitor_y = monitor.position().y as f64 / scale;
+        let monitor_width = monitor.size().width as f64 / scale;
+        let monitor_height = monitor.size().height as f64 / scale;
+
+        let work_area = monitor.work_area();
+        let wa_x = work_area.position.x as f64 / scale;
+        let wa_y = work_area.position.y as f64 / scale;
+        let wa_w = work_area.size.width as f64 / scale;
+        let wa_h = work_area.size.height as f64 / scale;
+
+        let wa_bottom = wa_y + wa_h;
+        let monitor_bottom = monitor_y + monitor_height;
+        let work_area_valid =
+            wa_y >= monitor_y && wa_bottom <= monitor_bottom + 1.0 && wa_w <= monitor_width + 1.0;
+
+        let (area_x, area_y, area_w, area_h) = if work_area_valid {
+            (wa_x, wa_y, wa_w, wa_h)
+        } else {
+            log::debug!(
+                "work_area invalid for monitor (wa_bottom={:.0} > monitor_bottom={:.0}), using monitor bounds with safe offset",
+                wa_bottom, monitor_bottom
+            );
+            let menu_bar_offset = 25.0;
+            (
+                monitor_x,
+                monitor_y + menu_bar_offset,
+                monitor_width,
+                monitor_height - menu_bar_offset,
+            )
+        };
 
     let settings = settings::get_settings(app_handle);
 
-    let x = monitor_x + (monitor_width - OVERLAY_WIDTH) / 2.0;
-    let y = match settings.overlay_position {
-        OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
-        OverlayPosition::Bottom | OverlayPosition::None => {
-            monitor_y + monitor_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
-        }
-    };
+        let x = area_x + (area_w - OVERLAY_WIDTH) / 2.0;
+        let y = match settings.overlay_position {
+            OverlayPosition::Top => area_y + OVERLAY_TOP_OFFSET,
+            OverlayPosition::Bottom | OverlayPosition::None => {
+                area_y + area_h - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
+            }
+        };
 
-    Some((x, y))
+        log::debug!(
+            "Overlay position: ({:.0}, {:.0}) on monitor (scale={}, area=({:.0},{:.0},{:.0},{:.0}), wa_valid={})",
+            x, y, scale, area_x, area_y, area_w, area_h, work_area_valid
+        );
+
+        return Some((x, y));
+    }
+    None
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
@@ -314,7 +382,6 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 }
 
 fn show_overlay_state(app_handle: &AppHandle, state: &str) {
-    // Check if overlay should be shown based on position setting
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
         return;
@@ -325,7 +392,6 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
 
-        // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 
@@ -376,6 +442,27 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
             std::thread::sleep(std::time::Duration::from_millis(300));
             let _ = window_clone.hide();
         });
+    }
+}
+
+pub fn emit_action_selected(app_handle: &AppHandle, key: u8, name: &str) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit(
+            "action-selected",
+            serde_json::json!({ "key": key, "name": name }),
+        );
+    }
+}
+
+pub fn emit_action_deselected(app_handle: &AppHandle) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("action-deselected", ());
+    }
+}
+
+pub fn emit_recording_paused(app_handle: &AppHandle, paused: bool) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.emit("recording-paused", paused);
     }
 }
 

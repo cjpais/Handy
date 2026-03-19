@@ -1,4 +1,5 @@
 use crate::managers::history::{HistoryEntry, HistoryManager};
+use crate::managers::transcription::TranscriptionManager;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -69,6 +70,52 @@ pub async fn update_history_limit(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn reprocess_history_entry(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    id: i64,
+    model_id: String,
+) -> Result<String, String> {
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "History entry not found".to_string())?;
+
+    let audio_path = history_manager.get_audio_file_path(&entry.file_name);
+    if !audio_path.exists() {
+        return Err("Audio file not found".to_string());
+    }
+
+    let samples = crate::audio_toolkit::load_wav_file(&audio_path).map_err(|e| e.to_string())?;
+
+    let previous_model = transcription_manager.get_current_model();
+
+    transcription_manager
+        .load_model(&model_id)
+        .map_err(|e| e.to_string())?;
+
+    let new_text = transcription_manager
+        .transcribe(samples)
+        .map_err(|e| e.to_string())?;
+
+    let model_name = transcription_manager.get_current_model_name();
+    history_manager
+        .update_transcription_text(id, &new_text, model_name.as_deref())
+        .map_err(|e| e.to_string())?;
+
+    if let Some(prev_id) = previous_model {
+        if prev_id != model_id {
+            let _ = transcription_manager.load_model(&prev_id);
+        }
+    }
+
+    Ok(new_text)
 }
 
 #[tauri::command]

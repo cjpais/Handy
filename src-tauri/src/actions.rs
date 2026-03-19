@@ -13,10 +13,10 @@ use crate::utils::{
 };
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
@@ -26,6 +26,8 @@ struct RecordingErrorEvent {
     error_type: String,
     detail: Option<String>,
 }
+
+pub struct ActiveActionState(pub Mutex<Option<u8>>);
 
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
 /// transcription pipeline finishes — whether it completes normally or panics.
@@ -271,6 +273,142 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 }
 
+async fn process_action(
+    settings: &AppSettings,
+    transcription: &str,
+    prompt: &str,
+    action_model: Option<&str>,
+    action_provider_id: Option<&str>,
+) -> Option<String> {
+    let provider = if let Some(pid) = action_provider_id.filter(|p| !p.is_empty()) {
+        match settings.post_process_provider(pid).cloned() {
+            Some(p) => p,
+            None => {
+                debug!(
+                    "Action provider '{}' not found, falling back to active provider",
+                    pid
+                );
+                settings.active_post_process_provider().cloned()?
+            }
+        }
+    } else {
+        match settings.active_post_process_provider().cloned() {
+            Some(p) => p,
+            None => {
+                debug!("Action processing skipped: no provider configured");
+                return None;
+            }
+        }
+    };
+
+    let model = action_model
+        .filter(|m| !m.trim().is_empty())
+        .map(|m| m.to_string())
+        .or_else(|| settings.post_process_models.get(&provider.id).cloned())
+        .unwrap_or_default();
+
+    let full_prompt = if prompt.contains("${output}") {
+        prompt.replace("${output}", transcription)
+    } else {
+        format!("{}\n\n{}", prompt, transcription)
+    };
+
+    debug!(
+        "Starting action processing with provider '{}', model '{}', prompt length: {}",
+        provider.id,
+        model,
+        full_prompt.len()
+    );
+
+    // Handle Apple Intelligence via native Swift APIs
+    if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            if !apple_intelligence::check_apple_intelligence_availability() {
+                debug!("Apple Intelligence selected but not available for action processing");
+                return None;
+            }
+            let token_limit = model.trim().parse::<i32>().unwrap_or(0);
+            return match apple_intelligence::process_text_with_system_prompt(
+                &full_prompt,
+                transcription,
+                token_limit,
+            ) {
+                Ok(result) if !result.trim().is_empty() => {
+                    let result = strip_invisible_chars(&result);
+                    debug!(
+                        "Apple Intelligence action processing succeeded. Output length: {} chars",
+                        result.len()
+                    );
+                    Some(result)
+                }
+                Ok(_) => {
+                    debug!("Apple Intelligence action returned empty result");
+                    None
+                }
+                Err(err) => {
+                    error!("Apple Intelligence action processing failed: {}", err);
+                    None
+                }
+            };
+        }
+
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            debug!("Apple Intelligence provider selected on unsupported platform");
+            return None;
+        }
+    }
+
+    if model.trim().is_empty() {
+        debug!(
+            "Action processing skipped: no model configured for provider '{}'",
+            provider.id
+        );
+        return None;
+    }
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    let system_prompt = "You are a text processing assistant. Output ONLY the final processed text. Do not add any explanation, commentary, preamble, or formatting such as markdown code blocks. Just output the raw result text, nothing else.".to_string();
+
+    match crate::llm_client::send_chat_completion_with_schema(
+        &provider,
+        api_key,
+        &model,
+        full_prompt,
+        Some(system_prompt),
+        None,
+    )
+    .await
+    {
+        Ok(Some(content)) if !content.is_empty() => {
+            let result = strip_invisible_chars(&content);
+            debug!(
+                "Action processing succeeded for provider '{}'. Output length: {} chars",
+                provider.id,
+                result.len()
+            );
+            Some(result)
+        }
+        Ok(_) => {
+            debug!("Action processing returned empty result");
+            None
+        }
+        Err(e) => {
+            error!(
+                "Action processing failed for provider '{}': {}",
+                provider.id, e
+            );
+            None
+        }
+    }
+}
+
 async fn maybe_convert_chinese_variant(
     settings: &AppSettings,
     transcription: &str,
@@ -382,6 +520,8 @@ impl ShortcutAction for TranscribeAction {
         if recording_error.is_none() {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+            shortcut::register_pause_shortcut(app);
+            shortcut::register_action_shortcuts(app);
         } else {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
@@ -410,8 +550,10 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
-        // Unregister the cancel shortcut when transcription stops
+        crate::shortcut::handler::reset_cancel_confirmation();
         shortcut::unregister_cancel_shortcut(app);
+        shortcut::unregister_pause_shortcut(app);
+        shortcut::unregister_action_shortcuts(app);
 
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
@@ -433,12 +575,23 @@ impl ShortcutAction for TranscribeAction {
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
 
+        // Read and clear the selected action before spawning the async task
+        let selected_action_key =
+            app.try_state::<ActiveActionState>()
+                .and_then(|s| match s.0.lock() {
+                    Ok(mut guard) => guard.take(),
+                    Err(poisoned) => {
+                        error!("ActiveActionState mutex poisoned, recovering");
+                        poisoned.into_inner().take()
+                    }
+                });
+
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
             let binding_id = binding_id.clone(); // Clone for the inner async task
             debug!(
-                "Starting async transcription task for binding: {}",
-                binding_id
+                "Starting async transcription task for binding: {}, action: {:?}",
+                binding_id, selected_action_key
             );
 
             let stop_recording_time = Instant::now();
@@ -449,20 +602,93 @@ impl ShortcutAction for TranscribeAction {
                     samples.len()
                 );
 
+                let duration_seconds = samples.len() as f32 / 16000.0;
+                let settings_for_model = get_settings(&ah);
+                let original_model = tm.get_current_model();
+                let mut switched_model = false;
+
+                if let Some(ref long_model_id) = settings_for_model.long_audio_model {
+                    if duration_seconds > settings_for_model.long_audio_threshold_seconds
+                        && original_model.as_deref() != Some(long_model_id.as_str())
+                    {
+                        debug!(
+                            "Audio duration {:.1}s exceeds threshold {:.1}s, switching to long audio model: {}",
+                            duration_seconds,
+                            settings_for_model.long_audio_threshold_seconds,
+                            long_model_id
+                        );
+                        if let Err(e) = tm.load_model(long_model_id) {
+                            warn!(
+                                "Failed to load long audio model '{}': {}, using current model",
+                                long_model_id, e
+                            );
+                        } else {
+                            switched_model = true;
+                        }
+                    }
+                }
+
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
                 match tm.transcribe(samples) {
                     Ok(transcription) => {
+                        let mut transcription = transcription;
                         debug!(
                             "Transcription completed in {:?}: '{}'",
                             transcription_time.elapsed(),
                             transcription
                         );
+
+                        // Fallback: if cheap model returned nothing on meaningful audio, retry with accurate model
+                        if transcription.is_empty()
+                            && duration_seconds > 1.0
+                            && !switched_model
+                        {
+                            if let Some(ref long_model_id) = settings_for_model.long_audio_model {
+                                let already_using_long = original_model.as_deref()
+                                    == Some(long_model_id.as_str());
+                                if !already_using_long {
+                                    info!(
+                                        "Transcription empty for {:.1}s audio, retrying with long audio model: {}",
+                                        duration_seconds, long_model_id
+                                    );
+                                    match tm.load_model(long_model_id) {
+                                        Ok(()) => {
+                                            switched_model = true;
+                                            match tm.transcribe(samples_clone.clone()) {
+                                                Ok(retry_result) => {
+                                                    if !retry_result.is_empty() {
+                                                        debug!(
+                                                            "Fallback transcription succeeded: '{}'",
+                                                            retry_result
+                                                        );
+                                                        transcription = retry_result;
+                                                    } else {
+                                                        debug!("Fallback transcription also returned empty");
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    warn!("Fallback transcription error: {}", e);
+                                                }
+                                            }
+                                        }
+                                        Err(e) => {
+                                            warn!(
+                                                "Failed to load long audio model for fallback: {}",
+                                                e
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        let mut post_processed_text: Option<String> = None;
+                        let mut post_process_prompt: Option<String> = None;
+
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
-                            let mut post_processed_text: Option<String> = None;
-                            let mut post_process_prompt: Option<String> = None;
 
                             // First, check if Chinese variant conversion is needed
                             if let Some(converted_text) =
@@ -471,22 +697,43 @@ impl ShortcutAction for TranscribeAction {
                                 final_text = converted_text;
                             }
 
-                            // Then apply LLM post-processing if this is the post-process hotkey
-                            // Uses final_text which may already have Chinese conversion applied
-                            if post_process {
+                            let selected_action = selected_action_key.and_then(|key| {
+                                settings
+                                    .post_process_actions
+                                    .iter()
+                                    .find(|a| a.key == key)
+                                    .cloned()
+                            });
+
+                            if selected_action.is_some() || post_process {
                                 show_processing_overlay(&ah);
                             }
-                            let processed = if post_process {
+
+                            // Action processing takes priority over default post-processing
+                            let processed = if let Some(ref action) = selected_action {
+                                process_action(
+                                    &settings,
+                                    &final_text,
+                                    &action.prompt,
+                                    action.model.as_deref(),
+                                    action.provider_id.as_deref(),
+                                )
+                                .await
+                            } else if post_process {
                                 post_process_transcription(&settings, &final_text).await
                             } else {
                                 None
                             };
+
                             if let Some(processed_text) = processed {
                                 post_processed_text = Some(processed_text.clone());
                                 final_text = processed_text;
 
-                                // Get the prompt that was used
-                                if let Some(prompt_id) = &settings.post_process_selected_prompt_id {
+                                if let Some(action) = selected_action {
+                                    post_process_prompt = Some(action.prompt);
+                                } else if let Some(prompt_id) =
+                                    &settings.post_process_selected_prompt_id
+                                {
                                     if let Some(prompt) = settings
                                         .post_process_prompts
                                         .iter()
@@ -499,23 +746,6 @@ impl ShortcutAction for TranscribeAction {
                                 // Chinese conversion was applied but no LLM post-processing
                                 post_processed_text = Some(final_text.clone());
                             }
-
-                            // Save to history with post-processed text and prompt
-                            let hm_clone = Arc::clone(&hm);
-                            let transcription_for_history = transcription.clone();
-                            tauri::async_runtime::spawn(async move {
-                                if let Err(e) = hm_clone
-                                    .save_transcription(
-                                        samples_clone,
-                                        transcription_for_history,
-                                        post_processed_text,
-                                        post_process_prompt,
-                                    )
-                                    .await
-                                {
-                                    error!("Failed to save transcription to history: {}", e);
-                                }
-                            });
 
                             // Paste the final text (either processed or original)
                             let ah_clone = ah.clone();
@@ -541,11 +771,48 @@ impl ShortcutAction for TranscribeAction {
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
+
+                        // Always save to history for non-empty results or meaningful audio duration
+                        if !transcription.is_empty() || duration_seconds > 1.0 {
+                            let hm_clone = Arc::clone(&hm);
+                            let transcription_for_history = transcription.clone();
+                            let model_name_for_history = tm.get_current_model_name();
+                            let action_key_for_history = if post_processed_text.is_some() {
+                                selected_action_key
+                            } else {
+                                None
+                            };
+                            tauri::async_runtime::spawn(async move {
+                                if let Err(e) = hm_clone
+                                    .save_transcription(
+                                        samples_clone,
+                                        transcription_for_history,
+                                        post_processed_text,
+                                        post_process_prompt,
+                                        action_key_for_history,
+                                        model_name_for_history,
+                                    )
+                                    .await
+                                {
+                                    error!("Failed to save transcription to history: {}", e);
+                                }
+                            });
+                        }
                     }
                     Err(err) => {
                         debug!("Global Shortcut Transcription error: {}", err);
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
+                    }
+                }
+
+                // Restore original model if we switched for long audio
+                if switched_model {
+                    if let Some(ref orig_id) = original_model {
+                        debug!("Restoring original model: {}", orig_id);
+                        if let Err(e) = tm.load_model(orig_id) {
+                            warn!("Failed to restore original model '{}': {}", orig_id, e);
+                        }
                     }
                 }
             } else {

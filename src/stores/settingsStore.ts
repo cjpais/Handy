@@ -151,6 +151,13 @@ const settingUpdaters: {
     commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  long_audio_model: (value) =>
+    commands.changeLongAudioModelSetting((value as string | null) ?? null),
+  long_audio_threshold_seconds: (value) =>
+    commands.changeLongAudioThresholdSetting(value as number),
+  gemini_api_key: (value) =>
+    commands.changeGeminiApiKeySetting((value as string | null) ?? ""),
+  gemini_model: (value) => commands.changeGeminiModelSetting(value as string),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

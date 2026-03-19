@@ -96,7 +96,7 @@
     },
     "permissions": {
       "title": "Permissões Necessárias",
-      "description": "O Handy precisa de algumas permissões para funcionar corretamente.",
+      "description": "O Parler precisa de algumas permissões para funcionar corretamente.",
       "microphone": {
         "title": "Acesso ao Microfone",
         "description": "Necessário para ouvir sua voz para transcrição."
@@ -109,6 +109,7 @@
       "granted": "Concedido",
       "waiting": "Aguardando...",
       "allGranted": "Tudo pronto!",
+      "skip": "Pular por enquanto",
       "errors": {
         "checkFailed": "Erro ao verificar permissões. Por favor, tente novamente.",
         "requestFailed": "Erro ao solicitar permissão. Por favor, tente novamente."
@@ -152,7 +153,7 @@
     "general": {
       "title": "Geral",
       "shortcut": {
-        "title": "Atalhos do Handy",
+        "title": "Atalhos do Parler",
         "description": "Configure atalhos de teclado para iniciar a gravação de voz para texto",
         "loading": "Carregando atalhos...",
         "none": "Nenhum atalho configurado",
@@ -265,11 +266,11 @@
       },
       "autostart": {
         "label": "Iniciar na Inicialização",
-        "description": "Iniciar automaticamente o Handy quando você fizer login no seu computador."
+        "description": "Iniciar automaticamente o Parler quando você fizer login no seu computador."
       },
       "showTrayIcon": {
         "label": "Mostrar ícone na bandeja",
-        "description": "Exibir o ícone do Handy na bandeja do sistema."
+        "description": "Exibir o ícone do Parler na bandeja do sistema."
       },
       "overlay": {
         "title": "Posição da Sobreposição",
@@ -430,7 +431,7 @@
       },
       "updateChecks": {
         "label": "Verificar Atualizações",
-        "description": "Verificar automaticamente novas versões do Handy"
+        "description": "Verificar automaticamente novas versões do Parler"
       },
       "soundTheme": {
         "label": "Tema de Som",
@@ -498,11 +499,11 @@
       "title": "Sobre",
       "version": {
         "title": "Versão",
-        "description": "Versão atual do Handy"
+        "description": "Versão atual do Parler"
       },
       "appDataDirectory": {
         "title": "Diretório de Dados do App",
-        "description": "Local onde o Handy armazena seus dados"
+        "description": "Local onde o Parler armazena seus dados"
       },
       "sourceCode": {
         "title": "Código Fonte",
@@ -511,7 +512,7 @@
       },
       "supportDevelopment": {
         "title": "Apoiar o Desenvolvimento",
-        "description": "Ajude-nos a continuar construindo o Handy",
+        "description": "Ajude-nos a continuar construindo o Parler",
         "button": "Doar"
       },
       "acknowledgments": {
@@ -519,7 +520,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "Inferência de alto desempenho do modelo de reconhecimento automático de fala Whisper da OpenAI",
-          "details": "O Handy usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
+          "details": "O Parler usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
         }
       }
     }
@@ -562,7 +563,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Permissões de Acessibilidade Necessárias",
-    "permissionsDescription": "O Handy precisa de permissões de acessibilidade para digitar o texto transcrito.",
+    "permissionsDescription": "O Parler precisa de permissões de acessibilidade para digitar o texto transcrito.",
     "openSettings": "Abrir Configurações do Sistema",
     "dismiss": "Dispensar"
   },
@@ -581,7 +582,7 @@
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",
-    "description": "Alterar o idioma da interface do Handy"
+    "description": "Alterar o idioma da interface do Parler"
   },
   "overlay": {
     "transcribing": "Transcrevendo...",

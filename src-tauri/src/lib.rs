@@ -6,6 +6,7 @@ pub mod audio_toolkit;
 pub mod cli;
 mod clipboard;
 mod commands;
+pub mod gemini_client;
 mod helpers;
 mod input;
 mod llm_client;
@@ -34,7 +35,7 @@ use managers::transcription::TranscriptionManager;
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tauri::image::Image;
 pub use transcription_coordinator::TranscriptionCoordinator;
@@ -49,6 +50,9 @@ use crate::settings::get_settings;
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+
+// Cached tray visibility flag to avoid store access in on_window_event (which can deadlock)
+pub static TRAY_ICON_ENABLED: AtomicBool = AtomicBool::new(true);
 
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     match value {
@@ -84,7 +88,7 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
-fn show_main_window(app: &AppHandle) {
+pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         if let Err(e) = main_window.unminimize() {
             log::error!("Failed to unminimize webview window: {}", e);
@@ -265,8 +269,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Initialize tray menu with idle state
     utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
 
-    // Apply show_tray_icon setting
+    // Apply show_tray_icon setting and cache it in the atomic flag
     let settings = settings::get_settings(app_handle);
+    TRAY_ICON_ENABLED.store(settings.show_tray_icon, Ordering::Relaxed);
     if !settings.show_tray_icon {
         tray::set_tray_visibility(app_handle, false);
     }
@@ -354,6 +359,11 @@ pub fn run(cli_args: CliArgs) {
         shortcut::update_post_process_prompt,
         shortcut::delete_post_process_prompt,
         shortcut::set_post_process_selected_prompt,
+        shortcut::add_post_process_action,
+        shortcut::update_post_process_action,
+        shortcut::delete_post_process_action,
+        shortcut::add_saved_processing_model,
+        shortcut::delete_saved_processing_model,
         shortcut::update_custom_words,
         shortcut::suspend_binding,
         shortcut::resume_binding,
@@ -368,11 +378,14 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_whisper_accelerator_setting,
         shortcut::change_ort_accelerator_setting,
         shortcut::get_available_accelerators,
+        shortcut::change_long_audio_model_setting,
+        shortcut::change_long_audio_threshold_setting,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
         trigger_update_check,
         show_main_window_command,
         commands::cancel_operation,
+        commands::toggle_pause,
         commands::get_app_dir_path,
         commands::get_app_settings,
         commands::get_default_settings,
@@ -381,6 +394,8 @@ pub fn run(cli_args: CliArgs) {
         commands::open_recordings_folder,
         commands::open_log_dir,
         commands::open_app_data_dir,
+        commands::export_settings,
+        commands::import_settings,
         commands::check_apple_intelligence_available,
         commands::initialize_enigo,
         commands::initialize_shortcuts,
@@ -419,6 +434,9 @@ pub fn run(cli_args: CliArgs) {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::history::reprocess_history_entry,
+        commands::gemini::change_gemini_api_key_setting,
+        commands::gemini::change_gemini_model_setting,
         helpers::clamshell::is_laptop,
     ]);
 
@@ -528,6 +546,7 @@ pub fn run(cli_args: CliArgs) {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
+            app.manage(actions::ActiveActionState(std::sync::Mutex::new(None)));
 
             initialize_core_logic(&app_handle);
 

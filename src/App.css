@@ -1,12 +1,21 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Geist Pixel Circle";
+  src: url("../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Circle.woff2")
+    format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   /* Design tokens */
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
+  --color-background-ui: #4a7fd4;
+  --color-logo-primary: #5b9bf5;
+  --color-logo-stroke: #1e3a5f;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
 }
@@ -20,8 +29,8 @@
   /* Colors - Light Theme */
   /* --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-logo-primary: #FAA2CA;
-  --color-logo-stroke: #382731;
+  --color-logo-primary: #5b9bf5;
+  --color-logo-stroke: #1e3a5f;
   --color-text-stroke: #f6f6f6; */
 
   /* Typography settings */
@@ -57,8 +66,8 @@
     /* Colors - Dark Theme */
     --color-text: #fbfbfb;
     --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    --color-logo-primary: #6aa3f7;
+    --color-logo-stroke: #b8d4fc;
   }
 }
 
@@ -105,4 +114,27 @@
   fill: var(--color-logo-stroke);
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-mid-gray);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-logo-primary);
 }

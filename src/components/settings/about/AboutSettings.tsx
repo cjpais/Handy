@@ -7,6 +7,7 @@ import { SettingContainer } from "../../ui/SettingContainer";
 import { Button } from "../../ui/Button";
 import { AppDataDirectory } from "../AppDataDirectory";
 import { AppLanguageSelector } from "../AppLanguageSelector";
+import { ExportImportSettings } from "../ExportImportSettings";
 import { LogDirectory } from "../debug";
 
 export const AboutSettings: React.FC = () => {
@@ -66,13 +67,14 @@ export const AboutSettings: React.FC = () => {
           <Button
             variant="secondary"
             size="md"
-            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+            onClick={() => openUrl("https://github.com/Melvynx/Handy")}
           >
             {t("settings.about.sourceCode.button")}
           </Button>
         </SettingContainer>
 
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
+        <ExportImportSettings grouped={true} />
         <LogDirectory grouped={true} />
       </SettingsGroup>
 

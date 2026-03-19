@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import { useModelStore } from "../../stores/modelStore";
+import { useSettings } from "../../hooks/useSettings";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
@@ -40,6 +41,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   // Track pending model switch for optimistic display
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
 
+  const { getSetting } = useSettings();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const displayModelId = pendingModelId || currentModel;
@@ -139,6 +141,13 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   }, [selectModel]);
 
   const handleModelSelect = async (modelId: string) => {
+    if (modelId === "gemini-api") {
+      const apiKey = getSetting("gemini_api_key") as string | undefined;
+      if (!apiKey || apiKey.length === 0) {
+        setShowModelDropdown(false);
+        return;
+      }
+    }
     setPendingModelId(modelId);
     setModelError(null);
     setShowModelDropdown(false);
@@ -242,6 +251,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
             models={models}
             currentModelId={displayModelId}
             onModelSelect={handleModelSelect}
+            hasGeminiKey={
+              !!(getSetting("gemini_api_key") as string | undefined)
+            }
           />
         )}
       </div>

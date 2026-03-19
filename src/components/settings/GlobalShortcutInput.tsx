@@ -302,7 +302,9 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={() => startRecording(shortcutId)}
           >
-            {formatKeyCombination(binding.current_binding, osType)}
+            {binding.current_binding.trim()
+              ? formatKeyCombination(binding.current_binding, osType)
+              : t("settings.general.shortcut.clickToSet")}
           </div>
         )}
         <ResetButton

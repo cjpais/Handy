@@ -116,6 +116,16 @@ pub async fn send_chat_completion_with_schema(
     system_prompt: Option<String>,
     json_schema: Option<Value>,
 ) -> Result<Option<String>, String> {
+    // Route Gemini requests to the dedicated Gemini client
+    if provider.id == "gemini" {
+        let sys = system_prompt.unwrap_or_default();
+        match crate::gemini_client::generate_text(&api_key, model, &sys, &user_content).await {
+            Ok(text) if !text.is_empty() => return Ok(Some(text)),
+            Ok(_) => return Ok(None),
+            Err(e) => return Err(format!("Gemini API error: {}", e)),
+        }
+    }
+
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/chat/completions", base_url);
 
@@ -192,6 +202,11 @@ pub async fn fetch_models(
     provider: &PostProcessProvider,
     api_key: String,
 ) -> Result<Vec<String>, String> {
+    // Gemini uses a different API format for listing models
+    if provider.id == "gemini" {
+        return fetch_gemini_models(&api_key).await;
+    }
+
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/models", base_url);
 
@@ -239,6 +254,50 @@ pub async fn fetch_models(
         for entry in array {
             if let Some(model) = entry.as_str() {
                 models.push(model.to_string());
+            }
+        }
+    }
+
+    Ok(models)
+}
+
+async fn fetch_gemini_models(api_key: &str) -> Result<Vec<String>, String> {
+    let url = "https://generativelanguage.googleapis.com/v1beta/models";
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(url)
+        .header("x-goog-api-key", api_key)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch Gemini models: {}", e))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        let error_text = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Unknown error".to_string());
+        return Err(format!(
+            "Gemini model list request failed ({}): {}",
+            status, error_text
+        ));
+    }
+
+    let parsed: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse Gemini response: {}", e))?;
+
+    let mut models = Vec::new();
+    if let Some(data) = parsed.get("models").and_then(|d| d.as_array()) {
+        for entry in data {
+            if let Some(name) = entry.get("name").and_then(|n| n.as_str()) {
+                // Gemini returns "models/gemini-2.5-flash" - strip the prefix
+                let model_id = name.strip_prefix("models/").unwrap_or(name);
+                if model_id.contains("gemini") {
+                    models.push(model_id.to_string());
+                }
             }
         }
     }

@@ -17,8 +17,11 @@ pub use crate::tray::*;
 pub fn cancel_current_operation(app: &AppHandle) {
     info!("Initiating operation cancellation...");
 
-    // Unregister the cancel shortcut asynchronously
+    // Reset cancel confirmation state
+    crate::shortcut::handler::reset_cancel_confirmation();
+
     shortcut::unregister_cancel_shortcut(app);
+    shortcut::unregister_pause_shortcut(app);
 
     // Cancel any ongoing recording
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();

@@ -43,6 +43,7 @@ enum LoadedEngine {
     SenseVoice(SenseVoiceModel),
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
+    GeminiApi,
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -282,7 +283,11 @@ impl TranscriptionManager {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        let model_path = self.model_manager.get_model_path(model_id)?;
+        let model_path = if matches!(model_info.engine_type, EngineType::GeminiApi) {
+            std::path::PathBuf::new()
+        } else {
+            self.model_manager.get_model_path(model_id)?
+        };
 
         // Create appropriate engine based on model type
         let loaded_engine = match model_info.engine_type {
@@ -411,6 +416,28 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::Canary(engine)
             }
+            EngineType::GeminiApi => {
+                let settings = get_settings(&self.app_handle);
+                if settings.gemini_api_key.is_none()
+                    || settings
+                        .gemini_api_key
+                        .as_ref()
+                        .map_or(true, |k| k.is_empty())
+                {
+                    let error_msg = "Gemini API key not configured";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    return Err(anyhow::anyhow!(error_msg));
+                }
+                LoadedEngine::GeminiApi
+            }
         };
 
         // Update the current engine and model ID
@@ -471,6 +498,13 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
+    pub fn get_current_model_name(&self) -> Option<String> {
+        let model_id = self.get_current_model()?;
+        self.model_manager
+            .get_model_info(&model_id)
+            .map(|info| info.name)
+    }
+
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
         // Update last activity timestamp
         self.touch_activity();
@@ -528,6 +562,46 @@ impl TranscriptionManager {
                 "auto".to_string()
             }
         };
+
+        // Handle Gemini API separately (requires async HTTP call)
+        {
+            let engine_guard = self.lock_engine();
+            if let Some(LoadedEngine::GeminiApi) = engine_guard.as_ref() {
+                drop(engine_guard);
+                let api_key = settings
+                    .gemini_api_key
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Gemini API key not configured"))?
+                    .clone();
+                let gemini_model = settings.gemini_model.clone();
+
+                let result = tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(
+                        crate::gemini_client::transcribe_audio(&api_key, &gemini_model, &audio),
+                    )
+                })?;
+
+                let corrected = if !settings.custom_words.is_empty() {
+                    apply_custom_words(
+                        &result,
+                        &settings.custom_words,
+                        settings.word_correction_threshold,
+                    )
+                } else {
+                    result
+                };
+                let final_result = filter_transcription_output(&corrected);
+
+                let et = std::time::Instant::now();
+                info!(
+                    "Gemini transcription completed in {}ms",
+                    (et - st).as_millis()
+                );
+
+                self.maybe_unload_immediately("gemini transcription");
+                return Ok(final_result);
+            }
+        }
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
@@ -636,6 +710,9 @@ impl TranscriptionManager {
                             canary_engine
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
+                        }
+                        LoadedEngine::GeminiApi => {
+                            unreachable!("GeminiApi handled before catch_unwind")
                         }
                     }
                 },

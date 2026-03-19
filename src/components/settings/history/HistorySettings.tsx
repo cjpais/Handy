@@ -1,14 +1,23 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import {
+  Copy,
+  Star,
+  Check,
+  Trash2,
+  FolderOpen,
+  RefreshCw,
+  Loader2,
+} from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { commands, type HistoryEntry } from "@/bindings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
+import { useModelStore } from "@/stores/modelStore";
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -203,7 +212,11 @@ export const HistorySettings: React.FC = () => {
                 key={entry.id}
                 entry={entry}
                 onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
+                onCopyText={() =>
+                  copyToClipboard(
+                    entry.post_processed_text ?? entry.transcription_text,
+                  )
+                }
                 getAudioUrl={getAudioUrl}
                 deleteAudio={deleteAudioEntry}
               />
@@ -232,6 +245,12 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
+  const [showModelPicker, setShowModelPicker] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const models = useModelStore((s) => s.models);
+
+  const downloadedModels = models.filter((m) => m.is_downloaded);
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -253,13 +272,79 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
   };
 
+  const handleReprocess = async (modelId: string) => {
+    setShowModelPicker(false);
+    setReprocessing(true);
+    try {
+      await commands.reprocessHistoryEntry(entry.id, modelId);
+    } catch (error) {
+      console.error("Failed to reprocess entry:", error);
+    } finally {
+      setReprocessing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showModelPicker) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowModelPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showModelPicker]);
+
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium">{formattedDate}</p>
+          {entry.model_name && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-mid-gray/10 text-text/50 font-medium">
+              {entry.model_name}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
+          <div className="relative" ref={pickerRef}>
+            <button
+              onClick={() =>
+                !reprocessing && setShowModelPicker(!showModelPicker)
+              }
+              disabled={reprocessing}
+              className="p-2 rounded-md text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title={
+                reprocessing
+                  ? t("settings.history.reprocessing")
+                  : t("settings.history.reprocess")
+              }
+            >
+              {reprocessing ? (
+                <Loader2 width={16} height={16} className="animate-spin" />
+              ) : (
+                <RefreshCw width={16} height={16} />
+              )}
+            </button>
+            {showModelPicker && downloadedModels.length > 0 && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-background border border-mid-gray/20 rounded-lg shadow-lg py-1 min-w-[200px]">
+                <p className="px-3 py-1 text-xs text-text/50 font-medium">
+                  {t("settings.history.selectModel")}
+                </p>
+                {downloadedModels.map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => handleReprocess(model.id)}
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-mid-gray/10 transition-colors cursor-pointer"
+                  >
+                    {model.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             onClick={handleCopyText}
             className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
@@ -299,9 +384,39 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </button>
         </div>
       </div>
-      <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
-        {entry.transcription_text}
-      </p>
+      {entry.post_processed_text ? (
+        <div className="space-y-2 pb-2">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-xs font-medium text-text/50">
+                {t("settings.history.postProcessed")}
+              </span>
+              {entry.post_process_action_key != null && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-logo-primary/10 text-logo-primary font-medium">
+                  {t("settings.history.action", {
+                    key: entry.post_process_action_key,
+                  })}
+                </span>
+              )}
+            </div>
+            <p className="italic text-text/90 text-sm select-text cursor-text">
+              {entry.post_processed_text}
+            </p>
+          </div>
+          <div>
+            <span className="text-xs font-medium text-text/50 mb-0.5 block">
+              {t("settings.history.originalTranscript")}
+            </span>
+            <p className="italic text-text/50 text-sm select-text cursor-text">
+              {entry.transcription_text}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
+          {entry.transcription_text}
+        </p>
+      )}
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );

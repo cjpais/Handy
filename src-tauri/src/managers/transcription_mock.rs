@@ -57,6 +57,10 @@ impl TranscriptionManager {
         None
     }
 
+    pub fn get_current_model_name(&self) -> Option<String> {
+        None
+    }
+
     pub fn transcribe(&self, _audio: Vec<f32>) -> Result<String> {
         Ok(String::new())
     }

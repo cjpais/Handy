@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod gemini;
 pub mod history;
 pub mod models;
 pub mod transcription;
@@ -12,6 +13,19 @@ use tauri_plugin_opener::OpenerExt;
 #[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
     cancel_current_operation(&app);
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn toggle_pause(app: AppHandle) -> bool {
+    let audio_manager =
+        app.state::<std::sync::Arc<crate::managers::audio::AudioRecordingManager>>();
+    if !audio_manager.is_recording() {
+        return false;
+    }
+    let paused = audio_manager.toggle_pause();
+    crate::overlay::emit_recording_paused(&app, paused);
+    paused
 }
 
 #[tauri::command]
@@ -103,6 +117,30 @@ pub fn open_app_data_dir(app: AppHandle) -> Result<(), String> {
         .open_path(path, None::<String>)
         .map_err(|e| format!("Failed to open app data directory: {}", e))?;
 
+    Ok(())
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn export_settings(app: AppHandle, path: String) -> Result<(), String> {
+    let settings = get_settings(&app);
+    let json = serde_json::to_string_pretty(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    std::fs::write(&path, json)
+        .map_err(|e| format!("Failed to write file: {}", e))?;
+    log::info!("Settings exported to {}", path);
+    Ok(())
+}
+
+#[specta::specta]
+#[tauri::command]
+pub fn import_settings(app: AppHandle, path: String) -> Result<(), String> {
+    let json = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let settings: AppSettings = serde_json::from_str(&json)
+        .map_err(|e| format!("Invalid settings file: {}", e))?;
+    write_settings(&app, settings);
+    log::info!("Settings imported from {}", path);
     Ok(())
 }
 

@@ -95,9 +95,9 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
 
     // Create common menu items
     let version_label = if cfg!(debug_assertions) {
-        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+        format!("Parler v{} (Dev)", env!("CARGO_PKG_VERSION"))
     } else {
-        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+        format!("Parler v{}", env!("CARGO_PKG_VERSION"))
     };
     let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)
         .expect("failed to create version item");
@@ -267,6 +267,8 @@ mod tests {
             transcription_text: transcription.to_string(),
             post_processed_text: post_processed.map(|text| text.to_string()),
             post_process_prompt: None,
+            post_process_action_key: None,
+            model_name: None,
         }
     }
 

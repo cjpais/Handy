@@ -1,6 +1,6 @@
-use enigo::{Enigo, Key, Keyboard, Mouse, Settings};
+use enigo::{Enigo, Key, Keyboard, Settings};
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 /// Wrapper for Enigo to store in Tauri's managed state.
 /// Enigo is wrapped in a Mutex since it requires mutable access.
@@ -14,12 +14,11 @@ impl EnigoState {
     }
 }
 
-/// Get the current mouse cursor position using the managed Enigo instance.
-/// Returns None if the state is not available or if getting the location fails.
+/// Get the current mouse cursor position in global desktop coordinates.
+/// Returns None if getting the location fails.
 pub fn get_cursor_position(app_handle: &AppHandle) -> Option<(i32, i32)> {
-    let enigo_state = app_handle.try_state::<EnigoState>()?;
-    let enigo = enigo_state.0.lock().ok()?;
-    enigo.location().ok()
+    let cursor_pos = app_handle.cursor_position().ok()?;
+    Some((cursor_pos.x.round() as i32, cursor_pos.y.round() as i32))
 }
 
 /// Sends a Ctrl+V or Cmd+V paste command using platform-specific virtual key codes.

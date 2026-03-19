@@ -1,7 +1,22 @@
 use anyhow::Result;
-use hound::{WavSpec, WavWriter};
+use hound::{WavReader, WavSpec, WavWriter};
 use log::debug;
 use std::path::Path;
+
+/// Load audio samples from a WAV file, converting i16 samples back to f32
+pub fn load_wav_file<P: AsRef<Path>>(file_path: P) -> Result<Vec<f32>> {
+    let reader = WavReader::open(file_path.as_ref())?;
+    let samples: Vec<f32> = reader
+        .into_samples::<i16>()
+        .map(|s| s.map(|v| v as f32 / i16::MAX as f32))
+        .collect::<std::result::Result<Vec<f32>, _>>()?;
+    debug!(
+        "Loaded WAV file: {:?} ({} samples)",
+        file_path.as_ref(),
+        samples.len()
+    );
+    Ok(samples)
+}
 
 /// Save audio samples as a WAV file
 pub async fn save_wav_file<P: AsRef<Path>>(file_path: P, samples: &[f32]) -> Result<()> {
