@@ -413,9 +413,9 @@
       "unsave": "Kaydedilenlerden kaldır",
       "delete": "Kaydı sil",
       "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
-      "retry": "Tekrar dene",
-      "retryError": "Transkripsiyon yeniden denenemedi. Lütfen tekrar deneyin.",
-      "retryHint": "Transkripsiyonu yeniden deneyebilir veya sesi manuel olarak kurtarmak için kayıt klasörünü açabilirsiniz."
+      "retranscribe": "Yeniden yazıya dök",
+      "retranscribeError": "Yeniden yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
+      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden yazıya dökebilir veya kayıt klasörünü açabilirsiniz."
     },
     "debug": {
       "title": "Hata Ayıklama",

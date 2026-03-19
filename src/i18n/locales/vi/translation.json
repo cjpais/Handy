@@ -413,9 +413,9 @@
       "unsave": "Xóa khỏi đã lưu",
       "delete": "Xóa mục",
       "deleteError": "Không thể xóa mục. Vui lòng thử lại.",
-      "retry": "Thử lại",
-      "retryError": "Không thể thử lại bản phiên âm. Vui lòng thử lại.",
-      "retryHint": "Bạn có thể thử lại bản phiên âm hoặc mở thư mục bản ghi để khôi phục âm thanh theo cách thủ công."
+      "retranscribe": "Phiên âm lại",
+      "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
+      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại hoặc mở thư mục bản ghi để khôi phục âm thanh."
     },
     "debug": {
       "title": "Gỡ lỗi",

@@ -413,9 +413,9 @@
       "unsave": "Remove from saved",
       "delete": "Delete entry",
       "deleteError": "Failed to delete entry. Please try again.",
-      "retry": "Retry",
-      "retryError": "Failed to retry transcription. Please try again.",
-      "retryHint": "You can retry transcription or open the recordings folder to recover the audio manually."
+      "retranscribe": "Re-transcribe",
+      "retranscribeError": "Failed to re-transcribe. Please try again.",
+      "transcriptionFailed": "Transcription failed. You can re-transcribe or open the recordings folder to recover the audio."
     },
     "debug": {
       "title": "Debug",

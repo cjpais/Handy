@@ -413,9 +413,9 @@
       "unsave": "Usuń z zapisanych",
       "delete": "Usuń wpis",
       "deleteError": "Nie udało się usunąć wpisu. Spróbuj ponownie.",
-      "retry": "Ponów",
-      "retryError": "Nie udało się ponowić transkrypcji. Spróbuj ponownie.",
-      "retryHint": "Możesz ponowić transkrypcję lub otworzyć folder nagrań, aby ręcznie odzyskać dźwięk."
+      "retranscribe": "Transkrybuj ponownie",
+      "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
+      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie lub otworzyć folder nagrań."
     },
     "debug": {
       "title": "Debugowanie",

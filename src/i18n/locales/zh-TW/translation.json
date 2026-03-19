@@ -413,9 +413,9 @@
       "unsave": "從已儲存中移除",
       "delete": "刪除條目",
       "deleteError": "刪除條目失敗，請重試",
-      "retry": "重試",
-      "retryError": "重新嘗試轉錄失敗，請重試。",
-      "retryHint": "您可以重新嘗試轉錄，或打開錄音資料夾手動還原音訊。"
+      "retranscribe": "重新轉錄",
+      "retranscribeError": "重新轉錄失敗，請重試。",
+      "transcriptionFailed": "轉錄失敗。您可以重新轉錄，或打開錄音資料夾還原音訊。"
     },
     "debug": {
       "title": "偵錯",

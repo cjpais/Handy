@@ -413,9 +413,9 @@
       "unsave": "Rimuovi dai salvataggi",
       "delete": "Elimina elemento",
       "deleteError": "Errore nell'eliminazione dell'elemento. Riprova.",
-      "retry": "Riprova",
-      "retryError": "Impossibile riprovare la trascrizione. Riprova.",
-      "retryHint": "Puoi riprovare la trascrizione oppure aprire la cartella delle registrazioni per recuperare manualmente l'audio."
+      "retranscribe": "Ri-trascrivere",
+      "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
+      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere o aprire la cartella delle registrazioni."
     },
     "debug": {
       "title": "Debug",

@@ -413,9 +413,9 @@
       "unsave": "从已保存中移除",
       "delete": "删除条目",
       "deleteError": "删除条目失败，请重试。",
-      "retry": "重试",
-      "retryError": "重试转录失败。请重试。",
-      "retryHint": "您可以重试转录，或打开录音文件夹手动恢复音频。"
+      "retranscribe": "重新转录",
+      "retranscribeError": "重新转录失败。请重试。",
+      "transcriptionFailed": "转录失败。您可以重新转录，或打开录音文件夹恢复音频。"
     },
     "debug": {
       "title": "调试",

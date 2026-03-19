@@ -219,7 +219,6 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   const [retrying, setRetrying] = useState(false);
 
   const hasTranscription = entry.transcription_text.trim().length > 0;
-  const showRetry = !hasTranscription;
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -245,13 +244,13 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     }
   };
 
-  const handleRetry = async () => {
+  const handleRetranscribe = async () => {
     try {
       setRetrying(true);
       await retryTranscription(entry.id);
     } catch (error) {
-      console.error("Failed to retry transcription:", error);
-      alert(t("settings.history.retryError"));
+      console.error("Failed to re-transcribe:", error);
+      alert(t("settings.history.retranscribeError"));
     } finally {
       setRetrying(false);
     }
@@ -261,11 +260,9 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
 
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
-      <div className="flex justify-between items-start gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-medium">{formattedDate}</p>
-        </div>
-        <div className="flex items-center gap-1 flex-wrap justify-end">
+      <div className="flex justify-between items-center">
+        <p className="text-sm font-medium">{formattedDate}</p>
+        <div className="flex items-center gap-1">
           <button
             onClick={handleCopyText}
             disabled={!hasTranscription}
@@ -297,21 +294,18 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               fill={entry.saved ? "currentColor" : "none"}
             />
           </button>
-          {showRetry ? (
-            <Button
-              onClick={handleRetry}
-              variant="secondary"
-              size="sm"
-              disabled={retrying}
-              className="flex items-center gap-1"
-              title={t("settings.history.retry")}
-            >
-              <RefreshCcw
-                className={`h-3.5 w-3.5 ${retrying ? "animate-spin" : ""}`}
-              />
-              <span>{t("settings.history.retry")}</span>
-            </Button>
-          ) : null}
+          <button
+            onClick={handleRetranscribe}
+            disabled={retrying}
+            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20"
+            title={t("settings.history.retranscribe")}
+          >
+            <RefreshCcw
+              width={16}
+              height={16}
+              className={retrying ? "animate-spin" : ""}
+            />
+          </button>
           <button
             onClick={handleDeleteEntry}
             className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
@@ -322,17 +316,15 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         </div>
       </div>
 
-      {showRetry ? (
-        <p className="text-xs text-text/60 break-words pb-2">
-          {t("settings.history.retryHint")}
-        </p>
-      ) : null}
-
       {hasTranscription ? (
         <p className="italic text-text/90 text-sm pb-2 select-text cursor-text whitespace-pre-wrap break-words">
           {entry.transcription_text}
         </p>
-      ) : null}
+      ) : (
+        <p className="text-sm text-text/40 pb-2">
+          {t("settings.history.transcriptionFailed")}
+        </p>
+      )}
 
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>

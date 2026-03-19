@@ -456,6 +456,11 @@ impl TranscriptionManager {
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        #[cfg(debug_assertions)]
+        if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
+            return Err(anyhow::anyhow!("Simulated transcription failure (HANDY_FORCE_TRANSCRIPTION_FAILURE)"));
+        }
+
         // Update last activity timestamp
         self.last_activity.store(
             SystemTime::now()
