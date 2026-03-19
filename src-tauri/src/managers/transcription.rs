@@ -1,4 +1,4 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{apply_custom_words, apply_word_replacements, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
@@ -664,9 +664,16 @@ impl TranscriptionManager {
             result.text
         };
 
+        // Apply word replacements (exact from→to substitution)
+        let replaced_result = if !settings.word_replacements.is_empty() {
+            apply_word_replacements(&corrected_result, &settings.word_replacements)
+        } else {
+            corrected_result
+        };
+
         // Filter out filler words and hallucinations
         let filtered_result = filter_transcription_output(
-            &corrected_result,
+            &replaced_result,
             &settings.app_language,
             &settings.custom_filler_words,
         );
