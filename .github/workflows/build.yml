@@ -53,6 +53,14 @@ jobs:
       contents: write
     runs-on: ${{ inputs.platform }}
     steps:
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+            -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+          git config --system core.longpaths true
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -265,6 +273,70 @@ jobs:
           fi
           echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
 
+      # whisper-rs-sys cmake builds create paths that exceed Windows MAX_PATH
+      # (260 chars). Shorten the target dir to keep paths under the limit.
+      - name: Shorten build path (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $drive = Split-Path -Qualifier $env:GITHUB_WORKSPACE
+          $targetDir = "$drive\t"
+          New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+          echo "CARGO_TARGET_DIR=$targetDir" >> $env:GITHUB_ENV
+
+      # ggml requires clang for ARM. The VS generator determines the compiler
+      # via the toolset (-T flag) which can't be overridden from env vars.
+      # Use Ninja + clang-cl instead, which respects CMAKE_C_COMPILER.
+      - name: Configure cmake for ARM64 (Windows)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          echo "CMAKE_GENERATOR=Ninja" >> $env:GITHUB_ENV
+          echo "CMAKE_C_COMPILER=clang-cl" >> $env:GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER=clang-cl" >> $env:GITHUB_ENV
+          echo "CMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
+          echo "CL=/EHsc" >> $env:GITHUB_ENV
+
+      - name: Install ONNX Runtime (x86_64 macOS)
+        if: inputs.target == 'x86_64-apple-darwin'
+        shell: bash
+        run: |
+          ORT_VERSION="1.24.2"
+          curl -L -o ort.tgz "https://blob.handy.computer/onnxruntime-osx-x86_64-${ORT_VERSION}.tgz"
+          tar xzf ort.tgz
+          ORT_DIR="$(pwd)/onnxruntime-osx-x86_64-${ORT_VERSION}"
+          echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
+          echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
+          # Bundle the versioned dylib (matches the install name @rpath/libonnxruntime.1.24.2.dylib)
+          jq --arg lib "$ORT_DIR/lib/libonnxruntime.${ORT_VERSION}.dylib" \
+            '.bundle.macOS.frameworks = [$lib]' \
+            src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
+      - name: Install ONNX Runtime (x86_64 Linux, Ubuntu 22.04)
+        if: contains(inputs.platform, 'ubuntu-22.04') && inputs.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          ORT_VERSION="1.24.2"
+          curl -L -o ort.tgz "https://blob.handy.computer/onnxruntime-linux-x86_64-${ORT_VERSION}.tgz"
+          tar xzf ort.tgz
+          ORT_DIR="$(pwd)/onnxruntime-linux-x86_64-${ORT_VERSION}"
+          echo "ORT_LIB_LOCATION=$ORT_DIR/lib" >> $GITHUB_ENV
+          echo "ORT_PREFER_DYNAMIC_LINK=1" >> $GITHUB_ENV
+          # Resolve symlinks so the deb bundler gets real files (not broken symlinks)
+          for f in "$ORT_DIR"/lib/libonnxruntime.so*; do
+            if [ -L "$f" ]; then
+              cp -L "$f" "$f.real" && mv "$f.real" "$f"
+            fi
+          done
+          # Add the shared libs to the deb package under /usr/lib
+          # deb.files key = destination in package, value = source on disk
+          jq --arg so "$ORT_DIR/lib/libonnxruntime.so" \
+             --arg so1 "$ORT_DIR/lib/libonnxruntime.so.1" \
+             --arg sov "$ORT_DIR/lib/libonnxruntime.so.1.24.2" \
+            '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
+            src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
@@ -289,6 +361,27 @@ jobs:
           releaseId: ${{ inputs.release-id }}
           assetNamePattern: ${{ steps.patch-release-name.outputs.platform }}
           args: ${{ inputs.build-args }}
+
+      - name: Verify macOS dylib bundling
+        if: inputs.target == 'x86_64-apple-darwin'
+        shell: bash
+        run: |
+          APP=$(find src-tauri/target -name "*.app" -type d | head -1)
+          echo "=== Frameworks contents ==="
+          ls -la "$APP/Contents/Frameworks/" | grep onnx || true
+          echo "=== Binary linked libs ==="
+          otool -L "$APP/Contents/MacOS/handy" | grep onnx || true
+          echo "=== Checking all @rpath deps are satisfied ==="
+          # Extract every @rpath lib the binary needs
+          otool -L "$APP/Contents/MacOS/handy" | grep '@rpath/' | awk '{print $1}' | while read dep; do
+            libname=$(basename "$dep")
+            if [ ! -f "$APP/Contents/Frameworks/$libname" ]; then
+              echo "MISSING: $libname not found in Frameworks/"
+              exit 1
+            else
+              echo "OK: $libname"
+            fi
+          done
 
       - name: Upload artifacts (macOS)
         if: inputs.upload-artifacts && contains(inputs.platform, 'macos')
@@ -368,13 +461,20 @@ jobs:
             src-tauri/target/${{ steps.build-profile.outputs.profile }}/bundle/rpm/*.rpm
           retention-days: 30
 
+      - name: Resolve Windows artifact path
+        if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
+        id: win-artifact-path
+        shell: pwsh
+        run: |
+          $base = if ($env:CARGO_TARGET_DIR) { $env:CARGO_TARGET_DIR } else { "src-tauri/target" }
+          echo "base=$base" >> $env:GITHUB_OUTPUT
+
       - name: Upload artifacts (Windows)
         if: inputs.upload-artifacts && contains(inputs.platform, 'windows')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.asset-prefix }}-${{ inputs.target }}
-          # Default Windows builds place bundles under release/, but cross-compiles (ARM64) nest under target/<triple>/release.
           path: |
-            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
-            src-tauri/target/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
+            ${{ steps.win-artifact-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/msi/*.msi
+            ${{ steps.win-artifact-path.outputs.base }}/${{ inputs.target != '' && inputs.target != 'x86_64-pc-windows-msvc' && format('{0}/{1}', inputs.target, steps.build-profile.outputs.profile) || steps.build-profile.outputs.profile }}/bundle/nsis/*.exe
           retention-days: 30

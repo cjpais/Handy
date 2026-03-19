@@ -1,4 +1,5 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
@@ -12,7 +13,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
     onnx::{
         canary::CanaryModel,
@@ -79,12 +80,7 @@ impl TranscriptionManager {
             model_manager,
             app_handle: app_handle.clone(),
             current_model_id: Arc::new(Mutex::new(None)),
-            last_activity: Arc::new(AtomicU64::new(
-                SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis() as u64,
-            )),
+            last_activity: Arc::new(AtomicU64::new(Self::now_ms())),
             shutdown_signal: Arc::new(AtomicBool::new(false)),
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
@@ -107,14 +103,28 @@ impl TranscriptionManager {
                     }
 
                     let settings = get_settings(&app_handle_cloned);
-                    let timeout_seconds = settings.model_unload_timeout.to_seconds();
+                    let timeout = settings.model_unload_timeout;
 
-                    if let Some(limit_seconds) = timeout_seconds {
+                    // Skip Immediately — that variant is handled by
+                    // maybe_unload_immediately() after each transcription.
+                    // Treating it as 0s here would unload the model mid-recording.
+                    if timeout == ModelUnloadTimeout::Immediately {
+                        continue;
+                    }
+
+                    // While recording, keep the idle timer fresh so the
+                    // model is never unloaded mid-session.
+                    let is_recording = app_handle_cloned
+                        .try_state::<Arc<AudioRecordingManager>>()
+                        .map_or(false, |a| a.is_recording());
+                    if is_recording {
+                        manager_cloned.touch_activity();
+                        continue;
+                    }
+
+                    if let Some(limit_seconds) = timeout.to_seconds() {
                         let last = manager_cloned.last_activity.load(Ordering::Relaxed);
-                        let now_ms = SystemTime::now()
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis() as u64;
+                        let now_ms = TranscriptionManager::now_ms();
                         let idle_ms = now_ms.saturating_sub(last);
                         let limit_ms = limit_seconds * 1000;
 
@@ -186,7 +196,7 @@ impl TranscriptionManager {
 
         {
             let mut engine = self.lock_engine();
-            // v0.3.0: no explicit unload — dropping the engine frees all resources
+            // Dropping the engine frees all resources
             *engine = None;
         }
         {
@@ -211,6 +221,18 @@ impl TranscriptionManager {
             unload_duration.as_millis()
         );
         Ok(())
+    }
+
+    fn now_ms() -> u64 {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64
+    }
+
+    /// Reset the idle timer to now.
+    fn touch_activity(&self) {
+        self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
     }
 
     /// Unloads the model immediately if the setting is enabled and the model is loaded
@@ -263,19 +285,23 @@ impl TranscriptionManager {
         let model_path = self.model_manager.get_model_path(model_id)?;
 
         // Create appropriate engine based on model type
+        let emit_loading_failed = |error_msg: &str| {
+            let _ = self.app_handle.emit(
+                "model-state-changed",
+                ModelStateEvent {
+                    event_type: "loading_failed".to_string(),
+                    model_id: Some(model_id.to_string()),
+                    model_name: Some(model_info.name.clone()),
+                    error: Some(error_msg.to_string()),
+                },
+            );
+        };
+
         let loaded_engine = match model_info.engine_type {
             EngineType::Whisper => {
                 let engine = WhisperEngine::load(&model_path).map_err(|e| {
                     let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.clone()),
-                        },
-                    );
+                    emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
                 })?;
                 LoadedEngine::Whisper(engine)
@@ -285,15 +311,7 @@ impl TranscriptionManager {
                     ParakeetModel::load(&model_path, &Quantization::Int8).map_err(|e| {
                         let error_msg =
                             format!("Failed to load parakeet model {}: {}", model_id, e);
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
+                        emit_loading_failed(&error_msg);
                         anyhow::anyhow!(error_msg)
                     })?;
                 LoadedEngine::Parakeet(engine)
@@ -306,15 +324,7 @@ impl TranscriptionManager {
                 )
                 .map_err(|e| {
                     let error_msg = format!("Failed to load moonshine model {}: {}", model_id, e);
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.clone()),
-                        },
-                    );
+                    emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
                 })?;
                 LoadedEngine::Moonshine(engine)
@@ -326,15 +336,7 @@ impl TranscriptionManager {
                             "Failed to load moonshine streaming model {}: {}",
                             model_id, e
                         );
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
+                        emit_loading_failed(&error_msg);
                         anyhow::anyhow!(error_msg)
                     })?;
                 LoadedEngine::MoonshineStreaming(engine)
@@ -344,15 +346,7 @@ impl TranscriptionManager {
                     SenseVoiceModel::load(&model_path, &Quantization::Int8).map_err(|e| {
                         let error_msg =
                             format!("Failed to load SenseVoice model {}: {}", model_id, e);
-                        let _ = self.app_handle.emit(
-                            "model-state-changed",
-                            ModelStateEvent {
-                                event_type: "loading_failed".to_string(),
-                                model_id: Some(model_id.to_string()),
-                                model_name: Some(model_info.name.clone()),
-                                error: Some(error_msg.clone()),
-                            },
-                        );
+                        emit_loading_failed(&error_msg);
                         anyhow::anyhow!(error_msg)
                     })?;
                 LoadedEngine::SenseVoice(engine)
@@ -360,15 +354,7 @@ impl TranscriptionManager {
             EngineType::GigaAM => {
                 let engine = GigaAMModel::load(&model_path, &Quantization::Int8).map_err(|e| {
                     let error_msg = format!("Failed to load gigaam model {}: {}", model_id, e);
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.clone()),
-                        },
-                    );
+                    emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
                 })?;
                 LoadedEngine::GigaAM(engine)
@@ -376,15 +362,7 @@ impl TranscriptionManager {
             EngineType::Canary => {
                 let engine = CanaryModel::load(&model_path, &Quantization::Int8).map_err(|e| {
                     let error_msg = format!("Failed to load canary model {}: {}", model_id, e);
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "loading_failed".to_string(),
-                            model_id: Some(model_id.to_string()),
-                            model_name: Some(model_info.name.clone()),
-                            error: Some(error_msg.clone()),
-                        },
-                    );
+                    emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
                 })?;
                 LoadedEngine::Canary(engine)
@@ -402,13 +380,7 @@ impl TranscriptionManager {
         }
 
         // Reset idle timer so the watcher doesn't immediately unload a just-loaded model
-        self.last_activity.store(
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            Ordering::Relaxed,
-        );
+        self.touch_activity();
 
         // Emit loading completed event
         let _ = self.app_handle.emit(
@@ -462,13 +434,7 @@ impl TranscriptionManager {
         }
 
         // Update last activity timestamp
-        self.last_activity.store(
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            Ordering::Relaxed,
-        );
+        self.touch_activity();
 
         let st = std::time::Instant::now();
 

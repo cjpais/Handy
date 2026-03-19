@@ -245,6 +245,10 @@
         "label": "Experimentální funkce",
         "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
       },
+      "lazyStreamClose": {
+        "label": "Ponechat mikrofon zapnutý mezi přepisy",
+        "description": "Ponechá stream mikrofonu otevřený po dobu 30 sekund po zastavení nahrávání, čímž se sníží latence při opakovaném přepisu. Může zhoršit kvalitu zvuku Bluetooth."
+      },
       "acceleration": {
         "whisper": {
           "title": "Akcelerace Whisper",
@@ -331,7 +335,7 @@
           "min10": "Po 10 minutách",
           "min15": "Po 15 minutách",
           "hour1": "Po 1 hodině",
-          "sec5": "Po 5 sekundách (Debug)"
+          "sec15": "Po 15 sekundách (Debug)"
         }
       },
       "customWords": {

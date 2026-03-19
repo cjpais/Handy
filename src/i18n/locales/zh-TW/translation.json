@@ -245,6 +245,10 @@
         "label": "實驗性功能",
         "description": "啟用仍在開發中的實驗性功能"
       },
+      "lazyStreamClose": {
+        "label": "在轉錄之間保持麥克風開啟",
+        "description": "錄音停止後保持麥克風串流開啟30秒，減少連續轉錄時的延遲。啟用時可能會降低藍牙音訊品質。"
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper 加速",
@@ -331,7 +335,7 @@
           "min10": "10 分鐘後",
           "min15": "15 分鐘後",
           "hour1": "1 小時後",
-          "sec5": "5 秒後（偵錯）"
+          "sec15": "15 秒後（偵錯）"
         }
       },
       "customWords": {

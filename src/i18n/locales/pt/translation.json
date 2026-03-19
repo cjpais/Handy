@@ -245,6 +245,10 @@
         "label": "Recursos Experimentais",
         "description": "Ativar recursos experimentais que ainda estão em desenvolvimento."
       },
+      "lazyStreamClose": {
+        "label": "Manter microfone aberto entre transcrições",
+        "description": "Mantém o fluxo do microfone aberto por 30 segundos após parar a gravação, reduzindo a latência em transcrições consecutivas. Pode degradar a qualidade do áudio Bluetooth enquanto ativo."
+      },
       "acceleration": {
         "whisper": {
           "title": "Aceleração Whisper",
@@ -331,7 +335,7 @@
           "min10": "Após 10 minutos",
           "min15": "Após 15 minutos",
           "hour1": "Após 1 hora",
-          "sec5": "Após 5 segundos (Depuração)"
+          "sec15": "Após 15 segundos (Depuração)"
         }
       },
       "customWords": {

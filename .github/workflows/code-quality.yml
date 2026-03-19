@@ -1,6 +1,18 @@
 name: "code quality"
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "package.json"
+      - "bun.lock"
+      - ".eslintrc*"
+      - "eslint.config.*"
+      - ".prettierrc*"
+      - "tsconfig*"
+      - "tailwind.config.*"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "src/**"

@@ -30,6 +30,9 @@ const lockFile = join(root, "bun.lock");
 const hashFile = join(nixDir, "bun-lock-hash");
 const nixFile = join(nixDir, "bun.nix");
 
+// Skip on Windows — bun2nix is Nix-only and hangs on Windows CI
+if (process.platform === "win32") process.exit(0);
+
 // No bun.lock — nothing to do
 if (!existsSync(lockFile)) process.exit(0);
 
