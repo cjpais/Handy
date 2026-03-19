@@ -415,8 +415,7 @@
       "deleteError": "Falha ao excluir entrada. Por favor, tente novamente.",
       "retry": "Tentar novamente",
       "retryError": "Falha ao tentar novamente a transcrição. Por favor, tente novamente.",
-      "retryHint": "Você pode tentar novamente a transcrição ou abrir a pasta de gravações para recuperar o áudio manualmente.",
-      "noTranscript": "Nenhuma transcrição foi gerada."
+      "retryHint": "Você pode tentar novamente a transcrição ou abrir a pasta de gravações para recuperar o áudio manualmente."
     },
     "debug": {
       "title": "Depuração",

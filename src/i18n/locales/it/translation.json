@@ -415,8 +415,7 @@
       "deleteError": "Errore nell'eliminazione dell'elemento. Riprova.",
       "retry": "Riprova",
       "retryError": "Impossibile riprovare la trascrizione. Riprova.",
-      "retryHint": "Puoi riprovare la trascrizione oppure aprire la cartella delle registrazioni per recuperare manualmente l'audio.",
-      "noTranscript": "Nessuna trascrizione generata."
+      "retryHint": "Puoi riprovare la trascrizione oppure aprire la cartella delle registrazioni per recuperare manualmente l'audio."
     },
     "debug": {
       "title": "Debug",

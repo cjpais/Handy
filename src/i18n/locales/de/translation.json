@@ -415,8 +415,7 @@
       "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
       "retry": "Erneut versuchen",
       "retryError": "Der erneute Versuch der Transkription ist fehlgeschlagen. Bitte versuche es erneut.",
-      "retryHint": "Du kannst die Transkription erneut versuchen oder den Aufnahmeordner öffnen, um das Audio manuell wiederherzustellen.",
-      "noTranscript": "Kein Transkript erzeugt."
+      "retryHint": "Du kannst die Transkription erneut versuchen oder den Aufnahmeordner öffnen, um das Audio manuell wiederherzustellen."
     },
     "debug": {
       "title": "Debug",

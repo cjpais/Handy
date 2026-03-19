@@ -415,8 +415,7 @@
       "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
       "retry": "Réessayer",
       "retryError": "Impossible de réessayer la transcription. Veuillez réessayer.",
-      "retryHint": "Vous pouvez réessayer la transcription ou ouvrir le dossier des enregistrements pour récupérer l’audio manuellement.",
-      "noTranscript": "Aucune transcription générée."
+      "retryHint": "Vous pouvez réessayer la transcription ou ouvrir le dossier des enregistrements pour récupérer l’audio manuellement."
     },
     "debug": {
       "title": "Débogage",

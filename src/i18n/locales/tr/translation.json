@@ -415,8 +415,7 @@
       "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
       "retry": "Tekrar dene",
       "retryError": "Transkripsiyon yeniden denenemedi. Lütfen tekrar deneyin.",
-      "retryHint": "Transkripsiyonu yeniden deneyebilir veya sesi manuel olarak kurtarmak için kayıt klasörünü açabilirsiniz.",
-      "noTranscript": "Transkript oluşturulmadı."
+      "retryHint": "Transkripsiyonu yeniden deneyebilir veya sesi manuel olarak kurtarmak için kayıt klasörünü açabilirsiniz."
     },
     "debug": {
       "title": "Hata Ayıklama",

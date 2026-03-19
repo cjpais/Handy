@@ -415,8 +415,7 @@
       "deleteError": "Error al eliminar la entrada. Por favor, intenta de nuevo.",
       "retry": "Reintentar",
       "retryError": "No se pudo reintentar la transcripción. Por favor, inténtalo de nuevo.",
-      "retryHint": "Puedes reintentar la transcripción o abrir la carpeta de grabaciones para recuperar el audio manualmente.",
-      "noTranscript": "No se generó ninguna transcripción."
+      "retryHint": "Puedes reintentar la transcripción o abrir la carpeta de grabaciones para recuperar el audio manualmente."
     },
     "debug": {
       "title": "Depuración",

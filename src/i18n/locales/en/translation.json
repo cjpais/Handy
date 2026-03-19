@@ -415,8 +415,7 @@
       "deleteError": "Failed to delete entry. Please try again.",
       "retry": "Retry",
       "retryError": "Failed to retry transcription. Please try again.",
-      "retryHint": "You can retry transcription or open the recordings folder to recover the audio manually.",
-      "noTranscript": "No transcript generated."
+      "retryHint": "You can retry transcription or open the recordings folder to recover the audio manually."
     },
     "debug": {
       "title": "Debug",

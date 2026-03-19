@@ -415,8 +415,7 @@
       "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu.",
       "retry": "Zkusit znovu",
       "retryError": "Opětovný pokus o přepis se nezdařil. Zkuste to prosím znovu.",
-      "retryHint": "Můžete zkusit přepis znovu nebo otevřít složku s nahrávkami a obnovit zvuk ručně.",
-      "noTranscript": "Nebyl vygenerován žádný přepis."
+      "retryHint": "Můžete zkusit přepis znovu nebo otevřít složku s nahrávkami a obnovit zvuk ručně."
     },
     "debug": {
       "title": "Ladění",

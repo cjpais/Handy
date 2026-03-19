@@ -119,26 +119,16 @@ export const HistorySettings: React.FC = () => {
   );
 
   const deleteAudioEntry = async (id: number) => {
-    try {
-      const result = await commands.deleteHistoryEntry(id);
-      if (result.status !== "ok") {
-        throw new Error(String(result.error));
-      }
-    } catch (error) {
-      console.error("Failed to delete audio entry:", error);
-      throw error;
+    const result = await commands.deleteHistoryEntry(id);
+    if (result.status !== "ok") {
+      throw new Error(String(result.error));
     }
   };
 
   const retryHistoryEntry = async (id: number) => {
-    try {
-      const result = await commands.retryHistoryEntryTranscription(id);
-      if (result.status !== "ok") {
-        throw new Error(String(result.error));
-      }
-    } catch (error) {
-      console.error("Failed to retry history entry transcription:", error);
-      throw error;
+    const result = await commands.retryHistoryEntryTranscription(id);
+    if (result.status !== "ok") {
+      throw new Error(String(result.error));
     }
   };
 

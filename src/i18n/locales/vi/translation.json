@@ -415,8 +415,7 @@
       "deleteError": "Không thể xóa mục. Vui lòng thử lại.",
       "retry": "Thử lại",
       "retryError": "Không thể thử lại bản phiên âm. Vui lòng thử lại.",
-      "retryHint": "Bạn có thể thử lại bản phiên âm hoặc mở thư mục bản ghi để khôi phục âm thanh theo cách thủ công.",
-      "noTranscript": "Không tạo được bản phiên âm."
+      "retryHint": "Bạn có thể thử lại bản phiên âm hoặc mở thư mục bản ghi để khôi phục âm thanh theo cách thủ công."
     },
     "debug": {
       "title": "Gỡ lỗi",

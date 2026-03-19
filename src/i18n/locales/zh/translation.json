@@ -415,8 +415,7 @@
       "deleteError": "删除条目失败，请重试。",
       "retry": "重试",
       "retryError": "重试转录失败。请重试。",
-      "retryHint": "您可以重试转录，或打开录音文件夹手动恢复音频。",
-      "noTranscript": "未生成转录内容。"
+      "retryHint": "您可以重试转录，或打开录音文件夹手动恢复音频。"
     },
     "debug": {
       "title": "调试",
