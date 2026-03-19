@@ -88,6 +88,22 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Multilingüe preciso. 25 idiomas europeos. Soporta traducción."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Transcripción por lotes multilingüe con buen equilibrio entre precisión y eficiencia."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Transcripción por lotes multilingüe. Mayor precisión entre los modelos ASR de código abierto."
+      },
+      "qwen3-0.6b-int4": {
+        "name": "Qwen3 ASR 0.6B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
+      },
+      "qwen3-1.7b-int4": {
+        "name": "Qwen3 ASR 1.7B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
       }
     },
     "errors": {
