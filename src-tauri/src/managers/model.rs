@@ -1156,14 +1156,26 @@ impl ModelManager {
             }
         }
 
-        // Verify SHA256 checksum. On failure the partial is deleted inside verify_sha256
-        // so the next attempt always starts fresh.
+        // Verify SHA256 checksum. Runs in a blocking thread so the async executor is not
+        // stalled while hashing large model files (up to 1.6 GB). On failure the partial
+        // is deleted inside verify_sha256 so the next attempt always starts fresh.
         info!("Verifying SHA256 for model {}...", model_id);
-        if let Err(e) = Self::verify_sha256(&partial_path, model_info.sha256.as_deref(), model_id) {
-            let mut models = self.available_models.lock().unwrap();
-            if let Some(model) = models.get_mut(model_id) {
-                model.is_downloading = false;
+        let verify_path = partial_path.clone();
+        let verify_expected = model_info.sha256.clone();
+        let verify_model_id = model_id.to_string();
+        let verify_result = tokio::task::spawn_blocking(move || {
+            Self::verify_sha256(&verify_path, verify_expected.as_deref(), &verify_model_id)
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("SHA256 task panicked: {}", e))?;
+        if let Err(e) = verify_result {
+            {
+                let mut models = self.available_models.lock().unwrap();
+                if let Some(model) = models.get_mut(model_id) {
+                    model.is_downloading = false;
+                }
             }
+            self.cancel_flags.lock().unwrap().remove(model_id);
             return Err(e);
         }
 
