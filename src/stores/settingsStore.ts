@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import { listen } from "@tauri-apps/api/event";
+import type {
+  AppSettings as Settings,
+  AudioDevice,
+  WhisperAcceleratorSetting,
+  OrtAcceleratorSetting,
+} from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
@@ -135,6 +141,14 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
+  whisper_accelerator: (value) =>
+    commands.changeWhisperAcceleratorSetting(
+      value as WhisperAcceleratorSetting,
+    ),
+  ort_accelerator: (value) =>
+    commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
+  extra_recording_buffer_ms: (value) =>
+    commands.changeExtraRecordingBufferSetting(value as number),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -565,6 +579,12 @@ export const useSettingsStore = create<SettingsStore>()(
         refreshSettings(),
         checkCustomSounds(),
       ]);
+
+      // Re-fetch settings when the backend changes them (e.g. language
+      // reset during model switch). The backend is the source of truth.
+      listen("model-state-changed", () => {
+        get().refreshSettings();
+      });
     },
   })),
 );

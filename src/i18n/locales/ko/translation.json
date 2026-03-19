@@ -4,6 +4,7 @@
     "checkUpdates": "업데이트 확인...",
     "copyLastTranscript": "마지막 녹음 내용 복사",
     "unloadModel": "모델 언로드",
+    "model": "모델",
     "quit": "종료",
     "cancel": "취소"
   },
@@ -79,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "러시아어 음성 인식. 빠르고 정확함."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "매우 빠름. 영어, 독일어, 스페인어, 프랑스어. 번역 지원."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "정확한 다국어 지원. 25개 유럽 언어. 번역 지원."
       }
     },
     "errors": {
@@ -235,6 +244,16 @@
       "experimentalToggle": {
         "label": "실험적 기능",
         "description": "개발 중인 실험적 기능을 활성화합니다."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper 가속",
+          "description": "Whisper 모델의 하드웨어 가속. 자동 모드는 GPU를 사용합니다 (macOS에서는 Metal, Windows/Linux에서는 Vulkan)."
+        },
+        "ort": {
+          "title": "ONNX 가속",
+          "description": "ONNX 모델의 하드웨어 가속 (Parakeet, Canary, Moonshine 등). Windows의 DirectML은 실험적입니다. 모델이 전사에 실패할 수 있습니다."
+        }
       },
       "startHidden": {
         "label": "숨김으로 시작",
@@ -467,6 +486,10 @@
         "title": "붙여넣기 지연",
         "description": "붙여넣기 키 입력을 보내기 전 지연 시간(밀리초). 잘못된 텍스트가 붙여넣어지면 늘리세요."
       },
+      "recordingBuffer": {
+        "title": "추가 녹음 버퍼",
+        "description": "키를 놓은 후 추가로 녹음을 계속하는 시간(밀리초). 후행 오디오를 캡처하기 위함. 0 = 추가 버퍼 없음."
+      },
       "paths": {
         "appData": "앱 데이터:",
         "models": "모델:",
@@ -547,6 +570,13 @@
   },
   "errors": {
     "loadDirectory": "디렉토리 로딩 오류: {{error}}",
+    "micPermissionDeniedTitle": "마이크 접근이 거부되었습니다",
+    "micPermissionDenied": {
+      "generic": "운영 체제에서 마이크 접근을 거부했습니다. 시스템 설정에서 마이크 권한을 허용해 주세요.",
+      "windows": "설정 → 개인 정보 및 보안 → 마이크(데스크톱 앱 접근 포함)에서 마이크 접근을 활성화하세요.",
+      "macos": "시스템 설정 → 개인 정보 보호 및 보안 → 마이크에서 마이크 접근을 허용하세요.",
+      "linux": "시스템의 소리 또는 개인 정보 설정에서 마이크 접근을 허용하세요."
+    },
     "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
     "modelLoadFailed": "모델을 불러오지 못했습니다: {{model}}",
     "modelLoadFailedUnknown": "알 수 없는 모델"

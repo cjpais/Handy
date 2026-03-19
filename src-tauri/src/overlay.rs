@@ -218,14 +218,15 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
-    let position = calculate_overlay_position(app_handle);
-
     // On Linux (Wayland), monitor detection often fails, but we don't need exact coordinates
     // for Layer Shell as we use anchors. On other platforms, we require a monitor.
     #[cfg(not(target_os = "linux"))]
-    if position.is_none() {
-        debug!("Failed to determine overlay position, not creating overlay window");
-        return;
+    {
+        let position = calculate_overlay_position(app_handle);
+        if position.is_none() {
+            debug!("Failed to determine overlay position, not creating overlay window");
+            return;
+        }
     }
 
     // Position starts unset — update_overlay_position() sets the correct
@@ -254,6 +255,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         builder = builder.data_directory(data_dir.join("webview"));
     }
 
+    #[allow(unused_variables)]
     match builder.build() {
         Ok(window) => {
             #[cfg(target_os = "linux")]

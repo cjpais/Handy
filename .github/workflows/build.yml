@@ -44,6 +44,9 @@ on:
         type: boolean
         default: false
 
+env:
+  TSC_VERSION: "0.9.0"
+
 jobs:
   build:
     permissions:
@@ -170,9 +173,17 @@ jobs:
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
 
-      - name: Install trusted-signing-cli
+      - name: Cache trusted-signing-cli
         if: contains(inputs.platform, 'windows') && inputs.sign-binaries
-        run: cargo install trusted-signing-cli
+        id: cache-tsc
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/trusted-signing-cli*
+          key: trusted-signing-cli-${{ env.TSC_VERSION }}-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Install trusted-signing-cli
+        if: contains(inputs.platform, 'windows') && inputs.sign-binaries && steps.cache-tsc.outputs.cache-hit != 'true'
+        run: cargo install trusted-signing-cli@${{ env.TSC_VERSION }}
 
       - name: Prepare Vulkan SDK for Ubuntu 24.04
         if: contains(inputs.platform, 'ubuntu-24.04') && !contains(inputs.platform, 'arm')

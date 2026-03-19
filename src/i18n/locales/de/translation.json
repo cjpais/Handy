@@ -4,6 +4,7 @@
     "checkUpdates": "Nach Updates suchen...",
     "copyLastTranscript": "Letzte Transkription kopieren",
     "unloadModel": "Modell entladen",
+    "model": "Modell",
     "quit": "Beenden",
     "cancel": "Abbrechen"
   },
@@ -79,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Russische Spracherkennung. Schnell und präzise."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Sehr schnell. Englisch, Deutsch, Spanisch, Französisch. Unterstützt Übersetzung."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Genaue mehrsprachige Erkennung. 25 europäische Sprachen. Unterstützt Übersetzung."
       }
     },
     "errors": {
@@ -235,6 +244,16 @@
       "experimentalToggle": {
         "label": "Experimentelle Funktionen",
         "description": "Experimentelle Funktionen aktivieren, die sich noch in Entwicklung befinden."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper-Beschleunigung",
+          "description": "Hardwarebeschleunigung für Whisper-Modelle. Automatisch nutzt GPU falls verfügbar (Metal auf macOS, Vulkan auf Windows/Linux)."
+        },
+        "ort": {
+          "title": "ONNX-Beschleunigung",
+          "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
+        }
       },
       "startHidden": {
         "label": "Versteckt starten",
@@ -471,6 +490,10 @@
       "pasteDelay": {
         "title": "Einfügeverzögerung",
         "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhen Sie den Wert, wenn falscher Text eingefügt wird."
+      },
+      "recordingBuffer": {
+        "title": "Zusätzlicher Aufnahmepuffer",
+        "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiterzuzeichnen, um nachlaufendes Audio aufzunehmen. 0 = kein zusätzlicher Puffer."
       }
     },
     "about": {
@@ -547,6 +570,13 @@
   },
   "errors": {
     "loadDirectory": "Fehler beim Laden des Verzeichnisses: {{error}}",
+    "micPermissionDeniedTitle": "Mikrofonzugriff verweigert",
+    "micPermissionDenied": {
+      "generic": "Der Mikrofonzugriff wurde vom Betriebssystem verweigert. Bitte erteilen Sie die Mikrofonberechtigung in Ihren Systemeinstellungen.",
+      "windows": "Aktivieren Sie den Mikrofonzugriff unter Einstellungen → Datenschutz und Sicherheit → Mikrofon (einschließlich Desktop-App-Zugriff).",
+      "macos": "Erteilen Sie den Mikrofonzugriff in Systemeinstellungen → Datenschutz & Sicherheit → Mikrofon.",
+      "linux": "Erteilen Sie den Mikrofonzugriff in den Sound- oder Datenschutzeinstellungen Ihres Systems."
+    },
     "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
     "modelLoadFailedUnknown": "unbekanntes Modell"

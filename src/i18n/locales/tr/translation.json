@@ -4,6 +4,7 @@
     "checkUpdates": "Güncellemeleri Kontrol Et...",
     "copyLastTranscript": "Son transkripti kopyala",
     "unloadModel": "Modeli boşalt",
+    "model": "Model",
     "quit": "Çıkış",
     "cancel": "İptal"
   },
@@ -79,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Rusça konuşma tanıma. Hızlı ve doğru."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Çok hızlı. İngilizce, Almanca, İspanyolca, Fransızca. Çeviri desteği."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Doğru çok dilli. 25 Avrupa dili. Çeviri desteği."
       }
     },
     "errors": {
@@ -235,6 +244,16 @@
       "experimentalToggle": {
         "label": "Deneysel Özellikler",
         "description": "Hala geliştirme aşamasında olan deneysel özellikleri etkinleştir."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper Hızlandırma",
+          "description": "Whisper modelleri için donanım hızlandırma. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
+        },
+        "ort": {
+          "title": "ONNX Hızlandırma",
+          "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Windows'ta DirectML deneyseldir. Modeller transkripsiyon yapamayabilir."
+        }
       },
       "startHidden": {
         "label": "Gizli Başlat",
@@ -471,6 +490,10 @@
       "pasteDelay": {
         "title": "Yapıştırma gecikmesi",
         "description": "Yapıştırma tuşu göndermeden önce gecikme (milisaniye cinsinden). Yanlış metin yapıştırılıyorsa artırın."
+      },
+      "recordingBuffer": {
+        "title": "Ekstra kayıt tamponu",
+        "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
       }
     },
     "about": {
@@ -547,6 +570,13 @@
   },
   "errors": {
     "loadDirectory": "Dizin yüklenirken hata oluştu: {{error}}",
+    "micPermissionDeniedTitle": "Mikrofon erişimi reddedildi",
+    "micPermissionDenied": {
+      "generic": "Mikrofon erişimi işletim sistemi tarafından reddedildi. Lütfen sistem ayarlarından mikrofon iznini verin.",
+      "windows": "Ayarlar → Gizlilik ve güvenlik → Mikrofon (masaüstü uygulama erişimi dahil) bölümünden mikrofon erişimini etkinleştirin.",
+      "macos": "Sistem Ayarları → Gizlilik ve Güvenlik → Mikrofon bölümünden mikrofon erişimini verin.",
+      "linux": "Sisteminizin ses veya gizlilik ayarlarından mikrofon erişimini verin."
+    },
     "recordingFailed": "Kayıt başlatılamadı: {{error}}",
     "modelLoadFailed": "Model yüklenemedi: {{model}}",
     "modelLoadFailedUnknown": "bilinmeyen model"

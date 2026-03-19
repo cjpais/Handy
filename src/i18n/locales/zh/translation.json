@@ -4,6 +4,7 @@
     "checkUpdates": "检查更新...",
     "copyLastTranscript": "复制最新转录",
     "unloadModel": "卸载模型",
+    "model": "模型",
     "quit": "退出",
     "cancel": "取消"
   },
@@ -79,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "俄语语音识别。快速且准确。"
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "非常快速。支持英语、德语、西班牙语、法语。支持翻译。"
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "准确的多语言模型。25种欧洲语言。支持翻译。"
       }
     },
     "errors": {
@@ -235,6 +244,16 @@
       "experimentalToggle": {
         "label": "实验性功能",
         "description": "启用仍在开发中的实验性功能。"
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Whisper 加速",
+          "description": "Whisper 模型的硬件加速。自动模式在可用时使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
+        },
+        "ort": {
+          "title": "ONNX 加速",
+          "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
+        }
       },
       "startHidden": {
         "label": "隐藏启动",
@@ -471,6 +490,10 @@
       "pasteDelay": {
         "title": "粘贴延迟",
         "description": "发送粘贴按键前的延迟（毫秒）。如果粘贴了错误的文本，请增加此值。"
+      },
+      "recordingBuffer": {
+        "title": "额外录音缓冲",
+        "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
       }
     },
     "about": {
@@ -547,6 +570,13 @@
   },
   "errors": {
     "loadDirectory": "加载目录时出错: {{error}}",
+    "micPermissionDeniedTitle": "麦克风访问被拒绝",
+    "micPermissionDenied": {
+      "generic": "操作系统拒绝了麦克风访问。请在系统设置中授予麦克风权限。",
+      "windows": "在设置 → 隐私和安全性 → 麦克风（包括桌面应用访问）中启用麦克风访问。",
+      "macos": "在系统设置 → 隐私与安全性 → 麦克风中授予麦克风访问权限。",
+      "linux": "在系统的声音或隐私设置中授予麦克风访问权限。"
+    },
     "recordingFailed": "录音启动失败: {{error}}",
     "modelLoadFailed": "加载模型失败: {{model}}",
     "modelLoadFailedUnknown": "未知模型"

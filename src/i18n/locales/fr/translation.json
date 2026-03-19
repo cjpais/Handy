@@ -4,6 +4,7 @@
     "checkUpdates": "Rechercher des mises à jour...",
     "copyLastTranscript": "Copier la dernière transcription",
     "unloadModel": "Décharger le modèle",
+    "model": "Modèle",
     "quit": "Quitter",
     "cancel": "Annuler"
   },
@@ -79,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Reconnaissance vocale en russe. Rapide et précis."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Très rapide. Anglais, allemand, espagnol, français. Supporte la traduction."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Multilingue précis. 25 langues européennes. Supporte la traduction."
       }
     },
     "errors": {
@@ -235,6 +244,16 @@
       "experimentalToggle": {
         "label": "Fonctionnalités Expérimentales",
         "description": "Activer les fonctionnalités expérimentales encore en développement."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Accélération Whisper",
+          "description": "Accélération matérielle pour les modèles Whisper. Auto utilise le GPU si disponible (Metal sur macOS, Vulkan sur Windows/Linux)."
+        },
+        "ort": {
+          "title": "Accélération ONNX",
+          "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
+        }
       },
       "startHidden": {
         "label": "Démarrer masqué",
@@ -471,6 +490,10 @@
       "pasteDelay": {
         "title": "Délai de collage",
         "description": "Délai avant l'envoi de la touche de collage (en millisecondes). Augmentez si le mauvais texte est collé."
+      },
+      "recordingBuffer": {
+        "title": "Tampon d'enregistrement supplémentaire",
+        "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
       }
     },
     "about": {
@@ -547,6 +570,13 @@
   },
   "errors": {
     "loadDirectory": "Erreur lors du chargement du répertoire : {{error}}",
+    "micPermissionDeniedTitle": "Accès au microphone refusé",
+    "micPermissionDenied": {
+      "generic": "L'accès au microphone a été refusé par le système d'exploitation. Veuillez accorder l'autorisation du microphone dans les paramètres système.",
+      "windows": "Activez l'accès au microphone dans Paramètres → Confidentialité et sécurité → Microphone (y compris l'accès des applications de bureau).",
+      "macos": "Accordez l'accès au microphone dans Réglages du système → Confidentialité et sécurité → Microphone.",
+      "linux": "Accordez l'accès au microphone dans les paramètres de son ou de confidentialité de votre système."
+    },
     "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
     "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
     "modelLoadFailedUnknown": "modèle inconnu"

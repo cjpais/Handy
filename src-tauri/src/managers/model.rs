@@ -24,6 +24,7 @@ pub enum EngineType {
     MoonshineStreaming,
     SenseVoice,
     GigaAM,
+    Canary,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -44,6 +45,7 @@ pub struct ModelInfo {
     pub supports_translation: bool, // Whether the model supports translating to English
     pub is_recommended: bool,       // Whether this is the recommended model for new users
     pub supported_languages: Vec<String>, // Languages this model can transcribe
+    pub supports_language_selection: bool, // Whether the user can explicitly pick a language
     pub is_custom: bool,            // Whether this is a user-provided custom model
 }
 
@@ -112,6 +114,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -136,6 +139,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -159,6 +163,7 @@ impl ModelManager {
                 supports_translation: false, // Turbo doesn't support translation
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -182,6 +187,7 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -206,6 +212,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: whisper_languages,
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -230,6 +237,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -263,6 +271,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: true,
                 supported_languages: parakeet_v3_languages,
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -286,6 +295,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -311,6 +321,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -336,6 +347,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -361,6 +373,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -392,6 +405,7 @@ impl ModelManager {
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -405,19 +419,85 @@ impl ModelManager {
                 id: "gigaam-v3-e2e-ctc".to_string(),
                 name: "GigaAM v3".to_string(),
                 description: "Russian speech recognition. Fast and accurate.".to_string(),
-                filename: "giga-am-v3.int8.onnx".to_string(),
-                url: Some("https://blob.handy.computer/giga-am-v3.int8.onnx".to_string()),
-                size_mb: 225,
+                filename: "giga-am-v3-int8".to_string(),
+                url: Some("https://blob.handy.computer/giga-am-v3-int8.tar.gz".to_string()),
+                size_mb: 152,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
-                is_directory: false,
+                is_directory: true,
                 engine_type: EngineType::GigaAM,
                 accuracy_score: 0.85,
                 speed_score: 0.75,
                 supports_translation: false,
                 is_recommended: false,
                 supported_languages: gigaam_languages,
+                supports_language_selection: false,
+                is_custom: false,
+            },
+        );
+
+        // Canary 180m Flash supported languages (4 languages)
+        let canary_flash_languages: Vec<String> = vec!["en", "de", "es", "fr"]
+            .into_iter()
+            .map(String::from)
+            .collect();
+
+        available_models.insert(
+            "canary-180m-flash".to_string(),
+            ModelInfo {
+                id: "canary-180m-flash".to_string(),
+                name: "Canary 180M Flash".to_string(),
+                description: "Very fast. English, German, Spanish, French. Supports translation."
+                    .to_string(),
+                filename: "canary-180m-flash".to_string(),
+                url: Some("https://blob.handy.computer/canary-180m-flash.tar.gz".to_string()),
+                size_mb: 146,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Canary,
+                accuracy_score: 0.75,
+                speed_score: 0.85,
+                supports_translation: true,
+                is_recommended: false,
+                supported_languages: canary_flash_languages,
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // Canary 1B v2 supported languages (25 EU languages)
+        let canary_1b_languages: Vec<String> = vec![
+            "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv",
+            "lt", "mt", "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        available_models.insert(
+            "canary-1b-v2".to_string(),
+            ModelInfo {
+                id: "canary-1b-v2".to_string(),
+                name: "Canary 1B v2".to_string(),
+                description: "Accurate multilingual. 25 European languages. Supports translation."
+                    .to_string(),
+                filename: "canary-1b-v2".to_string(),
+                url: Some("https://blob.handy.computer/canary-1b-v2.tar.gz".to_string()),
+                size_mb: 692,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Canary,
+                accuracy_score: 0.85,
+                speed_score: 0.70,
+                supports_translation: true,
+                is_recommended: false,
+                supported_languages: canary_1b_languages,
+                supports_language_selection: true,
                 is_custom: false,
             },
         );
@@ -437,6 +517,9 @@ impl ModelManager {
 
         // Migrate any bundled models to user directory
         manager.migrate_bundled_models()?;
+
+        // Migrate GigaAM from single-file to directory format
+        manager.migrate_gigaam_to_directory()?;
 
         // Check which models are already downloaded
         manager.update_download_status()?;
@@ -481,6 +564,46 @@ impl ModelManager {
             }
         }
 
+        Ok(())
+    }
+
+    /// Migrate GigaAM from the old single-file format (giga-am-v3.int8.onnx)
+    /// to the new directory format (giga-am-v3-int8/model.int8.onnx + vocab.txt).
+    /// This was required by the transcribe-rs 0.3.x upgrade.
+    fn migrate_gigaam_to_directory(&self) -> Result<()> {
+        let old_file = self.models_dir.join("giga-am-v3.int8.onnx");
+        let new_dir = self.models_dir.join("giga-am-v3-int8");
+
+        if !old_file.exists() || new_dir.exists() {
+            return Ok(());
+        }
+
+        info!("Migrating GigaAM from single-file to directory format");
+
+        let vocab_path = self
+            .app_handle
+            .path()
+            .resolve(
+                "resources/models/gigaam_vocab.txt",
+                tauri::path::BaseDirectory::Resource,
+            )
+            .map_err(|e| anyhow::anyhow!("Failed to resolve GigaAM vocab path: {}", e))?;
+
+        info!("Resolved vocab path: {:?} (exists: {})", vocab_path, vocab_path.exists());
+        info!("Old file: {:?} (exists: {})", old_file, old_file.exists());
+        info!("New dir: {:?} (exists: {})", new_dir, new_dir.exists());
+
+        fs::create_dir_all(&new_dir)?;
+        fs::rename(&old_file, new_dir.join("model.int8.onnx"))?;
+        fs::copy(&vocab_path, new_dir.join("vocab.txt"))?;
+
+        // Clean up old partial file if it exists
+        let old_partial = self.models_dir.join("giga-am-v3.int8.onnx.partial");
+        if old_partial.exists() {
+            let _ = fs::remove_file(&old_partial);
+        }
+
+        info!("GigaAM migration complete");
         Ok(())
     }
 
@@ -689,6 +812,7 @@ impl ModelManager {
                     supports_translation: false,
                     is_recommended: false,
                     supported_languages: vec![],
+                    supports_language_selection: true,
                     is_custom: true,
                 },
             );
@@ -1240,6 +1364,7 @@ mod tests {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: vec!["en".to_string()],
+                supports_language_selection: true,
                 is_custom: false,
             },
         );

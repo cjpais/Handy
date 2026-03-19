@@ -3,7 +3,8 @@
     "settings": "Impostazioni...",
     "checkUpdates": "Verifica aggiornamenti...",
     "copyLastTranscript": "Copia l'ultima trascrizione",
-    "unloadModel": "Scarica modello",
+    "unloadModel": "Rilascia modello",
+    "model": "Modello",
     "quit": "Esci",
     "cancel": "Annulla"
   },
@@ -79,6 +80,14 @@
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Riconoscimento vocale in russo. Veloce e preciso."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Molto veloce. Inglese, tedesco, spagnolo, francese. Supporta la traduzione."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Multilingue accurato. 25 lingue europee. Supporta la traduzione."
       }
     },
     "errors": {
@@ -235,6 +244,16 @@
       "experimentalToggle": {
         "label": "Funzionalità Sperimentali",
         "description": "Abilita le funzionalità sperimentali ancora in fase di sviluppo."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Accelerazione Whisper",
+          "description": "Accelerazione hardware per i modelli Whisper. Auto utilizza la GPU se disponibile (Metal su macOS, Vulkan su Windows/Linux)."
+        },
+        "ort": {
+          "title": "Accelerazione ONNX",
+          "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). DirectML su Windows è sperimentale. I modelli potrebbero non riuscire a trascrivere."
+        }
       },
       "startHidden": {
         "label": "Avvia in Background",
@@ -471,6 +490,10 @@
       "pasteDelay": {
         "title": "Ritardo incolla",
         "description": "Ritardo prima dell'invio del tasto incolla (in millisecondi). Aumentare se viene incollato il testo sbagliato."
+      },
+      "recordingBuffer": {
+        "title": "Buffer di registrazione extra",
+        "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
       }
     },
     "about": {
@@ -547,6 +570,13 @@
   },
   "errors": {
     "loadDirectory": "Errore di caricamento cartella: {{error}}",
+    "micPermissionDeniedTitle": "Accesso al microfono negato",
+    "micPermissionDenied": {
+      "generic": "L'accesso al microfono è stato negato dal sistema operativo. Concedi l'autorizzazione al microfono nelle impostazioni di sistema.",
+      "windows": "Abilita l'accesso al microfono in Impostazioni → Privacy e sicurezza → Microfono (incluso l'accesso delle app desktop).",
+      "macos": "Concedi l'accesso al microfono in Impostazioni di Sistema → Privacy e sicurezza → Microfono.",
+      "linux": "Concedi l'accesso al microfono nelle impostazioni audio o sulla privacy del tuo sistema."
+    },
     "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
     "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
     "modelLoadFailedUnknown": "modello sconosciuto"

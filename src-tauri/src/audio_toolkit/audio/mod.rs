@@ -6,7 +6,7 @@ mod utils;
 mod visualizer;
 
 pub use device::{list_input_devices, list_output_devices, CpalDeviceInfo};
-pub use recorder::AudioRecorder;
+pub use recorder::{is_microphone_access_denied, AudioRecorder};
 pub use resampler::FrameResampler;
 pub use utils::{load_wav_file, save_wav_file};
 pub use visualizer::AudioVisualiser;

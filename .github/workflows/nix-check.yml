@@ -1,18 +1,81 @@
+# Nix CI — two tiers:
+#
+# 1. Quick checks (bun.nix sync, flake eval) run on ANY source change
+#    so compilation-breaking edits are caught by flake eval.
+# 2. Full nix build (~25 min) only runs when nix packaging files change.
+#
+# Setting up a Cachix binary cache would further reduce full-build times.
+
 name: "nix build check"
-on: [pull_request]
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - ".nix/**"
+      - "bun.lock"
+      - "src-tauri/**"
+      - "src/**"
+      - ".github/workflows/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   nix-build:
     runs-on: ubuntu-24.04
-    continue-on-error: true
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
+      - uses: DeterminateSystems/magic-nix-cache-action@565684385bcd71bad329742eefe8d12f2e765b39 # v13
+
+      # Regenerate .nix/bun.nix from bun.lock and check if it matches
+      # what's committed. A diff means the developer forgot to run
+      # bun scripts/check-nix-deps.ts or bun install (which triggers it).
+      - name: Check bun.nix is up to date
+        id: bun-check
+        run: |
+          bunx bun2nix -o .nix/bun.nix
+          if ! git diff --quiet .nix/bun.nix; then
+            echo "outdated=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Hint on outdated bun.nix
+        if: steps.bun-check.outputs.outdated == 'true'
+        run: |
+          echo ""
+          echo "::warning::.nix/bun.nix is out of sync with bun.lock"
+          echo ""
+          echo "┌──────────────────────────────────────────────────────────────┐"
+          echo "│  .nix/bun.nix is outdated. To fix, run:                      │"
+          echo "│                                                              │"
+          echo "│    bun scripts/check-nix-deps.ts                             │"
+          echo "│                                                              │"
+          echo "│  Or simply run 'bun install' — the postinstall hook will     │"
+          echo "│  regenerate it automatically. Commit the resulting changes.  │"
+          echo "└──────────────────────────────────────────────────────────────┘"
+          echo ""
+          echo "Diff:"
+          git diff .nix/bun.nix
+          exit 1
+
+      # Evaluate the flake to catch issues with cargo git dependency hashes,
+      # missing inputs, or other Nix expression errors.
+      # Skip if bun.nix is already outdated — nix eval would fail with a
+      # cryptic error, and the bun-check step already printed a clear message.
       - name: Check flake evaluation
+        if: steps.bun-check.outputs.outdated != 'true'
         id: eval
         run: |
           if ! nix eval .#packages.x86_64-linux.handy.drvPath 2>eval_err.log; then
@@ -24,16 +87,27 @@ jobs:
         if: steps.eval.outputs.failed == 'true'
         run: |
           echo ""
-          echo "::warning::flake.nix evaluation failed — likely outdated outputHashes or bunDeps hash."
-          echo ""
-          echo "┌─────────────────────────────────────────────────────────────────┐"
-          echo "│  To fix, run on NixOS, Ubuntu/Debian, macOS with nix installed: │"
-          echo "│                                                                 │"
-          echo "│    ./scripts/update-nix-hashes.sh                               │"
-          echo "│                                                                 │"
-          echo "│  The script will update version keys and hashes in flake.nix    │"
-          echo "│  automatically. Commit the resulting changes.                   │"
-          echo "└─────────────────────────────────────────────────────────────────┘"
+          echo "::warning::flake.nix evaluation failed"
           echo ""
           cat eval_err.log
           exit 1
+
+      # Detect whether nix packaging files changed — if only source code
+      # changed, the quick checks above are sufficient.
+      # Skipped on workflow_dispatch (no base ref) — full build runs instead.
+      - name: Check if nix files changed
+        if: github.event_name == 'pull_request'
+        id: nix-files
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE '^(flake\.(nix|lock)|\.nix/|bun\.lock|src-tauri/(Cargo\.(toml|lock)|tauri\.conf\.json|build\.rs))'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Full build — catches runtime build errors (broken dependencies,
+      # sandbox issues, compilation failures) that flake eval alone misses.
+      # Only runs when nix packaging files change (~25 min with cold cache).
+      # Always runs on workflow_dispatch (manual trigger).
+      - name: Build handy
+        if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true' && (steps.nix-files.outputs.changed == 'true' || github.event_name == 'workflow_dispatch')
+        run: nix build .#handy -L --show-trace

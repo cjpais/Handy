@@ -1,6 +1,7 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_toolkit::is_microphone_access_denied;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -19,6 +20,12 @@ use std::sync::Arc;
 use std::time::Instant;
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
+
+#[derive(Clone, serde::Serialize)]
+struct RecordingErrorEvent {
+    error_type: String,
+    detail: Option<String>,
+}
 
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
 /// transcription pipeline finishes — whether it completes normally or panics.
@@ -427,7 +434,18 @@ impl ShortcutAction for TranscribeAction {
             utils::hide_recording_overlay(app);
             change_tray_icon(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
-                let _ = app.emit("recording-error", err);
+                let error_type = if is_microphone_access_denied(&err) {
+                    "microphone_permission_denied"
+                } else {
+                    "unknown"
+                };
+                let _ = app.emit(
+                    "recording-error",
+                    RecordingErrorEvent {
+                        error_type: error_type.to_string(),
+                        detail: Some(err),
+                    },
+                );
             }
         }
 

@@ -1,6 +1,6 @@
 [package]
 name = "handy"
-version = "0.7.10"
+version = "0.7.12"
 description = "Handy"
 authors = ["cjpais"]
 edition = "2021"
@@ -68,8 +68,8 @@ chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = { version = "0.2.8", features = ["whisper", "parakeet", "moonshine", "sense_voice", "gigaam"] }
-handy-keys = "0.2.2"
+transcribe-rs = { version = "0.3.1", features = ["whisper", "onnx"] }
+handy-keys = "0.2.4"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
@@ -87,6 +87,7 @@ tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.10.0"
 
 [target.'cfg(windows)'.dependencies]
+transcribe-rs = { version = "0.3.1", features = ["ort-directml"] }
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
@@ -94,6 +95,7 @@ windows = { version = "0.61.3", features = [
   "Win32_Foundation",
   "Win32_UI_WindowsAndMessaging",
 ] }
+winreg = "0.55"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
@@ -114,4 +116,4 @@ tempfile = "3"
 lto = true
 codegen-units = 1
 strip = true
-panic = "abort"
+panic = "unwind"
