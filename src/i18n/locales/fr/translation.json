@@ -335,7 +335,7 @@
           "min10": "Après 10 minutes",
           "min15": "Après 15 minutes",
           "hour1": "Après 1 heure",
-          "sec5": "Après 5 secondes (Débogage)"
+          "sec15": "Après 15 secondes (Débogage)"
         }
       },
       "customWords": {

@@ -335,7 +335,7 @@
           "min10": "Após 10 minutos",
           "min15": "Após 15 minutos",
           "hour1": "Após 1 hora",
-          "sec5": "Após 5 segundos (Depuração)"
+          "sec15": "Após 15 segundos (Depuração)"
         }
       },
       "customWords": {

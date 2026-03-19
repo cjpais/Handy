@@ -335,7 +335,7 @@
           "min10": "10 dakika sonra",
           "min15": "15 dakika sonra",
           "hour1": "1 saat sonra",
-          "sec5": "5 saniye sonra (Debug)"
+          "sec15": "15 saniye sonra (Debug)"
         }
       },
       "customWords": {
