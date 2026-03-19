@@ -88,6 +88,22 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Genaue mehrsprachige Erkennung. 25 europäische Sprachen. Unterstützt Übersetzung."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Mehrsprachige Stapeltranskription mit gutem Verhältnis von Genauigkeit und Effizienz."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Mehrsprachige Stapeltranskription. Höchste Genauigkeit unter Open-Source-ASR-Modellen."
+      },
+      "qwen3-0.6b-int4": {
+        "name": "Qwen3 ASR 0.6B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
+      },
+      "qwen3-1.7b-int4": {
+        "name": "Qwen3 ASR 1.7B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
       }
     },
     "errors": {
