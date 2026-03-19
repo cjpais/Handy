@@ -3,6 +3,7 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
+import { toast } from "sonner";
 
 interface DownloadProgress {
   model_id: string;
@@ -175,22 +176,15 @@ export const useModelStore = create<ModelsStore>()(
           }),
         );
         const result = await commands.downloadModel(modelId);
-        if (result.status === "ok") {
-          return true;
-        } else {
-          set({ error: `Failed to download model: ${result.error}` });
-          set(
-            produce((state) => {
-              delete state.downloadingModels[modelId];
-            }),
-          );
-          return false;
-        }
-      } catch (err) {
-        set({ error: `Failed to download model: ${err}` });
+        return result.status === "ok";
+      } catch {
+        // model-download-failed event won't fire for JS exceptions (e.g. IPC error),
+        // so clean up state here to avoid a stuck progress spinner.
         set(
           produce((state) => {
             delete state.downloadingModels[modelId];
+            delete state.downloadProgress[modelId];
+            delete state.downloadStats[modelId];
           }),
         );
         return false;
@@ -322,6 +316,22 @@ export const useModelStore = create<ModelsStore>()(
         );
         get().loadModels();
       });
+
+      listen<{ model_id: string; error: string }>(
+        "model-download-failed",
+        (event) => {
+          const { model_id: modelId, error } = event.payload;
+          set(
+            produce((state) => {
+              delete state.downloadingModels[modelId];
+              delete state.downloadProgress[modelId];
+              delete state.downloadStats[modelId];
+              state.error = error;
+            }),
+          );
+          toast.error(error);
+        },
+      );
 
       listen<string>("model-extraction-started", (event) => {
         const modelId = event.payload;
