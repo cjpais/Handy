@@ -245,6 +245,10 @@
         "label": "Experimentelle Funktionen",
         "description": "Experimentelle Funktionen aktivieren, die sich noch in Entwicklung befinden."
       },
+      "lazyStreamClose": {
+        "label": "Mikrofon zwischen Transkriptionen offen halten",
+        "description": "Hält den Mikrofon-Stream nach dem Aufnahmestopp 30 Sekunden lang offen, um die Latenz bei aufeinanderfolgenden Transkriptionen zu verringern. Kann die Bluetooth-Audioqualität beeinträchtigen."
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper-Beschleunigung",
