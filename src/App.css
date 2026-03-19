@@ -62,17 +62,22 @@
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
+/* macOS - tint native overlay scrollbar thumb */
+:root[data-platform="macos"] {
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/* Custom Scrollbar - only on Windows/Linux; macOS uses native overlay scrollbars */
+:root:not([data-platform="macos"]) ::-webkit-scrollbar {
   width: 14px;
   height: 14px;
 }
 
-::-webkit-scrollbar-track {
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb);
   border-radius: 20px;
   border: 3px solid transparent;
@@ -82,7 +87,7 @@
   min-height: 32px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb:hover {
   background-color: var(--scrollbar-thumb-hover);
 }
 

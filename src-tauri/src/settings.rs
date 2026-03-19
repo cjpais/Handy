@@ -397,6 +397,8 @@ pub struct AppSettings {
     pub whisper_accelerator: WhisperAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
+    #[serde(default)]
+    pub extra_recording_buffer_ms: u64,
 }
 
 fn default_model() -> String {
@@ -765,6 +767,7 @@ pub fn get_default_settings() -> AppSettings {
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
+        extra_recording_buffer_ms: 0,
     }
 }
 

@@ -488,6 +488,10 @@
       "pasteDelay": {
         "title": "粘贴延迟",
         "description": "发送粘贴按键前的延迟（毫秒）。如果粘贴了错误的文本，请增加此值。"
+      },
+      "recordingBuffer": {
+        "title": "额外录音缓冲",
+        "description": "放开按键后继续录音的额外时间（毫秒），以捕捉尾音。0 = 无额外缓冲。"
       }
     },
     "about": {

@@ -488,6 +488,10 @@
       "pasteDelay": {
         "title": "貼上延遲",
         "description": "發送貼上按鍵前的延遲（毫秒）。如果貼上了錯誤的文字，請增加此值"
+      },
+      "recordingBuffer": {
+        "title": "額外錄音緩衝",
+        "description": "放開按鍵後繼續錄音的額外時間（毫秒），以捕捉尾音。0 = 無額外緩衝。"
       }
     },
     "about": {

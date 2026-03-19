@@ -282,13 +282,26 @@ impl AudioRecorder {
     fn get_preferred_config(
         device: &cpal::Device,
     ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
-        let supported_configs = device.supported_input_configs()?;
+        // Use the device's native/default sample rate and let the FrameResampler
+        // in run_consumer() downsample to 16kHz. This avoids forcing hardware into
+        // a non-native rate which can cause issues on some devices (Bluetooth
+        // codecs, certain ALSA drivers, etc.).
+        let default_config = device.default_input_config()?;
+        let target_rate = default_config.sample_rate();
+
+        // Try to find the best sample format at the device's default rate
+        let supported_configs = match device.supported_input_configs() {
+            Ok(configs) => configs,
+            Err(e) => {
+                log::warn!("Could not enumerate input configs ({e}), using device default");
+                return Ok(default_config);
+            }
+        };
         let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
 
-        // Try to find a config that supports 16kHz, prioritizing better formats
         for config_range in supported_configs {
-            if config_range.min_sample_rate().0 <= constants::WHISPER_SAMPLE_RATE
-                && config_range.max_sample_rate().0 >= constants::WHISPER_SAMPLE_RATE
+            if config_range.min_sample_rate() <= target_rate
+                && config_range.max_sample_rate() >= target_rate
             {
                 match best_config {
                     None => best_config = Some(config_range),
@@ -310,11 +323,15 @@ impl AudioRecorder {
         }
 
         if let Some(config) = best_config {
-            return Ok(config.with_sample_rate(cpal::SampleRate(constants::WHISPER_SAMPLE_RATE)));
+            return Ok(config.with_sample_rate(target_rate));
         }
 
-        // If no config supports 16kHz, fall back to default
-        Ok(device.default_input_config()?)
+        // Fall back to device default if no config matched (exotic/virtual devices)
+        log::warn!(
+            "No supported config matched device default rate {:?}, using default config",
+            target_rate
+        );
+        Ok(default_config)
     }
 }
 

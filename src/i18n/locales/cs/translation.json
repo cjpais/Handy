@@ -488,6 +488,10 @@
       "pasteDelay": {
         "title": "Zpoždění vložení",
         "description": "Zpoždění před odesláním klávesy pro vložení (v milisekundách). Zvyšte, pokud se vkládá špatný text."
+      },
+      "recordingBuffer": {
+        "title": "Extra vyrovnávací paměť nahrávání",
+        "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
       }
     },
     "about": {

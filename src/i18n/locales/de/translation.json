@@ -488,6 +488,10 @@
       "pasteDelay": {
         "title": "Einfügeverzögerung",
         "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhen Sie den Wert, wenn falscher Text eingefügt wird."
+      },
+      "recordingBuffer": {
+        "title": "Zusätzlicher Aufnahmepuffer",
+        "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiterzuzeichnen, um nachlaufendes Audio aufzunehmen. 0 = kein zusätzlicher Puffer."
       }
     },
     "about": {
