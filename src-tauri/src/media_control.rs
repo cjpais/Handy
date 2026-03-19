@@ -178,12 +178,67 @@ impl MediaControlBackend for PlatformMediaControlBackend {
 
 #[cfg(target_os = "macos")]
 fn platform_pause_playback() -> Result<Option<PausedPlaybackState>, String> {
-    match crate::media_remote::any_application_is_playing()? {
-        true => {
-            crate::media_remote::pause()?;
-            Ok(Some(PausedPlaybackState::Global))
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    const PRECHECK_DELAY: Duration = Duration::from_millis(120);
+    const PRECHECK_PASSES: usize = 3;
+
+    // MediaRemote's C API reports overly broad/stale state on this macOS setup. JXA access via
+    // MRNowPlayingRequest.localIsPlaying has been much more accurate for whether something is
+    // actively playing right now, so use that to decide whether a later global resume is safe.
+    for attempt in 0..PRECHECK_PASSES {
+        let local_is_playing = macos_local_is_playing()?;
+        if !local_is_playing {
+            if attempt > 0 {
+                debug!("Skipping macOS media pause because playback was not stably active");
+            }
+            return Ok(None);
         }
-        false => Ok(None),
+
+        if attempt + 1 < PRECHECK_PASSES {
+            sleep(PRECHECK_DELAY);
+        }
+    }
+
+    crate::media_remote::pause()?;
+    Ok(Some(PausedPlaybackState::Global))
+}
+
+#[cfg(target_os = "macos")]
+fn macos_local_is_playing() -> Result<bool, String> {
+    let script = r#"
+ObjC.import('Foundation');
+const MediaRemote = $.NSBundle.bundleWithPath('/System/Library/PrivateFrameworks/MediaRemote.framework/');
+if (!MediaRemote || !MediaRemote.load) {
+  throw new Error('Failed to load MediaRemote bundle');
+}
+MediaRemote.load;
+const MRNowPlayingRequest = $.NSClassFromString('MRNowPlayingRequest');
+if (!MRNowPlayingRequest) {
+  throw new Error('MRNowPlayingRequest class unavailable');
+}
+MRNowPlayingRequest.localIsPlaying ? 'true' : 'false';
+"#;
+
+    let output = std::process::Command::new("osascript")
+        .args(["-l", "JavaScript", "-e", script])
+        .output()
+        .map_err(|err| format!("Failed to run osascript for MediaRemote state: {err}"))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "osascript MediaRemote query failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    match String::from_utf8_lossy(&output.stdout).trim() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        other => Err(format!(
+            "Unexpected osascript MediaRemote state output: {other}"
+        )),
     }
 }
 

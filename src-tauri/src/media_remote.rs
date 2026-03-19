@@ -4,21 +4,7 @@ const MEDIA_REMOTE_COMMAND_PLAY: c_int = 0;
 const MEDIA_REMOTE_COMMAND_PAUSE: c_int = 1;
 
 unsafe extern "C" {
-    fn media_remote_any_application_is_playing() -> c_int;
     fn media_remote_send_command(command: c_int) -> c_int;
-}
-
-pub fn any_application_is_playing() -> Result<bool, String> {
-    match unsafe { media_remote_any_application_is_playing() } {
-        1 => Ok(true),
-        0 => Ok(false),
-        -1 => Err("Failed to load MediaRemote framework".to_string()),
-        -2 => Err("MediaRemote any-playing symbol was not found".to_string()),
-        -3 => Err("MediaRemote any-playing query timed out".to_string()),
-        status => Err(format!(
-            "MediaRemote any-playing query returned unexpected status {status}"
-        )),
-    }
 }
 
 /// Resume media playback via Apple's global MediaRemote API.
