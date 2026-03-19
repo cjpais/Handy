@@ -184,7 +184,9 @@
         "descriptionUnsupported": "Parakeet 模型會自動偵測語言，無需手動選擇",
         "searchPlaceholder": "搜尋語言...",
         "noResults": "未找到語言",
-        "auto": "自動"
+        "auto": "自動",
+        "followOs": "跟隨作業系統 ({{language}})",
+        "followOsInput": "跟隨作業系統輸入語言"
       },
       "pushToTalk": {
         "label": "按住說話",

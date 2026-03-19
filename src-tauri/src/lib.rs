@@ -8,6 +8,7 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
+mod input_source;
 mod llm_client;
 mod managers;
 mod overlay;
@@ -370,6 +371,7 @@ pub fn run(cli_args: CliArgs) {
         shortcut::get_available_accelerators,
         shortcut::handy_keys::start_handy_keys_recording,
         shortcut::handy_keys::stop_handy_keys_recording,
+        shortcut::get_language_from_os_input,
         trigger_update_check,
         show_main_window_command,
         commands::cancel_operation,

@@ -463,25 +463,35 @@ impl TranscriptionManager {
         let validated_language = if settings.selected_language == "auto" {
             "auto".to_string()
         } else {
-            let is_supported = self
-                .model_manager
-                .get_model_info(&settings.selected_model)
-                .map(|info| {
-                    info.supported_languages.is_empty()
-                        || info
-                            .supported_languages
-                            .contains(&settings.selected_language)
-                })
-                .unwrap_or(true);
-
-            if is_supported {
-                settings.selected_language.clone()
+            // Resolve os_input to actual language code
+            let effective_language = if settings.selected_language == "os_input" {
+                crate::input_source::get_language_from_input_source()
+                    .unwrap_or_else(|| "auto".to_string())
             } else {
-                warn!(
-                    "Language '{}' not supported by current model, falling back to auto-detect",
-                    settings.selected_language
-                );
+                settings.selected_language.clone()
+            };
+
+            if effective_language == "auto" {
                 "auto".to_string()
+            } else {
+                let is_supported = self
+                    .model_manager
+                    .get_model_info(&settings.selected_model)
+                    .map(|info| {
+                        info.supported_languages.is_empty()
+                            || info.supported_languages.contains(&effective_language)
+                    })
+                    .unwrap_or(true);
+
+                if is_supported {
+                    effective_language
+                } else {
+                    warn!(
+                        "Language '{}' not supported by current model, falling back to auto-detect",
+                        effective_language
+                    );
+                    "auto".to_string()
+                }
             }
         };
 
