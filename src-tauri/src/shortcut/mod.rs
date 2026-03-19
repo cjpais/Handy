@@ -1121,3 +1121,12 @@ pub fn change_ort_accelerator_setting(
 pub fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
     crate::managers::transcription::get_available_accelerators()
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_ort_thread_count_setting(app: AppHandle, count: u8) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.ort_thread_count = count;
+    apply_and_reload_accelerator(&app, s);
+    Ok(())
+}

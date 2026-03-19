@@ -19,6 +19,7 @@ import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
+import { OrtThreadCount } from "../OrtThreadCount";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -64,6 +65,7 @@ export const AdvancedSettings: React.FC = () => {
             grouped={true}
           />
           <AccelerationSelector descriptionMode="tooltip" grouped={true} />
+          <OrtThreadCount descriptionMode="tooltip" grouped={true} />
         </SettingsGroup>
       )}
     </div>

@@ -396,6 +396,8 @@ pub struct AppSettings {
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
     #[serde(default)]
+    pub ort_thread_count: u8,
+    #[serde(default)]
     pub extra_recording_buffer_ms: u64,
 }
 
@@ -764,6 +766,7 @@ pub fn get_default_settings() -> AppSettings {
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
+        ort_thread_count: 0,
         extra_recording_buffer_ms: 0,
     }
 }

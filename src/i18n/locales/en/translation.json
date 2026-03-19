@@ -88,6 +88,22 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Accurate multilingual. 25 European languages. Supports translation."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Multilingual batch transcription with good accuracy-efficiency trade-off."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Multilingual batch transcription. Highest accuracy among open-source ASR models."
+      },
+      "qwen3-0.6b-int4": {
+        "name": "Qwen3 ASR 0.6B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
+      },
+      "qwen3-1.7b-int4": {
+        "name": "Qwen3 ASR 1.7B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
       }
     },
     "errors": {
@@ -254,6 +270,11 @@
           "title": "ONNX Acceleration",
           "description": "Hardware acceleration for ONNX models (Parakeet, Canary, Moonshine, etc.). DirectML on Windows is experimental. Models may fail to transcribe."
         }
+      },
+      "ortThreadCount": {
+        "title": "ONNX Thread Count",
+        "description": "Number of CPU threads for ONNX model loading and encoder inference. 0 lets ORT decide (typically all cores).",
+        "auto": "(auto)"
       },
       "startHidden": {
         "label": "Start Hidden",
