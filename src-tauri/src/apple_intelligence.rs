@@ -12,10 +12,6 @@ pub struct AppleLLMResponse {
 // Link to the Swift functions
 extern "C" {
     pub fn is_apple_intelligence_available() -> c_int;
-    pub fn process_text_with_apple_llm(
-        prompt: *const c_char,
-        max_tokens: i32,
-    ) -> *mut AppleLLMResponse;
     pub fn free_apple_llm_response(response: *mut AppleLLMResponse);
 }
 
@@ -24,10 +20,27 @@ pub fn check_apple_intelligence_availability() -> bool {
     unsafe { is_apple_intelligence_available() == 1 }
 }
 
-pub fn process_text(prompt: &str, max_tokens: i32) -> Result<String, String> {
-    let prompt_cstr = CString::new(prompt).map_err(|e| e.to_string())?;
+// Link to the Swift function for system prompt support
+extern "C" {
+    pub fn process_text_with_system_prompt_apple(
+        system_prompt: *const c_char,
+        user_content: *const c_char,
+        max_tokens: i32,
+    ) -> *mut AppleLLMResponse;
+}
 
-    let response_ptr = unsafe { process_text_with_apple_llm(prompt_cstr.as_ptr(), max_tokens) };
+/// Process text with Apple Intelligence using separate system prompt and user content
+pub fn process_text_with_system_prompt(
+    system_prompt: &str,
+    user_content: &str,
+    max_tokens: i32,
+) -> Result<String, String> {
+    let system_cstr = CString::new(system_prompt).map_err(|e| e.to_string())?;
+    let user_cstr = CString::new(user_content).map_err(|e| e.to_string())?;
+
+    let response_ptr = unsafe {
+        process_text_with_system_prompt_apple(system_cstr.as_ptr(), user_cstr.as_ptr(), max_tokens)
+    };
 
     if response_ptr.is_null() {
         return Err("Null response from Apple LLM".to_string());

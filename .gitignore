@@ -29,3 +29,14 @@ dist-ssr
 /target/
 recording_*
 .crush/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+.direnv
+.envrc
+
+# Nix build output
+result

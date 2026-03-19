@@ -9,11 +9,13 @@ import { LANGUAGES } from "../../lib/constants/languages";
 interface LanguageSelectorProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  supportedLanguages?: string[];
 }
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   descriptionMode = "tooltip",
   grouped = false,
+  supportedLanguages,
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, resetSetting, isUpdating } = useSettings();
@@ -60,12 +62,21 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     return () => clearInterval(interval);
   }, [selectedLanguage]);
 
+  const availableLanguages = useMemo(() => {
+    if (!supportedLanguages || supportedLanguages.length === 0)
+      return LANGUAGES;
+    return LANGUAGES.filter(
+      (lang) =>
+        lang.value === "auto" || supportedLanguages.includes(lang.value),
+    );
+  }, [supportedLanguages]);
+
   const filteredLanguages = useMemo(
     () =>
-      LANGUAGES.filter((language) =>
+      availableLanguages.filter((language) =>
         language.label.toLowerCase().includes(searchQuery.toLowerCase()),
       ),
-    [searchQuery],
+    [searchQuery, availableLanguages],
   );
 
   const selectedLanguageName = useMemo(() => {

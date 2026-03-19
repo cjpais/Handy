@@ -1,5 +1,17 @@
 name: "test"
-on: [pull_request]
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+  pull_request:
+    paths:
+      - "src-tauri/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   rust-tests:
@@ -10,7 +22,11 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libasound2-dev libssl-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libasound2-dev libssl-dev libgtk-layer-shell-dev
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
 
       - name: Use mock TranscriptionManager (CI only)
         working-directory: src-tauri

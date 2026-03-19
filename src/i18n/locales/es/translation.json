@@ -3,11 +3,14 @@
     "settings": "Configuración...",
     "checkUpdates": "Buscar actualizaciones...",
     "copyLastTranscript": "Copiar la última transcripción",
+    "unloadModel": "Descargar modelo",
+    "model": "Modelo",
     "quit": "Salir",
     "cancel": "Cancelar"
   },
   "sidebar": {
     "general": "General",
+    "models": "Modelos",
     "advanced": "Avanzado",
     "postProcessing": "Post Proceso",
     "history": "Historial",
@@ -19,6 +22,8 @@
     "recommended": "Recomendado",
     "download": "Descargar",
     "downloading": "Descargando...",
+    "customModelDescription": "Sin soporte oficial",
+    "downloadFailed": "La descarga falló. Por favor, inténtalo de nuevo.",
     "modelCard": {
       "accuracy": "precisión",
       "speed": "velocidad"
@@ -50,7 +55,39 @@
       },
       "moonshine-base": {
         "name": "Moonshine Base",
-        "description": "Very fast, English only. Handles accents well."
+        "description": "Muy rápido, solo inglés. Maneja bien los acentos."
+      },
+      "moonshine-tiny-streaming-en": {
+        "name": "Moonshine V2 Tiny",
+        "description": "Ultrarrápido, solo inglés"
+      },
+      "moonshine-small-streaming-en": {
+        "name": "Moonshine V2 Small",
+        "description": "Rápido, solo inglés. Buen equilibrio entre velocidad y precisión."
+      },
+      "moonshine-medium-streaming-en": {
+        "name": "Moonshine V2 Medium",
+        "description": "Solo inglés. Alta calidad."
+      },
+      "breeze-asr": {
+        "name": "Breeze ASR",
+        "description": "Optimizado para mandarín taiwanés. Soporte para cambio de código."
+      },
+      "sense-voice-int8": {
+        "name": "SenseVoice",
+        "description": "Muy rápido. Chino, inglés, japonés, coreano, cantonés."
+      },
+      "gigaam-v3-e2e-ctc": {
+        "name": "GigaAM v3",
+        "description": "Reconocimiento de voz en ruso. Rápido y preciso."
+      },
+      "canary-180m-flash": {
+        "name": "Canary 180M Flash",
+        "description": "Muy rápido. Inglés, alemán, español, francés. Soporta traducción."
+      },
+      "canary-1b-v2": {
+        "name": "Canary 1B v2",
+        "description": "Multilingüe preciso. 25 idiomas europeos. Soporta traducción."
       }
     },
     "errors": {
@@ -71,18 +108,17 @@
       "grant": "Conceder Permiso",
       "granted": "Concedido",
       "waiting": "Esperando...",
-      "allGranted": "¡Todo listo!"
+      "allGranted": "¡Todo listo!",
+      "errors": {
+        "checkFailed": "Error al verificar permisos. Por favor, inténtalo de nuevo.",
+        "requestFailed": "Error al solicitar permiso. Por favor, inténtalo de nuevo."
+      }
     }
   },
   "modelSelector": {
-    "welcome": "¡Bienvenido a Handy!",
-    "downloadPrompt": "Descarga un modelo a continuación para comenzar con la transcripción.",
-    "availableModels": "Modelos Disponibles",
-    "downloadModels": "Descargar Modelos",
-    "chooseModel": "Elegir un Modelo",
+    "custom": "Personalizado",
     "active": "Activo",
-    "download": "Descargar",
-    "downloadSize": "Tamaño de descarga",
+    "switching": "Cambiando...",
     "noModelsAvailable": "No hay modelos disponibles",
     "extracting": "Extrayendo {{modelName}}...",
     "extractingMultiple": "Extrayendo {{count}} modelos...",
@@ -95,9 +131,42 @@
     "modelError": "Error del Modelo",
     "modelUnloaded": "Modelo Descargado",
     "noModelDownloadRequired": "Sin Modelo - Descarga Requerida",
-    "deleteModel": "Eliminar {{modelName}}"
+    "deleteModel": "Eliminar {{modelName}}",
+    "downloadSpeed": "{{speed}} MB/s",
+    "capabilities": {
+      "languageSelection": "Soporta múltiples idiomas de entrada",
+      "multiLanguage": "Multiidioma",
+      "translation": "Puede traducir al inglés",
+      "translate": "Traducir al inglés",
+      "singleLanguage": "Solo admite este idioma",
+      "languageOnly": "Solo {{language}}"
+    },
+    "cancel": "Cancelar",
+    "cancelDownload": "Cancelar descarga"
   },
   "settings": {
+    "modelSettings": {
+      "title": "Configuración de {{model}}",
+      "noSettingsNeeded": "Este modelo funciona automáticamente sin necesidad de configuración."
+    },
+    "models": {
+      "title": "Modelos de Transcripción",
+      "description": "Selecciona un modelo de transcripción o descarga modelos adicionales. Diferentes modelos ofrecen distintos niveles de precisión y velocidad.",
+      "downloaded": "Descargados",
+      "available": "Disponibles para Descargar",
+      "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
+      "deleteActiveConfirm": "{{modelName}} es tu modelo activo. Eliminarlo detendrá las transcripciones hasta que selecciones un nuevo modelo. ¿Estás seguro?",
+      "deleteTitle": "Eliminar modelo",
+      "filters": {
+        "all": "Todos",
+        "multiLanguage": "Multiidioma",
+        "translation": "Traducción",
+        "allLanguages": "Todos los idiomas"
+      },
+      "noModelsMatch": "Ningún modelo coincide con este filtro.",
+      "yourModels": "Modelos descargados",
+      "availableModels": "Disponibles para descargar"
+    },
     "general": {
       "title": "General",
       "shortcut": {
@@ -115,6 +184,10 @@
           "cancel": {
             "name": "Atajo de Cancelar",
             "description": "El atajo de teclado para cancelar la grabación actual."
+          },
+          "transcribe_with_post_process": {
+            "name": "Tecla de Post Procesamiento",
+            "description": "Opcional: Una tecla de acceso rápido dedicada que siempre aplica post procesamiento con IA a tu transcripción."
           }
         },
         "errors": {
@@ -172,6 +245,20 @@
         "label": "Funciones Experimentales",
         "description": "Habilitar funciones experimentales que aún están en desarrollo."
       },
+      "lazyStreamClose": {
+        "label": "Mantener micrófono abierto entre transcripciones",
+        "description": "Mantiene el flujo del micrófono abierto durante 30 segundos después de detener la grabación, reduciendo la latencia en transcripciones consecutivas. Puede degradar la calidad del audio Bluetooth mientras está activo."
+      },
+      "acceleration": {
+        "whisper": {
+          "title": "Aceleración de Whisper",
+          "description": "Aceleración por hardware para modelos Whisper. Auto usa GPU si está disponible (Metal en macOS, Vulkan en Windows/Linux)."
+        },
+        "ort": {
+          "title": "Aceleración de ONNX",
+          "description": "Aceleración por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML en Windows es experimental. Los modelos pueden fallar al transcribir."
+        }
+      },
       "startHidden": {
         "label": "Iniciar Oculto",
         "description": "Lanzar en la bandeja del sistema sin abrir la ventana."
@@ -179,6 +266,10 @@
       "autostart": {
         "label": "Iniciar al Arranque",
         "description": "Iniciar Handy automáticamente cuando inicies sesión en tu computadora."
+      },
+      "showTrayIcon": {
+        "label": "Mostrar Icono de Bandeja",
+        "description": "Mostrar el icono de Handy en la bandeja del sistema."
       },
       "overlay": {
         "title": "Posición de Superposición",
@@ -197,7 +288,16 @@
           "clipboardCtrlShiftV": "Portapapeles (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Portapapeles (Shift+Insert)",
           "direct": "Directo",
-          "none": "Ninguno"
+          "none": "Ninguno",
+          "externalScript": "Script externo"
+        },
+        "externalScriptPlaceholder": "/ruta/a/su/script.sh"
+      },
+      "typingTool": {
+        "title": "Herramienta de Escritura",
+        "description": "Elige qué herramienta de escritura de Linux usar para el método de pegado directo. Auto detectará y usará automáticamente la mejor herramienta disponible para tu sistema.",
+        "options": {
+          "auto": "Auto (Recomendado)"
         }
       },
       "clipboardHandling": {
@@ -206,6 +306,17 @@
         "options": {
           "dontModify": "No Modificar Portapapeles",
           "copyToClipboard": "Copiar al Portapapeles"
+        }
+      },
+      "autoSubmit": {
+        "title": "Envío automático",
+        "description": "Envía automáticamente la combinación de teclas seleccionada después de insertar el texto. Cmd+Enter se aplica en macOS, mientras que Windows/Linux usan Super+Enter.",
+        "options": {
+          "off": "Desactivado",
+          "enter": "Enter",
+          "cmdEnter": "Cmd+Enter",
+          "superEnter": "Super+Enter",
+          "ctrlEnter": "Ctrl+Enter"
         }
       },
       "translateToEnglish": {
@@ -224,7 +335,7 @@
           "min10": "Después de 10 minutos",
           "min15": "Después de 15 minutos",
           "hour1": "Después de 1 hora",
-          "sec5": "Después de 5 segundos (Depuración)"
+          "sec15": "Después de 15 segundos (Depuración)"
         }
       },
       "customWords": {
@@ -232,12 +343,15 @@
         "description": "Agrega palabras que a menudo se escuchan mal o se escriben incorrectamente durante la transcripción. El sistema corregirá automáticamente palabras similares para que coincidan con tu lista.",
         "placeholder": "Agregar una palabra",
         "add": "Agregar",
-        "remove": "Eliminar {{word}}"
+        "remove": "Eliminar {{word}}",
+        "duplicate": "\"{{word}}\" ya existe"
       }
     },
     "postProcessing": {
       "title": "Post Proceso",
-      "disabledNotice": "El post procesamiento está actualmente deshabilitado. Habilítalo en la configuración de Depuración para configurarlo.",
+      "hotkey": {
+        "title": "Tecla de acceso rápido"
+      },
       "api": {
         "title": "API (Compatible con OpenAI)",
         "provider": {
@@ -361,10 +475,23 @@
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
       },
+      "keyboardImplementation": {
+        "title": "Implementación del teclado",
+        "description": "Elige el sistema que gestiona los atajos de teclado.",
+        "bindingsReset": "Los atajos de teclado eran incompatibles y se restablecieron a los valores predeterminados"
+      },
       "paths": {
         "appData": "Datos de la Aplicación:",
         "models": "Modelos:",
         "settings": "Configuración:"
+      },
+      "pasteDelay": {
+        "title": "Retraso de pegado",
+        "description": "Retraso antes de enviar la pulsación de tecla de pegar (en milisegundos). Aumente si se está pegando texto incorrecto."
+      },
+      "recordingBuffer": {
+        "title": "Búfer de grabación adicional",
+        "description": "Tiempo adicional (en milisegundos) para seguir grabando después de soltar la tecla, para capturar el audio restante. 0 = sin búfer adicional."
       }
     },
     "about": {
@@ -440,13 +567,24 @@
     "dismiss": "Descartar"
   },
   "errors": {
-    "loadDirectory": "Error al cargar el directorio: {{error}}"
+    "loadDirectory": "Error al cargar el directorio: {{error}}",
+    "micPermissionDeniedTitle": "Acceso al micrófono denegado",
+    "micPermissionDenied": {
+      "generic": "El sistema operativo denegó el acceso al micrófono. Por favor, conceda el permiso del micrófono en la configuración del sistema.",
+      "windows": "Active el acceso al micrófono en Configuración → Privacidad y seguridad → Micrófono (incluido el acceso de aplicaciones de escritorio).",
+      "macos": "Conceda el acceso al micrófono en Ajustes del Sistema → Privacidad y seguridad → Micrófono.",
+      "linux": "Conceda el acceso al micrófono en la configuración de sonido o privacidad de su sistema."
+    },
+    "recordingFailed": "Error al iniciar la grabación: {{error}}",
+    "modelLoadFailed": "Error al cargar el modelo: {{model}}",
+    "modelLoadFailedUnknown": "modelo desconocido"
   },
   "appLanguage": {
     "title": "Idioma de la aplicación",
     "description": "Cambia el idioma de la interfaz de Handy"
   },
   "overlay": {
-    "transcribing": "Transcribiendo..."
+    "transcribing": "Transcribiendo...",
+    "processing": "Procesando..."
   }
 }

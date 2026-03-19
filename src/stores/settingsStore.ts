@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import type { AppSettings as Settings, AudioDevice } from "@/bindings";
+import { listen } from "@tauri-apps/api/event";
+import type {
+  AppSettings as Settings,
+  AudioDevice,
+  WhisperAcceleratorSetting,
+  OrtAcceleratorSetting,
+} from "@/bindings";
 import { commands } from "@/bindings";
 
 interface SettingsStore {
@@ -112,8 +118,14 @@ const settingUpdaters: {
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
+  typing_tool: (value) => commands.changeTypingToolSetting(value as string),
+  external_script_path: (value) =>
+    commands.changeExternalScriptPathSetting(value as string | null),
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
+  auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),
+  auto_submit_key: (value) =>
+    commands.changeAutoSubmitKeySetting(value as string),
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),
@@ -127,6 +139,18 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  lazy_stream_close: (value) =>
+    commands.changeLazyStreamCloseSetting(value as boolean),
+  show_tray_icon: (value) =>
+    commands.changeShowTrayIconSetting(value as boolean),
+  whisper_accelerator: (value) =>
+    commands.changeWhisperAcceleratorSetting(
+      value as WhisperAcceleratorSetting,
+    ),
+  ort_accelerator: (value) =>
+    commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
+  extra_recording_buffer_ms: (value) =>
+    commands.changeExtraRecordingBufferSetting(value as number),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -366,7 +390,12 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     setPostProcessProvider: async (providerId) => {
-      const { settings, setUpdating, refreshSettings } = get();
+      const {
+        settings,
+        setUpdating,
+        refreshSettings,
+        setPostProcessModelOptions,
+      } = get();
       const updateKey = "post_process_provider_id";
       const previousId = settings?.post_process_provider_id ?? null;
 
@@ -379,6 +408,10 @@ export const useSettingsStore = create<SettingsStore>()(
             : null,
         }));
       }
+
+      // Clear cached model options for the new provider so the dropdown
+      // doesn't show stale models from a previous fetch or base_url.
+      setPostProcessModelOptions(providerId, []);
 
       try {
         await commands.setPostProcessProvider(providerId);
@@ -428,7 +461,49 @@ export const useSettingsStore = create<SettingsStore>()(
     },
 
     updatePostProcessBaseUrl: async (providerId, baseUrl) => {
-      return get().updatePostProcessSetting("base_url", providerId, baseUrl);
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `post_process_base_url:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        // Persist the new base URL first.
+        const urlResult = await commands.changePostProcessBaseUrlSetting(
+          providerId,
+          baseUrl,
+        );
+        if (urlResult.status === "error") {
+          console.error("Failed to persist base URL:", urlResult.error);
+          return;
+        }
+
+        // Reset the stored model since the previous value is almost certainly
+        // invalid for the new endpoint (e.g. switching Custom from Groq to
+        // Cerebras). Only proceed if the reset succeeds.
+        const modelResult = await commands.changePostProcessModelSetting(
+          providerId,
+          "",
+        );
+        if (modelResult.status === "error") {
+          console.error("Failed to reset model setting:", modelResult.error);
+          return;
+        }
+
+        // Clear cached model options only after both backend writes succeed.
+        set((state) => ({
+          postProcessModelOptions: {
+            ...state.postProcessModelOptions,
+            [providerId]: [],
+          },
+        }));
+
+        // Single refresh after both backend writes.
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update post-process base URL:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
     },
 
     updatePostProcessApiKey: async (providerId, apiKey) => {
@@ -506,6 +581,12 @@ export const useSettingsStore = create<SettingsStore>()(
         refreshSettings(),
         checkCustomSounds(),
       ]);
+
+      // Re-fetch settings when the backend changes them (e.g. language
+      // reset during model switch). The backend is the source of truth.
+      listen("model-state-changed", () => {
+        get().refreshSettings();
+      });
     },
   })),
 );
