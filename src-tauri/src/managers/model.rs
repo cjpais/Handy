@@ -873,6 +873,41 @@ impl ModelManager {
         Ok(())
     }
 
+    /// Verifies the SHA256 of `path` against `expected_sha256` (if provided).
+    /// On mismatch or read error the partial file is deleted and an error is returned,
+    /// so the next download attempt always starts from a clean state.
+    /// When `expected_sha256` is `None` (custom user models) verification is skipped.
+    fn verify_sha256(path: &Path, expected_sha256: Option<&str>, model_id: &str) -> Result<()> {
+        let Some(expected) = expected_sha256 else {
+            return Ok(());
+        };
+        match Self::compute_sha256(path) {
+            Ok(actual) if actual == expected => {
+                info!("SHA256 verified for model {}", model_id);
+                Ok(())
+            }
+            Ok(actual) => {
+                warn!(
+                    "SHA256 mismatch for model {}: expected {}, got {}",
+                    model_id, expected, actual
+                );
+                let _ = fs::remove_file(path);
+                Err(anyhow::anyhow!(
+                    "Download verification failed for model {}: file is corrupt. Please retry.",
+                    model_id
+                ))
+            }
+            Err(e) => {
+                let _ = fs::remove_file(path);
+                Err(anyhow::anyhow!(
+                    "Failed to verify download for model {}: {}. Please retry.",
+                    model_id,
+                    e
+                ))
+            }
+        }
+    }
+
     /// Computes the SHA256 hex digest of a file, reading in 64KB chunks to handle large models.
     fn compute_sha256(path: &Path) -> Result<String> {
         let mut file = File::open(path)?;
@@ -1121,49 +1156,17 @@ impl ModelManager {
             }
         }
 
-        // Verify SHA256 checksum for built-in models (None for custom models — skipped silently).
-        // A mismatch means the file is corrupt (e.g. partial resume that passed the size check
-        // because Content-Length was absent). Delete the partial so the next attempt starts fresh.
-        if let Some(expected_sha256) = model_info.sha256.as_deref() {
-            info!("Verifying SHA256 for model {}...", model_id);
-            match Self::compute_sha256(&partial_path) {
-                Ok(actual) if actual == expected_sha256 => {
-                    info!("SHA256 verified for model {}", model_id);
-                }
-                Ok(actual) => {
-                    warn!(
-                        "SHA256 mismatch for model {}: expected {}, got {}",
-                        model_id, expected_sha256, actual
-                    );
-                    let _ = fs::remove_file(&partial_path);
-                    {
-                        let mut models = self.available_models.lock().unwrap();
-                        if let Some(model) = models.get_mut(model_id) {
-                            model.is_downloading = false;
-                        }
-                    }
-                    return Err(anyhow::anyhow!(
-                        "Download verification failed for model {}: file is corrupt. Please retry.",
-                        model_id
-                    ));
-                }
-                Err(e) => {
-                    // Can't read the file to hash it — treat as corrupt and delete so
-                    // the next attempt starts fresh rather than promoting a bad file.
-                    let _ = fs::remove_file(&partial_path);
-                    {
-                        let mut models = self.available_models.lock().unwrap();
-                        if let Some(model) = models.get_mut(model_id) {
-                            model.is_downloading = false;
-                        }
-                    }
-                    return Err(anyhow::anyhow!(
-                        "Failed to verify download for model {}: {}. Please retry.",
-                        model_id,
-                        e
-                    ));
-                }
+        // Verify SHA256 checksum. On failure the partial is deleted inside verify_sha256
+        // so the next attempt always starts fresh.
+        info!("Verifying SHA256 for model {}...", model_id);
+        if let Err(e) =
+            Self::verify_sha256(&partial_path, model_info.sha256.as_deref(), model_id)
+        {
+            let mut models = self.available_models.lock().unwrap();
+            if let Some(model) = models.get_mut(model_id) {
+                model.is_downloading = false;
             }
+            return Err(e);
         }
 
         // Handle directory-based models (extract tar.gz) vs file-based models
@@ -1538,5 +1541,71 @@ mod tests {
         let result = ModelManager::discover_custom_whisper_models(&models_dir, &mut models);
         assert!(result.is_ok());
         assert_eq!(models.len(), count_before);
+    }
+
+    // ── SHA256 verification tests ─────────────────────────────────────────────
+
+    /// Helper: write `data` to a temp file and return (TempDir, path).
+    /// TempDir must be kept alive for the duration of the test.
+    fn write_temp_file(data: &[u8]) -> (TempDir, std::path::PathBuf) {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("model.partial");
+        let mut f = File::create(&path).unwrap();
+        f.write_all(data).unwrap();
+        (dir, path)
+    }
+
+    #[test]
+    fn test_verify_sha256_skipped_when_none() {
+        // Custom models have no expected hash — verification must be a no-op.
+        let (_dir, path) = write_temp_file(b"anything");
+        assert!(ModelManager::verify_sha256(&path, None, "custom").is_ok());
+        assert!(path.exists(), "file must be untouched when verification is skipped");
+    }
+
+    #[test]
+    fn test_verify_sha256_passes_on_correct_hash() {
+        // Compute the real hash so the test is self-consistent.
+        let (_dir, path) = write_temp_file(b"hello world");
+        let actual = ModelManager::compute_sha256(&path).unwrap();
+        assert!(
+            ModelManager::verify_sha256(&path, Some(&actual), "test_model").is_ok(),
+            "should pass when hash matches"
+        );
+        assert!(path.exists(), "file must be kept on successful verification");
+    }
+
+    #[test]
+    fn test_verify_sha256_fails_and_deletes_partial_on_mismatch() {
+        let (_dir, path) = write_temp_file(b"this is not the real model");
+        let wrong_hash = "0000000000000000000000000000000000000000000000000000000000000000";
+
+        let result = ModelManager::verify_sha256(&path, Some(wrong_hash), "bad_model");
+
+        assert!(result.is_err(), "mismatch must return an error");
+        assert!(
+            result.unwrap_err().to_string().contains("corrupt"),
+            "error message should mention corruption"
+        );
+        assert!(
+            !path.exists(),
+            "partial file must be deleted after hash mismatch"
+        );
+    }
+
+    #[test]
+    fn test_verify_sha256_fails_and_deletes_partial_when_file_missing() {
+        // Simulate a partial file that was already removed (e.g. disk full mid-download).
+        let dir = TempDir::new().unwrap();
+        let missing_path = dir.path().join("gone.partial");
+        // Don't create the file — it should not exist.
+
+        let result = ModelManager::verify_sha256(
+            &missing_path,
+            Some("anyexpectedhash"),
+            "missing_model",
+        );
+
+        assert!(result.is_err(), "missing file must return an error");
     }
 }
