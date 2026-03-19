@@ -1159,9 +1159,7 @@ impl ModelManager {
         // Verify SHA256 checksum. On failure the partial is deleted inside verify_sha256
         // so the next attempt always starts fresh.
         info!("Verifying SHA256 for model {}...", model_id);
-        if let Err(e) =
-            Self::verify_sha256(&partial_path, model_info.sha256.as_deref(), model_id)
-        {
+        if let Err(e) = Self::verify_sha256(&partial_path, model_info.sha256.as_deref(), model_id) {
             let mut models = self.available_models.lock().unwrap();
             if let Some(model) = models.get_mut(model_id) {
                 model.is_downloading = false;
@@ -1560,7 +1558,10 @@ mod tests {
         // Custom models have no expected hash — verification must be a no-op.
         let (_dir, path) = write_temp_file(b"anything");
         assert!(ModelManager::verify_sha256(&path, None, "custom").is_ok());
-        assert!(path.exists(), "file must be untouched when verification is skipped");
+        assert!(
+            path.exists(),
+            "file must be untouched when verification is skipped"
+        );
     }
 
     #[test]
@@ -1572,7 +1573,10 @@ mod tests {
             ModelManager::verify_sha256(&path, Some(&actual), "test_model").is_ok(),
             "should pass when hash matches"
         );
-        assert!(path.exists(), "file must be kept on successful verification");
+        assert!(
+            path.exists(),
+            "file must be kept on successful verification"
+        );
     }
 
     #[test]
@@ -1600,11 +1604,8 @@ mod tests {
         let missing_path = dir.path().join("gone.partial");
         // Don't create the file — it should not exist.
 
-        let result = ModelManager::verify_sha256(
-            &missing_path,
-            Some("anyexpectedhash"),
-            "missing_model",
-        );
+        let result =
+            ModelManager::verify_sha256(&missing_path, Some("anyexpectedhash"), "missing_model");
 
         assert!(result.is_err(), "missing file must return an error");
     }
