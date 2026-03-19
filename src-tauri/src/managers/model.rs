@@ -589,7 +589,11 @@ impl ModelManager {
             )
             .map_err(|e| anyhow::anyhow!("Failed to resolve GigaAM vocab path: {}", e))?;
 
-        info!("Resolved vocab path: {:?} (exists: {})", vocab_path, vocab_path.exists());
+        info!(
+            "Resolved vocab path: {:?} (exists: {})",
+            vocab_path,
+            vocab_path.exists()
+        );
         info!("Old file: {:?} (exists: {})", old_file, old_file.exists());
         info!("New dir: {:?} (exists: {})", new_dir, new_dir.exists());
 
