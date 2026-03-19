@@ -202,7 +202,9 @@
         "descriptionUnsupported": "Модель Parakeet автоматически определяет язык. Ручной выбор не требуется.",
         "searchPlaceholder": "Поиск языков...",
         "noResults": "Языки не найдены",
-        "auto": "Авто"
+        "auto": "Авто",
+        "followOs": "Как в ОС ({{language}})",
+        "followOsInput": "Язык ввода ОС"
       },
       "pushToTalk": {
         "label": "Нажми и говори",

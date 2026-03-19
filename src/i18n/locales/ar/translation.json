@@ -180,7 +180,9 @@
         "descriptionUnsupported": ".يكتشف نموذج Parakeet اللغة تلقائياً. لا يلزم الاختيار اليدوي",
         "searchPlaceholder": "البحث عن اللغات...",
         "noResults": "لم يتم العثور على لغات",
-        "auto": "تلقائي"
+        "auto": "تلقائي",
+        "followOs": "اتباع نظام التشغيل ({{language}})",
+        "followOsInput": "اتباع لغة إدخال نظام التشغيل"
       },
       "pushToTalk": {
         "label": "اضغط للتحدث",

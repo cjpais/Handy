@@ -202,7 +202,9 @@
         "descriptionUnsupported": "Mô hình Parakeet tự động phát hiện ngôn ngữ. Không cần chọn thủ công.",
         "searchPlaceholder": "Tìm kiếm ngôn ngữ...",
         "noResults": "Không tìm thấy ngôn ngữ",
-        "auto": "Tự động"
+        "auto": "Tự động",
+        "followOs": "Theo hệ điều hành ({{language}})",
+        "followOsInput": "Theo ngôn ngữ nhập của hệ điều hành"
       },
       "pushToTalk": {
         "label": "Nhấn để nói",

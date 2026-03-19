@@ -184,7 +184,9 @@
         "descriptionUnsupported": "Parakeet 모델은 자동으로 언어를 감지합니다. 수동 선택이 필요하지 않습니다.",
         "searchPlaceholder": "언어 검색...",
         "noResults": "언어를 찾을 수 없습니다",
-        "auto": "자동"
+        "auto": "자동",
+        "followOs": "OS 따르기 ({{language}})",
+        "followOsInput": "OS 입력 언어 따르기"
       },
       "pushToTalk": {
         "label": "녹음 중 단축키 홀딩",

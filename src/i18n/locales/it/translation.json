@@ -202,7 +202,9 @@
         "descriptionUnsupported": "Il modello Parakeet sceglie automaticamente la lingua. Non serve scegliere manualmente.",
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Segui il SO ({{language}})",
+        "followOsInput": "Segui la lingua di input del SO"
       },
       "pushToTalk": {
         "label": "Premi per Parlare",

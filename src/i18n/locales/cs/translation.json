@@ -202,7 +202,9 @@
         "descriptionUnsupported": "Model Parakeet rozpozná jazyk automaticky. Ruční výběr není potřeba.",
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",
-        "auto": "Auto"
+        "auto": "Auto",
+        "followOs": "Podle OS ({{language}})",
+        "followOsInput": "Podle jazyka vstupu OS"
       },
       "pushToTalk": {
         "label": "Stisk a mluv",

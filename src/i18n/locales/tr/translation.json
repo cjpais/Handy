@@ -202,7 +202,9 @@
         "descriptionUnsupported": "Parakeet modeli dili otomatik algılar. Manuel seçim gerekmez.",
         "searchPlaceholder": "Dil ara...",
         "noResults": "Dil bulunamadı",
-        "auto": "Otomatik"
+        "auto": "Otomatik",
+        "followOs": "İşletim sistemini takip et ({{language}})",
+        "followOsInput": "İşletim sistemi giriş dilini takip et"
       },
       "pushToTalk": {
         "label": "Bas Konuş",

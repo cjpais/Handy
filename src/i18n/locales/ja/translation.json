@@ -202,7 +202,9 @@
         "descriptionUnsupported": "Parakeetモデルは言語を自動的に検出します。手動選択は不要です。",
         "searchPlaceholder": "言語を検索...",
         "noResults": "言語が見つかりません",
-        "auto": "自動"
+        "auto": "自動",
+        "followOs": "OSに従う ({{language}})",
+        "followOsInput": "OS入力言語に従う"
       },
       "pushToTalk": {
         "label": "プッシュトゥトーク",
