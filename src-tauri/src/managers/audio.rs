@@ -221,7 +221,15 @@ impl AudioRecordingManager {
         std::thread::spawn(move || {
             std::thread::sleep(STREAM_IDLE_TIMEOUT);
             let rm = app.state::<Arc<AudioRecordingManager>>();
-            if rm.close_generation.load(Ordering::SeqCst) == gen {
+            // Hold state lock across the check AND close to serialize against
+            // try_start_recording, preventing a race where the stream is closed
+            // under an active recording.
+            let state = rm.state.lock().unwrap();
+            if rm.close_generation.load(Ordering::SeqCst) == gen
+                && matches!(*state, RecordingState::Idle)
+            {
+                // stop_microphone_stream does not acquire the state lock,
+                // so holding it here is safe (no deadlock).
                 info!(
                     "Closing idle microphone stream after {:?}",
                     STREAM_IDLE_TIMEOUT
@@ -330,19 +338,16 @@ impl AudioRecordingManager {
     /* ---------- mode switching --------------------------------------------- */
 
     pub fn update_mode(&self, new_mode: MicrophoneMode) -> Result<(), anyhow::Error> {
-        let mode_guard = self.mode.lock().unwrap();
-        let cur_mode = mode_guard.clone();
+        let cur_mode = self.mode.lock().unwrap().clone();
 
         match (cur_mode, &new_mode) {
             (MicrophoneMode::AlwaysOn, MicrophoneMode::OnDemand) => {
                 if matches!(*self.state.lock().unwrap(), RecordingState::Idle) {
-                    drop(mode_guard);
                     self.close_generation.fetch_add(1, Ordering::SeqCst);
                     self.stop_microphone_stream();
                 }
             }
             (MicrophoneMode::OnDemand, MicrophoneMode::AlwaysOn) => {
-                drop(mode_guard);
                 self.close_generation.fetch_add(1, Ordering::SeqCst);
                 self.start_microphone_stream()?;
             }
@@ -389,6 +394,7 @@ impl AudioRecordingManager {
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
         // If currently open, restart the microphone stream to use the new device
         if *self.is_open.lock().unwrap() {
+            self.close_generation.fetch_add(1, Ordering::SeqCst);
             self.stop_microphone_stream();
             self.start_microphone_stream()?;
         }
