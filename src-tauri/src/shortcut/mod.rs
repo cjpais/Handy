@@ -1155,3 +1155,12 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
         .await
         .expect("get_available_accelerators panicked")
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_ort_thread_count_setting(app: AppHandle, count: u8) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.ort_thread_count = count;
+    apply_and_reload_accelerator(&app, s);
+    Ok(())
+}

@@ -429,6 +429,8 @@ pub struct AppSettings {
     #[serde(default = "default_whisper_gpu_device")]
     pub whisper_gpu_device: i32,
     #[serde(default)]
+    pub ort_thread_count: u8,
+    #[serde(default)]
     pub extra_recording_buffer_ms: u64,
 }
 
@@ -813,6 +815,7 @@ pub fn get_default_settings() -> AppSettings {
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
+        ort_thread_count: 0,
         extra_recording_buffer_ms: 0,
     }
 }

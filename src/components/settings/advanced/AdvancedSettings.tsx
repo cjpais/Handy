@@ -20,6 +20,7 @@ import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
+import { OrtThreadCount } from "../OrtThreadCount";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -66,6 +67,7 @@ export const AdvancedSettings: React.FC = () => {
           />
           <AccelerationSelector descriptionMode="tooltip" grouped={true} />
           <LazyStreamClose descriptionMode="tooltip" grouped={true} />
+          <OrtThreadCount descriptionMode="tooltip" grouped={true} />
         </SettingsGroup>
       )}
     </div>
