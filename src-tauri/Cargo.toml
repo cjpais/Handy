@@ -68,7 +68,7 @@ chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
-transcribe-rs = { version = "0.3.1", features = ["whisper", "onnx"] }
+transcribe-rs = { git = "https://github.com/andrewleech/transcribe-rs", branch = "feat/qwen3-batch", features = ["whisper-cpp", "onnx", "qwen3"] }
 handy-keys = "0.2.4"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
@@ -87,7 +87,7 @@ tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.10.0"
 
 [target.'cfg(windows)'.dependencies]
-transcribe-rs = { version = "0.3.1", features = ["ort-directml"] }
+transcribe-rs = { git = "https://github.com/andrewleech/transcribe-rs", branch = "feat/qwen3-batch", features = ["ort-directml", "qwen3"] }
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
