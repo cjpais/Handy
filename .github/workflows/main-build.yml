@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build:
     permissions:
-      contents: write
+      contents: read
     strategy:
       fail-fast: false
       matrix:
