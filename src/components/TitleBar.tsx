@@ -10,16 +10,6 @@ const buttonClassName =
 const TitleBar = () => {
   const { t } = useTranslation();
 
-  const handleDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) {
-      return;
-    }
-
-    void win.startDragging().catch((error) => {
-      console.error("Failed to start window drag", error);
-    });
-  };
-
   const handleMinimize = () => {
     void win.minimize().catch((error) => {
       console.error("Failed to minimize window", error);
@@ -41,7 +31,7 @@ const TitleBar = () => {
   return (
     <div className="flex h-8 shrink-0 items-center justify-between border-b border-mid-gray/10 bg-background">
       <div
-        onPointerDown={handleDragStart}
+        data-tauri-drag-region
         className="flex h-full min-w-0 flex-1 items-center px-3 text-xs font-medium uppercase tracking-[0.2em] text-mid-gray/80"
       >
         {t("common.appName")}
