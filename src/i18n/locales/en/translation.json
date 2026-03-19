@@ -345,6 +345,15 @@
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
+      },
+      "wordReplacements": {
+        "title": "Word Replacements",
+        "description": "Replace words or phrases in transcriptions. For example, replace \"gonna\" with \"going to\".",
+        "fromPlaceholder": "From",
+        "toPlaceholder": "To",
+        "add": "Add",
+        "remove": "Remove {{from}}",
+        "duplicate": "\"{{from}}\" already has a replacement"
       }
     },
     "postProcessing": {
