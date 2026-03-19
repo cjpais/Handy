@@ -1,6 +1,10 @@
 name: "test"
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
   pull_request:
     paths:
       - "src-tauri/**"

@@ -9,6 +9,16 @@
 name: "nix build check"
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - ".nix/**"
+      - "bun.lock"
+      - "src-tauri/**"
+      - "src/**"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "flake.nix"
@@ -106,8 +116,9 @@ jobs:
 
       # Full build — catches runtime build errors (broken dependencies,
       # sandbox issues, compilation failures) that flake eval alone misses.
-      # Only runs when nix packaging files change (~25 min with cold cache).
-      # Always runs on workflow_dispatch (manual trigger).
+      # On PRs: only runs when nix packaging files change (~25 min with cold cache).
+      # On push to main and workflow_dispatch: always runs so every commit on
+      # main has a verified nix build before release.
       - name: Build handy
-        if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true' && (steps.nix-files.outputs.changed == 'true' || github.event_name == 'workflow_dispatch')
+        if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true' && (steps.nix-files.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
         run: nix build .#handy -L --show-trace
