@@ -123,7 +123,7 @@ pub enum ModelUnloadTimeout {
     Min10,
     Min15,
     Hour1,
-    Sec5, // Debug mode only
+    Sec15, // Debug mode only
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -216,7 +216,7 @@ impl ModelUnloadTimeout {
             ModelUnloadTimeout::Min10 => Some(10),
             ModelUnloadTimeout::Min15 => Some(15),
             ModelUnloadTimeout::Hour1 => Some(60),
-            ModelUnloadTimeout::Sec5 => Some(0), // Special case for debug - handled separately
+            ModelUnloadTimeout::Sec15 => Some(0), // Special case for debug - handled separately
         }
     }
 
@@ -224,7 +224,7 @@ impl ModelUnloadTimeout {
         match self {
             ModelUnloadTimeout::Never => None,
             ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
-            ModelUnloadTimeout::Sec5 => Some(5),
+            ModelUnloadTimeout::Sec15 => Some(15),
             _ => self.to_minutes().map(|m| m * 60),
         }
     }

@@ -331,7 +331,7 @@
           "min10": "Sau 10 phút",
           "min15": "Sau 15 phút",
           "hour1": "Sau 1 giờ",
-          "sec5": "Sau 5 giây (Gỡ lỗi)"
+          "sec15": "Sau 15 giây (Gỡ lỗi)"
         }
       },
       "customWords": {
