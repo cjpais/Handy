@@ -23,6 +23,10 @@ pub struct CliArgs {
     #[arg(long)]
     pub cancel: bool,
 
+    /// Force auto-submit after transcription (sent to running instance)
+    #[arg(long, value_parser = ["enter", "ctrl+enter", "cmd+enter"], default_missing_value = "enter", num_args = 0..=1)]
+    pub auto_submit: Option<String>,
+
     /// Enable debug mode with verbose logging
     #[arg(long)]
     pub debug: bool,

@@ -1,5 +1,6 @@
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
+use crate::settings::TranscriptionContext;
 use log::{debug, error, warn};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
@@ -16,6 +17,7 @@ enum Command {
         hotkey_string: String,
         is_pressed: bool,
         push_to_talk: bool,
+        context: TranscriptionContext,
     },
     Cancel {
         recording_was_active: bool,
@@ -26,7 +28,7 @@ enum Command {
 /// Pipeline lifecycle, owned exclusively by the coordinator thread.
 enum Stage {
     Idle,
-    Recording(String), // binding_id
+    Recording(String, TranscriptionContext),
     Processing,
 }
 
@@ -57,6 +59,7 @@ impl TranscriptionCoordinator {
                             hotkey_string,
                             is_pressed,
                             push_to_talk,
+                            context,
                         } => {
                             // Debounce rapid-fire press events (key repeat / double-tap).
                             // Releases always pass through for push-to-talk.
@@ -71,19 +74,27 @@ impl TranscriptionCoordinator {
 
                             if push_to_talk {
                                 if is_pressed && matches!(stage, Stage::Idle) {
-                                    start(&app, &mut stage, &binding_id, &hotkey_string);
+                                    start(&app, &mut stage, &binding_id, &hotkey_string, context);
                                 } else if !is_pressed
-                                    && matches!(&stage, Stage::Recording(id) if id == &binding_id)
+                                    && matches!(&stage, Stage::Recording(ref id, _) if id == &binding_id)
                                 {
-                                    stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                    let ctx = take_recording_context(&mut stage);
+                                    stop(&app, &mut stage, &binding_id, &hotkey_string, ctx);
                                 }
                             } else if is_pressed {
                                 match &stage {
                                     Stage::Idle => {
-                                        start(&app, &mut stage, &binding_id, &hotkey_string);
+                                        start(
+                                            &app,
+                                            &mut stage,
+                                            &binding_id,
+                                            &hotkey_string,
+                                            context,
+                                        );
                                     }
-                                    Stage::Recording(id) if id == &binding_id => {
-                                        stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                    Stage::Recording(id, _) if id == &binding_id => {
+                                        let ctx = take_recording_context(&mut stage);
+                                        stop(&app, &mut stage, &binding_id, &hotkey_string, ctx);
                                     }
                                     _ => {
                                         debug!("Ignoring press for '{binding_id}': pipeline busy")
@@ -96,7 +107,7 @@ impl TranscriptionCoordinator {
                         } => {
                             // Don't reset during processing — wait for the pipeline to finish.
                             if !matches!(stage, Stage::Processing)
-                                && (recording_was_active || matches!(stage, Stage::Recording(_)))
+                                && (recording_was_active || matches!(stage, Stage::Recording(_, _)))
                             {
                                 stage = Stage::Idle;
                             }
@@ -124,6 +135,7 @@ impl TranscriptionCoordinator {
         hotkey_string: &str,
         is_pressed: bool,
         push_to_talk: bool,
+        context: TranscriptionContext,
     ) {
         if self
             .tx
@@ -132,6 +144,7 @@ impl TranscriptionCoordinator {
                 hotkey_string: hotkey_string.to_string(),
                 is_pressed,
                 push_to_talk,
+                context,
             })
             .is_err()
         {
@@ -158,7 +171,23 @@ impl TranscriptionCoordinator {
     }
 }
 
-fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
+fn take_recording_context(stage: &mut Stage) -> TranscriptionContext {
+    match std::mem::replace(stage, Stage::Processing) {
+        Stage::Recording(_, ctx) => ctx,
+        other => {
+            *stage = other;
+            TranscriptionContext::default()
+        }
+    }
+}
+
+fn start(
+    app: &AppHandle,
+    stage: &mut Stage,
+    binding_id: &str,
+    hotkey_string: &str,
+    context: TranscriptionContext,
+) {
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!("No action in ACTION_MAP for '{binding_id}'");
         return;
@@ -168,17 +197,23 @@ fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &s
         .try_state::<Arc<AudioRecordingManager>>()
         .map_or(false, |a| a.is_recording())
     {
-        *stage = Stage::Recording(binding_id.to_string());
+        *stage = Stage::Recording(binding_id.to_string(), context);
     } else {
         debug!("Start for '{binding_id}' did not begin recording; staying idle");
     }
 }
 
-fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
+fn stop(
+    app: &AppHandle,
+    stage: &mut Stage,
+    binding_id: &str,
+    hotkey_string: &str,
+    context: TranscriptionContext,
+) {
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!("No action in ACTION_MAP for '{binding_id}'");
         return;
     };
-    action.stop(app, binding_id, hotkey_string);
+    action.stop(app, binding_id, hotkey_string, context);
     *stage = Stage::Processing;
 }

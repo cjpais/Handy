@@ -206,6 +206,16 @@ impl Default for AutoSubmitKey {
     }
 }
 
+/// Per-invocation overrides for transcription behavior.
+/// Passed through the pipeline from CLI/signal triggers to the paste step.
+/// Fields are `Option` — `None` means "use the persistent setting".
+#[derive(Debug, Clone, Default)]
+pub struct TranscriptionContext {
+    /// `None` = use persistent `auto_submit` + `auto_submit_key` settings.
+    /// `Some(key)` = force auto-submit with the given key.
+    pub auto_submit_override: Option<AutoSubmitKey>,
+}
+
 impl ModelUnloadTimeout {
     pub fn to_minutes(self) -> Option<u64> {
         match self {
