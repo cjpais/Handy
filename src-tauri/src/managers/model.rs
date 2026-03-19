@@ -35,10 +35,6 @@ pub struct ModelInfo {
     pub description: String,
     pub filename: String,
     pub url: Option<String>,
-    /// SHA256 hex digest of the download file. Verified post-download before extraction.
-    /// None for custom user-provided models (verification skipped).
-    /// If a model file is re-uploaded to blob.handy.computer, update this hash and
-    /// ship a new app release — mismatched hashes will block downloads until updated.
     pub sha256: Option<String>,
     pub size_mb: u64,
     pub is_downloaded: bool,
