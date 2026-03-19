@@ -523,9 +523,7 @@ impl TranscriptionManager {
                     .get_model_info(&settings.selected_model)
                     .map(|info| {
                         info.supported_languages.is_empty()
-                            || info
-                                .supported_languages
-                                .contains(&effective_language)
+                            || info.supported_languages.contains(&effective_language)
                     })
                     .unwrap_or(true);
 
