@@ -154,6 +154,7 @@
         "none": "لا توجد اختصارات مجهزة",
         "notFound": "الاختصار غير موجود",
         "pressKeys": "...اضغط على المفاتيح",
+        "unassigned": "Unassigned",
         "bindings": {
           "transcribe": {
             "name": "اختصار التفريغ الصوتي",
@@ -166,6 +167,10 @@
           "transcribe_with_post_process": {
             "name": "مفتاح المعالجة اللاحقة",
             "description": "اختياري: مفتاح اختصار مخصص يطبق دائماً المعالجة اللاحقة بالذكاء الاصطناعي على التفريغ الصوتي."
+          },
+          "transcribe_secondary": {
+            "name": "Secondary Language Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice using the secondary language setting."
           }
         },
         "errors": {
@@ -181,6 +186,10 @@
         "searchPlaceholder": "البحث عن اللغات...",
         "noResults": "لم يتم العثور على لغات",
         "auto": "تلقائي"
+      },
+      "secondaryLanguage": {
+        "title": "Secondary Language",
+        "description": "Select the language used when the secondary shortcut triggers transcription. Auto will automatically determine the language."
       },
       "pushToTalk": {
         "label": "اضغط للتحدث",

@@ -176,6 +176,7 @@
         "none": "Žádné zkratky nejsou nastavené",
         "notFound": "Zkratka nenalezena",
         "pressKeys": "Stiskněte klávesy...",
+        "unassigned": "Unassigned",
         "bindings": {
           "transcribe": {
             "name": "Zkratka přepisu",
@@ -188,6 +189,10 @@
           "transcribe_with_post_process": {
             "name": "Klávesa pro následné zpracování",
             "description": "Volitelné: Vyhrazená klávesová zkratka, která vždy použije AI následné zpracování na váš přepis."
+          },
+          "transcribe_secondary": {
+            "name": "Secondary Language Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice using the secondary language setting."
           }
         },
         "errors": {
@@ -203,6 +208,10 @@
         "searchPlaceholder": "Hledat jazyky...",
         "noResults": "Žádné jazyky nenalezeny",
         "auto": "Auto"
+      },
+      "secondaryLanguage": {
+        "title": "Secondary Language",
+        "description": "Select the language used when the secondary shortcut triggers transcription. Auto will automatically determine the language."
       },
       "pushToTalk": {
         "label": "Stisk a mluv",

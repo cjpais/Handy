@@ -6,10 +6,11 @@ import { useSettings } from "../../hooks/useSettings";
 interface TranslateToEnglishProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  disabled?: boolean;
 }
 
 export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
-  ({ descriptionMode = "tooltip", grouped = false }) => {
+  ({ descriptionMode = "tooltip", grouped = false, disabled = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
@@ -19,6 +20,7 @@ export const TranslateToEnglish: React.FC<TranslateToEnglishProps> = React.memo(
       <ToggleSwitch
         checked={translateToEnglish}
         onChange={(enabled) => updateSetting("translate_to_english", enabled)}
+        disabled={disabled}
         isUpdating={isUpdating("translate_to_english")}
         label={t("settings.advanced.translateToEnglish.label")}
         description={t("settings.advanced.translateToEnglish.description")}

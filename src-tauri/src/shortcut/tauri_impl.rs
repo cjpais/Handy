@@ -9,9 +9,9 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 #[cfg(not(target_os = "linux"))]
 use crate::settings::get_settings;
-use crate::settings::{self, ShortcutBinding};
+use crate::settings::{self, ShortcutBinding, TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID};
 
-use super::handler::handle_shortcut_event;
+use super::{handler::handle_shortcut_event, should_register_binding};
 
 /// Initialize shortcuts using Tauri's global-shortcut plugin
 pub fn init_shortcuts(app: &AppHandle) {
@@ -24,7 +24,7 @@ pub fn init_shortcuts(app: &AppHandle) {
             continue; // Skip cancel shortcut, it will be registered dynamically
         }
         // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !user_settings.post_process_enabled {
+        if id == TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID && !user_settings.post_process_enabled {
             continue;
         }
         let binding = user_settings
@@ -71,6 +71,10 @@ pub fn validate_shortcut(raw: &str) -> Result<(), String> {
 
 /// Register a shortcut using Tauri's global-shortcut plugin
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if !should_register_binding(&binding) {
+        return Ok(());
+    }
+
     // Validate for Tauri requirements
     if let Err(e) = validate_shortcut(&binding.current_binding) {
         warn!(
@@ -130,6 +134,10 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
 
 /// Unregister a shortcut from Tauri's global-shortcut plugin
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if !should_register_binding(&binding) {
+        return Ok(());
+    }
+
     let shortcut = match binding.current_binding.parse::<Shortcut>() {
         Ok(s) => s,
         Err(e) => {

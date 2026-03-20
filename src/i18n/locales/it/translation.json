@@ -176,6 +176,7 @@
         "none": "Nessuna scorciatoia configurata",
         "notFound": "Scorciatoia non trovata",
         "pressKeys": "Premi i tasti...",
+        "unassigned": "Unassigned",
         "bindings": {
           "transcribe": {
             "name": "Scorciatoia Trascrizione",
@@ -188,6 +189,10 @@
           "transcribe_with_post_process": {
             "name": "Tasto di post-elaborazione",
             "description": "Facoltativo: Un tasto di scelta rapida dedicato che applica sempre la post-elaborazione IA alla trascrizione."
+          },
+          "transcribe_secondary": {
+            "name": "Secondary Language Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice using the secondary language setting."
           }
         },
         "errors": {
@@ -203,6 +208,10 @@
         "searchPlaceholder": "Cerca lingue...",
         "noResults": "Nessuna lingua trovata",
         "auto": "Auto"
+      },
+      "secondaryLanguage": {
+        "title": "Secondary Language",
+        "description": "Select the language used when the secondary shortcut triggers transcription. Auto will automatically determine the language."
       },
       "pushToTalk": {
         "label": "Premi per Parlare",

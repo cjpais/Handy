@@ -176,6 +176,7 @@
         "none": "Chưa cấu hình phím tắt",
         "notFound": "Không tìm thấy phím tắt",
         "pressKeys": "Nhấn phím...",
+        "unassigned": "Unassigned",
         "bindings": {
           "transcribe": {
             "name": "Phím tắt chuyển đổi",
@@ -188,6 +189,10 @@
           "transcribe_with_post_process": {
             "name": "Phím tắt xử lý sau",
             "description": "Tùy chọn: Phím tắt chuyên dụng luôn áp dụng xử lý sau bằng AI cho bản chuyển đổi của bạn."
+          },
+          "transcribe_secondary": {
+            "name": "Secondary Language Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice using the secondary language setting."
           }
         },
         "errors": {
@@ -203,6 +208,10 @@
         "searchPlaceholder": "Tìm kiếm ngôn ngữ...",
         "noResults": "Không tìm thấy ngôn ngữ",
         "auto": "Tự động"
+      },
+      "secondaryLanguage": {
+        "title": "Secondary Language",
+        "description": "Select the language used when the secondary shortcut triggers transcription. Auto will automatically determine the language."
       },
       "pushToTalk": {
         "label": "Nhấn để nói",

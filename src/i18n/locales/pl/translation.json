@@ -176,6 +176,7 @@
         "none": "Brak skonfigurowanych skrótów",
         "notFound": "Nie znaleziono skrótu",
         "pressKeys": "Naciśnij klawisze...",
+        "unassigned": "Unassigned",
         "bindings": {
           "transcribe": {
             "name": "Skrót transkrypcji",
@@ -188,6 +189,10 @@
           "transcribe_with_post_process": {
             "name": "Skrót postprocessingu",
             "description": "Opcjonalnie: Dedykowany skrót klawiszowy, który zawsze stosuje postprocessing AI do transkrypcji."
+          },
+          "transcribe_secondary": {
+            "name": "Secondary Language Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice using the secondary language setting."
           }
         },
         "errors": {
@@ -203,6 +208,10 @@
         "searchPlaceholder": "Szukaj języka...",
         "noResults": "Nie znaleziono języków",
         "auto": "Auto"
+      },
+      "secondaryLanguage": {
+        "title": "Secondary Language",
+        "description": "Select the language used when the secondary shortcut triggers transcription. Auto will automatically determine the language."
       },
       "pushToTalk": {
         "label": "Push To Talk",

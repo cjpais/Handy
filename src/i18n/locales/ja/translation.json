@@ -176,6 +176,7 @@
         "none": "ショートカットが設定されていません",
         "notFound": "ショートカットが見つかりません",
         "pressKeys": "キーを押してください...",
+        "unassigned": "Unassigned",
         "bindings": {
           "transcribe": {
             "name": "文字起こしショートカット",
@@ -188,6 +189,10 @@
           "transcribe_with_post_process": {
             "name": "後処理ホットキー",
             "description": "オプション：文字起こしに常にAI後処理を適用する専用ホットキー。"
+          },
+          "transcribe_secondary": {
+            "name": "Secondary Language Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice using the secondary language setting."
           }
         },
         "errors": {
@@ -203,6 +208,10 @@
         "searchPlaceholder": "言語を検索...",
         "noResults": "言語が見つかりません",
         "auto": "自動"
+      },
+      "secondaryLanguage": {
+        "title": "Secondary Language",
+        "description": "Select the language used when the secondary shortcut triggers transcription. Auto will automatically determine the language."
       },
       "pushToTalk": {
         "label": "プッシュトゥトーク",

@@ -158,6 +158,7 @@
         "none": "Скорочення не налаштовані",
         "notFound": "Скорочення не знайдено",
         "pressKeys": "Натисніть клавіші...",
+        "unassigned": "Unassigned",
         "bindings": {
           "transcribe": {
             "name": "Гаряча клавіша транскрипції",
@@ -170,6 +171,10 @@
           "transcribe_with_post_process": {
             "name": "Гаряча клавіша постобробки",
             "description": "Необов'язково: Спеціальна гаряча клавіша, яка завжди застосовує AI-постобробку до вашої транскрипції."
+          },
+          "transcribe_secondary": {
+            "name": "Secondary Language Shortcut",
+            "description": "The keyboard shortcut to record and transcribe your voice using the secondary language setting."
           }
         },
         "errors": {
@@ -185,6 +190,10 @@
         "searchPlaceholder": "Пошук мов...",
         "noResults": "Мов не знайдено",
         "auto": "Авто"
+      },
+      "secondaryLanguage": {
+        "title": "Secondary Language",
+        "description": "Select the language used when the secondary shortcut triggers transcription. Auto will automatically determine the language."
       },
       "pushToTalk": {
         "label": "Утримувати для запису (Push To Talk)",

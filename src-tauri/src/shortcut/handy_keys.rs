@@ -38,9 +38,11 @@ use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::settings::{self, get_settings, ShortcutBinding};
+use crate::settings::{
+    self, get_settings, ShortcutBinding, TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID,
+};
 
-use super::handler::handle_shortcut_event;
+use super::{handler::handle_shortcut_event, should_register_binding};
 
 /// Commands that can be sent to the hotkey manager thread
 enum ManagerCommand {
@@ -228,6 +230,10 @@ impl HandyKeysState {
 
     /// Register a shortcut binding
     pub fn register(&self, binding: &ShortcutBinding) -> Result<(), String> {
+        if !should_register_binding(binding) {
+            return Ok(());
+        }
+
         let (tx, rx) = mpsc::channel();
         self.command_sender
             .lock()
@@ -434,7 +440,7 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
             continue;
         }
         // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !user_settings.post_process_enabled {
+        if id == TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID && !user_settings.post_process_enabled {
             continue;
         }
 
@@ -504,6 +510,10 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
 
 /// Register a shortcut
 pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if !should_register_binding(&binding) {
+        return Ok(());
+    }
+
     let state = app
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
@@ -512,6 +522,10 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
 
 /// Unregister a shortcut
 pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<(), String> {
+    if !should_register_binding(&binding) {
+        return Ok(());
+    }
+
     let state = app
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;

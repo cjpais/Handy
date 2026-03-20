@@ -5,7 +5,11 @@ use crate::audio_toolkit::is_microphone_access_denied;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, selected_language_for_binding, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID,
+    TRANSCRIBE_BINDING_ID, TRANSCRIBE_SECONDARY_BINDING_ID,
+    TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -271,22 +275,19 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 }
 
-async fn maybe_convert_chinese_variant(
-    settings: &AppSettings,
-    transcription: &str,
-) -> Option<String> {
+async fn maybe_convert_chinese_variant(language: &str, transcription: &str) -> Option<String> {
     // Check if language is set to Simplified or Traditional Chinese
-    let is_simplified = settings.selected_language == "zh-Hans";
-    let is_traditional = settings.selected_language == "zh-Hant";
+    let is_simplified = language == "zh-Hans";
+    let is_traditional = language == "zh-Hant";
 
     if !is_simplified && !is_traditional {
-        debug!("selected_language is not Simplified or Traditional Chinese; skipping translation");
+        debug!("Language is not Simplified or Traditional Chinese; skipping translation");
         return None;
     }
 
     debug!(
         "Starting Chinese translation using OpenCC for language: {}",
-        settings.selected_language
+        language
     );
 
     // Use OpenCC to convert based on selected language
@@ -451,7 +452,11 @@ impl ShortcutAction for TranscribeAction {
 
                 let transcription_time = Instant::now();
                 let samples_clone = samples.clone(); // Clone for history saving
-                match tm.transcribe(samples) {
+                let settings = get_settings(&ah);
+                let selected_language =
+                    selected_language_for_binding(&settings, &binding_id).to_string();
+
+                match tm.transcribe(samples, &selected_language) {
                     Ok(transcription) => {
                         debug!(
                             "Transcription completed in {:?}: '{}'",
@@ -459,14 +464,14 @@ impl ShortcutAction for TranscribeAction {
                             transcription
                         );
                         if !transcription.is_empty() {
-                            let settings = get_settings(&ah);
                             let mut final_text = transcription.clone();
                             let mut post_processed_text: Option<String> = None;
                             let mut post_process_prompt: Option<String> = None;
 
                             // First, check if Chinese variant conversion is needed
                             if let Some(converted_text) =
-                                maybe_convert_chinese_variant(&settings, &transcription).await
+                                maybe_convert_chinese_variant(&selected_language, &transcription)
+                                    .await
                             {
                                 final_text = converted_text;
                             }
@@ -602,14 +607,20 @@ impl ShortcutAction for TestAction {
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
     map.insert(
-        "transcribe".to_string(),
+        TRANSCRIBE_BINDING_ID.to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
-        "transcribe_with_post_process".to_string(),
+        TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID.to_string(),
         Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        TRANSCRIBE_SECONDARY_BINDING_ID.to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),

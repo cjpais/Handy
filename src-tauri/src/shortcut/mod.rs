@@ -24,7 +24,7 @@ use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
     OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    APPLE_INTELLIGENCE_PROVIDER_ID, TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID,
 };
 use crate::tray;
 
@@ -92,6 +92,10 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     }
 }
 
+pub(crate) fn should_register_binding(binding: &ShortcutBinding) -> bool {
+    settings::binding_has_value(&binding.current_binding)
+}
+
 // ============================================================================
 // Binding Management Commands
 // ============================================================================
@@ -110,11 +114,6 @@ pub fn change_binding(
     id: String,
     binding: String,
 ) -> Result<BindingResponse, String> {
-    // Reject empty bindings — every shortcut should have a value
-    if binding.trim().is_empty() {
-        return Err("Binding cannot be empty".to_string());
-    }
-
     let mut settings = settings::get_settings(&app);
 
     // Get the binding to modify, or create it from defaults if it doesn't exist
@@ -166,10 +165,13 @@ pub fn change_binding(
     }
 
     // Validate the new shortcut for the current keyboard implementation
-    if let Err(e) = validate_shortcut_for_implementation(&binding, settings.keyboard_implementation)
-    {
-        warn!("change_binding validation error: {}", e);
-        return Err(e);
+    if settings::binding_has_value(&binding) {
+        if let Err(e) =
+            validate_shortcut_for_implementation(&binding, settings.keyboard_implementation)
+        {
+            warn!("change_binding validation error: {}", e);
+            return Err(e);
+        }
     }
 
     // Create an updated binding
@@ -177,14 +179,16 @@ pub fn change_binding(
     updated_binding.current_binding = binding;
 
     // Register the new binding
-    if let Err(e) = register_shortcut(&app, updated_binding.clone()) {
-        let error_msg = format!("Failed to register shortcut: {}", e);
-        error!("change_binding error: {}", error_msg);
-        return Ok(BindingResponse {
-            success: false,
-            binding: None,
-            error: Some(error_msg),
-        });
+    if should_register_binding(&updated_binding) {
+        if let Err(e) = register_shortcut(&app, updated_binding.clone()) {
+            let error_msg = format!("Failed to register shortcut: {}", e);
+            error!("change_binding error: {}", error_msg);
+            return Ok(BindingResponse {
+                success: false,
+                binding: None,
+                error: Some(error_msg),
+            });
+        }
     }
 
     // Update the binding in the settings
@@ -204,8 +208,13 @@ pub fn change_binding(
 #[tauri::command]
 #[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
-    let binding = settings::get_stored_binding(&app, &id);
-    change_binding(app, id, binding.default_binding)
+    let default_binding = settings::get_default_settings()
+        .bindings
+        .get(&id)
+        .map(|binding| binding.default_binding.clone())
+        .ok_or_else(|| format!("Binding with id '{}' not found in defaults", id))?;
+
+    change_binding(app, id, default_binding)
 }
 
 /// Temporarily unregister a binding while the user is editing it in the UI.
@@ -233,6 +242,37 @@ pub fn resume_binding(app: AppHandle, id: String) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_binding_is_treated_as_unbound() {
+        let binding = ShortcutBinding {
+            id: crate::settings::TRANSCRIBE_SECONDARY_BINDING_ID.to_string(),
+            name: "Secondary".to_string(),
+            description: "Secondary shortcut".to_string(),
+            default_binding: String::new(),
+            current_binding: String::new(),
+        };
+
+        assert!(!should_register_binding(&binding));
+    }
+
+    #[test]
+    fn non_empty_binding_is_registered() {
+        let binding = ShortcutBinding {
+            id: crate::settings::TRANSCRIBE_BINDING_ID.to_string(),
+            name: "Primary".to_string(),
+            description: "Primary shortcut".to_string(),
+            default_binding: "ctrl+space".to_string(),
+            current_binding: "ctrl+space".to_string(),
+        };
+
+        assert!(should_register_binding(&binding));
+    }
 }
 
 // ============================================================================
@@ -395,7 +435,7 @@ fn register_all_shortcuts_for_implementation(
         }
 
         // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !current_settings.post_process_enabled {
+        if id == TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID && !current_settings.post_process_enabled {
             continue;
         }
 
@@ -406,20 +446,22 @@ fn register_all_shortcuts_for_implementation(
             .unwrap_or_else(|| default_binding.clone());
 
         // Validate the shortcut for the target implementation
-        if let Err(e) =
-            validate_shortcut_for_implementation(&binding.current_binding, implementation)
-        {
-            info!(
-                "Shortcut '{}' ({}) is invalid for {:?}: {}. Resetting to default.",
-                id, binding.current_binding, implementation, e
-            );
+        if should_register_binding(&binding) {
+            if let Err(e) =
+                validate_shortcut_for_implementation(&binding.current_binding, implementation)
+            {
+                info!(
+                    "Shortcut '{}' ({}) is invalid for {:?}: {}. Resetting to default.",
+                    id, binding.current_binding, implementation, e
+                );
 
-            // Reset to default
-            binding.current_binding = default_binding.current_binding.clone();
-            current_settings
-                .bindings
-                .insert(id.clone(), binding.clone());
-            reset_bindings.push(id.clone());
+                // Reset to default
+                binding.current_binding = default_binding.current_binding.clone();
+                current_settings
+                    .bindings
+                    .insert(id.clone(), binding.clone());
+                reset_bindings.push(id.clone());
+            }
         }
 
         // Register with the appropriate implementation
@@ -530,6 +572,18 @@ pub fn change_translate_to_english_setting(app: AppHandle, enabled: bool) -> Res
 pub fn change_selected_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.selected_language = language;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_secondary_selected_language_setting(
+    app: AppHandle,
+    language: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.secondary_selected_language = language;
     settings::write_settings(&app, settings);
     Ok(())
 }
@@ -793,7 +847,7 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
     // Register or unregister the post-processing shortcut
     if let Some(binding) = settings
         .bindings
-        .get("transcribe_with_post_process")
+        .get(TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID)
         .cloned()
     {
         if enabled {

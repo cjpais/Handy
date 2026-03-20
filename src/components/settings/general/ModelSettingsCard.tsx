@@ -8,7 +8,8 @@ import type { ModelInfo } from "@/bindings";
 
 export const ModelSettingsCard: React.FC = () => {
   const { t } = useTranslation();
-  const { currentModel, models } = useModelStore();
+  const { currentModel, models, switchingModelId } = useModelStore();
+  const modelSwitchInProgress = switchingModelId !== null;
 
   const currentModelInfo = models.find((m: ModelInfo) => m.id === currentModel);
 
@@ -29,14 +30,30 @@ export const ModelSettingsCard: React.FC = () => {
       })}
     >
       {supportsLanguageSelection && (
-        <LanguageSelector
-          descriptionMode="tooltip"
-          grouped={true}
-          supportedLanguages={currentModelInfo.supported_languages}
-        />
+        <>
+          <LanguageSelector
+            descriptionMode="tooltip"
+            grouped={true}
+            supportedLanguages={currentModelInfo.supported_languages}
+            disabled={modelSwitchInProgress}
+          />
+          <LanguageSelector
+            descriptionMode="tooltip"
+            grouped={true}
+            settingKey="secondary_selected_language"
+            titleKey="settings.general.secondaryLanguage.title"
+            descriptionKey="settings.general.secondaryLanguage.description"
+            supportedLanguages={currentModelInfo.supported_languages}
+            disabled={modelSwitchInProgress}
+          />
+        </>
       )}
       {supportsTranslation && (
-        <TranslateToEnglish descriptionMode="tooltip" grouped={true} />
+        <TranslateToEnglish
+          descriptionMode="tooltip"
+          grouped={true}
+          disabled={modelSwitchInProgress}
+        />
       )}
     </SettingsGroup>
   );

@@ -8,6 +8,9 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const TRANSCRIBE_BINDING_ID: &str = "transcribe";
+pub const TRANSCRIBE_SECONDARY_BINDING_ID: &str = "transcribe_secondary";
+pub const TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID: &str = "transcribe_with_post_process";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -334,6 +337,8 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    #[serde(default = "default_secondary_selected_language")]
+    pub secondary_selected_language: String,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -401,6 +406,26 @@ pub struct AppSettings {
     pub extra_recording_buffer_ms: u64,
 }
 
+pub fn binding_has_value(binding: &str) -> bool {
+    !binding.trim().is_empty()
+}
+
+pub fn is_transcribe_binding_id(id: &str) -> bool {
+    matches!(
+        id,
+        TRANSCRIBE_BINDING_ID
+            | TRANSCRIBE_SECONDARY_BINDING_ID
+            | TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID
+    )
+}
+
+pub fn selected_language_for_binding<'a>(settings: &'a AppSettings, binding_id: &str) -> &'a str {
+    match binding_id {
+        TRANSCRIBE_SECONDARY_BINDING_ID => &settings.secondary_selected_language,
+        _ => &settings.selected_language,
+    }
+}
+
 fn default_model() -> String {
     "".to_string()
 }
@@ -426,6 +451,10 @@ fn default_update_checks_enabled() -> bool {
 }
 
 fn default_selected_language() -> String {
+    "auto".to_string()
+}
+
+fn default_secondary_selected_language() -> String {
     "auto".to_string()
 }
 
@@ -679,9 +708,9 @@ pub fn get_default_settings() -> AppSettings {
 
     let mut bindings = HashMap::new();
     bindings.insert(
-        "transcribe".to_string(),
+        TRANSCRIBE_BINDING_ID.to_string(),
         ShortcutBinding {
-            id: "transcribe".to_string(),
+            id: TRANSCRIBE_BINDING_ID.to_string(),
             name: "Transcribe".to_string(),
             description: "Converts your speech into text.".to_string(),
             default_binding: default_shortcut.to_string(),
@@ -698,14 +727,24 @@ pub fn get_default_settings() -> AppSettings {
     let default_post_process_shortcut = "alt+shift+space";
 
     bindings.insert(
-        "transcribe_with_post_process".to_string(),
+        TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID.to_string(),
         ShortcutBinding {
-            id: "transcribe_with_post_process".to_string(),
+            id: TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID.to_string(),
             name: "Transcribe with Post-Processing".to_string(),
             description: "Converts your speech into text and applies AI post-processing."
                 .to_string(),
             default_binding: default_post_process_shortcut.to_string(),
             current_binding: default_post_process_shortcut.to_string(),
+        },
+    );
+    bindings.insert(
+        TRANSCRIBE_SECONDARY_BINDING_ID.to_string(),
+        ShortcutBinding {
+            id: TRANSCRIBE_SECONDARY_BINDING_ID.to_string(),
+            name: "Transcribe Secondary Language".to_string(),
+            description: "Converts your speech into text using the secondary language.".to_string(),
+            default_binding: String::new(),
+            current_binding: String::new(),
         },
     );
     bindings.insert(
@@ -735,6 +774,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: "auto".to_string(),
+        secondary_selected_language: "auto".to_string(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
@@ -883,14 +923,6 @@ pub fn get_bindings(app: &AppHandle) -> HashMap<String, ShortcutBinding> {
     settings.bindings
 }
 
-pub fn get_stored_binding(app: &AppHandle, id: &str) -> ShortcutBinding {
-    let bindings = get_bindings(app);
-
-    let binding = bindings.get(id).unwrap().clone();
-
-    binding
-}
-
 pub fn get_history_limit(app: &AppHandle) -> usize {
     let settings = get_settings(app);
     settings.history_limit
@@ -910,5 +942,38 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn secondary_shortcut_is_unbound_by_default() {
+        let settings = get_default_settings();
+        let binding = settings
+            .bindings
+            .get(TRANSCRIBE_SECONDARY_BINDING_ID)
+            .expect("secondary binding should exist");
+
+        assert!(binding.default_binding.is_empty());
+        assert!(binding.current_binding.is_empty());
+        assert_eq!(settings.secondary_selected_language, "auto");
+    }
+
+    #[test]
+    fn selected_language_depends_on_binding_id() {
+        let mut settings = get_default_settings();
+        settings.selected_language = "en".to_string();
+        settings.secondary_selected_language = "uk".to_string();
+
+        assert_eq!(
+            selected_language_for_binding(&settings, TRANSCRIBE_BINDING_ID),
+            "en"
+        );
+        assert_eq!(
+            selected_language_for_binding(&settings, TRANSCRIBE_SECONDARY_BINDING_ID),
+            "uk"
+        );
+        assert_eq!(
+            selected_language_for_binding(&settings, TRANSCRIBE_WITH_POST_PROCESS_BINDING_ID),
+            "en"
+        );
     }
 }

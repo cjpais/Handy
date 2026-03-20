@@ -57,13 +57,11 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     await commands.stopHandyKeysRecording().catch(console.error);
 
     // Restore original binding
-    if (originalBinding) {
-      try {
-        await updateBinding(shortcutId, originalBinding);
-      } catch (error) {
-        console.error("Failed to restore original binding:", error);
-        toast.error(t("settings.general.shortcut.errors.restore"));
-      }
+    try {
+      await updateBinding(shortcutId, originalBinding);
+    } catch (error) {
+      console.error("Failed to restore original binding:", error);
+      toast.error(t("settings.general.shortcut.errors.restore"));
     }
 
     setIsRecording(false);
@@ -105,13 +103,11 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
               );
 
               // Reset to original binding on error
-              if (originalBinding) {
-                try {
-                  await updateBinding(shortcutId, originalBinding);
-                } catch (resetError) {
-                  console.error("Failed to reset binding:", resetError);
-                  toast.error(t("settings.general.shortcut.errors.reset"));
-                }
+              try {
+                await updateBinding(shortcutId, originalBinding);
+              } catch (resetError) {
+                console.error("Failed to reset binding:", resetError);
+                toast.error(t("settings.general.shortcut.errors.reset"));
               }
             }
 
@@ -255,6 +251,11 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     );
   }
 
+  const displayBinding =
+    binding.current_binding.trim() === ""
+      ? t("settings.general.shortcut.unassigned")
+      : formatKeyCombination(binding.current_binding, osType);
+
   // Get translated name and description for the binding
   const translatedName = t(
     `settings.general.shortcut.bindings.${shortcutId}.name`,
@@ -287,7 +288,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={startRecording}
           >
-            {formatKeyCombination(binding.current_binding, osType)}
+            {displayBinding}
           </div>
         )}
         <ResetButton

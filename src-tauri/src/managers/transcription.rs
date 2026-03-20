@@ -427,7 +427,7 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+    pub fn transcribe(&self, audio: Vec<f32>, selected_language: &str) -> Result<String> {
         // Update last activity timestamp
         self.touch_activity();
 
@@ -460,7 +460,7 @@ impl TranscriptionManager {
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.
-        let validated_language = if settings.selected_language == "auto" {
+        let validated_language = if selected_language == "auto" {
             "auto".to_string()
         } else {
             let is_supported = self
@@ -470,16 +470,16 @@ impl TranscriptionManager {
                     info.supported_languages.is_empty()
                         || info
                             .supported_languages
-                            .contains(&settings.selected_language)
+                            .contains(&selected_language.to_string())
                 })
                 .unwrap_or(true);
 
             if is_supported {
-                settings.selected_language.clone()
+                selected_language.to_string()
             } else {
                 warn!(
                     "Language '{}' not supported by current model, falling back to auto-detect",
-                    settings.selected_language
+                    selected_language
                 );
                 "auto".to_string()
             }

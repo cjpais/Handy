@@ -1,8 +1,79 @@
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
-use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use crate::settings::{get_settings, write_settings, AppSettings, ModelUnloadTimeout};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ModelSelectionSnapshot {
+    selected_model: String,
+    selected_language: String,
+    secondary_selected_language: String,
+}
+
+fn sanitize_language_for_model(language: &str, model_info: &ModelInfo) -> Option<String> {
+    if language == "auto"
+        || model_info.supported_languages.is_empty()
+        || model_info
+            .supported_languages
+            .iter()
+            .any(|supported| supported == language)
+    {
+        return None;
+    }
+
+    Some("auto".to_string())
+}
+
+fn sanitize_transcription_languages(
+    settings: &mut AppSettings,
+    model_id: &str,
+    model_info: &ModelInfo,
+) {
+    sanitize_setting_language(
+        &mut settings.selected_language,
+        "language",
+        model_id,
+        model_info,
+    );
+    sanitize_setting_language(
+        &mut settings.secondary_selected_language,
+        "secondary language",
+        model_id,
+        model_info,
+    );
+}
+
+fn sanitize_setting_language(
+    language: &mut String,
+    label: &str,
+    model_id: &str,
+    model_info: &ModelInfo,
+) {
+    if let Some(sanitized_language) = sanitize_language_for_model(language, model_info) {
+        log::info!(
+            "Resetting {} from '{}' to 'auto' (not supported by {})",
+            label,
+            language,
+            model_id
+        );
+        *language = sanitized_language;
+    }
+}
+
+fn snapshot_model_selection(settings: &AppSettings) -> ModelSelectionSnapshot {
+    ModelSelectionSnapshot {
+        selected_model: settings.selected_model.clone(),
+        selected_language: settings.selected_language.clone(),
+        secondary_selected_language: settings.secondary_selected_language.clone(),
+    }
+}
+
+fn restore_model_selection(settings: &mut AppSettings, snapshot: &ModelSelectionSnapshot) {
+    settings.selected_model = snapshot.selected_model.clone();
+    settings.selected_language = snapshot.selected_language.clone();
+    settings.secondary_selected_language = snapshot.secondary_selected_language.clone();
+}
 
 #[tauri::command]
 #[specta::specta]
@@ -86,29 +157,16 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
 
     let settings = get_settings(app);
     let unload_timeout = settings.model_unload_timeout;
-    let old_model = settings.selected_model.clone();
+    let previous_selection = snapshot_model_selection(&settings);
 
     // Persist the new selection early so the frontend sees the correct model
     // when it reacts to events emitted by load_model.
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
 
-    // Reset language to auto if the new model doesn't support the currently selected language.
-    // This prevents stale language settings from causing errors (e.g. Canary receiving zh-Hans)
-    // and stops downstream processing (e.g. OpenCC) from running on an irrelevant language.
-    if settings.selected_language != "auto"
-        && !model_info.supported_languages.is_empty()
-        && !model_info
-            .supported_languages
-            .contains(&settings.selected_language)
-    {
-        log::info!(
-            "Resetting language from '{}' to 'auto' (not supported by {})",
-            settings.selected_language,
-            model_id
-        );
-        settings.selected_language = "auto".to_string();
-    }
+    // Reset languages to auto if the new model doesn't support them.
+    // This prevents stale language settings from causing downstream errors.
+    sanitize_transcription_languages(&mut settings, model_id, &model_info);
 
     write_settings(app, settings);
 
@@ -136,7 +194,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     // Load the model. On failure, revert the persisted selection.
     if let Err(e) = transcription_manager.load_model(model_id) {
         let mut settings = get_settings(app);
-        settings.selected_model = old_model;
+        restore_model_selection(&mut settings, &previous_selection);
         write_settings(app, settings);
         return Err(e.to_string());
     }
@@ -153,6 +211,100 @@ pub async fn set_active_model(
     model_id: String,
 ) -> Result<(), String> {
     switch_active_model(&app_handle, &model_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::managers::model::EngineType;
+    use crate::settings::get_default_settings;
+
+    fn test_model_info(supported_languages: &[&str]) -> ModelInfo {
+        ModelInfo {
+            id: "test".to_string(),
+            name: "Test Model".to_string(),
+            description: String::new(),
+            filename: String::new(),
+            url: None,
+            size_mb: 0,
+            is_downloaded: true,
+            is_downloading: false,
+            partial_size: 0,
+            is_directory: false,
+            engine_type: EngineType::Whisper,
+            accuracy_score: 0.0,
+            speed_score: 0.0,
+            supports_translation: true,
+            is_recommended: false,
+            supported_languages: supported_languages.iter().map(|s| s.to_string()).collect(),
+            supports_language_selection: true,
+            is_custom: false,
+        }
+    }
+
+    #[test]
+    fn sanitize_language_keeps_supported_values() {
+        let model_info = test_model_info(&["en", "uk"]);
+
+        assert_eq!(sanitize_language_for_model("en", &model_info), None);
+        assert_eq!(sanitize_language_for_model("auto", &model_info), None);
+    }
+
+    #[test]
+    fn sanitize_language_resets_unsupported_values_to_auto() {
+        let model_info = test_model_info(&["en"]);
+
+        assert_eq!(
+            sanitize_language_for_model("uk", &model_info),
+            Some("auto".to_string())
+        );
+    }
+
+    #[test]
+    fn sanitize_transcription_languages_updates_primary_and_secondary() {
+        let model_info = test_model_info(&["en"]);
+        let mut settings = get_default_settings();
+        settings.selected_language = "uk".to_string();
+        settings.secondary_selected_language = "fr".to_string();
+
+        sanitize_transcription_languages(&mut settings, "test", &model_info);
+
+        assert_eq!(settings.selected_language, "auto");
+        assert_eq!(settings.secondary_selected_language, "auto");
+    }
+
+    #[test]
+    fn sanitize_transcription_languages_keeps_supported_secondary_language() {
+        let model_info = test_model_info(&["en", "uk"]);
+        let mut settings = get_default_settings();
+        settings.selected_language = "en".to_string();
+        settings.secondary_selected_language = "uk".to_string();
+
+        sanitize_transcription_languages(&mut settings, "test", &model_info);
+
+        assert_eq!(settings.selected_language, "en");
+        assert_eq!(settings.secondary_selected_language, "uk");
+    }
+
+    #[test]
+    fn restore_model_selection_restores_model_and_languages() {
+        let mut settings = get_default_settings();
+        settings.selected_model = "new-model".to_string();
+        settings.selected_language = "auto".to_string();
+        settings.secondary_selected_language = "auto".to_string();
+
+        let snapshot = ModelSelectionSnapshot {
+            selected_model: "old-model".to_string(),
+            selected_language: "en".to_string(),
+            secondary_selected_language: "uk".to_string(),
+        };
+
+        restore_model_selection(&mut settings, &snapshot);
+
+        assert_eq!(settings.selected_model, "old-model");
+        assert_eq!(settings.selected_language, "en");
+        assert_eq!(settings.secondary_selected_language, "uk");
+    }
 }
 
 #[tauri::command]

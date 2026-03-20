@@ -3,6 +3,7 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
+import { ModelStateEvent } from "@/lib/types/events";
 
 interface DownloadProgress {
   model_id: string;
@@ -22,6 +23,7 @@ interface DownloadStats {
 interface ModelsStore {
   models: ModelInfo[];
   currentModel: string;
+  switchingModelId: string | null;
   downloadingModels: Record<string, true>;
   extractingModels: Record<string, true>;
   downloadProgress: Record<string, DownloadProgress>;
@@ -57,6 +59,7 @@ export const useModelStore = create<ModelsStore>()(
   subscribeWithSelector((set, get) => ({
     models: [],
     currentModel: "",
+    switchingModelId: null,
     downloadingModels: {},
     extractingModels: {},
     downloadProgress: {},
@@ -142,20 +145,30 @@ export const useModelStore = create<ModelsStore>()(
     selectModel: async (modelId: string) => {
       try {
         set({ error: null });
+        set({
+          switchingModelId: modelId,
+        });
         const result = await commands.setActiveModel(modelId);
         if (result.status === "ok") {
           set({
             currentModel: modelId,
+            switchingModelId: null,
             isFirstRun: false,
             hasAnyModels: true,
           });
           return true;
         } else {
-          set({ error: `Failed to switch to model: ${result.error}` });
+          set({
+            error: `Failed to switch to model: ${result.error}`,
+            switchingModelId: null,
+          });
           return false;
         }
       } catch (err) {
-        set({ error: `Failed to switch to model: ${err}` });
+        set({
+          error: `Failed to switch to model: ${err}`,
+          switchingModelId: null,
+        });
         return false;
       }
     },
@@ -371,7 +384,26 @@ export const useModelStore = create<ModelsStore>()(
         get().loadCurrentModel();
       });
 
-      listen("model-state-changed", () => {
+      listen<ModelStateEvent>("model-state-changed", (event) => {
+        const { event_type, model_id } = event.payload;
+
+        switch (event_type) {
+          case "loading_started":
+            set({
+              switchingModelId: model_id ?? get().switchingModelId,
+            });
+            break;
+          case "loading_completed":
+          case "loading_failed":
+          case "selection_changed":
+            set({
+              switchingModelId: null,
+            });
+            break;
+          default:
+            break;
+        }
+
         get().loadModels();
         get().loadCurrentModel();
       });

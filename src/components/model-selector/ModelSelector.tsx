@@ -28,6 +28,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const {
     models,
     currentModel,
+    switchingModelId,
     downloadProgress,
     downloadStats,
     extractingModels,
@@ -37,12 +38,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const [modelStatus, setModelStatus] = useState<ModelStatus>("unloaded");
   const [modelError, setModelError] = useState<string | null>(null);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
-  // Track pending model switch for optimistic display
-  const [pendingModelId, setPendingModelId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const displayModelId = pendingModelId || currentModel;
+  const displayModelId = switchingModelId || currentModel;
 
   // Check model status when currentModel changes
   useEffect(() => {
@@ -80,15 +79,17 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           case "loading_completed":
             setModelStatus("ready");
             setModelError(null);
-            setPendingModelId(null);
             break;
           case "loading_failed":
             setModelStatus("error");
             setModelError(error || "Failed to load model");
-            setPendingModelId(null);
             break;
           case "unloaded":
             setModelStatus("unloaded");
+            setModelError(null);
+            break;
+          case "selection_changed":
+            setModelStatus("ready");
             setModelError(null);
             break;
         }
@@ -104,13 +105,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           try {
             const isRecording = await commands.isRecording();
             if (!isRecording) {
-              setPendingModelId(modelId);
               setModelError(null);
               setShowModelDropdown(false);
-              const success = await selectModel(modelId);
-              if (!success) {
-                setPendingModelId(null);
-              }
+              await selectModel(modelId);
             }
           } catch {
             // Ignore errors in auto-select
@@ -139,12 +136,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   }, [selectModel]);
 
   const handleModelSelect = async (modelId: string) => {
-    setPendingModelId(modelId);
     setModelError(null);
     setShowModelDropdown(false);
     const success = await selectModel(modelId);
     if (!success) {
-      setPendingModelId(null);
       setModelStatus("error");
       setModelError("Failed to switch model");
       onError?.("Failed to switch model");
