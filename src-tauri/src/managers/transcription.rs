@@ -166,6 +166,12 @@ impl TranscriptionManager {
         engine.is_some()
     }
 
+    /// Check whether no model load is currently in progress.
+    pub fn is_loading_idle(&self) -> bool {
+        let is_loading = self.is_loading.lock().unwrap();
+        !*is_loading
+    }
+
     /// Atomically check whether a model load is in progress and, if not, mark
     /// one as starting. Returns a [`LoadingGuard`] whose [`Drop`] impl will
     /// clear the flag and wake waiters. Returns `None` if a load is already in

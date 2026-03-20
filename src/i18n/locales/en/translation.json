@@ -274,7 +274,21 @@
       "ortThreadCount": {
         "title": "ONNX Thread Count",
         "description": "Number of CPU threads for ONNX model loading and encoder inference. 0 lets ORT decide (typically all cores).",
-        "auto": "(auto)"
+        "auto": "(auto)",
+        "autoButton": "Auto",
+        "benchmarkTitle": "Finding Optimal Thread Count",
+        "benchmarkStarting": "Loading model and preparing benchmark...",
+        "benchmarkProgress": "Testing {{threads}} threads... (trial {{current}} of {{total}})",
+        "benchmarkComplete": "Best: {{threads}} threads ({{time}}s for {{duration}}s audio)",
+        "benchmarkModel": "Tested with: {{model}}",
+        "benchmarkNote": "Re-run if you switch models",
+        "benchmarkThreads": "Threads",
+        "benchmarkTime": "Time",
+        "benchmarkRtf": "RTF",
+        "benchmarkError": "Benchmark failed",
+        "benchmarkNoRecordings": "No recordings available. Record some audio first.",
+        "apply": "Apply",
+        "cancel": "Cancel"
       },
       "startHidden": {
         "label": "Start Hidden",

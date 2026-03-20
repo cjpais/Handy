@@ -164,6 +164,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(Arc::new(std::sync::atomic::AtomicBool::new(false))); // benchmark cancel flag
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -419,6 +420,8 @@ pub fn run(cli_args: CliArgs) {
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
+        commands::benchmark::benchmark_ort_thread_count,
+        commands::benchmark::cancel_benchmark,
         helpers::clamshell::is_laptop,
     ]);
 
