@@ -742,6 +742,9 @@ pub fn get_available_accelerators() -> AvailableAccelerators {
         })
         .collect();
 
+    // Whisper acceleration is currently a policy choice (auto/cpu/gpu), not a backend choice.
+    // If `WhisperAcceleratorSetting` ever grows backend-specific variants (for example CoreMl),
+    // this should be revisited to mirror the capability-driven ORT mapping above.
     let whisper_options = vec![
         WhisperAcceleratorSetting::Auto,
         WhisperAcceleratorSetting::Cpu,

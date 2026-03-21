@@ -15,7 +15,7 @@ interface UseSettingsReturn {
   // Actions
   updateSetting: <K extends keyof Settings>(
     key: K,
-    value: Settings[K],
+    value: Exclude<Settings[K], undefined>,
   ) => Promise<void>;
   resetSetting: (key: keyof Settings) => Promise<void>;
   refreshSettings: () => Promise<void>;
