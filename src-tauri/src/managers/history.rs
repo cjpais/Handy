@@ -273,7 +273,7 @@ impl HistoryManager {
         })
         .emit(&self.app_handle)
         {
-            error!("Failed to emit history-update-payload event: {}", e);
+            error!("Failed to emit history-updated event: {}", e);
         }
 
         Ok(entry)
@@ -321,7 +321,7 @@ impl HistoryManager {
         })
         .emit(&self.app_handle)
         {
-            error!("Failed to emit history-update-payload event: {}", e);
+            error!("Failed to emit history-updated event: {}", e);
         }
 
         Ok(entry)
@@ -331,12 +331,19 @@ impl HistoryManager {
         let retention_period = crate::settings::get_recording_retention_period(&self.app_handle);
 
         match retention_period {
-            crate::settings::RecordingRetentionPeriod::Never => Ok(()),
-            crate::settings::RecordingRetentionPeriod::PreserveLimit => {
-                let limit = crate::settings::get_history_limit(&self.app_handle);
-                self.cleanup_by_count(limit)
+            crate::settings::RecordingRetentionPeriod::Never => {
+                // Don't delete anything
+                return Ok(());
             }
-            _ => self.cleanup_by_time(retention_period),
+            crate::settings::RecordingRetentionPeriod::PreserveLimit => {
+                // Use the old count-based logic with history_limit
+                let limit = crate::settings::get_history_limit(&self.app_handle);
+                return self.cleanup_by_count(limit);
+            }
+            _ => {
+                // Use time-based logic
+                return self.cleanup_by_time(retention_period);
+            }
         }
     }
 
@@ -349,11 +356,13 @@ impl HistoryManager {
         let mut deleted_count = 0;
 
         for (id, file_name) in entries {
+            // Delete database entry
             conn.execute(
                 "DELETE FROM transcription_history WHERE id = ?1",
                 params![id],
             )?;
 
+            // Delete WAV file
             let file_path = self.recordings_dir.join(file_name);
             if file_path.exists() {
                 if let Err(e) = fs::remove_file(&file_path) {
@@ -370,11 +379,10 @@ impl HistoryManager {
 
     fn cleanup_by_count(&self, limit: usize) -> Result<()> {
         let conn = self.get_connection()?;
+
+        // Get all entries that are not saved, ordered by timestamp desc
         let mut stmt = conn.prepare(
-            "SELECT id, file_name
-             FROM transcription_history
-             WHERE saved = 0
-             ORDER BY timestamp DESC",
+            "SELECT id, file_name FROM transcription_history WHERE saved = 0 ORDER BY timestamp DESC"
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -404,18 +412,18 @@ impl HistoryManager {
     ) -> Result<()> {
         let conn = self.get_connection()?;
 
+        // Calculate cutoff timestamp (current time minus retention period)
         let now = Utc::now().timestamp();
         let cutoff_timestamp = match retention_period {
-            crate::settings::RecordingRetentionPeriod::Days3 => now - (3 * 24 * 60 * 60),
-            crate::settings::RecordingRetentionPeriod::Weeks2 => now - (2 * 7 * 24 * 60 * 60),
-            crate::settings::RecordingRetentionPeriod::Months3 => now - (3 * 30 * 24 * 60 * 60),
+            crate::settings::RecordingRetentionPeriod::Days3 => now - (3 * 24 * 60 * 60), // 3 days in seconds
+            crate::settings::RecordingRetentionPeriod::Weeks2 => now - (2 * 7 * 24 * 60 * 60), // 2 weeks in seconds
+            crate::settings::RecordingRetentionPeriod::Months3 => now - (3 * 30 * 24 * 60 * 60), // 3 months in seconds (approximate)
             _ => unreachable!("Should not reach here"),
         };
 
+        // Get all unsaved entries older than the cutoff timestamp
         let mut stmt = conn.prepare(
-            "SELECT id, file_name
-             FROM transcription_history
-             WHERE saved = 0 AND timestamp < ?1",
+            "SELECT id, file_name FROM transcription_history WHERE saved = 0 AND timestamp < ?1",
         )?;
 
         let rows = stmt.query_map(params![cutoff_timestamp], |row| {
@@ -548,6 +556,8 @@ impl HistoryManager {
 
     pub async fn toggle_saved_status(&self, id: i64) -> Result<()> {
         let conn = self.get_connection()?;
+
+        // Get current saved status
         let current_saved: bool = conn.query_row(
             "SELECT saved FROM transcription_history WHERE id = ?1",
             params![id],
@@ -563,8 +573,9 @@ impl HistoryManager {
 
         debug!("Toggled saved status for entry {}: {}", id, new_saved);
 
+        // Emit history updated event
         if let Err(e) = (HistoryUpdatePayload::Toggled { id }).emit(&self.app_handle) {
-            error!("Failed to emit history-update-payload event: {}", e);
+            error!("Failed to emit history-updated event: {}", e);
         }
 
         Ok(())
@@ -599,15 +610,19 @@ impl HistoryManager {
     pub async fn delete_entry(&self, id: i64) -> Result<()> {
         let conn = self.get_connection()?;
 
+        // Get the entry to find the file name
         if let Some(entry) = self.get_entry_by_id(id).await? {
+            // Delete the audio file first
             let file_path = self.get_audio_file_path(&entry.file_name);
             if file_path.exists() {
                 if let Err(e) = fs::remove_file(&file_path) {
                     error!("Failed to delete audio file {}: {}", entry.file_name, e);
+                    // Continue with database deletion even if file deletion fails
                 }
             }
         }
 
+        // Delete from database
         conn.execute(
             "DELETE FROM transcription_history WHERE id = ?1",
             params![id],
@@ -615,8 +630,9 @@ impl HistoryManager {
 
         debug!("Deleted history entry with id: {}", id);
 
+        // Emit history updated event
         if let Err(e) = (HistoryUpdatePayload::Deleted { id }).emit(&self.app_handle) {
-            error!("Failed to emit history-update-payload event: {}", e);
+            error!("Failed to emit history-updated event: {}", e);
         }
 
         Ok(())
@@ -624,6 +640,7 @@ impl HistoryManager {
 
     fn format_timestamp_title(&self, timestamp: i64) -> String {
         if let Some(utc_datetime) = DateTime::from_timestamp(timestamp, 0) {
+            // Convert UTC to local timezone
             let local_datetime = utc_datetime.with_timezone(&Local);
             local_datetime.format("%B %e, %Y - %l:%M%p").to_string()
         } else {
