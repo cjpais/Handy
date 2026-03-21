@@ -34,6 +34,18 @@ static MIGRATIONS: &[M] = &[
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct PaginatedHistory {
+    pub entries: Vec<HistoryEntry>,
+    pub has_more: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct HistoryUpdatePayload {
+    pub action: String,
+    pub id: Option<i64>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct HistoryEntry {
     pub id: i64,
     pub file_name: String,
@@ -193,7 +205,7 @@ impl HistoryManager {
         save_wav_file(file_path, &audio_samples).await?;
 
         // Save to database
-        self.save_to_database(
+        let id = self.save_to_database(
             file_name,
             timestamp,
             title,
@@ -206,7 +218,13 @@ impl HistoryManager {
         self.cleanup_old_entries()?;
 
         // Emit history updated event
-        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+        if let Err(e) = self.app_handle.emit(
+            "history-updated",
+            HistoryUpdatePayload {
+                action: "added".to_string(),
+                id: Some(id),
+            },
+        ) {
             error!("Failed to emit history-updated event: {}", e);
         }
 
@@ -221,15 +239,16 @@ impl HistoryManager {
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
-    ) -> Result<()> {
+    ) -> Result<i64> {
         let conn = self.get_connection()?;
         conn.execute(
             "INSERT INTO transcription_history (file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![file_name, timestamp, false, title, transcription_text, post_processed_text, post_process_prompt],
         )?;
 
-        debug!("Saved transcription to database");
-        Ok(())
+        let id = conn.last_insert_rowid();
+        debug!("Saved transcription to database with id {}", id);
+        Ok(id)
     }
 
     pub fn cleanup_old_entries(&self) -> Result<()> {
@@ -379,6 +398,65 @@ impl HistoryManager {
         Ok(entries)
     }
 
+    pub async fn get_history_entries_paginated(
+        &self,
+        cursor: Option<i64>,
+        limit: usize,
+    ) -> Result<PaginatedHistory> {
+        let conn = self.get_connection()?;
+        let fetch_count = (limit + 1) as i64;
+
+        let mut entries: Vec<HistoryEntry> = if let Some(cursor_id) = cursor {
+            let mut stmt = conn.prepare(
+                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+                 FROM transcription_history
+                 WHERE id < ?1
+                 ORDER BY id DESC
+                 LIMIT ?2",
+            )?;
+            let rows = stmt.query_map(params![cursor_id, fetch_count], |row| {
+                Ok(HistoryEntry {
+                    id: row.get("id")?,
+                    file_name: row.get("file_name")?,
+                    timestamp: row.get("timestamp")?,
+                    saved: row.get("saved")?,
+                    title: row.get("title")?,
+                    transcription_text: row.get("transcription_text")?,
+                    post_processed_text: row.get("post_processed_text")?,
+                    post_process_prompt: row.get("post_process_prompt")?,
+                })
+            })?;
+            rows.collect::<std::result::Result<Vec<_>, _>>()?
+        } else {
+            let mut stmt = conn.prepare(
+                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt
+                 FROM transcription_history
+                 ORDER BY id DESC
+                 LIMIT ?1",
+            )?;
+            let rows = stmt.query_map(params![fetch_count], |row| {
+                Ok(HistoryEntry {
+                    id: row.get("id")?,
+                    file_name: row.get("file_name")?,
+                    timestamp: row.get("timestamp")?,
+                    saved: row.get("saved")?,
+                    title: row.get("title")?,
+                    transcription_text: row.get("transcription_text")?,
+                    post_processed_text: row.get("post_processed_text")?,
+                    post_process_prompt: row.get("post_process_prompt")?,
+                })
+            })?;
+            rows.collect::<std::result::Result<Vec<_>, _>>()?
+        };
+
+        let has_more = entries.len() > limit;
+        if has_more {
+            entries.pop();
+        }
+
+        Ok(PaginatedHistory { entries, has_more })
+    }
+
     pub fn get_latest_entry(&self) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
         Self::get_latest_entry_with_conn(&conn)
@@ -430,7 +508,13 @@ impl HistoryManager {
         debug!("Toggled saved status for entry {}: {}", id, new_saved);
 
         // Emit history updated event
-        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+        if let Err(e) = self.app_handle.emit(
+            "history-updated",
+            HistoryUpdatePayload {
+                action: "toggled".to_string(),
+                id: Some(id),
+            },
+        ) {
             error!("Failed to emit history-updated event: {}", e);
         }
 
@@ -490,7 +574,13 @@ impl HistoryManager {
         debug!("Deleted history entry with id: {}", id);
 
         // Emit history updated event
-        if let Err(e) = self.app_handle.emit("history-updated", ()) {
+        if let Err(e) = self.app_handle.emit(
+            "history-updated",
+            HistoryUpdatePayload {
+                action: "deleted".to_string(),
+                id: Some(id),
+            },
+        ) {
             error!("Failed to emit history-updated event: {}", e);
         }
 

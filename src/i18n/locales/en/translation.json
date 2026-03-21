@@ -416,7 +416,10 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again."
+      "deleteError": "Failed to delete entry. Please try again.",
+      "retranscribe": "Re-transcribe",
+      "retranscribeError": "Failed to re-transcribe. Please try again.",
+      "loadingMore": "Loading more..."
     },
     "debug": {
       "title": "Debug",

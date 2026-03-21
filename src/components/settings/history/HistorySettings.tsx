@@ -1,14 +1,21 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import { AudioPlayer } from "../../ui/AudioPlayer";
-import { Button } from "../../ui/Button";
-import { Copy, Star, Check, Trash2, FolderOpen } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { Check, Copy, FolderOpen, Star, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { commands, type HistoryEntry } from "@/bindings";
-import { formatDateTime } from "@/utils/dateFormat";
 import { useOsType } from "@/hooks/useOsType";
+import { formatDateTime } from "@/utils/dateFormat";
+import { AudioPlayer } from "../../ui/AudioPlayer";
+import { Button } from "../../ui/Button";
+
+const PAGE_SIZE = 30;
+
+interface HistoryUpdatePayload {
+  action: "added" | "deleted" | "toggled";
+  id: number | null;
+}
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -34,53 +41,125 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
-  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const loadHistoryEntries = useCallback(async () => {
-    try {
-      const result = await commands.getHistoryEntries();
-      if (result.status === "ok") {
-        setHistoryEntries(result.data);
+  const loadPage = useCallback(
+    async (cursor?: number) => {
+      const isFirstPage = cursor === undefined;
+      if (isFirstPage) setLoading(true);
+      else setLoadingMore(true);
+
+      try {
+        const result = await commands.getHistoryEntriesPaginated(
+          cursor ?? null,
+          PAGE_SIZE,
+        );
+        if (result.status === "ok") {
+          const { entries: newEntries, has_more } = result.data;
+          setEntries((prev) =>
+            isFirstPage ? newEntries : [...prev, ...newEntries],
+          );
+          setHasMore(has_more);
+        }
+      } catch (error) {
+        console.error("Failed to load history entries:", error);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error("Failed to load history entries:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
+  // Initial load
   useEffect(() => {
-    loadHistoryEntries();
+    loadPage();
+  }, [loadPage]);
 
-    // Listen for history update events
-    const setupListener = async () => {
-      const unlisten = await listen("history-updated", () => {
-        console.log("History updated, reloading entries...");
-        loadHistoryEntries();
-      });
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    if (loading) return;
 
-      // Return cleanup function
-      return unlisten;
-    };
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore || loadingMore) return;
 
-    let unlistenPromise = setupListener();
+    const observer = new IntersectionObserver(
+      (observerEntries) => {
+        const first = observerEntries[0];
+        if (first.isIntersecting) {
+          setEntries((current) => {
+            const lastEntry = current[current.length - 1];
+            if (lastEntry) {
+              loadPage(lastEntry.id);
+            }
+            return current;
+          });
+        }
+      },
+      { threshold: 0 },
+    );
 
-    return () => {
-      unlistenPromise.then((unlisten) => {
-        if (unlisten) {
-          unlisten();
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loading, hasMore, loadingMore, loadPage]);
+
+  // Listen for history-updated events
+  useEffect(() => {
+    const setupListener = async () =>
+      listen<HistoryUpdatePayload>("history-updated", (event) => {
+        const { action, id } = event.payload;
+
+        switch (action) {
+          case "added":
+            // A new entry was added — fetch the first page to get it
+            loadPage();
+            break;
+          case "deleted":
+            if (id !== null) {
+              setEntries((prev) => prev.filter((e) => e.id !== id));
+            }
+            break;
+          case "toggled":
+            if (id !== null) {
+              setEntries((prev) =>
+                prev.map((e) =>
+                  e.id === id ? { ...e, saved: !e.saved } : e,
+                ),
+              );
+            }
+            break;
         }
       });
+
+    const unlistenPromise = setupListener();
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
     };
-  }, [loadHistoryEntries]);
+  }, [loadPage]);
 
   const toggleSaved = async (id: number) => {
+    // Optimistic update
+    setEntries((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)),
+    );
     try {
-      await commands.toggleHistoryEntrySaved(id);
-      // No need to reload here - the event listener will handle it
+      const result = await commands.toggleHistoryEntrySaved(id);
+      if (result.status !== "ok") {
+        // Revert on failure
+        setEntries((prev) =>
+          prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)),
+        );
+      }
     } catch (error) {
       console.error("Failed to toggle saved status:", error);
+      // Revert on failure
+      setEntries((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)),
+      );
     }
   };
 
@@ -100,10 +179,8 @@ export const HistorySettings: React.FC = () => {
           if (osType === "linux") {
             const fileData = await readFile(result.data);
             const blob = new Blob([fileData], { type: "audio/wav" });
-
             return URL.createObjectURL(blob);
           }
-
           return convertFileSrc(result.data, "asset");
         }
         return null;
@@ -116,68 +193,65 @@ export const HistorySettings: React.FC = () => {
   );
 
   const deleteAudioEntry = async (id: number) => {
+    // Optimistically remove
+    setEntries((prev) => prev.filter((e) => e.id !== id));
     try {
-      await commands.deleteHistoryEntry(id);
+      const result = await commands.deleteHistoryEntry(id);
+      if (result.status !== "ok") {
+        // Reload on failure
+        loadPage();
+      }
     } catch (error) {
-      console.error("Failed to delete audio entry:", error);
-      throw error;
+      console.error("Failed to delete entry:", error);
+      loadPage();
     }
   };
 
   const openRecordingsFolder = async () => {
     try {
-      await commands.openRecordingsFolder();
+      const result = await commands.openRecordingsFolder();
+      if (result.status !== "ok") {
+        throw new Error(String(result.error));
+      }
     } catch (error) {
       console.error("Failed to open recordings folder:", error);
     }
   };
 
+  let content: React.ReactNode;
+
   if (loading) {
-    return (
-      <div className="max-w-3xl w-full mx-auto space-y-6">
-        <div className="space-y-2">
-          <div className="px-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-                {t("settings.history.title")}
-              </h2>
-            </div>
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
-          </div>
-          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-            <div className="px-4 py-3 text-center text-text/60">
-              {t("settings.history.loading")}
-            </div>
-          </div>
-        </div>
+    content = (
+      <div className="px-4 py-3 text-center text-text/60">
+        {t("settings.history.loading")}
       </div>
     );
-  }
-
-  if (historyEntries.length === 0) {
-    return (
-      <div className="max-w-3xl w-full mx-auto space-y-6">
-        <div className="space-y-2">
-          <div className="px-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-                {t("settings.history.title")}
-              </h2>
-            </div>
-            <OpenRecordingsButton
-              onClick={openRecordingsFolder}
-              label={t("settings.history.openFolder")}
-            />
+  } else if (entries.length === 0) {
+    content = (
+      <div className="px-4 py-3 text-center text-text/60">
+        {t("settings.history.empty")}
+      </div>
+    );
+  } else {
+    content = (
+      <div className="divide-y divide-mid-gray/20">
+        {entries.map((entry) => (
+          <HistoryEntryComponent
+            key={entry.id}
+            entry={entry}
+            onToggleSaved={() => toggleSaved(entry.id)}
+            onCopyText={() => copyToClipboard(entry.transcription_text)}
+            getAudioUrl={getAudioUrl}
+            deleteAudio={deleteAudioEntry}
+          />
+        ))}
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="h-1" />
+        {loadingMore && (
+          <div className="px-4 py-3 text-center text-text/60 text-sm">
+            {t("settings.history.loadingMore")}
           </div>
-          <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-            <div className="px-4 py-3 text-center text-text/60">
-              {t("settings.history.empty")}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -197,18 +271,7 @@ export const HistorySettings: React.FC = () => {
           />
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
-          <div className="divide-y divide-mid-gray/20">
-            {historyEntries.map((entry) => (
-              <HistoryEntryComponent
-                key={entry.id}
-                entry={entry}
-                onToggleSaved={() => toggleSaved(entry.id)}
-                onCopyText={() => copyToClipboard(entry.transcription_text)}
-                getAudioUrl={getAudioUrl}
-                deleteAudio={deleteAudioEntry}
-              />
-            ))}
-          </div>
+          {content}
         </div>
       </div>
     </div>
@@ -249,7 +312,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert("Failed to delete entry. Please try again.");
+      alert(t("settings.history.deleteError"));
     }
   };
 
@@ -262,7 +325,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         <div className="flex items-center gap-1">
           <button
             onClick={handleCopyText}
-            className="text-text/50 hover:text-logo-primary  hover:border-logo-primary transition-colors cursor-pointer"
+            className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer"
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
