@@ -46,6 +46,7 @@ export const HistorySettings: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const entriesRef = useRef<HistoryEntry[]>([]);
+  const loadingRef = useRef(false);
 
   // Keep ref in sync for use in IntersectionObserver callback
   useEffect(() => {
@@ -55,6 +56,9 @@ export const HistorySettings: React.FC = () => {
   const loadPage = useCallback(
     async (cursor?: number) => {
       const isFirstPage = cursor === undefined;
+      if (!isFirstPage && loadingRef.current) return;
+      loadingRef.current = true;
+
       if (isFirstPage) setLoading(true);
       else setLoadingMore(true);
 
@@ -75,6 +79,7 @@ export const HistorySettings: React.FC = () => {
       } finally {
         setLoading(false);
         setLoadingMore(false);
+        loadingRef.current = false;
       }
     },
     [],
