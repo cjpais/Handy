@@ -420,7 +420,7 @@
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe or open the recordings folder to recover the audio."
+      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
     },
     "debug": {
       "title": "Debug",
