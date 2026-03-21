@@ -6,7 +6,7 @@ import {
   Check,
   Copy,
   FolderOpen,
-  RefreshCcw,
+  RotateCcw,
   Star,
   Trash2,
 } from "lucide-react";
@@ -16,6 +16,27 @@ import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
+
+const IconButton: React.FC<{
+  onClick: () => void;
+  title: string;
+  disabled?: boolean;
+  active?: boolean;
+  children: React.ReactNode;
+}> = ({ onClick, title, disabled, active, children }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20 ${
+      active
+        ? "text-logo-primary hover:text-logo-primary/80"
+        : "text-text/50 hover:text-logo-primary"
+    }`}
+    title={title}
+  >
+    {children}
+  </button>
+);
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -262,11 +283,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <p className="text-sm font-medium">{formattedDate}</p>
-        <div className="flex items-center gap-1">
-          <button
+        <div className="flex items-center">
+          <IconButton
             onClick={handleCopyText}
             disabled={!hasTranscription}
-            className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20"
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
@@ -274,14 +294,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             ) : (
               <Copy width={16} height={16} />
             )}
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={onToggleSaved}
-            className={`p-2 rounded-md transition-colors cursor-pointer ${
-              entry.saved
-                ? "text-logo-primary hover:text-logo-primary/80"
-                : "text-text/50 hover:text-logo-primary"
-            }`}
+            active={entry.saved}
             title={
               entry.saved
                 ? t("settings.history.unsave")
@@ -293,26 +309,24 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               height={16}
               fill={entry.saved ? "currentColor" : "none"}
             />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={handleRetranscribe}
             disabled={retrying}
-            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20"
             title={t("settings.history.retranscribe")}
           >
-            <RefreshCcw
+            <RotateCcw
               width={16}
               height={16}
               className={retrying ? "animate-spin" : ""}
             />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={handleDeleteEntry}
-            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
             title={t("settings.history.delete")}
           >
             <Trash2 width={16} height={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
