@@ -412,7 +412,8 @@ impl HistoryManager {
                      ORDER BY id DESC
                      LIMIT ?2",
                 )?;
-                let result = stmt.query_map(params![cursor_id, fetch_count], row_mapper)?
+                let result = stmt
+                    .query_map(params![cursor_id, fetch_count], row_mapper)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
                 result
             }
@@ -424,7 +425,8 @@ impl HistoryManager {
                      ORDER BY id DESC
                      LIMIT ?1",
                 )?;
-                let result = stmt.query_map(params![fetch_count], row_mapper)?
+                let result = stmt
+                    .query_map(params![fetch_count], row_mapper)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
                 result
             }
@@ -434,7 +436,8 @@ impl HistoryManager {
                      FROM transcription_history
                      ORDER BY id DESC",
                 )?;
-                let result = stmt.query_map([], row_mapper)?
+                let result = stmt
+                    .query_map([], row_mapper)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
                 result
             }

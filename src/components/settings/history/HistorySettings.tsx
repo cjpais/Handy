@@ -53,37 +53,34 @@ export const HistorySettings: React.FC = () => {
     entriesRef.current = entries;
   }, [entries]);
 
-  const loadPage = useCallback(
-    async (cursor?: number) => {
-      const isFirstPage = cursor === undefined;
-      if (!isFirstPage && loadingRef.current) return;
-      loadingRef.current = true;
+  const loadPage = useCallback(async (cursor?: number) => {
+    const isFirstPage = cursor === undefined;
+    if (!isFirstPage && loadingRef.current) return;
+    loadingRef.current = true;
 
-      if (isFirstPage) setLoading(true);
-      else setLoadingMore(true);
+    if (isFirstPage) setLoading(true);
+    else setLoadingMore(true);
 
-      try {
-        const result = await commands.getHistoryEntries(
-          cursor ?? null,
-          PAGE_SIZE,
+    try {
+      const result = await commands.getHistoryEntries(
+        cursor ?? null,
+        PAGE_SIZE,
+      );
+      if (result.status === "ok") {
+        const { entries: newEntries, has_more } = result.data;
+        setEntries((prev) =>
+          isFirstPage ? newEntries : [...prev, ...newEntries],
         );
-        if (result.status === "ok") {
-          const { entries: newEntries, has_more } = result.data;
-          setEntries((prev) =>
-            isFirstPage ? newEntries : [...prev, ...newEntries],
-          );
-          setHasMore(has_more);
-        }
-      } catch (error) {
-        console.error("Failed to load history entries:", error);
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-        loadingRef.current = false;
+        setHasMore(has_more);
       }
-    },
-    [],
-  );
+    } catch (error) {
+      console.error("Failed to load history entries:", error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+      loadingRef.current = false;
+    }
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -101,8 +98,7 @@ export const HistorySettings: React.FC = () => {
       (observerEntries) => {
         const first = observerEntries[0];
         if (first.isIntersecting) {
-          const lastEntry =
-            entriesRef.current[entriesRef.current.length - 1];
+          const lastEntry = entriesRef.current[entriesRef.current.length - 1];
           if (lastEntry) {
             loadPage(lastEntry.id);
           }
