@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use tauri_specta::Event;
 
 /// Database migrations for transcription history.
@@ -44,6 +44,8 @@ pub struct PaginatedHistory {
 pub enum HistoryUpdatePayload {
     #[serde(rename = "added")]
     Added { entry: HistoryEntry },
+    #[serde(rename = "updated")]
+    Updated { entry: HistoryEntry },
     #[serde(rename = "deleted")]
     Deleted { id: i64 },
     #[serde(rename = "toggled")]
@@ -194,12 +196,6 @@ impl HistoryManager {
         Ok(Connection::open(&self.db_path)?)
     }
 
-    fn emit_history_updated(&self) {
-        if let Err(e) = self.app_handle.emit("history-updated", ()) {
-            error!("Failed to emit history-updated event: {}", e);
-        }
-    }
-
     fn map_history_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<HistoryEntry> {
         Ok(HistoryEntry {
             id: row.get("id")?,
@@ -270,7 +266,6 @@ impl HistoryManager {
         debug!("Saved history entry with id {}", entry.id);
 
         self.cleanup_old_entries()?;
-        self.emit_history_updated();
 
         // Emit typed event for real-time frontend updates
         if let Err(e) =
@@ -283,13 +278,13 @@ impl HistoryManager {
     }
 
     /// Update an existing history entry with new transcription results (used by retry).
-    pub async fn update_transcription(
+    pub fn update_transcription(
         &self,
         id: i64,
         transcription_text: String,
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
-    ) -> Result<()> {
+    ) -> Result<HistoryEntry> {
         let conn = self.get_connection()?;
         let updated = conn.execute(
             "UPDATE transcription_history
@@ -309,10 +304,23 @@ impl HistoryManager {
             return Err(anyhow!("History entry {} not found", id));
         }
 
-        debug!("Updated transcription for history entry {}", id);
-        self.emit_history_updated();
+        let entry = conn
+            .query_row(
+                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                 FROM transcription_history WHERE id = ?1",
+                params![id],
+                Self::map_history_entry,
+            )?;
 
-        Ok(())
+        debug!("Updated transcription for history entry {}", id);
+
+        if let Err(e) =
+            (HistoryUpdatePayload::Updated { entry: entry.clone() }).emit(&self.app_handle)
+        {
+            error!("Failed to emit history-update-payload event: {}", e);
+        }
+
+        Ok(entry)
     }
 
     pub fn cleanup_old_entries(&self) -> Result<()> {
@@ -550,7 +558,6 @@ impl HistoryManager {
         )?;
 
         debug!("Toggled saved status for entry {}: {}", id, new_saved);
-        self.emit_history_updated();
 
         if let Err(e) = (HistoryUpdatePayload::Toggled { id }).emit(&self.app_handle) {
             error!("Failed to emit history-update-payload event: {}", e);
@@ -603,7 +610,6 @@ impl HistoryManager {
         )?;
 
         debug!("Deleted history entry with id: {}", id);
-        self.emit_history_updated();
 
         if let Err(e) = (HistoryUpdatePayload::Deleted { id }).emit(&self.app_handle) {
             error!("Failed to emit history-update-payload event: {}", e);

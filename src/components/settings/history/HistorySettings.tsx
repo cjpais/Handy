@@ -135,6 +135,10 @@ export const HistorySettings: React.FC = () => {
       const payload: HistoryUpdatePayload = event.payload;
       if (payload.action === "added") {
         setEntries((prev) => [payload.entry, ...prev]);
+      } else if (payload.action === "updated") {
+        setEntries((prev) =>
+          prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
+        );
       }
       // "deleted" and "toggled" are handled by optimistic updates only,
       // so we intentionally ignore them here to avoid double-mutation.
@@ -387,7 +391,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             <RotateCcw
               width={16}
               height={16}
-              className={retrying ? "animate-spin" : ""}
+              style={retrying ? { animation: "spin 1s linear infinite reverse" } : undefined}
             />
           </IconButton>
           <IconButton
