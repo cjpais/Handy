@@ -721,17 +721,9 @@ async unloadModelManually() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getHistoryEntries() : Promise<Result<HistoryEntry[], string>> {
+async getHistoryEntries(cursor: number | null, limit: number | null) : Promise<Result<PaginatedHistory, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_history_entries") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async getHistoryEntriesPaginated(cursor: number | null, limit: number) : Promise<Result<PaginatedHistory, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_history_entries_paginated", { cursor, limit }) };
+    return { status: "ok", data: await TAURI_INVOKE("get_history_entries", { cursor, limit }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -796,6 +788,11 @@ async isLaptop() : Promise<Result<boolean, string>> {
 /** user-defined events **/
 
 
+export const events = __makeEvents__<{
+historyUpdatePayload: HistoryUpdatePayload
+}>({
+historyUpdatePayload: "history-update-payload"
+})
 
 /** user-defined constants **/
 
@@ -812,6 +809,7 @@ export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GigaAM" | "Canary"
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null }
+export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
  * Result of changing keyboard implementation
  */

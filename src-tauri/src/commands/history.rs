@@ -1,4 +1,4 @@
-use crate::managers::history::{HistoryEntry, HistoryManager, PaginatedHistory};
+use crate::managers::history::{HistoryManager, PaginatedHistory};
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -7,23 +7,11 @@ use tauri::{AppHandle, State};
 pub async fn get_history_entries(
     _app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
-) -> Result<Vec<HistoryEntry>, String> {
-    history_manager
-        .get_history_entries()
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn get_history_entries_paginated(
-    _app: AppHandle,
-    history_manager: State<'_, Arc<HistoryManager>>,
     cursor: Option<i64>,
-    limit: usize,
+    limit: Option<usize>,
 ) -> Result<PaginatedHistory, String> {
     history_manager
-        .get_history_entries_paginated(cursor, limit)
+        .get_history_entries(cursor, limit)
         .await
         .map_err(|e| e.to_string())
 }

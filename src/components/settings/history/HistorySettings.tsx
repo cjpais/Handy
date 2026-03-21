@@ -1,21 +1,20 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Check, Copy, FolderOpen, Star, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { commands, type HistoryEntry } from "@/bindings";
+import {
+  commands,
+  events,
+  type HistoryEntry,
+  type HistoryUpdatePayload,
+} from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
 
 const PAGE_SIZE = 30;
-
-interface HistoryUpdatePayload {
-  action: "added" | "deleted" | "toggled";
-  id: number | null;
-}
 
 interface OpenRecordingsButtonProps {
   onClick: () => void;
@@ -46,6 +45,12 @@ export const HistorySettings: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const entriesRef = useRef<HistoryEntry[]>([]);
+
+  // Keep ref in sync for use in IntersectionObserver callback
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
 
   const loadPage = useCallback(
     async (cursor?: number) => {
@@ -54,7 +59,7 @@ export const HistorySettings: React.FC = () => {
       else setLoadingMore(true);
 
       try {
-        const result = await commands.getHistoryEntriesPaginated(
+        const result = await commands.getHistoryEntries(
           cursor ?? null,
           PAGE_SIZE,
         );
@@ -91,13 +96,11 @@ export const HistorySettings: React.FC = () => {
       (observerEntries) => {
         const first = observerEntries[0];
         if (first.isIntersecting) {
-          setEntries((current) => {
-            const lastEntry = current[current.length - 1];
-            if (lastEntry) {
-              loadPage(lastEntry.id);
-            }
-            return current;
-          });
+          const lastEntry =
+            entriesRef.current[entriesRef.current.length - 1];
+          if (lastEntry) {
+            loadPage(lastEntry.id);
+          }
         }
       },
       { threshold: 0 },
@@ -107,39 +110,21 @@ export const HistorySettings: React.FC = () => {
     return () => observer.disconnect();
   }, [loading, hasMore, loadingMore, loadPage]);
 
-  // Listen for history-updated events
+  // Listen for new entries added from the transcription pipeline
   useEffect(() => {
-    const setupListener = async () =>
-      listen<HistoryUpdatePayload>("history-updated", (event) => {
-        const { action, id } = event.payload;
+    const unlisten = events.historyUpdatePayload.listen((event) => {
+      const payload: HistoryUpdatePayload = event.payload;
+      if (payload.action === "added") {
+        setEntries((prev) => [payload.entry, ...prev]);
+      }
+      // "deleted" and "toggled" are handled by optimistic updates only,
+      // so we intentionally ignore them here to avoid double-mutation.
+    });
 
-        switch (action) {
-          case "added":
-            // A new entry was added — fetch the first page to get it
-            loadPage();
-            break;
-          case "deleted":
-            if (id !== null) {
-              setEntries((prev) => prev.filter((e) => e.id !== id));
-            }
-            break;
-          case "toggled":
-            if (id !== null) {
-              setEntries((prev) =>
-                prev.map((e) =>
-                  e.id === id ? { ...e, saved: !e.saved } : e,
-                ),
-              );
-            }
-            break;
-        }
-      });
-
-    const unlistenPromise = setupListener();
     return () => {
-      unlistenPromise.then((unlisten) => unlisten());
+      unlisten.then((fn) => fn());
     };
-  }, [loadPage]);
+  }, []);
 
   const toggleSaved = async (id: number) => {
     // Optimistic update

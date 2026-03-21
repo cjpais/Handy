@@ -23,7 +23,7 @@ mod utils;
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
-use tauri_specta::{collect_commands, Builder};
+use tauri_specta::{collect_commands, collect_events, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
@@ -414,13 +414,15 @@ pub fn run(cli_args: CliArgs) {
         commands::transcription::get_model_load_status,
         commands::transcription::unload_model_manually,
         commands::history::get_history_entries,
-        commands::history::get_history_entries_paginated,
         commands::history::toggle_history_entry_saved,
         commands::history::get_audio_file_path,
         commands::history::delete_history_entry,
         commands::history::update_history_limit,
         commands::history::update_recording_retention_period,
         helpers::clamshell::is_laptop,
+    ])
+    .events(collect_events![
+        managers::history::HistoryUpdatePayload,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -430,6 +432,8 @@ pub fn run(cli_args: CliArgs) {
             "../src/bindings.ts",
         )
         .expect("Failed to export typescript bindings");
+
+    let invoke_handler = specta_builder.invoke_handler();
 
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
@@ -498,6 +502,8 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
+            specta_builder.mount_events(app);
+
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
@@ -581,7 +587,7 @@ pub fn run(cli_args: CliArgs) {
             }
             _ => {}
         })
-        .invoke_handler(specta_builder.invoke_handler())
+        .invoke_handler(invoke_handler)
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
