@@ -3,6 +3,7 @@ import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ModelInfo } from "@/bindings";
+import { toast } from "sonner";
 
 interface DownloadProgress {
   model_id: string;
@@ -23,6 +24,7 @@ interface ModelsStore {
   models: ModelInfo[];
   currentModel: string;
   downloadingModels: Record<string, true>;
+  verifyingModels: Record<string, true>;
   extractingModels: Record<string, true>;
   downloadProgress: Record<string, DownloadProgress>;
   downloadStats: Record<string, DownloadStats>;
@@ -43,6 +45,7 @@ interface ModelsStore {
   deleteModel: (modelId: string) => Promise<boolean>;
   getModelInfo: (modelId: string) => ModelInfo | undefined;
   isModelDownloading: (modelId: string) => boolean;
+  isModelVerifying: (modelId: string) => boolean;
   isModelExtracting: (modelId: string) => boolean;
   getDownloadProgress: (modelId: string) => DownloadProgress | undefined;
 
@@ -58,6 +61,7 @@ export const useModelStore = create<ModelsStore>()(
     models: [],
     currentModel: "",
     downloadingModels: {},
+    verifyingModels: {},
     extractingModels: {},
     downloadProgress: {},
     downloadStats: {},
@@ -175,22 +179,27 @@ export const useModelStore = create<ModelsStore>()(
           }),
         );
         const result = await commands.downloadModel(modelId);
-        if (result.status === "ok") {
-          return true;
-        } else {
-          set({ error: `Failed to download model: ${result.error}` });
+        if (result.status !== "ok") {
+          // Fallback cleanup in case the model-download-failed event was not received
+          // (e.g. listener not yet registered). The event handler is a no-op if it
+          // arrives after this cleanup since deleting missing keys is safe.
           set(
             produce((state) => {
               delete state.downloadingModels[modelId];
+              delete state.downloadProgress[modelId];
+              delete state.downloadStats[modelId];
             }),
           );
-          return false;
         }
-      } catch (err) {
-        set({ error: `Failed to download model: ${err}` });
+        return result.status === "ok";
+      } catch {
+        // model-download-failed event won't fire for JS exceptions (e.g. IPC error),
+        // so clean up state here to avoid a stuck progress spinner.
         set(
           produce((state) => {
             delete state.downloadingModels[modelId];
+            delete state.downloadProgress[modelId];
+            delete state.downloadStats[modelId];
           }),
         );
         return false;
@@ -247,6 +256,10 @@ export const useModelStore = create<ModelsStore>()(
 
     isModelDownloading: (modelId: string) => {
       return modelId in get().downloadingModels;
+    },
+
+    isModelVerifying: (modelId: string) => {
+      return modelId in get().verifyingModels;
     },
 
     isModelExtracting: (modelId: string) => {
@@ -316,11 +329,47 @@ export const useModelStore = create<ModelsStore>()(
         set(
           produce((state) => {
             delete state.downloadingModels[modelId];
+            delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
             delete state.downloadStats[modelId];
           }),
         );
         get().loadModels();
+      });
+
+      listen<{ model_id: string; error: string }>(
+        "model-download-failed",
+        (event) => {
+          const { model_id: modelId, error } = event.payload;
+          set(
+            produce((state) => {
+              delete state.downloadingModels[modelId];
+              delete state.verifyingModels[modelId];
+              delete state.downloadProgress[modelId];
+              delete state.downloadStats[modelId];
+              state.error = error;
+            }),
+          );
+          toast.error(error);
+        },
+      );
+
+      listen<string>("model-verification-started", (event) => {
+        const modelId = event.payload;
+        set(
+          produce((state) => {
+            state.verifyingModels[modelId] = true;
+          }),
+        );
+      });
+
+      listen<string>("model-verification-completed", (event) => {
+        const modelId = event.payload;
+        set(
+          produce((state) => {
+            delete state.verifyingModels[modelId];
+          }),
+        );
       });
 
       listen<string>("model-extraction-started", (event) => {
@@ -360,6 +409,7 @@ export const useModelStore = create<ModelsStore>()(
         set(
           produce((state) => {
             delete state.downloadingModels[modelId];
+            delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
             delete state.downloadStats[modelId];
           }),

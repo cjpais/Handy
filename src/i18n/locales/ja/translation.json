@@ -120,6 +120,8 @@
     "active": "アクティブ",
     "switching": "切替中...",
     "noModelsAvailable": "利用可能なモデルがありません",
+    "verifying": "{{modelName}}を検証中...",
+    "verifyingGeneric": "検証中...",
     "extracting": "{{modelName}}を展開中...",
     "extractingMultiple": "{{count}}個のモデルを展開中...",
     "extractingGeneric": "展開中...",

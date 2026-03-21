@@ -120,6 +120,8 @@
     "active": "Активный",
     "switching": "Переключение...",
     "noModelsAvailable": "Нет доступных моделей",
+    "verifying": "Проверка {{modelName}}...",
+    "verifyingGeneric": "Проверка...",
     "extracting": "Извлечение {{modelName}}...",
     "extractingMultiple": "Извлечение моделей {{count}}...",
     "extractingGeneric": "Извлечение...",

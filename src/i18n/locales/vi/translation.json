@@ -120,6 +120,8 @@
     "active": "Đang hoạt động",
     "switching": "Đang chuyển...",
     "noModelsAvailable": "Không có mô hình nào",
+    "verifying": "Đang xác minh {{modelName}}...",
+    "verifyingGeneric": "Đang xác minh...",
     "extracting": "Đang giải nén {{modelName}}...",
     "extractingMultiple": "Đang giải nén {{count}} mô hình...",
     "extractingGeneric": "Đang giải nén...",

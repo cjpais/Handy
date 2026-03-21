@@ -120,6 +120,8 @@
     "active": "使用中",
     "switching": "切換中...",
     "noModelsAvailable": "沒有可用的模型",
+    "verifying": "正在驗證 {{modelName}}...",
+    "verifyingGeneric": "正在驗證...",
     "extracting": "正在解壓 {{modelName}}...",
     "extractingMultiple": "正在解壓 {{count}} 個模型...",
     "extractingGeneric": "解壓中...",

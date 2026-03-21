@@ -119,6 +119,8 @@
     "custom": "Vlastní",
     "active": "Aktivní",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
+    "verifying": "Ověřování {{modelName}}...",
+    "verifyingGeneric": "Ověřování...",
     "extracting": "Rozbaluji {{modelName}}...",
     "extractingMultiple": "Rozbaluji {{count}} modelů...",
     "extractingGeneric": "Rozbalování...",

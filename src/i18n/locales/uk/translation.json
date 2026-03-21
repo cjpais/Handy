@@ -119,6 +119,8 @@
     "custom": "Користувацька",
     "active": "Активна",
     "noModelsAvailable": "Немає доступних моделей",
+    "verifying": "Перевірка {{modelName}}...",
+    "verifyingGeneric": "Перевірка...",
     "extracting": "Розпакування {{modelName}}...",
     "extractingMultiple": "Розпакування {{count}} моделей...",
     "extractingGeneric": "Розпакування...",
