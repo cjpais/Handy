@@ -119,6 +119,8 @@
     "custom": "Özel",
     "active": "Aktif",
     "noModelsAvailable": "Kullanılabilir model yok",
+    "verifying": "{{modelName}} doğrulanıyor...",
+    "verifyingGeneric": "Doğrulanıyor...",
     "extracting": "{{modelName}} çıkarılıyor...",
     "extractingMultiple": "{{count}} model çıkarılıyor...",
     "extractingGeneric": "Çıkarılıyor...",

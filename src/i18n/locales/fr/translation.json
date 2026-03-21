@@ -120,6 +120,8 @@
     "active": "Actif",
     "switching": "Changement...",
     "noModelsAvailable": "Aucun modèle disponible",
+    "verifying": "Vérification de {{modelName}}...",
+    "verifyingGeneric": "Vérification...",
     "extracting": "Extraction de {{modelName}}...",
     "extractingMultiple": "Extraction de {{count}} modèles...",
     "extractingGeneric": "Extraction...",

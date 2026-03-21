@@ -120,6 +120,8 @@
     "active": "Aktiv",
     "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",
+    "verifying": "Überprüfung von {{modelName}}...",
+    "verifyingGeneric": "Überprüfung...",
     "extracting": "Entpacke {{modelName}}...",
     "extractingMultiple": "Entpacke {{count}} Modelle...",
     "extractingGeneric": "Wird entpackt...",

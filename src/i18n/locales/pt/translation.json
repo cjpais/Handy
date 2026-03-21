@@ -119,6 +119,8 @@
     "custom": "Personalizado",
     "active": "Ativo",
     "noModelsAvailable": "Nenhum modelo disponível",
+    "verifying": "Verificando {{modelName}}...",
+    "verifyingGeneric": "Verificando...",
     "extracting": "Extraindo {{modelName}}...",
     "extractingMultiple": "Extraindo {{count}} modelos...",
     "extractingGeneric": "Extraindo...",

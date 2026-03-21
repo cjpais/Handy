@@ -119,6 +119,8 @@
     "custom": "مخصص",
     "active": "نشط",
     "noModelsAvailable": "لا توجد نماذج متاحة",
+    "verifying": "جارٍ التحقق من {{modelName}}...",
+    "verifyingGeneric": "جارٍ التحقق...",
     "extracting": "...جاري استخراج {{modelName}}",
     "extractingMultiple": "...جاري استخراج {{count}} من النماذج",
     "extractingGeneric": "...جاري الاستخراج",

@@ -120,6 +120,8 @@
     "active": "활성",
     "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
+    "verifying": "{{modelName}} 검증 중...",
+    "verifyingGeneric": "검증 중...",
     "extracting": "{{modelName}} 압축 해제 중...",
     "extractingMultiple": "{{count}}개 모델 압축 해제 중...",
     "extractingGeneric": "압축 해제 중...",
