@@ -59,6 +59,31 @@ pub struct DownloadProgress {
     pub percentage: f64,
 }
 
+/// RAII guard that cleans up download state (`is_downloading` flag and cancel flag)
+/// when dropped, unless explicitly disarmed. This ensures consistent cleanup on
+/// every error path without requiring manual cleanup at each `?` or `return Err`.
+struct DownloadCleanup<'a> {
+    available_models: &'a Mutex<HashMap<String, ModelInfo>>,
+    cancel_flags: &'a Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    model_id: String,
+    disarmed: bool,
+}
+
+impl<'a> Drop for DownloadCleanup<'a> {
+    fn drop(&mut self) {
+        if self.disarmed {
+            return;
+        }
+        {
+            let mut models = self.available_models.lock().unwrap();
+            if let Some(model) = models.get_mut(self.model_id.as_str()) {
+                model.is_downloading = false;
+            }
+        }
+        self.cancel_flags.lock().unwrap().remove(&self.model_id);
+    }
+}
+
 pub struct ModelManager {
     app_handle: AppHandle,
     models_dir: PathBuf,
@@ -975,6 +1000,15 @@ impl ModelManager {
             flags.insert(model_id.to_string(), cancel_flag.clone());
         }
 
+        // Guard ensures is_downloading and cancel_flags are cleaned up on every
+        // error path. Disarmed only on success (which sets is_downloaded = true).
+        let mut cleanup = DownloadCleanup {
+            available_models: &self.available_models,
+            cancel_flags: &self.cancel_flags,
+            model_id: model_id.to_string(),
+            disarmed: false,
+        };
+
         // Create HTTP client with range request for resuming
         let client = reqwest::Client::new();
         let mut request = client.get(&url);
@@ -1007,13 +1041,6 @@ impl ModelManager {
         if !response.status().is_success()
             && response.status() != reqwest::StatusCode::PARTIAL_CONTENT
         {
-            // Mark as not downloading on error
-            {
-                let mut models = self.available_models.lock().unwrap();
-                if let Some(model) = models.get_mut(model_id) {
-                    model.is_downloading = false;
-                }
-            }
             return Err(anyhow::anyhow!(
                 "Failed to download model: HTTP {}",
                 response.status()
@@ -1063,38 +1090,14 @@ impl ModelManager {
         while let Some(chunk) = stream.next().await {
             // Check if download was cancelled
             if cancel_flag.load(Ordering::Relaxed) {
-                // Close the file before returning
                 drop(file);
                 info!("Download cancelled for: {}", model_id);
-
-                // Update state to mark as not downloading
-                {
-                    let mut models = self.available_models.lock().unwrap();
-                    if let Some(model) = models.get_mut(model_id) {
-                        model.is_downloading = false;
-                    }
-                }
-
-                // Remove cancel flag
-                {
-                    let mut flags = self.cancel_flags.lock().unwrap();
-                    flags.remove(model_id);
-                }
-
-                // Keep partial file for resume functionality
+                // Keep partial file for resume functionality.
+                // Guard handles is_downloading + cancel_flags cleanup on drop.
                 return Ok(());
             }
 
-            let chunk = chunk.map_err(|e| {
-                // Mark as not downloading on error
-                {
-                    let mut models = self.available_models.lock().unwrap();
-                    if let Some(model) = models.get_mut(model_id) {
-                        model.is_downloading = false;
-                    }
-                }
-                e
-            })?;
+            let chunk = chunk?;
 
             file.write_all(&chunk)?;
             downloaded += chunk.len() as u64;
@@ -1142,12 +1145,6 @@ impl ModelManager {
             if actual_size != total_size {
                 // Download is incomplete/corrupted - delete partial and return error
                 let _ = fs::remove_file(&partial_path);
-                {
-                    let mut models = self.available_models.lock().unwrap();
-                    if let Some(model) = models.get_mut(model_id) {
-                        model.is_downloading = false;
-                    }
-                }
                 return Err(anyhow::anyhow!(
                     "Download incomplete: expected {} bytes, got {} bytes",
                     total_size,
@@ -1159,6 +1156,7 @@ impl ModelManager {
         // Verify SHA256 checksum. Runs in a blocking thread so the async executor is not
         // stalled while hashing large model files (up to 1.6 GB). On failure the partial
         // is deleted inside verify_sha256 so the next attempt always starts fresh.
+        let _ = self.app_handle.emit("model-verification-started", model_id);
         info!("Verifying SHA256 for model {}...", model_id);
         let verify_path = partial_path.clone();
         let verify_expected = model_info.sha256.clone();
@@ -1168,16 +1166,10 @@ impl ModelManager {
         })
         .await
         .map_err(|e| anyhow::anyhow!("SHA256 task panicked: {}", e))?;
-        if let Err(e) = verify_result {
-            {
-                let mut models = self.available_models.lock().unwrap();
-                if let Some(model) = models.get_mut(model_id) {
-                    model.is_downloading = false;
-                }
-            }
-            self.cancel_flags.lock().unwrap().remove(model_id);
-            return Err(e);
-        }
+        verify_result?;
+        let _ = self
+            .app_handle
+            .emit("model-verification-completed", model_id);
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
@@ -1272,7 +1264,9 @@ impl ModelManager {
             fs::rename(&partial_path, &model_path)?;
         }
 
-        // Update download status
+        // Disarm the guard — success path does its own cleanup because it
+        // additionally sets is_downloaded = true.
+        cleanup.disarmed = true;
         {
             let mut models = self.available_models.lock().unwrap();
             if let Some(model) = models.get_mut(model_id) {
@@ -1281,12 +1275,7 @@ impl ModelManager {
                 model.partial_size = 0;
             }
         }
-
-        // Remove cancel flag on successful completion
-        {
-            let mut flags = self.cancel_flags.lock().unwrap();
-            flags.remove(model_id);
-        }
+        self.cancel_flags.lock().unwrap().remove(model_id);
 
         // Emit completion event
         let _ = self.app_handle.emit("model-download-complete", model_id);

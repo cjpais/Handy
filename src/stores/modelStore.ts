@@ -24,6 +24,7 @@ interface ModelsStore {
   models: ModelInfo[];
   currentModel: string;
   downloadingModels: Record<string, true>;
+  verifyingModels: Record<string, true>;
   extractingModels: Record<string, true>;
   downloadProgress: Record<string, DownloadProgress>;
   downloadStats: Record<string, DownloadStats>;
@@ -44,6 +45,7 @@ interface ModelsStore {
   deleteModel: (modelId: string) => Promise<boolean>;
   getModelInfo: (modelId: string) => ModelInfo | undefined;
   isModelDownloading: (modelId: string) => boolean;
+  isModelVerifying: (modelId: string) => boolean;
   isModelExtracting: (modelId: string) => boolean;
   getDownloadProgress: (modelId: string) => DownloadProgress | undefined;
 
@@ -59,6 +61,7 @@ export const useModelStore = create<ModelsStore>()(
     models: [],
     currentModel: "",
     downloadingModels: {},
+    verifyingModels: {},
     extractingModels: {},
     downloadProgress: {},
     downloadStats: {},
@@ -255,6 +258,10 @@ export const useModelStore = create<ModelsStore>()(
       return modelId in get().downloadingModels;
     },
 
+    isModelVerifying: (modelId: string) => {
+      return modelId in get().verifyingModels;
+    },
+
     isModelExtracting: (modelId: string) => {
       return modelId in get().extractingModels;
     },
@@ -322,6 +329,7 @@ export const useModelStore = create<ModelsStore>()(
         set(
           produce((state) => {
             delete state.downloadingModels[modelId];
+            delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
             delete state.downloadStats[modelId];
           }),
@@ -336,6 +344,7 @@ export const useModelStore = create<ModelsStore>()(
           set(
             produce((state) => {
               delete state.downloadingModels[modelId];
+              delete state.verifyingModels[modelId];
               delete state.downloadProgress[modelId];
               delete state.downloadStats[modelId];
               state.error = error;
@@ -344,6 +353,24 @@ export const useModelStore = create<ModelsStore>()(
           toast.error(error);
         },
       );
+
+      listen<string>("model-verification-started", (event) => {
+        const modelId = event.payload;
+        set(
+          produce((state) => {
+            state.verifyingModels[modelId] = true;
+          }),
+        );
+      });
+
+      listen<string>("model-verification-completed", (event) => {
+        const modelId = event.payload;
+        set(
+          produce((state) => {
+            delete state.verifyingModels[modelId];
+          }),
+        );
+      });
 
       listen<string>("model-extraction-started", (event) => {
         const modelId = event.payload;
@@ -382,6 +409,7 @@ export const useModelStore = create<ModelsStore>()(
         set(
           produce((state) => {
             delete state.downloadingModels[modelId];
+            delete state.verifyingModels[modelId];
             delete state.downloadProgress[modelId];
             delete state.downloadStats[modelId];
           }),
