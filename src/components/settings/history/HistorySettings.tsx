@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   commands,
   events,
@@ -334,7 +335,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert(t("settings.history.deleteError"));
+      toast.error(t("settings.history.deleteError"));
     }
   };
 
@@ -344,7 +345,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await retryTranscription(entry.id);
     } catch (error) {
       console.error("Failed to re-transcribe:", error);
-      alert(t("settings.history.retranscribeError"));
+      toast.error(t("settings.history.retranscribeError"));
     } finally {
       setRetrying(false);
     }
