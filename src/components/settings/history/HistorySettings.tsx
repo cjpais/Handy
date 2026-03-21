@@ -42,7 +42,6 @@ export const HistorySettings: React.FC = () => {
   const osType = useOsType();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const entriesRef = useRef<HistoryEntry[]>([]);
@@ -59,7 +58,6 @@ export const HistorySettings: React.FC = () => {
     loadingRef.current = true;
 
     if (isFirstPage) setLoading(true);
-    else setLoadingMore(true);
 
     try {
       const result = await commands.getHistoryEntries(
@@ -77,7 +75,6 @@ export const HistorySettings: React.FC = () => {
       console.error("Failed to load history entries:", error);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
       loadingRef.current = false;
     }
   }, []);
@@ -92,7 +89,7 @@ export const HistorySettings: React.FC = () => {
     if (loading) return;
 
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore || loadingMore) return;
+    if (!sentinel || !hasMore) return;
 
     const observer = new IntersectionObserver(
       (observerEntries) => {
@@ -109,7 +106,7 @@ export const HistorySettings: React.FC = () => {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loading, hasMore, loadingMore, loadPage]);
+  }, [loading, hasMore, loadPage]);
 
   // Listen for new entries added from the transcription pipeline
   useEffect(() => {
@@ -220,25 +217,22 @@ export const HistorySettings: React.FC = () => {
     );
   } else {
     content = (
-      <div className="divide-y divide-mid-gray/20">
-        {entries.map((entry) => (
-          <HistoryEntryComponent
-            key={entry.id}
-            entry={entry}
-            onToggleSaved={() => toggleSaved(entry.id)}
-            onCopyText={() => copyToClipboard(entry.transcription_text)}
-            getAudioUrl={getAudioUrl}
-            deleteAudio={deleteAudioEntry}
-          />
-        ))}
+      <>
+        <div className="divide-y divide-mid-gray/20">
+          {entries.map((entry) => (
+            <HistoryEntryComponent
+              key={entry.id}
+              entry={entry}
+              onToggleSaved={() => toggleSaved(entry.id)}
+              onCopyText={() => copyToClipboard(entry.transcription_text)}
+              getAudioUrl={getAudioUrl}
+              deleteAudio={deleteAudioEntry}
+            />
+          ))}
+        </div>
         {/* Sentinel for infinite scroll */}
         <div ref={sentinelRef} className="h-1" />
-        {loadingMore && (
-          <div className="px-4 py-3 text-center text-text/60 text-sm">
-            {t("settings.history.loadingMore")}
-          </div>
-        )}
-      </div>
+      </>
     );
   }
 

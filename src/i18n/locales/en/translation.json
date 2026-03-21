@@ -416,8 +416,7 @@
       "save": "Save transcription",
       "unsave": "Remove from saved",
       "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again.",
-      "loadingMore": "Loading more..."
+      "deleteError": "Failed to delete entry. Please try again."
     },
     "debug": {
       "title": "Debug",
