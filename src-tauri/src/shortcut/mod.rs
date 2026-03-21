@@ -692,14 +692,14 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_available_typing_tools() -> Vec<String> {
+pub fn get_available_typing_tools() -> Vec<TypingTool> {
     #[cfg(target_os = "linux")]
     {
         crate::clipboard::get_available_typing_tools()
     }
     #[cfg(not(target_os = "linux"))]
     {
-        vec!["auto".to_string()]
+        vec![TypingTool::Auto]
     }
 }
 
@@ -1020,15 +1020,21 @@ pub async fn fetch_post_process_models(
 
 #[tauri::command]
 #[specta::specta]
-pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<(), String> {
+pub fn set_post_process_selected_prompt(app: AppHandle, id: Option<String>) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
 
     // Verify the prompt exists
-    if !settings.post_process_prompts.iter().any(|p| p.id == id) {
-        return Err(format!("Prompt with id '{}' not found", id));
+    if let Some(ref id_value) = id {
+        if !settings
+            .post_process_prompts
+            .iter()
+            .any(|p| p.id == *id_value)
+        {
+            return Err(format!("Prompt with id '{}' not found", id_value));
+        }
     }
 
-    settings.post_process_selected_prompt_id = Some(id);
+    settings.post_process_selected_prompt_id = id;
     settings::write_settings(&app, settings);
     Ok(())
 }

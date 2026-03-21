@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
@@ -25,7 +25,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const osType = useOsType();
-    const [availableTools, setAvailableTools] = useState<string[] | null>(null);
+    const [availableTools, setAvailableTools] = useState<TypingTool[]>([]);
 
     useEffect(() => {
       if (osType !== "linux") return;
@@ -49,7 +49,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
     }
 
     const tools = availableTools ?? ["auto"];
-    const typingToolOptions = tools.map((tool) =>
+    const typingToolOptions: DropdownOption<TypingTool>[] = tools.map((tool) =>
       tool === "auto"
         ? {
             value: "auto",
@@ -58,7 +58,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
         : { value: tool, label: allToolLabels[tool] ?? tool },
     );
 
-    const selectedTool = (getSetting("typing_tool") || "auto") as TypingTool;
+    const selectedTool = getSetting("typing_tool") || "auto";
 
     return (
       <SettingContainer
@@ -71,9 +71,7 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
         <Dropdown
           options={typingToolOptions}
           selectedValue={selectedTool}
-          onSelect={(value) =>
-            updateSetting("typing_tool", value as TypingTool)
-          }
+          onSelect={(value) => updateSetting("typing_tool", value)}
           disabled={isUpdating("typing_tool")}
         />
       </SettingContainer>

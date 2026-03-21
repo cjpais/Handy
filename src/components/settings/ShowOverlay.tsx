@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Dropdown } from "../ui/Dropdown";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import type { OverlayPosition } from "@/bindings";
@@ -15,14 +15,13 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
-    const overlayOptions = [
+    const overlayOptions: DropdownOption<OverlayPosition>[] = [
       { value: "none", label: t("settings.advanced.overlay.options.none") },
       { value: "bottom", label: t("settings.advanced.overlay.options.bottom") },
       { value: "top", label: t("settings.advanced.overlay.options.top") },
     ];
 
-    const selectedPosition = (getSetting("overlay_position") ||
-      "bottom") as OverlayPosition;
+    const selectedPosition = getSetting("overlay_position") || "bottom";
 
     return (
       <SettingContainer
@@ -34,9 +33,7 @@ export const ShowOverlay: React.FC<ShowOverlayProps> = React.memo(
         <Dropdown
           options={overlayOptions}
           selectedValue={selectedPosition}
-          onSelect={(value) =>
-            updateSetting("overlay_position", value as OverlayPosition)
-          }
+          onSelect={(value) => updateSetting("overlay_position", value)}
           disabled={isUpdating("overlay_position")}
         />
       </SettingContainer>
