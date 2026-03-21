@@ -419,6 +419,7 @@
       "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
       "retranscribe": "Erneut transkribieren",
       "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "transcribing": "Transkribiere...",
       "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst erneut transkribieren oder den Aufnahmeordner öffnen."
     },
     "debug": {

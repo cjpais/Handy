@@ -419,6 +419,7 @@
       "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
       "retranscribe": "Re-transcrire",
       "retranscribeError": "Impossible de re-transcrire. Veuillez réessayer.",
+      "transcribing": "Transcription en cours...",
       "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire ou ouvrir le dossier des enregistrements."
     },
     "debug": {

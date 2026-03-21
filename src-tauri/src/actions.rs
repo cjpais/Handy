@@ -516,20 +516,13 @@ impl ShortcutAction for TranscribeAction {
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
                         Ok(Ok(())) => {
-                            // Verify: 44-byte header + num_samples * 2 bytes (16-bit)
-                            let expected_size = 44 + (sample_count * 2) as u64;
-                            match std::fs::metadata(&wav_path_for_verify) {
-                                Ok(meta) if meta.len() == expected_size => true,
-                                Ok(meta) => {
-                                    error!(
-                                        "WAV file size mismatch: expected {}, got {}",
-                                        expected_size,
-                                        meta.len()
-                                    );
-                                    false
-                                }
+                            match crate::audio_toolkit::verify_wav_file(
+                                &wav_path_for_verify,
+                                sample_count,
+                            ) {
+                                Ok(()) => true,
                                 Err(e) => {
-                                    error!("Failed to verify WAV file: {}", e);
+                                    error!("WAV verification failed: {}", e);
                                     false
                                 }
                             }
@@ -559,8 +552,8 @@ impl ShortcutAction for TranscribeAction {
                                 process_transcription_output(&ah, &transcription, post_process)
                                     .await;
 
-                            // Save to history if WAV was saved and transcription is non-empty
-                            if wav_saved && !transcription.is_empty() {
+                            // Save to history if WAV was saved
+                            if wav_saved {
                                 if let Err(err) = hm.save_entry(
                                     file_name,
                                     transcription,

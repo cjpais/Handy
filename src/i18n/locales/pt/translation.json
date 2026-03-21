@@ -419,6 +419,7 @@
       "deleteError": "Falha ao excluir entrada. Por favor, tente novamente.",
       "retranscribe": "Re-transcrever",
       "retranscribeError": "Falha ao re-transcrever. Por favor, tente novamente.",
+      "transcribing": "Transcrevendo...",
       "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever ou abrir a pasta de gravações."
     },
     "debug": {

@@ -419,6 +419,7 @@
       "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
       "retranscribe": "Yeniden yazıya dök",
       "retranscribeError": "Yeniden yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
+      "transcribing": "Yazıya döküyor...",
       "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden yazıya dökebilir veya kayıt klasörünü açabilirsiniz."
     },
     "debug": {

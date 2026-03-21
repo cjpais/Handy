@@ -268,8 +268,10 @@ impl HistoryManager {
         self.cleanup_old_entries()?;
 
         // Emit typed event for real-time frontend updates
-        if let Err(e) =
-            (HistoryUpdatePayload::Added { entry: entry.clone() }).emit(&self.app_handle)
+        if let Err(e) = (HistoryUpdatePayload::Added {
+            entry: entry.clone(),
+        })
+        .emit(&self.app_handle)
         {
             error!("Failed to emit history-update-payload event: {}", e);
         }
@@ -314,8 +316,10 @@ impl HistoryManager {
 
         debug!("Updated transcription for history entry {}", id);
 
-        if let Err(e) =
-            (HistoryUpdatePayload::Updated { entry: entry.clone() }).emit(&self.app_handle)
+        if let Err(e) = (HistoryUpdatePayload::Updated {
+            entry: entry.clone(),
+        })
+        .emit(&self.app_handle)
         {
             error!("Failed to emit history-update-payload event: {}", e);
         }

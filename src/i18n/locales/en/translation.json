@@ -419,6 +419,7 @@
       "deleteError": "Failed to delete entry. Please try again.",
       "retranscribe": "Re-transcribe",
       "retranscribeError": "Failed to re-transcribe. Please try again.",
+      "transcribing": "Transcribing...",
       "transcriptionFailed": "Transcription failed. You can re-transcribe or open the recordings folder to recover the audio."
     },
     "debug": {

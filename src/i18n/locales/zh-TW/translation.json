@@ -419,6 +419,7 @@
       "deleteError": "刪除條目失敗，請重試",
       "retranscribe": "重新轉錄",
       "retranscribeError": "重新轉錄失敗，請重試。",
+      "transcribing": "轉錄中...",
       "transcriptionFailed": "轉錄失敗。您可以重新轉錄，或打開錄音資料夾還原音訊。"
     },
     "debug": {

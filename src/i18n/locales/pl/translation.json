@@ -419,6 +419,7 @@
       "deleteError": "Nie udało się usunąć wpisu. Spróbuj ponownie.",
       "retranscribe": "Transkrybuj ponownie",
       "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
+      "transcribing": "Transkrybuję...",
       "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie lub otworzyć folder nagrań."
     },
     "debug": {

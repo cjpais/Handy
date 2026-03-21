@@ -419,6 +419,7 @@
       "deleteError": "Không thể xóa mục. Vui lòng thử lại.",
       "retranscribe": "Phiên âm lại",
       "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
+      "transcribing": "Đang phiên âm...",
       "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại hoặc mở thư mục bản ghi để khôi phục âm thanh."
     },
     "debug": {

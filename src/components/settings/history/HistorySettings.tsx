@@ -359,7 +359,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         <div className="flex items-center">
           <IconButton
             onClick={handleCopyText}
-            disabled={!hasTranscription}
+            disabled={!hasTranscription || retrying}
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
@@ -370,6 +370,7 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
           </IconButton>
           <IconButton
             onClick={onToggleSaved}
+            disabled={retrying}
             active={entry.saved}
             title={
               entry.saved
@@ -391,11 +392,16 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             <RotateCcw
               width={16}
               height={16}
-              style={retrying ? { animation: "spin 1s linear infinite reverse" } : undefined}
+              style={
+                retrying
+                  ? { animation: "spin 1s linear infinite reverse" }
+                  : undefined
+              }
             />
           </IconButton>
           <IconButton
             onClick={handleDeleteEntry}
+            disabled={retrying}
             title={t("settings.history.delete")}
           >
             <Trash2 width={16} height={16} />
@@ -403,15 +409,34 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         </div>
       </div>
 
-      {hasTranscription ? (
-        <p className="italic text-text/90 text-sm pb-2 select-text cursor-text whitespace-pre-wrap break-words">
-          {entry.transcription_text}
-        </p>
-      ) : (
-        <p className="text-sm text-text/40 pb-2">
-          {t("settings.history.transcriptionFailed")}
-        </p>
-      )}
+      <p
+        className={`italic text-sm pb-2 ${
+          retrying
+            ? ""
+            : hasTranscription
+              ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
+              : "text-text/40"
+        }`}
+        style={
+          retrying
+            ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
+            : undefined
+        }
+      >
+        {retrying && (
+          <style>{`
+            @keyframes transcribe-pulse {
+              0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+              50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+            }
+          `}</style>
+        )}
+        {retrying
+          ? t("settings.history.transcribing")
+          : hasTranscription
+            ? entry.transcription_text
+            : t("settings.history.transcriptionFailed")}
+      </p>
 
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
