@@ -8,6 +8,7 @@ use specta::Type;
 use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter};
+use tauri_specta::Event;
 
 /// Database migrations for transcription history.
 /// Each migration is applied in order. The library tracks which migrations
@@ -31,6 +32,23 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
 ];
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct PaginatedHistory {
+    pub entries: Vec<HistoryEntry>,
+    pub has_more: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+#[serde(tag = "action")]
+pub enum HistoryUpdatePayload {
+    #[serde(rename = "added")]
+    Added { entry: HistoryEntry },
+    #[serde(rename = "deleted")]
+    Deleted { id: i64 },
+    #[serde(rename = "toggled")]
+    Toggled { id: i64 },
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct HistoryEntry {
@@ -254,6 +272,13 @@ impl HistoryManager {
         self.cleanup_old_entries()?;
         self.emit_history_updated();
 
+        // Emit typed event for real-time frontend updates
+        if let Err(e) =
+            (HistoryUpdatePayload::Added { entry: entry.clone() }).emit(&self.app_handle)
+        {
+            error!("Failed to emit history-update-payload event: {}", e);
+        }
+
         Ok(entry)
     }
 
@@ -402,31 +427,61 @@ impl HistoryManager {
         Ok(())
     }
 
-    pub async fn get_history_entries(&self) -> Result<Vec<HistoryEntry>> {
+    pub async fn get_history_entries(
+        &self,
+        cursor: Option<i64>,
+        limit: Option<usize>,
+    ) -> Result<PaginatedHistory> {
         let conn = self.get_connection()?;
-        let mut stmt = conn.prepare(
-            "SELECT
-                id,
-                file_name,
-                timestamp,
-                saved,
-                title,
-                transcription_text,
-                post_processed_text,
-                post_process_prompt,
-                post_process_requested
-             FROM transcription_history
-             ORDER BY timestamp DESC",
-        )?;
+        let limit = limit.map(|l| l.min(100));
 
-        let rows = stmt.query_map([], Self::map_history_entry)?;
+        let mut entries: Vec<HistoryEntry> = match (cursor, limit) {
+            (Some(cursor_id), Some(lim)) => {
+                let fetch_count = (lim + 1) as i64;
+                let mut stmt = conn.prepare(
+                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                     FROM transcription_history
+                     WHERE id < ?1
+                     ORDER BY id DESC
+                     LIMIT ?2",
+                )?;
+                let result = stmt
+                    .query_map(params![cursor_id, fetch_count], Self::map_history_entry)?
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                result
+            }
+            (None, Some(lim)) => {
+                let fetch_count = (lim + 1) as i64;
+                let mut stmt = conn.prepare(
+                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                     FROM transcription_history
+                     ORDER BY id DESC
+                     LIMIT ?1",
+                )?;
+                let result = stmt
+                    .query_map(params![fetch_count], Self::map_history_entry)?
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                result
+            }
+            (_, None) => {
+                let mut stmt = conn.prepare(
+                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                     FROM transcription_history
+                     ORDER BY id DESC",
+                )?;
+                let result = stmt
+                    .query_map([], Self::map_history_entry)?
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                result
+            }
+        };
 
-        let mut entries = Vec::new();
-        for row in rows {
-            entries.push(row?);
+        let has_more = limit.is_some_and(|lim| entries.len() > lim);
+        if has_more {
+            entries.pop();
         }
 
-        Ok(entries)
+        Ok(PaginatedHistory { entries, has_more })
     }
 
     #[cfg(test)]
@@ -497,6 +552,10 @@ impl HistoryManager {
         debug!("Toggled saved status for entry {}: {}", id, new_saved);
         self.emit_history_updated();
 
+        if let Err(e) = (HistoryUpdatePayload::Toggled { id }).emit(&self.app_handle) {
+            error!("Failed to emit history-update-payload event: {}", e);
+        }
+
         Ok(())
     }
 
@@ -545,6 +604,10 @@ impl HistoryManager {
 
         debug!("Deleted history entry with id: {}", id);
         self.emit_history_updated();
+
+        if let Err(e) = (HistoryUpdatePayload::Deleted { id }).emit(&self.app_handle) {
+            error!("Failed to emit history-update-payload event: {}", e);
+        }
 
         Ok(())
     }
