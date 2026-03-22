@@ -327,6 +327,10 @@ pub struct AppSettings {
     #[serde(default)]
     pub selected_microphone: Option<String>,
     #[serde(default)]
+    pub multi_microphone_enabled: bool,
+    #[serde(default)]
+    pub prioritized_microphones: Vec<String>,
+    #[serde(default)]
     pub clamshell_microphone: Option<String>,
     #[serde(default)]
     pub selected_output_device: Option<String>,
@@ -737,6 +741,8 @@ pub fn get_default_settings() -> AppSettings {
         selected_model: "".to_string(),
         always_on_microphone: false,
         selected_microphone: None,
+        multi_microphone_enabled: false,
+        prioritized_microphones: vec![],
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,

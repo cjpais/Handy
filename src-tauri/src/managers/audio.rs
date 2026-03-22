@@ -196,13 +196,54 @@ impl AudioRecordingManager {
             false
         };
 
-        let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref().unwrap()
-        } else {
-            settings.selected_microphone.as_ref()?
-        };
+        if use_clamshell_mic {
+            let device_name = settings.clamshell_microphone.as_ref().unwrap();
+            return match list_input_devices() {
+                Ok(devices) => devices
+                    .into_iter()
+                    .find(|d| d.name == *device_name)
+                    .map(|d| d.device),
+                Err(e) => {
+                    debug!("Failed to list devices, using default: {}", e);
+                    None
+                }
+            };
+        }
 
-        // Find the device by name
+        // Multi-microphone mode: try each prioritized device in order
+        if settings.multi_microphone_enabled && !settings.prioritized_microphones.is_empty() {
+            let devices = match list_input_devices() {
+                Ok(d) => d,
+                Err(e) => {
+                    debug!("Failed to list devices, using default: {}", e);
+                    return None;
+                }
+            };
+            let available_names: std::collections::HashSet<&str> =
+                devices.iter().map(|d| d.name.as_str()).collect();
+            let first_available = settings
+                .prioritized_microphones
+                .iter()
+                .find(|name| available_names.contains(name.as_str()));
+            if let Some(name) = first_available {
+                return devices
+                    .into_iter()
+                    .find(|d| d.name == *name)
+                    .map(|d| d.device);
+            }
+            // No prioritized device available, fall back to selected_microphone
+            debug!("No prioritized microphone available, falling back to selected_microphone");
+            return match settings.selected_microphone.as_ref() {
+                Some(name) => devices
+                    .into_iter()
+                    .find(|d| d.name == *name)
+                    .map(|d| d.device),
+                None => None,
+            };
+        }
+
+        // Default: single selected microphone
+        let device_name = settings.selected_microphone.as_ref()?;
         match list_input_devices() {
             Ok(devices) => devices
                 .into_iter()
