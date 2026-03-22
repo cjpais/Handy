@@ -62,7 +62,7 @@ impl TranscriptionCoordinator {
                             // Releases always pass through for push-to-talk.
                             if is_pressed {
                                 let now = Instant::now();
-                                if last_press.map_or(false, |t| now.duration_since(t) < DEBOUNCE) {
+                                if last_press.is_some_and(|t| now.duration_since(t) < DEBOUNCE) {
                                     debug!("Debounced press for '{binding_id}'");
                                     continue;
                                 }
@@ -166,7 +166,7 @@ fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &s
     action.start(app, binding_id, hotkey_string);
     if app
         .try_state::<Arc<AudioRecordingManager>>()
-        .map_or(false, |a| a.is_recording())
+        .is_some_and(|a| a.is_recording())
     {
         *stage = Stage::Recording(binding_id.to_string());
     } else {

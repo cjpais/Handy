@@ -1,3 +1,4 @@
+use crate::huggingface::HFClient;
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
 use flate2::read::GzDecoder;
@@ -90,6 +91,7 @@ pub struct ModelManager {
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
+    hf_client: HFClient,
 }
 
 impl ModelManager {
@@ -585,6 +587,7 @@ impl ModelManager {
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             extracting_models: Arc::new(Mutex::new(HashSet::new())),
+            hf_client: HFClient::new(),
         };
 
         // Migrate any bundled models to user directory
@@ -972,6 +975,7 @@ impl ModelManager {
                 let _ = fs::remove_file(&partial_path);
             }
             self.update_download_status()?;
+            let _ = self.app_handle.emit("model-download-complete", model_id);
             return Ok(());
         }
 
@@ -1433,6 +1437,15 @@ impl ModelManager {
 
         info!("Download cancellation initiated for: {}", model_id);
         Ok(())
+    }
+
+    pub fn add_temporary_model(&self, info: ModelInfo) {
+        let mut models = self.available_models.lock().unwrap();
+        models.insert(info.id.clone(), info);
+    }
+
+    pub fn hf_client(&self) -> &HFClient {
+        &self.hf_client
     }
 }
 

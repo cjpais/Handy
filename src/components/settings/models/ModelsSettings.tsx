@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { ChevronDown, Globe } from "lucide-react";
+import { ChevronDown, Globe, Smile } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
+import { HFModelBrowser } from "@/components/HFModelBrowser/HFModelBrowser";
+import { HFLogo } from "@/components/HFModelBrowser/HFLogo";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -360,6 +362,22 @@ export const ModelsSettings: React.FC = () => {
           {t("settings.models.noModelsMatch")}
         </div>
       )}
+
+      {/* Community Models Section */}
+      <div className="pt-10 border-t border-mid-gray/20">
+        <div className="flex items-center gap-2.5 mb-5">
+          <div className="p-1 bg-white/5 rounded-lg border border-white/5">
+            <HFLogo className="w-5 h-5" />
+          </div>
+          <h2 className="text-sm font-bold text-text/70 uppercase tracking-[0.15em]">
+            {t("settings.models.communityModels", "Community Models")}
+          </h2>
+          <span className="px-2 py-0.5 text-[10px] font-bold bg-mid-gray/10 text-text/40 rounded uppercase tracking-wider ml-1">
+            {t("settings.models.huggingface.provider", "Hugging Face")}
+          </span>
+        </div>
+        <HFModelBrowser />
+      </div>
     </div>
   );
 };

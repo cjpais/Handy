@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
 import { listen } from "@tauri-apps/api/event";
-import { commands, type ModelInfo } from "@/bindings";
+import { commands, type ModelInfo, type HFModelResult } from "@/bindings";
 import { toast } from "sonner";
 
 interface DownloadProgress {
@@ -48,6 +48,9 @@ interface ModelsStore {
   isModelVerifying: (modelId: string) => boolean;
   isModelExtracting: (modelId: string) => boolean;
   getDownloadProgress: (modelId: string) => DownloadProgress | undefined;
+
+  searchHFModels: (query: string, sort?: string) => Promise<HFModelResult[]>;
+  downloadHFModel: (hfModelId: string) => Promise<boolean>;
 
   // Internal setters
   setModels: (models: ModelInfo[]) => void;
@@ -268,6 +271,30 @@ export const useModelStore = create<ModelsStore>()(
 
     getDownloadProgress: (modelId: string) => {
       return get().downloadProgress[modelId];
+    },
+
+    searchHFModels: async (query: string, sort?: string) => {
+      const result = await commands.searchHuggingfaceModels(
+        query,
+        sort || null,
+      );
+      if (result.status === "ok") {
+        return result.data;
+      } else {
+        toast.error(`Search failed: ${result.error}`);
+        return [];
+      }
+    },
+
+    downloadHFModel: async (hfModelId: string) => {
+      const prepareResult = await commands.prepareHfModelForDownload(hfModelId);
+      if (prepareResult.status === "ok") {
+        const modelInfo = prepareResult.data;
+        return await get().downloadModel(modelInfo.id);
+      } else {
+        toast.error(`Failed to prepare model: ${prepareResult.error}`);
+        return false;
+      }
     },
 
     initialize: async () => {

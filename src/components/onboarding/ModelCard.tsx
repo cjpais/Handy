@@ -7,7 +7,9 @@ import {
   Languages,
   Loader2,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { ModelInfo } from "@/bindings";
 import { formatModelSize } from "../../lib/utils/format";
 import {
@@ -17,6 +19,7 @@ import {
 import { LANGUAGES } from "../../lib/constants/languages";
 import Badge from "../ui/Badge";
 import { Button } from "../ui/Button";
+import { LanguageList } from "../ui";
 
 // Get display text for model's language support
 const getLanguageDisplayText = (
@@ -133,11 +136,29 @@ const ModelCard: React.FC<ModelCardProps> = ({
       <div className="flex justify-between items-center w-full">
         <div className="flex flex-col items-start flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
-            <h3
-              className={`text-base font-semibold text-text ${isClickable ? "group-hover:text-logo-primary" : ""} transition-colors`}
-            >
-              {displayName}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3
+                className={`text-base font-semibold text-text ${isClickable ? "group-hover:text-logo-primary" : ""} transition-colors`}
+              >
+                {displayName}
+              </h3>
+              {model.is_custom && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openUrl(`https://huggingface.co/${model.name}`);
+                  }}
+                  className="text-text/30 hover:text-logo-primary transition-colors p-1 -m-1"
+                  title={t(
+                    "settings.models.huggingface.open",
+                    "Open on Hugging Face",
+                  )}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
             {showRecommended && model.is_recommended && (
               <Badge variant="primary">{t("onboarding.recommended")}</Badge>
             )}
@@ -196,16 +217,8 @@ const ModelCard: React.FC<ModelCardProps> = ({
       {/* Bottom row: tags + action buttons (full width) */}
       <div className="flex items-center gap-3 w-full -mb-0.5 mt-0.5 h-5">
         {model.supported_languages.length > 0 && (
-          <div
-            className="flex items-center gap-1 text-xs text-text/50"
-            title={
-              model.supported_languages.length === 1
-                ? t("modelSelector.capabilities.singleLanguage")
-                : t("modelSelector.capabilities.languageSelection")
-            }
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>{getLanguageDisplayText(model.supported_languages, t)}</span>
+          <div className="flex items-center gap-1 text-xs text-text/50">
+            <LanguageList languages={model.supported_languages} />
           </div>
         )}
         {model.supports_translation && (

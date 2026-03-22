@@ -219,3 +219,93 @@ pub async fn cancel_download(
         .cancel_download(&model_id)
         .map_err(|e| e.to_string())
 }
+#[tauri::command]
+#[specta::specta]
+pub async fn search_huggingface_models(
+    model_manager: State<'_, Arc<ModelManager>>,
+    query: String,
+    sort: Option<String>,
+) -> Result<Vec<crate::huggingface::HFModelResult>, String> {
+    model_manager
+        .hf_client()
+        .search_whisper_models(&query, sort.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn prepare_hf_model_for_download(
+    model_manager: State<'_, Arc<ModelManager>>,
+    model_id: String,
+) -> Result<ModelInfo, String> {
+    let client = model_manager.hf_client();
+    let details = client
+        .get_model_details(&model_id)
+        .await
+        .map_err(|e| format!("Failed to get model details: {}", e))?;
+
+    let hf_file = details
+        .siblings
+        .iter()
+        .find(|f| {
+            let name = f.rfilename.to_lowercase();
+            if name == "pytorch_model.bin" || name == "training_args.bin" || name == "optimizer.bin" {
+                return false;
+            }
+            name.contains("ggml") && name.ends_with(".bin")
+        })
+        .or_else(|| {
+            details.siblings.iter().find(|f| {
+                let name = f.rfilename.to_lowercase();
+                 name.ends_with(".bin") && 
+                 !name.contains("pytorch") && 
+                 !name.contains("training") && 
+                 !name.contains("optimizer") &&
+                 !name.contains("config")
+            })
+        })
+        .ok_or_else(|| "No compatible GGML model file (.bin) found in this repository. Ensure the repository contains a GGML-formatted Whisper model.".to_string())?;
+
+    let download_url = client.get_download_url(&model_id, &hf_file.rfilename);
+
+    let clean_id = model_id.replace('/', "--");
+    let filename = format!("{}.bin", clean_id);
+
+    let mut supported_languages = Vec::new();
+    for tag in &details.tags {
+        let tag_clean = tag.strip_prefix("language:").unwrap_or(tag);
+        if (tag_clean.len() == 2 && tag_clean.chars().all(|c| c.is_ascii_lowercase()))
+            || tag_clean == "zh-Hans"
+            || tag_clean == "zh-Hant"
+        {
+            supported_languages.push(tag_clean.to_string());
+        }
+    }
+
+    let info = ModelInfo {
+        id: clean_id,
+        name: model_id.clone(),
+        description: format!("From Hugging Face repo: {}", model_id),
+        filename,
+        url: Some(download_url),
+        sha256: None,
+        size_mb: 0,
+        is_downloaded: false,
+        is_downloading: false,
+        partial_size: 0,
+        is_directory: false,
+        engine_type: crate::managers::model::EngineType::Whisper,
+        accuracy_score: 0.0,
+        speed_score: 0.0,
+        supports_translation: false,
+        is_recommended: false,
+        supported_languages,
+        supports_language_selection: true,
+        is_custom: true,
+    };
+
+    model_manager.add_temporary_model(info.clone());
+
+    Ok(info)
+}
