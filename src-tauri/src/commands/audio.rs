@@ -199,30 +199,16 @@ pub fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<(), String> {
+pub fn set_prioritized_microphones(app: AppHandle, devices: Vec<String>) -> Result<(), String> {
     let mut settings = get_settings(&app);
-    settings.selected_microphone = if device_name == "default" {
-        None
-    } else {
-        Some(device_name)
-    };
+    settings.prioritized_microphones = devices;
     write_settings(&app, settings);
 
-    // Update the audio manager to use the new device
     let rm = app.state::<Arc<AudioRecordingManager>>();
     rm.update_selected_device()
         .map_err(|e| format!("Failed to update selected device: {}", e))?;
 
     Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
-    let settings = get_settings(&app);
-    Ok(settings
-        .selected_microphone
-        .unwrap_or_else(|| "default".to_string()))
 }
 
 #[tauri::command]

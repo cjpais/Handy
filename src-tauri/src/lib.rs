@@ -44,7 +44,7 @@ use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
-use crate::settings::get_settings;
+use crate::settings::{get_settings, load_or_create_app_settings};
 
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
@@ -142,6 +142,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // The frontend is responsible for calling the `initialize_enigo` command
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
+
+    // Run settings migration (e.g. selected_microphone → prioritized_microphones)
+    // before any manager reads settings, so all subsequent get_settings() calls
+    // see the migrated data.
+    load_or_create_app_settings(app_handle);
 
     // Initialize the managers
     let recording_manager = Arc::new(
@@ -401,8 +406,7 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::get_windows_microphone_permission_status,
             commands::audio::open_microphone_privacy_settings,
             commands::audio::get_available_microphones,
-            commands::audio::set_selected_microphone,
-            commands::audio::get_selected_microphone,
+            commands::audio::set_prioritized_microphones,
             commands::audio::get_available_output_devices,
             commands::audio::set_selected_output_device,
             commands::audio::get_selected_output_device,

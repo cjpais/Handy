@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { MicrophoneSelector } from "../MicrophoneSelector";
+import { PrioritizedMicrophoneSelector } from "../PrioritizedMicrophoneSelector";
 import { ShortcutInput } from "../ShortcutInput";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { OutputDeviceSelector } from "../OutputDeviceSelector";
@@ -13,7 +13,11 @@ import { ModelSettingsCard } from "./ModelSettingsCard";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
-  const { audioFeedbackEnabled } = useSettings();
+  const { audioFeedbackEnabled, refreshAudioDevices } = useSettings();
+
+  useEffect(() => {
+    refreshAudioDevices();
+  }, []);
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.general.title")}>
@@ -22,7 +26,7 @@ export const GeneralSettings: React.FC = () => {
       </SettingsGroup>
       <ModelSettingsCard />
       <SettingsGroup title={t("settings.sound.title")}>
-        <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
+        <PrioritizedMicrophoneSelector grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
         <AudioFeedback descriptionMode="tooltip" grouped={true} />
         <OutputDeviceSelector
