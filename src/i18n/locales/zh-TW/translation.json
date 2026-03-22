@@ -209,7 +209,15 @@
         "translation": "翻譯",
         "allLanguages": "所有語言"
       },
-      "noModelsMatch": "沒有符合此篩選條件的模型"
+      "noModelsMatch": "沒有符合此篩選條件的模型",
+      "sort": {
+        "default": "預設",
+        "accuracy": "準確度",
+        "speed": "速度",
+        "size": "大小",
+        "ascending": "升序",
+        "descending": "降序"
+      }
     },
     "sound": {
       "title": "聲音",

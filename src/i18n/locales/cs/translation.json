@@ -166,6 +166,14 @@
         "allLanguages": "Všechny jazyky"
       },
       "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
+      "sort": {
+        "default": "Výchozí",
+        "accuracy": "Přesnost",
+        "speed": "Rychlost",
+        "size": "Velikost",
+        "ascending": "Vzestupně",
+        "descending": "Sestupně"
+      },
       "yourModels": "Stažené modely",
       "availableModels": "Dostupné ke stažení"
     },

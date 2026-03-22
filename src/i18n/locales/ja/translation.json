@@ -166,6 +166,14 @@
         "allLanguages": "すべての言語"
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
+      "sort": {
+        "default": "デフォルト",
+        "accuracy": "精度",
+        "speed": "速度",
+        "size": "サイズ",
+        "ascending": "昇順",
+        "descending": "降順"
+      },
       "yourModels": "ダウンロード済みモデル",
       "availableModels": "ダウンロード可能"
     },

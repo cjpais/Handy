@@ -209,7 +209,15 @@
         "translation": "Översättning",
         "allLanguages": "Alla språk"
       },
-      "noModelsMatch": "Inga modeller matchar detta filter."
+      "noModelsMatch": "Inga modeller matchar detta filter.",
+      "sort": {
+        "default": "Standard",
+        "accuracy": "Noggrannhet",
+        "speed": "Hastighet",
+        "size": "Storlek",
+        "ascending": "Stigande",
+        "descending": "Fallande"
+      }
     },
     "sound": {
       "title": "Ljud",

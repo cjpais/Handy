@@ -527,7 +527,15 @@
         "translation": "ترجمة",
         "allLanguages": "جميع اللغات"
       },
-      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
+      "sort": {
+        "default": "افتراضي",
+        "accuracy": "الدقة",
+        "speed": "السرعة",
+        "size": "الحجم",
+        "ascending": "تصاعدي",
+        "descending": "تنازلي"
+      }
     }
   },
   "footer": {

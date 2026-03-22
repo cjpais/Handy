@@ -209,7 +209,15 @@
         "translation": "Translation",
         "allLanguages": "All Languages"
       },
-      "noModelsMatch": "No models match this filter."
+      "noModelsMatch": "No models match this filter.",
+      "sort": {
+        "default": "Default",
+        "accuracy": "Accuracy",
+        "speed": "Speed",
+        "size": "Size",
+        "ascending": "Ascending",
+        "descending": "Descending"
+      }
     },
     "sound": {
       "title": "Sound",

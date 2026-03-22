@@ -166,6 +166,14 @@
         "allLanguages": "Tüm Diller"
       },
       "noModelsMatch": "Bu filtreyle eşleşen model yok.",
+      "sort": {
+        "default": "Varsayılan",
+        "accuracy": "Doğruluk",
+        "speed": "Hız",
+        "size": "Boyut",
+        "ascending": "Artan",
+        "descending": "Azalan"
+      },
       "yourModels": "İndirilen modeller",
       "availableModels": "İndirilebilir"
     },

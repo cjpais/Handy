@@ -166,6 +166,14 @@
         "allLanguages": "所有语言"
       },
       "noModelsMatch": "没有符合此筛选条件的模型。",
+      "sort": {
+        "default": "默认",
+        "accuracy": "准确度",
+        "speed": "速度",
+        "size": "大小",
+        "ascending": "升序",
+        "descending": "降序"
+      },
       "yourModels": "已下载的模型",
       "availableModels": "可供下载"
     },

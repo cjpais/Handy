@@ -166,6 +166,14 @@
         "allLanguages": "Tutte le lingue"
       },
       "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
+      "sort": {
+        "default": "Predefinito",
+        "accuracy": "Precisione",
+        "speed": "Velocità",
+        "size": "Dimensione",
+        "ascending": "Crescente",
+        "descending": "Decrescente"
+      },
       "yourModels": "Modelli scaricati",
       "availableModels": "Disponibili per il Download"
     },

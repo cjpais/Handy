@@ -232,7 +232,15 @@
         "translation": "번역",
         "allLanguages": "모든 언어"
       },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
+      "sort": {
+        "default": "기본",
+        "accuracy": "정확도",
+        "speed": "속도",
+        "size": "크기",
+        "ascending": "오름차순",
+        "descending": "내림차순"
+      }
     },
     "advanced": {
       "title": "고급",
