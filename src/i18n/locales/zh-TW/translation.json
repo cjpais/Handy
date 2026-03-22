@@ -418,7 +418,11 @@
       "save": "儲存轉錄",
       "unsave": "從已儲存中移除",
       "delete": "刪除條目",
-      "deleteError": "刪除條目失敗，請重試"
+      "deleteError": "刪除條目失敗，請重試",
+      "retranscribe": "重新轉錄",
+      "retranscribeError": "重新轉錄失敗，請重試。",
+      "transcribing": "轉錄中...",
+      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。"
     },
     "debug": {
       "title": "偵錯",

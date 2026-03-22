@@ -418,7 +418,11 @@
       "save": "Zapisz transkrypcję",
       "unsave": "Usuń z zapisanych",
       "delete": "Usuń wpis",
-      "deleteError": "Nie udało się usunąć wpisu. Spróbuj ponownie."
+      "deleteError": "Nie udało się usunąć wpisu. Spróbuj ponownie.",
+      "retranscribe": "Transkrybuj ponownie",
+      "retranscribeError": "Nie udało się ponownie transkrybować. Spróbuj ponownie.",
+      "transcribing": "Transkrybuję...",
+      "transcriptionFailed": "Transkrypcja nie powiodła się. Możesz transkrybować ponownie za pomocą ikony ponowienia."
     },
     "debug": {
       "title": "Debugowanie",

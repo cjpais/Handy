@@ -418,7 +418,11 @@
       "save": "保存转录",
       "unsave": "从已保存中移除",
       "delete": "删除条目",
-      "deleteError": "删除条目失败，请重试。"
+      "deleteError": "删除条目失败，请重试。",
+      "retranscribe": "重新转录",
+      "retranscribeError": "重新转录失败。请重试。",
+      "transcribing": "转录中...",
+      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。"
     },
     "debug": {
       "title": "调试",

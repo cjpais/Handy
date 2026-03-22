@@ -418,7 +418,11 @@
       "save": "Transkription speichern",
       "unsave": "Aus Gespeicherten entfernen",
       "delete": "Eintrag löschen",
-      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut."
+      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
+      "retranscribe": "Erneut transkribieren",
+      "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
+      "transcribing": "Transkribiere...",
+      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
     },
     "debug": {
       "title": "Debug",

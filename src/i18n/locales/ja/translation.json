@@ -418,7 +418,11 @@
       "save": "文字起こしを保存",
       "unsave": "保存から削除",
       "delete": "エントリーを削除",
-      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。"
+      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。",
+      "retranscribe": "再文字起こし",
+      "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
+      "transcribing": "文字起こし中...",
+      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
     },
     "debug": {
       "title": "デバッグ",

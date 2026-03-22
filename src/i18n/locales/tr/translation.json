@@ -418,7 +418,11 @@
       "save": "Transkripsiyonu kaydet",
       "unsave": "Kaydedilenlerden kaldır",
       "delete": "Kaydı sil",
-      "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin."
+      "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
+      "retranscribe": "Yeniden yazıya dök",
+      "retranscribeError": "Yeniden yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
+      "transcribing": "Yazıya döküyor...",
+      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar yazıya dökebilirsiniz."
     },
     "debug": {
       "title": "Hata Ayıklama",

@@ -418,7 +418,11 @@
       "save": "Lưu bản ghi",
       "unsave": "Xóa khỏi đã lưu",
       "delete": "Xóa mục",
-      "deleteError": "Không thể xóa mục. Vui lòng thử lại."
+      "deleteError": "Không thể xóa mục. Vui lòng thử lại.",
+      "retranscribe": "Phiên âm lại",
+      "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
+      "transcribing": "Đang phiên âm...",
+      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại."
     },
     "debug": {
       "title": "Gỡ lỗi",

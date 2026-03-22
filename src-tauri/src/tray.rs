@@ -232,19 +232,28 @@ pub fn set_tray_visibility(app: &AppHandle, visible: bool) {
 
 pub fn copy_last_transcript(app: &AppHandle) {
     let history_manager = app.state::<Arc<HistoryManager>>();
-    let entry = match history_manager.get_latest_entry() {
+    let entry = match history_manager.get_latest_completed_entry() {
         Ok(Some(entry)) => entry,
         Ok(None) => {
-            warn!("No transcription history entries available for tray copy.");
+            warn!("No completed transcription history entries available for tray copy.");
             return;
         }
         Err(err) => {
-            error!("Failed to fetch last transcription entry: {}", err);
+            error!(
+                "Failed to fetch last completed transcription entry: {}",
+                err
+            );
             return;
         }
     };
 
-    if let Err(err) = app.clipboard().write_text(last_transcript_text(&entry)) {
+    let text = last_transcript_text(&entry);
+    if text.trim().is_empty() {
+        warn!("Last completed transcription is empty; skipping tray copy.");
+        return;
+    }
+
+    if let Err(err) = app.clipboard().write_text(text) {
         error!("Failed to copy last transcript to clipboard: {}", err);
         return;
     }
@@ -267,6 +276,7 @@ mod tests {
             transcription_text: transcription.to_string(),
             post_processed_text: post_processed.map(|text| text.to_string()),
             post_process_prompt: None,
+            post_process_requested: false,
         }
     }
 

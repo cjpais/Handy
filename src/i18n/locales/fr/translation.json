@@ -418,7 +418,11 @@
       "save": "Enregistrer la transcription",
       "unsave": "Retirer des favoris",
       "delete": "Supprimer l'entrée",
-      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer."
+      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
+      "retranscribe": "Re-transcrire",
+      "retranscribeError": "Impossible de re-transcrire. Veuillez réessayer.",
+      "transcribing": "Transcription en cours...",
+      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai."
     },
     "debug": {
       "title": "Débogage",

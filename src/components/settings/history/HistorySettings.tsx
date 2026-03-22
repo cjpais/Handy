@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { Check, Copy, FolderOpen, Star, Trash2 } from "lucide-react";
+import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   commands,
   events,
@@ -13,6 +14,27 @@ import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
+
+const IconButton: React.FC<{
+  onClick: () => void;
+  title: string;
+  disabled?: boolean;
+  active?: boolean;
+  children: React.ReactNode;
+}> = ({ onClick, title, disabled, active, children }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`p-1.5 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-not-allowed disabled:text-text/20 ${
+      active
+        ? "text-logo-primary hover:text-logo-primary/80"
+        : "text-text/50 hover:text-logo-primary"
+    }`}
+    title={title}
+  >
+    {children}
+  </button>
+);
 
 const PAGE_SIZE = 30;
 
@@ -114,6 +136,10 @@ export const HistorySettings: React.FC = () => {
       const payload: HistoryUpdatePayload = event.payload;
       if (payload.action === "added") {
         setEntries((prev) => [payload.entry, ...prev]);
+      } else if (payload.action === "updated") {
+        setEntries((prev) =>
+          prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
+        );
       }
       // "deleted" and "toggled" are handled by optimistic updates only,
       // so we intentionally ignore them here to avoid double-mutation.
@@ -190,6 +216,13 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const retryHistoryEntry = async (id: number) => {
+    const result = await commands.retryHistoryEntryTranscription(id);
+    if (result.status !== "ok") {
+      throw new Error(String(result.error));
+    }
+  };
+
   const openRecordingsFolder = async () => {
     try {
       const result = await commands.openRecordingsFolder();
@@ -227,6 +260,7 @@ export const HistorySettings: React.FC = () => {
               onCopyText={() => copyToClipboard(entry.transcription_text)}
               getAudioUrl={getAudioUrl}
               deleteAudio={deleteAudioEntry}
+              retryTranscription={retryHistoryEntry}
             />
           ))}
         </div>
@@ -264,6 +298,7 @@ interface HistoryEntryProps {
   onCopyText: () => void;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
+  retryTranscription: (id: number) => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
@@ -272,9 +307,13 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   onCopyText,
   getAudioUrl,
   deleteAudio,
+  retryTranscription,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  const hasTranscription = entry.transcription_text.trim().length > 0;
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -282,6 +321,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   );
 
   const handleCopyText = () => {
+    if (!hasTranscription) {
+      return;
+    }
+
     onCopyText();
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
@@ -292,7 +335,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
       await deleteAudio(entry.id);
     } catch (error) {
       console.error("Failed to delete entry:", error);
-      alert(t("settings.history.deleteError"));
+      toast.error(t("settings.history.deleteError"));
+    }
+  };
+
+  const handleRetranscribe = async () => {
+    try {
+      setRetrying(true);
+      await retryTranscription(entry.id);
+    } catch (error) {
+      console.error("Failed to re-transcribe:", error);
+      toast.error(t("settings.history.retranscribeError"));
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -302,10 +357,10 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <p className="text-sm font-medium">{formattedDate}</p>
-        <div className="flex items-center gap-1">
-          <button
+        <div className="flex items-center">
+          <IconButton
             onClick={handleCopyText}
-            className="text-text/50 hover:text-logo-primary hover:border-logo-primary transition-colors cursor-pointer"
+            disabled={!hasTranscription || retrying}
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
@@ -313,14 +368,11 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
             ) : (
               <Copy width={16} height={16} />
             )}
-          </button>
-          <button
+          </IconButton>
+          <IconButton
             onClick={onToggleSaved}
-            className={`p-2 rounded-md transition-colors cursor-pointer ${
-              entry.saved
-                ? "text-logo-primary hover:text-logo-primary/80"
-                : "text-text/50 hover:text-logo-primary"
-            }`}
+            disabled={retrying}
+            active={entry.saved}
             title={
               entry.saved
                 ? t("settings.history.unsave")
@@ -332,19 +384,61 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
               height={16}
               fill={entry.saved ? "currentColor" : "none"}
             />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            onClick={handleRetranscribe}
+            disabled={retrying}
+            title={t("settings.history.retranscribe")}
+          >
+            <RotateCcw
+              width={16}
+              height={16}
+              style={
+                retrying
+                  ? { animation: "spin 1s linear infinite reverse" }
+                  : undefined
+              }
+            />
+          </IconButton>
+          <IconButton
             onClick={handleDeleteEntry}
-            className="text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
+            disabled={retrying}
             title={t("settings.history.delete")}
           >
             <Trash2 width={16} height={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
-      <p className="italic text-text/90 text-sm pb-2 select-text cursor-text">
-        {entry.transcription_text}
+
+      <p
+        className={`italic text-sm pb-2 ${
+          retrying
+            ? ""
+            : hasTranscription
+              ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
+              : "text-text/40"
+        }`}
+        style={
+          retrying
+            ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
+            : undefined
+        }
+      >
+        {retrying && (
+          <style>{`
+            @keyframes transcribe-pulse {
+              0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+              50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+            }
+          `}</style>
+        )}
+        {retrying
+          ? t("settings.history.transcribing")
+          : hasTranscription
+            ? entry.transcription_text
+            : t("settings.history.transcriptionFailed")}
       </p>
+
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
     </div>
   );

@@ -418,7 +418,11 @@
       "save": "Salvar transcrição",
       "unsave": "Remover dos salvos",
       "delete": "Excluir entrada",
-      "deleteError": "Falha ao excluir entrada. Por favor, tente novamente."
+      "deleteError": "Falha ao excluir entrada. Por favor, tente novamente.",
+      "retranscribe": "Re-transcrever",
+      "retranscribeError": "Falha ao re-transcrever. Por favor, tente novamente.",
+      "transcribing": "Transcrevendo...",
+      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente."
     },
     "debug": {
       "title": "Depuração",
