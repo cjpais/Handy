@@ -41,9 +41,9 @@ pub use transcription_coordinator::TranscriptionCoordinator;
 
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Listener, Manager};
-use tauri_specta::Event;
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
+use tauri_specta::Event;
 
 use crate::settings::get_settings;
 
@@ -294,9 +294,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     utils::create_recording_overlay(app_handle);
 }
 
-#[derive(
-    Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event,
-)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
 pub struct CheckForUpdates;
 
 #[tauri::command]
