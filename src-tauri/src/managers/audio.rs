@@ -196,18 +196,39 @@ impl AudioRecordingManager {
             false
         };
 
-        let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref().unwrap()
-        } else {
-            settings.selected_microphone.as_ref()?
-        };
+        if use_clamshell_mic {
+            let device_name = settings.clamshell_microphone.as_ref().unwrap();
+            return match list_input_devices() {
+                Ok(devices) => devices
+                    .into_iter()
+                    .find(|d| d.name == *device_name)
+                    .map(|d| d.device),
+                Err(e) => {
+                    debug!("Failed to list devices, using default: {}", e);
+                    None
+                }
+            };
+        }
 
-        // Find the device by name
+        if settings.prioritized_microphones.is_empty() {
+            return None; // → system default
+        }
+
+        // Build priority map: name → priority index (lower = higher priority)
+        let priority: std::collections::HashMap<&str, usize> = settings
+            .prioritized_microphones
+            .iter()
+            .enumerate()
+            .map(|(i, n)| (n.as_str(), i))
+            .collect();
+
+        // Consume devices with into_iter() to avoid Clone requirement on cpal::Device
         match list_input_devices() {
             Ok(devices) => devices
                 .into_iter()
-                .find(|d| d.name == *device_name)
-                .map(|d| d.device),
+                .filter_map(|d| priority.get(d.name.as_str()).map(|&p| (p, d)))
+                .min_by_key(|(p, _)| *p)
+                .map(|(_, d)| d.device),
             Err(e) => {
                 debug!("Failed to list devices, using default: {}", e);
                 None

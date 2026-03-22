@@ -232,6 +232,19 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "prioritizedMicrophones": {
+        "title": "Prioritized Devices",
+        "description": "Devices will be used in order of priority. If a device is unavailable, the next one will be tried. If no prioritized device is available, the built-in microphone will be used.",
+        "availableTitle": "Available Devices",
+        "active": "Active",
+        "empty": "No prioritized devices. Add devices from the list below.",
+        "noAvailable": "No additional devices detected.",
+        "add": "Add device",
+        "remove": "Remove device",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "refresh": "Refresh device list"
       }
     },
     "advanced": {

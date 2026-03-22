@@ -105,9 +105,11 @@ Handy is a cross-platform desktop speech-to-text application built with Tauri (R
 Settings are stored using Tauri's store plugin with reactive updates:
 
 - Keyboard shortcuts (configurable, supports push-to-talk)
-- Audio devices (microphone/output selection)
+- Audio devices (prioritized microphone list + output selection)
 - Model preferences (Small/Medium/Turbo/Large Whisper variants)
 - Audio feedback and translation options
+
+**Prioritized microphones:** `AppSettings.prioritized_microphones: Vec<String>` is an ordered list; the first available device is used for recording. Empty list → system default. `cpal::Device` does not implement `Clone` — device resolution uses a priority-map with `into_iter()` to avoid cloning (see `managers/audio.rs`).
 
 ### Single Instance Architecture
 

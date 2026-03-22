@@ -324,8 +324,8 @@ pub struct AppSettings {
     pub selected_model: String,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
-    #[serde(default)]
-    pub selected_microphone: Option<String>,
+    #[serde(default = "default_prioritized_microphones")]
+    pub prioritized_microphones: Vec<String>,
     #[serde(default)]
     pub clamshell_microphone: Option<String>,
     #[serde(default)]
@@ -407,6 +407,10 @@ fn default_model() -> String {
 
 fn default_always_on_microphone() -> bool {
     false
+}
+
+fn default_prioritized_microphones() -> Vec<String> {
+    vec![]
 }
 
 fn default_translate_to_english() -> bool {
@@ -730,7 +734,7 @@ pub fn get_default_settings() -> AppSettings {
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
         always_on_microphone: false,
-        selected_microphone: None,
+        prioritized_microphones: vec![],
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,
@@ -801,6 +805,26 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         .expect("Failed to initialize store");
 
     let mut settings = if let Some(settings_value) = store.get("settings") {
+        // Migrate selected_microphone → prioritized_microphones[0]
+        let settings_value = {
+            let mut raw = settings_value.clone();
+            if let Some(obj) = raw.as_object_mut() {
+                if let Some(serde_json::Value::String(old_mic)) = obj.remove("selected_microphone")
+                {
+                    let mics = obj
+                        .entry("prioritized_microphones")
+                        .or_insert_with(|| serde_json::Value::Array(vec![]));
+                    if let serde_json::Value::Array(arr) = mics {
+                        if arr.is_empty() {
+                            arr.push(serde_json::Value::String(old_mic));
+                        }
+                    }
+                    store.set("settings", raw.clone());
+                }
+            }
+            raw
+        };
+
         // Parse the entire settings object
         match serde_json::from_value::<AppSettings>(settings_value) {
             Ok(mut settings) => {
