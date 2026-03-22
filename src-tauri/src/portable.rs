@@ -7,7 +7,6 @@ use tauri::Manager;
 /// When a file named `portable` exists next to the executable, all user data
 /// (settings, models, recordings, database, logs) is stored in a `Data/`
 /// directory alongside the executable instead of `%APPDATA%`.
-
 static PORTABLE_DATA_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
 
 /// Detect portable mode by looking for a `portable` marker file next to the exe.

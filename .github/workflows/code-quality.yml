@@ -39,6 +39,12 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 

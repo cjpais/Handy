@@ -82,7 +82,10 @@ export const LanguageList: React.FC<LanguageListProps> = ({
         >
           <div className="max-h-60 overflow-y-auto py-1.5">
             <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-text/30 border-b border-mid-gray/10 mb-1">
-              {t("modelSelector.capabilities.supportedLanguages", "Supported Languages")}
+              {t(
+                "modelSelector.capabilities.supportedLanguages",
+                "Supported Languages",
+              )}
             </div>
             {mappedLanguages.map((lang, i) => (
               <div

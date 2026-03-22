@@ -1362,6 +1362,7 @@ impl ModelManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_model_path(&self, model_id: &str) -> Result<PathBuf> {
         let model_info = self
             .get_model_info(model_id)

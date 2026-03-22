@@ -195,14 +195,14 @@ export const HFModelBrowser: React.FC = () => {
               const isDownloading = model.id in downloadingModels;
               const progress = downloadProgress[model.id]?.percentage || 0;
 
-                  const extractedLangs = model.tags
-                    .map((t) => t.replace("language:", ""))
-                    .filter(
-                      (t) =>
-                        (t.length === 2 && /^[a-z]+$/.test(t)) ||
-                        t === "zh-Hans" ||
-                        t === "zh-Hant",
-                    );
+              const extractedLangs = model.tags
+                .map((t) => t.replace("language:", ""))
+                .filter(
+                  (t) =>
+                    (t.length === 2 && /^[a-z]+$/.test(t)) ||
+                    t === "zh-Hans" ||
+                    t === "zh-Hant",
+                );
 
               return (
                 <div
