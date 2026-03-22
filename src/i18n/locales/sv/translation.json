@@ -170,8 +170,8 @@
             "description": "Kortkommandot för att avbryta den aktuella inspelningen."
           },
           "transcribe_with_post_process": {
-            "name": "Hotkey för efterbehandling",
-            "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbehandling på din transkription."
+            "name": "Snabbkommando för efterbearbetning",
+            "description": "Valfritt: En dedikerad snabbknapp som alltid tillämpar AI-efterbearbetning på din transkription."
           }
         },
         "errors": {
@@ -189,7 +189,7 @@
         "auto": "Auto"
       },
       "pushToTalk": {
-        "label": "Push To Talk",
+        "label": "Tryck för att tala",
         "description": "Håll ned för att spela in, släpp för att stoppa"
       }
     },
@@ -352,7 +352,7 @@
     "postProcessing": {
       "title": "Efterbearbetning",
       "hotkey": {
-        "title": "Hotkey"
+        "title": "Snabbkommando"
       },
       "api": {
         "title": "API (OpenAI-kompatibelt)",
@@ -507,7 +507,7 @@
         "description": "Nuvarande version av Handy"
       },
       "appDataDirectory": {
-        "title": "Katalog för appdata",
+        "title": "Mapp för appdata",
         "description": "Plats där Handy lagrar sina data"
       },
       "sourceCode": {
