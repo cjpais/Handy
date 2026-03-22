@@ -476,10 +476,32 @@ pub fn run(cli_args: CliArgs) {
 
     builder
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            let context = {
+                let mut ctx = settings::TranscriptionContext::default();
+                if let Some(pos) = args.iter().position(|a| a == "--auto-submit") {
+                    let key = args
+                        .get(pos + 1)
+                        .filter(|s| !s.starts_with("--"))
+                        .map(|s| s.as_str())
+                        .unwrap_or("enter");
+                    ctx.auto_submit_override = Some(match key {
+                        "ctrl+enter" => settings::AutoSubmitKey::CtrlEnter,
+                        "cmd+enter" => settings::AutoSubmitKey::CmdEnter,
+                        _ => settings::AutoSubmitKey::Enter,
+                    });
+                }
+                ctx
+            };
+
             if args.iter().any(|a| a == "--toggle-transcription") {
-                signal_handle::send_transcription_input(app, "transcribe", "CLI");
+                signal_handle::send_transcription_input(app, "transcribe", "CLI", context);
             } else if args.iter().any(|a| a == "--toggle-post-process") {
-                signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
+                signal_handle::send_transcription_input(
+                    app,
+                    "transcribe_with_post_process",
+                    "CLI",
+                    context,
+                );
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
             } else {
