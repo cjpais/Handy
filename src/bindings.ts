@@ -797,9 +797,43 @@ async isLaptop() : Promise<Result<boolean, string>> {
 
 
 export const events = __makeEvents__<{
-historyUpdatePayload: HistoryUpdatePayload
+checkForUpdates: CheckForUpdates,
+handyKeysEvent: HandyKeysEvent,
+hideOverlay: HideOverlay,
+historyUpdatePayload: HistoryUpdatePayload,
+micLevel: MicLevel,
+modelDeleted: ModelDeleted,
+modelDownloadCancelled: ModelDownloadCancelled,
+modelDownloadComplete: ModelDownloadComplete,
+modelDownloadFailed: ModelDownloadFailed,
+modelDownloadProgress: ModelDownloadProgress,
+modelExtractionCompleted: ModelExtractionCompleted,
+modelExtractionFailed: ModelExtractionFailed,
+modelExtractionStarted: ModelExtractionStarted,
+modelStateChanged: ModelStateChanged,
+modelVerificationCompleted: ModelVerificationCompleted,
+modelVerificationStarted: ModelVerificationStarted,
+recordingError: RecordingError,
+showOverlay: ShowOverlay
 }>({
-historyUpdatePayload: "history-update-payload"
+checkForUpdates: "check-for-updates",
+handyKeysEvent: "handy-keys-event",
+hideOverlay: "hide-overlay",
+historyUpdatePayload: "history-update-payload",
+micLevel: "mic-level",
+modelDeleted: "model-deleted",
+modelDownloadCancelled: "model-download-cancelled",
+modelDownloadComplete: "model-download-complete",
+modelDownloadFailed: "model-download-failed",
+modelDownloadProgress: "model-download-progress",
+modelExtractionCompleted: "model-extraction-completed",
+modelExtractionFailed: "model-extraction-failed",
+modelExtractionStarted: "model-extraction-started",
+modelStateChanged: "model-state-changed",
+modelVerificationCompleted: "model-verification-completed",
+modelVerificationStarted: "model-verification-started",
+recordingError: "recording-error",
+showOverlay: "show-overlay"
 })
 
 /** user-defined constants **/
@@ -813,9 +847,31 @@ export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AvailableAccelerators = { whisper: string[]; ort: string[] }
 export type BindingResponse = { success: boolean; binding: ShortcutBinding | null; error: string | null }
+export type CheckForUpdates = null
 export type ClipboardHandling = "dont_modify" | "copy_to_clipboard"
 export type CustomSounds = { start: boolean; stop: boolean }
 export type EngineType = "Whisper" | "Parakeet" | "Moonshine" | "MoonshineStreaming" | "SenseVoice" | "GigaAM" | "Canary"
+/**
+ * Key event sent to frontend during recording mode
+ */
+export type HandyKeysEvent = { 
+/**
+ * Currently pressed modifier keys
+ */
+modifiers: string[]; 
+/**
+ * The key that was pressed (if any)
+ */
+key: string | null; 
+/**
+ * Whether this is a key down event
+ */
+is_key_down: boolean; 
+/**
+ * The full hotkey string (e.g., "option+space")
+ */
+hotkey_string: string }
+export type HideOverlay = null
 export type HistoryEntry = { id: number; file_name: string; timestamp: number; saved: boolean; title: string; transcription_text: string; post_processed_text: string | null; post_process_prompt: string | null; post_process_requested: boolean }
 export type HistoryUpdatePayload = { action: "added"; entry: HistoryEntry } | { action: "updated"; entry: HistoryEntry } | { action: "deleted"; id: number } | { action: "toggled"; id: number }
 /**
@@ -829,17 +885,31 @@ reset_bindings: string[] }
 export type KeyboardImplementation = "tauri" | "handy_keys"
 export type LLMPrompt = { id: string; name: string; prompt: string }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
+export type MicLevel = number[]
+export type ModelDeleted = string
+export type ModelDownloadCancelled = string
+export type ModelDownloadComplete = string
+export type ModelDownloadFailed = { model_id: string; error: string }
+export type ModelDownloadProgress = { model_id: string; downloaded: number; total: number; percentage: number }
+export type ModelExtractionCompleted = string
+export type ModelExtractionFailed = { model_id: string; error: string }
+export type ModelExtractionStarted = string
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; sha256: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
+export type ModelStateChanged = { event_type: string; model_id: string | null; model_name: string | null; error: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+export type ModelVerificationCompleted = string
+export type ModelVerificationStarted = string
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }
 export type PasteMethod = "ctrl_v" | "direct" | "none" | "shift_insert" | "ctrl_shift_v" | "external_script"
 export type PermissionAccess = "allowed" | "denied" | "unknown"
 export type PostProcessProvider = { id: string; label: string; base_url: string; allow_base_url_edit?: boolean; models_endpoint?: string | null; supports_structured_output?: boolean }
+export type RecordingError = { error_type: string; detail: string | null }
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
+export type ShowOverlay = string
 export type SoundTheme = "marimba" | "pop" | "custom"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type WhisperAcceleratorSetting = "auto" | "cpu" | "gpu"

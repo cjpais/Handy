@@ -40,7 +40,8 @@ use tauri::image::Image;
 pub use transcription_coordinator::TranscriptionCoordinator;
 
 use tauri::tray::TrayIconBuilder;
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Listener, Manager};
+use tauri_specta::Event;
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_log::{Builder as LogBuilder, RotationStrategy, Target, TargetKind};
 
@@ -211,7 +212,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 let settings = settings::get_settings(app);
                 if settings.update_checks_enabled {
                     show_main_window(app);
-                    let _ = app.emit("check-for-updates", ());
+                    let _ = CheckForUpdates.emit(app);
                 }
             }
             "copy_last_transcript" => {
@@ -293,6 +294,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     utils::create_recording_overlay(app_handle);
 }
 
+#[derive(
+    Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event,
+)]
+pub struct CheckForUpdates;
+
 #[tauri::command]
 #[specta::specta]
 fn trigger_update_check(app: AppHandle) -> Result<(), String> {
@@ -300,8 +306,7 @@ fn trigger_update_check(app: AppHandle) -> Result<(), String> {
     if !settings.update_checks_enabled {
         return Ok(());
     }
-    app.emit("check-for-updates", ())
-        .map_err(|e| e.to_string())?;
+    CheckForUpdates.emit(&app).map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -423,7 +428,26 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
         ])
-        .events(collect_events![managers::history::HistoryUpdatePayload,]);
+        .events(collect_events![
+            managers::history::HistoryUpdatePayload,
+            managers::model::ModelDownloadProgress,
+            managers::model::ModelDownloadComplete,
+            managers::model::ModelDownloadFailed,
+            managers::model::ModelDownloadCancelled,
+            managers::model::ModelVerificationStarted,
+            managers::model::ModelVerificationCompleted,
+            managers::model::ModelExtractionStarted,
+            managers::model::ModelExtractionCompleted,
+            managers::model::ModelExtractionFailed,
+            managers::model::ModelDeleted,
+            managers::transcription::ModelStateChanged,
+            actions::RecordingError,
+            shortcut::handy_keys::HandyKeysEvent,
+            overlay::ShowOverlay,
+            overlay::HideOverlay,
+            overlay::MicLevel,
+            CheckForUpdates,
+        ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     specta_builder

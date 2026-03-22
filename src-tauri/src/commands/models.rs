@@ -1,8 +1,9 @@
-use crate::managers::model::{ModelInfo, ModelManager};
-use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
+use crate::managers::model::{ModelDownloadFailed, ModelInfo, ModelManager};
+use crate::managers::transcription::{ModelStateChanged, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Manager, State};
+use tauri_specta::Event;
 
 #[tauri::command]
 #[specta::specta]
@@ -34,10 +35,11 @@ pub async fn download_model(
         .map_err(|e| e.to_string());
 
     if let Err(ref error) = result {
-        let _ = app_handle.emit(
-            "model-download-failed",
-            serde_json::json!({ "model_id": &model_id, "error": error }),
-        );
+        let _ = (ModelDownloadFailed {
+            model_id: model_id.clone(),
+            error: error.clone(),
+        })
+        .emit(&app_handle);
     }
 
     result
@@ -127,15 +129,13 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     if unload_timeout == ModelUnloadTimeout::Immediately {
         // Notify frontend — load_model won't be called so no events
         // would otherwise be emitted.
-        let _ = app.emit(
-            "model-state-changed",
-            ModelStateEvent {
-                event_type: "selection_changed".to_string(),
-                model_id: Some(model_id.to_string()),
-                model_name: Some(model_info.name.clone()),
-                error: None,
-            },
-        );
+        let _ = (ModelStateChanged {
+            event_type: "selection_changed".to_string(),
+            model_id: Some(model_id.to_string()),
+            model_name: Some(model_info.name.clone()),
+            error: None,
+        })
+        .emit(app);
         log::info!(
             "Model selection changed to {} (not loading — unload set to Immediately).",
             model_id

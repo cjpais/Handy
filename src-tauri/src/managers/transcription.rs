@@ -6,14 +6,15 @@ use crate::settings::{
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, SystemTime};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
+use tauri_specta::Event;
 use transcribe_rs::{
     onnx::{
         canary::CanaryModel,
@@ -27,8 +28,8 @@ use transcribe_rs::{
     SpeechModel, TranscribeOptions,
 };
 
-#[derive(Clone, Debug, Serialize)]
-pub struct ModelStateEvent {
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelStateChanged {
     pub event_type: String,
     pub model_id: Option<String>,
     pub model_name: Option<String>,
@@ -205,15 +206,13 @@ impl TranscriptionManager {
         }
 
         // Emit unloaded event
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
-                event_type: "unloaded".to_string(),
-                model_id: None,
-                model_name: None,
-                error: None,
-            },
-        );
+        let _ = (ModelStateChanged {
+            event_type: "unloaded".to_string(),
+            model_id: None,
+            model_name: None,
+            error: None,
+        })
+        .emit(&self.app_handle);
 
         let unload_duration = unload_start.elapsed();
         debug!(
@@ -253,15 +252,13 @@ impl TranscriptionManager {
         debug!("Starting to load model: {}", model_id);
 
         // Emit loading started event
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
-                event_type: "loading_started".to_string(),
-                model_id: Some(model_id.to_string()),
-                model_name: None,
-                error: None,
-            },
-        );
+        let _ = (ModelStateChanged {
+            event_type: "loading_started".to_string(),
+            model_id: Some(model_id.to_string()),
+            model_name: None,
+            error: None,
+        })
+        .emit(&self.app_handle);
 
         let model_info = self
             .model_manager
@@ -270,15 +267,13 @@ impl TranscriptionManager {
 
         if !model_info.is_downloaded {
             let error_msg = "Model not downloaded";
-            let _ = self.app_handle.emit(
-                "model-state-changed",
-                ModelStateEvent {
-                    event_type: "loading_failed".to_string(),
-                    model_id: Some(model_id.to_string()),
-                    model_name: Some(model_info.name.clone()),
-                    error: Some(error_msg.to_string()),
-                },
-            );
+            let _ = (ModelStateChanged {
+                event_type: "loading_failed".to_string(),
+                model_id: Some(model_id.to_string()),
+                model_name: Some(model_info.name.clone()),
+                error: Some(error_msg.to_string()),
+            })
+            .emit(&self.app_handle);
             return Err(anyhow::anyhow!(error_msg));
         }
 
@@ -286,15 +281,13 @@ impl TranscriptionManager {
 
         // Create appropriate engine based on model type
         let emit_loading_failed = |error_msg: &str| {
-            let _ = self.app_handle.emit(
-                "model-state-changed",
-                ModelStateEvent {
-                    event_type: "loading_failed".to_string(),
-                    model_id: Some(model_id.to_string()),
-                    model_name: Some(model_info.name.clone()),
-                    error: Some(error_msg.to_string()),
-                },
-            );
+            let _ = (ModelStateChanged {
+                event_type: "loading_failed".to_string(),
+                model_id: Some(model_id.to_string()),
+                model_name: Some(model_info.name.clone()),
+                error: Some(error_msg.to_string()),
+            })
+            .emit(&self.app_handle);
         };
 
         let loaded_engine = match model_info.engine_type {
@@ -383,15 +376,13 @@ impl TranscriptionManager {
         self.touch_activity();
 
         // Emit loading completed event
-        let _ = self.app_handle.emit(
-            "model-state-changed",
-            ModelStateEvent {
-                event_type: "loading_completed".to_string(),
-                model_id: Some(model_id.to_string()),
-                model_name: Some(model_info.name.clone()),
-                error: None,
-            },
-        );
+        let _ = (ModelStateChanged {
+            event_type: "loading_completed".to_string(),
+            model_id: Some(model_id.to_string()),
+            model_name: Some(model_info.name.clone()),
+            error: None,
+        })
+        .emit(&self.app_handle);
 
         let load_duration = load_start.elapsed();
         debug!(
@@ -635,15 +626,13 @@ impl TranscriptionManager {
                         *current_model = None;
                     }
 
-                    let _ = self.app_handle.emit(
-                        "model-state-changed",
-                        ModelStateEvent {
-                            event_type: "unloaded".to_string(),
-                            model_id: None,
-                            model_name: None,
-                            error: Some(format!("Engine panicked: {}", panic_msg)),
-                        },
-                    );
+                    let _ = (ModelStateChanged {
+                        event_type: "unloaded".to_string(),
+                        model_id: None,
+                        model_name: None,
+                        error: Some(format!("Engine panicked: {}", panic_msg)),
+                    })
+                    .emit(&self.app_handle);
 
                     return Err(anyhow::anyhow!(
                         "Transcription engine panicked: {}. The model has been unloaded and will reload on next attempt.",

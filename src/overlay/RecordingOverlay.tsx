@@ -1,4 +1,3 @@
-import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -7,11 +6,11 @@ import {
   CancelIcon,
 } from "../components/icons";
 import "./RecordingOverlay.css";
-import { commands } from "@/bindings";
+import { commands, events, type ShowOverlay } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "transcribing" | "processing";
+type OverlayState = ShowOverlay;
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
@@ -24,22 +23,21 @@ const RecordingOverlay: React.FC = () => {
   useEffect(() => {
     const setupEventListeners = async () => {
       // Listen for show-overlay event from Rust
-      const unlistenShow = await listen("show-overlay", async (event) => {
+      const unlistenShow = await events.showOverlay.listen(async (event) => {
         // Sync language from settings each time overlay is shown
         await syncLanguageFromSettings();
-        const overlayState = event.payload as OverlayState;
-        setState(overlayState);
+        setState(event.payload);
         setIsVisible(true);
       });
 
       // Listen for hide-overlay event from Rust
-      const unlistenHide = await listen("hide-overlay", () => {
+      const unlistenHide = await events.hideOverlay.listen(() => {
         setIsVisible(false);
       });
 
       // Listen for mic-level updates
-      const unlistenLevel = await listen<number[]>("mic-level", (event) => {
-        const newLevels = event.payload as number[];
+      const unlistenLevel = await events.micLevel.listen((event) => {
+        const newLevels = event.payload;
 
         // Apply smoothing to reduce jitter
         const smoothed = smoothedLevelsRef.current.map((prev, i) => {
