@@ -1,7 +1,19 @@
 use crate::input;
 use crate::settings;
 use crate::settings::OverlayPosition;
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
+use serde::{Deserialize, Serialize};
+use specta::Type;
+use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize};
+use tauri_specta::Event;
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ShowOverlay(pub String);
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct HideOverlay;
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct MicLevel(pub Vec<f32>);
 
 #[cfg(not(target_os = "macos"))]
 use log::debug;
@@ -329,7 +341,7 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         #[cfg(target_os = "windows")]
         force_overlay_topmost(&overlay_window);
 
-        let _ = overlay_window.emit("show-overlay", state);
+        let _ = ShowOverlay(state.to_string()).emit(&overlay_window);
     }
 }
 
@@ -369,7 +381,7 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         // Emit event to trigger fade-out animation
-        let _ = overlay_window.emit("hide-overlay", ());
+        let _ = HideOverlay.emit(&overlay_window);
         // Hide the window after a short delay to allow animation to complete
         let window_clone = overlay_window.clone();
         std::thread::spawn(move || {
@@ -380,11 +392,12 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
 }
 
 pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
+    let event = MicLevel(levels.clone());
     // emit levels to main app
-    let _ = app_handle.emit("mic-level", levels);
+    let _ = event.emit(app_handle);
 
     // also emit to the recording overlay if it's open
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        let _ = overlay_window.emit("mic-level", levels);
+        let _ = event.emit(&overlay_window);
     }
 }

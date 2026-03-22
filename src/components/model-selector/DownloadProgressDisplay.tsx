@@ -1,12 +1,6 @@
 import React from "react";
 import { ProgressBar, ProgressData } from "../shared";
-
-interface DownloadProgress {
-  model_id: string;
-  downloaded: number;
-  total: number;
-  percentage: number;
-}
+import type { ModelDownloadProgress } from "@/bindings";
 
 interface DownloadStats {
   startTime: number;
@@ -16,7 +10,7 @@ interface DownloadStats {
 }
 
 interface DownloadProgressDisplayProps {
-  downloadProgress: Record<string, DownloadProgress>;
+  downloadProgress: Record<string, ModelDownloadProgress>;
   downloadStats: Record<string, DownloadStats>;
   className?: string;
 }

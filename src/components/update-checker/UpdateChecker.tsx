@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
-import { listen } from "@tauri-apps/api/event";
+import { events } from "@/bindings";
 import { ProgressBar } from "../shared";
 import { useSettings } from "../../hooks/useSettings";
 
@@ -45,7 +45,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
     checkForUpdates();
 
     // Listen for update check events
-    const updateUnlisten = listen("check-for-updates", () => {
+    const updateUnlisten = events.checkForUpdates.listen(() => {
       handleManualUpdateCheck();
     });
 

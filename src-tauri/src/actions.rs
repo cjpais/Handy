@@ -18,13 +18,14 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
+use tauri::AppHandle;
 use tauri::Manager;
-use tauri::{AppHandle, Emitter};
+use tauri_specta::Event;
 
-#[derive(Clone, serde::Serialize)]
-struct RecordingErrorEvent {
-    error_type: String,
-    detail: Option<String>,
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+pub struct RecordingError {
+    pub error_type: String,
+    pub detail: Option<String>,
 }
 
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
@@ -439,13 +440,11 @@ impl ShortcutAction for TranscribeAction {
                 } else {
                     "unknown"
                 };
-                let _ = app.emit(
-                    "recording-error",
-                    RecordingErrorEvent {
-                        error_type: error_type.to_string(),
-                        detail: Some(err),
-                    },
-                );
+                let _ = (RecordingError {
+                    error_type: error_type.to_string(),
+                    detail: Some(err),
+                })
+                .emit(app);
             }
         }
 

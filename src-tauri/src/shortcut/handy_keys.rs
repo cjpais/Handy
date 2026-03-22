@@ -29,14 +29,15 @@
 
 use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener};
 use log::{debug, error, info};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
+use tauri_specta::Event;
 
 use crate::settings::{self, get_settings, ShortcutBinding};
 
@@ -73,8 +74,8 @@ pub struct HandyKeysState {
 }
 
 /// Key event sent to frontend during recording mode
-#[derive(Debug, Clone, Serialize, Type)]
-pub struct FrontendKeyEvent {
+#[derive(Debug, Clone, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct HandyKeysEvent {
     /// Currently pressed modifier keys
     pub modifiers: Vec<String>,
     /// The key that was pressed (if any)
@@ -312,7 +313,7 @@ impl HandyKeysState {
 
             if let Some(key_event) = event {
                 // Convert to frontend-friendly format
-                let frontend_event = FrontendKeyEvent {
+                let frontend_event = HandyKeysEvent {
                     modifiers: modifiers_to_strings(key_event.modifiers),
                     key: key_event.key.map(|k| k.to_string().to_lowercase()),
                     is_key_down: key_event.is_key_down,
@@ -323,7 +324,7 @@ impl HandyKeysState {
                 };
 
                 // Emit to frontend
-                if let Err(e) = app.emit("handy-keys-event", &frontend_event) {
+                if let Err(e) = frontend_event.emit(&app) {
                     error!("Failed to emit key event: {}", e);
                 }
             } else {
