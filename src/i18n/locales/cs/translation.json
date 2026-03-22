@@ -581,6 +581,8 @@
       "macos": "Povolte přístup k mikrofonu v Nastavení systému → Soukromí a zabezpečení → Mikrofon.",
       "linux": "Povolte přístup k mikrofonu v nastavení zvuku nebo soukromí vašeho systému."
     },
+    "noInputDeviceTitle": "Mikrofon nebyl nalezen",
+    "noInputDevice": "Nebylo detekováno žádné zvukové vstupní zařízení. Připojte mikrofon nebo sluchátka a zkuste to znovu.",
     "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
     "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
     "modelLoadFailedUnknown": "neznámý model"

@@ -107,6 +107,10 @@ function App() {
           defaultValue: t("errors.micPermissionDenied.generic"),
         });
         toast.error(t("errors.micPermissionDeniedTitle"), { description });
+      } else if (error_type === "no_input_device") {
+        toast.error(t("errors.noInputDeviceTitle"), {
+          description: t("errors.noInputDevice"),
+        });
       } else {
         toast.error(
           t("errors.recordingFailed", { error: detail ?? "Unknown error" }),

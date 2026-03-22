@@ -342,9 +342,16 @@ pub fn is_microphone_access_denied(error_message: &str) -> bool {
         || normalized.contains("0x80070005")
 }
 
+pub fn is_no_input_device_error(error_message: &str) -> bool {
+    let normalized = error_message.to_lowercase();
+    normalized.contains("no input device found")
+        || (normalized.contains("failed to fetch preferred config")
+            && normalized.contains("coreaudio"))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_microphone_access_denied;
+    use super::{is_microphone_access_denied, is_no_input_device_error};
 
     #[test]
     fn detects_access_is_denied() {
@@ -364,6 +371,24 @@ mod tests {
     #[test]
     fn does_not_match_unrelated_errors() {
         assert!(!is_microphone_access_denied("device not found"));
+    }
+
+    #[test]
+    fn detects_no_input_device() {
+        assert!(is_no_input_device_error("No input device found"));
+    }
+
+    #[test]
+    fn detects_coreaudio_config_error() {
+        assert!(is_no_input_device_error(
+            "Failed to fetch preferred config: A backend-specific error has occurred: An unknown error unknown to the coreaudio-rs API occurred"
+        ));
+    }
+
+    #[test]
+    fn does_not_match_other_errors_for_no_device() {
+        assert!(!is_no_input_device_error("permission denied"));
+        assert!(!is_no_input_device_error("device not found"));
     }
 }
 

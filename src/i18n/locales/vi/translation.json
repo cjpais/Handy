@@ -581,6 +581,8 @@
       "macos": "Cấp quyền truy cập micrô trong Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Micrô.",
       "linux": "Cấp quyền truy cập micrô trong cài đặt âm thanh hoặc quyền riêng tư của hệ thống."
     },
+    "noInputDeviceTitle": "Không tìm thấy micrô",
+    "noInputDevice": "Không phát hiện thiết bị đầu vào âm thanh nào. Vui lòng kết nối micrô hoặc tai nghe và thử lại.",
     "recordingFailed": "Không thể bắt đầu ghi âm: {{error}}",
     "modelLoadFailed": "Không thể tải mô hình: {{model}}",
     "modelLoadFailedUnknown": "mô hình không xác định"

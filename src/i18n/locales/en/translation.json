@@ -581,6 +581,8 @@
       "macos": "Grant microphone access in System Settings → Privacy & Security → Microphone.",
       "linux": "Grant microphone access in your system's sound or privacy settings."
     },
+    "noInputDeviceTitle": "No Microphone Found",
+    "noInputDevice": "No audio input device was detected. Please connect a microphone or headset and try again.",
     "recordingFailed": "Failed to start recording: {{error}}",
     "modelLoadFailed": "Failed to load model: {{model}}",
     "modelLoadFailedUnknown": "unknown model"
