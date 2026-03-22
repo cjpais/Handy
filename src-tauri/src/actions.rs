@@ -505,8 +505,8 @@ impl ShortcutAction for TranscribeAction {
                     let wav_path = hm.recordings_dir().join(&file_name);
                     let wav_path_for_verify = wav_path.clone();
                     let samples_for_wav = samples.clone();
-                    let wav_handle = tauri::async_runtime::spawn(async move {
-                        crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav).await
+                    let wav_handle = tauri::async_runtime::spawn_blocking(move || {
+                        crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
                     // Transcribe concurrently with WAV save
