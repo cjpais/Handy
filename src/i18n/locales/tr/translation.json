@@ -581,6 +581,8 @@
       "macos": "Sistem Ayarları → Gizlilik ve Güvenlik → Mikrofon bölümünden mikrofon erişimini verin.",
       "linux": "Sisteminizin ses veya gizlilik ayarlarından mikrofon erişimini verin."
     },
+    "noInputDeviceTitle": "Mikrofon bulunamadı",
+    "noInputDevice": "Ses giriş aygıtı algılanamadı. Lütfen bir mikrofon veya kulaklık bağlayın ve tekrar deneyin.",
     "recordingFailed": "Kayıt başlatılamadı: {{error}}",
     "modelLoadFailed": "Model yüklenemedi: {{model}}",
     "modelLoadFailedUnknown": "bilinmeyen model"

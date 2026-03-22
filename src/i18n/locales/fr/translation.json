@@ -581,6 +581,8 @@
       "macos": "Accordez l'accès au microphone dans Réglages du système → Confidentialité et sécurité → Microphone.",
       "linux": "Accordez l'accès au microphone dans les paramètres de son ou de confidentialité de votre système."
     },
+    "noInputDeviceTitle": "Aucun microphone trouvé",
+    "noInputDevice": "Aucun périphérique d'entrée audio n'a été détecté. Veuillez connecter un microphone ou un casque et réessayer.",
     "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
     "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
     "modelLoadFailedUnknown": "modèle inconnu"

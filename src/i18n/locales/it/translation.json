@@ -581,6 +581,8 @@
       "macos": "Concedi l'accesso al microfono in Impostazioni di Sistema → Privacy e sicurezza → Microfono.",
       "linux": "Concedi l'accesso al microfono nelle impostazioni audio o sulla privacy del tuo sistema."
     },
+    "noInputDeviceTitle": "Nessun microfono trovato",
+    "noInputDevice": "Non è stato rilevato alcun dispositivo di ingresso audio. Collega un microfono o delle cuffie e riprova.",
     "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
     "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
     "modelLoadFailedUnknown": "modello sconosciuto"

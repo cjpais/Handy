@@ -581,6 +581,8 @@
       "macos": "在系统设置 → 隐私与安全性 → 麦克风中授予麦克风访问权限。",
       "linux": "在系统的声音或隐私设置中授予麦克风访问权限。"
     },
+    "noInputDeviceTitle": "未找到麦克风",
+    "noInputDevice": "未检测到音频输入设备。请连接麦克风或耳机后重试。",
     "recordingFailed": "录音启动失败: {{error}}",
     "modelLoadFailed": "加载模型失败: {{model}}",
     "modelLoadFailedUnknown": "未知模型"
