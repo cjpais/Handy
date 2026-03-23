@@ -1,5 +1,8 @@
 fn main() {
     #[cfg(target_os = "macos")]
+    add_clang_rt_search_path();
+
+    #[cfg(target_os = "macos")]
     build_media_remote_bridge();
 
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -112,6 +115,21 @@ fn escape_string(s: &str) -> String {
         .replace('\n', "\\n")
         .replace('\r', "\\r")
         .replace('\t', "\\t")
+}
+
+#[cfg(target_os = "macos")]
+fn add_clang_rt_search_path() {
+    if let Ok(output) = std::process::Command::new("xcrun")
+        .args(["clang", "-print-runtime-dir"])
+        .output()
+    {
+        if let Ok(dir) = std::str::from_utf8(&output.stdout) {
+            let dir = dir.trim();
+            if !dir.is_empty() {
+                println!("cargo:rustc-link-search=native={dir}");
+            }
+        }
+    }
 }
 
 #[cfg(target_os = "macos")]
