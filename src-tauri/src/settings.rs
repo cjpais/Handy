@@ -105,6 +105,14 @@ pub struct PostProcessProvider {
     pub supports_structured_output: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
+pub struct CloudTranscriptionProvider {
+    pub id: String,
+    pub label: String,
+    pub base_url: String,
+    pub default_model: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
@@ -399,6 +407,12 @@ pub struct AppSettings {
     pub ort_accelerator: OrtAcceleratorSetting,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default)]
+    pub cloud_transcription_provider_id: Option<String>,
+    #[serde(default)]
+    pub cloud_transcription_api_key: Option<String>,
+    #[serde(default)]
+    pub cloud_transcription_model: Option<String>,
 }
 
 fn default_model() -> String {
@@ -768,6 +782,9 @@ pub fn get_default_settings() -> AppSettings {
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
         extra_recording_buffer_ms: 0,
+        cloud_transcription_provider_id: None,
+        cloud_transcription_api_key: None,
+        cloud_transcription_model: None,
     }
 }
 

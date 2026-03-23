@@ -26,6 +26,7 @@ pub enum EngineType {
     SenseVoice,
     GigaAM,
     Canary,
+    Cloud,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -570,6 +571,33 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: canary_1b_languages,
                 supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // Cloud transcription provider (virtual model - no download needed)
+        available_models.insert(
+            "cloud".to_string(),
+            ModelInfo {
+                id: "cloud".to_string(),
+                name: "Cloud (Groq Whisper)".to_string(),
+                description: "Cloud-based transcription via Groq Whisper API. Requires API key."
+                    .to_string(),
+                filename: String::new(),
+                url: None,
+                sha256: None,
+                size_mb: 0,
+                is_downloaded: true, // Always "downloaded" - no model file needed
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Cloud,
+                accuracy_score: 0.90,
+                speed_score: 0.95,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: vec![], // Cloud supports all languages
+                supports_language_selection: false,
                 is_custom: false,
             },
         );

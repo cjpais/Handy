@@ -43,6 +43,11 @@ enum LoadedEngine {
     SenseVoice(SenseVoiceModel),
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
+    Cloud {
+        base_url: String,
+        api_key: String,
+        model: String,
+    },
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -268,6 +273,70 @@ impl TranscriptionManager {
             .get_model_info(model_id)
             .ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
+        // Cloud providers don't need model files - skip download/path checks
+        if model_info.engine_type == EngineType::Cloud {
+            let settings = get_settings(&self.app_handle);
+            let api_key = settings
+                .cloud_transcription_api_key
+                .clone()
+                .filter(|k| !k.is_empty())
+                .ok_or_else(|| {
+                    let error_msg = "Cloud transcription API key not configured";
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.to_string()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
+
+            let base_url = "https://api.groq.com/openai/v1".to_string(); // Default to Groq
+            let model = settings
+                .cloud_transcription_model
+                .clone()
+                .filter(|m| !m.is_empty())
+                .unwrap_or_else(|| "whisper-large-v3-turbo".to_string());
+
+            let loaded_engine = LoadedEngine::Cloud {
+                base_url,
+                api_key,
+                model,
+            };
+
+            {
+                let mut engine = self.lock_engine();
+                *engine = Some(loaded_engine);
+            }
+            {
+                let mut current_model = self.current_model_id.lock().unwrap();
+                *current_model = Some(model_id.to_string());
+            }
+
+            self.touch_activity();
+
+            let _ = self.app_handle.emit(
+                "model-state-changed",
+                ModelStateEvent {
+                    event_type: "loading_completed".to_string(),
+                    model_id: Some(model_id.to_string()),
+                    model_name: Some(model_info.name.clone()),
+                    error: None,
+                },
+            );
+
+            let load_duration = load_start.elapsed();
+            debug!(
+                "Cloud transcription provider ready: {} (took {}ms)",
+                model_id,
+                load_duration.as_millis()
+            );
+            return Ok(());
+        }
+
         if !model_info.is_downloaded {
             let error_msg = "Model not downloaded";
             let _ = self.app_handle.emit(
@@ -366,6 +435,10 @@ impl TranscriptionManager {
                     anyhow::anyhow!(error_msg)
                 })?;
                 LoadedEngine::Canary(engine)
+            }
+            EngineType::Cloud => {
+                // Cloud is handled above before this match - this arm is unreachable
+                unreachable!("Cloud engine type should be handled before model file loading")
             }
         };
 
@@ -600,6 +673,63 @@ impl TranscriptionManager {
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
                         }
+                        LoadedEngine::Cloud {
+                            base_url,
+                            api_key,
+                            model,
+                        } => {
+                            // Cloud transcription runs synchronously via blocking HTTP call
+                            let base_url = base_url.clone();
+                            let api_key = api_key.clone();
+                            let model = model.clone();
+                            let audio_clone = audio.clone();
+
+                            let wav_bytes = samples_to_wav(&audio_clone, 44100);
+                            let client = reqwest::blocking::Client::new();
+                            let part = reqwest::blocking::multipart::Part::bytes(wav_bytes)
+                                .file_name("audio.wav")
+                                .mime_str("audio/wav")
+                                .map_err(|e| {
+                                    anyhow::anyhow!("Failed to create multipart: {}", e)
+                                })?;
+
+                            let form = reqwest::blocking::multipart::Form::new()
+                                .part("file", part)
+                                .text("model", model)
+                                .text("response_format", "json");
+
+                            let url =
+                                format!("{}/audio/transcriptions", base_url.trim_end_matches('/'));
+                            let response = client
+                                .post(&url)
+                                .bearer_auth(&api_key)
+                                .multipart(form)
+                                .send()
+                                .map_err(|e| {
+                                    anyhow::anyhow!("Cloud transcription request failed: {}", e)
+                                })?;
+
+                            if !response.status().is_success() {
+                                let status = response.status();
+                                let body = response.text().unwrap_or_default();
+                                return Err(anyhow::anyhow!(
+                                    "Cloud transcription API error ({}): {}",
+                                    status,
+                                    body
+                                ));
+                            }
+
+                            let json: serde_json::Value = response.json().map_err(|e| {
+                                anyhow::anyhow!("Failed to parse cloud response: {}", e)
+                            })?;
+
+                            let text = json["text"].as_str().unwrap_or_default().to_string();
+
+                            Ok(transcribe_rs::TranscriptionResult {
+                                text,
+                                segments: vec![],
+                            })
+                        }
                     }
                 },
             ));
@@ -751,6 +881,40 @@ pub fn get_available_accelerators() -> AvailableAccelerators {
         whisper: whisper_options,
         ort: ort_options,
     }
+}
+
+/// Convert f32 audio samples (44100Hz mono) to WAV bytes for cloud API upload.
+fn samples_to_wav(samples: &[f32], sample_rate: u32) -> Vec<u8> {
+    let num_channels: u16 = 1;
+    let bits_per_sample: u16 = 16;
+    let byte_rate = sample_rate * num_channels as u32 * bits_per_sample as u32 / 8;
+    let block_align = num_channels * bits_per_sample / 8;
+    let data_size = samples.len() as u32 * block_align as u32;
+    let chunk_size = 36 + data_size;
+
+    let mut wav = Vec::with_capacity(44 + data_size as usize);
+    // RIFF header
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&chunk_size.to_le_bytes());
+    wav.extend_from_slice(b"WAVE");
+    // fmt subchunk
+    wav.extend_from_slice(b"fmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes()); // subchunk size
+    wav.extend_from_slice(&1u16.to_le_bytes()); // PCM format
+    wav.extend_from_slice(&num_channels.to_le_bytes());
+    wav.extend_from_slice(&sample_rate.to_le_bytes());
+    wav.extend_from_slice(&byte_rate.to_le_bytes());
+    wav.extend_from_slice(&block_align.to_le_bytes());
+    wav.extend_from_slice(&bits_per_sample.to_le_bytes());
+    // data subchunk
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&data_size.to_le_bytes());
+    for &sample in samples {
+        let clamped = sample.clamp(-1.0, 1.0);
+        let pcm = (clamped * 32767.0) as i16;
+        wav.extend_from_slice(&pcm.to_le_bytes());
+    }
+    wav
 }
 
 impl Drop for TranscriptionManager {
