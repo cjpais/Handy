@@ -18,8 +18,22 @@ pub fn init() {
         let exe_dir = exe_path.parent()?;
 
         let marker_path = exe_dir.join("portable");
-        if is_valid_portable_marker(&marker_path) {
-            let data_dir = exe_dir.join("Data");
+        let data_dir = exe_dir.join("Data");
+
+        let is_portable = if is_valid_portable_marker(&marker_path) {
+            true
+        } else if marker_path.exists() && data_dir.exists() {
+            // Migration: v0.8.0 created an empty marker file. If we find an
+            // empty/invalid marker alongside an existing Data/ dir, this is a
+            // real portable install — upgrade the marker in place.
+            eprintln!("[portable] upgrading legacy empty marker to magic string");
+            let _ = std::fs::write(&marker_path, "Handy Portable Mode");
+            true
+        } else {
+            false
+        };
+
+        if is_portable {
             if !data_dir.exists() {
                 std::fs::create_dir_all(&data_dir).ok()?;
             }
@@ -126,6 +140,17 @@ mod tests {
     fn test_missing_file_does_not_enable_portable() {
         let path = std::path::Path::new("/nonexistent/portable");
         assert!(!is_valid_portable_marker(path));
+    }
+
+    #[test]
+    fn test_legacy_empty_marker_without_data_dir_does_not_enable_portable() {
+        // Empty marker alone (scoop scenario) — no Data/ dir → not portable
+        let dir = std::env::temp_dir().join("handy_test_legacy_no_data");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("portable");
+        std::fs::File::create(&marker).unwrap();
+        assert!(!is_valid_portable_marker(&marker));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
