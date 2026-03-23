@@ -162,10 +162,10 @@ const ModelCard: React.FC<ModelCardProps> = ({
           </p>
         </div>
         {(model.accuracy_score > 0 || model.speed_score > 0) && (
-          <div className="hidden sm:flex items-center ml-4">
+          <div className="hidden sm:flex items-center ms-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <p className="text-xs text-text/60 w-14 text-right">
+                <p className="text-xs text-text/60 w-24 text-end">
                   {t("onboarding.modelCard.accuracy")}
                 </p>
                 <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
@@ -176,7 +176,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <p className="text-xs text-text/60 w-14 text-right">
+                <p className="text-xs text-text/60 w-24 text-end">
                   {t("onboarding.modelCard.speed")}
                 </p>
                 <div className="w-16 h-1.5 bg-mid-gray/20 rounded-full overflow-hidden">
@@ -218,7 +218,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
           </div>
         )}
         {status === "downloadable" && (
-          <span className="flex items-center gap-1.5 ml-auto text-xs text-text/50">
+          <span className="flex items-center gap-1.5 ms-auto text-xs text-text/50">
             <Download className="w-3.5 h-3.5" />
             <span>{formatModelSize(Number(model.size_mb))}</span>
           </span>
@@ -229,7 +229,7 @@ const ModelCard: React.FC<ModelCardProps> = ({
             size="sm"
             onClick={handleDelete}
             title={t("modelSelector.deleteModel", { modelName: displayName })}
-            className="flex items-center gap-1.5 ml-auto text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
+            className="flex items-center gap-1.5 ms-auto text-logo-primary/85 hover:text-logo-primary hover:bg-logo-primary/10"
           >
             <Trash2 className="w-3.5 h-3.5" />
             <span>{t("common.delete")}</span>
