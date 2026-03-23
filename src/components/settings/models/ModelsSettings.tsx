@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Check,
   ChevronDown,
   Globe,
 } from "lucide-react";
@@ -287,48 +288,34 @@ export const ModelsSettings: React.FC = () => {
               <div className="flex items-center gap-2">
                 {/* Sort dropdown */}
                 <div className="relative" ref={sortDropdownRef}>
-                  <div className="flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
-                        sortBy !== "default"
-                          ? "bg-logo-primary/20 text-logo-primary rounded-l-lg"
-                          : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20 rounded-lg"
-                      }`}
-                    >
+                  <button
+                    type="button"
+                    onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                      sortBy !== "default"
+                        ? "bg-logo-primary/20 text-logo-primary"
+                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                    }`}
+                  >
+                    {sortBy !== "default" ? (
+                      sortDirection === "desc" ? (
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      ) : (
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      )
+                    ) : (
                       <ArrowUpDown className="w-3.5 h-3.5" />
-                      <span>{t(`settings.models.sort.${sortBy}`)}</span>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${
-                          sortDropdownOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                    {sortBy !== "default" && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSortDirection((d) =>
-                            d === "desc" ? "asc" : "desc",
-                          )
-                        }
-                        className="flex items-center px-2 py-1.5 text-sm font-medium bg-logo-primary/20 text-logo-primary rounded-r-lg border-l border-logo-primary/30 hover:bg-logo-primary/30 transition-colors"
-                        title={t(
-                          `settings.models.sort.${sortDirection === "desc" ? "descending" : "ascending"}`,
-                        )}
-                      >
-                        {sortDirection === "desc" ? (
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        ) : (
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        )}
-                      </button>
                     )}
-                  </div>
+                    <span>{t(`settings.models.sort.${sortBy}`)}</span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        sortDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
                   {sortDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-1 w-40 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+                    <div className="absolute top-full right-0 mt-1 w-44 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden py-1">
                       {(
                         ["default", "accuracy", "speed", "size"] as SortOption[]
                       ).map((option) => (
@@ -346,13 +333,25 @@ export const ModelsSettings: React.FC = () => {
                             }
                             setSortDropdownOpen(false);
                           }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors flex items-center justify-between ${
                             sortBy === option
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                              ? "bg-logo-primary/10 text-logo-primary"
                               : "hover:bg-mid-gray/10"
                           }`}
                         >
-                          {t(`settings.models.sort.${option}`)}
+                          <span>{t(`settings.models.sort.${option}`)}</span>
+                          {sortBy === option && option !== "default" && (
+                            <span className="flex items-center gap-1 text-logo-primary/70">
+                              {sortDirection === "desc" ? (
+                                <ArrowDown className="w-3 h-3" />
+                              ) : (
+                                <ArrowUp className="w-3 h-3" />
+                              )}
+                            </span>
+                          )}
+                          {sortBy === option && option === "default" && (
+                            <Check className="w-3 h-3 text-logo-primary/70" />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -410,7 +409,7 @@ export const ModelsSettings: React.FC = () => {
                           className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
                         />
                       </div>
-                      <div className="max-h-48 overflow-y-auto">
+                      <div className="max-h-48 overflow-y-auto py-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -418,13 +417,18 @@ export const ModelsSettings: React.FC = () => {
                             setLanguageDropdownOpen(false);
                             setLanguageSearch("");
                           }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors flex items-center justify-between ${
                             languageFilter === "all"
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                              ? "bg-logo-primary/10 text-logo-primary"
                               : "hover:bg-mid-gray/10"
                           }`}
                         >
-                          {t("settings.models.filters.allLanguages")}
+                          <span>
+                            {t("settings.models.filters.allLanguages")}
+                          </span>
+                          {languageFilter === "all" && (
+                            <Check className="w-3 h-3 text-logo-primary/70" />
+                          )}
                         </button>
                         {filteredLanguages.map((lang) => (
                           <button
@@ -435,13 +439,16 @@ export const ModelsSettings: React.FC = () => {
                               setLanguageDropdownOpen(false);
                               setLanguageSearch("");
                             }}
-                            className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                            className={`w-full px-3 py-1.5 text-sm text-left transition-colors flex items-center justify-between ${
                               languageFilter === lang.value
-                                ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                                ? "bg-logo-primary/10 text-logo-primary"
                                 : "hover:bg-mid-gray/10"
                             }`}
                           >
-                            {lang.label}
+                            <span>{lang.label}</span>
+                            {languageFilter === lang.value && (
+                              <Check className="w-3 h-3 text-logo-primary/70" />
+                            )}
                           </button>
                         ))}
                         {filteredLanguages.length === 0 && (
