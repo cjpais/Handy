@@ -583,7 +583,9 @@
     },
     "recordingFailed": "Misslyckades med att starta inspelning: {{error}}",
     "modelLoadFailed": "Misslyckades med att ladda modell: {{model}}",
-    "modelLoadFailedUnknown": "okänd modell"
+    "modelLoadFailedUnknown": "okänd modell",
+    "noInputDeviceTitle": "Ingen mikrofon hittades",
+    "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen."
   },
   "appLanguage": {
     "title": "Applikationsspråk",
