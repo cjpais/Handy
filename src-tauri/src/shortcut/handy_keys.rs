@@ -27,8 +27,8 @@
 //! polled from a dedicated recording thread. Events are emitted to the frontend
 //! via Tauri's event system.
 
-use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, Key, KeyboardListener, Modifiers};
-use log::{debug, error, info, warn};
+use handy_keys::{Hotkey, HotkeyId, HotkeyManager, HotkeyState, KeyboardListener};
+use log::{debug, error, info};
 use serde::Serialize;
 use specta::Type;
 use std::collections::HashMap;
@@ -39,40 +39,6 @@ use std::thread::{self, JoinHandle};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::settings::{self, get_settings, ShortcutBinding};
-
-/// Check whether a key is a function key (F1-F20).
-///
-/// On macOS, function keys require holding `fn` on default keyboard settings
-/// (where the top row acts as media keys). The `fn` key sets the FN modifier
-/// flag, but it's a transport mechanism — not a meaningful modifier. We need
-/// to register both the FN and non-FN variants so that function key shortcuts
-/// work regardless of the user's keyboard configuration.
-#[cfg(target_os = "macos")]
-fn is_function_key(key: Key) -> bool {
-    matches!(
-        key,
-        Key::F1
-            | Key::F2
-            | Key::F3
-            | Key::F4
-            | Key::F5
-            | Key::F6
-            | Key::F7
-            | Key::F8
-            | Key::F9
-            | Key::F10
-            | Key::F11
-            | Key::F12
-            | Key::F13
-            | Key::F14
-            | Key::F15
-            | Key::F16
-            | Key::F17
-            | Key::F18
-            | Key::F19
-            | Key::F20
-    )
-}
 
 use super::handler::handle_shortcut_event;
 
@@ -240,44 +206,6 @@ impl HandyKeysState {
             "Registered handy-keys shortcut: {} -> {:?}",
             binding_id, hotkey
         );
-
-        // On macOS, register the FN-toggled variant for function key shortcuts.
-        // This ensures F-key shortcuts work regardless of whether the user's
-        // keyboard is in "media keys" mode (fn required) or "standard function
-        // keys" mode (fn not required).
-        #[cfg(target_os = "macos")]
-        if let Some(key) = hotkey.key {
-            if is_function_key(key) {
-                let alt_mods = if hotkey.modifiers.contains(Modifiers::FN) {
-                    hotkey.modifiers & !Modifiers::FN
-                } else {
-                    hotkey.modifiers | Modifiers::FN
-                };
-                if let Ok(alt_hotkey) = Hotkey::new(alt_mods, key) {
-                    match manager.register(alt_hotkey) {
-                        Ok(alt_id) => {
-                            let fn_binding_id = format!("{}__fn_variant", binding_id);
-                            binding_to_hotkey.insert(fn_binding_id, alt_id);
-                            hotkey_to_binding.insert(
-                                alt_id,
-                                (binding_id.to_string(), hotkey_string.to_string()),
-                            );
-                            debug!(
-                                "Registered FN-variant shortcut for {}: {:?}",
-                                binding_id, alt_hotkey
-                            );
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Failed to register FN-variant for {}: {} (non-fatal)",
-                                binding_id, e
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
         Ok(())
     }
 
@@ -295,15 +223,6 @@ impl HandyKeysState {
             hotkey_to_binding.remove(&id);
             debug!("Unregistered handy-keys shortcut: {}", binding_id);
         }
-
-        // Also unregister the FN-variant if it exists (macOS function key support)
-        let fn_binding_id = format!("{}__fn_variant", binding_id);
-        if let Some(fn_id) = binding_to_hotkey.remove(&fn_binding_id) {
-            let _ = manager.unregister(fn_id);
-            hotkey_to_binding.remove(&fn_id);
-            debug!("Unregistered FN-variant shortcut: {}", binding_id);
-        }
-
         Ok(())
     }
 
@@ -392,18 +311,6 @@ impl HandyKeysState {
             };
 
             if let Some(key_event) = event {
-                // On macOS, strip the FN modifier from function key events during
-                // recording. The fn key is a transport mechanism to access F-keys,
-                // not a meaningful modifier, so we record "f5" instead of "fn+f5".
-                #[cfg(target_os = "macos")]
-                let key_event = {
-                    let mut ke = key_event;
-                    if ke.key.map_or(false, is_function_key) {
-                        ke.modifiers = ke.modifiers & !Modifiers::FN;
-                    }
-                    ke
-                };
-
                 // Convert to frontend-friendly format
                 let frontend_event = FrontendKeyEvent {
                     modifiers: modifiers_to_strings(key_event.modifiers),

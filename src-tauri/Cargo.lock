@@ -2475,8 +2475,7 @@ dependencies = [
 [[package]]
 name = "handy-keys"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1c1bb519fbead4e7344bf0fe32718c4cea30fc05e03fc65c242df064f515b03"
+source = "git+https://github.com/fullstck/handy-keys?branch=fix%2Fmacos-fn-function-keys#ceab00e00c87e5bc5fcb5f4340f3505c69bdf9cb"
 dependencies = [
  "bitflags 2.11.0",
  "block2",
