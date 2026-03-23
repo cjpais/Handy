@@ -213,37 +213,37 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
           </div>
         </div>
       )}
-    <div className={`flex items-center gap-3 ${className}`}>
-      {isUpdateClickable ? (
-        <button
-          onClick={getUpdateStatusAction()}
-          disabled={isUpdateDisabled}
-          className={`transition-colors disabled:opacity-50 tabular-nums ${
-            updateAvailable
-              ? "text-logo-primary hover:text-logo-primary/80 font-medium"
-              : "text-text/60 hover:text-text/80"
-          }`}
-        >
-          {getUpdateStatusText()}
-        </button>
-      ) : (
-        <span className="text-text/60 tabular-nums">
-          {getUpdateStatusText()}
-        </span>
-      )}
+      <div className={`flex items-center gap-3 ${className}`}>
+        {isUpdateClickable ? (
+          <button
+            onClick={getUpdateStatusAction()}
+            disabled={isUpdateDisabled}
+            className={`transition-colors disabled:opacity-50 tabular-nums ${
+              updateAvailable
+                ? "text-logo-primary hover:text-logo-primary/80 font-medium"
+                : "text-text/60 hover:text-text/80"
+            }`}
+          >
+            {getUpdateStatusText()}
+          </button>
+        ) : (
+          <span className="text-text/60 tabular-nums">
+            {getUpdateStatusText()}
+          </span>
+        )}
 
-      {isInstalling && downloadProgress > 0 && downloadProgress < 100 && (
-        <ProgressBar
-          progress={[
-            {
-              id: "update",
-              percentage: downloadProgress,
-            },
-          ]}
-          size="large"
-        />
-      )}
-    </div>
+        {isInstalling && downloadProgress > 0 && downloadProgress < 100 && (
+          <ProgressBar
+            progress={[
+              {
+                id: "update",
+                percentage: downloadProgress,
+              },
+            ]}
+            size="large"
+          />
+        )}
+      </div>
     </>
   );
 };
