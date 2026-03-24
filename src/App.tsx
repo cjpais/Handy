@@ -1,13 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -15,7 +13,7 @@ import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
-import { commands } from "@/bindings";
+import { commands, events } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
@@ -97,7 +95,7 @@ function App() {
 
   // Listen for recording errors from the backend and show a toast
   useEffect(() => {
-    const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
+    const unlisten = events.recordingError.listen((event) => {
       const { error_type, detail } = event.payload;
 
       if (error_type === "microphone_permission_denied") {
@@ -124,7 +122,7 @@ function App() {
 
   // Listen for model loading failures and show a toast
   useEffect(() => {
-    const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
+    const unlisten = events.modelStateChanged.listen((event) => {
       if (event.payload.event_type === "loading_failed") {
         toast.error(
           t("errors.modelLoadFailed", {

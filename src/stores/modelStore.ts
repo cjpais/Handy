@@ -1,16 +1,13 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import { produce } from "immer";
-import { listen } from "@tauri-apps/api/event";
-import { commands, type ModelInfo } from "@/bindings";
+import {
+  commands,
+  events,
+  type ModelInfo,
+  type ModelDownloadProgress,
+} from "@/bindings";
 import { toast } from "sonner";
-
-interface DownloadProgress {
-  model_id: string;
-  downloaded: number;
-  total: number;
-  percentage: number;
-}
 
 interface DownloadStats {
   startTime: number;
@@ -26,7 +23,7 @@ interface ModelsStore {
   downloadingModels: Record<string, true>;
   verifyingModels: Record<string, true>;
   extractingModels: Record<string, true>;
-  downloadProgress: Record<string, DownloadProgress>;
+  downloadProgress: Record<string, ModelDownloadProgress>;
   downloadStats: Record<string, DownloadStats>;
   loading: boolean;
   error: string | null;
@@ -47,7 +44,7 @@ interface ModelsStore {
   isModelDownloading: (modelId: string) => boolean;
   isModelVerifying: (modelId: string) => boolean;
   isModelExtracting: (modelId: string) => boolean;
-  getDownloadProgress: (modelId: string) => DownloadProgress | undefined;
+  getDownloadProgress: (modelId: string) => ModelDownloadProgress | undefined;
 
   // Internal setters
   setModels: (models: ModelInfo[]) => void;
@@ -279,7 +276,7 @@ export const useModelStore = create<ModelsStore>()(
       await Promise.all([loadModels(), loadCurrentModel(), checkFirstRun()]);
 
       // Set up event listeners
-      listen<DownloadProgress>("model-download-progress", (event) => {
+      events.modelDownloadProgress.listen((event) => {
         const progress = event.payload;
         set(
           produce((state) => {
@@ -324,7 +321,7 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-download-complete", (event) => {
+      events.modelDownloadComplete.listen((event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -337,24 +334,21 @@ export const useModelStore = create<ModelsStore>()(
         get().loadModels();
       });
 
-      listen<{ model_id: string; error: string }>(
-        "model-download-failed",
-        (event) => {
-          const { model_id: modelId, error } = event.payload;
-          set(
-            produce((state) => {
-              delete state.downloadingModels[modelId];
-              delete state.verifyingModels[modelId];
-              delete state.downloadProgress[modelId];
-              delete state.downloadStats[modelId];
-              state.error = error;
-            }),
-          );
-          toast.error(error);
-        },
-      );
+      events.modelDownloadFailed.listen((event) => {
+        const { model_id: modelId, error } = event.payload;
+        set(
+          produce((state) => {
+            delete state.downloadingModels[modelId];
+            delete state.verifyingModels[modelId];
+            delete state.downloadProgress[modelId];
+            delete state.downloadStats[modelId];
+            state.error = error;
+          }),
+        );
+        toast.error(error);
+      });
 
-      listen<string>("model-verification-started", (event) => {
+      events.modelVerificationStarted.listen((event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -363,7 +357,7 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-verification-completed", (event) => {
+      events.modelVerificationCompleted.listen((event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -372,7 +366,7 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-extraction-started", (event) => {
+      events.modelExtractionStarted.listen((event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -381,7 +375,7 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-extraction-completed", (event) => {
+      events.modelExtractionCompleted.listen((event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -391,20 +385,17 @@ export const useModelStore = create<ModelsStore>()(
         get().loadModels();
       });
 
-      listen<{ model_id: string; error: string }>(
-        "model-extraction-failed",
-        (event) => {
-          const modelId = event.payload.model_id;
-          set(
-            produce((state) => {
-              delete state.extractingModels[modelId];
-              state.error = `Failed to extract model: ${event.payload.error}`;
-            }),
-          );
-        },
-      );
+      events.modelExtractionFailed.listen((event) => {
+        const modelId = event.payload.model_id;
+        set(
+          produce((state) => {
+            delete state.extractingModels[modelId];
+            state.error = `Failed to extract model: ${event.payload.error}`;
+          }),
+        );
+      });
 
-      listen<string>("model-download-cancelled", (event) => {
+      events.modelDownloadCancelled.listen((event) => {
         const modelId = event.payload;
         set(
           produce((state) => {
@@ -416,12 +407,12 @@ export const useModelStore = create<ModelsStore>()(
         );
       });
 
-      listen<string>("model-deleted", () => {
+      events.modelDeleted.listen(() => {
         get().loadModels();
         get().loadCurrentModel();
       });
 
-      listen("model-state-changed", () => {
+      events.modelStateChanged.listen(() => {
         get().loadModels();
         get().loadCurrentModel();
       });

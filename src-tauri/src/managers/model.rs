@@ -15,7 +15,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tar::Archive;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
+use tauri_specta::Event;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
@@ -51,13 +52,46 @@ pub struct ModelInfo {
     pub is_custom: bool,            // Whether this is a user-provided custom model
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
-pub struct DownloadProgress {
+#[derive(Debug, Clone, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelDownloadProgress {
     pub model_id: String,
     pub downloaded: u64,
     pub total: u64,
     pub percentage: f64,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelDownloadComplete(pub String);
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelDownloadFailed {
+    pub model_id: String,
+    pub error: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelDownloadCancelled(pub String);
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelVerificationStarted(pub String);
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelVerificationCompleted(pub String);
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelExtractionStarted(pub String);
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelExtractionCompleted(pub String);
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelExtractionFailed {
+    pub model_id: String,
+    pub error: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct ModelDeleted(pub String);
 
 /// RAII guard that cleans up download state (`is_downloading` flag and cancel flag)
 /// when dropped, unless explicitly disarmed. This ensures consistent cleanup on
@@ -1068,7 +1102,7 @@ impl ModelManager {
         };
 
         // Emit initial progress
-        let initial_progress = DownloadProgress {
+        let initial_progress = ModelDownloadProgress {
             model_id: model_id.to_string(),
             downloaded,
             total: total_size,
@@ -1078,9 +1112,7 @@ impl ModelManager {
                 0.0
             },
         };
-        let _ = self
-            .app_handle
-            .emit("model-download-progress", &initial_progress);
+        let _ = initial_progress.emit(&self.app_handle);
 
         // Throttle progress events to max 10/sec (100ms intervals)
         let mut last_emit = Instant::now();
@@ -1110,19 +1142,19 @@ impl ModelManager {
 
             // Emit progress event (throttled to avoid UI freeze)
             if last_emit.elapsed() >= throttle_duration {
-                let progress = DownloadProgress {
+                let progress = ModelDownloadProgress {
                     model_id: model_id.to_string(),
                     downloaded,
                     total: total_size,
                     percentage,
                 };
-                let _ = self.app_handle.emit("model-download-progress", &progress);
+                let _ = progress.emit(&self.app_handle);
                 last_emit = Instant::now();
             }
         }
 
         // Emit final progress to ensure 100% is shown
-        let final_progress = DownloadProgress {
+        let final_progress = ModelDownloadProgress {
             model_id: model_id.to_string(),
             downloaded,
             total: total_size,
@@ -1132,9 +1164,7 @@ impl ModelManager {
                 100.0
             },
         };
-        let _ = self
-            .app_handle
-            .emit("model-download-progress", &final_progress);
+        let _ = final_progress.emit(&self.app_handle);
 
         file.flush()?;
         drop(file); // Ensure file is closed before moving
@@ -1156,7 +1186,7 @@ impl ModelManager {
         // Verify SHA256 checksum. Runs in a blocking thread so the async executor is not
         // stalled while hashing large model files (up to 1.6 GB). On failure the partial
         // is deleted inside verify_sha256 so the next attempt always starts fresh.
-        let _ = self.app_handle.emit("model-verification-started", model_id);
+        let _ = ModelVerificationStarted(model_id.to_string()).emit(&self.app_handle);
         info!("Verifying SHA256 for model {}...", model_id);
         let verify_path = partial_path.clone();
         let verify_expected = model_info.sha256.clone();
@@ -1167,9 +1197,7 @@ impl ModelManager {
         .await
         .map_err(|e| anyhow::anyhow!("SHA256 task panicked: {}", e))?;
         verify_result?;
-        let _ = self
-            .app_handle
-            .emit("model-verification-completed", model_id);
+        let _ = ModelVerificationCompleted(model_id.to_string()).emit(&self.app_handle);
 
         // Handle directory-based models (extract tar.gz) vs file-based models
         if model_info.is_directory {
@@ -1180,7 +1208,7 @@ impl ModelManager {
             }
 
             // Emit extraction started event
-            let _ = self.app_handle.emit("model-extraction-started", model_id);
+            let _ = ModelExtractionStarted(model_id.to_string()).emit(&self.app_handle);
             info!("Extracting archive for directory-based model: {}", model_id);
 
             // Use a temporary extraction directory to ensure atomic operations
@@ -1215,13 +1243,11 @@ impl ModelManager {
                     let mut extracting = self.extracting_models.lock().unwrap();
                     extracting.remove(model_id);
                 }
-                let _ = self.app_handle.emit(
-                    "model-extraction-failed",
-                    &serde_json::json!({
-                        "model_id": model_id,
-                        "error": error_msg
-                    }),
-                );
+                let _ = ModelExtractionFailed {
+                    model_id: model_id.to_string(),
+                    error: error_msg.clone(),
+                }
+                .emit(&self.app_handle);
                 anyhow::anyhow!(error_msg)
             })?;
 
@@ -1255,7 +1281,7 @@ impl ModelManager {
                 extracting.remove(model_id);
             }
             // Emit extraction completed event
-            let _ = self.app_handle.emit("model-extraction-completed", model_id);
+            let _ = ModelExtractionCompleted(model_id.to_string()).emit(&self.app_handle);
 
             // Remove the downloaded tar.gz file
             let _ = fs::remove_file(&partial_path);
@@ -1278,7 +1304,7 @@ impl ModelManager {
         self.cancel_flags.lock().unwrap().remove(model_id);
 
         // Emit completion event
-        let _ = self.app_handle.emit("model-download-complete", model_id);
+        let _ = ModelDownloadComplete(model_id.to_string()).emit(&self.app_handle);
 
         info!(
             "Successfully downloaded model {} to {:?}",
@@ -1353,7 +1379,7 @@ impl ModelManager {
         }
 
         // Emit event to notify UI
-        let _ = self.app_handle.emit("model-deleted", model_id);
+        let _ = ModelDeleted(model_id.to_string()).emit(&self.app_handle);
 
         Ok(())
     }
@@ -1429,7 +1455,7 @@ impl ModelManager {
         self.update_download_status()?;
 
         // Emit cancellation event so all UI components can clear their state
-        let _ = self.app_handle.emit("model-download-cancelled", model_id);
+        let _ = ModelDownloadCancelled(model_id.to_string()).emit(&self.app_handle);
 
         info!("Download cancellation initiated for: {}", model_id);
         Ok(())

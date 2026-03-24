@@ -1,13 +1,12 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
-import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
   AudioDevice,
   WhisperAcceleratorSetting,
   OrtAcceleratorSetting,
 } from "@/bindings";
-import { commands } from "@/bindings";
+import { commands, events } from "@/bindings";
 
 interface SettingsStore {
   settings: Settings | null;
@@ -584,7 +583,7 @@ export const useSettingsStore = create<SettingsStore>()(
 
       // Re-fetch settings when the backend changes them (e.g. language
       // reset during model switch). The backend is the source of truth.
-      listen("model-state-changed", () => {
+      events.modelStateChanged.listen(() => {
         get().refreshSettings();
       });
     },

@@ -1,14 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { listen } from "@tauri-apps/api/event";
-import { commands } from "@/bindings";
+import { commands, events } from "@/bindings";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import { useModelStore } from "../../stores/modelStore";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
-
-import { ModelStateEvent } from "@/lib/types/events";
 
 type ModelStatus =
   | "ready"
@@ -70,36 +67,32 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
 
   useEffect(() => {
     // Listen for model loading lifecycle events
-    const modelStateUnlisten = listen<ModelStateEvent>(
-      "model-state-changed",
-      (event) => {
-        const { event_type, error } = event.payload;
-        switch (event_type) {
-          case "loading_started":
-            setModelStatus("loading");
-            setModelError(null);
-            break;
-          case "loading_completed":
-            setModelStatus("ready");
-            setModelError(null);
-            setPendingModelId(null);
-            break;
-          case "loading_failed":
-            setModelStatus("error");
-            setModelError(error || "Failed to load model");
-            setPendingModelId(null);
-            break;
-          case "unloaded":
-            setModelStatus("unloaded");
-            setModelError(null);
-            break;
-        }
-      },
-    );
+    const modelStateUnlisten = events.modelStateChanged.listen((event) => {
+      const { event_type, error } = event.payload;
+      switch (event_type) {
+        case "loading_started":
+          setModelStatus("loading");
+          setModelError(null);
+          break;
+        case "loading_completed":
+          setModelStatus("ready");
+          setModelError(null);
+          setPendingModelId(null);
+          break;
+        case "loading_failed":
+          setModelStatus("error");
+          setModelError(error || "Failed to load model");
+          setPendingModelId(null);
+          break;
+        case "unloaded":
+          setModelStatus("unloaded");
+          setModelError(null);
+          break;
+      }
+    });
 
     // Auto-select model when download completes (fires after extraction too)
-    const downloadCompleteUnlisten = listen<string>(
-      "model-download-complete",
+    const downloadCompleteUnlisten = events.modelDownloadComplete.listen(
       (event) => {
         const modelId = event.payload;
         setTimeout(async () => {
