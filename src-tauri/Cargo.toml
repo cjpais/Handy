@@ -70,7 +70,7 @@ tar = "0.4.44"
 flate2 = "1.0"
 sha2 = "0.10"
 transcribe-rs = { version = "0.3.2", features = ["whisper-cpp", "onnx"] }
-handy-keys = "0.2.4"
+handy-keys = { git = "https://github.com/fullstck/handy-keys", branch = "fix/macos-fn-function-keys" }
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
