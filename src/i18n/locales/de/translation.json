@@ -259,6 +259,11 @@
         "ort": {
           "title": "ONNX-Beschleunigung",
           "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
+        },
+        "gpuDevice": {
+          "title": "GPU-Gerät",
+          "description": "Wählen Sie die GPU für die Whisper-Inferenz. Auto wählt die dedizierte GPU.",
+          "auto": "Auto"
         }
       },
       "startHidden": {

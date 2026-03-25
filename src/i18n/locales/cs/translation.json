@@ -259,6 +259,11 @@
         "ort": {
           "title": "Akcelerace ONNX",
           "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
+        },
+        "gpuDevice": {
+          "title": "GPU zařízení",
+          "description": "Vyberte, který GPU použít pro Whisper. Automaticky vybere dedikovaný GPU.",
+          "auto": "Automaticky"
         }
       },
       "startHidden": {
