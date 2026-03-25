@@ -961,4 +961,12 @@ mod tests {
         assert!(!debug_output.contains("sk-ant-secret-key-67890"));
         assert!(debug_output.contains("[REDACTED]"));
     }
+
+    #[test]
+    fn secret_map_debug_redacts_values() {
+        let map = SecretMap(HashMap::from([("key".into(), "secret".into())]));
+        let out = format!("{:?}", map);
+        assert!(!out.contains("secret"));
+        assert!(out.contains("[REDACTED]"));
+    }
 }
