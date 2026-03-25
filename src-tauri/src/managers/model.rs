@@ -483,8 +483,10 @@ impl ModelManager {
             "fire-red-asr-large-zh-en".to_string(),
             ModelInfo {
                 id: "fire-red-asr-large-zh-en".to_string(),
-                name: "FireRedASR Large (zh+en)".to_string(),
-                description: "Accurate Chinese + English speech recognition (offline).".to_string(),
+                name: "FireRedASR-AED Large (zh+en)".to_string(),
+                description:
+                    "Chinese-focused offline speech recognition (also supports English)."
+                        .to_string(),
                 filename: "fire-red-asr-large-zh-en".to_string(),
                 url: Some("https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16.tar.bz2".to_string()),
                 // SHA256 not yet pinned; skip verification for now (local dev).
