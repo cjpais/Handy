@@ -1,5 +1,6 @@
 use crate::settings::{get_settings, write_settings};
 use anyhow::Result;
+use bzip2::read::BzDecoder;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use log::{debug, info, warn};
@@ -24,6 +25,7 @@ pub enum EngineType {
     Moonshine,
     MoonshineStreaming,
     SenseVoice,
+    FireRedAsr,
     GigaAM,
     Canary,
 }
@@ -469,6 +471,36 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: sense_voice_languages,
                 supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        // FireRedASR (AED) supported languages
+        let fire_red_asr_languages: Vec<String> =
+            vec!["zh", "zh-Hans", "zh-Hant", "en"].into_iter().map(String::from).collect();
+
+        available_models.insert(
+            "fire-red-asr-large-zh-en".to_string(),
+            ModelInfo {
+                id: "fire-red-asr-large-zh-en".to_string(),
+                name: "FireRedASR Large (zh+en)".to_string(),
+                description: "Accurate Chinese + English speech recognition (offline).".to_string(),
+                filename: "fire-red-asr-large-zh-en".to_string(),
+                url: Some("https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-fire-red-asr-large-zh_en-2025-02-16.tar.bz2".to_string()),
+                // SHA256 not yet pinned; skip verification for now (local dev).
+                sha256: None,
+                size_mb: 1401,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::FireRedAsr,
+                accuracy_score: 0.90,
+                speed_score: 0.55,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: fire_red_asr_languages,
+                supports_language_selection: false,
                 is_custom: false,
             },
         );
@@ -1197,10 +1229,19 @@ impl ModelManager {
             // Create temporary extraction directory
             fs::create_dir_all(&temp_extract_dir)?;
 
-            // Open the downloaded tar.gz file
-            let tar_gz = File::open(&partial_path)?;
-            let tar = GzDecoder::new(tar_gz);
-            let mut archive = Archive::new(tar);
+            // Open the downloaded archive (.tar.gz or .tar.bz2)
+            let archive_file = File::open(&partial_path)?;
+            let reader: Box<dyn Read> = if url.ends_with(".tar.gz") {
+                Box::new(GzDecoder::new(archive_file))
+            } else if url.ends_with(".tar.bz2") {
+                Box::new(BzDecoder::new(archive_file))
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Unsupported archive format for directory-based model: {}",
+                    url
+                ));
+            };
+            let mut archive = Archive::new(reader);
 
             // Extract to the temporary directory first
             archive.unpack(&temp_extract_dir).map_err(|e| {

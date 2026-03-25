@@ -68,6 +68,7 @@ chrono = "0.4"
 rusqlite = { version = "0.37", features = ["bundled"] }
 tar = "0.4.44"
 flate2 = "1.0"
+bzip2 = "0.5"
 sha2 = "0.10"
 transcribe-rs = { version = "0.3.2", features = ["whisper-cpp", "onnx"] }
 handy-keys = "0.2.4"
@@ -111,6 +112,7 @@ transcribe-rs = { version = "0.3.2", features = ["whisper-vulkan"] }
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
+transcribe-rs = { path = "../../transcribe-rs" }
 
 [dev-dependencies]
 tempfile = "3"
