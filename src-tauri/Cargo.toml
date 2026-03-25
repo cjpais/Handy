@@ -112,7 +112,7 @@ transcribe-rs = { version = "0.3.2", features = ["whisper-vulkan"] }
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
-transcribe-rs = { path = "../../transcribe-rs" }
+transcribe-rs = { git = "https://github.com/chiimagnus/transcribe-rs", rev = "7b7c04a6a8506883e3d91e336e3cc259262dab67" }
 
 [dev-dependencies]
 tempfile = "3"
