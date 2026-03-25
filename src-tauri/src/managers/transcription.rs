@@ -17,6 +17,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
     onnx::{
         canary::CanaryModel,
+        fire_red_asr::FireRedAsrModel,
         gigaam::GigaAMModel,
         moonshine::{MoonshineModel, MoonshineVariant, StreamingModel},
         parakeet::{ParakeetModel, ParakeetParams, TimestampGranularity},
@@ -41,6 +42,7 @@ enum LoadedEngine {
     Moonshine(MoonshineModel),
     MoonshineStreaming(StreamingModel),
     SenseVoice(SenseVoiceModel),
+    FireRedAsr(FireRedAsrModel),
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
 }
@@ -351,6 +353,16 @@ impl TranscriptionManager {
                     })?;
                 LoadedEngine::SenseVoice(engine)
             }
+            EngineType::FireRedAsr => {
+                let engine =
+                    FireRedAsrModel::load(&model_path, &Quantization::Int8).map_err(|e| {
+                        let error_msg =
+                            format!("Failed to load FireRedASR model {}: {}", model_id, e);
+                        emit_loading_failed(&error_msg);
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                LoadedEngine::FireRedAsr(engine)
+            }
             EngineType::GigaAM => {
                 let engine = GigaAMModel::load(&model_path, &Quantization::Int8).map_err(|e| {
                     let error_msg = format!("Failed to load gigaam model {}: {}", model_id, e);
@@ -583,6 +595,11 @@ impl TranscriptionManager {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
+                        LoadedEngine::FireRedAsr(fire_red_asr_engine) => fire_red_asr_engine
+                            .transcribe(&audio, &TranscribeOptions::default())
+                            .map_err(|e| {
+                                anyhow::anyhow!("FireRedASR transcription failed: {}", e)
+                            }),
                         LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
                             .transcribe(&audio, &TranscribeOptions::default())
                             .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),

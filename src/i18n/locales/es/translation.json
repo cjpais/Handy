@@ -77,6 +77,10 @@
         "name": "SenseVoice",
         "description": "Muy rápido. Chino, inglés, japonés, coreano, cantonés."
       },
+      "fire-red-asr-large-zh-en": {
+        "name": "FireRedASR-AED Large (zh+en)",
+        "description": "Chinese-focused offline speech recognition (also supports English)."
+      },
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "Reconocimiento de voz en ruso. Rápido y preciso."

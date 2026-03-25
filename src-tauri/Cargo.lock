@@ -600,6 +600,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "bzip2"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49ecfb22d906f800d4fe833b6282cf4dc1c298f5057ca0b5445e5c209735ca47"
+dependencies = [
+ "bzip2-sys",
+]
+
+[[package]]
+name = "bzip2-sys"
+version = "0.1.13+1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "225bff33b2141874fe80d71e07d6eec4f85c5c216453dd96388240f96e1acc14"
+dependencies = [
+ "cc",
+ "pkg-config",
+]
+
+[[package]]
 name = "cairo-rs"
 version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2416,6 +2435,7 @@ name = "handy"
 version = "0.8.0"
 dependencies = [
  "anyhow",
+ "bzip2",
  "chrono",
  "clap",
  "cpal",
@@ -6993,8 +7013,7 @@ dependencies = [
 [[package]]
 name = "transcribe-rs"
 version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4e2b882795f8cee1a97e70bb8f4265bc159b786421ee525a372ccc6bf990fce"
+source = "git+https://github.com/chiimagnus/transcribe-rs?rev=7b7c04a6a8506883e3d91e336e3cc259262dab67#7b7c04a6a8506883e3d91e336e3cc259262dab67"
 dependencies = [
  "base64 0.22.1",
  "derive_builder",

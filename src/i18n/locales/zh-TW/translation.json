@@ -77,6 +77,10 @@
         "name": "SenseVoice",
         "description": "速度極快。支援中文、英語、日語、韓語、粵語。"
       },
+      "fire-red-asr-large-zh-en": {
+        "name": "FireRedASR-AED Large（中英）",
+        "description": "以中文為主的離線語音辨識（也支援英文）。"
+      },
       "gigaam-v3-e2e-ctc": {
         "name": "GigaAM v3",
         "description": "俄語語音辨識。快速且準確。"
