@@ -307,7 +307,7 @@ impl Default for OrtAcceleratorSetting {
 
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
-pub struct SecretMap(HashMap<String, String>);
+pub(crate) struct SecretMap(HashMap<String, String>);
 
 impl fmt::Debug for SecretMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -947,9 +947,10 @@ mod tests {
         settings
             .post_process_api_keys
             .insert("openai".to_string(), "sk-proj-secret-key-12345".to_string());
-        settings
-            .post_process_api_keys
-            .insert("anthropic".to_string(), "sk-ant-secret-key-67890".to_string());
+        settings.post_process_api_keys.insert(
+            "anthropic".to_string(),
+            "sk-ant-secret-key-67890".to_string(),
+        );
         settings
             .post_process_api_keys
             .insert("empty_provider".to_string(), "".to_string());
