@@ -973,4 +973,24 @@ mod tests {
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
     }
+
+    #[test]
+    fn debug_output_redacts_api_keys() {
+        let mut settings = get_default_settings();
+        settings
+            .post_process_api_keys
+            .insert("openai".to_string(), "sk-proj-secret-key-12345".to_string());
+        settings
+            .post_process_api_keys
+            .insert("anthropic".to_string(), "sk-ant-secret-key-67890".to_string());
+        settings
+            .post_process_api_keys
+            .insert("empty_provider".to_string(), "".to_string());
+
+        let debug_output = format!("{:?}", settings);
+
+        assert!(!debug_output.contains("sk-proj-secret-key-12345"));
+        assert!(!debug_output.contains("sk-ant-secret-key-67890"));
+        assert!(debug_output.contains("[REDACTED]"));
+    }
 }
