@@ -10,7 +10,7 @@ use serde::Serialize;
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Condvar, Mutex, MutexGuard};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
@@ -717,7 +717,16 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
         WhisperAcceleratorSetting::Gpu => accel::WhisperAccelerator::Gpu,
     };
     accel::set_whisper_accelerator(whisper_pref);
-    info!("Whisper accelerator set to: {}", whisper_pref);
+    accel::set_whisper_gpu_device(settings.whisper_gpu_device);
+    info!(
+        "Whisper accelerator set to: {}, gpu_device: {}",
+        whisper_pref,
+        if settings.whisper_gpu_device == accel::GPU_DEVICE_AUTO {
+            "auto".to_string()
+        } else {
+            settings.whisper_gpu_device.to_string()
+        }
+    );
 
     let ort_pref = match settings.ort_accelerator {
         OrtAcceleratorSetting::Auto => accel::OrtAccelerator::Auto,
@@ -731,9 +740,34 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
 }
 
 #[derive(Serialize, Clone, Debug, Type)]
+pub struct GpuDeviceOption {
+    pub id: i32,
+    pub name: String,
+    pub total_vram_mb: usize,
+}
+
+static GPU_DEVICES: OnceLock<Vec<GpuDeviceOption>> = OnceLock::new();
+
+fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
+    use transcribe_rs::whisper_cpp::gpu::list_gpu_devices;
+
+    GPU_DEVICES.get_or_init(|| {
+        list_gpu_devices()
+            .into_iter()
+            .map(|d| GpuDeviceOption {
+                id: d.id,
+                name: d.name,
+                total_vram_mb: d.total_vram / (1024 * 1024),
+            })
+            .collect()
+    })
+}
+
+#[derive(Serialize, Clone, Debug, Type)]
 pub struct AvailableAccelerators {
     pub whisper: Vec<String>,
     pub ort: Vec<String>,
+    pub gpu_devices: Vec<GpuDeviceOption>,
 }
 
 /// Return which accelerators are compiled into this build.
@@ -750,6 +784,7 @@ pub fn get_available_accelerators() -> AvailableAccelerators {
     AvailableAccelerators {
         whisper: whisper_options,
         ort: ort_options,
+        gpu_devices: cached_gpu_devices().to_vec(),
     }
 }
 

@@ -1124,7 +1124,16 @@ pub fn change_ort_accelerator_setting(
     Ok(())
 }
 
-/// Return which ORT accelerators are compiled into this build.
+#[tauri::command]
+#[specta::specta]
+pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
+    let mut s = settings::get_settings(&app);
+    s.whisper_gpu_device = device;
+    apply_and_reload_accelerator(&app, s);
+    Ok(())
+}
+
+/// Return which accelerators and GPU devices are available for this build.
 #[tauri::command]
 #[specta::specta]
 pub fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
