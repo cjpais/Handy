@@ -88,6 +88,22 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Точна багатомовна. 25 європейських мов. Підтримує переклад."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Багатомовна пакетна транскрипція з добрим балансом точності та ефективності."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Багатомовна пакетна транскрипція. Найвища точність серед моделей ASR з відкритим кодом."
+      },
+      "qwen3-0.6b-int4": {
+        "name": "Qwen3 ASR 0.6B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
+      },
+      "qwen3-1.7b-int4": {
+        "name": "Qwen3 ASR 1.7B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
       }
     },
     "errors": {

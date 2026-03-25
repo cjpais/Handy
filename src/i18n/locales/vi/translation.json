@@ -88,6 +88,22 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Đa ngôn ngữ chính xác. 25 ngôn ngữ châu Âu. Hỗ trợ dịch thuật."
+      },
+      "qwen3-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Chuyển đổi hàng loạt đa ngôn ngữ với sự cân bằng tốt giữa độ chính xác và hiệu quả."
+      },
+      "qwen3-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Chuyển đổi hàng loạt đa ngôn ngữ. Độ chính xác cao nhất trong các mô hình ASR mã nguồn mở."
+      },
+      "qwen3-0.6b-int4": {
+        "name": "Qwen3 ASR 0.6B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
+      },
+      "qwen3-1.7b-int4": {
+        "name": "Qwen3 ASR 1.7B (Int4)",
+        "description": "Multilingual batch transcription. Quantized for smaller download."
       }
     },
     "errors": {

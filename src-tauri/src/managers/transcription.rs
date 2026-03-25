@@ -20,6 +20,7 @@ use transcribe_rs::{
         gigaam::GigaAMModel,
         moonshine::{MoonshineModel, MoonshineVariant, StreamingModel},
         parakeet::{ParakeetModel, ParakeetParams, TimestampGranularity},
+        qwen3::Qwen3Model,
         sense_voice::{SenseVoiceModel, SenseVoiceParams},
         Quantization,
     },
@@ -43,6 +44,7 @@ enum LoadedEngine {
     SenseVoice(SenseVoiceModel),
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
+    Qwen3(Qwen3Model),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -367,6 +369,28 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::Canary(engine)
             }
+            EngineType::Qwen3 => {
+                // Model IDs ending in "-int4" use Int4 quantization; others use FP32.
+                let quantization = if model_id.ends_with("-int4") {
+                    Quantization::Int4
+                } else {
+                    Quantization::default()
+                };
+                let engine = Qwen3Model::load(&model_path, &quantization).map_err(|e| {
+                    let error_msg = format!("Failed to load Qwen3 model {}: {}", model_id, e);
+                    let _ = self.app_handle.emit(
+                        "model-state-changed",
+                        ModelStateEvent {
+                            event_type: "loading_failed".to_string(),
+                            model_id: Some(model_id.to_string()),
+                            model_name: Some(model_info.name.clone()),
+                            error: Some(error_msg.clone()),
+                        },
+                    );
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::Qwen3(engine)
+            }
         };
 
         // Update the current engine and model ID
@@ -600,6 +624,9 @@ impl TranscriptionManager {
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
                         }
+                        LoadedEngine::Qwen3(qwen3_engine) => qwen3_engine
+                            .transcribe(&audio, &TranscribeOptions::default())
+                            .map_err(|e| anyhow::anyhow!("Qwen3 transcription failed: {}", e)),
                     }
                 },
             ));
@@ -728,6 +755,12 @@ pub fn apply_accelerator_settings(app: &tauri::AppHandle) {
     };
     accel::set_ort_accelerator(ort_pref);
     info!("ORT accelerator set to: {}", ort_pref);
+
+    accel::set_ort_intra_threads(settings.ort_thread_count);
+    info!(
+        "ORT intra-op threads set to: {} (0=auto)",
+        settings.ort_thread_count
+    );
 }
 
 #[derive(Serialize, Clone, Debug, Type)]
