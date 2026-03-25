@@ -305,8 +305,36 @@ impl Default for OrtAcceleratorSetting {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, Type)]
+#[serde(transparent)]
+pub struct SecretMap(HashMap<String, String>);
+
+impl fmt::Debug for SecretMap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let redacted: HashMap<&String, &str> = self
+            .0
+            .iter()
+            .map(|(k, v)| (k, if v.is_empty() { "" } else { "[REDACTED]" }))
+            .collect();
+        redacted.fmt(f)
+    }
+}
+
+impl std::ops::Deref for SecretMap {
+    type Target = HashMap<String, String>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for SecretMap {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
-#[derive(Serialize, Deserialize, Clone, Type)]
+#[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
     pub push_to_talk: bool,
@@ -366,7 +394,7 @@ pub struct AppSettings {
     #[serde(default = "default_post_process_providers")]
     pub post_process_providers: Vec<PostProcessProvider>,
     #[serde(default = "default_post_process_api_keys")]
-    pub post_process_api_keys: HashMap<String, String>,
+    pub post_process_api_keys: SecretMap,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
     #[serde(default = "default_post_process_prompts")]
@@ -400,67 +428,6 @@ pub struct AppSettings {
     pub ort_accelerator: OrtAcceleratorSetting,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
-}
-
-impl fmt::Debug for AppSettings {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let redacted_keys: HashMap<&String, &str> = self
-            .post_process_api_keys
-            .iter()
-            .map(|(k, v)| (k, if v.is_empty() { "" } else { "[REDACTED]" }))
-            .collect();
-
-        f.debug_struct("AppSettings")
-            .field("bindings", &self.bindings)
-            .field("push_to_talk", &self.push_to_talk)
-            .field("audio_feedback", &self.audio_feedback)
-            .field("audio_feedback_volume", &self.audio_feedback_volume)
-            .field("sound_theme", &self.sound_theme)
-            .field("start_hidden", &self.start_hidden)
-            .field("autostart_enabled", &self.autostart_enabled)
-            .field("update_checks_enabled", &self.update_checks_enabled)
-            .field("selected_model", &self.selected_model)
-            .field("always_on_microphone", &self.always_on_microphone)
-            .field("selected_microphone", &self.selected_microphone)
-            .field("clamshell_microphone", &self.clamshell_microphone)
-            .field("selected_output_device", &self.selected_output_device)
-            .field("translate_to_english", &self.translate_to_english)
-            .field("selected_language", &self.selected_language)
-            .field("overlay_position", &self.overlay_position)
-            .field("debug_mode", &self.debug_mode)
-            .field("log_level", &self.log_level)
-            .field("custom_words", &self.custom_words)
-            .field("model_unload_timeout", &self.model_unload_timeout)
-            .field("word_correction_threshold", &self.word_correction_threshold)
-            .field("history_limit", &self.history_limit)
-            .field("recording_retention_period", &self.recording_retention_period)
-            .field("paste_method", &self.paste_method)
-            .field("clipboard_handling", &self.clipboard_handling)
-            .field("auto_submit", &self.auto_submit)
-            .field("auto_submit_key", &self.auto_submit_key)
-            .field("post_process_enabled", &self.post_process_enabled)
-            .field("post_process_provider_id", &self.post_process_provider_id)
-            .field("post_process_providers", &self.post_process_providers)
-            .field("post_process_api_keys", &redacted_keys)
-            .field("post_process_models", &self.post_process_models)
-            .field("post_process_prompts", &self.post_process_prompts)
-            .field("post_process_selected_prompt_id", &self.post_process_selected_prompt_id)
-            .field("mute_while_recording", &self.mute_while_recording)
-            .field("append_trailing_space", &self.append_trailing_space)
-            .field("app_language", &self.app_language)
-            .field("experimental_enabled", &self.experimental_enabled)
-            .field("lazy_stream_close", &self.lazy_stream_close)
-            .field("keyboard_implementation", &self.keyboard_implementation)
-            .field("show_tray_icon", &self.show_tray_icon)
-            .field("paste_delay_ms", &self.paste_delay_ms)
-            .field("typing_tool", &self.typing_tool)
-            .field("external_script_path", &self.external_script_path)
-            .field("custom_filler_words", &self.custom_filler_words)
-            .field("whisper_accelerator", &self.whisper_accelerator)
-            .field("ort_accelerator", &self.ort_accelerator)
-            .field("extra_recording_buffer_ms", &self.extra_recording_buffer_ms)
-            .finish()
-    }
 }
 
 fn default_model() -> String {
@@ -633,12 +600,12 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
     providers
 }
 
-fn default_post_process_api_keys() -> HashMap<String, String> {
+fn default_post_process_api_keys() -> SecretMap {
     let mut map = HashMap::new();
     for provider in default_post_process_providers() {
         map.insert(provider.id, String::new());
     }
-    map
+    SecretMap(map)
 }
 
 fn default_model_for_provider(provider_id: &str) -> String {
