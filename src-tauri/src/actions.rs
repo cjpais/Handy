@@ -32,6 +32,9 @@ struct RecordingErrorEvent {
 struct FinishGuard(AppHandle);
 impl Drop for FinishGuard {
     fn drop(&mut self) {
+        if let Some(tm) = self.0.try_state::<Arc<TranscriptionManager>>() {
+            tm.set_dictation_active(false);
+        }
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
         }
@@ -426,9 +429,11 @@ impl ShortcutAction for TranscribeAction {
         }
 
         if recording_error.is_none() {
+            tm.set_dictation_active(true);
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
         } else {
+            tm.set_dictation_active(false);
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             utils::hide_recording_overlay(app);

@@ -1,9 +1,18 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
+import {
+  Cog,
+  FlaskConical,
+  History,
+  Info,
+  Sparkles,
+  Cpu,
+  Clapperboard,
+} from "lucide-react";
 import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
+import { StudioHome } from "./studio/StudioHome";
 import {
   GeneralSettings,
   AdvancedSettings,
@@ -25,7 +34,8 @@ interface IconProps {
 }
 
 interface SectionConfig {
-  labelKey: string;
+  labelKey?: string;
+  label?: string;
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
   enabled: (settings: any) => boolean;
@@ -36,6 +46,12 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.general",
     icon: HandyHand,
     component: GeneralSettings,
+    enabled: () => true,
+  },
+  studio: {
+    label: "Studio",
+    icon: Clapperboard,
+    component: StudioHome,
     enabled: () => true,
   },
   models: {
@@ -88,9 +104,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { t } = useTranslation();
   const { settings } = useSettings();
 
-  const availableSections = Object.entries(SECTIONS_CONFIG)
+  const availableSections: Array<{ id: SidebarSection } & SectionConfig> =
+    Object.entries(SECTIONS_CONFIG)
     .filter(([_, config]) => config.enabled(settings))
-    .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
+    .map(([id, config]) => ({
+      id: id as SidebarSection,
+      ...(config as SectionConfig),
+    }));
 
   return (
     <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
@@ -99,6 +119,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
+          const label =
+            section.label ??
+            t(section.labelKey || "", { defaultValue: section.id.toString() });
 
           return (
             <div
@@ -113,9 +136,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Icon width={24} height={24} className="shrink-0" />
               <p
                 className="text-sm font-medium truncate"
-                title={t(section.labelKey)}
+                title={label}
               >
-                {t(section.labelKey)}
+                {label}
               </p>
             </div>
           );

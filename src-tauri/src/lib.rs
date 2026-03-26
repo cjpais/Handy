@@ -6,10 +6,12 @@ pub mod audio_toolkit;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod exporters;
 mod helpers;
 mod input;
 mod llm_client;
 mod managers;
+mod media;
 mod overlay;
 pub mod portable;
 mod settings;
@@ -29,6 +31,7 @@ use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
+use managers::studio::StudioManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
@@ -155,6 +158,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+    let studio_manager =
+        Arc::new(StudioManager::new(app_handle).expect("Failed to initialize Studio manager"));
 
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
@@ -164,6 +169,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(studio_manager.clone());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -424,6 +430,14 @@ pub fn run(cli_args: CliArgs) {
             commands::history::retry_history_entry_transcription,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
+            commands::studio::prepare_studio_job,
+            commands::studio::start_studio_job,
+            commands::studio::cancel_studio_job,
+            commands::studio::get_studio_job,
+            commands::studio::list_studio_jobs,
+            commands::studio::delete_studio_job,
+            commands::studio::open_studio_output_folder,
+            commands::studio::retry_studio_job,
             helpers::clamshell::is_laptop,
         ])
         .events(collect_events![managers::history::HistoryUpdatePayload,]);

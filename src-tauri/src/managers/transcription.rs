@@ -2,7 +2,7 @@ use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
-    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
+    get_settings, AppSettings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
@@ -71,6 +71,8 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    dictation_active: Arc<Mutex<bool>>,
+    dictation_condvar: Arc<Condvar>,
 }
 
 impl TranscriptionManager {
@@ -85,6 +87,8 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            dictation_active: Arc::new(Mutex::new(false)),
+            dictation_condvar: Arc::new(Condvar::new()),
         };
 
         // Start the idle watcher
@@ -427,7 +431,34 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
+    pub fn set_dictation_active(&self, active: bool) {
+        let mut guard = self.dictation_active.lock().unwrap();
+        *guard = active;
+        if !active {
+            self.dictation_condvar.notify_all();
+        }
+    }
+
+    pub fn is_dictation_active(&self) -> bool {
+        *self.dictation_active.lock().unwrap()
+    }
+
+    pub fn wait_for_dictation_idle(&self) {
+        let mut guard = self.dictation_active.lock().unwrap();
+        while *guard {
+            guard = self.dictation_condvar.wait(guard).unwrap();
+        }
+    }
+
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        self.transcribe_with_settings(audio, get_settings(&self.app_handle))
+    }
+
+    pub fn transcribe_with_settings(
+        &self,
+        audio: Vec<f32>,
+        settings: AppSettings,
+    ) -> Result<String> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -461,9 +492,6 @@ impl TranscriptionManager {
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
         }
-
-        // Get current settings for configuration
-        let settings = get_settings(&self.app_handle);
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.
