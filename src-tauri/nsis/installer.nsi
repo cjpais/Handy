@@ -587,11 +587,18 @@ Function .onInit
 
 
   ; --- PORTABLE MODE --- Auto-detect portable mode during updates.
-  ; If the target directory already has a portable marker file, preserve
+  ; If the target directory already has a valid portable marker file, preserve
   ; portable mode so the Tauri updater works without needing /PORTABLE.
+  ; We validate the magic string to avoid false-positives from stale empty files
+  ; left by scoop's NSIS extraction (dl.7z side-effect).
   ${If} $PortableMode <> 1
   ${AndIf} ${FileExists} "$INSTDIR\portable"
-    StrCpy $PortableMode 1
+    FileOpen $1 "$INSTDIR\portable" r
+    FileRead $1 $2
+    FileClose $1
+    ${If} $2 == "Handy Portable Mode"
+      StrCpy $PortableMode 1
+    ${EndIf}
   ${EndIf}
 
   !if "${INSTALLMODE}" == "both"
@@ -757,6 +764,7 @@ Section Install
   ; --- PORTABLE MODE --- Create portable marker and Data directory
   ${If} $PortableMode = 1
     FileOpen $0 "$INSTDIR\portable" w
+    FileWrite $0 "Handy Portable Mode"
     FileClose $0
     CreateDirectory "$INSTDIR\Data"
     DetailPrint "Portable mode: created marker file and Data directory."
@@ -1050,11 +1058,6 @@ Function CreateOrUpdateStartMenuShortcut
 FunctionEnd
 
 Function CreateOrUpdateDesktopShortcut
-  ; --- PORTABLE MODE --- No desktop shortcut for portable installs
-  ${If} $PortableMode = 1
-    Return
-  ${EndIf}
-
   ; We used to use product name as MAINBINARYNAME
   ; migrate old shortcuts to target the new MAINBINARYNAME
   !insertmacro IsShortcutTarget "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\$OldMainBinaryName"

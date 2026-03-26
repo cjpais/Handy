@@ -17,8 +17,23 @@ pub fn init() {
         let exe_path = std::env::current_exe().ok()?;
         let exe_dir = exe_path.parent()?;
 
-        if exe_dir.join("portable").exists() {
-            let data_dir = exe_dir.join("Data");
+        let marker_path = exe_dir.join("portable");
+        let data_dir = exe_dir.join("Data");
+
+        let is_portable = if is_valid_portable_marker(&marker_path) {
+            true
+        } else if marker_path.exists() && data_dir.exists() {
+            // Migration: v0.8.0 created an empty marker file. If we find an
+            // empty/invalid marker alongside an existing Data/ dir, this is a
+            // real portable install — upgrade the marker in place.
+            eprintln!("[portable] upgrading legacy empty marker to magic string");
+            let _ = std::fs::write(&marker_path, "Handy Portable Mode");
+            true
+        } else {
+            false
+        };
+
+        if is_portable {
             if !data_dir.exists() {
                 std::fs::create_dir_all(&data_dir).ok()?;
             }
@@ -73,5 +88,79 @@ pub fn store_path(relative: &str) -> PathBuf {
         dir.join(relative)
     } else {
         PathBuf::from(relative)
+    }
+}
+
+/// Check if a marker file path contains the portable magic string.
+/// Extracted for testability.
+fn is_valid_portable_marker(path: &std::path::Path) -> bool {
+    std::fs::read_to_string(path)
+        .map(|s| s.trim().starts_with("Handy Portable Mode"))
+        .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn test_valid_magic_string_enables_portable() {
+        let dir = std::env::temp_dir().join("handy_test_valid");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("portable");
+        let mut f = std::fs::File::create(&marker).unwrap();
+        write!(f, "Handy Portable Mode").unwrap();
+        assert!(is_valid_portable_marker(&marker));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn test_empty_file_does_not_enable_portable() {
+        let dir = std::env::temp_dir().join("handy_test_empty");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("portable");
+        std::fs::File::create(&marker).unwrap();
+        assert!(!is_valid_portable_marker(&marker));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn test_wrong_content_does_not_enable_portable() {
+        let dir = std::env::temp_dir().join("handy_test_wrong");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("portable");
+        let mut f = std::fs::File::create(&marker).unwrap();
+        write!(f, "some other content").unwrap();
+        assert!(!is_valid_portable_marker(&marker));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn test_missing_file_does_not_enable_portable() {
+        let path = std::path::Path::new("/nonexistent/portable");
+        assert!(!is_valid_portable_marker(path));
+    }
+
+    #[test]
+    fn test_legacy_empty_marker_without_data_dir_does_not_enable_portable() {
+        // Empty marker alone (scoop scenario) — no Data/ dir → not portable
+        let dir = std::env::temp_dir().join("handy_test_legacy_no_data");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("portable");
+        std::fs::File::create(&marker).unwrap();
+        assert!(!is_valid_portable_marker(&marker));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn test_magic_string_with_whitespace_enables_portable() {
+        let dir = std::env::temp_dir().join("handy_test_ws");
+        std::fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("portable");
+        let mut f = std::fs::File::create(&marker).unwrap();
+        write!(f, "  Handy Portable Mode\n").unwrap();
+        assert!(is_valid_portable_marker(&marker));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }
