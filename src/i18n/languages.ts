@@ -33,6 +33,7 @@ export const LANGUAGE_METADATA: Record<
   cs: { name: "Czech", nativeName: "Čeština", priority: 15 },
   tr: { name: "Turkish", nativeName: "Türkçe", priority: 16 },
   ar: { name: "Arabic", nativeName: "العربية", priority: 17, direction: "rtl" },
-  sv: { name: "Swedish", nativeName: "Svenska", priority: 18 },
-  bg: { name: "Bulgarian", nativeName: "Български", priority: 19 },
+  he: { name: "Hebrew", nativeName: "עברית", priority: 18, direction: "rtl" },
+  sv: { name: "Swedish", nativeName: "Svenska", priority: 19 },
+  bg: { name: "Bulgarian", nativeName: "Български", priority: 20 }
 };
