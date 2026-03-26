@@ -6,7 +6,9 @@
     "unloadModel": "Zwolnij model",
     "model": "Model",
     "quit": "Zamknij",
-    "cancel": "Anuluj"
+    "cancel": "Anuluj",
+    "transcribe": "Transkrybuj",
+    "stop": "Zatrzymaj"
   },
   "sidebar": {
     "general": "Ogólne",

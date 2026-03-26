@@ -6,7 +6,9 @@
     "unloadModel": "卸載模型",
     "model": "模型",
     "quit": "結束",
-    "cancel": "取消"
+    "cancel": "取消",
+    "transcribe": "轉錄",
+    "stop": "停止"
   },
   "sidebar": {
     "general": "一般",

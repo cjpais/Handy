@@ -6,7 +6,9 @@
     "unloadModel": "Выгрузить модель",
     "model": "Модель",
     "quit": "Выход",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "transcribe": "Транскрибировать",
+    "stop": "Остановить"
   },
   "sidebar": {
     "general": "Общие",

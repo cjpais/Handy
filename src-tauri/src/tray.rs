@@ -171,6 +171,8 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
 
     let menu = match state {
         TrayIconState::Recording | TrayIconState::Transcribing => {
+            let stop_i = MenuItem::with_id(app, "stop", &strings.stop, true, None::<&str>)
+                .expect("failed to create stop item");
             let cancel_i = MenuItem::with_id(app, "cancel", &strings.cancel, true, None::<&str>)
                 .expect("failed to create cancel item");
             Menu::with_items(
@@ -178,6 +180,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                 &[
                     &version_i,
                     &separator(),
+                    &stop_i,
                     &cancel_i,
                     &separator(),
                     &copy_last_transcript_i,
@@ -190,23 +193,30 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
             )
             .expect("failed to create menu")
         }
-        TrayIconState::Idle => Menu::with_items(
-            app,
-            &[
-                &version_i,
-                &separator(),
-                &copy_last_transcript_i,
-                &separator(),
-                &model_submenu,
-                &unload_model_i,
-                &separator(),
-                &settings_i,
-                &check_updates_i,
-                &separator(),
-                &quit_i,
-            ],
-        )
-        .expect("failed to create menu"),
+        TrayIconState::Idle => {
+            let transcribe_i =
+                MenuItem::with_id(app, "transcribe", &strings.transcribe, true, None::<&str>)
+                    .expect("failed to create transcribe item");
+            Menu::with_items(
+                app,
+                &[
+                    &version_i,
+                    &separator(),
+                    &transcribe_i,
+                    &separator(),
+                    &copy_last_transcript_i,
+                    &separator(),
+                    &model_submenu,
+                    &unload_model_i,
+                    &separator(),
+                    &settings_i,
+                    &check_updates_i,
+                    &separator(),
+                    &quit_i,
+                ],
+            )
+            .expect("failed to create menu")
+        }
     };
 
     let tray = app.state::<TrayIcon>();

@@ -6,7 +6,9 @@
     "unloadModel": "Uvolnit model",
     "model": "Model",
     "quit": "Ukončit",
-    "cancel": "Zrušit"
+    "cancel": "Zrušit",
+    "transcribe": "Přepsat",
+    "stop": "Zastavit"
   },
   "sidebar": {
     "general": "Obecné",

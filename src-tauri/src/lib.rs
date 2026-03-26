@@ -228,11 +228,15 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     Err(e) => log::error!("Failed to unload model via tray: {}", e),
                 }
             }
+            "transcribe" => {
+                utils::send_transcription_input(app, "transcribe", "tray");
+            }
+            "stop" => {
+                utils::send_transcription_input(app, "transcribe", "tray");
+            }
             "cancel" => {
-                use crate::utils::cancel_current_operation;
-
                 // Use centralized cancellation that handles all operations
-                cancel_current_operation(app);
+                utils::cancel_current_operation(app);
             }
             "quit" => {
                 app.exit(0);
@@ -481,9 +485,9 @@ pub fn run(cli_args: CliArgs) {
     builder
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == "--toggle-transcription") {
-                signal_handle::send_transcription_input(app, "transcribe", "CLI");
+                utils::send_transcription_input(app, "transcribe", "CLI");
             } else if args.iter().any(|a| a == "--toggle-post-process") {
-                signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
+                utils::send_transcription_input(app, "transcribe_with_post_process", "CLI");
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
             } else {

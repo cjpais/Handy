@@ -1,8 +1,7 @@
-use crate::TranscriptionCoordinator;
+use crate::utils::send_transcription_input;
 #[cfg(unix)]
 use log::debug;
-use log::warn;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 #[cfg(unix)]
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
@@ -10,16 +9,6 @@ use signal_hook::consts::{SIGUSR1, SIGUSR2};
 use signal_hook::iterator::Signals;
 #[cfg(unix)]
 use std::thread;
-
-/// Send a transcription input to the coordinator.
-/// Used by signal handlers, CLI flags, and any other external trigger.
-pub fn send_transcription_input(app: &AppHandle, binding_id: &str, source: &str) {
-    if let Some(c) = app.try_state::<TranscriptionCoordinator>() {
-        c.send_input(binding_id, source, true, false);
-    } else {
-        warn!("TranscriptionCoordinator not initialized");
-    }
-}
 
 #[cfg(unix)]
 pub fn setup_signal_handler(app_handle: AppHandle, mut signals: Signals) {

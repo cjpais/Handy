@@ -6,7 +6,9 @@
     "unloadModel": "Dỡ mô hình",
     "model": "Mô hình",
     "quit": "Thoát",
-    "cancel": "Hủy"
+    "cancel": "Hủy",
+    "transcribe": "Phiên âm",
+    "stop": "Dừng"
   },
   "sidebar": {
     "general": "Chung",

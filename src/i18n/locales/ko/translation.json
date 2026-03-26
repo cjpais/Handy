@@ -6,7 +6,9 @@
     "unloadModel": "모델 언로드",
     "model": "모델",
     "quit": "종료",
-    "cancel": "취소"
+    "cancel": "취소",
+    "transcribe": "받아쓰기",
+    "stop": "중지"
   },
   "sidebar": {
     "general": "일반",

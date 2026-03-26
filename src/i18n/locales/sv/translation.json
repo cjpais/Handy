@@ -6,7 +6,9 @@
     "unloadModel": "Avlasta modell",
     "model": "Modell",
     "quit": "Avsluta",
-    "cancel": "Avbryt"
+    "cancel": "Avbryt",
+    "transcribe": "Transkribera",
+    "stop": "Stoppa"
   },
   "sidebar": {
     "general": "Allmänt",

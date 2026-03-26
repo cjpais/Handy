@@ -2,7 +2,7 @@ use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
 use crate::TranscriptionCoordinator;
-use log::info;
+use log::{info, warn};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
@@ -11,6 +11,16 @@ use tauri::{AppHandle, Manager};
 pub use crate::clipboard::*;
 pub use crate::overlay::*;
 pub use crate::tray::*;
+
+/// Send a transcription input to the coordinator.
+/// Used by signal handlers, CLI flags, tray menu, and any other external trigger.
+pub fn send_transcription_input(app: &AppHandle, binding_id: &str, source: &str) {
+    if let Some(c) = app.try_state::<TranscriptionCoordinator>() {
+        c.send_input(binding_id, source, true, false);
+    } else {
+        warn!("TranscriptionCoordinator not initialized");
+    }
+}
 
 /// Centralized cancellation function that can be called from anywhere in the app.
 /// Handles cancelling both recording and transcription operations and updates UI state.

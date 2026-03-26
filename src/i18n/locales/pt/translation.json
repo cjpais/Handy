@@ -6,7 +6,9 @@
     "unloadModel": "Descarregar modelo",
     "model": "Modelo",
     "quit": "Sair",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "transcribe": "Transcrever",
+    "stop": "Parar"
   },
   "sidebar": {
     "general": "Geral",

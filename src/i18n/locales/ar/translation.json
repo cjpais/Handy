@@ -6,7 +6,9 @@
     "unloadModel": "تفريغ النموذج",
     "model": "النموذج",
     "quit": "إنهاء",
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "transcribe": "نسخ صوتي",
+    "stop": "إيقاف"
   },
   "sidebar": {
     "general": "عام",
