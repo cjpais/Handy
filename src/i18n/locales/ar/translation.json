@@ -237,6 +237,11 @@
         "ort": {
           "title": "تسريع ONNX",
           "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
+        },
+        "gpuDevice": {
+          "title": "جهاز GPU",
+          "description": "حدد وحدة معالجة الرسومات المستخدمة لاستدلال Whisper. يختار تلقائي وحدة GPU المخصصة.",
+          "auto": "تلقائي"
         }
       },
       "startHidden": {

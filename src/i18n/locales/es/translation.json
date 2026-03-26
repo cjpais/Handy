@@ -259,6 +259,11 @@
         "ort": {
           "title": "Aceleración de ONNX",
           "description": "Aceleración por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML en Windows es experimental. Los modelos pueden fallar al transcribir."
+        },
+        "gpuDevice": {
+          "title": "Dispositivo GPU",
+          "description": "Seleccione qué GPU usar para la inferencia de Whisper. Auto elige la GPU dedicada.",
+          "auto": "Auto"
         }
       },
       "startHidden": {

@@ -259,6 +259,11 @@
         "ort": {
           "title": "ONNX Hızlandırma",
           "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Windows'ta DirectML deneyseldir. Modeller transkripsiyon yapamayabilir."
+        },
+        "gpuDevice": {
+          "title": "GPU Aygıtı",
+          "description": "Whisper çıkarımı için hangi GPU'nun kullanılacağını seçin. Otomatik, özel GPU'yu seçer.",
+          "auto": "Otomatik"
         }
       },
       "startHidden": {

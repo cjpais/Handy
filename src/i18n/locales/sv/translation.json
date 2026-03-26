@@ -259,6 +259,11 @@
         "ort": {
           "title": "ONNX-acceleration",
           "description": "Hårdvaruacceleration för ONNX-modeller (Parakeet, Canary, Moonshine, etc.). DirectML på Windows är experimentellt. Modeller kan misslyckas med att transkribera."
+        },
+        "gpuDevice": {
+          "title": "GPU-enhet",
+          "description": "Välj vilken GPU som ska användas för Whisper-inferens. Auto väljer den dedikerade GPU:n.",
+          "auto": "Auto"
         }
       },
       "startHidden": {

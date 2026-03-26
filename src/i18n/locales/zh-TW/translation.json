@@ -259,6 +259,11 @@
         "ort": {
           "title": "ONNX 加速",
           "description": "ONNX 模型的硬體加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 為實驗性功能。模型可能無法正常轉錄。"
+        },
+        "gpuDevice": {
+          "title": "GPU 裝置",
+          "description": "選擇用於 Whisper 推理的 GPU。自動選擇獨立 GPU。",
+          "auto": "自動"
         }
       },
       "startHidden": {
