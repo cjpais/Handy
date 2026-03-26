@@ -259,6 +259,11 @@
         "ort": {
           "title": "ONNX 加速",
           "description": "ONNX 模型的硬件加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 为实验性功能。模型可能无法正常转录。"
+        },
+        "gpuDevice": {
+          "title": "GPU 设备",
+          "description": "选择用于 Whisper 推理的 GPU。自动选择独立 GPU。",
+          "auto": "自动"
         }
       },
       "startHidden": {
@@ -542,7 +547,10 @@
     "downloading": "下载中... {{progress}}%",
     "installing": "安装中...",
     "preparing": "准备中...",
-    "checkForUpdates": "检查更新"
+    "checkForUpdates": "检查更新",
+    "portableUpdateTitle": "Manual update required",
+    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
+    "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
     "loading": "加载中...",
