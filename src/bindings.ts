@@ -796,11 +796,73 @@ async updateRecordingRetentionPeriod(period: string) : Promise<Result<null, stri
     else return { status: "error", error: e  as any };
 }
 },
+async prepareStudioJob(filePath: string) : Promise<Result<StudioJob, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("prepare_studio_job", { filePath }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async startStudioJob(jobId: string, config: StartStudioJobConfig) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_studio_job", { jobId, config }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async cancelStudioJob(jobId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("cancel_studio_job", { jobId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getStudioJob(jobId: string) : Promise<Result<StudioJob | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_studio_job", { jobId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async listStudioJobs() : Promise<Result<StudioHomeData, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("list_studio_jobs") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async deleteStudioJob(jobId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("delete_studio_job", { jobId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async openStudioOutputFolder(jobId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("open_studio_output_folder", { jobId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async retryStudioJob(jobId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("retry_studio_job", { jobId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
- * Checks if the Mac is a laptop by detecting battery presence
- * 
- * This uses pmset to check for battery information.
- * Returns true if a battery is detected (laptop), false otherwise (desktop)
+ * Stub implementation for non-macOS platforms
+ * Always returns false since laptop detection is macOS-specific
  */
 async isLaptop() : Promise<Result<boolean, string>> {
     try {
@@ -861,6 +923,11 @@ export type PostProcessProvider = { id: string; label: string; base_url: string;
 export type RecordingRetentionPeriod = "never" | "preserve_limit" | "days_3" | "weeks_2" | "months_3"
 export type ShortcutBinding = { id: string; name: string; description: string; default_binding: string; current_binding: string }
 export type SoundTheme = "marimba" | "pop" | "custom"
+export type StartStudioJobConfig = { output_folder: string; output_formats: string[] }
+export type StudioHomeData = { jobs: StudioJob[] }
+export type StudioJob = { id: string; source_path: string; source_name: string; working_wav_path: string | null; media_duration_ms: number; file_size_bytes: number; container_format: string | null; audio_codec: string | null; audio_sample_rate_hz: number | null; status: StudioJobStatus; model_id: string; language: string; output_folder: string | null; output_formats: string[]; settings_fingerprint: string; chunk_count: number; chunks_completed: number; transcript_text: string; error_message: string | null; created_at: number; updated_at: number; completed_at: number | null; output_files: StudioOutputFile[]; estimate_text: string | null }
+export type StudioJobStatus = "pending" | "running" | "paused" | "done" | "error" | "cancelled"
+export type StudioOutputFile = { format: string; output_path: string; file_name: string }
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type WhisperAcceleratorSetting = "auto" | "cpu" | "gpu"
 export type WindowsMicrophonePermissionStatus = { supported: boolean; overall_access: PermissionAccess; device_access: PermissionAccess; app_access: PermissionAccess; desktop_app_access: PermissionAccess }
