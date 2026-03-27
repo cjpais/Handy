@@ -102,50 +102,71 @@ impl AudioRecorder {
                     config.sample_format()
                 );
 
-                let stream = match config.sample_format() {
+                // Pre-clone for I16 fallback — both are cheap (ref-count bumps).
+                // Some devices (e.g. Bluetooth HFP on macOS) report one format
+                // in default_input_config() but only accept I16 when the stream
+                // is actually opened. We retry with I16 before giving up.
+                let sample_tx_i16 = sample_tx.clone();
+                let stop_i16 = stop_flag_for_stream.clone();
+
+                let stream_result = match config.sample_format() {
                     cpal::SampleFormat::U8 => AudioRecorder::build_stream::<u8>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::I8 => AudioRecorder::build_stream::<i8>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::I16 => AudioRecorder::build_stream::<i16>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     sample_format => {
                         return Err(format!("Unsupported sample format: {sample_format:?}"));
                     }
+                };
+
+                let stream = match stream_result {
+                    Ok(s) => s,
+                    Err(e) if config.sample_format() != cpal::SampleFormat::I16 => {
+                        log::warn!(
+                            "Failed with {:?} format, retrying with I16: {e}",
+                            config.sample_format()
+                        );
+                        AudioRecorder::build_stream::<i16>(
+                            &thread_device,
+                            &config,
+                            sample_tx_i16,
+                            channels,
+                            stop_i16,
+                        )
+                        .map_err(|e| format!("Failed to build input stream: {e}"))?
+                    }
+                    Err(e) => return Err(format!("Failed to build input stream: {e}")),
                 };
 
                 stream
