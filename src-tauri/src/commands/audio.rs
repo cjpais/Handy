@@ -229,7 +229,11 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
 #[specta::specta]
 pub fn set_prioritized_microphones(app: AppHandle, devices: Vec<String>) -> Result<(), String> {
     let mut settings = get_settings(&app);
-    settings.prioritized_microphones = devices;
+    let mut seen = std::collections::HashSet::new();
+    settings.prioritized_microphones = devices
+        .into_iter()
+        .filter(|d| !d.trim().is_empty() && seen.insert(d.clone()))
+        .collect();
     write_settings(&app, settings);
 
     let rm = app.state::<Arc<AudioRecordingManager>>();

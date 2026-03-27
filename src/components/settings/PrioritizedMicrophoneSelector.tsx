@@ -32,14 +32,25 @@ export const PrioritizedMicrophoneSelector: React.FC = React.memo(() => {
 
   const handleToggle = (checked: boolean) => {
     updateSetting("multi_microphone_enabled", checked);
+    if (checked) {
+      const selectedMic = getSetting("selected_microphone");
+      const currentPrioritized = getSetting("prioritized_microphones") ?? [];
+      if (
+        currentPrioritized.length === 0 &&
+        selectedMic &&
+        selectedMic !== "default"
+      ) {
+        updateSetting("prioritized_microphones", [selectedMic]);
+      }
+    }
   };
 
   useEffect(() => {
     if (enabled) {
       refreshAudioDevices();
+      window.addEventListener("focus", refreshAudioDevices);
+      return () => window.removeEventListener("focus", refreshAudioDevices);
     }
-    window.addEventListener("focus", refreshAudioDevices);
-    return () => window.removeEventListener("focus", refreshAudioDevices);
   }, [refreshAudioDevices, enabled]);
 
   const handleAdd = (name: string) => {
@@ -194,7 +205,7 @@ export const PrioritizedMicrophoneSelector: React.FC = React.memo(() => {
                   aria-label={t(
                     "settings.sound.multipleMicrophones.add",
                   )}
-                  className="p-1 rounded hover:bg-logo-primary/10 text-mid-gray hover:text-logo-primary opacity-0 group-hover:opacity-100 disabled:opacity-30 transition-all shrink-0"
+                  className="p-1 rounded hover:bg-logo-primary/10 text-mid-gray hover:text-logo-primary opacity-0 group-hover:opacity-100 focus:opacity-100 group-focus-within:opacity-100 disabled:opacity-30 transition-all shrink-0"
                 >
                   <Plus size={14} />
                 </button>
