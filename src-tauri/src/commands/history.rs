@@ -1,7 +1,9 @@
-use crate::actions::process_transcription_output;
-use crate::managers::{
-    transcription::TranscriptionManager,
-    managers::history::{HistoryEntry, HistoryManager, PaginatedHistory},
+use crate::{
+    actions::process_transcription_output,
+    managers::{
+        history::{HistoryManager, PaginatedHistory},
+        transcription::TranscriptionManager,
+    },
     settings::RecordingRetentionPeriod,
 };
 use std::sync::Arc;

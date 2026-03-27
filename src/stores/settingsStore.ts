@@ -4,8 +4,6 @@ import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
   AudioDevice,
-  WhisperAcceleratorSetting,
-  OrtAcceleratorSetting,
   ModelUnloadTimeout,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -25,7 +23,7 @@ interface SettingsStore {
   loadDefaultSettings: () => Promise<void>;
   updateSetting: <K extends keyof Settings>(
     key: K,
-    value: Settings[K],
+    value: Exclude<Settings[K], undefined>,
   ) => Promise<void>;
   resetSetting: (key: keyof Settings) => Promise<void>;
   refreshSettings: () => Promise<void>;
@@ -75,89 +73,77 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
 };
 
 const settingUpdaters: {
-  [K in keyof Settings]?: (value: Settings[K]) => Promise<unknown>;
+  [K in keyof Settings]?: (
+    value: Exclude<Settings[K], undefined>,
+  ) => Promise<unknown>;
 } = {
-  always_on_microphone: (value) =>
-    commands.updateMicrophoneMode(value as boolean),
-  audio_feedback: (value) =>
-    commands.changeAudioFeedbackSetting(value as boolean),
+  always_on_microphone: (value) => commands.updateMicrophoneMode(value),
+  audio_feedback: (value) => commands.changeAudioFeedbackSetting(value),
   audio_feedback_volume: (value) =>
-    commands.changeAudioFeedbackVolumeSetting(value as number),
-  sound_theme: (value) => commands.changeSoundThemeSetting(value as string),
-  start_hidden: (value) => commands.changeStartHiddenSetting(value as boolean),
-  autostart_enabled: (value) =>
-    commands.changeAutostartSetting(value as boolean),
-  update_checks_enabled: (value) =>
-    commands.changeUpdateChecksSetting(value as boolean),
-  push_to_talk: (value) => commands.changePttSetting(value as boolean),
+    commands.changeAudioFeedbackVolumeSetting(value),
+  sound_theme: (value) => commands.changeSoundThemeSetting(value),
+  start_hidden: (value) => commands.changeStartHiddenSetting(value),
+  autostart_enabled: (value) => commands.changeAutostartSetting(value),
+  update_checks_enabled: (value) => commands.changeUpdateChecksSetting(value),
+  push_to_talk: (value) => commands.changePttSetting(value),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(
-      (value as string) === "Default" || value === null
-        ? "default"
-        : (value as string),
+      value === "Default" || value === null ? "default" : value,
     ),
   clamshell_microphone: (value) =>
     commands.setClamshellMicrophone(
-      (value as string) === "Default" ? "default" : (value as string),
+      value === "Default" || value == null ? "default" : value,
     ),
   selected_output_device: (value) =>
     commands.setSelectedOutputDevice(
-      (value as string) === "Default" || value === null
-        ? "default"
-        : (value as string),
+      value === "Default" || value === null ? "default" : value,
     ),
   recording_retention_period: (value) =>
-    commands.updateRecordingRetentionPeriod(value ?? "never"),
-  model_unload_timeout: (value) =>
-    commands.setModelUnloadTimeout(value ?? "min5"),
+    commands.updateRecordingRetentionPeriod(value),
+  model_unload_timeout: (value: ModelUnloadTimeout) =>
+    commands.setModelUnloadTimeout(value),
   translate_to_english: (value) =>
-    commands.changeTranslateToEnglishSetting(value as boolean),
-  selected_language: (value) =>
-    commands.changeSelectedLanguageSetting(value as string),
-  overlay_position: (value) =>
-    commands.changeOverlayPositionSetting(value as string),
-  debug_mode: (value) => commands.changeDebugModeSetting(value as boolean),
-  custom_words: (value) => commands.updateCustomWords(value as string[]),
+    commands.changeTranslateToEnglishSetting(value),
+  selected_language: (value) => commands.changeSelectedLanguageSetting(value),
+  overlay_position: (value) => commands.changeOverlayPositionSetting(value),
+  debug_mode: (value) => commands.changeDebugModeSetting(value),
+  custom_words: (value) => commands.updateCustomWords(value),
   word_correction_threshold: (value) =>
-    commands.changeWordCorrectionThresholdSetting(value as number),
+    commands.changeWordCorrectionThresholdSetting(value),
   paste_delay_ms: (value) =>
-    commands.changePasteDelayMsSetting(value as number),
-  paste_method: (value) => commands.changePasteMethodSetting(value as string),
-  typing_tool: (value) => commands.changeTypingToolSetting(value as string),
+    commands.changePasteDelayMsSetting(value),
+  paste_method: (value) => commands.changePasteMethodSetting(value),
+  typing_tool: (value) => commands.changeTypingToolSetting(value),
   external_script_path: (value) =>
-    commands.changeExternalScriptPathSetting(value as string | null),
-  clipboard_handling: (value) =>
-    commands.changeClipboardHandlingSetting(value as string),
-  auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),
-  auto_submit_key: (value) =>
-    commands.changeAutoSubmitKeySetting(value as string),
-  history_limit: (value) => commands.updateHistoryLimit(value as number),
+    commands.changeExternalScriptPathSetting(value),
+  clipboard_handling: (value) => commands.changeClipboardHandlingSetting(value),
+  auto_submit: (value) => commands.changeAutoSubmitSetting(value),
+  auto_submit_key: (value) => commands.changeAutoSubmitKeySetting(value),
+  history_limit: (value) => commands.updateHistoryLimit(value),
   post_process_enabled: (value) =>
-    commands.changePostProcessEnabledSetting(value as boolean),
+    commands.changePostProcessEnabledSetting(value),
   post_process_selected_prompt_id: (value) =>
-    commands.setPostProcessSelectedPrompt(value as string),
+    commands.setPostProcessSelectedPrompt(value),
   mute_while_recording: (value) =>
-    commands.changeMuteWhileRecordingSetting(value as boolean),
+    commands.changeMuteWhileRecordingSetting(value),
   append_trailing_space: (value) =>
-    commands.changeAppendTrailingSpaceSetting(value as boolean),
-  log_level: (value) => commands.setLogLevel(value as any),
-  app_language: (value) => commands.changeAppLanguageSetting(value as string),
+    commands.changeAppendTrailingSpaceSetting(value),
+  log_level: (value) => commands.setLogLevel(value),
+  app_language: (value) => commands.changeAppLanguageSetting(value),
   experimental_enabled: (value) =>
-    commands.changeExperimentalEnabledSetting(value as boolean),
-  lazy_stream_close: (value) =>
-    commands.changeLazyStreamCloseSetting(value as boolean),
-  show_tray_icon: (value) =>
-    commands.changeShowTrayIconSetting(value as boolean),
+    commands.changeExperimentalEnabledSetting(value),
+  lazy_stream_close: (value) => commands.changeLazyStreamCloseSetting(value),
+  show_tray_icon: (value) => commands.changeShowTrayIconSetting(value),
   whisper_accelerator: (value) =>
     commands.changeWhisperAcceleratorSetting(
-      value as WhisperAcceleratorSetting,
+      value,
     ),
   ort_accelerator: (value) =>
-    commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
+    commands.changeOrtAcceleratorSetting(value),
   whisper_gpu_device: (value) =>
-    commands.changeWhisperGpuDevice(value as number),
+    commands.changeWhisperGpuDevice(value),
   extra_recording_buffer_ms: (value) =>
-    commands.changeExtraRecordingBufferSetting(value as number),
+    commands.changeExtraRecordingBufferSetting(value),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -275,7 +261,7 @@ export const useSettingsStore = create<SettingsStore>()(
     // Update a specific setting
     updateSetting: async <K extends keyof Settings>(
       key: K,
-      value: Settings[K],
+      value: Exclude<Settings[K], undefined>,
     ) => {
       const { settings, setUpdating } = get();
       const updateKey = String(key);

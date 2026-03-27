@@ -256,7 +256,7 @@ async deletePostProcessPrompt(id: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async setPostProcessSelectedPrompt(id: string) : Promise<Result<null, string>> {
+async setPostProcessSelectedPrompt(id: string | null) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("set_post_process_selected_prompt", { id }) };
 } catch (e) {

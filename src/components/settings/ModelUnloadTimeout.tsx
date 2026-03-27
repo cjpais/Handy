@@ -51,7 +51,7 @@ export const ModelUnloadTimeoutSetting: React.FC<ModelUnloadTimeoutProps> = ({
   const debugTimeoutOptions: DropdownOption<ModelUnloadTimeout>[] = [
     ...timeoutOptions,
     {
-      value: "sec5",
+      value: "sec15",
       label: t("settings.advanced.modelUnload.options.sec5"),
     },
   ];
