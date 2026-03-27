@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { FolderOpen, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { StudioJob } from "@/lib/types/studio";
@@ -27,15 +28,30 @@ export const StudioRecentList: React.FC<StudioRecentListProps> = ({
   onRetry,
   onDelete,
 }) => {
+  const { t } = useTranslation();
+
   if (jobs.length === 0) {
     return null;
   }
+
+  const statusLabel = (status: StudioJob["status"]) =>
+    t(`studio.statuses.${status}`, {
+      defaultValue:
+        {
+          pending: "Ready",
+          running: "Running",
+          paused: "Paused",
+          done: "Done",
+          error: "Failed",
+          cancelled: "Cancelled",
+        }[status] ?? status,
+    });
 
   return (
     <div className="rounded-2xl border border-mid-gray/20 bg-background p-5">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-text/60">
-          Recent Jobs
+          {t("studio.recent.title", { defaultValue: "Recent Jobs" })}
         </h3>
       </div>
       <div className="space-y-3">
@@ -48,7 +64,7 @@ export const StudioRecentList: React.FC<StudioRecentListProps> = ({
               <div>
                 <p className="text-sm font-medium">{job.source_name}</p>
                 <p className="text-xs text-text/55">
-                  {job.status} · {formatRelativeTime(job.created_at)}
+                  {statusLabel(job.status)} - {formatRelativeTime(job.created_at)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -57,16 +73,30 @@ export const StudioRecentList: React.FC<StudioRecentListProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => onOpenFolder(job.id)}
+                    title={t("studio.job.openFolder", { defaultValue: "Open output folder" })}
+                    aria-label={t("studio.job.openFolder", { defaultValue: "Open output folder" })}
                   >
                     <FolderOpen className="h-4 w-4" />
                   </Button>
                 )}
                 {(job.status === "error" || job.status === "cancelled") && (
-                  <Button variant="ghost" size="sm" onClick={() => onRetry(job.id)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRetry(job.id)}
+                    title={t("studio.job.retry", { defaultValue: "Retry job" })}
+                    aria-label={t("studio.job.retry", { defaultValue: "Retry job" })}
+                  >
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 )}
-                <Button variant="danger-ghost" size="sm" onClick={() => onDelete(job.id)}>
+                <Button
+                  variant="danger-ghost"
+                  size="sm"
+                  onClick={() => onDelete(job.id)}
+                  title={t("studio.recent.delete", { defaultValue: "Delete job" })}
+                  aria-label={t("studio.recent.delete", { defaultValue: "Delete job" })}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

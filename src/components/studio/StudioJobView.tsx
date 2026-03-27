@@ -1,4 +1,6 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { FolderOpen, RotateCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
@@ -8,6 +10,7 @@ interface StudioJobViewProps {
   job: StudioJob;
   statusMessage: string | null;
   stage: string;
+  preparationProgress: number | null;
   error: string | null;
   onCancel: () => Promise<void>;
   onRetry: () => Promise<void>;
@@ -22,18 +25,75 @@ const progressPercentage = (job: StudioJob) => {
   );
 };
 
+const formatBytes = (bytes: number) => {
+  if (!bytes) return "Unknown size";
+  const gb = bytes / 1024 / 1024 / 1024;
+  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  const mb = bytes / 1024 / 1024;
+  return `${mb.toFixed(0)} MB`;
+};
+
+const formatDuration = (durationMs: number) => {
+  const totalSeconds = Math.round(durationMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds}s`;
+};
+
+const PREPARATION_STAGES = new Set([
+  "preparing_audio",
+  "opening_file",
+  "decoding_audio",
+  "resampling_audio",
+  "writing_normalized_audio",
+  "building_chunks",
+]);
+
 export const StudioJobView: React.FC<StudioJobViewProps> = ({
   job,
   statusMessage,
   stage,
+  preparationProgress,
   error,
   onCancel,
   onRetry,
   onOpenFolder,
 }) => {
+  const { t } = useTranslation();
   const isRunning = job.status === "running" || job.status === "paused";
   const isDone = job.status === "done";
   const isError = job.status === "error" || job.status === "cancelled";
+  const isPreparing = PREPARATION_STAGES.has(stage);
+  const preparationValue =
+    isRunning && isPreparing && preparationProgress !== null
+      ? Math.max(0, Math.min(100, preparationProgress))
+      : null;
+  const isIndeterminate =
+    isRunning && isPreparing && job.chunk_count <= 0 && preparationValue === null;
+  const progressLabel =
+    preparationValue !== null
+      ? `${preparationValue}%`
+      : isIndeterminate
+        ? t("studio.job.preparing", { defaultValue: "Preparing..." })
+        : `${job.chunks_completed} / ${job.chunk_count || "?"}`;
+  const isStopping = statusMessage === "Stopping...";
+
+  const handleCancel = async () => {
+    const confirmed = await confirm(
+      t("studio.job.confirmCancel", {
+        defaultValue:
+          "Stop this Studio job now? You can retry it later from the recent jobs list.",
+      }),
+      {
+        title: t("studio.job.stop", { defaultValue: "Stop job" }),
+        kind: "warning",
+        okLabel: t("studio.job.stop", { defaultValue: "Stop job" }),
+        cancelLabel: t("common.cancel", { defaultValue: "Cancel" }),
+      },
+    );
+    if (!confirmed) return;
+    await onCancel();
+  };
 
   return (
     <div className="rounded-2xl border border-mid-gray/20 bg-background p-5">
@@ -42,59 +102,132 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
           <div>
             <h2 className="text-lg font-semibold">{job.source_name}</h2>
             <p className="mt-1 text-sm text-text/60">
-              {statusMessage || (isDone ? "Done" : "Waiting")}
+              {statusMessage ||
+                (isDone
+                  ? t("studio.job.done", { defaultValue: "Done" })
+                  : t("studio.job.waiting", { defaultValue: "Waiting" }))}
             </p>
           </div>
           <div className="flex gap-2">
             {isRunning && (
-              <Button variant="danger" onClick={onCancel}>
+              <Button
+                variant="danger"
+                onClick={handleCancel}
+                disabled={isStopping}
+                title={t("studio.job.stop", { defaultValue: "Stop job" })}
+                aria-label={t("studio.job.stop", { defaultValue: "Stop job" })}
+              >
                 <Square className="h-4 w-4" />
               </Button>
             )}
             {isDone && (
-              <Button variant="secondary" onClick={onOpenFolder}>
+              <Button
+                variant="secondary"
+                onClick={onOpenFolder}
+                title={t("studio.job.openFolder", { defaultValue: "Open output folder" })}
+                aria-label={t("studio.job.openFolder", { defaultValue: "Open output folder" })}
+              >
                 <FolderOpen className="h-4 w-4" />
               </Button>
             )}
             {isError && (
-              <Button variant="secondary" onClick={onRetry}>
+              <Button
+                variant="secondary"
+                onClick={onRetry}
+                title={t("studio.job.retry", { defaultValue: "Retry job" })}
+                aria-label={t("studio.job.retry", { defaultValue: "Retry job" })}
+              >
                 <RotateCcw className="h-4 w-4" />
               </Button>
             )}
           </div>
         </div>
 
+        <div className="grid gap-2 text-sm text-text/65 sm:grid-cols-2">
+          <p>
+            {t("studio.job.duration", {
+              defaultValue: "Duration: {{value}}",
+              value: formatDuration(job.media_duration_ms),
+            })}
+          </p>
+          <p>
+            {t("studio.job.size", {
+              defaultValue: "Size: {{value}}",
+              value: formatBytes(job.file_size_bytes),
+            })}
+          </p>
+          <p>
+            {t("studio.job.estimate", {
+              defaultValue: "Estimate: {{value}}",
+              value:
+                job.estimate_text ||
+                t("studio.common.estimateFallback", {
+                  defaultValue: "About a few minutes",
+                }),
+            })}
+          </p>
+          <p>
+            {t("studio.job.currentStep", {
+              defaultValue: "Current step: {{value}}",
+              value:
+                statusMessage ||
+                (isDone
+                  ? t("studio.job.done", { defaultValue: "Done" })
+                  : t("studio.job.waiting", { defaultValue: "Waiting" })),
+            })}
+          </p>
+        </div>
+
         <div>
           <div className="mb-2 flex items-center justify-between text-sm text-text/60">
-            <span>{stage === "paused" ? "Paused" : "Progress"}</span>
             <span>
-              {job.chunks_completed} / {job.chunk_count || "?"}
+              {stage === "paused"
+                ? t("studio.job.paused", { defaultValue: "Paused" })
+                : t("studio.job.progress", { defaultValue: "Progress" })}
             </span>
+            <span>{progressLabel}</span>
           </div>
           <div className="h-2 rounded-full bg-mid-gray/15">
-            <div
-              className="h-2 rounded-full bg-logo-primary transition-all"
-              style={{ width: `${progressPercentage(job)}%` }}
-            />
+            {isIndeterminate ? (
+              <div className="h-2 w-2/5 rounded-full bg-logo-primary animate-pulse" />
+            ) : (
+              <div
+                className="h-2 rounded-full bg-logo-primary transition-all"
+                style={{
+                  width: `${preparationValue ?? progressPercentage(job)}%`,
+                }}
+              />
+            )}
           </div>
         </div>
 
         {(error || job.error_message) && (
           <Alert variant="error">
-            {error || job.error_message || "This file could not be processed"}
+            {error ||
+              job.error_message ||
+              t("studio.job.processError", {
+                defaultValue: "This file could not be processed",
+              })}
           </Alert>
         )}
 
         <div className="rounded-xl border border-mid-gray/15 bg-mid-gray/5 p-4">
-          <p className="mb-2 text-sm font-medium">Transcript preview</p>
+          <p className="mb-2 text-sm font-medium">
+            {t("studio.job.preview", { defaultValue: "Transcript preview" })}
+          </p>
           <div className="max-h-72 overflow-y-auto whitespace-pre-wrap text-sm text-text/75">
-            {job.transcript_text.trim() || "Transcript preview will appear here."}
+            {job.transcript_text.trim() ||
+              t("studio.job.previewEmpty", {
+                defaultValue: "Transcript preview will appear here.",
+              })}
           </div>
         </div>
 
         {isDone && job.output_files.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium">Output files</p>
+            <p className="text-sm font-medium">
+              {t("studio.job.outputFiles", { defaultValue: "Output files" })}
+            </p>
             <div className="flex flex-wrap gap-2">
               {job.output_files.map((file) => (
                 <span

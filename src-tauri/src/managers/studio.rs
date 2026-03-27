@@ -18,8 +18,9 @@ use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_opener::OpenerExt;
 
-const CHUNK_MS: i64 = 30_000;
+const CHUNK_MS: i64 = 10_000;
 const CHUNK_SAMPLE_RATE: usize = 16_000;
+const CHUNK_OVERLAP_MS: i64 = 750;
 
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -119,6 +120,7 @@ pub struct StudioJob {
     pub id: String,
     pub source_path: String,
     pub source_name: String,
+    pub source_dir: Option<String>,
     pub working_wav_path: Option<String>,
     pub media_duration_ms: i64,
     pub file_size_bytes: u64,
@@ -160,6 +162,7 @@ struct StudioProgressEvent {
     chunk_count: i64,
     stage: String,
     message: String,
+    preparation_progress: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -186,6 +189,48 @@ pub struct StudioManager {
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
 }
 
+struct ActiveJobCleanup {
+    active_job_id: Arc<Mutex<Option<String>>>,
+    cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    job_id: String,
+    armed: bool,
+}
+
+impl ActiveJobCleanup {
+    fn new(manager: &StudioManager, job_id: impl Into<String>) -> Self {
+        Self::from_state(
+            manager.active_job_id.clone(),
+            manager.cancel_flags.clone(),
+            job_id,
+        )
+    }
+
+    fn from_state(
+        active_job_id: Arc<Mutex<Option<String>>>,
+        cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+        job_id: impl Into<String>,
+    ) -> Self {
+        Self {
+            active_job_id,
+            cancel_flags,
+            job_id: job_id.into(),
+            armed: true,
+        }
+    }
+
+    fn disarm(&mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for ActiveJobCleanup {
+    fn drop(&mut self) {
+        if self.armed {
+            clear_active_job_state(&self.active_job_id, &self.cancel_flags, &self.job_id);
+        }
+    }
+}
+
 impl StudioManager {
     pub fn new(app_handle: &AppHandle) -> Result<Self> {
         let studio_dir = crate::portable::app_data_dir(app_handle)?.join("studio");
@@ -202,6 +247,7 @@ impl StudioManager {
         };
 
         manager.init_database()?;
+        manager.recover_interrupted_jobs()?;
         Ok(manager)
     }
 
@@ -211,6 +257,26 @@ impl StudioManager {
         #[cfg(debug_assertions)]
         migrations.validate().expect("Invalid Studio migrations");
         migrations.to_latest(&mut conn)?;
+        Ok(())
+    }
+
+    fn recover_interrupted_jobs(&self) -> Result<()> {
+        let conn = self.get_connection()?;
+        conn.execute(
+            "UPDATE studio_jobs
+             SET status = ?1,
+                 error_message = CASE
+                     WHEN error_message IS NULL OR error_message = '' THEN ?2
+                     ELSE error_message
+                 END,
+                 updated_at = ?3
+             WHERE status IN ('running', 'paused')",
+            params![
+                StudioJobStatus::Cancelled.as_str(),
+                "Studio stopped before this job finished. Retry to continue.",
+                Self::now_ms()
+            ],
+        )?;
         Ok(())
     }
 
@@ -229,10 +295,14 @@ impl StudioManager {
 
     fn map_job(&self, row: &rusqlite::Row<'_>) -> rusqlite::Result<StudioJob> {
         let id: String = row.get("id")?;
+        let source_path: String = row.get("source_path")?;
         Ok(StudioJob {
             id: id.clone(),
-            source_path: row.get("source_path")?,
+            source_path: source_path.clone(),
             source_name: row.get("source_name")?,
+            source_dir: Path::new(&source_path)
+                .parent()
+                .map(|parent| parent.to_string_lossy().to_string()),
             working_wav_path: row.get("working_wav_path")?,
             media_duration_ms: row.get("media_duration_ms")?,
             file_size_bytes: row.get::<_, i64>("file_size_bytes")?.max(0) as u64,
@@ -297,13 +367,17 @@ impl StudioManager {
 
     pub fn get_job(&self, job_id: &str) -> Result<Option<StudioJob>> {
         let conn = self.get_connection()?;
-        conn.query_row(
-            "SELECT * FROM studio_jobs WHERE id = ?1",
-            params![job_id],
-            |row| self.map_job(row),
-        )
-        .optional()
-        .map_err(Into::into)
+        let mut job = conn
+            .query_row(
+                "SELECT * FROM studio_jobs WHERE id = ?1",
+                params![job_id],
+                |row| self.map_job(row),
+            )
+            .optional()?;
+        if let Some(job_ref) = job.as_mut() {
+            job_ref.estimate_text = Some(self.estimate_for_job(job_ref));
+        }
+        Ok(job)
     }
 
     pub fn prepare_job(&self, file_path: &str) -> Result<StudioJob> {
@@ -376,6 +450,12 @@ impl StudioManager {
         let job = self
             .get_job(job_id)?
             .ok_or_else(|| anyhow!("Studio job not found"))?;
+        if !can_retry_with_available_source(
+            job.working_wav_path.as_deref(),
+            Path::new(&job.source_path),
+        ) {
+            bail!("The original source file is missing. Re-select the file to start again.");
+        }
         let output_folder = job
             .output_folder
             .clone()
@@ -486,11 +566,7 @@ impl StudioManager {
     }
 
     fn clear_active_job(&self, job_id: &str) {
-        let mut active = self.active_job_id.lock().unwrap();
-        if active.as_deref() == Some(job_id) {
-            active.take();
-        }
-        self.cancel_flags.lock().unwrap().remove(job_id);
+        clear_active_job_state(&self.active_job_id, &self.cancel_flags, job_id);
     }
 
     fn start_or_retry_job(
@@ -504,43 +580,51 @@ impl StudioManager {
         }
 
         let cancel_flag = self.set_active_job(job_id)?;
-        let now = Self::now_ms();
-        let output_formats_json = serde_json::to_string(&config.output_formats)?;
+        let mut setup_cleanup = ActiveJobCleanup::new(self, job_id);
+        let setup_result = (|| -> Result<()> {
+            let now = Self::now_ms();
+            let output_formats_json = serde_json::to_string(&config.output_formats)?;
 
-        let conn = self.get_connection()?;
-        conn.execute(
-            "UPDATE studio_jobs
-             SET output_folder = ?1, output_formats = ?2, status = ?3, error_message = NULL, updated_at = ?4
-             WHERE id = ?5",
-            params![
-                &config.output_folder,
-                output_formats_json,
-                StudioJobStatus::Pending.as_str(),
-                now,
-                job_id
-            ],
-        )?;
+            let conn = self.get_connection()?;
+            conn.execute(
+                "UPDATE studio_jobs
+                 SET output_folder = ?1, output_formats = ?2, status = ?3, error_message = NULL, updated_at = ?4
+                 WHERE id = ?5",
+                params![
+                    &config.output_folder,
+                    output_formats_json,
+                    StudioJobStatus::Running.as_str(),
+                    now,
+                    job_id
+                ],
+            )?;
+
+            Ok(())
+        })();
+
+        if let Err(error) = setup_result {
+            return Err(error);
+        }
+        setup_cleanup.disarm();
 
         let manager = self.clone();
         let job_id = job_id.to_string();
         std::thread::spawn(move || {
-            if let Err(error) = manager.run_job(&job_id, resume_requested, cancel_flag.clone()) {
-                error!("Studio job {} failed: {}", job_id, error);
-                if let Err(update_error) = manager.fail_job(&job_id, &error.to_string()) {
-                    error!(
-                        "Failed to persist Studio failure for {}: {}",
-                        job_id, update_error
-                    );
+            let thread_cleanup = ActiveJobCleanup::new(&manager, job_id.clone());
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                manager.run_job(&job_id, resume_requested, cancel_flag.clone())
+            }));
+
+            match result {
+                Ok(Ok(())) => {}
+                Ok(Err(error)) => {
+                    manager.report_job_failure(&job_id, error.to_string());
                 }
-                let _ = manager.app_handle.emit(
-                    "studio-job-failed",
-                    serde_json::json!({
-                        "job_id": job_id,
-                        "error": error.to_string(),
-                    }),
-                );
-                manager.clear_active_job(&job_id);
+                Err(payload) => {
+                    manager.report_job_failure(&job_id, panic_payload_to_message(payload));
+                }
             }
+            drop(thread_cleanup);
         });
 
         Ok(())
@@ -574,9 +658,37 @@ impl StudioManager {
 
         if !should_resume {
             self.reset_job_storage(job_id, &work_dir)?;
-            self.emit_progress(job_id, 0, 0, "preparing_audio", "Preparing audio");
-            decode::normalize_to_wav(Path::new(&job.source_path), &working_wav_path)?;
+            self.emit_progress(job_id, 0, 0, "preparing_audio", "Preparing audio", Some(0));
+            let normalization_result = decode::normalize_to_wav_with_progress(
+                Path::new(&job.source_path),
+                &working_wav_path,
+                |stage, message, progress| {
+                    self.emit_progress(job_id, 0, 0, stage, message, progress.map(i64::from))
+                },
+                || cancel_flag.load(Ordering::Relaxed),
+            );
+            if let Err(error) = normalization_result {
+                if decode::is_cancelled(&error) {
+                    self.finish_cancelled_job(job_id)?;
+                    return Ok(());
+                }
+                return Err(error);
+            }
+
             let samples = read_wav_samples(&working_wav_path)?;
+            if cancel_flag.load(Ordering::Relaxed) {
+                self.finish_cancelled_job(job_id)?;
+                return Ok(());
+            }
+
+            self.emit_progress(
+                job_id,
+                0,
+                0,
+                "building_chunks",
+                "Building chunks",
+                Some(100),
+            );
             let chunks = build_chunks(samples.len());
             self.store_chunks(job_id, &chunks)?;
             self.update_job_for_start(
@@ -586,13 +698,33 @@ impl StudioManager {
                 &current_fingerprint,
                 &settings_snapshot,
             )?;
+            self.emit_progress(
+                job_id,
+                0,
+                chunks.len() as i64,
+                "transcribing",
+                &format!("Ready to transcribe {} chunks", chunks.len()),
+                None,
+            );
+            let all_samples = samples;
+            return self.run_transcription(job_id, cancel_flag, settings_snapshot, all_samples);
         } else {
             self.set_job_status(job_id, StudioJobStatus::Running, None)?;
         }
 
+        let all_samples = read_wav_samples(&working_wav_path)?;
+        self.run_transcription(job_id, cancel_flag, settings_snapshot, all_samples)
+    }
+
+    fn run_transcription(
+        &self,
+        job_id: &str,
+        cancel_flag: Arc<AtomicBool>,
+        settings_snapshot: AppSettings,
+        all_samples: Vec<f32>,
+    ) -> Result<()> {
         let chunks = self.load_chunks(job_id)?;
         let total_chunks = chunks.len() as i64;
-        let all_samples = read_wav_samples(&working_wav_path)?;
         let tm = self.app_handle.state::<Arc<TranscriptionManager>>();
 
         let mut paused = false;
@@ -602,12 +734,7 @@ impl StudioManager {
             }
 
             if cancel_flag.load(Ordering::Relaxed) {
-                self.cancel_running_job(job_id)?;
-                self.clear_active_job(job_id);
-                let _ = self.app_handle.emit(
-                    "studio-job-cancelled",
-                    serde_json::json!({ "job_id": job_id }),
-                );
+                self.finish_cancelled_job(job_id)?;
                 return Ok(());
             }
 
@@ -632,8 +759,14 @@ impl StudioManager {
 
             let start_sample = ((chunk.start_ms * CHUNK_SAMPLE_RATE as i64) / 1000) as usize;
             let end_sample = ((chunk.end_ms * CHUNK_SAMPLE_RATE as i64) / 1000) as usize;
+            let overlap_samples = ((CHUNK_OVERLAP_MS * CHUNK_SAMPLE_RATE as i64) / 1000) as usize;
+            let slice_start = if chunk.chunk_index > 0 {
+                start_sample.saturating_sub(overlap_samples)
+            } else {
+                start_sample
+            };
             let slice = all_samples
-                [start_sample.min(all_samples.len())..end_sample.min(all_samples.len())]
+                [slice_start.min(all_samples.len())..end_sample.min(all_samples.len())]
                 .to_vec();
 
             self.emit_progress(
@@ -646,6 +779,7 @@ impl StudioManager {
                     chunk.chunk_index + 1,
                     total_chunks
                 ),
+                None,
             );
 
             let text = tm.transcribe_with_settings(slice, settings_snapshot.clone())?;
@@ -668,6 +802,7 @@ impl StudioManager {
             total_chunks,
             "writing_output_files",
             "Writing output files",
+            None,
         );
         let output_files = self.export_job(job_id)?;
         self.complete_job(job_id)?;
@@ -793,7 +928,7 @@ impl StudioManager {
     fn complete_chunk(&self, job_id: &str, chunk_index: i64, text: &str) -> Result<()> {
         let conn = self.get_connection()?;
         let now = Self::now_ms();
-        let cleaned = text.trim().to_string();
+        let cleaned = self.trim_chunk_text(job_id, chunk_index, text)?;
 
         conn.execute(
             "UPDATE studio_chunks SET text = ?1, status = 'done', updated_at = ?2 WHERE job_id = ?3 AND chunk_index = ?4",
@@ -825,8 +960,28 @@ impl StudioManager {
             total,
             "transcribing",
             &format!("Transcribing chunk {} of {}", completed.min(total), total),
+            None,
         );
         Ok(())
+    }
+
+    fn trim_chunk_text(&self, job_id: &str, chunk_index: i64, text: &str) -> Result<String> {
+        let cleaned = text.trim().to_string();
+        if chunk_index <= 0 || cleaned.is_empty() {
+            return Ok(cleaned);
+        }
+
+        let conn = self.get_connection()?;
+        let previous_text = conn
+            .query_row(
+                "SELECT text FROM studio_chunks WHERE job_id = ?1 AND chunk_index = ?2",
+                params![job_id, chunk_index - 1],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()?
+            .unwrap_or_default();
+
+        Ok(trim_overlap_prefix(&previous_text, &cleaned))
     }
 
     fn count_completed_chunks(&self, job_id: &str) -> Result<i64> {
@@ -1026,6 +1181,33 @@ impl StudioManager {
         self.set_job_status(job_id, StudioJobStatus::Error, Some(error_message))
     }
 
+    fn finish_cancelled_job(&self, job_id: &str) -> Result<()> {
+        self.cancel_running_job(job_id)?;
+        self.clear_active_job(job_id);
+        let _ = self.app_handle.emit(
+            "studio-job-cancelled",
+            serde_json::json!({ "job_id": job_id }),
+        );
+        Ok(())
+    }
+
+    fn report_job_failure(&self, job_id: &str, error_message: String) {
+        error!("Studio job {} failed: {}", job_id, error_message);
+        if let Err(update_error) = self.fail_job(job_id, &error_message) {
+            error!(
+                "Failed to persist Studio failure for {}: {}",
+                job_id, update_error
+            );
+        }
+        let _ = self.app_handle.emit(
+            "studio-job-failed",
+            serde_json::json!({
+                "job_id": job_id,
+                "error": error_message,
+            }),
+        );
+    }
+
     fn emit_progress(
         &self,
         job_id: &str,
@@ -1033,6 +1215,7 @@ impl StudioManager {
         chunk_count: i64,
         stage: &str,
         message: &str,
+        preparation_progress: Option<i64>,
     ) {
         let _ = self.app_handle.emit(
             "studio-job-progress",
@@ -1042,6 +1225,7 @@ impl StudioManager {
                 chunk_count,
                 stage: stage.to_string(),
                 message: message.to_string(),
+                preparation_progress,
             },
         );
     }
@@ -1063,6 +1247,41 @@ fn build_chunks(sample_count: usize) -> Vec<(i64, i64)> {
         start_sample = end_sample;
     }
     chunks
+}
+
+fn trim_overlap_prefix(previous_text: &str, current_text: &str) -> String {
+    let previous_words = previous_text
+        .split_whitespace()
+        .map(normalize_word)
+        .collect::<Vec<_>>();
+    let current_original_words = current_text.split_whitespace().collect::<Vec<_>>();
+    let current_words = current_original_words
+        .iter()
+        .map(|word| normalize_word(word))
+        .collect::<Vec<_>>();
+
+    let max_overlap = previous_words.len().min(current_words.len()).min(12);
+    for overlap in (3..=max_overlap).rev() {
+        if previous_words[previous_words.len() - overlap..] == current_words[..overlap] {
+            return current_original_words[overlap..]
+                .join(" ")
+                .trim()
+                .to_string();
+        }
+    }
+
+    current_text.trim().to_string()
+}
+
+fn normalize_word(word: &str) -> String {
+    word.chars()
+        .filter(|character| character.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
+fn can_retry_with_available_source(working_wav_path: Option<&str>, source_path: &Path) -> bool {
+    working_wav_path.map(Path::new).is_some_and(Path::exists) || source_path.exists()
 }
 
 fn settings_fingerprint(settings: &AppSettings) -> Result<String> {
@@ -1090,5 +1309,131 @@ fn move_file(from: &Path, to: &Path) -> Result<()> {
             fs::remove_file(from)?;
             Ok(())
         }
+    }
+}
+
+fn clear_active_job_state(
+    active_job_id: &Arc<Mutex<Option<String>>>,
+    cancel_flags: &Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    job_id: &str,
+) {
+    let mut active = active_job_id.lock().unwrap();
+    if active.as_deref() == Some(job_id) {
+        active.take();
+    }
+    cancel_flags.lock().unwrap().remove(job_id);
+}
+
+fn panic_payload_to_message(payload: Box<dyn std::any::Any + Send>) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        format!("Studio job panicked: {}", message)
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        format!("Studio job panicked: {}", message)
+    } else {
+        "Studio job panicked unexpectedly".to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        build_chunks, can_retry_with_available_source, panic_payload_to_message,
+        trim_overlap_prefix, ActiveJobCleanup, CHUNK_MS, CHUNK_SAMPLE_RATE,
+    };
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn active_job_cleanup_clears_state_on_drop() {
+        let active_job_id = Arc::new(Mutex::new(Some("job-123".to_string())));
+        let cancel_flags = Arc::new(Mutex::new(HashMap::from([(
+            "job-123".to_string(),
+            Arc::new(AtomicBool::new(false)),
+        )])));
+
+        {
+            let _cleanup = ActiveJobCleanup::from_state(
+                active_job_id.clone(),
+                cancel_flags.clone(),
+                "job-123",
+            );
+        }
+
+        assert!(active_job_id.lock().unwrap().is_none());
+        assert!(!cancel_flags.lock().unwrap().contains_key("job-123"));
+    }
+
+    #[test]
+    fn active_job_cleanup_can_be_disarmed() {
+        let active_job_id = Arc::new(Mutex::new(Some("job-123".to_string())));
+        let cancel_flags = Arc::new(Mutex::new(HashMap::from([(
+            "job-123".to_string(),
+            Arc::new(AtomicBool::new(false)),
+        )])));
+
+        {
+            let mut cleanup = ActiveJobCleanup::from_state(
+                active_job_id.clone(),
+                cancel_flags.clone(),
+                "job-123",
+            );
+            cleanup.disarm();
+        }
+
+        assert_eq!(active_job_id.lock().unwrap().as_deref(), Some("job-123"));
+        assert!(cancel_flags.lock().unwrap().contains_key("job-123"));
+    }
+
+    #[test]
+    fn panic_payload_to_message_handles_string_payloads() {
+        let payload: Box<dyn std::any::Any + Send> = Box::new("boom");
+        let message = panic_payload_to_message(payload);
+        assert_eq!(message, "Studio job panicked: boom");
+    }
+
+    #[test]
+    fn trim_overlap_prefix_removes_repeated_words() {
+        let trimmed = trim_overlap_prefix(
+            "this is the end of the sentence",
+            "end of the sentence and here is more",
+        );
+
+        assert_eq!(trimmed, "and here is more");
+    }
+
+    #[test]
+    fn build_chunks_uses_ten_second_windows() {
+        let twenty_five_seconds_of_samples = CHUNK_SAMPLE_RATE * 25;
+        let chunks = build_chunks(twenty_five_seconds_of_samples);
+
+        assert_eq!(CHUNK_MS, 10_000);
+        assert_eq!(chunks, vec![(0, 10_000), (10_000, 20_000), (20_000, 25_000)]);
+    }
+
+    #[test]
+    fn retry_accepts_existing_working_wav_even_if_source_is_missing() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let working_wav = temp_dir.path().join("normalized.wav");
+        std::fs::write(&working_wav, b"wav").expect("working wav");
+        let missing_source = temp_dir.path().join("missing.mp3");
+
+        assert!(can_retry_with_available_source(
+            Some(working_wav.to_string_lossy().as_ref()),
+            &missing_source,
+        ));
+    }
+
+    #[test]
+    fn retry_requires_source_when_working_wav_is_missing() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let missing_wav = PathBuf::from(temp_dir.path().join("missing.wav"));
+        let missing_source = temp_dir.path().join("missing.mp3");
+
+        assert!(!can_retry_with_available_source(
+            Some(missing_wav.to_string_lossy().as_ref()),
+            &missing_source,
+        ));
     }
 }

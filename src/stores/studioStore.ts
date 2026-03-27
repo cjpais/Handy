@@ -33,11 +33,35 @@ type StudioStage =
   | "idle"
   | "ready"
   | "preparing_audio"
+  | "opening_file"
+  | "decoding_audio"
+  | "resampling_audio"
+  | "writing_normalized_audio"
+  | "building_chunks"
   | "transcribing"
   | "writing_output_files"
   | "paused"
   | "done"
   | "error";
+
+const mapStage = (stage: string): StudioStage => {
+  switch (stage) {
+    case "opening_file":
+    case "decoding_audio":
+    case "resampling_audio":
+    case "writing_normalized_audio":
+    case "building_chunks":
+    case "preparing_audio":
+    case "transcribing":
+    case "writing_output_files":
+    case "paused":
+    case "done":
+    case "error":
+      return stage;
+    default:
+      return "transcribing";
+  }
+};
 
 interface StudioStore {
   initialized: boolean;
@@ -49,6 +73,7 @@ interface StudioStore {
   activeJob: StudioJob | null;
   statusMessage: string | null;
   currentStage: StudioStage;
+  preparationProgress: number | null;
   error: string | null;
   selectedFormats: StudioFormat[];
   lastOutputFolder: string;
@@ -80,6 +105,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   activeJob: null,
   statusMessage: null,
   currentStage: "idle",
+  preparationProgress: null,
   error: null,
   selectedFormats: readStoredFormats(),
   lastOutputFolder: localStorage.getItem(LAST_OUTPUT_FOLDER_KEY) ?? "",
@@ -89,45 +115,45 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
 
     await get().refreshHome();
 
-    listen<StudioJobProgressEvent>("studio-job-progress", async (event) => {
+    listen<StudioJobProgressEvent>("studio-job-progress", (event) => {
       const payload = event.payload;
+      const stage = mapStage(payload.stage);
       set((state) => {
+        const nextStatus =
+          stage === "paused" ? "paused" : stage === "done" ? "done" : "running";
+        const updateJob = (job: StudioJob): StudioJob => ({
+          ...job,
+          chunk_count: payload.chunk_count > 0 ? payload.chunk_count : job.chunk_count,
+          chunks_completed:
+            payload.chunks_completed > 0 ? payload.chunks_completed : job.chunks_completed,
+          status: nextStatus,
+        });
+
         if (!state.activeJob || state.activeJob.id !== payload.job_id) {
           return {
-            currentStage:
-              payload.stage === "writing_output_files"
-                ? "writing_output_files"
-                : "transcribing",
+            currentStage: stage,
             statusMessage: payload.message,
+            preparationProgress:
+              payload.preparation_progress ??
+              (stage === "transcribing" || stage === "writing_output_files" ? null : 0),
+            recentJobs: state.recentJobs.map((job) =>
+              job.id === payload.job_id ? updateJob(job) : job,
+            ),
           };
         }
 
         return {
-          activeJob: {
-            ...state.activeJob,
-            chunk_count: payload.chunk_count,
-            chunks_completed: payload.chunks_completed,
-            status:
-              payload.stage === "writing_output_files" ? "running" : "running",
-          },
-          currentStage:
-            payload.stage === "preparing_audio"
-              ? "preparing_audio"
-              : payload.stage === "writing_output_files"
-                ? "writing_output_files"
-                : "transcribing",
+          activeJob: updateJob(state.activeJob),
+          recentJobs: state.recentJobs.map((job) =>
+            job.id === payload.job_id ? updateJob(job) : job,
+          ),
+          currentStage: stage,
           statusMessage: payload.message,
+          preparationProgress:
+            payload.preparation_progress ??
+            (stage === "transcribing" || stage === "writing_output_files" ? null : 0),
         };
       });
-
-      const job = await studioApi.getJob(payload.job_id);
-      if (job) {
-        set((state) => ({
-          activeJob:
-            state.activeJob?.id === payload.job_id ? job : state.activeJob,
-          recentJobs: upsertJob(state.recentJobs, job),
-        }));
-      }
     });
 
     listen<StudioJobPreviewEvent>("studio-job-preview", (event) => {
@@ -154,6 +180,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       set((state) => ({
         currentStage: "paused",
         statusMessage: "Paused while dictation is running",
+        preparationProgress: null,
         activeJob:
           state.activeJob?.id === event.payload.job_id
             ? { ...state.activeJob, status: "paused" }
@@ -168,6 +195,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           state.statusMessage === "Paused while dictation is running"
             ? "Resuming Studio"
             : state.statusMessage,
+        preparationProgress: null,
         activeJob:
           state.activeJob?.id === event.payload.job_id
             ? { ...state.activeJob, status: "running" }
@@ -185,6 +213,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           preparedJob: null,
           currentStage: "done",
           statusMessage: "Done",
+          preparationProgress: null,
           recentJobs: upsertJob(state.recentJobs, job),
         }));
       },
@@ -198,6 +227,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         currentStage: "error",
         error: event.payload.error,
         statusMessage: "This file could not be processed",
+        preparationProgress: null,
         recentJobs: job ? upsertJob(state.recentJobs, job) : state.recentJobs,
       }));
     });
@@ -209,6 +239,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         preparedJob: null,
         currentStage: "idle",
         statusMessage: null,
+        preparationProgress: null,
         recentJobs: job ? upsertJob(state.recentJobs, job) : state.recentJobs,
       }));
     });
@@ -225,6 +256,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       isLoading: false,
       recentJobs: home.jobs,
       activeJob,
+      preparationProgress: null,
     });
   },
 
@@ -234,6 +266,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       error: null,
       statusMessage: null,
       currentStage: "idle",
+      preparationProgress: null,
     });
     try {
       const job = await studioApi.prepareJob(filePath);
@@ -260,6 +293,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       error: null,
       currentStage: "preparing_audio",
       statusMessage: "Preparing audio",
+      preparationProgress: 0,
     });
 
     try {
@@ -289,6 +323,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         isStarting: false,
         currentStage: "error",
         error: error instanceof Error ? error.message : String(error),
+        preparationProgress: null,
       });
       throw error;
     }
@@ -297,6 +332,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   cancelActiveJob: async () => {
     const activeJob = get().activeJob;
     if (!activeJob) return;
+    set({ statusMessage: "Stopping..." });
     await studioApi.cancelJob(activeJob.id);
   },
 
@@ -318,6 +354,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       error: null,
       currentStage: "preparing_audio",
       statusMessage: "Preparing audio",
+      preparationProgress: 0,
     });
     await studioApi.retryJob(jobId);
     const job = await studioApi.getJob(jobId);
@@ -328,7 +365,13 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     }));
   },
 
-  clearPreparedJob: () => set({ preparedJob: null, currentStage: "idle", error: null }),
+  clearPreparedJob: () =>
+    set({
+      preparedJob: null,
+      currentStage: "idle",
+      preparationProgress: null,
+      error: null,
+    }),
 
   setSelectedFormats: (formats) => set({ selectedFormats: formats }),
 

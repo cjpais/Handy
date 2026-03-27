@@ -1,20 +1,10 @@
 import React, { useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { FileAudio, UploadCloud } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-const MEDIA_EXTENSIONS = [
-  "mp3",
-  "mp4",
-  "wav",
-  "m4a",
-  "mov",
-  "mkv",
-  "flac",
-  "ogg",
-  "webm",
-  "avi",
-];
+const MEDIA_EXTENSIONS = ["mp3", "wav", "m4a", "flac", "ogg"];
 
 interface StudioDropzoneProps {
   disabled?: boolean;
@@ -25,6 +15,7 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
   disabled = false,
   onFileSelected,
 }) => {
+  const { t } = useTranslation();
   const dragCounter = useRef(0);
   const [dragging, setDragging] = React.useState(false);
 
@@ -32,7 +23,7 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
     const selected = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: "Media", extensions: MEDIA_EXTENSIONS }],
+      filters: [{ name: "Audio", extensions: MEDIA_EXTENSIONS }],
     });
 
     if (typeof selected === "string") {
@@ -85,9 +76,13 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
           <FileAudio className="h-6 w-6" />
         )}
       </div>
-      <h2 className="text-lg font-semibold">Drop an audio or video file</h2>
+      <h2 className="text-lg font-semibold">
+        {t("studio.dropzone.title", { defaultValue: "Drop an audio file" })}
+      </h2>
       <p className="mt-2 text-sm text-text/60">
-        One file at a time. Studio keeps the flow simple and reliable.
+        {t("studio.dropzone.description", {
+          defaultValue: "One file at a time. Studio keeps the flow simple and reliable.",
+        })}
       </p>
       <Button
         onClick={chooseFile}
@@ -95,10 +90,12 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
         className="mt-5"
         disabled={disabled}
       >
-        Choose File
+        {t("studio.dropzone.chooseFile", { defaultValue: "Choose File" })}
       </Button>
       <p className="mt-4 text-xs text-text/50">
-        Supported: MP3, MP4, WAV, M4A, MOV, MKV, FLAC, OGG, WEBM, AVI
+        {t("studio.dropzone.supported", {
+          defaultValue: "Supported: MP3, WAV, M4A, FLAC, OGG",
+        })}
       </p>
     </div>
   );

@@ -17,6 +17,7 @@ export interface StudioJob {
   id: string;
   source_path: string;
   source_name: string;
+  source_dir: string | null;
   working_wav_path: string | null;
   media_duration_ms: number;
   file_size_bytes: number;
@@ -55,6 +56,7 @@ export interface StudioJobProgressEvent {
   chunk_count: number;
   stage: string;
   message: string;
+  preparation_progress?: number | null;
 }
 
 export interface StudioJobPreviewEvent {

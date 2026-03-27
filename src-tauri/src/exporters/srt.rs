@@ -21,8 +21,8 @@ fn format_timestamp(ms: i64) -> String {
 pub fn write(path: &Path, chunks: &[SubtitleChunk]) -> Result<()> {
     let body = chunks
         .iter()
+        .filter(|chunk| !chunk.text.trim().is_empty())
         .enumerate()
-        .filter(|(_, chunk)| !chunk.text.trim().is_empty())
         .map(|(index, chunk)| {
             format!(
                 "{}\n{} --> {}\n{}\n",
@@ -37,4 +37,42 @@ pub fn write(path: &Path, chunks: &[SubtitleChunk]) -> Result<()> {
 
     fs::write(path, body)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{write, SubtitleChunk};
+
+    #[test]
+    fn write_uses_sequential_numbers_after_skipping_empty_chunks() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let path = temp_dir.path().join("out.srt");
+
+        write(
+            &path,
+            &[
+                SubtitleChunk {
+                    start_ms: 0,
+                    end_ms: 1_000,
+                    text: "First".to_string(),
+                },
+                SubtitleChunk {
+                    start_ms: 1_000,
+                    end_ms: 2_000,
+                    text: "   ".to_string(),
+                },
+                SubtitleChunk {
+                    start_ms: 2_000,
+                    end_ms: 3_000,
+                    text: "Third".to_string(),
+                },
+            ],
+        )
+        .expect("srt write should succeed");
+
+        let output = std::fs::read_to_string(path).expect("read srt");
+        assert!(output.contains("1\n00:00:00,000 --> 00:00:01,000\nFirst"));
+        assert!(output.contains("2\n00:00:02,000 --> 00:00:03,000\nThird"));
+        assert!(!output.contains("\n3\n"));
+    }
 }

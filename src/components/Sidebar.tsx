@@ -34,8 +34,7 @@ interface IconProps {
 }
 
 interface SectionConfig {
-  labelKey?: string;
-  label?: string;
+  labelKey: string;
   icon: React.ComponentType<IconProps>;
   component: React.ComponentType;
   enabled: (settings: any) => boolean;
@@ -49,7 +48,7 @@ export const SECTIONS_CONFIG = {
     enabled: () => true,
   },
   studio: {
-    label: "Studio",
+    labelKey: "sidebar.studio",
     icon: Clapperboard,
     component: StudioHome,
     enabled: () => true,
@@ -119,9 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
-          const label =
-            section.label ??
-            t(section.labelKey || "", { defaultValue: section.id.toString() });
+          const label = t(section.labelKey, { defaultValue: section.id.toString() });
 
           return (
             <div

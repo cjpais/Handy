@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +44,8 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
   onCancel,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
+
   const chooseFolder = async () => {
     const selected = await open({
       directory: true,
@@ -67,22 +70,51 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
         <div>
           <h2 className="text-lg font-semibold">{job.source_name}</h2>
           <div className="mt-3 grid gap-2 text-sm text-text/65 sm:grid-cols-2">
-            <p>Duration: {formatDuration(job.media_duration_ms)}</p>
-            <p>Size: {formatBytes(job.file_size_bytes)}</p>
             <p>
-              Format: {job.container_format || "Unknown"}
-              {job.audio_codec ? ` · ${job.audio_codec}` : ""}
+              {t("studio.setup.duration", {
+                defaultValue: "Duration: {{value}}",
+                value: formatDuration(job.media_duration_ms),
+              })}
             </p>
-            <p>Estimate: {job.estimate_text || "About a few minutes"}</p>
+            <p>
+              {t("studio.setup.size", {
+                defaultValue: "Size: {{value}}",
+                value: formatBytes(job.file_size_bytes),
+              })}
+            </p>
+            <p>
+              {t("studio.setup.format", {
+                defaultValue: "Format: {{format}}",
+                format:
+                  job.container_format ||
+                  t("studio.common.unknown", { defaultValue: "Unknown" }),
+              })}
+              {job.audio_codec ? ` - ${job.audio_codec}` : ""}
+            </p>
+            <p>
+              {t("studio.setup.estimate", {
+                defaultValue: "Estimate: {{value}}",
+                value:
+                  job.estimate_text ||
+                  t("studio.common.estimateFallback", {
+                    defaultValue: "About a few minutes",
+                  }),
+              })}
+            </p>
           </div>
         </div>
 
         <div className="space-y-3">
           <div>
-            <p className="text-sm font-medium">Output folder</p>
+            <p className="text-sm font-medium">
+              {t("studio.setup.outputFolder", { defaultValue: "Output folder" })}
+            </p>
             <div className="mt-2 flex gap-2">
               <div className="flex-1 rounded-lg border border-mid-gray/20 bg-mid-gray/5 px-3 py-2 text-sm text-text/70">
-                {outputFolder || "Choose where to save your transcript"}
+                {outputFolder ||
+                  t("studio.setup.chooseOutput", {
+                    defaultValue: "Choose where to save your transcript",
+                  })}
               </div>
               <Button variant="secondary" onClick={chooseFolder} disabled={disabled}>
                 <FolderOpen className="h-4 w-4" />
@@ -91,7 +123,9 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
           </div>
 
           <div>
-            <p className="text-sm font-medium">Formats</p>
+            <p className="text-sm font-medium">
+              {t("studio.setup.formats", { defaultValue: "Formats" })}
+            </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {FORMATS.map((format) => {
                 const active = selectedFormats.includes(format);
@@ -112,7 +146,11 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
         </div>
 
         {selectedFormats.length === 0 && (
-          <Alert variant="warning">Select at least one output format.</Alert>
+          <Alert variant="warning">
+            {t("studio.setup.selectFormatWarning", {
+              defaultValue: "Select at least one output format.",
+            })}
+          </Alert>
         )}
 
         <div className="flex flex-wrap gap-3">
@@ -120,10 +158,12 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
             onClick={onStart}
             disabled={disabled || !outputFolder || selectedFormats.length === 0}
           >
-            Start
+            {t("studio.setup.start", { defaultValue: "Start" })}
           </Button>
           <Button variant="secondary" onClick={onCancel} disabled={disabled}>
-            Choose another file
+            {t("studio.setup.chooseAnotherFile", {
+              defaultValue: "Choose another file",
+            })}
           </Button>
         </div>
       </div>
