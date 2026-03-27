@@ -65,8 +65,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   const handleDownloadModel = async (modelId: string) => {
     setSelectedModelId(modelId);
 
-    // Error toast is handled centrally by the model-download-failed event listener
-    // in modelStore — no toast here to avoid duplicates.
+    // Error handling is centralized in modelStore so onboarding only needs to
+    // reset local state when the download request fails.
     const success = await downloadModel(modelId);
     if (!success) {
       setSelectedModelId(null);

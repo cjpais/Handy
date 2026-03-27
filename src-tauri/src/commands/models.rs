@@ -24,23 +24,14 @@ pub async fn get_model_info(
 #[tauri::command]
 #[specta::specta]
 pub async fn download_model(
-    app_handle: AppHandle,
+    _app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
 ) -> Result<(), String> {
-    let result = model_manager
+    model_manager
         .download_model(&model_id)
         .await
-        .map_err(|e| e.to_string());
-
-    if let Err(ref error) = result {
-        let _ = app_handle.emit(
-            "model-download-failed",
-            serde_json::json!({ "model_id": &model_id, "error": error }),
-        );
-    }
-
-    result
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
