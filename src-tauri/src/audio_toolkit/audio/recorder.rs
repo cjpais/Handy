@@ -282,56 +282,16 @@ impl AudioRecorder {
     fn get_preferred_config(
         device: &cpal::Device,
     ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
-        // Use the device's native/default sample rate and let the FrameResampler
-        // in run_consumer() downsample to 16kHz. This avoids forcing hardware into
-        // a non-native rate which can cause issues on some devices (Bluetooth
-        // codecs, certain ALSA drivers, etc.).
-        let default_config = device.default_input_config()?;
-        let target_rate = default_config.sample_rate();
-
-        // Try to find the best sample format at the device's default rate
-        let supported_configs = match device.supported_input_configs() {
-            Ok(configs) => configs,
-            Err(e) => {
-                log::warn!("Could not enumerate input configs ({e}), using device default");
-                return Ok(default_config);
-            }
-        };
-        let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
-
-        for config_range in supported_configs {
-            if config_range.min_sample_rate() <= target_rate
-                && config_range.max_sample_rate() >= target_rate
-            {
-                match best_config {
-                    None => best_config = Some(config_range),
-                    Some(ref current) => {
-                        // Prioritize F32 > I16 > I32 > others
-                        let score = |fmt: cpal::SampleFormat| match fmt {
-                            cpal::SampleFormat::F32 => 4,
-                            cpal::SampleFormat::I16 => 3,
-                            cpal::SampleFormat::I32 => 2,
-                            _ => 1,
-                        };
-
-                        if score(config_range.sample_format()) > score(current.sample_format()) {
-                            best_config = Some(config_range);
-                        }
-                    }
-                }
-            }
-        }
-
-        if let Some(config) = best_config {
-            return Ok(config.with_sample_rate(target_rate));
-        }
-
-        // Fall back to device default if no config matched (exotic/virtual devices)
-        log::warn!(
-            "No supported config matched device default rate {:?}, using default config",
-            target_rate
-        );
-        Ok(default_config)
+        // Always use the device's default config. This returns the OS mixer's
+        // shared-mode native format (sample rate, channels, and sample format),
+        // which is the only format that CoreAudio and WASAPI will accept when
+        // opening a stream in shared mode. Trying to override the sample format
+        // (e.g. preferring F32 over I16) causes "stream configuration not
+        // supported" errors on macOS and Windows even when enumeration claims
+        // the format is available — those formats are exclusive-mode only.
+        // The FrameResampler in run_consumer() handles any necessary downsampling
+        // to the 16 kHz rate required by Whisper/Parakeet.
+        Ok(device.default_input_config()?)
     }
 }
 
