@@ -553,6 +553,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Načítání...",
     "save": "Uložit",
     "cancel": "Zrušit",

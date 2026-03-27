@@ -553,6 +553,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Laddar...",
     "save": "Spara",
     "cancel": "Avbryt",

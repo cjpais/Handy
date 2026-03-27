@@ -229,7 +229,9 @@ function App() {
   let content: React.ReactNode;
 
   if (onboardingStep === "accessibility") {
-    content = <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
+    content = (
+      <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
+    );
   } else if (onboardingStep === "model") {
     content = <Onboarding onModelSelected={handleModelSelected} />;
   } else {
@@ -272,7 +274,9 @@ function App() {
         }}
       />
       {isLinux && <TitleBar />}
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">{content}</div>
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {content}
+      </div>
     </div>
   );
 }

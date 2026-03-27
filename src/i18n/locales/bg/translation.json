@@ -553,6 +553,7 @@
     "portableUpdateButton": "Отвори GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Зареждане...",
     "save": "Запазване",
     "cancel": "Отказ",
