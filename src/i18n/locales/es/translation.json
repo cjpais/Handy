@@ -15,7 +15,8 @@
     "postProcessing": "Post Proceso",
     "history": "Historial",
     "debug": "Depuración",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "Para comenzar, elige un modelo de transcripción",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Transcribiendo...",
     "processing": "Procesando..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Suelta un archivo de audio, elige el destino, inicia, espera y obtén archivos de transcripción limpios.",
+    "selectModelWarning": "Selecciona un modelo de transcripción antes de iniciar Studio.",
+    "common": {
+      "unknown": "Desconocido",
+      "estimateFallback": "Unos pocos minutos"
+    },
+    "statuses": {
+      "pending": "Listo",
+      "running": "En curso",
+      "paused": "En pausa",
+      "done": "Completado",
+      "error": "Fallido",
+      "cancelled": "Cancelado"
+    },
+    "status": {
+      "model": "Modelo: {{name}}",
+      "noneSelected": "Ninguno seleccionado",
+      "import": "Importación de audio integrada"
+    },
+    "dropzone": {
+      "title": "Suelta un archivo de audio",
+      "description": "Un archivo a la vez. Studio mantiene el flujo simple y confiable.",
+      "chooseFile": "Elegir archivo",
+      "supported": "Compatible: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Duración: {{value}}",
+      "size": "Tamaño: {{value}}",
+      "format": "Formato: {{format}}",
+      "estimate": "Estimado: {{value}}",
+      "outputFolder": "Carpeta de salida",
+      "chooseOutput": "Elige dónde guardar tu transcripción",
+      "formats": "Formatos",
+      "selectFormatWarning": "Selecciona al menos un formato de salida.",
+      "start": "Iniciar",
+      "chooseAnotherFile": "Elegir otro archivo"
+    },
+    "job": {
+      "preparing": "Preparando...",
+      "waiting": "Esperando",
+      "done": "Completado",
+      "paused": "En pausa",
+      "progress": "Progreso",
+      "stop": "Detener trabajo",
+      "retry": "Reintentar trabajo",
+      "openFolder": "Abrir carpeta de salida",
+      "confirmCancel": "¿Detener este trabajo de Studio ahora? Puedes reintentarlo más tarde desde la lista de trabajos recientes.",
+      "duration": "Duración: {{value}}",
+      "size": "Tamaño: {{value}}",
+      "estimate": "Estimado: {{value}}",
+      "currentStep": "Paso actual: {{value}}",
+      "processError": "Este archivo no se pudo procesar",
+      "preview": "Vista previa de la transcripción",
+      "previewEmpty": "La vista previa de la transcripción aparecerá aquí.",
+      "outputFiles": "Archivos de salida"
+    },
+    "recent": {
+      "title": "Trabajos recientes",
+      "delete": "Eliminar trabajo"
+    }
   }
 }

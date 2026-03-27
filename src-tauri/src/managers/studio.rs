@@ -783,14 +783,14 @@ impl StudioManager {
             );
 
             let text = tm.transcribe_with_settings(slice, settings_snapshot.clone())?;
-            self.complete_chunk(job_id, chunk.chunk_index, &text)?;
+            let cleaned_text = self.complete_chunk(job_id, chunk.chunk_index, &text)?;
 
-            if !text.trim().is_empty() {
+            if !cleaned_text.is_empty() {
                 let _ = self.app_handle.emit(
                     "studio-job-preview",
                     StudioPreviewEvent {
                         job_id: job_id.to_string(),
-                        appended_text: text.trim().to_string(),
+                        appended_text: cleaned_text,
                     },
                 );
             }
@@ -925,7 +925,7 @@ impl StudioManager {
         Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
     }
 
-    fn complete_chunk(&self, job_id: &str, chunk_index: i64, text: &str) -> Result<()> {
+    fn complete_chunk(&self, job_id: &str, chunk_index: i64, text: &str) -> Result<String> {
         let conn = self.get_connection()?;
         let now = Self::now_ms();
         let cleaned = self.trim_chunk_text(job_id, chunk_index, text)?;
@@ -962,7 +962,7 @@ impl StudioManager {
             &format!("Transcribing chunk {} of {}", completed.min(total), total),
             None,
         );
-        Ok(())
+        Ok(cleaned)
     }
 
     fn trim_chunk_text(&self, job_id: &str, chunk_index: i64, text: &str) -> Result<String> {
@@ -1260,7 +1260,7 @@ fn trim_overlap_prefix(previous_text: &str, current_text: &str) -> String {
         .map(|word| normalize_word(word))
         .collect::<Vec<_>>();
 
-    let max_overlap = previous_words.len().min(current_words.len()).min(12);
+    let max_overlap = previous_words.len().min(current_words.len());
     for overlap in (3..=max_overlap).rev() {
         if previous_words[previous_words.len() - overlap..] == current_words[..overlap] {
             return current_original_words[overlap..]
@@ -1404,12 +1404,26 @@ mod tests {
     }
 
     #[test]
+    fn trim_overlap_prefix_removes_long_repeated_prefixes() {
+        let previous =
+            "one two three four five six seven eight nine ten eleven twelve thirteen fourteen";
+        let current = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen and new words";
+
+        let trimmed = trim_overlap_prefix(previous, current);
+
+        assert_eq!(trimmed, "and new words");
+    }
+
+    #[test]
     fn build_chunks_uses_ten_second_windows() {
         let twenty_five_seconds_of_samples = CHUNK_SAMPLE_RATE * 25;
         let chunks = build_chunks(twenty_five_seconds_of_samples);
 
         assert_eq!(CHUNK_MS, 10_000);
-        assert_eq!(chunks, vec![(0, 10_000), (10_000, 20_000), (20_000, 25_000)]);
+        assert_eq!(
+            chunks,
+            vec![(0, 10_000), (10_000, 20_000), (20_000, 25_000)]
+        );
     }
 
     #[test]

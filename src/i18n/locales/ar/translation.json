@@ -15,7 +15,8 @@
     "history": "السجل",
     "debug": "تصحيح الأخطاء",
     "about": "حول",
-    "models": "النماذج"
+    "models": "النماذج",
+    "studio": "الاستوديو"
   },
   "onboarding": {
     "subtitle": "للبدء، اختر نموذج التفريغ الصوتي",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "...جاري التفريغ",
     "processing": "...جاري المعالجة"
+  },
+  "studio": {
+    "title": "الاستوديو",
+    "subtitle": "أسقط ملف صوتي، اختر مجلد الإخراج، ابدأ، انتظر واحصل على ملفات نصية نظيفة.",
+    "selectModelWarning": "اختر نموذج التفريغ قبل بدء الاستوديو.",
+    "common": {
+      "unknown": "غير معروف",
+      "estimateFallback": "حوالي بضع دقائق"
+    },
+    "statuses": {
+      "pending": "جاهز",
+      "running": "قيد التشغيل",
+      "paused": "متوقف مؤقتاً",
+      "done": "مكتمل",
+      "error": "فشل",
+      "cancelled": "ملغى"
+    },
+    "status": {
+      "model": "النموذج: {{name}}",
+      "noneSelected": "لم يتم الاختيار",
+      "import": "استيراد الصوت المدمج"
+    },
+    "dropzone": {
+      "title": "أسقط ملفاً صوتياً",
+      "description": "ملف واحد في كل مرة...",
+      "chooseFile": "اختر ملفاً",
+      "supported": "المدعوم: MP3، WAV، M4A، FLAC، OGG"
+    },
+    "setup": {
+      "duration": "المدة: {{value}}",
+      "size": "الحجم: {{value}}",
+      "format": "الصيغة: {{format}}",
+      "estimate": "التقدير: {{value}}",
+      "outputFolder": "مجلد الإخراج",
+      "chooseOutput": "اختر مكان حفظ النص المفرّغ",
+      "formats": "الصيغ",
+      "selectFormatWarning": "اختر صيغة إخراج واحدة على الأقل.",
+      "start": "بدء",
+      "chooseAnotherFile": "اختر ملفاً آخر"
+    },
+    "job": {
+      "preparing": "...جارٍ التحضير",
+      "waiting": "انتظار",
+      "done": "مكتمل",
+      "paused": "متوقف مؤقتاً",
+      "progress": "التقدم",
+      "stop": "إيقاف المهمة",
+      "retry": "إعادة المهمة",
+      "openFolder": "فتح مجلد الإخراج",
+      "confirmCancel": "إيقاف مهمة الاستوديو الآن؟",
+      "duration": "المدة: {{value}}",
+      "size": "الحجم: {{value}}",
+      "estimate": "التقدير: {{value}}",
+      "currentStep": "الخطوة الحالية: {{value}}",
+      "processError": "تعذّرت معالجة هذا الملف",
+      "preview": "معاينة النص المفرّغ",
+      "previewEmpty": "ستظهر معاينة النص المفرّغ هنا.",
+      "outputFiles": "ملفات الإخراج"
+    },
+    "recent": {
+      "title": "المهام الأخيرة",
+      "delete": "حذف المهمة"
+    }
   }
 }

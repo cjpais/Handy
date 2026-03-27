@@ -15,7 +15,8 @@
     "postProcessing": "Son İşlem",
     "history": "Geçmiş",
     "debug": "Hata Ayıklama",
-    "about": "Hakkında"
+    "about": "Hakkında",
+    "studio": "Stüdyo"
   },
   "onboarding": {
     "subtitle": "Başlamak için bir transkripsiyon modeli seçin",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
     "processing": "İşleniyor..."
+  },
+  "studio": {
+    "title": "Stüdyo",
+    "subtitle": "Bir ses dosyası bırakın, çıktıyı seçin, başlatın, bekleyin ve temiz transkript dosyalarını alın.",
+    "selectModelWarning": "Stüdyoyu başlatmadan önce bir transkripsiyon modeli seçin.",
+    "common": {
+      "unknown": "Bilinmiyor",
+      "estimateFallback": "Yaklaşık birkaç dakika"
+    },
+    "statuses": {
+      "pending": "Hazır",
+      "running": "Çalışıyor",
+      "paused": "Duraklatıldı",
+      "done": "Tamamlandı",
+      "error": "Başarısız",
+      "cancelled": "İptal edildi"
+    },
+    "status": {
+      "model": "Model: {{name}}",
+      "noneSelected": "Hiçbiri seçilmedi",
+      "import": "Yerleşik ses içe aktarma"
+    },
+    "dropzone": {
+      "title": "Bir ses dosyası bırakın",
+      "description": "Bir seferde bir dosya...",
+      "chooseFile": "Dosya seç",
+      "supported": "Desteklenen: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Süre: {{value}}",
+      "size": "Boyut: {{value}}",
+      "format": "Format: {{format}}",
+      "estimate": "Tahmin: {{value}}",
+      "outputFolder": "Çıktı klasörü",
+      "chooseOutput": "Transkriptinizi nereye kaydedeceğinizi seçin",
+      "formats": "Formatlar",
+      "selectFormatWarning": "En az bir çıktı formatı seçin.",
+      "start": "Başlat",
+      "chooseAnotherFile": "Başka bir dosya seç"
+    },
+    "job": {
+      "preparing": "Hazırlanıyor...",
+      "waiting": "Bekliyor",
+      "done": "Tamamlandı",
+      "paused": "Duraklatıldı",
+      "progress": "İlerleme",
+      "stop": "İşi durdur",
+      "retry": "İşi yeniden dene",
+      "openFolder": "Çıktı klasörünü aç",
+      "confirmCancel": "Bu Stüdyo işi şimdi durdurulsun mu?",
+      "duration": "Süre: {{value}}",
+      "size": "Boyut: {{value}}",
+      "estimate": "Tahmin: {{value}}",
+      "currentStep": "Mevcut adım: {{value}}",
+      "processError": "Bu dosya işlenemedi",
+      "preview": "Transkript önizlemesi",
+      "previewEmpty": "Transkript önizlemesi burada görünecek.",
+      "outputFiles": "Çıktı dosyaları"
+    },
+    "recent": {
+      "title": "Son İşler",
+      "delete": "İşi sil"
+    }
   }
 }

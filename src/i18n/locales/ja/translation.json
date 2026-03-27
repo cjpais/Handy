@@ -15,7 +15,8 @@
     "postProcessing": "後処理",
     "history": "履歴",
     "debug": "デバッグ",
-    "about": "概要"
+    "about": "概要",
+    "studio": "スタジオ"
   },
   "onboarding": {
     "subtitle": "開始するには、文字起こしモデルを選択してください",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "文字起こし中...",
     "processing": "処理中..."
+  },
+  "studio": {
+    "title": "スタジオ",
+    "subtitle": "音声ファイルをドロップし、出力先を選択して開始するだけで、整理された文字起こしファイルが得られます。",
+    "selectModelWarning": "スタジオを開始する前に文字起こしモデルを選択してください。",
+    "common": {
+      "unknown": "不明",
+      "estimateFallback": "数分程度"
+    },
+    "statuses": {
+      "pending": "準備完了",
+      "running": "実行中",
+      "paused": "一時停止",
+      "done": "完了",
+      "error": "失敗",
+      "cancelled": "キャンセル済み"
+    },
+    "status": {
+      "model": "モデル: {{name}}",
+      "noneSelected": "未選択",
+      "import": "内蔵オーディオインポート"
+    },
+    "dropzone": {
+      "title": "音声ファイルをドロップ",
+      "description": "一度に1ファイルずつ...",
+      "chooseFile": "ファイルを選択",
+      "supported": "対応形式: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "長さ: {{value}}",
+      "size": "サイズ: {{value}}",
+      "format": "フォーマット: {{format}}",
+      "estimate": "推定時間: {{value}}",
+      "outputFolder": "出力フォルダー",
+      "chooseOutput": "文字起こしの保存場所を選択",
+      "formats": "フォーマット",
+      "selectFormatWarning": "少なくとも1つの出力フォーマットを選択してください。",
+      "start": "開始",
+      "chooseAnotherFile": "別のファイルを選択"
+    },
+    "job": {
+      "preparing": "準備中...",
+      "waiting": "待機中",
+      "done": "完了",
+      "paused": "一時停止",
+      "progress": "進捗",
+      "stop": "ジョブを停止",
+      "retry": "ジョブを再試行",
+      "openFolder": "出力フォルダーを開く",
+      "confirmCancel": "このスタジオジョブを今すぐ停止しますか？",
+      "duration": "長さ: {{value}}",
+      "size": "サイズ: {{value}}",
+      "estimate": "推定時間: {{value}}",
+      "currentStep": "現在のステップ: {{value}}",
+      "processError": "このファイルを処理できませんでした",
+      "preview": "文字起こしプレビュー",
+      "previewEmpty": "文字起こしのプレビューがここに表示されます。",
+      "outputFiles": "出力ファイル"
+    },
+    "recent": {
+      "title": "最近のジョブ",
+      "delete": "ジョブを削除"
+    }
   }
 }

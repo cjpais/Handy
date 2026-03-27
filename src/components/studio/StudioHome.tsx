@@ -9,7 +9,6 @@ import { StudioDropzone } from "./StudioDropzone";
 import { StudioJobView } from "./StudioJobView";
 import { StudioRecentList } from "./StudioRecentList";
 import { StudioSetupCard } from "./StudioSetupCard";
-import { StudioStatusBar } from "./StudioStatusBar";
 
 export const StudioHome: React.FC = () => {
   const { t } = useTranslation();
@@ -28,10 +27,6 @@ export const StudioHome: React.FC = () => {
       console.error("Failed to initialize model store for Studio:", error);
     });
   }, [modelStore]);
-
-  const selectedModel =
-    modelStore.models.find((model) => model.id === settings?.selected_model) || null;
-  const modelName = selectedModel?.name || settings?.selected_model || "";
 
   const [outputFolder, setOutputFolder] = React.useState(studio.lastOutputFolder);
 
@@ -116,9 +111,6 @@ export const StudioHome: React.FC = () => {
           })}
         </p>
       </div>
-
-      <StudioStatusBar modelName={modelName} />
-
       {!settings?.selected_model && (
         <Alert variant="warning">
           {t("studio.selectModelWarning", {

@@ -15,7 +15,8 @@
     "postProcessing": "Post-Elaborazione",
     "history": "Cronologia",
     "debug": "Debug",
-    "about": "Informazioni"
+    "about": "Informazioni",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "Per cominciare, scegli un modello di riconoscimento vocale",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Trascrizione...",
     "processing": "Elaborazione..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Trascina un file audio, scegli l'output, avvia, attendi e ottieni file di trascrizione puliti.",
+    "selectModelWarning": "Seleziona un modello di trascrizione prima di avviare Studio.",
+    "common": {
+      "unknown": "Sconosciuto",
+      "estimateFallback": "Circa qualche minuto"
+    },
+    "statuses": {
+      "pending": "Pronto",
+      "running": "In esecuzione",
+      "paused": "In pausa",
+      "done": "Completato",
+      "error": "Fallito",
+      "cancelled": "Annullato"
+    },
+    "status": {
+      "model": "Modello: {{name}}",
+      "noneSelected": "Nessuno selezionato",
+      "import": "Importazione audio integrata"
+    },
+    "dropzone": {
+      "title": "Trascina un file audio",
+      "description": "Un file alla volta...",
+      "chooseFile": "Scegli file",
+      "supported": "Supportati: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Durata: {{value}}",
+      "size": "Dimensione: {{value}}",
+      "format": "Formato: {{format}}",
+      "estimate": "Stima: {{value}}",
+      "outputFolder": "Cartella di output",
+      "chooseOutput": "Scegli dove salvare la trascrizione",
+      "formats": "Formati",
+      "selectFormatWarning": "Seleziona almeno un formato di output.",
+      "start": "Avvia",
+      "chooseAnotherFile": "Scegli un altro file"
+    },
+    "job": {
+      "preparing": "Preparazione...",
+      "waiting": "In attesa",
+      "done": "Completato",
+      "paused": "In pausa",
+      "progress": "Avanzamento",
+      "stop": "Interrompi lavoro",
+      "retry": "Riprova lavoro",
+      "openFolder": "Apri cartella di output",
+      "confirmCancel": "Interrompere questo lavoro Studio ora?",
+      "duration": "Durata: {{value}}",
+      "size": "Dimensione: {{value}}",
+      "estimate": "Stima: {{value}}",
+      "currentStep": "Passaggio corrente: {{value}}",
+      "processError": "Impossibile elaborare questo file",
+      "preview": "Anteprima trascrizione",
+      "previewEmpty": "L'anteprima della trascrizione apparirà qui.",
+      "outputFiles": "File di output"
+    },
+    "recent": {
+      "title": "Lavori recenti",
+      "delete": "Elimina lavoro"
+    }
   }
 }

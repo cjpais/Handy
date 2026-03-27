@@ -15,7 +15,8 @@
     "postProcessing": "后处理",
     "history": "历史记录",
     "debug": "调试",
-    "about": "关于"
+    "about": "关于",
+    "studio": "录音室"
   },
   "onboarding": {
     "subtitle": "请选择一个转录模型以开始使用",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "正在转录...",
     "processing": "处理中..."
+  },
+  "studio": {
+    "title": "录音室",
+    "subtitle": "拖放音频文件，选择输出，开始，等待，然后获取干净的转录文件。",
+    "selectModelWarning": "启动录音室前请选择转录模型。",
+    "common": {
+      "unknown": "未知",
+      "estimateFallback": "大约几分钟"
+    },
+    "statuses": {
+      "pending": "就绪",
+      "running": "运行中",
+      "paused": "已暂停",
+      "done": "已完成",
+      "error": "失败",
+      "cancelled": "已取消"
+    },
+    "status": {
+      "model": "模型：{{name}}",
+      "noneSelected": "未选择",
+      "import": "内置音频导入"
+    },
+    "dropzone": {
+      "title": "拖放音频文件",
+      "description": "一次一个文件...",
+      "chooseFile": "选择文件",
+      "supported": "支持的格式：MP3、WAV、M4A、FLAC、OGG"
+    },
+    "setup": {
+      "duration": "时长：{{value}}",
+      "size": "大小：{{value}}",
+      "format": "格式：{{format}}",
+      "estimate": "预计时间：{{value}}",
+      "outputFolder": "输出文件夹",
+      "chooseOutput": "选择保存转录的位置",
+      "formats": "格式",
+      "selectFormatWarning": "请至少选择一种输出格式。",
+      "start": "开始",
+      "chooseAnotherFile": "选择其他文件"
+    },
+    "job": {
+      "preparing": "准备中...",
+      "waiting": "等待中",
+      "done": "已完成",
+      "paused": "已暂停",
+      "progress": "进度",
+      "stop": "停止任务",
+      "retry": "重试任务",
+      "openFolder": "打开输出文件夹",
+      "confirmCancel": "现在停止此录音室任务？",
+      "duration": "时长：{{value}}",
+      "size": "大小：{{value}}",
+      "estimate": "预计时间：{{value}}",
+      "currentStep": "当前步骤：{{value}}",
+      "processError": "无法处理此文件",
+      "preview": "转录预览",
+      "previewEmpty": "转录预览将在此处显示。",
+      "outputFiles": "输出文件"
+    },
+    "recent": {
+      "title": "最近任务",
+      "delete": "删除任务"
+    }
   }
 }

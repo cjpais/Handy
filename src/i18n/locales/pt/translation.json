@@ -15,7 +15,8 @@
     "postProcessing": "Pós-Processamento",
     "history": "Histórico",
     "debug": "Depuração",
-    "about": "Sobre"
+    "about": "Sobre",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "Para começar, escolha um modelo de transcrição",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Transcrevendo...",
     "processing": "Processando..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Solte um arquivo de áudio, escolha a saída, inicie, aguarde e obtenha arquivos de transcrição limpos.",
+    "selectModelWarning": "Selecione um modelo de transcrição antes de iniciar o Studio.",
+    "common": {
+      "unknown": "Desconhecido",
+      "estimateFallback": "Cerca de alguns minutos"
+    },
+    "statuses": {
+      "pending": "Pronto",
+      "running": "Em execução",
+      "paused": "Pausado",
+      "done": "Concluído",
+      "error": "Falhou",
+      "cancelled": "Cancelado"
+    },
+    "status": {
+      "model": "Modelo: {{name}}",
+      "noneSelected": "Nenhum selecionado",
+      "import": "Importação de áudio integrada"
+    },
+    "dropzone": {
+      "title": "Solte um arquivo de áudio",
+      "description": "Um arquivo de cada vez...",
+      "chooseFile": "Escolher arquivo",
+      "supported": "Suportados: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Duração: {{value}}",
+      "size": "Tamanho: {{value}}",
+      "format": "Formato: {{format}}",
+      "estimate": "Estimativa: {{value}}",
+      "outputFolder": "Pasta de saída",
+      "chooseOutput": "Escolha onde salvar sua transcrição",
+      "formats": "Formatos",
+      "selectFormatWarning": "Selecione pelo menos um formato de saída.",
+      "start": "Iniciar",
+      "chooseAnotherFile": "Escolher outro arquivo"
+    },
+    "job": {
+      "preparing": "Preparando...",
+      "waiting": "Aguardando",
+      "done": "Concluído",
+      "paused": "Pausado",
+      "progress": "Progresso",
+      "stop": "Parar trabalho",
+      "retry": "Tentar novamente",
+      "openFolder": "Abrir pasta de saída",
+      "confirmCancel": "Parar este trabalho do Studio agora?",
+      "duration": "Duração: {{value}}",
+      "size": "Tamanho: {{value}}",
+      "estimate": "Estimativa: {{value}}",
+      "currentStep": "Etapa atual: {{value}}",
+      "processError": "Este arquivo não pôde ser processado",
+      "preview": "Prévia da transcrição",
+      "previewEmpty": "A prévia da transcrição aparecerá aqui.",
+      "outputFiles": "Arquivos de saída"
+    },
+    "recent": {
+      "title": "Trabalhos recentes",
+      "delete": "Excluir trabalho"
+    }
   }
 }

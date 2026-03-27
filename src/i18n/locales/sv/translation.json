@@ -15,7 +15,8 @@
     "postProcessing": "Efterbearbetning",
     "history": "Historik",
     "debug": "Felsökning",
-    "about": "Om"
+    "about": "Om",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "För att komma igång, välj en transkriptionsmodell",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Transkriberar...",
     "processing": "Bearbetar..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Släpp en ljudfil, välj utdata, starta, vänta och få rena transkriptionsfiler.",
+    "selectModelWarning": "Välj en transkriptionsmodell innan du startar Studio.",
+    "common": {
+      "unknown": "Okänt",
+      "estimateFallback": "Ungefär några minuter"
+    },
+    "statuses": {
+      "pending": "Redo",
+      "running": "Körs",
+      "paused": "Pausad",
+      "done": "Klar",
+      "error": "Misslyckades",
+      "cancelled": "Avbruten"
+    },
+    "status": {
+      "model": "Modell: {{name}}",
+      "noneSelected": "Ingen vald",
+      "import": "Inbyggd ljudimport"
+    },
+    "dropzone": {
+      "title": "Släpp en ljudfil",
+      "description": "En fil i taget...",
+      "chooseFile": "Välj fil",
+      "supported": "Stöds: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Längd: {{value}}",
+      "size": "Storlek: {{value}}",
+      "format": "Format: {{format}}",
+      "estimate": "Uppskattning: {{value}}",
+      "outputFolder": "Utdatamapp",
+      "chooseOutput": "Välj var du vill spara din transkription",
+      "formats": "Format",
+      "selectFormatWarning": "Välj minst ett utdataformat.",
+      "start": "Starta",
+      "chooseAnotherFile": "Välj en annan fil"
+    },
+    "job": {
+      "preparing": "Förbereder...",
+      "waiting": "Väntar",
+      "done": "Klar",
+      "paused": "Pausad",
+      "progress": "Förlopp",
+      "stop": "Stoppa jobb",
+      "retry": "Försök igen",
+      "openFolder": "Öppna utdatamapp",
+      "confirmCancel": "Stoppa detta Studio-jobb nu?",
+      "duration": "Längd: {{value}}",
+      "size": "Storlek: {{value}}",
+      "estimate": "Uppskattning: {{value}}",
+      "currentStep": "Aktuellt steg: {{value}}",
+      "processError": "Den här filen kunde inte bearbetas",
+      "preview": "Transkriptionsförhandsvisning",
+      "previewEmpty": "Förhandsgranskning av transkription visas här.",
+      "outputFiles": "Utdatafiler"
+    },
+    "recent": {
+      "title": "Senaste jobb",
+      "delete": "Ta bort jobb"
+    }
   }
 }

@@ -15,7 +15,8 @@
     "postProcessing": "עיבוד משלים",
     "history": "היסטוריה",
     "debug": "ניפוי שגיאות",
-    "about": "אודות"
+    "about": "אודות",
+    "studio": "סטודיו"
   },
   "onboarding": {
     "subtitle": "כדי להתחיל, בחר מודל תמלול",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "מתמלל...",
     "processing": "מעבד..."
+  },
+  "studio": {
+    "title": "סטודיו",
+    "subtitle": "גרור קובץ שמע, בחר יעד, התחל, המתן, וקבל קבצי תמלול נקיים.",
+    "selectModelWarning": "בחר מודל תמלול לפני הפעלת הסטודיו.",
+    "common": {
+      "unknown": "לא ידוע",
+      "estimateFallback": "כמה דקות"
+    },
+    "statuses": {
+      "pending": "מוכן",
+      "running": "פועל",
+      "paused": "מושהה",
+      "done": "הושלם",
+      "error": "נכשל",
+      "cancelled": "בוטל"
+    },
+    "status": {
+      "model": "מודל: {{name}}",
+      "noneSelected": "לא נבחר",
+      "import": "ייבוא שמע מובנה"
+    },
+    "dropzone": {
+      "title": "גרור קובץ שמע",
+      "description": "קובץ אחד בכל פעם. הסטודיו שומר על תהליך פשוט ואמין.",
+      "chooseFile": "בחר קובץ",
+      "supported": "נתמך: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "משך: {{value}}",
+      "size": "גודל: {{value}}",
+      "format": "פורמט: {{format}}",
+      "estimate": "הערכת זמן: {{value}}",
+      "outputFolder": "תיקיית פלט",
+      "chooseOutput": "בחר היכן לשמור את התמלול",
+      "formats": "פורמטים",
+      "selectFormatWarning": "בחר לפחות פורמט פלט אחד.",
+      "start": "התחל",
+      "chooseAnotherFile": "בחר קובץ אחר"
+    },
+    "job": {
+      "preparing": "מכין...",
+      "waiting": "ממתין",
+      "done": "הושלם",
+      "paused": "מושהה",
+      "progress": "התקדמות",
+      "stop": "עצור משימה",
+      "retry": "נסה שוב",
+      "openFolder": "פתח תיקיית פלט",
+      "confirmCancel": "לעצור את משימת הסטודיו עכשיו? תוכל לנסות שוב מאוחר יותר מרשימת המשימות האחרונות.",
+      "duration": "משך: {{value}}",
+      "size": "גודל: {{value}}",
+      "estimate": "הערכת זמן: {{value}}",
+      "currentStep": "שלב נוכחי: {{value}}",
+      "processError": "לא ניתן היה לעבד את הקובץ",
+      "preview": "תצוגה מקדימה של התמלול",
+      "previewEmpty": "תצוגה מקדימה של התמלול תופיע כאן.",
+      "outputFiles": "קבצי פלט"
+    },
+    "recent": {
+      "title": "משימות אחרונות",
+      "delete": "מחק משימה"
+    }
   }
 }

@@ -15,7 +15,8 @@
     "postProcessing": "Postproces",
     "history": "Historia",
     "debug": "Debugowanie",
-    "about": "O programie"
+    "about": "O programie",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "Aby rozpocząć, wybierz model transkrypcji",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Transkrypcja...",
     "processing": "Przetwarzanie..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Upuść plik audio, wybierz wyjście, uruchom, poczekaj i otrzymaj czyste pliki transkrypcji.",
+    "selectModelWarning": "Wybierz model transkrypcji przed uruchomieniem Studia.",
+    "common": {
+      "unknown": "Nieznane",
+      "estimateFallback": "Około kilku minut"
+    },
+    "statuses": {
+      "pending": "Gotowe",
+      "running": "Trwa",
+      "paused": "Wstrzymane",
+      "done": "Gotowe",
+      "error": "Nieudane",
+      "cancelled": "Anulowane"
+    },
+    "status": {
+      "model": "Model: {{name}}",
+      "noneSelected": "Nie wybrano",
+      "import": "Wbudowany import audio"
+    },
+    "dropzone": {
+      "title": "Upuść plik audio",
+      "description": "Jeden plik na raz...",
+      "chooseFile": "Wybierz plik",
+      "supported": "Obsługiwane: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Czas trwania: {{value}}",
+      "size": "Rozmiar: {{value}}",
+      "format": "Format: {{format}}",
+      "estimate": "Szacowany czas: {{value}}",
+      "outputFolder": "Folder wyjściowy",
+      "chooseOutput": "Wybierz, gdzie zapisać transkrypcję",
+      "formats": "Formaty",
+      "selectFormatWarning": "Wybierz co najmniej jeden format wyjściowy.",
+      "start": "Uruchom",
+      "chooseAnotherFile": "Wybierz inny plik"
+    },
+    "job": {
+      "preparing": "Przygotowywanie...",
+      "waiting": "Oczekiwanie",
+      "done": "Gotowe",
+      "paused": "Wstrzymane",
+      "progress": "Postęp",
+      "stop": "Zatrzymaj zadanie",
+      "retry": "Ponów zadanie",
+      "openFolder": "Otwórz folder wyjściowy",
+      "confirmCancel": "Zatrzymać to zadanie Studia teraz?",
+      "duration": "Czas trwania: {{value}}",
+      "size": "Rozmiar: {{value}}",
+      "estimate": "Szacowany czas: {{value}}",
+      "currentStep": "Bieżący krok: {{value}}",
+      "processError": "Nie można przetworzyć tego pliku",
+      "preview": "Podgląd transkrypcji",
+      "previewEmpty": "Podgląd transkrypcji pojawi się tutaj.",
+      "outputFiles": "Pliki wyjściowe"
+    },
+    "recent": {
+      "title": "Ostatnie zadania",
+      "delete": "Usuń zadanie"
+    }
   }
 }

@@ -15,7 +15,8 @@
     "postProcessing": "Постобробка",
     "history": "Історія",
     "debug": "Дебаг",
-    "about": "Інфо"
+    "about": "Інфо",
+    "studio": "Студія"
   },
   "onboarding": {
     "subtitle": "Для початку оберіть модель транскрипції",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Обробка...",
     "processing": "Постобробка..."
+  },
+  "studio": {
+    "title": "Студія",
+    "subtitle": "Перетягніть аудіофайл, оберіть вивід, запустіть, зачекайте та отримайте готові файли транскрипції.",
+    "selectModelWarning": "Виберіть модель транскрипції перед запуском студії.",
+    "common": {
+      "unknown": "Невідомо",
+      "estimateFallback": "Приблизно кілька хвилин"
+    },
+    "statuses": {
+      "pending": "Готово",
+      "running": "Виконується",
+      "paused": "Призупинено",
+      "done": "Завершено",
+      "error": "Помилка",
+      "cancelled": "Скасовано"
+    },
+    "status": {
+      "model": "Модель: {{name}}",
+      "noneSelected": "Не вибрано",
+      "import": "Вбудований імпорт аудіо"
+    },
+    "dropzone": {
+      "title": "Перетягніть аудіофайл",
+      "description": "По одному файлу за раз...",
+      "chooseFile": "Вибрати файл",
+      "supported": "Підтримувані: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Тривалість: {{value}}",
+      "size": "Розмір: {{value}}",
+      "format": "Формат: {{format}}",
+      "estimate": "Оцінка: {{value}}",
+      "outputFolder": "Папка виводу",
+      "chooseOutput": "Виберіть, куди зберегти транскрипцію",
+      "formats": "Формати",
+      "selectFormatWarning": "Виберіть принаймні один формат виводу.",
+      "start": "Почати",
+      "chooseAnotherFile": "Вибрати інший файл"
+    },
+    "job": {
+      "preparing": "Підготовка...",
+      "waiting": "Очікування",
+      "done": "Завершено",
+      "paused": "Призупинено",
+      "progress": "Прогрес",
+      "stop": "Зупинити завдання",
+      "retry": "Повторити завдання",
+      "openFolder": "Відкрити папку виводу",
+      "confirmCancel": "Зупинити це завдання студії зараз?",
+      "duration": "Тривалість: {{value}}",
+      "size": "Розмір: {{value}}",
+      "estimate": "Оцінка: {{value}}",
+      "currentStep": "Поточний крок: {{value}}",
+      "processError": "Цей файл не вдалося обробити",
+      "preview": "Перегляд транскрипції",
+      "previewEmpty": "Перегляд транскрипції з'явиться тут.",
+      "outputFiles": "Вихідні файли"
+    },
+    "recent": {
+      "title": "Останні завдання",
+      "delete": "Видалити завдання"
+    }
   }
 }

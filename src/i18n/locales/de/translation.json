@@ -15,7 +15,8 @@
     "postProcessing": "Nachbearbeitung",
     "history": "Verlauf",
     "debug": "Debug",
-    "about": "Info"
+    "about": "Info",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "Wähle ein Transkriptionsmodell, um loszulegen",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Transkribiere...",
     "processing": "Verarbeite..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Audiodatei ablegen, Ausgabe wählen, starten, warten und saubere Transkriptionsdateien erhalten.",
+    "selectModelWarning": "Wähle vor dem Starten von Studio ein Transkriptionsmodell aus.",
+    "common": {
+      "unknown": "Unbekannt",
+      "estimateFallback": "Ungefähr ein paar Minuten"
+    },
+    "statuses": {
+      "pending": "Bereit",
+      "running": "Läuft",
+      "paused": "Pausiert",
+      "done": "Fertig",
+      "error": "Fehlgeschlagen",
+      "cancelled": "Abgebrochen"
+    },
+    "status": {
+      "model": "Modell: {{name}}",
+      "noneSelected": "Keines ausgewählt",
+      "import": "Integrierter Audio-Import"
+    },
+    "dropzone": {
+      "title": "Audiodatei ablegen",
+      "description": "Jeweils eine Datei...",
+      "chooseFile": "Datei wählen",
+      "supported": "Unterstützt: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Dauer: {{value}}",
+      "size": "Größe: {{value}}",
+      "format": "Format: {{format}}",
+      "estimate": "Schätzung: {{value}}",
+      "outputFolder": "Ausgabeordner",
+      "chooseOutput": "Wähle, wo die Transkription gespeichert werden soll",
+      "formats": "Formate",
+      "selectFormatWarning": "Wähle mindestens ein Ausgabeformat aus.",
+      "start": "Starten",
+      "chooseAnotherFile": "Andere Datei wählen"
+    },
+    "job": {
+      "preparing": "Vorbereitung...",
+      "waiting": "Warten",
+      "done": "Fertig",
+      "paused": "Pausiert",
+      "progress": "Fortschritt",
+      "stop": "Auftrag stoppen",
+      "retry": "Auftrag wiederholen",
+      "openFolder": "Ausgabeordner öffnen",
+      "confirmCancel": "Diesen Studio-Auftrag jetzt stoppen?",
+      "duration": "Dauer: {{value}}",
+      "size": "Größe: {{value}}",
+      "estimate": "Schätzung: {{value}}",
+      "currentStep": "Aktueller Schritt: {{value}}",
+      "processError": "Diese Datei konnte nicht verarbeitet werden",
+      "preview": "Transkriptionsvorschau",
+      "previewEmpty": "Transkriptionsvorschau erscheint hier.",
+      "outputFiles": "Ausgabedateien"
+    },
+    "recent": {
+      "title": "Letzte Aufträge",
+      "delete": "Auftrag löschen"
+    }
   }
 }

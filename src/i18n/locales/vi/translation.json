@@ -15,7 +15,8 @@
     "postProcessing": "Xử lý sau",
     "history": "Lịch sử",
     "debug": "Gỡ lỗi",
-    "about": "Giới thiệu"
+    "about": "Giới thiệu",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "Để bắt đầu, hãy chọn một mô hình chuyển đổi giọng nói",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Đang chuyển đổi...",
     "processing": "Đang xử lý..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Thả tệp âm thanh, chọn đầu ra, bắt đầu, chờ và nhận các tệp bản ghi sạch.",
+    "selectModelWarning": "Chọn mô hình phiên âm trước khi khởi động Studio.",
+    "common": {
+      "unknown": "Không xác định",
+      "estimateFallback": "Khoảng vài phút"
+    },
+    "statuses": {
+      "pending": "Sẵn sàng",
+      "running": "Đang chạy",
+      "paused": "Tạm dừng",
+      "done": "Hoàn thành",
+      "error": "Thất bại",
+      "cancelled": "Đã hủy"
+    },
+    "status": {
+      "model": "Mô hình: {{name}}",
+      "noneSelected": "Chưa chọn",
+      "import": "Nhập âm thanh tích hợp"
+    },
+    "dropzone": {
+      "title": "Thả tệp âm thanh",
+      "description": "Mỗi lần một tệp...",
+      "chooseFile": "Chọn tệp",
+      "supported": "Hỗ trợ: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Thời lượng: {{value}}",
+      "size": "Kích thước: {{value}}",
+      "format": "Định dạng: {{format}}",
+      "estimate": "Ước tính: {{value}}",
+      "outputFolder": "Thư mục đầu ra",
+      "chooseOutput": "Chọn nơi lưu bản ghi của bạn",
+      "formats": "Định dạng",
+      "selectFormatWarning": "Chọn ít nhất một định dạng đầu ra.",
+      "start": "Bắt đầu",
+      "chooseAnotherFile": "Chọn tệp khác"
+    },
+    "job": {
+      "preparing": "Đang chuẩn bị...",
+      "waiting": "Đang chờ",
+      "done": "Hoàn thành",
+      "paused": "Tạm dừng",
+      "progress": "Tiến độ",
+      "stop": "Dừng công việc",
+      "retry": "Thử lại công việc",
+      "openFolder": "Mở thư mục đầu ra",
+      "confirmCancel": "Dừng công việc Studio này ngay bây giờ?",
+      "duration": "Thời lượng: {{value}}",
+      "size": "Kích thước: {{value}}",
+      "estimate": "Ước tính: {{value}}",
+      "currentStep": "Bước hiện tại: {{value}}",
+      "processError": "Không thể xử lý tệp này",
+      "preview": "Xem trước bản ghi",
+      "previewEmpty": "Bản xem trước bản ghi sẽ xuất hiện ở đây.",
+      "outputFiles": "Tệp đầu ra"
+    },
+    "recent": {
+      "title": "Công việc gần đây",
+      "delete": "Xóa công việc"
+    }
   }
 }

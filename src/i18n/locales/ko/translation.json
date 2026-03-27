@@ -15,7 +15,8 @@
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
-    "about": "정보"
+    "about": "정보",
+    "studio": "스튜디오"
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
+  },
+  "studio": {
+    "title": "스튜디오",
+    "subtitle": "오디오 파일을 드롭하고, 출력을 선택하고, 시작하고, 기다리면 깔끔한 트랜스크립트 파일을 받을 수 있습니다.",
+    "selectModelWarning": "스튜디오를 시작하기 전에 음성 인식 모델을 선택하세요.",
+    "common": {
+      "unknown": "알 수 없음",
+      "estimateFallback": "약 몇 분"
+    },
+    "statuses": {
+      "pending": "준비됨",
+      "running": "실행 중",
+      "paused": "일시 중지됨",
+      "done": "완료됨",
+      "error": "실패",
+      "cancelled": "취소됨"
+    },
+    "status": {
+      "model": "모델: {{name}}",
+      "noneSelected": "선택 없음",
+      "import": "내장 오디오 가져오기"
+    },
+    "dropzone": {
+      "title": "오디오 파일 드롭",
+      "description": "한 번에 하나의 파일...",
+      "chooseFile": "파일 선택",
+      "supported": "지원 형식: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "길이: {{value}}",
+      "size": "크기: {{value}}",
+      "format": "형식: {{format}}",
+      "estimate": "예상 시간: {{value}}",
+      "outputFolder": "출력 폴더",
+      "chooseOutput": "트랜스크립트를 저장할 위치 선택",
+      "formats": "형식",
+      "selectFormatWarning": "하나 이상의 출력 형식을 선택하세요.",
+      "start": "시작",
+      "chooseAnotherFile": "다른 파일 선택"
+    },
+    "job": {
+      "preparing": "준비 중...",
+      "waiting": "대기 중",
+      "done": "완료됨",
+      "paused": "일시 중지됨",
+      "progress": "진행률",
+      "stop": "작업 중지",
+      "retry": "작업 재시도",
+      "openFolder": "출력 폴더 열기",
+      "confirmCancel": "이 스튜디오 작업을 지금 중지하시겠습니까?",
+      "duration": "길이: {{value}}",
+      "size": "크기: {{value}}",
+      "estimate": "예상 시간: {{value}}",
+      "currentStep": "현재 단계: {{value}}",
+      "processError": "이 파일을 처리할 수 없습니다",
+      "preview": "트랜스크립트 미리보기",
+      "previewEmpty": "트랜스크립트 미리보기가 여기에 표시됩니다.",
+      "outputFiles": "출력 파일"
+    },
+    "recent": {
+      "title": "최근 작업",
+      "delete": "작업 삭제"
+    }
   }
 }

@@ -15,7 +15,8 @@
     "postProcessing": "Post Process",
     "history": "History",
     "debug": "Debug",
-    "about": "About"
+    "about": "About",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "To get started, choose a transcription model",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Drop an audio file, choose output, start, wait, and get clean transcript files.",
+    "selectModelWarning": "Select a transcription model before starting Studio.",
+    "common": {
+      "unknown": "Unknown",
+      "estimateFallback": "About a few minutes"
+    },
+    "statuses": {
+      "pending": "Ready",
+      "running": "Running",
+      "paused": "Paused",
+      "done": "Done",
+      "error": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "status": {
+      "model": "Model: {{name}}",
+      "noneSelected": "None selected",
+      "import": "Built-in audio import"
+    },
+    "dropzone": {
+      "title": "Drop an audio file",
+      "description": "One file at a time. Studio keeps the flow simple and reliable.",
+      "chooseFile": "Choose File",
+      "supported": "Supported: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Duration: {{value}}",
+      "size": "Size: {{value}}",
+      "format": "Format: {{format}}",
+      "estimate": "Estimate: {{value}}",
+      "outputFolder": "Output folder",
+      "chooseOutput": "Choose where to save your transcript",
+      "formats": "Formats",
+      "selectFormatWarning": "Select at least one output format.",
+      "start": "Start",
+      "chooseAnotherFile": "Choose another file"
+    },
+    "job": {
+      "preparing": "Preparing...",
+      "waiting": "Waiting",
+      "done": "Done",
+      "paused": "Paused",
+      "progress": "Progress",
+      "stop": "Stop job",
+      "retry": "Retry job",
+      "openFolder": "Open output folder",
+      "confirmCancel": "Stop this Studio job now? You can retry it later from the recent jobs list.",
+      "duration": "Duration: {{value}}",
+      "size": "Size: {{value}}",
+      "estimate": "Estimate: {{value}}",
+      "currentStep": "Current step: {{value}}",
+      "processError": "This file could not be processed",
+      "preview": "Transcript preview",
+      "previewEmpty": "Transcript preview will appear here.",
+      "outputFiles": "Output files"
+    },
+    "recent": {
+      "title": "Recent Jobs",
+      "delete": "Delete job"
+    }
   }
 }

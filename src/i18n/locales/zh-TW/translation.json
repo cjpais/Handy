@@ -15,7 +15,8 @@
     "postProcessing": "後處理",
     "history": "歷史紀錄",
     "debug": "偵錯",
-    "about": "關於"
+    "about": "關於",
+    "studio": "錄音室"
   },
   "onboarding": {
     "subtitle": "首先，請選擇一種模型",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "正在轉錄...",
     "processing": "處理中..."
+  },
+  "studio": {
+    "title": "錄音室",
+    "subtitle": "拖放音訊檔案，選擇輸出，開始，等待，然後取得乾淨的轉錄檔案。",
+    "selectModelWarning": "啟動錄音室前請選擇轉錄模型。",
+    "common": {
+      "unknown": "未知",
+      "estimateFallback": "大約幾分鐘"
+    },
+    "statuses": {
+      "pending": "就緒",
+      "running": "執行中",
+      "paused": "已暫停",
+      "done": "已完成",
+      "error": "失敗",
+      "cancelled": "已取消"
+    },
+    "status": {
+      "model": "模型：{{name}}",
+      "noneSelected": "未選擇",
+      "import": "內建音訊匯入"
+    },
+    "dropzone": {
+      "title": "拖放音訊檔案",
+      "description": "一次一個檔案...",
+      "chooseFile": "選擇檔案",
+      "supported": "支援格式：MP3、WAV、M4A、FLAC、OGG"
+    },
+    "setup": {
+      "duration": "時長：{{value}}",
+      "size": "大小：{{value}}",
+      "format": "格式：{{format}}",
+      "estimate": "預計時間：{{value}}",
+      "outputFolder": "輸出資料夾",
+      "chooseOutput": "選擇儲存轉錄的位置",
+      "formats": "格式",
+      "selectFormatWarning": "請至少選擇一種輸出格式。",
+      "start": "開始",
+      "chooseAnotherFile": "選擇其他檔案"
+    },
+    "job": {
+      "preparing": "準備中...",
+      "waiting": "等待中",
+      "done": "已完成",
+      "paused": "已暫停",
+      "progress": "進度",
+      "stop": "停止任務",
+      "retry": "重試任務",
+      "openFolder": "開啟輸出資料夾",
+      "confirmCancel": "現在停止此錄音室任務？",
+      "duration": "時長：{{value}}",
+      "size": "大小：{{value}}",
+      "estimate": "預計時間：{{value}}",
+      "currentStep": "目前步驟：{{value}}",
+      "processError": "無法處理此檔案",
+      "preview": "轉錄預覽",
+      "previewEmpty": "轉錄預覽將在此處顯示。",
+      "outputFiles": "輸出檔案"
+    },
+    "recent": {
+      "title": "最近任務",
+      "delete": "刪除任務"
+    }
   }
 }

@@ -15,7 +15,8 @@
     "postProcessing": "Následné zpracování",
     "history": "Historie",
     "debug": "Ladění",
-    "about": "O aplikaci"
+    "about": "O aplikaci",
+    "studio": "Studio"
   },
   "onboarding": {
     "subtitle": "Pro začátek vyberte model pro přepis",
@@ -602,5 +603,68 @@
   "overlay": {
     "transcribing": "Přepisuji...",
     "processing": "Zpracovávám..."
+  },
+  "studio": {
+    "title": "Studio",
+    "subtitle": "Přetáhněte zvukový soubor, vyberte výstup, spusťte, počkejte a získejte čisté soubory přepisu.",
+    "selectModelWarning": "Před spuštěním Studia vyberte model přepisu.",
+    "common": {
+      "unknown": "Neznámé",
+      "estimateFallback": "Přibližně několik minut"
+    },
+    "statuses": {
+      "pending": "Připraveno",
+      "running": "Probíhá",
+      "paused": "Pozastaveno",
+      "done": "Hotovo",
+      "error": "Selhalo",
+      "cancelled": "Zrušeno"
+    },
+    "status": {
+      "model": "Model: {{name}}",
+      "noneSelected": "Nic nevybráno",
+      "import": "Vestavěný import zvuku"
+    },
+    "dropzone": {
+      "title": "Přetáhněte zvukový soubor",
+      "description": "Vždy jeden soubor...",
+      "chooseFile": "Vybrat soubor",
+      "supported": "Podporované: MP3, WAV, M4A, FLAC, OGG"
+    },
+    "setup": {
+      "duration": "Délka: {{value}}",
+      "size": "Velikost: {{value}}",
+      "format": "Formát: {{format}}",
+      "estimate": "Odhad: {{value}}",
+      "outputFolder": "Výstupní složka",
+      "chooseOutput": "Vyberte, kam uložit přepis",
+      "formats": "Formáty",
+      "selectFormatWarning": "Vyberte alespoň jeden výstupní formát.",
+      "start": "Spustit",
+      "chooseAnotherFile": "Vybrat jiný soubor"
+    },
+    "job": {
+      "preparing": "Příprava...",
+      "waiting": "Čekání",
+      "done": "Hotovo",
+      "paused": "Pozastaveno",
+      "progress": "Průběh",
+      "stop": "Zastavit úlohu",
+      "retry": "Opakovat úlohu",
+      "openFolder": "Otevřít výstupní složku",
+      "confirmCancel": "Zastavit tuto úlohu Studia nyní?",
+      "duration": "Délka: {{value}}",
+      "size": "Velikost: {{value}}",
+      "estimate": "Odhad: {{value}}",
+      "currentStep": "Aktuální krok: {{value}}",
+      "processError": "Tento soubor nelze zpracovat",
+      "preview": "Náhled přepisu",
+      "previewEmpty": "Náhled přepisu se zobrazí zde.",
+      "outputFiles": "Výstupní soubory"
+    },
+    "recent": {
+      "title": "Nedávné úlohy",
+      "delete": "Smazat úlohu"
+    }
   }
 }
