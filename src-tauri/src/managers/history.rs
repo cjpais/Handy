@@ -31,6 +31,12 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
+    M::up(
+        "UPDATE transcription_history
+         SET post_process_requested = 1
+         WHERE post_process_requested = 0
+           AND (post_process_prompt IS NOT NULL OR post_processed_text IS NOT NULL);",
+    ),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -63,6 +69,14 @@ pub struct HistoryEntry {
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
     pub post_process_requested: bool,
+}
+
+impl HistoryEntry {
+    pub fn should_post_process_on_retry(&self) -> bool {
+        self.post_process_requested
+            || self.post_process_prompt.is_some()
+            || self.post_processed_text.is_some()
+    }
 }
 
 pub struct HistoryManager {
@@ -697,6 +711,78 @@ mod tests {
             ],
         )
         .expect("insert history entry");
+    }
+
+    #[test]
+    fn should_post_process_on_retry_infers_legacy_rows() {
+        let entry = HistoryEntry {
+            id: 1,
+            file_name: "handy.wav".to_string(),
+            timestamp: 0,
+            saved: false,
+            title: "Recording".to_string(),
+            transcription_text: "text".to_string(),
+            post_processed_text: Some("processed".to_string()),
+            post_process_prompt: None,
+            post_process_requested: false,
+        };
+
+        assert!(entry.should_post_process_on_retry());
+    }
+
+    #[test]
+    fn migration_backfills_post_process_requested_for_legacy_rows() {
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        conn.execute_batch(
+            "CREATE TABLE transcription_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_name TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                saved BOOLEAN NOT NULL DEFAULT 0,
+                title TEXT NOT NULL,
+                transcription_text TEXT NOT NULL,
+                post_processed_text TEXT,
+                post_process_prompt TEXT,
+                post_process_requested BOOLEAN NOT NULL DEFAULT 0
+            );
+            INSERT INTO transcription_history (
+                file_name,
+                timestamp,
+                saved,
+                title,
+                transcription_text,
+                post_processed_text,
+                post_process_prompt,
+                post_process_requested
+            ) VALUES (
+                'handy.wav',
+                1,
+                0,
+                'Recording 1',
+                'raw',
+                'processed',
+                'prompt',
+                0
+            );",
+        )
+        .expect("seed legacy row");
+        conn.pragma_update(None, "user_version", 4)
+            .expect("set legacy schema version");
+
+        let migrations = Migrations::new(MIGRATIONS.to_vec());
+        migrations
+            .to_latest(&mut conn)
+            .expect("apply history migrations");
+
+        let post_process_requested: bool = conn
+            .query_row(
+                "SELECT post_process_requested FROM transcription_history WHERE id = 1",
+                [],
+                |row| row.get(0),
+            )
+            .expect("fetch backfilled flag");
+
+        assert!(post_process_requested);
     }
 
     #[test]

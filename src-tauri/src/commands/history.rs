@@ -81,6 +81,8 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording has no audio samples".to_string());
     }
 
+    let should_post_process = entry.should_post_process_on_retry();
+
     transcription_manager.initiate_model_load();
 
     let tm = Arc::clone(&transcription_manager);
@@ -93,8 +95,7 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording contains no speech".to_string());
     }
 
-    let processed =
-        process_transcription_output(&app, &transcription, entry.post_process_requested).await;
+    let processed = process_transcription_output(&app, &transcription, should_post_process).await;
     history_manager
         .update_transcription(
             id,

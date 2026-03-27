@@ -71,6 +71,7 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    transcription_lock: Arc<Mutex<()>>,
 }
 
 impl TranscriptionManager {
@@ -85,6 +86,7 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            transcription_lock: Arc::new(Mutex::new(())),
         };
 
         // Start the idle watcher
@@ -172,6 +174,13 @@ impl TranscriptionManager {
     pub fn is_model_loaded(&self) -> bool {
         let engine = self.lock_engine();
         engine.is_some()
+    }
+
+    fn lock_transcription(&self) -> MutexGuard<'_, ()> {
+        self.transcription_lock.lock().unwrap_or_else(|poisoned| {
+            warn!("Transcription lock was poisoned by a previous panic, recovering");
+            poisoned.into_inner()
+        })
     }
 
     /// Atomically check whether a model load is in progress and, if not, mark
@@ -434,6 +443,11 @@ impl TranscriptionManager {
                 "Simulated transcription failure (HANDY_FORCE_TRANSCRIPTION_FAILURE)"
             ));
         }
+
+        // Serialize all engine use so history retries, hotkey transcriptions,
+        // and other callers never race while the loaded model is temporarily
+        // taken out of the engine slot during inference.
+        let _transcription_lock = self.lock_transcription();
 
         // Update last activity timestamp
         self.touch_activity();
