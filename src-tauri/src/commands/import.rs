@@ -588,3 +588,355 @@ pub async fn cancel_import(
     info!("Import {} cancelled by user", import_id);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Cancellation token tests ─────────────────────────────────
+
+    #[test]
+    fn cancellation_token_lifecycle() {
+        let tokens = ImportCancellationTokens::new();
+
+        let id = "test-import-1";
+        let _token = tokens.create_token(id);
+
+        assert!(!tokens.is_cancelled(id), "freshly created token should not be cancelled");
+
+        tokens.cancel(id);
+        assert!(tokens.is_cancelled(id), "token should be cancelled after cancel()");
+
+        tokens.cleanup(id);
+        assert!(!tokens.is_cancelled(id), "cleaned up token should return false");
+    }
+
+    #[test]
+    fn cancellation_tokens_independent() {
+        let tokens = ImportCancellationTokens::new();
+
+        tokens.create_token("a");
+        tokens.create_token("b");
+
+        tokens.cancel("a");
+        assert!(tokens.is_cancelled("a"));
+        assert!(!tokens.is_cancelled("b"), "cancelling 'a' should not affect 'b'");
+    }
+
+    #[test]
+    fn cancellation_nonexistent_id_is_safe() {
+        let tokens = ImportCancellationTokens::new();
+        assert!(!tokens.is_cancelled("does-not-exist"));
+        tokens.cancel("does-not-exist"); // should not panic
+        tokens.cleanup("does-not-exist"); // should not panic
+    }
+
+    // ── Chunking logic tests ─────────────────────────────────────
+
+    #[test]
+    fn merge_and_pad_empty() {
+        let result = merge_and_pad(&[], 100_000);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn merge_and_pad_single_segment() {
+        let segs = vec![SpeechSegment { start: 10_000, end: 20_000 }];
+        let result = merge_and_pad(&segs, 100_000);
+
+        assert_eq!(result.len(), 1);
+        // Padding is 0.3s * 16000 = 4800 samples
+        assert_eq!(result[0].start, 10_000 - 4800);
+        assert_eq!(result[0].end, 20_000 + 4800);
+    }
+
+    #[test]
+    fn merge_and_pad_merges_nearby() {
+        // Two segments 0.5s apart (8000 samples) — should merge (gap < 1s)
+        let segs = vec![
+            SpeechSegment { start: 10_000, end: 20_000 },
+            SpeechSegment { start: 28_000, end: 40_000 },
+        ];
+        let result = merge_and_pad(&segs, 100_000);
+
+        assert_eq!(result.len(), 1, "nearby segments should merge");
+        assert!(result[0].start < 10_000, "should be padded before start");
+        assert!(result[0].end > 40_000, "should be padded after end");
+    }
+
+    #[test]
+    fn merge_and_pad_keeps_distant_segments() {
+        // Two segments 3s apart (48000 samples) — should NOT merge
+        let segs = vec![
+            SpeechSegment { start: 10_000, end: 20_000 },
+            SpeechSegment { start: 68_000, end: 80_000 },
+        ];
+        let result = merge_and_pad(&segs, 100_000);
+
+        assert_eq!(result.len(), 2, "distant segments should stay separate");
+    }
+
+    #[test]
+    fn merge_and_pad_clamps_to_bounds() {
+        // Segment near start — padding should not go below 0
+        let segs = vec![SpeechSegment { start: 100, end: 5000 }];
+        let result = merge_and_pad(&segs, 6000);
+
+        assert_eq!(result[0].start, 0, "start should clamp to 0");
+        assert_eq!(result[0].end, 6000, "end should clamp to total_samples");
+    }
+
+    #[test]
+    fn segments_to_chunks_small_segments() {
+        let segs = vec![
+            SpeechSegment { start: 0, end: 100_000 },    // ~6.25s
+            SpeechSegment { start: 200_000, end: 300_000 }, // ~6.25s
+        ];
+        let chunks = segments_to_chunks(&segs);
+
+        assert_eq!(chunks.len(), 2);
+        assert_eq!(chunks[0], (0, 100_000));
+        assert_eq!(chunks[1], (200_000, 300_000));
+    }
+
+    #[test]
+    fn segments_to_chunks_splits_large_segment() {
+        // 90 seconds of audio = 1_440_000 samples — exceeds 30s max
+        let segs = vec![SpeechSegment { start: 0, end: 1_440_000 }];
+        let chunks = segments_to_chunks(&segs);
+
+        assert!(chunks.len() >= 3, "90s segment should produce at least 3 chunks, got {}", chunks.len());
+
+        // Each chunk should be <= MAX_CHUNK_SAMPLES
+        for (i, (start, end)) in chunks.iter().enumerate() {
+            let len = end - start;
+            assert!(
+                len <= MAX_CHUNK_SAMPLES,
+                "chunk {} has {} samples, exceeds max {}",
+                i, len, MAX_CHUNK_SAMPLES
+            );
+        }
+
+        // Chunks should cover the full range
+        assert_eq!(chunks[0].0, 0, "first chunk should start at 0");
+        assert_eq!(chunks.last().unwrap().1, 1_440_000, "last chunk should end at total");
+
+        // Chunks should overlap (1 second = 16000 samples)
+        for pair in chunks.windows(2) {
+            let (_, end_a) = pair[0];
+            let (start_b, _) = pair[1];
+            assert!(
+                start_b < end_a,
+                "chunks should overlap: chunk ends at {} but next starts at {}",
+                end_a, start_b
+            );
+        }
+    }
+
+    #[test]
+    fn segments_to_chunks_exact_max_size() {
+        // Exactly 30s — should be one chunk, no split
+        let segs = vec![SpeechSegment { start: 0, end: MAX_CHUNK_SAMPLES }];
+        let chunks = segments_to_chunks(&segs);
+        assert_eq!(chunks.len(), 1);
+    }
+
+    // ── Decode and resample tests ────────────────────────────────
+
+    #[test]
+    fn decode_short_wav() {
+        let path = PathBuf::from("test_fixtures/short_10s.wav");
+        if !path.exists() {
+            println!("Skipping: {:?} not found", path);
+            return;
+        }
+        let samples = decode_and_resample(path).expect("should decode short wav");
+        let duration = samples.len() as f64 / SAMPLE_RATE as f64;
+        assert!((duration - 10.0).abs() < 0.5, "expected ~10s, got {:.1}s", duration);
+    }
+
+    #[test]
+    fn decode_tiny_wav() {
+        let path = PathBuf::from("test_fixtures/tiny_1s.wav");
+        if !path.exists() {
+            println!("Skipping: {:?} not found", path);
+            return;
+        }
+        let samples = decode_and_resample(path).expect("should decode tiny wav");
+        let duration = samples.len() as f64 / SAMPLE_RATE as f64;
+        assert!((duration - 1.0).abs() < 0.2, "expected ~1s, got {:.1}s", duration);
+    }
+
+    #[test]
+    fn decode_micro_wav() {
+        let path = PathBuf::from("test_fixtures/micro_100ms.wav");
+        if !path.exists() {
+            println!("Skipping: {:?} not found", path);
+            return;
+        }
+        let samples = decode_and_resample(path).expect("should decode micro wav");
+        assert!(!samples.is_empty(), "even 100ms file should produce samples");
+    }
+
+    #[test]
+    fn decode_stereo_48k_resamples() {
+        let path = PathBuf::from("test_fixtures/stereo_48k_5s.wav");
+        if !path.exists() {
+            println!("Skipping: {:?} not found", path);
+            return;
+        }
+        let samples = decode_and_resample(path).expect("should decode+resample stereo 48kHz");
+        let duration = samples.len() as f64 / SAMPLE_RATE as f64;
+        // 48kHz stereo → 16kHz mono: duration should be preserved
+        assert!((duration - 5.0).abs() < 1.0, "expected ~5s, got {:.1}s", duration);
+    }
+
+    #[test]
+    fn decode_long_wav() {
+        let path = PathBuf::from("test_fixtures/long_90s.wav");
+        if !path.exists() {
+            println!("Skipping: {:?} not found", path);
+            return;
+        }
+        let samples = decode_and_resample(path).expect("should decode 90s wav");
+        let duration = samples.len() as f64 / SAMPLE_RATE as f64;
+        assert!((duration - 90.0).abs() < 1.0, "expected ~90s, got {:.1}s", duration);
+    }
+
+    #[test]
+    fn decode_nonexistent_file_errors() {
+        let result = decode_and_resample(PathBuf::from("/tmp/nonexistent_audio.wav"));
+        assert!(result.is_err());
+    }
+
+    // ── File validation tests ────────────────────────────────────
+
+    #[test]
+    fn validate_nonexistent_file() {
+        let result = validate_audio_file(std::path::Path::new("/tmp/no_such_file.wav"));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("File not found"));
+    }
+
+    #[test]
+    fn validate_empty_file() {
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        let result = validate_audio_file(tmp.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("empty"));
+    }
+
+    #[test]
+    fn validate_non_audio_file() {
+        let mut tmp = tempfile::NamedTempFile::new().unwrap();
+        use std::io::Write;
+        write!(tmp, "this is not audio data, just plain text").unwrap();
+        let result = validate_audio_file(tmp.path());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("valid audio"));
+    }
+
+    #[test]
+    fn validate_real_wav() {
+        let path = std::path::Path::new("test_fixtures/short_10s.wav");
+        if !path.exists() {
+            println!("Skipping: {:?} not found", path);
+            return;
+        }
+        validate_audio_file(path).expect("valid wav should pass validation");
+    }
+
+    // ── Save WAV round-trip test ─────────────────────────────────
+
+    #[test]
+    fn save_and_reload_wav() {
+        let tmp_dir = tempfile::tempdir().unwrap();
+        let path = tmp_dir.path().join("test_roundtrip.wav");
+
+        // Generate samples
+        let samples: Vec<f32> = (0..16000)
+            .map(|i| (i as f32 / 16000.0 * 440.0 * 2.0 * std::f32::consts::PI).sin() * 0.5)
+            .collect();
+
+        // Save
+        save_wav_file(&path, &samples).expect("save should succeed");
+        assert!(path.exists());
+
+        // Reload
+        let loaded = decode_and_resample(path.to_path_buf()).expect("should decode saved wav");
+        let dur = loaded.len() as f64 / SAMPLE_RATE as f64;
+        assert!((dur - 1.0).abs() < 0.2, "round-trip duration should be ~1s, got {:.2}s", dur);
+    }
+
+    // ── History schema tests ─────────────────────────────────────
+
+    #[test]
+    fn history_entry_has_new_fields() {
+        use crate::managers::history::HistoryEntry;
+
+        let entry = HistoryEntry {
+            id: 1,
+            file_name: "test.wav".to_string(),
+            timestamp: 12345,
+            saved: false,
+            title: "Test".to_string(),
+            transcription_text: "hello world".to_string(),
+            post_processed_text: None,
+            post_process_prompt: None,
+            post_process_requested: false,
+            duration: Some(42.5),
+            source: Some("upload".to_string()),
+        };
+
+        assert_eq!(entry.duration, Some(42.5));
+        assert_eq!(entry.source.as_deref(), Some("upload"));
+    }
+
+    // ── End-to-end pipeline test (no transcription) ──────────────
+
+    #[test]
+    fn full_pipeline_decode_chunk_save() {
+        let input_path = PathBuf::from("test_fixtures/long_120s_gaps.wav");
+        if !input_path.exists() {
+            println!("Skipping: {:?} not found", input_path);
+            return;
+        }
+
+        // 1. Decode
+        let samples = decode_and_resample(input_path).expect("decode should succeed");
+        let duration = samples.len() as f64 / SAMPLE_RATE as f64;
+        assert!((duration - 120.0).abs() < 1.0, "expected ~120s, got {:.1}s", duration);
+
+        // 2. Build chunks (without VAD since we don't have AppHandle in tests)
+        //    Test the segment logic directly
+        let segments = vec![
+            SpeechSegment { start: 0, end: 320_000 },       // 0-20s
+            SpeechSegment { start: 330_000, end: 500_000 },  // 20.6-31.25s
+            SpeechSegment { start: 800_000, end: 1_200_000 }, // 50-75s (25s)
+            SpeechSegment { start: 1_500_000, end: 1_920_000 }, // 93.75-120s (26.25s)
+        ];
+        let merged = merge_and_pad(&segments, samples.len());
+        let chunks = segments_to_chunks(&merged);
+
+        // Verify all chunks are within bounds
+        for (i, (start, end)) in chunks.iter().enumerate() {
+            assert!(*end <= samples.len(),
+                "chunk {} end {} exceeds total {}", i, end, samples.len());
+            assert!(*start < *end,
+                "chunk {} has invalid range {}-{}", i, start, end);
+            assert!(*end - *start <= MAX_CHUNK_SAMPLES,
+                "chunk {} too large: {} samples", i, end - start);
+        }
+
+        // 3. Save
+        let tmp_dir = tempfile::tempdir().unwrap();
+        let out_path = tmp_dir.path().join("imported.wav");
+        save_wav_file(&out_path, &samples).expect("save should succeed");
+        
+        let file_size = fs::metadata(&out_path).unwrap().len();
+        assert!(file_size > 100_000, "saved file should be substantial, got {} bytes", file_size);
+
+        println!("Pipeline test passed: {:.1}s audio → {} chunks → {} byte WAV",
+            duration, chunks.len(), file_size);
+    }
+}
