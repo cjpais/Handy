@@ -2,7 +2,7 @@ use crate::audio_toolkit::audio::decode_and_resample;
 use crate::audio_toolkit::save_wav_file;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use log::{debug, info};
+use log::{debug, info, warn};
 use serde::Serialize;
 use specta::Type;
 use std::collections::HashMap;
@@ -18,6 +18,22 @@ use tauri::{AppHandle, Emitter, State};
 
 /// Maximum file size for import (10 GB)
 const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024 * 1024;
+
+/// Sample rate expected by all transcription engines
+const SAMPLE_RATE: usize = 16000;
+
+/// Chunk duration in seconds for splitting long audio.
+/// 30 seconds matches Whisper's native context window and works well with
+/// other engines too (Parakeet, Moonshine, SenseVoice, etc.).
+const CHUNK_DURATION_SECS: usize = 30;
+
+/// Overlap between consecutive chunks in seconds.
+/// Prevents word-boundary artifacts at chunk edges.
+const CHUNK_OVERLAP_SECS: f32 = 1.0;
+
+/// Audio shorter than this (in seconds) is transcribed in one shot.
+/// Audio longer is split into chunks for reliability and progress reporting.
+const CHUNK_THRESHOLD_SECS: f64 = 35.0;
 
 /// Progress event emitted during import
 #[derive(Serialize, Clone, Debug, Type)]
@@ -152,6 +168,147 @@ fn check_cancelled(
     Ok(())
 }
 
+/// Split audio samples into fixed-size chunks with overlap.
+/// Returns a Vec of (start_sample, end_sample) ranges.
+fn make_chunks(total_samples: usize) -> Vec<(usize, usize)> {
+    let chunk_samples = CHUNK_DURATION_SECS * SAMPLE_RATE;
+    let overlap_samples = (CHUNK_OVERLAP_SECS * SAMPLE_RATE as f32) as usize;
+    let step = chunk_samples.saturating_sub(overlap_samples);
+
+    let mut chunks = Vec::new();
+    let mut start = 0usize;
+    while start < total_samples {
+        let end = (start + chunk_samples).min(total_samples);
+        chunks.push((start, end));
+        if end >= total_samples {
+            break;
+        }
+        start += step;
+    }
+    chunks
+}
+
+/// Transcribe audio, using chunked processing for long files.
+///
+/// Short audio (< CHUNK_THRESHOLD_SECS) is transcribed in a single call.
+/// Long audio is split into 30-second overlapping chunks, each transcribed
+/// separately, with progress events and cancellation checks between chunks.
+///
+/// This approach:
+/// - Works with ALL upstream engine types (Whisper, Parakeet, Moonshine, etc.)
+/// - Doesn't modify TranscriptionManager at all
+/// - Provides per-chunk progress for long files
+/// - Supports cancellation between chunks
+async fn transcribe_with_chunking(
+    app_handle: &AppHandle,
+    transcription_state: &Arc<TranscriptionManager>,
+    cancellation_tokens: &ImportCancellationTokens,
+    import_id: &str,
+    samples: &[f32],
+) -> Result<String, String> {
+    let duration_secs = samples.len() as f64 / SAMPLE_RATE as f64;
+
+    // Short audio: single-shot transcription
+    if duration_secs <= CHUNK_THRESHOLD_SECS {
+        info!(
+            "Short audio ({:.1}s), transcribing in one shot",
+            duration_secs
+        );
+        emit_progress(app_handle, "transcribing", 30, "Transcribing...");
+
+        let tm = Arc::clone(transcription_state);
+        let audio = samples.to_vec();
+        return match tauri::async_runtime::spawn_blocking(move || tm.transcribe(audio)).await {
+            Ok(Ok(text)) => Ok(text),
+            Ok(Err(e)) => Err(format!("Transcription failed: {}", e)),
+            Err(e) => Err(format!("Transcription task panicked: {}", e)),
+        };
+    }
+
+    // Long audio: chunked transcription
+    let chunks = make_chunks(samples.len());
+    let total_chunks = chunks.len();
+    info!(
+        "Long audio ({:.1}s), splitting into {} chunks of ~{}s each",
+        duration_secs, total_chunks, CHUNK_DURATION_SECS
+    );
+
+    let mut results: Vec<String> = Vec::new();
+
+    for (i, (start, end)) in chunks.iter().enumerate() {
+        // Check cancellation between chunks
+        check_cancelled(app_handle, cancellation_tokens, import_id)?;
+
+        let chunk_duration = (*end - *start) as f32 / SAMPLE_RATE as f32;
+
+        // Map chunk progress to 20-85% range (leaving room for decode and save stages)
+        let progress_fraction = (i as f32 / total_chunks as f32) * 65.0;
+        let overall_percent = (20.0 + progress_fraction) as u8;
+
+        emit_progress(
+            app_handle,
+            "transcribing",
+            overall_percent.min(85),
+            &format!(
+                "Transcribing chunk {}/{} ({:.0}s)...",
+                i + 1,
+                total_chunks,
+                chunk_duration
+            ),
+        );
+
+        let chunk_audio = samples[*start..*end].to_vec();
+        let tm = Arc::clone(transcription_state);
+
+        let chunk_text =
+            match tauri::async_runtime::spawn_blocking(move || tm.transcribe(chunk_audio)).await {
+                Ok(Ok(text)) => text,
+                Ok(Err(e)) => {
+                    warn!(
+                        "Chunk {}/{} transcription failed: {}, skipping",
+                        i + 1,
+                        total_chunks,
+                        e
+                    );
+                    // Don't abort the whole import for one bad chunk
+                    continue;
+                }
+                Err(e) => {
+                    warn!(
+                        "Chunk {}/{} panicked: {}, skipping",
+                        i + 1,
+                        total_chunks,
+                        e
+                    );
+                    continue;
+                }
+            };
+
+        if !chunk_text.trim().is_empty() {
+            results.push(chunk_text.trim().to_string());
+        }
+
+        info!(
+            "Chunk {}/{} done ({:.0}s of audio)",
+            i + 1,
+            total_chunks,
+            chunk_duration
+        );
+    }
+
+    if results.is_empty() {
+        return Err("No speech detected in any chunk".to_string());
+    }
+
+    let combined = results.join(" ");
+    info!(
+        "Chunked transcription complete: {} chunks, {} chars total",
+        total_chunks,
+        combined.len()
+    );
+    Ok(combined)
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn import_audio_file(
@@ -202,46 +359,34 @@ pub async fn import_audio_file(
     // Check for cancellation after decoding
     check_cancelled(&app_handle, &cancellation_tokens, &import_id)?;
 
-    // Stage 2: Transcribing
-    emit_progress(&app_handle, "transcribing", 20, "Loading model & transcribing...");
+    let duration = samples.len() as f64 / SAMPLE_RATE as f64;
+    debug!("Audio duration: {:.2}s ({} samples)", duration, samples.len());
 
-    // Calculate Duration
-    let duration = samples.len() as f64 / 16000.0;
-    debug!("Audio duration: {:.2}s", duration);
+    // Stage 2: Load model and transcribe (with chunking for long files)
+    emit_progress(
+        &app_handle,
+        "transcribing",
+        15,
+        "Loading transcription model...",
+    );
 
     // Initiate model load (required — transcribe() doesn't auto-load)
     transcription_state.initiate_model_load();
 
-    // Clone samples before moving into blocking thread (we need them later for WAV save)
-    let samples_for_transcribe = samples.clone();
-
-    // Run transcription on a blocking thread (model inference is CPU-bound)
-    let tm = Arc::clone(&transcription_state);
-    let transcription_text = match tauri::async_runtime::spawn_blocking(move || {
-        tm.transcribe(samples_for_transcribe)
-    })
+    let transcription_text = match transcribe_with_chunking(
+        &app_handle,
+        &transcription_state,
+        &cancellation_tokens,
+        &import_id,
+        &samples,
+    )
     .await
     {
-        Ok(Ok(text)) => text,
-        Ok(Err(e)) => {
-            emit_progress(
-                &app_handle,
-                "failed",
-                0,
-                &format!("Transcription failed: {}", e),
-            );
-            cancellation_tokens.cleanup(&import_id);
-            return Err(format!("Transcription failed: {}", e));
-        }
+        Ok(text) => text,
         Err(e) => {
-            emit_progress(
-                &app_handle,
-                "failed",
-                0,
-                &format!("Transcription task panicked: {}", e),
-            );
+            emit_progress(&app_handle, "failed", 0, &e);
             cancellation_tokens.cleanup(&import_id);
-            return Err(format!("Transcription task panicked: {}", e));
+            return Err(e);
         }
     };
 
@@ -281,7 +426,7 @@ pub async fn import_audio_file(
         source_path
     );
 
-    // Save to database using upstream's save_entry with extra fields
+    // Save to database
     if let Err(e) = history_state.save_entry_with_import(
         file_name,
         transcription_text,
@@ -309,7 +454,7 @@ pub async fn import_audio_file(
         "Import completed successfully",
     );
     cancellation_tokens.cleanup(&import_id);
-    info!("Import completed successfully");
+    info!("Import completed successfully ({:.1}s audio)", duration);
     Ok(())
 }
 
