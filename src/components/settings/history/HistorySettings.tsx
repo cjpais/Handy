@@ -206,6 +206,10 @@ export const HistorySettings: React.FC = () => {
               setIsImporting(false);
               setImportProgress(null);
             }, 1500);
+          } else {
+            // Any active progress means an import is running
+            // (could be from drag & drop, not just the button)
+            setIsImporting(true);
           }
         },
       );
