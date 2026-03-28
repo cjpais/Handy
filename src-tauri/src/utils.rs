@@ -29,6 +29,15 @@ pub fn cancel_current_operation(app: &AppHandle) {
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
 
+    // Cancel any pending preview
+    if let Some(ps) = app.try_state::<crate::actions::PreviewState>() {
+        if let Ok(mut guard) = ps.0.lock() {
+            if let Some(tx) = guard.take() {
+                let _ = tx.send(false);
+            }
+        }
+    }
+
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();
     tm.maybe_unload_immediately("cancellation");

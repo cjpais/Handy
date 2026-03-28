@@ -33,6 +33,14 @@ tauri_panel! {
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
 
+const PREVIEW_OVERLAY_WIDTH: f64 = 400.0;
+const PREVIEW_OVERLAY_HEIGHT: f64 = 120.0;
+
+#[derive(Clone, serde::Serialize)]
+pub struct PreviewPayload {
+    pub text: String,
+}
+
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
@@ -195,6 +203,14 @@ fn is_mouse_within_monitor(
 /// converts PhysicalPosition using the scale factor of the monitor the window
 /// is *currently* on, which is wrong when moving cross-monitor.
 fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
+    calculate_overlay_position_with_size(app_handle, OVERLAY_WIDTH, OVERLAY_HEIGHT)
+}
+
+fn calculate_overlay_position_with_size(
+    app_handle: &AppHandle,
+    width: f64,
+    height: f64,
+) -> Option<(f64, f64)> {
     let monitor = get_monitor_with_cursor(app_handle)?;
     let scale = monitor.scale_factor();
     let monitor_x = monitor.position().x as f64 / scale;
@@ -204,11 +220,11 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 
     let settings = settings::get_settings(app_handle);
 
-    let x = monitor_x + (monitor_width - OVERLAY_WIDTH) / 2.0;
+    let x = monitor_x + (monitor_width - width) / 2.0;
     let y = match settings.overlay_position {
         OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
         OverlayPosition::Bottom | OverlayPosition::None => {
-            monitor_y + monitor_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
+            monitor_y + monitor_height - height - OVERLAY_BOTTOM_OFFSET
         }
     };
 
@@ -348,6 +364,42 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "processing");
 }
 
+/// Shows the preview overlay with transcribed text for user confirmation
+pub fn show_preview_overlay(app_handle: &AppHandle, text: &str) {
+    let settings = settings::get_settings(app_handle);
+    if settings.overlay_position == OverlayPosition::None {
+        return;
+    }
+
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        // Resize window for preview
+        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: PREVIEW_OVERLAY_WIDTH,
+            height: PREVIEW_OVERLAY_HEIGHT,
+        }));
+
+        // Reposition centered with new width
+        if let Some((x, y)) =
+            calculate_overlay_position_with_size(app_handle, PREVIEW_OVERLAY_WIDTH, PREVIEW_OVERLAY_HEIGHT)
+        {
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+
+        let _ = overlay_window.show();
+
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&overlay_window);
+
+        let _ = overlay_window.emit(
+            "show-preview",
+            PreviewPayload {
+                text: text.to_string(),
+            },
+        );
+    }
+}
+
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -375,6 +427,11 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(300));
             let _ = window_clone.hide();
+            // Reset size back to default pill dimensions for next use
+            let _ = window_clone.set_size(tauri::Size::Logical(tauri::LogicalSize {
+                width: OVERLAY_WIDTH,
+                height: OVERLAY_HEIGHT,
+            }));
         });
     }
 }

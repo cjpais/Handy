@@ -251,6 +251,10 @@
         "label": "Keep Mic Open Between Transcriptions",
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
       },
+      "previewBeforePaste": {
+        "label": "Preview Before Paste",
+        "description": "Show transcribed text for review before pasting. Confirm to paste, cancel to discard."
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper Acceleration",

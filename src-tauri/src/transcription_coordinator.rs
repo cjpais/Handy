@@ -1,4 +1,4 @@
-use crate::actions::ACTION_MAP;
+use crate::actions::{PreviewState, ACTION_MAP};
 use crate::managers::audio::AudioRecordingManager;
 use log::{debug, error, warn};
 use std::sync::mpsc::{self, Sender};
@@ -76,6 +76,16 @@ impl TranscriptionCoordinator {
                                     && matches!(&stage, Stage::Recording(id) if id == &binding_id)
                                 {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                } else if is_pressed && matches!(stage, Stage::Processing) {
+                                    // Confirm pending preview via push-to-talk press
+                                    if let Some(ps) = app.try_state::<PreviewState>() {
+                                        if let Ok(mut guard) = ps.0.lock() {
+                                            if let Some(tx) = guard.take() {
+                                                debug!("Confirming preview via push-to-talk shortcut");
+                                                let _ = tx.send(true);
+                                            }
+                                        }
+                                    }
                                 }
                             } else if is_pressed {
                                 match &stage {
@@ -84,6 +94,19 @@ impl TranscriptionCoordinator {
                                     }
                                     Stage::Recording(id) if id == &binding_id => {
                                         stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                    }
+                                    Stage::Processing => {
+                                        // If a preview is pending, confirm it
+                                        if let Some(ps) = app.try_state::<PreviewState>() {
+                                            if let Ok(mut guard) = ps.0.lock() {
+                                                if let Some(tx) = guard.take() {
+                                                    debug!("Confirming preview via transcribe shortcut");
+                                                    let _ = tx.send(true);
+                                                    continue;
+                                                }
+                                            }
+                                        }
+                                        debug!("Ignoring press for '{binding_id}': pipeline busy")
                                     }
                                     _ => {
                                         debug!("Ignoring press for '{binding_id}': pipeline busy")

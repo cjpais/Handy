@@ -9,17 +9,19 @@ use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID}
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
-    self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
+    self, show_preview_overlay, show_processing_overlay, show_recording_overlay,
+    show_transcribing_overlay,
 };
 use crate::TranscriptionCoordinator;
 use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
+use tokio::sync::oneshot;
 
 #[derive(Clone, serde::Serialize)]
 struct RecordingErrorEvent {
@@ -37,6 +39,10 @@ impl Drop for FinishGuard {
         }
     }
 }
+
+/// Holds the sender half of a oneshot channel used to signal
+/// whether the user confirmed or cancelled the transcription preview.
+pub struct PreviewState(pub Mutex<Option<oneshot::Sender<bool>>>);
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -571,25 +577,48 @@ impl ShortcutAction for TranscribeAction {
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             } else {
-                                let ah_clone = ah.clone();
-                                let paste_time = Instant::now();
-                                let final_text = processed.final_text;
-                                ah.run_on_main_thread(move || {
-                                    match utils::paste(final_text, ah_clone.clone()) {
-                                        Ok(()) => debug!(
-                                            "Text pasted successfully in {:?}",
-                                            paste_time.elapsed()
-                                        ),
-                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                let settings = get_settings(&ah);
+                                let should_paste = if settings.preview_before_paste {
+                                    // Create oneshot channel for preview confirmation
+                                    let (tx, rx) = oneshot::channel::<bool>();
+                                    if let Some(ps) = ah.try_state::<PreviewState>() {
+                                        *ps.0.lock().unwrap() = Some(tx);
                                     }
-                                    utils::hide_recording_overlay(&ah_clone);
-                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
-                                })
-                                .unwrap_or_else(|e| {
-                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    // Show preview overlay with text
+                                    show_preview_overlay(&ah, &processed.final_text);
+                                    // Await user decision (FinishGuard stays alive)
+                                    rx.await.unwrap_or(false)
+                                } else {
+                                    true
+                                };
+
+                                if should_paste {
+                                    let ah_clone = ah.clone();
+                                    let paste_time = Instant::now();
+                                    let final_text = processed.final_text;
+                                    ah.run_on_main_thread(move || {
+                                        match utils::paste(final_text, ah_clone.clone()) {
+                                            Ok(()) => debug!(
+                                                "Text pasted successfully in {:?}",
+                                                paste_time.elapsed()
+                                            ),
+                                            Err(e) => {
+                                                error!("Failed to paste transcription: {}", e)
+                                            }
+                                        }
+                                        utils::hide_recording_overlay(&ah_clone);
+                                        change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                    })
+                                    .unwrap_or_else(|e| {
+                                        error!("Failed to run paste on main thread: {:?}", e);
+                                        utils::hide_recording_overlay(&ah);
+                                        change_tray_icon(&ah, TrayIconState::Idle);
+                                    });
+                                } else {
+                                    debug!("Preview cancelled by user, discarding transcription");
                                     utils::hide_recording_overlay(&ah);
                                     change_tray_icon(&ah, TrayIconState::Idle);
-                                });
+                                }
                             }
                         }
                         Err(err) => {

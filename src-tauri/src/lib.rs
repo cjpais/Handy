@@ -361,6 +361,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::resume_binding,
             shortcut::change_mute_while_recording_setting,
             shortcut::change_append_trailing_space_setting,
+            shortcut::change_preview_before_paste_setting,
             shortcut::change_lazy_stream_close_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,
@@ -376,6 +377,8 @@ pub fn run(cli_args: CliArgs) {
             trigger_update_check,
             show_main_window_command,
             commands::cancel_operation,
+            commands::confirm_preview,
+            commands::cancel_preview,
             commands::is_portable,
             commands::get_app_dir_path,
             commands::get_app_settings,
@@ -538,6 +541,7 @@ pub fn run(cli_args: CliArgs) {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
+            app.manage(actions::PreviewState(std::sync::Mutex::new(None)));
 
             initialize_core_logic(&app_handle);
 

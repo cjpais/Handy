@@ -5,19 +5,21 @@ import {
   MicrophoneIcon,
   TranscriptionIcon,
   CancelIcon,
+  CheckIcon,
 } from "../components/icons";
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
-type OverlayState = "recording" | "transcribing" | "processing";
+type OverlayState = "recording" | "transcribing" | "processing" | "preview";
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
+  const [previewText, setPreviewText] = useState("");
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   const direction = getLanguageDirection(i18n.language);
 
@@ -31,6 +33,17 @@ const RecordingOverlay: React.FC = () => {
         setState(overlayState);
         setIsVisible(true);
       });
+
+      // Listen for show-preview event from Rust
+      const unlistenPreview = await listen<{ text: string }>(
+        "show-preview",
+        async (event) => {
+          await syncLanguageFromSettings();
+          setPreviewText(event.payload.text);
+          setState("preview");
+          setIsVisible(true);
+        },
+      );
 
       // Listen for hide-overlay event from Rust
       const unlistenHide = await listen("hide-overlay", () => {
@@ -54,6 +67,7 @@ const RecordingOverlay: React.FC = () => {
       // Cleanup function
       return () => {
         unlistenShow();
+        unlistenPreview();
         unlistenHide();
         unlistenLevel();
       };
@@ -65,6 +79,8 @@ const RecordingOverlay: React.FC = () => {
   const getIcon = () => {
     if (state === "recording") {
       return <MicrophoneIcon />;
+    } else if (state === "preview") {
+      return null;
     } else {
       return <TranscriptionIcon />;
     }
@@ -73,46 +89,77 @@ const RecordingOverlay: React.FC = () => {
   return (
     <div
       dir={direction}
-      className={`recording-overlay ${isVisible ? "fade-in" : ""}`}
+      className={`recording-overlay ${isVisible ? "fade-in" : ""} ${state === "preview" ? "preview-mode" : ""}`}
     >
-      <div className="overlay-left">{getIcon()}</div>
+      {state === "preview" ? (
+        <div className="preview-container">
+          <div className="preview-text">{previewText}</div>
+          <div className="preview-actions">
+            <div
+              className="preview-button confirm"
+              onClick={() => {
+                commands.confirmPreview();
+              }}
+            >
+              <CheckIcon width={20} height={20} />
+            </div>
+            <div
+              className="preview-button cancel"
+              onClick={() => {
+                commands.cancelPreview();
+              }}
+            >
+              <CancelIcon width={20} height={20} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="overlay-left">{getIcon()}</div>
 
-      <div className="overlay-middle">
-        {state === "recording" && (
-          <div className="bars-container">
-            {levels.map((v, i) => (
+          <div className="overlay-middle">
+            {state === "recording" && (
+              <div className="bars-container">
+                {levels.map((v, i) => (
+                  <div
+                    key={i}
+                    className="bar"
+                    style={{
+                      height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
+                      transition:
+                        "height 60ms ease-out, opacity 120ms ease-out",
+                      opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            {state === "transcribing" && (
+              <div className="transcribing-text">
+                {t("overlay.transcribing")}
+              </div>
+            )}
+            {state === "processing" && (
+              <div className="transcribing-text">
+                {t("overlay.processing")}
+              </div>
+            )}
+          </div>
+
+          <div className="overlay-right">
+            {state === "recording" && (
               <div
-                key={i}
-                className="bar"
-                style={{
-                  height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
-                  transition: "height 60ms ease-out, opacity 120ms ease-out",
-                  opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
+                className="cancel-button"
+                onClick={() => {
+                  commands.cancelOperation();
                 }}
-              />
-            ))}
+              >
+                <CancelIcon />
+              </div>
+            )}
           </div>
-        )}
-        {state === "transcribing" && (
-          <div className="transcribing-text">{t("overlay.transcribing")}</div>
-        )}
-        {state === "processing" && (
-          <div className="transcribing-text">{t("overlay.processing")}</div>
-        )}
-      </div>
-
-      <div className="overlay-right">
-        {state === "recording" && (
-          <div
-            className="cancel-button"
-            onClick={() => {
-              commands.cancelOperation();
-            }}
-          >
-            <CancelIcon />
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };

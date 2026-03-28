@@ -16,6 +16,34 @@ pub fn cancel_operation(app: AppHandle) {
 
 #[tauri::command]
 #[specta::specta]
+pub fn confirm_preview(app: AppHandle) -> Result<(), String> {
+    use crate::actions::PreviewState;
+    let state = app.state::<PreviewState>();
+    let sender = state.0.lock().map_err(|e| e.to_string())?.take();
+    if let Some(tx) = sender {
+        let _ = tx.send(true);
+        Ok(())
+    } else {
+        Err("No preview pending".to_string())
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_preview(app: AppHandle) -> Result<(), String> {
+    use crate::actions::PreviewState;
+    let state = app.state::<PreviewState>();
+    let sender = state.0.lock().map_err(|e| e.to_string())?.take();
+    if let Some(tx) = sender {
+        let _ = tx.send(false);
+        Ok(())
+    } else {
+        Err("No preview pending".to_string())
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn is_portable() -> bool {
     crate::portable::is_portable()
 }

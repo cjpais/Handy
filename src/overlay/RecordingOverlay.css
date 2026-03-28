@@ -93,3 +93,78 @@
 .cancel-button:active {
   transform: scale(0.95);
 }
+
+/* Preview mode */
+.recording-overlay.preview-mode {
+  width: 400px;
+  height: auto;
+  min-height: 60px;
+  max-height: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  border-radius: 12px;
+  grid-template-columns: none;
+}
+
+.preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+}
+
+.preview-text {
+  color: white;
+  font-size: 13px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.preview-button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    transform 100ms ease-out;
+}
+
+.preview-button:active {
+  transform: scale(0.95);
+}
+
+.preview-button.confirm {
+  background: #4ade8033;
+}
+
+.preview-button.confirm:hover {
+  background: #4ade8066;
+  transform: scale(1.05);
+}
+
+.preview-button.cancel {
+  background: transparent;
+}
+
+.preview-button.cancel:hover {
+  background: #faa2ca33;
+  transform: scale(1.05);
+}
