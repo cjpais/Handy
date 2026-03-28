@@ -117,6 +117,8 @@ const settingUpdaters: {
   custom_words: (value) => commands.updateCustomWords(value as string[]),
   word_correction_threshold: (value) =>
     commands.changeWordCorrectionThresholdSetting(value as number),
+  paste_delay_ms: (value) =>
+    commands.changePasteDelayMsSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>
@@ -149,6 +151,8 @@ const settingUpdaters: {
     ),
   ort_accelerator: (value) =>
     commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
+  whisper_gpu_device: (value) =>
+    commands.changeWhisperGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
 };

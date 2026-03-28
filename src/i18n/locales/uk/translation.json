@@ -259,6 +259,11 @@
         "ort": {
           "title": "Прискорення ONNX",
           "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). DirectML на Windows є експериментальним. Моделі можуть не виконувати транскрипцію."
+        },
+        "gpuDevice": {
+          "title": "Пристрій GPU",
+          "description": "Виберіть GPU для інференсу Whisper. Автоматично обирає виділений GPU.",
+          "auto": "Авто"
         }
       },
       "startHidden": {
@@ -542,7 +547,10 @@
     "downloading": "Завантаження... {{progress}}%",
     "installing": "Встановлення...",
     "preparing": "Підготовка...",
-    "checkForUpdates": "Перевірити оновлення"
+    "checkForUpdates": "Перевірити оновлення",
+    "portableUpdateTitle": "Manual update required",
+    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
+    "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
     "loading": "Завантаження...",

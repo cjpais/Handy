@@ -259,6 +259,11 @@
         "ort": {
           "title": "Akceleracja ONNX",
           "description": "Akceleracja sprzętowa dla modeli ONNX (Parakeet, Canary, Moonshine itp.). DirectML na Windows jest eksperymentalne. Modele mogą nie transkrybować poprawnie."
+        },
+        "gpuDevice": {
+          "title": "Urządzenie GPU",
+          "description": "Wybierz GPU do inferencji Whisper. Auto wybiera dedykowany GPU.",
+          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -542,7 +547,10 @@
     "downloading": "Pobieranie... {{progress}}%",
     "installing": "Instalowanie...",
     "preparing": "Przygotowywanie...",
-    "checkForUpdates": "Sprawdź aktualizacje"
+    "checkForUpdates": "Sprawdź aktualizacje",
+    "portableUpdateTitle": "Manual update required",
+    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
+    "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
     "loading": "Wczytywanie...",

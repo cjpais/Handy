@@ -426,6 +426,8 @@ pub struct AppSettings {
     pub whisper_accelerator: WhisperAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
+    #[serde(default = "default_whisper_gpu_device")]
+    pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
 }
@@ -634,6 +636,10 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
+fn default_whisper_gpu_device() -> i32 {
+    -1 // auto
+}
+
 fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
@@ -796,6 +802,7 @@ pub fn get_default_settings() -> AppSettings {
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
+        whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
     }
 }

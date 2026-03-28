@@ -259,6 +259,11 @@
         "ort": {
           "title": "ONNX 가속",
           "description": "ONNX 모델의 하드웨어 가속 (Parakeet, Canary, Moonshine 등). Windows의 DirectML은 실험적입니다. 모델이 전사에 실패할 수 있습니다."
+        },
+        "gpuDevice": {
+          "title": "GPU 장치",
+          "description": "Whisper 추론에 사용할 GPU를 선택합니다. 자동은 전용 GPU를 선택합니다.",
+          "auto": "자동"
         }
       },
       "startHidden": {
@@ -542,7 +547,10 @@
     "downloading": "다운로드 중... {{progress}}%",
     "installing": "설치 중...",
     "preparing": "준비 중...",
-    "checkForUpdates": "업데이트 확인"
+    "checkForUpdates": "업데이트 확인",
+    "portableUpdateTitle": "Manual update required",
+    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
+    "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
     "loading": "로딩 중...",
