@@ -125,21 +125,23 @@ function App() {
     };
   }, [t]);
 
-  // Prevent browser default file-drop behavior (navigates to file on WebKitGTK)
+  // Prevent browser default file-drop behavior (navigates to file on WebKitGTK).
+  // Only prevent dragover — NOT drop — so Tauri's native handler can still see it.
   useEffect(() => {
-    const preventDefaults = (e: DragEvent) => {
+    const preventDragover = (e: DragEvent) => {
       e.preventDefault();
-      e.stopPropagation();
     };
-    document.addEventListener("dragover", preventDefaults);
-    document.addEventListener("drop", preventDefaults);
+    document.addEventListener("dragover", preventDragover);
     return () => {
-      document.removeEventListener("dragover", preventDefaults);
-      document.removeEventListener("drop", preventDefaults);
+      document.removeEventListener("dragover", preventDragover);
     };
   }, []);
 
-  // Drag and drop support via Tauri window events
+  // Drag and drop support via Tauri window events.
+  // The overlay uses pointer-events:none so it doesn't intercept the native drop.
+  // A safety timeout hides the overlay if no drop/leave event arrives.
+  const dragOverlayTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (onboardingStep !== "done") return;
 
@@ -157,6 +159,21 @@ function App() {
       return SUPPORTED_AUDIO_EXTENSIONS.some((ext) => lower.endsWith(`.${ext}`));
     };
 
+    const showOverlay = () => {
+      setIsDragActive(true);
+      // Safety: auto-hide after 3s in case leave/drop never fires
+      if (dragOverlayTimeout.current) clearTimeout(dragOverlayTimeout.current);
+      dragOverlayTimeout.current = setTimeout(() => setIsDragActive(false), 3000);
+    };
+
+    const hideOverlay = () => {
+      setIsDragActive(false);
+      if (dragOverlayTimeout.current) {
+        clearTimeout(dragOverlayTimeout.current);
+        dragOverlayTimeout.current = null;
+      }
+    };
+
     const setupDragDrop = async () => {
       try {
         const appWindow = getCurrentWindow();
@@ -164,19 +181,23 @@ function App() {
         unlisten = await appWindow.onDragDropEvent(async (event) => {
           if (cancelled) return;
 
-          if (event.payload.type === "enter") {
-            setIsDragActive(true);
+          const type = event.payload.type;
+
+          if (type === "enter" || type === "over") {
+            showOverlay();
             return;
           }
-          if (event.payload.type === "leave" || event.payload.type === "over") {
-            if (event.payload.type === "leave") setIsDragActive(false);
+          if (type === "leave") {
+            hideOverlay();
             return;
           }
-          if (event.payload.type !== "drop") return;
+          if (type !== "drop") return;
+
+          // Always hide overlay on drop
+          hideOverlay();
 
           const paths = event.payload.paths;
-          const now = Date.now();
-          console.debug("[DragDrop] Drop event received, paths:", paths);
+          console.debug("[DragDrop] Drop event, paths:", paths);
 
           // Guard 1: ref-based processing flag
           if (isProcessingDrop.current) {
@@ -185,6 +206,7 @@ function App() {
           }
 
           // Guard 2: timestamp-based debounce
+          const now = Date.now();
           if (now - lastDropTimestamp < DROP_DEBOUNCE_MS) {
             console.debug("[DragDrop] Debounced, skipping");
             return;
@@ -192,7 +214,6 @@ function App() {
 
           isProcessingDrop.current = true;
           lastDropTimestamp = now;
-          setIsDragActive(false);
 
           try {
             if (!paths || paths.length === 0) {
@@ -249,9 +270,8 @@ function App() {
 
     return () => {
       cancelled = true;
-      if (unlisten) {
-        unlisten();
-      }
+      if (unlisten) unlisten();
+      if (dragOverlayTimeout.current) clearTimeout(dragOverlayTimeout.current);
     };
   }, [onboardingStep, t]);
 
@@ -370,10 +390,10 @@ function App() {
       dir={direction}
       className="h-screen flex flex-col select-none cursor-default"
     >
-      {/* Drag & drop overlay */}
+      {/* Drag & drop overlay — pointer-events:none so native drop still works */}
       {isDragActive && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
           style={{
             backgroundColor: "rgba(0, 0, 0, 0.5)",
             backdropFilter: "blur(2px)",
