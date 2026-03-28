@@ -105,11 +105,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const availableSections: Array<{ id: SidebarSection } & SectionConfig> =
     Object.entries(SECTIONS_CONFIG)
-    .filter(([_, config]) => config.enabled(settings))
-    .map(([id, config]) => ({
-      id: id as SidebarSection,
-      ...(config as SectionConfig),
-    }));
+      .filter(([_, config]) => config.enabled(settings))
+      .map(([id, config]) => ({
+        id: id as SidebarSection,
+        ...(config as SectionConfig),
+      }));
 
   return (
     <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
@@ -118,7 +118,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
-          const label = t(section.labelKey, { defaultValue: section.id.toString() });
+          const label = t(section.labelKey, {
+            defaultValue: section.id.toString(),
+          });
 
           return (
             <div
@@ -131,10 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => onSectionChange(section.id)}
             >
               <Icon width={24} height={24} className="shrink-0" />
-              <p
-                className="text-sm font-medium truncate"
-                title={label}
-              >
+              <p className="text-sm font-medium truncate" title={label}>
                 {label}
               </p>
             </div>

@@ -108,7 +108,9 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
       <p className="mt-4 text-xs text-text/50">
         {t("studio.dropzone.supported", {
           defaultValue: "Supported: {{extensions}}",
-          extensions: supportedExtensions.map((extension) => extension.toUpperCase()).join(", "),
+          extensions: supportedExtensions
+            .map((extension) => extension.toUpperCase())
+            .join(", "),
         })}
       </p>
     </div>
