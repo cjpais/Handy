@@ -353,8 +353,12 @@ jobs:
           AZURE_TENANT_ID: ${{ inputs.sign-binaries && secrets.AZURE_TENANT_ID || '' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
-          WHISPER_NO_AVX: ${{ contains(inputs.platform, 'ubuntu') && !contains(inputs.platform, 'arm') && 'ON' || '' }}
-          WHISPER_NO_AVX2: ${{ contains(inputs.platform, 'ubuntu') && !contains(inputs.platform, 'arm') && 'ON' || '' }}
+          # Disable -march=native so the Vulkan backend (and all non-CPU-backend
+          # code) compiles with baseline x86-64 instructions. Without this, older
+          # CPUs (pre-Haswell) crash with SIGILL on FMA/AVX2 instructions even
+          # when only using GPU acceleration. The CPU backend still gets its own
+          # AVX2/FMA flags through GGML_AVX2/GGML_FMA cmake options.
+          GGML_NATIVE: ${{ contains(inputs.platform, 'ubuntu') && !contains(inputs.platform, 'arm') && 'OFF' || '' }}
         with:
           tagName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}

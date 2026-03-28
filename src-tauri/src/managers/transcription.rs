@@ -752,6 +752,16 @@ fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
     use transcribe_rs::whisper_cpp::gpu::list_gpu_devices;
 
     GPU_DEVICES.get_or_init(|| {
+        // ggml's Vulkan backend uses FMA3 instructions internally.
+        // On older CPUs without FMA3 (e.g. Sandy Bridge Xeons) this causes
+        // a SIGILL crash that cannot be caught. Skip enumeration entirely
+        // on those CPUs — GPU-accelerated whisper won't work there anyway.
+        #[cfg(target_arch = "x86_64")]
+        if !std::arch::is_x86_feature_detected!("fma") {
+            warn!("CPU lacks FMA3 support — skipping GPU device enumeration");
+            return Vec::new();
+        }
+
         list_gpu_devices()
             .into_iter()
             .map(|d| GpuDeviceOption {
