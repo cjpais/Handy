@@ -20,11 +20,14 @@ import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
+import { TranscriptionModeSetting } from "../TranscriptionModeSetting";
+import { RealtimeChunkDuration } from "../RealtimeChunkDuration";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
   const experimentalEnabled = getSetting("experimental_enabled") || false;
+  const transcriptionMode = getSetting("transcription_mode") || "standard";
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
@@ -59,6 +62,16 @@ export const AdvancedSettings: React.FC = () => {
 
       {experimentalEnabled && (
         <SettingsGroup title={t("settings.advanced.groups.experimental")}>
+          <TranscriptionModeSetting
+            descriptionMode="tooltip"
+            grouped={true}
+          />
+          {transcriptionMode === "realtime" && (
+            <RealtimeChunkDuration
+              descriptionMode="tooltip"
+              grouped={true}
+            />
+          )}
           <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
           <KeyboardImplementationSelector
             descriptionMode="tooltip"

@@ -9,7 +9,7 @@ use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -71,6 +71,7 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    streaming_sessions: Arc<AtomicUsize>,
 }
 
 impl TranscriptionManager {
@@ -85,6 +86,7 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            streaming_sessions: Arc::new(AtomicUsize::new(0)),
         };
 
         // Start the idle watcher
@@ -109,6 +111,12 @@ impl TranscriptionManager {
                     // maybe_unload_immediately() after each transcription.
                     // Treating it as 0s here would unload the model mid-recording.
                     if timeout == ModelUnloadTimeout::Immediately {
+                        continue;
+                    }
+
+                    // Skip unloading while a streaming session is active
+                    if manager_cloned.streaming_sessions.load(Ordering::Relaxed) > 0 {
+                        manager_cloned.touch_activity();
                         continue;
                     }
 
@@ -235,8 +243,13 @@ impl TranscriptionManager {
         self.last_activity.store(Self::now_ms(), Ordering::Relaxed);
     }
 
-    /// Unloads the model immediately if the setting is enabled and the model is loaded
+    /// Unloads the model immediately if the setting is enabled and the model is loaded.
+    /// Skips unloading when a streaming session is active.
     pub fn maybe_unload_immediately(&self, context: &str) {
+        if self.streaming_sessions.load(Ordering::Relaxed) > 0 {
+            debug!("Skipping immediate unload during active streaming session");
+            return;
+        }
         let settings = get_settings(&self.app_handle);
         if settings.model_unload_timeout == ModelUnloadTimeout::Immediately
             && self.is_model_loaded()
@@ -244,6 +257,104 @@ impl TranscriptionManager {
             info!("Immediately unloading model after {}", context);
             if let Err(e) = self.unload_model() {
                 warn!("Failed to immediately unload model: {}", e);
+            }
+        }
+    }
+
+    /// Mark a streaming session as active. While active, the model will not be
+    /// auto-unloaded between transcription calls.
+    pub fn begin_streaming(&self) {
+        self.streaming_sessions.fetch_add(1, Ordering::Relaxed);
+        debug!(
+            "Streaming session started (active: {})",
+            self.streaming_sessions.load(Ordering::Relaxed)
+        );
+    }
+
+    /// Mark a streaming session as finished. If no sessions remain, normal
+    /// unload behaviour resumes.
+    pub fn end_streaming(&self) {
+        let prev = self.streaming_sessions.fetch_sub(1, Ordering::Relaxed);
+        debug!(
+            "Streaming session ended (active: {})",
+            prev.saturating_sub(1)
+        );
+    }
+
+    /// Execute a closure with exclusive access to the loaded speech model.
+    ///
+    /// The engine is taken out of the mutex before calling `f` and put back
+    /// after, so the mutex is NOT held during the (potentially slow) model call.
+    /// Panics in `f` are caught and the engine is discarded (unloaded).
+    pub fn with_engine<F, R>(&self, f: F) -> Result<R>
+    where
+        F: FnOnce(&mut dyn SpeechModel) -> Result<R>,
+    {
+        // Wait for any in-progress model loading to complete
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
+
+        let mut engine_guard = self.lock_engine();
+        let mut engine = engine_guard.take().ok_or_else(|| {
+            anyhow::anyhow!("No model loaded. Please check your model settings.")
+        })?;
+        drop(engine_guard);
+
+        let mut f = Some(f);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let f = f.take().unwrap();
+            let model_ref: &mut dyn SpeechModel = match &mut engine {
+                LoadedEngine::Whisper(e) => e,
+                LoadedEngine::Parakeet(e) => e,
+                LoadedEngine::Moonshine(e) => e,
+                LoadedEngine::MoonshineStreaming(e) => e,
+                LoadedEngine::SenseVoice(e) => e,
+                LoadedEngine::GigaAM(e) => e,
+                LoadedEngine::Canary(e) => e,
+            };
+            f(model_ref)
+        }));
+
+        match result {
+            Ok(inner) => {
+                let mut engine_guard = self.lock_engine();
+                *engine_guard = Some(engine);
+                self.touch_activity();
+                inner
+            }
+            Err(panic_payload) => {
+                let panic_msg = if let Some(s) = panic_payload.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = panic_payload.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "unknown panic".to_string()
+                };
+                error!("Engine panicked in with_engine: {}", panic_msg);
+
+                {
+                    let mut current_model =
+                        self.current_model_id.lock().unwrap_or_else(|e| e.into_inner());
+                    *current_model = None;
+                }
+                let _ = self.app_handle.emit(
+                    "model-state-changed",
+                    ModelStateEvent {
+                        event_type: "unloaded".to_string(),
+                        model_id: None,
+                        model_name: None,
+                        error: Some(format!("Engine panicked: {}", panic_msg)),
+                    },
+                );
+
+                Err(anyhow::anyhow!(
+                    "Engine panicked: {}. Model has been unloaded.",
+                    panic_msg
+                ))
             }
         }
     }

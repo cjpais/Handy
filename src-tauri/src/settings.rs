@@ -304,6 +304,21 @@ impl Default for OrtAcceleratorSetting {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptionMode {
+    Standard,
+    Realtime,
+    Stream,
+    BatchStream,
+}
+
+impl Default for TranscriptionMode {
+    fn default() -> Self {
+        TranscriptionMode::Standard
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -401,6 +416,10 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default)]
+    pub transcription_mode: TranscriptionMode,
+    #[serde(default = "default_realtime_chunk_duration_secs")]
+    pub realtime_chunk_duration_secs: f32,
 }
 
 fn default_model() -> String {
@@ -611,6 +630,10 @@ fn default_whisper_gpu_device() -> i32 {
     -1 // auto
 }
 
+fn default_realtime_chunk_duration_secs() -> f32 {
+    3.0
+}
+
 fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
@@ -775,6 +798,8 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
+        transcription_mode: TranscriptionMode::default(),
+        realtime_chunk_duration_secs: default_realtime_chunk_duration_secs(),
     }
 }
 

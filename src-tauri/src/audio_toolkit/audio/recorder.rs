@@ -21,6 +21,7 @@ use crate::audio_toolkit::{
 
 enum Cmd {
     Start,
+    StartStreaming(mpsc::Sender<Vec<f32>>),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -200,6 +201,14 @@ impl AudioRecorder {
             tx.send(Cmd::Start)?;
         }
         Ok(())
+    }
+
+    pub fn start_streaming(&self) -> Result<mpsc::Receiver<Vec<f32>>, Box<dyn std::error::Error>> {
+        let (tx, rx) = mpsc::channel();
+        if let Some(cmd_tx) = &self.cmd_tx {
+            cmd_tx.send(Cmd::StartStreaming(tx))?;
+        }
+        Ok(rx)
     }
 
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
@@ -408,6 +417,7 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut chunk_tx: Option<mpsc::Sender<Vec<f32>>> = None;
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -461,7 +471,20 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            if !recording {
+                return;
+            }
+
+            if let Some(tx) = &chunk_tx {
+                // Streaming mode: send raw resampled frames to the streaming session.
+                // VAD + chunking is handled by transcribe-rs in the session.
+                if tx.send(frame.to_vec()).is_err() {
+                    log::warn!("Streaming channel closed");
+                }
+            } else {
+                // Standard mode: use Handy's VAD filter
+                handle_frame(frame, recording, &vad, &mut processed_samples)
+            }
         });
 
         // non-blocking check for a command
@@ -470,6 +493,17 @@ fn run_consumer(
                 Cmd::Start => {
                     stop_flag.store(false, Ordering::Relaxed);
                     processed_samples.clear();
+                    chunk_tx = None;
+                    recording = true;
+                    visualizer.reset();
+                    if let Some(v) = &vad {
+                        v.lock().unwrap().reset();
+                    }
+                }
+                Cmd::StartStreaming(tx) => {
+                    stop_flag.store(false, Ordering::Relaxed);
+                    processed_samples.clear();
+                    chunk_tx = Some(tx);
                     recording = true;
                     visualizer.reset();
                     if let Some(v) = &vad {
@@ -479,6 +513,10 @@ fn run_consumer(
                 Cmd::Stop(reply_tx) => {
                     recording = false;
                     stop_flag.store(true, Ordering::Relaxed);
+
+                    // Drop chunk_tx so the streaming session's worker thread
+                    // exits its chunk_rx.iter() loop.
+                    chunk_tx = None;
 
                     // Drain all remaining audio until the producer confirms end-of-stream.
                     // The cpal callback sees the stop flag, sends EndOfStream, and goes

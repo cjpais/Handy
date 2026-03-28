@@ -826,6 +826,30 @@ pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_transcription_mode_setting(
+    app: AppHandle,
+    mode: settings::TranscriptionMode,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.transcription_mode = mode;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_realtime_chunk_duration_setting(
+    app: AppHandle,
+    duration: f32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.realtime_chunk_duration_secs = duration;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_post_process_base_url_setting(
     app: AppHandle,
     provider_id: String,

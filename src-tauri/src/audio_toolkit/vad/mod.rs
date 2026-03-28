@@ -25,8 +25,6 @@ pub trait VoiceActivityDetector: Send + Sync {
     fn reset(&mut self) {}
 }
 
-mod silero;
-mod smoothed;
+mod adapter;
 
-pub use silero::SileroVad;
-pub use smoothed::SmoothedVad;
+pub use adapter::{SileroVad, SmoothedVad};

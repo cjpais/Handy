@@ -4,7 +4,7 @@ use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::Manager;
 
@@ -395,6 +395,42 @@ impl AudioRecordingManager {
                     };
                     debug!("Recording started for binding {binding_id}");
                     return Ok(());
+                }
+            }
+            Err("Recorder not available".to_string())
+        } else {
+            Err("Already recording".to_string())
+        }
+    }
+
+    pub fn try_start_streaming_recording(
+        &self,
+        binding_id: &str,
+    ) -> Result<mpsc::Receiver<Vec<f32>>, String> {
+        let mut state = self.state.lock().unwrap();
+
+        if let RecordingState::Idle = *state {
+            // Ensure microphone is open in on-demand mode
+            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
+                self.close_generation.fetch_add(1, Ordering::SeqCst);
+                if let Err(e) = self.start_microphone_stream() {
+                    let msg = format!("{e}");
+                    error!("Failed to open microphone stream: {msg}");
+                    return Err(msg);
+                }
+            }
+
+            if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                match rec.start_streaming() {
+                    Ok(rx) => {
+                        *self.is_recording.lock().unwrap() = true;
+                        *state = RecordingState::Recording {
+                            binding_id: binding_id.to_string(),
+                        };
+                        debug!("Streaming recording started for binding {binding_id}");
+                        return Ok(rx);
+                    }
+                    Err(e) => return Err(format!("Failed to start streaming: {e}")),
                 }
             }
             Err("Recorder not available".to_string())

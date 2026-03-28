@@ -176,7 +176,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     print_help();
 
     let silero = SileroVad::new("./resources/models/silero_vad_v4.onnx", 0.5)?;
-    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15);
+    let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
     let recorder = AudioRecorder::new()?.with_vad(Box::new(smoothed_vad));
     let mut state = RecorderState::new(recorder);
 

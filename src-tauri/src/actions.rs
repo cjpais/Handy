@@ -4,8 +4,11 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::managers::streaming::StreamingSession;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, TranscriptionMode, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -16,7 +19,7 @@ use ferrous_opencc::{config::BuiltinConfig, OpenCC};
 use log::{debug, error, warn};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
 use tauri::{AppHandle, Emitter};
@@ -37,6 +40,9 @@ impl Drop for FinishGuard {
         }
     }
 }
+
+/// Active streaming session (if any). Keeps state isolated per recording.
+static STREAMING_SESSION: Lazy<Mutex<Option<StreamingSession>>> = Lazy::new(|| Mutex::new(None));
 
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
@@ -361,6 +367,86 @@ pub(crate) async fn process_transcription_output(
     }
 }
 
+async fn save_wav_and_history(
+    hm: &Arc<HistoryManager>,
+    audio: &[f32],
+    transcription: &str,
+    post_process: bool,
+    post_processed_text: Option<String>,
+    post_process_prompt: Option<String>,
+) {
+    if audio.is_empty() {
+        return;
+    }
+    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+    let wav_path = hm.recordings_dir().join(&file_name);
+    let samples = audio.to_vec();
+    let sample_count = samples.len();
+    let wav_path_for_verify = wav_path.clone();
+
+    let wav_saved = match tauri::async_runtime::spawn_blocking(move || {
+        crate::audio_toolkit::save_wav_file(&wav_path, &samples)
+    })
+    .await
+    {
+        Ok(Ok(())) => crate::audio_toolkit::verify_wav_file(&wav_path_for_verify, sample_count)
+            .map(|_| true)
+            .unwrap_or_else(|e| {
+                error!("WAV verification failed: {}", e);
+                false
+            }),
+        Ok(Err(e)) => {
+            error!("Failed to save WAV: {}", e);
+            false
+        }
+        Err(e) => {
+            error!("WAV save panicked: {}", e);
+            false
+        }
+    };
+
+    if wav_saved {
+        if let Err(err) = hm.save_entry(
+            file_name,
+            transcription.to_string(),
+            post_process,
+            post_processed_text,
+            post_process_prompt,
+        ) {
+            error!("Failed to save history entry: {}", err);
+        }
+    }
+}
+
+fn start_streaming_session(
+    app: &AppHandle,
+    mode: TranscriptionMode,
+    tm: Arc<TranscriptionManager>,
+    chunk_rx: std::sync::mpsc::Receiver<Vec<f32>>,
+    settings: &AppSettings,
+) {
+    let vad_path = app
+        .path()
+        .resolve(
+            "resources/models/silero_vad_v4.onnx",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
+    let session = StreamingSession::start(
+        mode,
+        tm,
+        app.clone(),
+        chunk_rx,
+        vad_path,
+        settings.realtime_chunk_duration_secs,
+    );
+    *STREAMING_SESSION.lock().unwrap() = Some(session);
+    debug!("Streaming session started (mode: {:?})", mode);
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -381,39 +467,78 @@ impl ShortcutAction for TranscribeAction {
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
+        let transcription_mode = settings.transcription_mode;
+        let is_streaming = !matches!(transcription_mode, TranscriptionMode::Standard);
+
         let mut recording_error: Option<String> = None;
+
+        // Start recording — streaming modes use start_streaming, standard uses start
+        if is_streaming {
+            // Clear any previous session
+            *STREAMING_SESSION.lock().unwrap() = None;
+        }
+
         if is_always_on {
             // Always-on mode: Play audio feedback immediately, then apply mute after sound finishes
             debug!("Always-on mode: Playing audio feedback immediately");
             let rm_clone = Arc::clone(&rm);
             let app_clone = app.clone();
-            // The blocking helper exits immediately if audio feedback is disabled,
-            // so we can always reuse this thread to ensure mute happens right after playback.
             std::thread::spawn(move || {
                 play_feedback_sound_blocking(&app_clone, SoundType::Start);
                 rm_clone.apply_mute();
             });
 
-            if let Err(e) = rm.try_start_recording(&binding_id) {
+            if is_streaming {
+                match rm.try_start_streaming_recording(&binding_id) {
+                    Ok(chunk_rx) => {
+                        start_streaming_session(
+                            app,
+                            transcription_mode,
+                            Arc::clone(&app.state::<Arc<TranscriptionManager>>()),
+                            chunk_rx,
+                            &settings,
+                        );
+                    }
+                    Err(e) => {
+                        debug!("Streaming recording failed: {}", e);
+                        recording_error = Some(e);
+                    }
+                }
+            } else if let Err(e) = rm.try_start_recording(&binding_id) {
                 debug!("Recording failed: {}", e);
                 recording_error = Some(e);
             }
         } else {
             // On-demand mode: Start recording first, then play audio feedback, then apply mute
-            // This allows the microphone to be activated before playing the sound
             debug!("On-demand mode: Starting recording first, then audio feedback");
             let recording_start_time = Instant::now();
-            match rm.try_start_recording(&binding_id) {
+
+            let started = if is_streaming {
+                match rm.try_start_streaming_recording(&binding_id) {
+                    Ok(chunk_rx) => {
+                        start_streaming_session(
+                            app,
+                            transcription_mode,
+                            Arc::clone(&app.state::<Arc<TranscriptionManager>>()),
+                            chunk_rx,
+                            &settings,
+                        );
+                        Ok(())
+                    }
+                    Err(e) => Err(e),
+                }
+            } else {
+                rm.try_start_recording(&binding_id)
+            };
+
+            match started {
                 Ok(()) => {
                     debug!("Recording started in {:?}", recording_start_time.elapsed());
-                    // Small delay to ensure microphone stream is active
                     let app_clone = app.clone();
                     let rm_clone = Arc::clone(&rm);
                     std::thread::spawn(move || {
                         std::thread::sleep(std::time::Duration::from_millis(100));
                         debug!("Handling delayed audio feedback/mute sequence");
-                        // Helper handles disabled audio feedback by returning early, so we reuse it
-                        // to keep mute sequencing consistent in every mode.
                         play_feedback_sound_blocking(&app_clone, SoundType::Start);
                         rm_clone.apply_mute();
                     });
@@ -458,7 +583,6 @@ impl ShortcutAction for TranscribeAction {
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
-        // Unregister the cancel shortcut when transcription stops
         shortcut::unregister_cancel_shortcut(app);
 
         let stop_time = Instant::now();
@@ -469,38 +593,97 @@ impl ShortcutAction for TranscribeAction {
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
+        let settings = get_settings(app);
+        let transcription_mode = settings.transcription_mode;
+
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
 
-        // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
-
-        // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
 
-        let binding_id = binding_id.to_string(); // Clone binding_id for the async task
+        let binding_id = binding_id.to_string();
         let post_process = self.post_process;
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
-            debug!(
-                "Starting async transcription task for binding: {}",
-                binding_id
-            );
+            debug!("Starting async transcription task for binding: {}", binding_id);
 
+            // Stop recording — this drops chunk_tx in streaming mode,
+            // causing the streaming worker's channel to close.
             let stop_recording_time = Instant::now();
-            if let Some(samples) = rm.stop_recording(&binding_id) {
-                debug!(
-                    "Recording stopped and samples retrieved in {:?}, sample count: {}",
-                    stop_recording_time.elapsed(),
-                    samples.len()
-                );
+            let samples = rm.stop_recording(&binding_id);
+            debug!("Recording stopped in {:?}", stop_recording_time.elapsed());
 
-                if samples.is_empty() {
-                    debug!("Recording produced no audio samples; skipping persistence");
+            if !matches!(transcription_mode, TranscriptionMode::Standard) {
+                // ── Streaming modes ──
+                let session = STREAMING_SESSION.lock().unwrap().take();
+                if let Some(session) = session {
+                    let result = session.finish();
+                    let transcription = result.combined_text;
+                    debug!("Streaming finished: '{}' ({} audio samples)", transcription, result.audio.len());
+
+                    if transcription.is_empty() {
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        return;
+                    }
+
+                    match transcription_mode {
+                        TranscriptionMode::Stream | TranscriptionMode::Realtime => {
+                            // Text was already pasted live. Just save history + clean up.
+                            save_wav_and_history(&hm, &result.audio, &transcription, false, None, None).await;
+                            utils::hide_recording_overlay(&ah);
+                            change_tray_icon(&ah, TrayIconState::Idle);
+                        }
+                        TranscriptionMode::BatchStream => {
+                            // Run post-processing on combined text, then paste once.
+                            if post_process {
+                                show_processing_overlay(&ah);
+                            }
+                            let processed = process_transcription_output(&ah, &transcription, post_process).await;
+                            save_wav_and_history(
+                                &hm, &result.audio, &transcription, post_process,
+                                processed.post_processed_text.clone(),
+                                processed.post_process_prompt.clone(),
+                            ).await;
+
+                            if processed.final_text.is_empty() {
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                            } else {
+                                let ah_clone = ah.clone();
+                                let final_text = processed.final_text;
+                                ah.run_on_main_thread(move || {
+                                    if let Err(e) = utils::paste(final_text, ah_clone.clone()) {
+                                        error!("Failed to paste transcription: {}", e);
+                                    }
+                                    utils::hide_recording_overlay(&ah_clone);
+                                    change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                }).unwrap_or_else(|e| {
+                                    error!("Failed to run paste on main thread: {:?}", e);
+                                    utils::hide_recording_overlay(&ah);
+                                    change_tray_icon(&ah, TrayIconState::Idle);
+                                });
+                            }
+                        }
+                        TranscriptionMode::Standard => unreachable!(),
+                    }
+                } else {
+                    debug!("No streaming session found");
                     utils::hide_recording_overlay(&ah);
                     change_tray_icon(&ah, TrayIconState::Idle);
-                } else {
+                }
+            } else {
+                // ── Standard mode (unchanged) ──
+                if let Some(samples) = samples {
+                    if samples.is_empty() {
+                        debug!("Recording produced no audio samples");
+                        utils::hide_recording_overlay(&ah);
+                        change_tray_icon(&ah, TrayIconState::Idle);
+                        return;
+                    }
+
                     // Save WAV concurrently with transcription
                     let sample_count = samples.len();
                     let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
@@ -511,55 +694,29 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save
                     let transcription_time = Instant::now();
                     let transcription_result = tm.transcribe(samples);
 
-                    // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
                         Ok(Ok(())) => {
-                            match crate::audio_toolkit::verify_wav_file(
-                                &wav_path_for_verify,
-                                sample_count,
-                            ) {
-                                Ok(()) => true,
-                                Err(e) => {
-                                    error!("WAV verification failed: {}", e);
-                                    false
-                                }
-                            }
+                            crate::audio_toolkit::verify_wav_file(&wav_path_for_verify, sample_count)
+                                .map(|_| true)
+                                .unwrap_or_else(|e| { error!("WAV verification failed: {}", e); false })
                         }
-                        Ok(Err(e)) => {
-                            error!("Failed to save WAV file: {}", e);
-                            false
-                        }
-                        Err(e) => {
-                            error!("WAV save task panicked: {}", e);
-                            false
-                        }
+                        Ok(Err(e)) => { error!("Failed to save WAV: {}", e); false }
+                        Err(e) => { error!("WAV save panicked: {}", e); false }
                     };
 
                     match transcription_result {
                         Ok(transcription) => {
-                            debug!(
-                                "Transcription completed in {:?}: '{}'",
-                                transcription_time.elapsed(),
-                                transcription
-                            );
+                            debug!("Transcription completed in {:?}: '{}'", transcription_time.elapsed(), transcription);
 
-                            if post_process {
-                                show_processing_overlay(&ah);
-                            }
-                            let processed =
-                                process_transcription_output(&ah, &transcription, post_process)
-                                    .await;
+                            if post_process { show_processing_overlay(&ah); }
+                            let processed = process_transcription_output(&ah, &transcription, post_process).await;
 
-                            // Save to history if WAV was saved
                             if wav_saved {
                                 if let Err(err) = hm.save_entry(
-                                    file_name,
-                                    transcription,
-                                    post_process,
+                                    file_name, transcription, post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
@@ -572,20 +729,14 @@ impl ShortcutAction for TranscribeAction {
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             } else {
                                 let ah_clone = ah.clone();
-                                let paste_time = Instant::now();
                                 let final_text = processed.final_text;
                                 ah.run_on_main_thread(move || {
-                                    match utils::paste(final_text, ah_clone.clone()) {
-                                        Ok(()) => debug!(
-                                            "Text pasted successfully in {:?}",
-                                            paste_time.elapsed()
-                                        ),
-                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    if let Err(e) = utils::paste(final_text, ah_clone.clone()) {
+                                        error!("Failed to paste transcription: {}", e);
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
                                     change_tray_icon(&ah_clone, TrayIconState::Idle);
-                                })
-                                .unwrap_or_else(|e| {
+                                }).unwrap_or_else(|e| {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
                                     change_tray_icon(&ah, TrayIconState::Idle);
@@ -593,16 +744,9 @@ impl ShortcutAction for TranscribeAction {
                             }
                         }
                         Err(err) => {
-                            debug!("Global Shortcut Transcription error: {}", err);
-                            // Save entry with empty text so user can retry
+                            debug!("Transcription error: {}", err);
                             if wav_saved {
-                                if let Err(save_err) = hm.save_entry(
-                                    file_name,
-                                    String::new(),
-                                    post_process,
-                                    None,
-                                    None,
-                                ) {
+                                if let Err(save_err) = hm.save_entry(file_name, String::new(), post_process, None, None) {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
@@ -610,18 +754,15 @@ impl ShortcutAction for TranscribeAction {
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
+                } else {
+                    debug!("No samples retrieved from recording stop");
+                    utils::hide_recording_overlay(&ah);
+                    change_tray_icon(&ah, TrayIconState::Idle);
                 }
-            } else {
-                debug!("No samples retrieved from recording stop");
-                utils::hide_recording_overlay(&ah);
-                change_tray_icon(&ah, TrayIconState::Idle);
             }
         });
 
-        debug!(
-            "TranscribeAction::stop completed in {:?}",
-            stop_time.elapsed()
-        );
+        debug!("TranscribeAction::stop completed in {:?}", stop_time.elapsed());
     }
 }
 

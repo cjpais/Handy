@@ -141,6 +141,10 @@ const settingUpdaters: {
   app_language: (value) => commands.changeAppLanguageSetting(value as string),
   experimental_enabled: (value) =>
     commands.changeExperimentalEnabledSetting(value as boolean),
+  transcription_mode: (value) =>
+    commands.changeTranscriptionModeSetting(value as any),
+  realtime_chunk_duration_secs: (value) =>
+    commands.changeRealtimeChunkDurationSetting(value as number),
   lazy_stream_close: (value) =>
     commands.changeLazyStreamCloseSetting(value as boolean),
   show_tray_icon: (value) =>
