@@ -90,7 +90,11 @@ impl StreamingSession {
                                 feed_texts.push(text.clone());
 
                                 if pastes_live {
-                                    paste_on_main_thread(&app_worker, text);
+                                    // Strip trailing punctuation and add a space so
+                                    // the next chunk flows naturally after this one.
+                                    let paste_text =
+                                        format!("{} ", strip_trailing_punctuation(&text));
+                                    paste_on_main_thread(&app_worker, paste_text);
                                 }
                             }
                         }
@@ -201,7 +205,7 @@ fn create_transcriber(
                 .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
             let vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
             let config = VadChunkedConfig {
-                min_chunk_secs: 1.0,
+                min_chunk_secs: 5.0,
                 max_chunk_secs: 30.0,
                 padding_secs: 0.0,
                 smart_split_search_secs: Some(3.0),
@@ -213,6 +217,13 @@ fn create_transcriber(
             unreachable!("Standard mode should not create a streaming session")
         }
     }
+}
+
+/// Strip trailing sentence-ending punctuation from a chunk so it flows
+/// naturally into the next chunk when pasted live.
+fn strip_trailing_punctuation(text: &str) -> &str {
+    text.trim_end_matches(|c: char| matches!(c, '.' | ',' | ';' | '!' | '?' | '…'))
+        .trim_end()
 }
 
 fn paste_on_main_thread(app: &AppHandle, text: String) {
