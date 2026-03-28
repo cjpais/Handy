@@ -299,9 +299,9 @@ impl TranscriptionManager {
         }
 
         let mut engine_guard = self.lock_engine();
-        let mut engine = engine_guard.take().ok_or_else(|| {
-            anyhow::anyhow!("No model loaded. Please check your model settings.")
-        })?;
+        let mut engine = engine_guard
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("No model loaded. Please check your model settings."))?;
         drop(engine_guard);
 
         let mut f = Some(f);
@@ -337,8 +337,10 @@ impl TranscriptionManager {
                 error!("Engine panicked in with_engine: {}", panic_msg);
 
                 {
-                    let mut current_model =
-                        self.current_model_id.lock().unwrap_or_else(|e| e.into_inner());
+                    let mut current_model = self
+                        .current_model_id
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner());
                     *current_model = None;
                 }
                 let _ = self.app_handle.emit(

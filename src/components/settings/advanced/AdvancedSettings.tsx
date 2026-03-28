@@ -62,15 +62,9 @@ export const AdvancedSettings: React.FC = () => {
 
       {experimentalEnabled && (
         <SettingsGroup title={t("settings.advanced.groups.experimental")}>
-          <TranscriptionModeSetting
-            descriptionMode="tooltip"
-            grouped={true}
-          />
+          <TranscriptionModeSetting descriptionMode="tooltip" grouped={true} />
           {transcriptionMode === "realtime" && (
-            <RealtimeChunkDuration
-              descriptionMode="tooltip"
-              grouped={true}
-            />
+            <RealtimeChunkDuration descriptionMode="tooltip" grouped={true} />
           )}
           <PostProcessingToggle descriptionMode="tooltip" grouped={true} />
           <KeyboardImplementationSelector

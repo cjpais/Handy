@@ -5,8 +5,8 @@ use crate::managers::{
 };
 use log::debug;
 use std::sync::Arc;
-use tauri::{AppHandle, State};
 use tauri::Manager;
+use tauri::{AppHandle, State};
 use transcribe_rs::transcriber::{Transcriber, VadChunked, VadChunkedConfig};
 use transcribe_rs::vad::SmoothedVad;
 use transcribe_rs::TranscribeOptions;

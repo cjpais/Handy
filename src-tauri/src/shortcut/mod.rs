@@ -838,10 +838,7 @@ pub fn change_transcription_mode_setting(
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_realtime_chunk_duration_setting(
-    app: AppHandle,
-    duration: f32,
-) -> Result<(), String> {
+pub fn change_realtime_chunk_duration_setting(app: AppHandle, duration: f32) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.realtime_chunk_duration_secs = duration;
     settings::write_settings(&app, settings);

@@ -51,11 +51,8 @@ impl StreamingSession {
         tm.begin_streaming();
 
         let worker_handle = thread::spawn(move || {
-            let transcriber_result = create_transcriber(
-                mode,
-                &vad_model_path,
-                realtime_chunk_duration_secs,
-            );
+            let transcriber_result =
+                create_transcriber(mode, &vad_model_path, realtime_chunk_duration_secs);
 
             let mut transcriber = match transcriber_result {
                 Ok(t) => t,

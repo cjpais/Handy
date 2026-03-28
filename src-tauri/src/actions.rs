@@ -607,7 +607,10 @@ impl ShortcutAction for TranscribeAction {
 
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
-            debug!("Starting async transcription task for binding: {}", binding_id);
+            debug!(
+                "Starting async transcription task for binding: {}",
+                binding_id
+            );
 
             // Stop recording — this drops chunk_tx in streaming mode,
             // causing the streaming worker's channel to close.
@@ -621,7 +624,11 @@ impl ShortcutAction for TranscribeAction {
                 if let Some(session) = session {
                     let result = session.finish();
                     let transcription = result.combined_text;
-                    debug!("Streaming finished: '{}' ({} audio samples)", transcription, result.audio.len());
+                    debug!(
+                        "Streaming finished: '{}' ({} audio samples)",
+                        transcription,
+                        result.audio.len()
+                    );
 
                     if transcription.is_empty() {
                         utils::hide_recording_overlay(&ah);
@@ -632,7 +639,15 @@ impl ShortcutAction for TranscribeAction {
                     match transcription_mode {
                         TranscriptionMode::Stream | TranscriptionMode::Realtime => {
                             // Text was already pasted live. Just save history + clean up.
-                            save_wav_and_history(&hm, &result.audio, &transcription, false, None, None).await;
+                            save_wav_and_history(
+                                &hm,
+                                &result.audio,
+                                &transcription,
+                                false,
+                                None,
+                                None,
+                            )
+                            .await;
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
@@ -641,12 +656,18 @@ impl ShortcutAction for TranscribeAction {
                             if post_process {
                                 show_processing_overlay(&ah);
                             }
-                            let processed = process_transcription_output(&ah, &transcription, post_process).await;
+                            let processed =
+                                process_transcription_output(&ah, &transcription, post_process)
+                                    .await;
                             save_wav_and_history(
-                                &hm, &result.audio, &transcription, post_process,
+                                &hm,
+                                &result.audio,
+                                &transcription,
+                                post_process,
                                 processed.post_processed_text.clone(),
                                 processed.post_process_prompt.clone(),
-                            ).await;
+                            )
+                            .await;
 
                             if processed.final_text.is_empty() {
                                 utils::hide_recording_overlay(&ah);
@@ -660,7 +681,8 @@ impl ShortcutAction for TranscribeAction {
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
                                     change_tray_icon(&ah_clone, TrayIconState::Idle);
-                                }).unwrap_or_else(|e| {
+                                })
+                                .unwrap_or_else(|e| {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
                                     change_tray_icon(&ah, TrayIconState::Idle);
@@ -698,25 +720,45 @@ impl ShortcutAction for TranscribeAction {
                     let transcription_result = tm.transcribe(samples);
 
                     let wav_saved = match wav_handle.await {
-                        Ok(Ok(())) => {
-                            crate::audio_toolkit::verify_wav_file(&wav_path_for_verify, sample_count)
-                                .map(|_| true)
-                                .unwrap_or_else(|e| { error!("WAV verification failed: {}", e); false })
+                        Ok(Ok(())) => crate::audio_toolkit::verify_wav_file(
+                            &wav_path_for_verify,
+                            sample_count,
+                        )
+                        .map(|_| true)
+                        .unwrap_or_else(|e| {
+                            error!("WAV verification failed: {}", e);
+                            false
+                        }),
+                        Ok(Err(e)) => {
+                            error!("Failed to save WAV: {}", e);
+                            false
                         }
-                        Ok(Err(e)) => { error!("Failed to save WAV: {}", e); false }
-                        Err(e) => { error!("WAV save panicked: {}", e); false }
+                        Err(e) => {
+                            error!("WAV save panicked: {}", e);
+                            false
+                        }
                     };
 
                     match transcription_result {
                         Ok(transcription) => {
-                            debug!("Transcription completed in {:?}: '{}'", transcription_time.elapsed(), transcription);
+                            debug!(
+                                "Transcription completed in {:?}: '{}'",
+                                transcription_time.elapsed(),
+                                transcription
+                            );
 
-                            if post_process { show_processing_overlay(&ah); }
-                            let processed = process_transcription_output(&ah, &transcription, post_process).await;
+                            if post_process {
+                                show_processing_overlay(&ah);
+                            }
+                            let processed =
+                                process_transcription_output(&ah, &transcription, post_process)
+                                    .await;
 
                             if wav_saved {
                                 if let Err(err) = hm.save_entry(
-                                    file_name, transcription, post_process,
+                                    file_name,
+                                    transcription,
+                                    post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
@@ -736,7 +778,8 @@ impl ShortcutAction for TranscribeAction {
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
                                     change_tray_icon(&ah_clone, TrayIconState::Idle);
-                                }).unwrap_or_else(|e| {
+                                })
+                                .unwrap_or_else(|e| {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
                                     change_tray_icon(&ah, TrayIconState::Idle);
@@ -746,7 +789,13 @@ impl ShortcutAction for TranscribeAction {
                         Err(err) => {
                             debug!("Transcription error: {}", err);
                             if wav_saved {
-                                if let Err(save_err) = hm.save_entry(file_name, String::new(), post_process, None, None) {
+                                if let Err(save_err) = hm.save_entry(
+                                    file_name,
+                                    String::new(),
+                                    post_process,
+                                    None,
+                                    None,
+                                ) {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
@@ -762,7 +811,10 @@ impl ShortcutAction for TranscribeAction {
             }
         });
 
-        debug!("TranscribeAction::stop completed in {:?}", stop_time.elapsed());
+        debug!(
+            "TranscribeAction::stop completed in {:?}",
+            stop_time.elapsed()
+        );
     }
 }
 

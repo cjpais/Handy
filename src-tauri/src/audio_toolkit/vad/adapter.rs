@@ -23,7 +23,10 @@ unsafe impl Sync for SileroVad {}
 
 impl VoiceActivityDetector for SileroVad {
     fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
-        let speech = self.0.is_speech(frame).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let speech = self
+            .0
+            .is_speech(frame)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
         if speech {
             Ok(VadFrame::Speech(frame))
         } else {
@@ -69,7 +72,10 @@ impl SmoothedVad {
 
 impl VoiceActivityDetector for SmoothedVad {
     fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
-        let speech = self.inner.is_speech(frame).map_err(|e| anyhow::anyhow!("{e}"))?;
+        let speech = self
+            .inner
+            .is_speech(frame)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         if speech {
             let prefill = self.inner.drain_prefill();
