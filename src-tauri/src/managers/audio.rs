@@ -155,6 +155,46 @@ pub struct AudioRecordingManager {
     close_generation: Arc<AtomicU64>,
 }
 
+fn select_microphone_name(
+    is_clamshell: bool,
+    clamshell_microphone: Option<&str>,
+    multi_microphone_enabled: bool,
+    prioritized_microphones: &[String],
+    selected_microphone: Option<&str>,
+    available_device_names: &[String],
+) -> Option<String> {
+    if is_clamshell {
+        if let Some(name) = clamshell_microphone {
+            return if available_device_names.iter().any(|d| d == name) {
+                Some(name.to_string())
+            } else {
+                None
+            };
+        }
+    }
+
+    if multi_microphone_enabled && !prioritized_microphones.is_empty() {
+        let available_set: std::collections::HashSet<&str> =
+            available_device_names.iter().map(|s| s.as_str()).collect();
+
+        if let Some(name) = prioritized_microphones
+            .iter()
+            .find(|name| available_set.contains(name.as_str()))
+        {
+            return Some(name.clone());
+        }
+
+        debug!("No prioritized microphone available, falling back to selected_microphone");
+        return selected_microphone
+            .filter(|name| available_set.contains(name))
+            .map(|s| s.to_string());
+    }
+
+    selected_microphone
+        .filter(|name| available_device_names.iter().any(|d| d == name))
+        .map(|s| s.to_string())
+}
+
 impl AudioRecordingManager {
     /* ---------- construction ------------------------------------------------ */
 
@@ -189,30 +229,31 @@ impl AudioRecordingManager {
     /* ---------- helper methods --------------------------------------------- */
 
     fn get_effective_microphone_device(&self, settings: &AppSettings) -> Option<cpal::Device> {
-        // Check if we're in clamshell mode and have a clamshell microphone configured
-        let use_clamshell_mic = if let Ok(is_clamshell) = clamshell::is_clamshell() {
-            is_clamshell && settings.clamshell_microphone.is_some()
-        } else {
-            false
-        };
+        let is_clamshell = clamshell::is_clamshell().unwrap_or(false);
 
-        let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref().unwrap()
-        } else {
-            settings.selected_microphone.as_ref()?
-        };
-
-        // Find the device by name
-        match list_input_devices() {
-            Ok(devices) => devices
-                .into_iter()
-                .find(|d| d.name == *device_name)
-                .map(|d| d.device),
+        let devices = match list_input_devices() {
+            Ok(d) => d,
             Err(e) => {
                 debug!("Failed to list devices, using default: {}", e);
-                None
+                return None;
             }
-        }
+        };
+
+        let available_names: Vec<String> = devices.iter().map(|d| d.name.clone()).collect();
+
+        let selected = select_microphone_name(
+            is_clamshell,
+            settings.clamshell_microphone.as_deref(),
+            settings.multi_microphone_enabled,
+            &settings.prioritized_microphones,
+            settings.selected_microphone.as_deref(),
+            &available_names,
+        )?;
+
+        devices
+            .into_iter()
+            .find(|d| d.name == selected)
+            .map(|d| d.device)
     }
 
     fn schedule_lazy_close(&self) {
@@ -500,6 +541,114 @@ impl AudioRecordingManager {
                     self.stop_microphone_stream();
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn available(names: &[&str]) -> Vec<String> {
+        names.iter().map(|s| s.to_string()).collect()
+    }
+
+    fn prioritized(names: &[&str]) -> Vec<String> {
+        names.iter().map(|s| s.to_string()).collect()
+    }
+
+    mod select_microphone_name_tests {
+        use super::*;
+
+        #[test]
+        fn first_priority_unavailable_picks_second() {
+            let result = select_microphone_name(
+                false,
+                None,
+                true,
+                &prioritized(&["Mic A", "Mic B"]),
+                Some("Mic C"),
+                &available(&["Mic B", "Mic C"]),
+            );
+            assert_eq!(result, Some("Mic B".to_string()));
+        }
+
+        #[test]
+        fn no_priority_available_falls_back_to_selected() {
+            let result = select_microphone_name(
+                false,
+                None,
+                true,
+                &prioritized(&["Mic A"]),
+                Some("Mic C"),
+                &available(&["Mic B", "Mic C"]),
+            );
+            assert_eq!(result, Some("Mic C".to_string()));
+        }
+
+        #[test]
+        fn feature_disabled_uses_selected_microphone() {
+            let result = select_microphone_name(
+                false,
+                None,
+                false,
+                &prioritized(&["Mic A", "Mic B"]),
+                Some("Mic X"),
+                &available(&["Mic A", "Mic B", "Mic X"]),
+            );
+            assert_eq!(result, Some("Mic X".to_string()));
+        }
+
+        #[test]
+        fn clamshell_mode_overrides_everything() {
+            let result = select_microphone_name(
+                true,
+                Some("External"),
+                true,
+                &prioritized(&["Mic A"]),
+                Some("Mic B"),
+                &available(&["External", "Mic A", "Mic B"]),
+            );
+            assert_eq!(result, Some("External".to_string()));
+        }
+
+        #[test]
+        fn clamshell_device_unavailable_returns_none() {
+            let result = select_microphone_name(
+                true,
+                Some("External"),
+                true,
+                &prioritized(&["Mic A"]),
+                Some("Mic B"),
+                &available(&["Mic A", "Mic B"]),
+            );
+            assert_eq!(result, None);
+        }
+
+        #[test]
+        fn no_selected_microphone_returns_none() {
+            let result = select_microphone_name(
+                false,
+                None,
+                false,
+                &[],
+                None,
+                &available(&["Mic A"]),
+            );
+            assert_eq!(result, None);
+        }
+
+        #[test]
+        fn selected_microphone_not_available_returns_none() {
+            let result = select_microphone_name(
+                false,
+                None,
+                false,
+                &[],
+                Some("Mic X"),
+                &available(&["Mic A", "Mic B"]),
+            );
+            assert_eq!(result, None);
         }
     }
 }

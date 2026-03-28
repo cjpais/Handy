@@ -227,6 +227,24 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn set_prioritized_microphones(app: AppHandle, devices: Vec<String>) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    let mut seen = std::collections::HashSet::new();
+    settings.prioritized_microphones = devices
+        .into_iter()
+        .filter(|d| !d.trim().is_empty() && seen.insert(d.clone()))
+        .collect();
+    write_settings(&app, settings);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.update_selected_device()
+        .map_err(|e| format!("Failed to update selected device: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn get_available_output_devices() -> Result<Vec<AudioDevice>, String> {
     let devices =
         list_output_devices().map_err(|e| format!("Failed to list output devices: {}", e))?;

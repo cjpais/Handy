@@ -217,7 +217,8 @@
         "title": "Microphone",
         "description": "Select your preferred microphone device",
         "placeholder": "Select microphone...",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "multiMicEnabled": "Managed by Multiple Microphones in Advanced settings."
       },
       "audioFeedback": {
         "label": "Audio Feedback",
@@ -232,12 +233,27 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "multipleMicrophones": {
+        "label": "Multiple Microphones",
+        "description": "Set up a prioritized list of microphones. Devices are tried in order — if the first is unavailable, the next one will be used.",
+        "selectedTitle": "Selected Devices",
+        "empty": "No devices selected. Add devices from the list below.",
+        "active": "Active",
+        "availableTitle": "Available Devices",
+        "noAvailable": "No additional devices detected.",
+        "add": "Add device",
+        "remove": "Remove device",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "refresh": "Refresh device list"
       }
     },
     "advanced": {
       "title": "Advanced",
       "groups": {
         "app": "App",
+        "input": "Input",
         "output": "Output",
         "transcription": "Transcription",
         "history": "History",

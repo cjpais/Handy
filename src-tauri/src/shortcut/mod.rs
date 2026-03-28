@@ -826,6 +826,26 @@ pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_multi_microphone_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    use crate::managers::audio::AudioRecordingManager;
+    use std::sync::Arc;
+
+    let mut settings = settings::get_settings(&app);
+    settings.multi_microphone_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.update_selected_device()
+        .map_err(|e| format!("Failed to update selected device: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_post_process_base_url_setting(
     app: AppHandle,
     provider_id: String,

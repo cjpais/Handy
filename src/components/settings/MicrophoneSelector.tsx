@@ -23,6 +23,8 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
       refreshAudioDevices,
     } = useSettings();
 
+    const multiMicEnabled = getSetting("multi_microphone_enabled") ?? false;
+
     const selectedMicrophone =
       getSetting("selected_microphone") === "default"
         ? "Default"
@@ -41,12 +43,17 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
       label: device.name,
     }));
 
+    const description = multiMicEnabled
+      ? t("settings.sound.microphone.multiMicEnabled")
+      : t("settings.sound.microphone.description");
+
     return (
       <SettingContainer
         title={t("settings.sound.microphone.title")}
-        description={t("settings.sound.microphone.description")}
-        descriptionMode={descriptionMode}
+        description={description}
+        descriptionMode={multiMicEnabled ? "inline" : descriptionMode}
         grouped={grouped}
+        disabled={multiMicEnabled}
       >
         <div className="flex items-center space-x-1">
           <Dropdown
@@ -59,6 +66,7 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
                 : t("settings.sound.microphone.placeholder")
             }
             disabled={
+              multiMicEnabled ||
               isUpdating("selected_microphone") ||
               isLoading ||
               audioDevices.length === 0
@@ -67,7 +75,11 @@ export const MicrophoneSelector: React.FC<MicrophoneSelectorProps> = React.memo(
           />
           <ResetButton
             onClick={handleReset}
-            disabled={isUpdating("selected_microphone") || isLoading}
+            disabled={
+              multiMicEnabled ||
+              isUpdating("selected_microphone") ||
+              isLoading
+            }
           />
         </div>
       </SettingContainer>

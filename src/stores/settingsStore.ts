@@ -95,6 +95,10 @@ const settingUpdaters: {
         ? "default"
         : (value as string),
     ),
+  multi_microphone_enabled: (value) =>
+    commands.changeMultiMicrophoneEnabledSetting(value as boolean),
+  prioritized_microphones: (value) =>
+    commands.setPrioritizedMicrophones(value as string[]),
   clamshell_microphone: (value) =>
     commands.setClamshellMicrophone(
       (value as string) === "Default" ? "default" : (value as string),

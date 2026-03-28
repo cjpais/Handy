@@ -232,6 +232,20 @@
       "volume": {
         "title": "Hlasitost",
         "description": "Upravte hlasitost zvukové odezvy"
+      },
+      "multipleMicrophones": {
+        "label": "Multiple Microphones",
+        "description": "Set up a prioritized list of microphones. Devices are tried in order — if the first is unavailable, the next one will be used.",
+        "selectedTitle": "Selected Devices",
+        "empty": "No devices selected. Add devices from the list below.",
+        "active": "Active",
+        "availableTitle": "Available Devices",
+        "noAvailable": "No additional devices detected.",
+        "add": "Add device",
+        "remove": "Remove device",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "refresh": "Refresh device list"
       }
     },
     "advanced": {
