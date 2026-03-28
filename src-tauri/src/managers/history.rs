@@ -31,8 +31,12 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
-    M::up("ALTER TABLE transcription_history ADD COLUMN duration REAL;"),
-    M::up("ALTER TABLE transcription_history ADD COLUMN source TEXT DEFAULT 'recording';"),
+    // Migrations 5 & 6 are no-ops: the actual columns are added by ensure_columns()
+    // after migrations run. This handles cross-fork migration mismatches where
+    // the old fork (tauri-plugin-sql) already added these columns with different
+    // migration version numbers.
+    M::up("SELECT 1; -- duration column placeholder"),
+    M::up("SELECT 1; -- source column placeholder"),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -134,6 +138,47 @@ impl HistoryManager {
             );
         } else {
             debug!("Database already at latest version {}", version_after);
+        }
+
+        // Ensure all expected columns exist. This handles cross-fork migration
+        // mismatches (e.g., old fork added duration/source via tauri-plugin-sql
+        // with different version numbers, or upstream didn't have those columns).
+        self.ensure_columns(&conn)?;
+
+        Ok(())
+    }
+
+    /// Idempotently add any columns that might be missing due to migration
+    /// version mismatches between different forks of the codebase.
+    fn ensure_columns(&self, conn: &Connection) -> Result<()> {
+        let columns: Vec<String> = conn
+            .prepare("PRAGMA table_info(transcription_history)")?
+            .query_map([], |row| row.get::<_, String>(1))?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        let expected: &[(&str, &str)] = &[
+            ("post_processed_text", "TEXT"),
+            ("post_process_prompt", "TEXT"),
+            (
+                "post_process_requested",
+                "BOOLEAN NOT NULL DEFAULT 0",
+            ),
+            ("duration", "REAL"),
+            ("source", "TEXT DEFAULT 'recording'"),
+        ];
+
+        for (col_name, col_def) in expected {
+            if !columns.contains(&col_name.to_string()) {
+                info!("Adding missing column: {}", col_name);
+                conn.execute(
+                    &format!(
+                        "ALTER TABLE transcription_history ADD COLUMN {} {}",
+                        col_name, col_def
+                    ),
+                    [],
+                )?;
+            }
         }
 
         Ok(())
