@@ -533,6 +533,22 @@
           "details": "Handy používá Whisper.cpp pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Režim přepisu",
+        "description": "Určuje, jak se audio dělí a přepisuje. Standardní přepisuje veškeré audio najednou. Reálný čas používá úseky s pevnou délkou. Stream přepisuje na hranicích vět. Dávkový stream shromažďuje úseky pro následné zpracování.",
+        "options": {
+          "standard": "Standardní",
+          "realtime": "Reálný čas",
+          "stream": "Stream",
+          "batchStream": "Dávkový stream"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Délka úseku v reálném čase",
+        "description": "Délka každého zvukového úseku v režimu reálného času. Kratší hodnoty poskytují rychlejší odezvu, ale mohou rozdělit větu uprostřed."
+      }
     }
   },
   "footer": {

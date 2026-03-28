@@ -533,6 +533,22 @@
           "details": "Handy utilise Whisper.cpp pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Mode de transcription",
+        "description": "Contrôle la façon dont l'audio est découpé et transcrit. Standard transcrit tout l'audio d'un coup. Temps réel utilise des segments de durée fixe. Flux transcrit aux limites des phrases. Flux par lots accumule les segments pour le post-traitement.",
+        "options": {
+          "standard": "Standard",
+          "realtime": "Temps réel",
+          "stream": "Flux",
+          "batchStream": "Flux par lots"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Durée des segments en temps réel",
+        "description": "Durée de chaque segment audio en mode temps réel. Des valeurs plus courtes donnent un retour plus rapide mais peuvent couper au milieu d'une phrase."
+      }
     }
   },
   "footer": {

@@ -533,6 +533,22 @@
           "details": "O Handy usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Modo de transcrição",
+        "description": "Controla como o áudio é dividido e transcrito. Padrão transcreve todo o áudio de uma vez. Tempo real usa segmentos de duração fixa. Fluxo transcreve nos limites das frases. Fluxo em lote acumula segmentos para pós-processamento.",
+        "options": {
+          "standard": "Padrão",
+          "realtime": "Tempo real",
+          "stream": "Fluxo",
+          "batchStream": "Fluxo em lote"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Duração do segmento em tempo real",
+        "description": "Duração de cada segmento de áudio no modo tempo real. Valores mais curtos dão respostas mais rápidas, mas podem cortar no meio de uma frase."
+      }
     }
   },
   "footer": {

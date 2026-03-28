@@ -1,9 +1,12 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
     history::{HistoryManager, PaginatedHistory},
+    streaming::transcribe_chunked,
     transcription::TranscriptionManager,
 };
+use log::debug;
 use std::sync::Arc;
+use tauri::Manager;
 use tauri::{AppHandle, State};
 
 #[tauri::command]
@@ -84,10 +87,37 @@ pub async fn retry_history_entry_transcription(
     transcription_manager.initiate_model_load();
 
     let tm = Arc::clone(&transcription_manager);
-    let transcription = tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))
+    let duration_secs = samples.len() as f32 / 16000.0;
+
+    let transcription = if duration_secs <= 30.0 {
+        // Short audio: single-shot transcription
+        tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))
+            .await
+            .map_err(|e| format!("Transcription task panicked: {}", e))?
+            .map_err(|e| e.to_string())?
+    } else {
+        // Long audio: chunked batch transcription for better performance
+        debug!(
+            "Retry using chunked transcription for {:.1}s audio",
+            duration_secs
+        );
+        let vad_model_path = app
+            .path()
+            .resolve(
+                "resources/models/silero_vad_v4.onnx",
+                tauri::path::BaseDirectory::Resource,
+            )
+            .map_err(|e| format!("Failed to resolve VAD model path: {}", e))?
+            .to_string_lossy()
+            .to_string();
+
+        tauri::async_runtime::spawn_blocking(move || {
+            transcribe_chunked(&tm, &samples, &vad_model_path)
+        })
         .await
         .map_err(|e| format!("Transcription task panicked: {}", e))?
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?
+    };
 
     if transcription.is_empty() {
         return Err("Recording contains no speech".to_string());

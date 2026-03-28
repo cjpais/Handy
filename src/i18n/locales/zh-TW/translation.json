@@ -533,6 +533,22 @@
           "details": "Handy 使用 Whisper.cpp 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "轉錄模式",
+        "description": "控制音訊的分段和轉錄方式。標準模式一次性轉錄全部音訊。即時模式使用固定時長的片段。串流模式在句子邊界處轉錄。批次串流模式累積片段用於後處理。",
+        "options": {
+          "standard": "標準",
+          "realtime": "即時",
+          "stream": "串流",
+          "batchStream": "批次串流"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "即時片段時長",
+        "description": "即時模式下每個音訊片段的時長。較短的值可提供更快的回饋，但可能會在句子中間斷開。"
+      }
     }
   },
   "footer": {

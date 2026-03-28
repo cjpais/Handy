@@ -1697,16 +1697,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af9673d8203fcb076b19dfd17e38b3d4ae9f44959416ea532ce72415a6020365"
 
 [[package]]
-name = "eyre"
-version = "0.6.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cd915d99f24784cdc19fd37ef22b97e3ff0ae756c7e492e9fbfe897d61e2aec"
-dependencies = [
- "indenter",
- "once_cell",
-]
-
-[[package]]
 name = "fallible-iterator"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2467,7 +2457,6 @@ dependencies = [
  "tempfile",
  "tokio",
  "transcribe-rs",
- "vad-rs",
  "windows 0.61.3",
  "winreg 0.55.0",
 ]
@@ -2863,12 +2852,6 @@ dependencies = [
  "png 0.18.1",
  "tiff",
 ]
-
-[[package]]
-name = "indenter"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "964de6e86d545b246d84badc0fef527924ace5134f30641c203ef52ba83f58d5"
 
 [[package]]
 name = "indexmap"
@@ -4981,12 +4964,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ringbuffer"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3df6368f71f205ff9c33c076d170dd56ebf68e8161c733c0caa07a7a5509ed53"
-
-[[package]]
 name = "rkyv"
 version = "0.7.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6992,9 +6969,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-rs"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8af54b24283d1548883a79f258c75c0e02938f5d66073b84b99dcaf00cb06f7"
+checksum = "e38caeddd0be4528f3ed21e57eb8baba38b5a4d8b821b97d49894d0adbb0420e"
 dependencies = [
  "base64 0.22.1",
  "derive_builder",
@@ -7244,17 +7221,6 @@ dependencies = [
  "js-sys",
  "serde_core",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "vad-rs"
-version = "0.1.6"
-source = "git+https://github.com/cjpais/vad-rs#2a412ed858695b9251f3f5a1a20d95b59fa7c498"
-dependencies = [
- "eyre",
- "ndarray",
- "ort",
- "ringbuffer",
 ]
 
 [[package]]

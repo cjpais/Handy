@@ -533,6 +533,22 @@
           "details": "Handy sử dụng Whisper.cpp để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Chế độ phiên âm",
+        "description": "Kiểm soát cách chia và phiên âm âm thanh. Tiêu chuẩn phiên âm toàn bộ âm thanh cùng lúc. Thời gian thực sử dụng các đoạn có thời lượng cố định. Luồng phiên âm tại ranh giới câu. Luồng theo lô tích lũy các đoạn để xử lý sau.",
+        "options": {
+          "standard": "Tiêu chuẩn",
+          "realtime": "Thời gian thực",
+          "stream": "Luồng",
+          "batchStream": "Luồng theo lô"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Thời lượng đoạn thời gian thực",
+        "description": "Thời lượng mỗi đoạn âm thanh trong chế độ thời gian thực. Giá trị ngắn hơn cho phản hồi nhanh hơn nhưng có thể cắt giữa câu."
+      }
     }
   },
   "footer": {

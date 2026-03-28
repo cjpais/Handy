@@ -533,6 +533,22 @@
           "details": "Handy använder Whisper.cpp för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Transkriptionsläge",
+        "description": "Styr hur ljud delas upp och transkriberas. Standard transkriberar allt ljud på en gång. Realtid använder segment med fast längd. Ström transkriberar vid meningsgränser. Batchström samlar segment för efterbehandling.",
+        "options": {
+          "standard": "Standard",
+          "realtime": "Realtid",
+          "stream": "Ström",
+          "batchStream": "Batchström"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Segmentlängd i realtid",
+        "description": "Längden på varje ljudsegment i realtidsläge. Kortare värden ger snabbare återkoppling men kan dela mitt i en mening."
+      }
     }
   },
   "footer": {

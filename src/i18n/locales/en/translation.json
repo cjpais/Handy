@@ -429,6 +429,22 @@
       "transcribing": "Transcribing...",
       "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
     },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Transcription Mode",
+        "description": "Controls how audio is chunked and transcribed. Standard transcribes all audio at once. Realtime uses fixed-duration chunks. Stream transcribes at sentence boundaries. Batch Stream accumulates chunks for post-processing.",
+        "options": {
+          "standard": "Standard",
+          "realtime": "Realtime",
+          "stream": "Stream",
+          "batchStream": "Batch Stream"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Realtime Chunk Duration",
+        "description": "Duration of each audio chunk in Realtime mode. Shorter values give faster feedback but may split mid-sentence."
+      }
+    },
     "debug": {
       "title": "Debug",
       "logDirectory": {
