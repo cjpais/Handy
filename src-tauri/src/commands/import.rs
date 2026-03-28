@@ -1,5 +1,6 @@
 use crate::audio_toolkit::audio::decode_and_resample;
 use crate::audio_toolkit::save_wav_file;
+use crate::audio_toolkit::vad::{SileroVad, VoiceActivityDetector};
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use log::{debug, info, warn};
@@ -14,7 +15,7 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 /// Maximum file size for import (10 GB)
 const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024 * 1024;
@@ -22,25 +23,37 @@ const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024 * 1024;
 /// Sample rate expected by all transcription engines
 const SAMPLE_RATE: usize = 16000;
 
-/// Chunk duration in seconds for splitting long audio.
-/// 30 seconds matches Whisper's native context window and works well with
-/// other engines too (Parakeet, Moonshine, SenseVoice, etc.).
-const CHUNK_DURATION_SECS: usize = 30;
+/// VAD frame size in samples (30ms at 16kHz = 480 samples)
+const VAD_FRAME_SAMPLES: usize = SAMPLE_RATE * 30 / 1000; // 480
 
-/// Overlap between consecutive chunks in seconds.
-/// Prevents word-boundary artifacts at chunk edges.
-const CHUNK_OVERLAP_SECS: f32 = 1.0;
+/// Maximum chunk duration in seconds. Chunks are kept under this limit
+/// by splitting at the best silence boundary.
+const MAX_CHUNK_SECS: f32 = 30.0;
+
+/// Maximum chunk size in samples
+const MAX_CHUNK_SAMPLES: usize = (MAX_CHUNK_SECS as usize) * SAMPLE_RATE;
+
+/// Padding around speech segments in seconds.
+/// Adds a small buffer before and after each speech region to avoid
+/// clipping the start/end of words.
+const SEGMENT_PADDING_SECS: f32 = 0.3;
+
+/// Silence gaps shorter than this (in seconds) are merged — they're
+/// likely just natural pauses within a sentence.
+const MERGE_GAP_SECS: f32 = 1.0;
 
 /// Audio shorter than this (in seconds) is transcribed in one shot.
-/// Audio longer is split into chunks for reliability and progress reporting.
 const CHUNK_THRESHOLD_SECS: f64 = 35.0;
+
+/// VAD speech detection threshold (0.0–1.0). Lower = more sensitive.
+const VAD_THRESHOLD: f32 = 0.35;
 
 /// Progress event emitted during import
 #[derive(Serialize, Clone, Debug, Type)]
 pub struct ImportProgress {
-    pub stage: String,   // "decoding", "transcribing", "saving", "completed", "failed", "cancelled"
-    pub percent: u8,     // 0-100
-    pub message: String, // User-friendly message
+    pub stage: String,
+    pub percent: u8,
+    pub message: String,
 }
 
 /// Cancellation tokens for active imports
@@ -93,7 +106,8 @@ impl Default for ImportCancellationTokens {
     }
 }
 
-/// Validate that a file is a readable audio file before processing
+// ── File validation ──────────────────────────────────────────────
+
 fn validate_audio_file(path: &std::path::Path) -> Result<(), String> {
     if !path.exists() {
         return Err(format!("File not found: {}", path.display()));
@@ -109,41 +123,33 @@ fn validate_audio_file(path: &std::path::Path) -> Result<(), String> {
 
     if file_size > MAX_FILE_SIZE {
         return Err(format!(
-            "File is too large ({:.1}GB, max 10GB). Consider using a smaller file.",
+            "File is too large ({:.1}GB, max 10GB).",
             file_size as f64 / (1024.0 * 1024.0 * 1024.0)
         ));
     }
 
-    // Probe the file to verify it's valid audio
     let file = fs::File::open(path).map_err(|e| format!("Cannot open file: {}", e))?;
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
 
     let mut hint = Hint::new();
-    if let Some(ext) = path.extension() {
-        if let Some(ext_str) = ext.to_str() {
-            hint.with_extension(ext_str);
-        }
+    if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+        hint.with_extension(ext);
     }
 
-    let format_opts: FormatOptions = Default::default();
-    let metadata_opts: MetadataOptions = Default::default();
-
-    let probed = symphonia::default::get_probe()
-        .format(&hint, mss, &format_opts, &metadata_opts)
-        .map_err(|e| format!("File does not appear to be a valid audio file: {}", e))?;
-
-    if let Some(track) = probed.format.tracks().first() {
-        debug!(
-            "Audio format detected: {} channels, {} Hz",
-            track.codec_params.channels.map(|c| c.count()).unwrap_or(1),
-            track.codec_params.sample_rate.unwrap_or(0)
-        );
-    }
+    symphonia::default::get_probe()
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
+        .map_err(|e| format!("Not a valid audio file: {}", e))?;
 
     Ok(())
 }
 
-/// Emit a progress update event
+// ── Progress helpers ─────────────────────────────────────────────
+
 fn emit_progress(app_handle: &AppHandle, stage: &str, percent: u8, message: &str) {
     let _ = app_handle.emit(
         "import-progress",
@@ -155,7 +161,6 @@ fn emit_progress(app_handle: &AppHandle, stage: &str, percent: u8, message: &str
     );
 }
 
-/// Check if import was cancelled
 fn check_cancelled(
     app_handle: &AppHandle,
     cancellation_tokens: &ImportCancellationTokens,
@@ -168,37 +173,183 @@ fn check_cancelled(
     Ok(())
 }
 
-/// Split audio samples into fixed-size chunks with overlap.
-/// Returns a Vec of (start_sample, end_sample) ranges.
-fn make_chunks(total_samples: usize) -> Vec<(usize, usize)> {
-    let chunk_samples = CHUNK_DURATION_SECS * SAMPLE_RATE;
-    let overlap_samples = (CHUNK_OVERLAP_SECS * SAMPLE_RATE as f32) as usize;
-    let step = chunk_samples.saturating_sub(overlap_samples);
+// ── VAD-aware chunking ───────────────────────────────────────────
 
-    let mut chunks = Vec::new();
-    let mut start = 0usize;
-    while start < total_samples {
-        let end = (start + chunk_samples).min(total_samples);
-        chunks.push((start, end));
-        if end >= total_samples {
-            break;
+/// A speech region detected by VAD (start/end in sample indices).
+#[derive(Debug, Clone)]
+struct SpeechSegment {
+    start: usize,
+    end: usize,
+}
+
+/// Run VAD over the audio and return speech segments.
+fn detect_speech_segments(
+    app_handle: &AppHandle,
+    samples: &[f32],
+) -> Result<Vec<SpeechSegment>, String> {
+    // Resolve the VAD model path from bundled resources
+    let vad_path = app_handle
+        .path()
+        .resolve(
+            "resources/models/silero_vad_v4.onnx",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|e| format!("Cannot resolve VAD model path: {}", e))?;
+
+    let mut vad = SileroVad::new(&vad_path, VAD_THRESHOLD)
+        .map_err(|e| format!("Failed to load VAD model: {}", e))?;
+
+    let mut segments: Vec<SpeechSegment> = Vec::new();
+    let mut in_speech = false;
+    let mut seg_start = 0usize;
+
+    for (i, frame) in samples.chunks_exact(VAD_FRAME_SAMPLES).enumerate() {
+        let is_speech = vad
+            .is_voice(frame)
+            .map_err(|e| format!("VAD error: {}", e))?;
+
+        let sample_pos = i * VAD_FRAME_SAMPLES;
+
+        if is_speech && !in_speech {
+            seg_start = sample_pos;
+            in_speech = true;
+        } else if !is_speech && in_speech {
+            segments.push(SpeechSegment {
+                start: seg_start,
+                end: sample_pos,
+            });
+            in_speech = false;
         }
-        start += step;
     }
+
+    // Close any trailing speech segment
+    if in_speech {
+        segments.push(SpeechSegment {
+            start: seg_start,
+            end: samples.len(),
+        });
+    }
+
+    Ok(segments)
+}
+
+/// Merge segments that are closer together than `gap` samples,
+/// then pad each segment by `pad` samples.
+fn merge_and_pad(segments: &[SpeechSegment], total_samples: usize) -> Vec<SpeechSegment> {
+    if segments.is_empty() {
+        return vec![];
+    }
+
+    let gap = (MERGE_GAP_SECS * SAMPLE_RATE as f32) as usize;
+    let pad = (SEGMENT_PADDING_SECS * SAMPLE_RATE as f32) as usize;
+
+    // Merge nearby segments
+    let mut merged: Vec<SpeechSegment> = Vec::new();
+    let mut current = segments[0].clone();
+
+    for seg in &segments[1..] {
+        if seg.start <= current.end + gap {
+            // Merge
+            current.end = current.end.max(seg.end);
+        } else {
+            merged.push(current);
+            current = seg.clone();
+        }
+    }
+    merged.push(current);
+
+    // Pad
+    for seg in &mut merged {
+        seg.start = seg.start.saturating_sub(pad);
+        seg.end = (seg.end + pad).min(total_samples);
+    }
+
+    merged
+}
+
+/// Convert speech segments into transcription chunks, splitting any
+/// segment that exceeds MAX_CHUNK_SAMPLES at the midpoint of the
+/// longest internal silence gap.
+fn segments_to_chunks(segments: &[SpeechSegment]) -> Vec<(usize, usize)> {
+    let mut chunks: Vec<(usize, usize)> = Vec::new();
+
+    for seg in segments {
+        let len = seg.end - seg.start;
+        if len <= MAX_CHUNK_SAMPLES {
+            chunks.push((seg.start, seg.end));
+        } else {
+            // Split oversized segments with simple fixed-step splitting.
+            // Use 1-second overlap so words at boundaries aren't lost.
+            let overlap = SAMPLE_RATE; // 1 second
+            let step = MAX_CHUNK_SAMPLES - overlap;
+            let mut pos = seg.start;
+            while pos < seg.end {
+                let chunk_end = (pos + MAX_CHUNK_SAMPLES).min(seg.end);
+                chunks.push((pos, chunk_end));
+                if chunk_end >= seg.end {
+                    break;
+                }
+                pos += step;
+            }
+        }
+    }
+
     chunks
 }
 
-/// Transcribe audio, using chunked processing for long files.
+/// Build chunks for the entire audio. Uses VAD when possible, falls
+/// back to fixed-size chunks if VAD fails or detects no speech.
+fn build_chunks(app_handle: &AppHandle, samples: &[f32]) -> Vec<(usize, usize)> {
+    // Try VAD-based segmentation
+    match detect_speech_segments(app_handle, samples) {
+        Ok(raw_segments) if !raw_segments.is_empty() => {
+            info!("VAD detected {} speech regions", raw_segments.len());
+            let merged = merge_and_pad(&raw_segments, samples.len());
+            info!(
+                "After merge+pad: {} segments",
+                merged.len()
+            );
+            let chunks = segments_to_chunks(&merged);
+            if !chunks.is_empty() {
+                info!("Created {} VAD-aware chunks", chunks.len());
+                return chunks;
+            }
+        }
+        Ok(_) => {
+            warn!("VAD detected no speech, falling back to fixed chunks");
+        }
+        Err(e) => {
+            warn!("VAD failed ({}), falling back to fixed chunks", e);
+        }
+    }
+
+    // Fallback: fixed-size chunks with 1-second overlap
+    let overlap = SAMPLE_RATE;
+    let step = MAX_CHUNK_SAMPLES - overlap;
+    let mut chunks = Vec::new();
+    let mut pos = 0usize;
+    while pos < samples.len() {
+        let end = (pos + MAX_CHUNK_SAMPLES).min(samples.len());
+        chunks.push((pos, end));
+        if end >= samples.len() {
+            break;
+        }
+        pos += step;
+    }
+    info!("Created {} fixed-size fallback chunks", chunks.len());
+    chunks
+}
+
+// ── Transcription ────────────────────────────────────────────────
+
+/// Transcribe audio, using VAD-aware chunking for long files.
 ///
 /// Short audio (< CHUNK_THRESHOLD_SECS) is transcribed in a single call.
-/// Long audio is split into 30-second overlapping chunks, each transcribed
-/// separately, with progress events and cancellation checks between chunks.
+/// Long audio is split at silence boundaries (via Silero VAD), then each
+/// chunk is transcribed separately via TranscriptionManager::transcribe().
 ///
-/// This approach:
-/// - Works with ALL upstream engine types (Whisper, Parakeet, Moonshine, etc.)
-/// - Doesn't modify TranscriptionManager at all
-/// - Provides per-chunk progress for long files
-/// - Supports cancellation between chunks
+/// This works with ALL upstream engine types without modifying
+/// TranscriptionManager.
 async fn transcribe_with_chunking(
     app_handle: &AppHandle,
     transcription_state: &Arc<TranscriptionManager>,
@@ -225,12 +376,20 @@ async fn transcribe_with_chunking(
         };
     }
 
-    // Long audio: chunked transcription
-    let chunks = make_chunks(samples.len());
+    // Long audio: VAD-aware chunking
+    emit_progress(
+        app_handle,
+        "transcribing",
+        18,
+        "Detecting speech segments...",
+    );
+
+    let chunks = build_chunks(app_handle, samples);
     let total_chunks = chunks.len();
+
     info!(
-        "Long audio ({:.1}s), splitting into {} chunks of ~{}s each",
-        duration_secs, total_chunks, CHUNK_DURATION_SECS
+        "Transcribing {:.1}s audio in {} chunks",
+        duration_secs, total_chunks
     );
 
     let mut results: Vec<String> = Vec::new();
@@ -241,14 +400,13 @@ async fn transcribe_with_chunking(
 
         let chunk_duration = (*end - *start) as f32 / SAMPLE_RATE as f32;
 
-        // Map chunk progress to 20-85% range (leaving room for decode and save stages)
-        let progress_fraction = (i as f32 / total_chunks as f32) * 65.0;
-        let overall_percent = (20.0 + progress_fraction) as u8;
+        // Map chunk progress to 20-85% range
+        let progress = 20.0 + (i as f32 / total_chunks as f32) * 65.0;
 
         emit_progress(
             app_handle,
             "transcribing",
-            overall_percent.min(85),
+            (progress as u8).min(85),
             &format!(
                 "Transcribing chunk {}/{} ({:.0}s)...",
                 i + 1,
@@ -264,22 +422,11 @@ async fn transcribe_with_chunking(
             match tauri::async_runtime::spawn_blocking(move || tm.transcribe(chunk_audio)).await {
                 Ok(Ok(text)) => text,
                 Ok(Err(e)) => {
-                    warn!(
-                        "Chunk {}/{} transcription failed: {}, skipping",
-                        i + 1,
-                        total_chunks,
-                        e
-                    );
-                    // Don't abort the whole import for one bad chunk
+                    warn!("Chunk {}/{} failed: {}, skipping", i + 1, total_chunks, e);
                     continue;
                 }
                 Err(e) => {
-                    warn!(
-                        "Chunk {}/{} panicked: {}, skipping",
-                        i + 1,
-                        total_chunks,
-                        e
-                    );
+                    warn!("Chunk {}/{} panicked: {}, skipping", i + 1, total_chunks, e);
                     continue;
                 }
             };
@@ -288,11 +435,12 @@ async fn transcribe_with_chunking(
             results.push(chunk_text.trim().to_string());
         }
 
-        info!(
-            "Chunk {}/{} done ({:.0}s of audio)",
+        debug!(
+            "Chunk {}/{} done ({:.0}s audio) → {} chars",
             i + 1,
             total_chunks,
-            chunk_duration
+            chunk_duration,
+            chunk_text.len()
         );
     }
 
@@ -302,12 +450,14 @@ async fn transcribe_with_chunking(
 
     let combined = results.join(" ");
     info!(
-        "Chunked transcription complete: {} chunks, {} chars total",
+        "Chunked transcription complete: {} chunks → {} chars",
         total_chunks,
         combined.len()
     );
     Ok(combined)
 }
+
+// ── Commands ─────────────────────────────────────────────────────
 
 #[tauri::command]
 #[specta::specta]
@@ -324,53 +474,43 @@ pub async fn import_audio_file(
     let _cancel_token = cancellation_tokens.create_token(&import_id);
 
     info!("Importing audio file: {} (ID: {})", file_path, import_id);
-
-    // Emit initial progress
     emit_progress(&app_handle, "starting", 0, "Starting import...");
 
     let source_path = PathBuf::from(&file_path);
 
-    // Validate file before doing anything
+    // Validate
     if let Err(e) = validate_audio_file(&source_path) {
         emit_progress(&app_handle, "failed", 0, &e);
         return Err(e);
     }
 
-    // Check for cancellation after validation
     check_cancelled(&app_handle, &cancellation_tokens, &import_id)?;
 
-    // Stage 1: Decoding
+    // Stage 1: Decode
     emit_progress(&app_handle, "decoding", 5, "Decoding audio file...");
 
     let samples = match decode_and_resample(source_path.clone()) {
         Ok(s) => s,
         Err(e) => {
-            emit_progress(
-                &app_handle,
-                "failed",
-                0,
-                &format!("Failed to decode audio: {}", e),
-            );
+            let msg = format!("Failed to decode audio: {}", e);
+            emit_progress(&app_handle, "failed", 0, &msg);
             cancellation_tokens.cleanup(&import_id);
-            return Err(format!("Failed to decode audio: {}", e));
+            return Err(msg);
         }
     };
 
-    // Check for cancellation after decoding
     check_cancelled(&app_handle, &cancellation_tokens, &import_id)?;
 
     let duration = samples.len() as f64 / SAMPLE_RATE as f64;
     debug!("Audio duration: {:.2}s ({} samples)", duration, samples.len());
 
-    // Stage 2: Load model and transcribe (with chunking for long files)
+    // Stage 2: Load model + transcribe
     emit_progress(
         &app_handle,
         "transcribing",
         15,
         "Loading transcription model...",
     );
-
-    // Initiate model load (required — transcribe() doesn't auto-load)
     transcription_state.initiate_model_load();
 
     let transcription_text = match transcribe_with_chunking(
@@ -390,43 +530,28 @@ pub async fn import_audio_file(
         }
     };
 
-    // Check for cancellation after transcription
     check_cancelled(&app_handle, &cancellation_tokens, &import_id)?;
 
-    // Stage 3: Saving
+    // Stage 3: Save
     emit_progress(&app_handle, "saving", 90, "Saving to database...");
 
     let timestamp = chrono::Utc::now().timestamp();
-
-    // Get recordings directory from the history manager
     let recordings_dir = history_state.recordings_dir().to_path_buf();
     if !recordings_dir.exists() {
         fs::create_dir_all(&recordings_dir)
             .map_err(|e| format!("Failed to create recordings dir: {}", e))?;
     }
 
-    // Save as new WAV file
     let file_name = format!("handy-{}.wav", timestamp);
     let target_path = recordings_dir.join(&file_name);
 
-    debug!("Saving imported audio to {:?}", target_path);
     if let Err(e) = save_wav_file(&target_path, &samples) {
-        emit_progress(
-            &app_handle,
-            "failed",
-            0,
-            &format!("Failed to save audio: {}", e),
-        );
+        let msg = format!("Failed to save audio: {}", e);
+        emit_progress(&app_handle, "failed", 0, &msg);
         cancellation_tokens.cleanup(&import_id);
-        return Err(format!("Failed to save imported audio: {}", e));
+        return Err(msg);
     }
 
-    debug!(
-        "Import completed, keeping source file at: {:?}",
-        source_path
-    );
-
-    // Save to database
     if let Err(e) = history_state.save_entry_with_import(
         file_name,
         transcription_text,
@@ -436,17 +561,12 @@ pub async fn import_audio_file(
         Some(duration),
         Some("upload".to_string()),
     ) {
-        emit_progress(
-            &app_handle,
-            "failed",
-            0,
-            &format!("Failed to save to database: {}", e),
-        );
+        let msg = format!("Failed to save to database: {}", e);
+        emit_progress(&app_handle, "failed", 0, &msg);
         cancellation_tokens.cleanup(&import_id);
-        return Err(format!("Failed to save to database: {}", e));
+        return Err(msg);
     }
 
-    // Complete
     emit_progress(
         &app_handle,
         "completed",
