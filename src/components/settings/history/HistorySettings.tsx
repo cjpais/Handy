@@ -1,7 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
+import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-dialog";
+import {
+  Check,
+  Copy,
+  FileText,
+  FolderOpen,
+  Loader2,
+  Mic,
+  RotateCcw,
+  Star,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -9,11 +23,13 @@ import {
   events,
   type HistoryEntry,
   type HistoryUpdatePayload,
+  type ImportProgress,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { Button } from "../../ui/Button";
+import { ExportOptions } from "./ExportOptions";
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -59,6 +75,12 @@ const OpenRecordingsButton: React.FC<OpenRecordingsButtonProps> = ({
   </Button>
 );
 
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
 export const HistorySettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
@@ -68,6 +90,18 @@ export const HistorySettings: React.FC = () => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const entriesRef = useRef<HistoryEntry[]>([]);
   const loadingRef = useRef(false);
+
+  // Import state
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(
+    null,
+  );
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterSource, setFilterSource] = useState<
+    "all" | "recording" | "upload"
+  >("all");
 
   // Keep ref in sync for use in IntersectionObserver callback
   useEffect(() => {
@@ -130,7 +164,7 @@ export const HistorySettings: React.FC = () => {
     return () => observer.disconnect();
   }, [loading, hasMore, loadPage]);
 
-  // Listen for new entries added from the transcription pipeline
+  // Listen for history update events (from transcription pipeline AND import)
   useEffect(() => {
     const unlisten = events.historyUpdatePayload.listen((event) => {
       const payload: HistoryUpdatePayload = event.payload;
@@ -141,8 +175,6 @@ export const HistorySettings: React.FC = () => {
           prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
         );
       }
-      // "deleted" and "toggled" are handled by optimistic updates only,
-      // so we intentionally ignore them here to avoid double-mutation.
     });
 
     return () => {
@@ -150,22 +182,69 @@ export const HistorySettings: React.FC = () => {
     };
   }, []);
 
+  // Listen for import progress events
+  useEffect(() => {
+    const setupListener = async () => {
+      const unlistenProgress = await listen<ImportProgress>(
+        "import-progress",
+        (event) => {
+          const progress = event.payload;
+          setImportProgress(progress);
+
+          if (
+            progress.stage === "completed" ||
+            progress.stage === "failed" ||
+            progress.stage === "cancelled"
+          ) {
+            // Clear import state after a short delay
+            setTimeout(() => {
+              setIsImporting(false);
+              setImportProgress(null);
+            }, 1500);
+          }
+        },
+      );
+
+      return unlistenProgress;
+    };
+
+    const unlistenPromise = setupListener();
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  // Filter and search logic (client-side on loaded entries)
+  const filteredEntries = entries.filter((entry) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.transcription_text
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+    const matchesSource =
+      filterSource === "all" ||
+      (filterSource === "recording" && entry.source !== "upload") ||
+      (filterSource === "upload" && entry.source === "upload");
+
+    return matchesSearch && matchesSource;
+  });
+
   const toggleSaved = async (id: number) => {
-    // Optimistic update
     setEntries((prev) =>
       prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)),
     );
     try {
       const result = await commands.toggleHistoryEntrySaved(id);
       if (result.status !== "ok") {
-        // Revert on failure
         setEntries((prev) =>
           prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)),
         );
       }
     } catch (error) {
       console.error("Failed to toggle saved status:", error);
-      // Revert on failure
       setEntries((prev) =>
         prev.map((e) => (e.id === id ? { ...e, saved: !e.saved } : e)),
       );
@@ -202,12 +281,10 @@ export const HistorySettings: React.FC = () => {
   );
 
   const deleteAudioEntry = async (id: number) => {
-    // Optimistically remove
     setEntries((prev) => prev.filter((e) => e.id !== id));
     try {
       const result = await commands.deleteHistoryEntry(id);
       if (result.status !== "ok") {
-        // Reload on failure
         loadPage();
       }
     } catch (error) {
@@ -234,6 +311,64 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const handleCancelImport = async () => {
+    try {
+      // Cancel with empty string - the backend cancels all active imports
+      await commands.cancelImport("");
+      toast.info(t("settings.history.cancellingImport"));
+    } catch (error) {
+      console.error("Failed to cancel import:", error);
+    }
+  };
+
+  const handleImport = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Audio",
+            extensions: [
+              "mp3",
+              "m4a",
+              "wav",
+              "ogg",
+              "flac",
+              "aac",
+              "wma",
+              "aiff",
+            ],
+          },
+        ],
+      });
+
+      if (selected) {
+        setIsImporting(true);
+        setImportProgress(null);
+        toast.info(t("settings.history.importing"));
+
+        const result = await commands.importAudioFile(selected as string);
+        if (result.status === "ok") {
+          toast.success(t("settings.history.importSuccess"));
+        } else {
+          toast.error(
+            `${t("settings.history.importFailed")}: ${result.error}`,
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to import audio:", error);
+      toast.error(`${t("settings.history.importFailed")}: ${error}`);
+    } finally {
+      setIsImporting(false);
+      setImportProgress(null);
+    }
+  };
+
+  // Determine content to render
+  const showFiltered = searchQuery !== "" || filterSource !== "all";
+  const displayEntries = showFiltered ? filteredEntries : entries;
+
   let content: React.ReactNode;
 
   if (loading) {
@@ -242,17 +377,19 @@ export const HistorySettings: React.FC = () => {
         {t("settings.history.loading")}
       </div>
     );
-  } else if (entries.length === 0) {
+  } else if (displayEntries.length === 0) {
     content = (
       <div className="px-4 py-3 text-center text-text/60">
-        {t("settings.history.empty")}
+        {showFiltered
+          ? t("settings.history.noMatchingEntries")
+          : t("settings.history.empty")}
       </div>
     );
   } else {
     content = (
       <>
         <div className="divide-y divide-mid-gray/20">
-          {entries.map((entry) => (
+          {displayEntries.map((entry) => (
             <HistoryEntryComponent
               key={entry.id}
               entry={entry}
@@ -265,7 +402,7 @@ export const HistorySettings: React.FC = () => {
           ))}
         </div>
         {/* Sentinel for infinite scroll */}
-        <div ref={sentinelRef} className="h-1" />
+        {!showFiltered && <div ref={sentinelRef} className="h-1" />}
       </>
     );
   }
@@ -279,11 +416,127 @@ export const HistorySettings: React.FC = () => {
               {t("settings.history.title")}
             </h2>
           </div>
-          <OpenRecordingsButton
-            onClick={openRecordingsFolder}
-            label={t("settings.history.openFolder")}
-          />
+          <div className="flex gap-2">
+            <Button
+              onClick={handleImport}
+              variant="secondary"
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              <span>
+                {isImporting
+                  ? importProgress?.message || t("settings.history.importing")
+                  : t("settings.history.importAudio")}
+              </span>
+            </Button>
+            <OpenRecordingsButton
+              onClick={openRecordingsFolder}
+              label={t("settings.history.openFolder")}
+            />
+          </div>
         </div>
+
+        {/* Search and Filter Section */}
+        <div className="px-4 space-y-3">
+          {/* Search box */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder={t("settings.history.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 px-3 py-1.5 text-sm bg-background border border-mid-gray/20 rounded text-text placeholder:text-text/40 focus:outline-none focus:border-logo-primary"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="text-mid-gray hover:text-text transition-colors"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter buttons */}
+          <div className="flex gap-2">
+            {(["all", "recording", "upload"] as const).map((source) => (
+              <button
+                key={source}
+                onClick={() => setFilterSource(source)}
+                className={`px-3 py-1 rounded text-xs transition-colors ${
+                  filterSource === source
+                    ? "bg-logo-primary text-white"
+                    : "bg-mid-gray/10 text-text hover:bg-mid-gray/20"
+                }`}
+              >
+                {source === "all" && t("settings.history.filterAll")}
+                {source === "recording" &&
+                  `🎤 ${t("settings.history.filterRecordings")}`}
+                {source === "upload" &&
+                  `📁 ${t("settings.history.filterUploaded")}`}
+              </button>
+            ))}
+          </div>
+
+          {/* Results count */}
+          {showFiltered && (
+            <div className="text-xs text-mid-gray">
+              {t("settings.history.foundEntries", {
+                found: filteredEntries.length,
+                total: entries.length,
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Import Progress Section */}
+        {isImporting && importProgress && (
+          <div className="px-4 space-y-2">
+            <div className="flex items-center justify-between text-xs text-mid-gray">
+              <span>
+                {importProgress.stage === "decoding" &&
+                  `🔄 ${t("settings.history.importDecoding")}`}
+                {importProgress.stage === "transcribing" &&
+                  `🎤 ${t("settings.history.importTranscribing")}`}
+                {importProgress.stage === "saving" &&
+                  `💾 ${t("settings.history.importSaving")}`}
+                {importProgress.stage === "starting" &&
+                  `🚀 ${t("settings.history.importStarting")}`}
+                {importProgress.stage === "completed" &&
+                  `✅ ${t("settings.history.importCompleted")}`}
+                {importProgress.stage === "failed" &&
+                  `❌ ${t("settings.history.importFailed")}`}
+                {importProgress.stage === "cancelled" &&
+                  `🚫 ${t("settings.history.importCancelled")}`}
+                {!["decoding", "transcribing", "saving", "starting", "completed", "failed", "cancelled"].includes(importProgress.stage) &&
+                  importProgress.message}
+              </span>
+              <Button
+                onClick={handleCancelImport}
+                variant="secondary"
+                size="sm"
+                className="h-6 px-2 text-xs"
+              >
+                {t("settings.history.importCancel")}
+              </Button>
+            </div>
+            <div className="w-full h-1 bg-mid-gray/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-logo-primary transition-all duration-300 ease-out"
+                style={{ width: `${importProgress.percent || 0}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* History List */}
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           {content}
         </div>
@@ -356,8 +609,27 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
+        <div className="flex items-center gap-2">
+          {/* Source icon */}
+          {entry.source === "upload" ? (
+            <span title={t("settings.history.sourceUpload")}>
+              <FileText className="w-4 h-4 text-mid-gray" />
+            </span>
+          ) : (
+            <span title={t("settings.history.sourceRecording")}>
+              <Mic className="w-4 h-4 text-mid-gray" />
+            </span>
+          )}
+          <p className="text-sm font-medium">{formattedDate}</p>
+          {/* Duration badge */}
+          {entry.duration != null && (
+            <span className="text-xs text-mid-gray bg-mid-gray/10 px-1.5 py-0.5 rounded">
+              {formatDuration(entry.duration)}
+            </span>
+          )}
+        </div>
         <div className="flex items-center">
+          <ExportOptions entry={entry} />
           <IconButton
             onClick={handleCopyText}
             disabled={!hasTranscription || retrying}

@@ -3,6 +3,7 @@ use crate::managers::{
     history::{HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
 };
+use base64::Engine;
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -151,4 +152,25 @@ pub async fn update_recording_retention_period(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/// Get audio file data as a base64 data URL.
+/// This is a fallback for platforms where `convertFileSrc` or `readFile` may not work.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_audio_file_data(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    file_name: String,
+) -> Result<String, String> {
+    let path = history_manager.get_audio_file_path(&file_name);
+
+    if !path.exists() {
+        return Err(format!("Audio file not found: {}", file_name));
+    }
+
+    let data = std::fs::read(&path).map_err(|e| format!("Failed to read audio file: {}", e))?;
+
+    let base64_data = base64::engine::general_purpose::STANDARD.encode(&data);
+    Ok(format!("data:audio/wav;base64,{}", base64_data))
 }

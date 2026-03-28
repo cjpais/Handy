@@ -77,6 +77,9 @@ specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 tauri-plugin-dialog = "2.6"
+symphonia = { version = "0.5.4", features = ["mp3", "isomp4", "pcm", "all-codecs"] }
+uuid = { version = "1.0", features = ["v4"] }
+base64 = "0.22"
 
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"

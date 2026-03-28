@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
@@ -45,6 +46,8 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const isProcessingDrop = useRef(false);
 
   useEffect(() => {
     checkOnboardingStatus();
@@ -121,6 +124,122 @@ function App() {
       unlisten.then((fn) => fn());
     };
   }, [t]);
+
+  // Drag and drop support
+  useEffect(() => {
+    if (onboardingStep !== "done") return;
+
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
+    let lastDropTimestamp = 0;
+    const DROP_DEBOUNCE_MS = 3000;
+
+    const SUPPORTED_AUDIO_EXTENSIONS = [
+      "mp3", "m4a", "wav", "ogg", "flac", "aac", "wma", "aiff",
+    ];
+
+    const isAudioFile = (filePath: string): boolean => {
+      const lower = filePath.toLowerCase();
+      return SUPPORTED_AUDIO_EXTENSIONS.some((ext) => lower.endsWith(`.${ext}`));
+    };
+
+    const setupDragDrop = async () => {
+      try {
+        const appWindow = getCurrentWindow();
+
+        unlisten = await appWindow.onDragDropEvent(async (event) => {
+          if (cancelled) return;
+
+          if (event.payload.type === "enter") {
+            setIsDragActive(true);
+            return;
+          }
+          if (event.payload.type === "leave" || event.payload.type === "over") {
+            if (event.payload.type === "leave") setIsDragActive(false);
+            return;
+          }
+          if (event.payload.type !== "drop") return;
+
+          const paths = event.payload.paths;
+          const now = Date.now();
+          console.debug("[DragDrop] Drop event received, paths:", paths);
+
+          // Guard 1: ref-based processing flag
+          if (isProcessingDrop.current) {
+            console.debug("[DragDrop] Already processing, skipping");
+            return;
+          }
+
+          // Guard 2: timestamp-based debounce
+          if (now - lastDropTimestamp < DROP_DEBOUNCE_MS) {
+            console.debug("[DragDrop] Debounced, skipping");
+            return;
+          }
+
+          isProcessingDrop.current = true;
+          lastDropTimestamp = now;
+          setIsDragActive(false);
+
+          try {
+            if (!paths || paths.length === 0) {
+              toast.error(t("settings.history.noFilesDropped"));
+              return;
+            }
+
+            const audioPaths = paths.filter((path: string) => isAudioFile(path));
+            const nonAudioPaths = paths.filter((path: string) => !isAudioFile(path));
+
+            if (audioPaths.length === 0) {
+              toast.error(t("settings.history.unsupportedFormat"));
+              return;
+            }
+
+            if (nonAudioPaths.length > 0) {
+              toast.warning(
+                t("settings.history.ignoringNonAudio", {
+                  count: nonAudioPaths.length,
+                }),
+              );
+            }
+
+            for (const filePath of audioPaths) {
+              try {
+                const fileName = filePath.split("/").pop() || filePath;
+                toast.info(
+                  t("settings.history.importingFile", { name: fileName }),
+                );
+                const result = await commands.importAudioFile(filePath);
+                if (result.status === "ok") {
+                  toast.success(
+                    t("settings.history.importedFile", { name: fileName }),
+                  );
+                } else {
+                  toast.error(
+                    `${t("settings.history.importFailed")}: ${result.error}`,
+                  );
+                }
+              } catch (error) {
+                toast.error(`${t("settings.history.importFailed")}: ${error}`);
+              }
+            }
+          } finally {
+            isProcessingDrop.current = false;
+          }
+        });
+      } catch (error) {
+        console.error("Failed to set up drag-drop listeners:", error);
+      }
+    };
+
+    setupDragDrop();
+
+    return () => {
+      cancelled = true;
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, [onboardingStep, t]);
 
   // Listen for model loading failures and show a toast
   useEffect(() => {
@@ -237,6 +356,36 @@ function App() {
       dir={direction}
       className="h-screen flex flex-col select-none cursor-default"
     >
+      {/* Drag & drop overlay */}
+      {isDragActive && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <div
+            className="bg-background border-2 border-dashed border-logo-primary rounded-xl px-8 py-6 shadow-2xl"
+            style={{
+              transform: "scale(1.05)",
+              transition: "transform 200ms ease-in-out",
+            }}
+          >
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-logo-primary/10 flex items-center justify-center">
+                <span className="text-2xl">📂</span>
+              </div>
+              <p className="text-lg font-semibold text-logo-primary">
+                {t("settings.history.dropOverlayTitle")}
+              </p>
+              <p className="text-sm text-text/60">
+                {t("settings.history.dropOverlaySubtitle")}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <Toaster
         theme="system"
         toastOptions={{

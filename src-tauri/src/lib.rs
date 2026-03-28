@@ -165,6 +165,12 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
 
+    // Import cancellation tokens
+    let import_cancellation_tokens = Arc::new(
+        crate::commands::import::ImportCancellationTokens::new(),
+    );
+    app_handle.manage(import_cancellation_tokens);
+
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
     // after permissions are confirmed (on macOS) or after onboarding completes.
@@ -424,6 +430,9 @@ pub fn run(cli_args: CliArgs) {
             commands::history::retry_history_entry_transcription,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
+            commands::history::get_audio_file_data,
+            commands::import::import_audio_file,
+            commands::import::cancel_import,
             helpers::clamshell::is_laptop,
         ])
         .events(collect_events![managers::history::HistoryUpdatePayload,]);
