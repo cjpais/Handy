@@ -298,7 +298,7 @@ async fn maybe_convert_chinese_variant(
         BuiltinConfig::Tw2sp
     } else {
         // Convert Simplified Chinese to Traditional Chinese
-        BuiltinConfig::S2twp
+        BuiltinConfig::S2tw
     };
 
     match OpenCC::from_config(config) {
