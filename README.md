@@ -432,5 +432,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **whisper.cpp and ggml** for amazing cross-platform whisper inference/acceleration
 - **Silero** for great lightweight VAD
 - **Tauri** team for the excellent Rust-based app framework
-- **MiniMax** for [OpenAI-compatible LLM API](https://www.minimaxi.com) powering cloud post-processing
 - **Community contributors** helping make Handy better
