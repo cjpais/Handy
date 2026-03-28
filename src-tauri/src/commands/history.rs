@@ -1,15 +1,13 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
     history::{HistoryManager, PaginatedHistory},
+    streaming::transcribe_chunked,
     transcription::TranscriptionManager,
 };
 use log::debug;
 use std::sync::Arc;
 use tauri::Manager;
 use tauri::{AppHandle, State};
-use transcribe_rs::transcriber::{Transcriber, VadChunked, VadChunkedConfig};
-use transcribe_rs::vad::SmoothedVad;
-use transcribe_rs::TranscribeOptions;
 
 #[tauri::command]
 #[specta::specta]
@@ -113,34 +111,8 @@ pub async fn retry_history_entry_transcription(
             .to_string_lossy()
             .to_string();
 
-        tauri::async_runtime::spawn_blocking(move || -> Result<String, anyhow::Error> {
-            let silero = transcribe_rs::vad::SileroVad::new(&vad_model_path, 0.3)
-                .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
-            let vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
-            let config = VadChunkedConfig {
-                min_chunk_secs: 10.0,
-                max_chunk_secs: 30.0,
-                padding_secs: 0.0,
-                smart_split_search_secs: Some(3.0),
-                merge_separator: " ".into(),
-            };
-            let mut transcriber =
-                VadChunked::new(Box::new(vad), config, TranscribeOptions::default());
-
-            tm.with_engine(|model| {
-                // feed() buffers and transcribes chunks as boundaries are found.
-                // finish() transcribes the remainder and returns ALL chunks merged.
-                // We only use finish()'s result to avoid duplication.
-                transcriber
-                    .feed(model, &samples)
-                    .map_err(|e| anyhow::anyhow!("Transcriber feed error: {}", e))?;
-
-                let result = transcriber
-                    .finish(model)
-                    .map_err(|e| anyhow::anyhow!("Transcriber finish error: {}", e))?;
-
-                Ok(result.text.trim().to_string())
-            })
+        tauri::async_runtime::spawn_blocking(move || {
+            transcribe_chunked(&tm, &samples, &vad_model_path)
         })
         .await
         .map_err(|e| format!("Transcription task panicked: {}", e))?

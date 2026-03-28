@@ -533,6 +533,22 @@
           "details": "Handy używa Whisper.cpp do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Tryb transkrypcji",
+        "description": "Kontroluje sposób dzielenia i transkrypcji dźwięku. Standardowy transkrybuje cały dźwięk naraz. Czas rzeczywisty używa fragmentów o stałej długości. Strumień transkrybuje na granicach zdań. Strumień wsadowy gromadzi fragmenty do późniejszego przetwarzania.",
+        "options": {
+          "standard": "Standardowy",
+          "realtime": "Czas rzeczywisty",
+          "stream": "Strumień",
+          "batchStream": "Strumień wsadowy"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Długość fragmentu w czasie rzeczywistym",
+        "description": "Długość każdego fragmentu audio w trybie czasu rzeczywistego. Krótsze wartości dają szybszą odpowiedź, ale mogą dzielić zdanie w połowie."
+      }
     }
   },
   "footer": {

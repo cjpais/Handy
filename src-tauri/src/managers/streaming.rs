@@ -223,6 +223,37 @@ fn strip_trailing_punctuation(text: &str) -> &str {
         .trim_end()
 }
 
+/// Batch-transcribe long audio using VAD-based chunking.
+///
+/// This is used by the history retry command when audio exceeds 30 s.
+pub fn transcribe_chunked(
+    tm: &TranscriptionManager,
+    samples: &[f32],
+    vad_model_path: &str,
+) -> Result<String, anyhow::Error> {
+    let silero = transcribe_rs::vad::SileroVad::new(vad_model_path, 0.3)
+        .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
+    let vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+    let config = VadChunkedConfig {
+        min_chunk_secs: 10.0,
+        max_chunk_secs: 30.0,
+        padding_secs: 0.0,
+        smart_split_search_secs: Some(3.0),
+        merge_separator: " ".into(),
+    };
+    let mut transcriber = VadChunked::new(Box::new(vad), config, TranscribeOptions::default());
+
+    tm.with_engine(|model| {
+        transcriber
+            .feed(model, samples)
+            .map_err(|e| anyhow::anyhow!("Transcriber feed error: {}", e))?;
+        let result = transcriber
+            .finish(model)
+            .map_err(|e| anyhow::anyhow!("Transcriber finish error: {}", e))?;
+        Ok(result.text.trim().to_string())
+    })
+}
+
 fn paste_on_main_thread(app: &AppHandle, text: String) {
     let app_clone = app.clone();
     let _ = app.run_on_main_thread(move || {

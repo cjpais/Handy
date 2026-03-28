@@ -31,8 +31,10 @@ jobs:
       - name: Use mock TranscriptionManager (CI only)
         working-directory: src-tauri
         run: |
-          # Swap to mock adapter - avoids compiling whisper/Vulkan
+          # Swap to mock adapters - avoids compiling whisper/Vulkan
           cp src/managers/transcription_mock.rs src/managers/transcription.rs
+          cp src/managers/streaming_mock.rs src/managers/streaming.rs
+          cp src/audio_toolkit/vad/adapter_mock.rs src/audio_toolkit/vad/adapter.rs
           sed -i '/^transcribe-rs/d' Cargo.toml
 
       - name: Run Rust tests

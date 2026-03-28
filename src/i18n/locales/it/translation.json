@@ -533,6 +533,22 @@
           "details": "Handy usa Whisper.cpp per il riconoscimento vocale veloce in locale. Grazie a Georgi Gerganov e collaboratori per il fantastico lavoro."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Modalità di trascrizione",
+        "description": "Controlla come l'audio viene suddiviso e trascritto. Standard trascrive tutto l'audio in una volta. Tempo reale usa segmenti a durata fissa. Flusso trascrive ai confini delle frasi. Flusso a lotti accumula segmenti per la post-elaborazione.",
+        "options": {
+          "standard": "Standard",
+          "realtime": "Tempo reale",
+          "stream": "Flusso",
+          "batchStream": "Flusso a lotti"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Durata dei segmenti in tempo reale",
+        "description": "Durata di ogni segmento audio in modalità tempo reale. Valori più brevi danno un feedback più rapido ma possono tagliare a metà frase."
+      }
     }
   },
   "footer": {

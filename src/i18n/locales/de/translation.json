@@ -533,6 +533,22 @@
           "details": "Handy verwendet Whisper.cpp für schnelle, lokale Sprach-zu-Text-Verarbeitung. Dank an Georgi Gerganov und die Mitwirkenden für ihre großartige Arbeit."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Transkriptionsmodus",
+        "description": "Steuert, wie Audio aufgeteilt und transkribiert wird. Standard transkribiert das gesamte Audio auf einmal. Echtzeit verwendet Abschnitte fester Dauer. Stream transkribiert an Satzgrenzen. Batch-Stream sammelt Abschnitte für die Nachbearbeitung.",
+        "options": {
+          "standard": "Standard",
+          "realtime": "Echtzeit",
+          "stream": "Stream",
+          "batchStream": "Batch-Stream"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Echtzeit-Abschnittdauer",
+        "description": "Dauer jedes Audio-Abschnitts im Echtzeitmodus. Kürzere Werte liefern schnelleres Feedback, können aber mitten im Satz trennen."
+      }
     }
   },
   "footer": {

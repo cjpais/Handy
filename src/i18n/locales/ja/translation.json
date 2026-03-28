@@ -533,6 +533,22 @@
           "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "文字起こしモード",
+        "description": "音声の分割と文字起こしの方法を制御します。標準はすべての音声を一度に文字起こしします。リアルタイムは固定長のチャンクを使用します。ストリームは文の区切りで文字起こしします。バッチストリームはチャンクを蓄積して後処理します。",
+        "options": {
+          "standard": "標準",
+          "realtime": "リアルタイム",
+          "stream": "ストリーム",
+          "batchStream": "バッチストリーム"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "リアルタイムチャンク長",
+        "description": "リアルタイムモードでの各音声チャンクの長さ。短い値ほど応答が速くなりますが、文の途中で分割される場合があります。"
+      }
     }
   },
   "footer": {

@@ -533,6 +533,22 @@
           "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "转录模式",
+        "description": "控制音频的分段和转录方式。标准模式一次性转录全部音频。实时模式使用固定时长的片段。流式模式在句子边界处转录。批量流式模式累积片段用于后处理。",
+        "options": {
+          "standard": "标准",
+          "realtime": "实时",
+          "stream": "流式",
+          "batchStream": "批量流式"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "实时片段时长",
+        "description": "实时模式下每个音频片段的时长。较短的值可提供更快的反馈，但可能会在句子中间断开。"
+      }
     }
   },
   "footer": {

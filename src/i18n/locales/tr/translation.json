@@ -533,6 +533,22 @@
           "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için Whisper.cpp kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
         }
       }
+    },
+    "experimental": {
+      "transcriptionMode": {
+        "title": "Transkripsiyon Modu",
+        "description": "Sesin nasıl bölünüp yazıya döküleceğini kontrol eder. Standart tüm sesi bir defada yazar. Gerçek zamanlı sabit süreli parçalar kullanır. Akış cümle sınırlarında yazar. Toplu akış parçaları son işlem için biriktirir.",
+        "options": {
+          "standard": "Standart",
+          "realtime": "Gerçek zamanlı",
+          "stream": "Akış",
+          "batchStream": "Toplu akış"
+        }
+      },
+      "realtimeChunkDuration": {
+        "title": "Gerçek Zamanlı Parça Süresi",
+        "description": "Gerçek zamanlı modda her ses parçasının süresi. Daha kısa değerler daha hızlı geri bildirim sağlar ancak cümleyi ortasından bölebilir."
+      }
     }
   },
   "footer": {
