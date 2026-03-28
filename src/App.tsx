@@ -125,7 +125,21 @@ function App() {
     };
   }, [t]);
 
-  // Drag and drop support
+  // Prevent browser default file-drop behavior (navigates to file on WebKitGTK)
+  useEffect(() => {
+    const preventDefaults = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    document.addEventListener("dragover", preventDefaults);
+    document.addEventListener("drop", preventDefaults);
+    return () => {
+      document.removeEventListener("dragover", preventDefaults);
+      document.removeEventListener("drop", preventDefaults);
+    };
+  }, []);
+
+  // Drag and drop support via Tauri window events
   useEffect(() => {
     if (onboardingStep !== "done") return;
 

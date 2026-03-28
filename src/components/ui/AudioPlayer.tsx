@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Pause } from "lucide-react";
 
+// Global registry: when one player starts, stop all others
+const activePlayers = new Set<() => void>();
+
 interface AudioPlayerProps {
   /** Audio source URL. If not provided, onLoadRequest must be provided. */
   src?: string;
@@ -22,68 +25,38 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(initialSrc ?? null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const src = loadedSrc;
-  const animationRef = useRef<number>();
   const dragTimeRef = useRef<number>(0);
 
-  // Use refs to avoid stale closures in animation loop
-  const isPlayingRef = useRef(false);
-  const isDraggingRef = useRef(false);
-
-  // Keep refs in sync with state
+  // Create audio element imperatively (not in JSX) so ref is always stable
+  // and event listeners attach before src is set.
   useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+    if (!src) return;
 
-  useEffect(() => {
-    isDraggingRef.current = isDragging;
-  }, [isDragging]);
-
-  // Stable animation loop with no dependencies
-  const tick = useCallback(() => {
-    if (audioRef.current && !isDraggingRef.current) {
-      const time = audioRef.current.currentTime;
-      setCurrentTime(time);
-    }
-
-    if (isPlayingRef.current) {
-      animationRef.current = requestAnimationFrame(tick);
-    }
-  }, []); // Empty dependency array is key!
-
-  // Manage animation loop lifecycle
-  useEffect(() => {
-    if (isPlaying && !isDragging) {
-      // Only start if not already running
-      if (!animationRef.current) {
-        animationRef.current = requestAnimationFrame(tick);
-      }
-    } else {
-      // Stop animation loop
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = undefined;
-      }
-    }
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = undefined;
-      }
-    };
-  }, [isPlaying, isDragging, tick]);
-
-  // Audio event handlers
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audioRef.current = audio;
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration || 0);
       setCurrentTime(0);
+      setLoadError(null);
+    };
+
+    const handleDurationChange = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+
+    const handleCanPlay = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+      setLoadError(null);
     };
 
     const handleEnded = () => {
@@ -94,40 +67,79 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
 
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleError = () => {
+      console.error("Audio load error:", audio.error);
+      setLoadError(audio.error?.message || "Failed to load audio");
+    };
+
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("durationchange", handleDurationChange);
+    audio.addEventListener("canplay", handleCanPlay);
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("error", handleError);
+
+    // Set src after attaching listeners
+    audio.src = src;
 
     return () => {
+      audio.pause();
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("durationchange", handleDurationChange);
+      audio.removeEventListener("canplay", handleCanPlay);
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("error", handleError);
+      audio.src = "";
+      audioRef.current = null;
     };
+  }, [src]); // Recreate when src changes
+
+  // Register stop callback for global "only one player at a time"
+  const stopPlayback = useCallback(() => {
+    audioRef.current?.pause();
   }, []);
 
-  // Auto-play when src becomes available (via onLoadRequest or autoPlay prop)
+  useEffect(() => {
+    activePlayers.add(stopPlayback);
+    return () => {
+      activePlayers.delete(stopPlayback);
+    };
+  }, [stopPlayback]);
+
+  // Auto-play when src becomes available (via onLoadRequest)
   const prevLoadedSrc = useRef<string | null>(null);
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Play when loadedSrc changes from null to a value (lazy load case)
     if (loadedSrc && !prevLoadedSrc.current && onLoadRequest) {
+      // Stop all others first
+      activePlayers.forEach((stop) => {
+        if (stop !== stopPlayback) stop();
+      });
       audio.play().catch((error) => {
         console.error("Auto-play failed:", error);
       });
-    }
-    // Or when autoPlay is set with initial src
-    else if (autoPlay && initialSrc && !prevLoadedSrc.current) {
+    } else if (autoPlay && initialSrc && !prevLoadedSrc.current) {
+      activePlayers.forEach((stop) => {
+        if (stop !== stopPlayback) stop();
+      });
       audio.play().catch((error) => {
         console.error("Auto-play failed:", error);
       });
     }
 
     prevLoadedSrc.current = loadedSrc;
-  }, [loadedSrc, autoPlay, initialSrc, onLoadRequest]);
+  }, [loadedSrc, autoPlay, initialSrc, onLoadRequest, stopPlayback]);
 
   // Global drag handlers
   const handleMouseUp = useCallback(() => {
@@ -144,7 +156,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     if (isDragging) {
       document.addEventListener("mouseup", handleMouseUp);
       document.addEventListener("touchend", handleMouseUp);
-
       return () => {
         document.removeEventListener("mouseup", handleMouseUp);
         document.removeEventListener("touchend", handleMouseUp);
@@ -163,25 +174,26 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   const togglePlay = async () => {
     const audio = audioRef.current;
-    if (!audio) return;
     if (isLoading) return;
 
     try {
       if (isPlaying) {
-        audio.pause();
-      } else {
+        audio?.pause();
+      } else if (!src && onLoadRequest) {
         // If no src loaded yet, request it
-        if (!src && onLoadRequest) {
-          setIsLoading(true);
-          const newSrc = await onLoadRequest();
-          setIsLoading(false);
-          if (newSrc) {
-            setLoadedSrc(newSrc);
-            // Playback will be triggered by the useEffect watching loadedSrc
-          }
-        } else if (src) {
-          await audio.play();
+        setIsLoading(true);
+        const newSrc = await onLoadRequest();
+        setIsLoading(false);
+        if (newSrc) {
+          setLoadedSrc(newSrc);
+          // Playback will be triggered by the useEffect watching loadedSrc
         }
+      } else if (audio && src) {
+        // Stop all other players first
+        activePlayers.forEach((stop) => {
+          if (stop !== stopPlayback) stop();
+        });
+        await audio.play();
       }
     } catch (error) {
       console.error("Playback failed:", error);
@@ -208,19 +220,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   const formatTime = (time: number): string => {
     if (!isFinite(time)) return "0:00";
-
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  // Fix playhead positioning with better edge case handling
   const getProgressPercent = (): number => {
     if (duration <= 0) return 0;
-
-    // Handle the end case - if we're within 0.1 seconds of the end, show 100%
     if (duration - currentTime < 0.1) return 100;
-
     const percent = (currentTime / duration) * 100;
     return Math.min(100, Math.max(0, percent));
   };
@@ -229,7 +236,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <audio ref={audioRef} src={src ?? undefined} preload="metadata" />
+      {/* No JSX <audio> — created imperatively above */}
 
       <button
         onClick={togglePlay}
@@ -268,6 +275,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           {formatTime(duration)}
         </span>
       </div>
+
+      {loadError && (
+        <div className="text-xs text-red-500 mt-1">Error: {loadError}</div>
+      )}
     </div>
   );
 };

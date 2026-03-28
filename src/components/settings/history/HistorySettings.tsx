@@ -23,8 +23,13 @@ import {
   events,
   type HistoryEntry,
   type HistoryUpdatePayload,
-  type ImportProgress,
 } from "@/bindings";
+
+interface ImportProgress {
+  stage: string;
+  percent: number;
+  message: string;
+}
 import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";

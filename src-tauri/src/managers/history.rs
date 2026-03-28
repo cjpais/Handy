@@ -345,7 +345,12 @@ impl HistoryManager {
 
         debug!("Saved history entry with id {}", entry.id);
 
-        self.cleanup_old_entries()?;
+        // Only run cleanup for recordings, not imports. Imports should not
+        // cause the user's existing recordings to be deleted due to the
+        // history_limit retention setting.
+        if entry.source.as_deref() != Some("upload") {
+            self.cleanup_old_entries()?;
+        }
 
         // Emit typed event for real-time frontend updates
         if let Err(e) = (HistoryUpdatePayload::Added {
