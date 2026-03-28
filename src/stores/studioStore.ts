@@ -10,11 +10,16 @@ import type {
   StudioJobProgressEvent,
 } from "@/lib/types/studio";
 
+// Studio preferences are stored in localStorage rather than tauri-plugin-store
+// because they are lightweight, non-critical defaults (last output folder and
+// format selection) that don't need to survive a WebView cache clear.
 const LAST_OUTPUT_FOLDER_KEY = "studio:last-output-folder";
 const LAST_FORMATS_KEY = "studio:last-formats";
 
 const DEFAULT_FORMATS: StudioFormat[] = ["txt", "srt"];
+const FALLBACK_EXTENSIONS = ["mp3", "wav", "m4a", "flac", "ogg"];
 let studioInitPromise: Promise<void> | null = null;
+let listenersRegistered = false;
 
 const readStoredFormats = (): StudioFormat[] => {
   const raw = localStorage.getItem(LAST_FORMATS_KEY);
@@ -72,6 +77,7 @@ interface StudioStore {
   isLoading: boolean;
   isPreparing: boolean;
   isStarting: boolean;
+  supportedExtensions: string[];
   recentJobs: StudioJob[];
   preparedJob: StudioJob | null;
   activeJob: StudioJob | null;
@@ -111,6 +117,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   isLoading: true,
   isPreparing: false,
   isStarting: false,
+  supportedExtensions: FALLBACK_EXTENSIONS,
   recentJobs: [],
   preparedJob: null,
   activeJob: null,
@@ -132,6 +139,18 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     studioInitPromise = (async () => {
       await get().refreshHome();
 
+      studioApi
+        .getSupportedExtensions()
+        .then((extensions) => {
+          if (extensions.length > 0) set({ supportedExtensions: extensions });
+        })
+        .catch(() => {});
+
+      if (listenersRegistered) {
+        set({ initialized: true });
+        return;
+      }
+
       await Promise.all([
         listen<StudioJobProgressEvent>("studio-job-progress", (event) => {
           const payload = event.payload;
@@ -148,7 +167,7 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
               chunk_count:
                 payload.chunk_count > 0 ? payload.chunk_count : job.chunk_count,
               chunks_completed:
-                payload.chunks_completed > 0
+                payload.chunk_count > 0
                   ? payload.chunks_completed
                   : job.chunks_completed,
               status: nextStatus,
@@ -327,9 +346,11 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
         }),
       ]);
 
+      listenersRegistered = true;
       set({ initialized: true });
     })().catch((error) => {
       studioInitPromise = null;
+      listenersRegistered = false;
       set({ initialized: false });
       throw error;
     });

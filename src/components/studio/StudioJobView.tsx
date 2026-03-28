@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/Alert";
 import {
   formatStudioBytes,
   formatStudioDuration,
+  formatStudioEstimate,
   formatStudioImportedAt,
 } from "@/lib/studioFormat";
 import type { StudioJob } from "@/lib/types/studio";
@@ -238,11 +239,11 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
           <p>
             {t("studio.job.estimate", {
               defaultValue: "Estimate: {{value}}",
-              value:
-                job.estimate_text ||
-                t("studio.common.estimateFallback", {
-                  defaultValue: "About a few minutes",
-                }),
+              value: formatStudioEstimate(
+                job.estimate_min_minutes,
+                job.estimate_max_minutes,
+                t,
+              ),
             })}
           </p>
           <p>

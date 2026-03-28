@@ -38,7 +38,8 @@ export interface StudioJob {
   updated_at: number;
   completed_at: number | null;
   output_files: StudioOutputFile[];
-  estimate_text: string | null;
+  estimate_min_minutes: number | null;
+  estimate_max_minutes: number | null;
 }
 
 export interface StudioHomeData {

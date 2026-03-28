@@ -611,6 +611,7 @@
     "common": {
       "unknown": "Neznámé",
       "estimateFallback": "Přibližně několik minut",
+      "estimateRange": "Přibližně {{min}} až {{max}} minut",
       "unknownSize": "Neznama velikost"
     },
     "statuses": {

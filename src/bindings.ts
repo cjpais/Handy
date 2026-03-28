@@ -860,6 +860,9 @@ async retryStudioJob(jobId: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getStudioSupportedExtensions() : Promise<string[]> {
+    return await TAURI_INVOKE("get_studio_supported_extensions");
+},
 /**
  * Stub implementation for non-macOS platforms
  * Always returns false since laptop detection is macOS-specific
@@ -926,7 +929,7 @@ export type ShortcutBinding = { id: string; name: string; description: string; d
 export type SoundTheme = "marimba" | "pop" | "custom"
 export type StartStudioJobConfig = { output_folder: string; output_formats: string[] }
 export type StudioHomeData = { jobs: StudioJob[] }
-export type StudioJob = { id: string; source_path: string; source_name: string; source_dir: string | null; working_wav_path: string | null; media_duration_ms: number; file_size_bytes: number; container_format: string | null; audio_codec: string | null; audio_sample_rate_hz: number | null; status: StudioJobStatus; model_id: string; language: string; output_folder: string | null; output_formats: string[]; settings_fingerprint: string; chunk_count: number; chunks_completed: number; transcript_text: string; error_message: string | null; created_at: number; updated_at: number; completed_at: number | null; output_files: StudioOutputFile[]; estimate_text: string | null }
+export type StudioJob = { id: string; source_path: string; source_name: string; source_dir: string | null; working_wav_path: string | null; media_duration_ms: number; file_size_bytes: number; container_format: string | null; audio_codec: string | null; audio_sample_rate_hz: number | null; status: StudioJobStatus; model_id: string; language: string; output_folder: string | null; output_formats: string[]; settings_fingerprint: string; chunk_count: number; chunks_completed: number; transcript_text: string; error_message: string | null; created_at: number; updated_at: number; completed_at: number | null; output_files: StudioOutputFile[]; estimate_min_minutes: number | null; estimate_max_minutes: number | null }
 export type StudioJobStatus = "pending" | "running" | "paused" | "done" | "error" | "cancelled"
 export type StudioOutputFile = { format: string; output_path: string; file_name: string }
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"

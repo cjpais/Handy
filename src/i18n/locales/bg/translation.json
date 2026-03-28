@@ -611,6 +611,7 @@
     "common": {
       "unknown": "Неизвестно",
       "estimateFallback": "Около няколко минути",
+      "estimateRange": "Около {{min}} до {{max}} минути",
       "unknownSize": "Neizvesten razmer"
     },
     "statuses": {

@@ -16,7 +16,7 @@ use symphonia::core::units::TimeBase;
 
 const TARGET_SAMPLE_RATE: usize = 16_000;
 const RESAMPLE_FRAME_MS: u64 = 30;
-const SUPPORTED_EXTENSIONS: &[&str] = &["mp3", "wav", "m4a", "flac", "ogg"];
+pub const SUPPORTED_EXTENSIONS: &[&str] = &["mp3", "wav", "m4a", "flac", "ogg"];
 const PREPARATION_PROGRESS_STEP: u8 = 5;
 
 #[derive(Debug)]

@@ -82,6 +82,23 @@ export const formatStudioImportedAt = (timestamp: number) => {
   }).format(date);
 };
 
+export const formatStudioEstimate = (
+  min: number | null,
+  max: number | null,
+  t: TFunction,
+) => {
+  if (min == null || max == null) {
+    return t("studio.common.estimateFallback", {
+      defaultValue: "About a few minutes",
+    });
+  }
+  return t("studio.common.estimateRange", {
+    defaultValue: "About {{min}} to {{max}} minutes",
+    min,
+    max,
+  });
+};
+
 export const formatStudioRelativeTime = (timestamp: number) => {
   const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60000);

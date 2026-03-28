@@ -611,6 +611,7 @@
     "common": {
       "unknown": "Không xác định",
       "estimateFallback": "Khoảng vài phút",
+      "estimateRange": "Khoảng {{min}} đến {{max}} phút",
       "unknownSize": "Kich thuoc khong ro"
     },
     "statuses": {

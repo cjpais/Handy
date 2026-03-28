@@ -611,7 +611,8 @@
     "common": {
       "unknown": "Unknown",
       "unknownSize": "Unknown size",
-      "estimateFallback": "About a few minutes"
+      "estimateFallback": "About a few minutes",
+      "estimateRange": "About {{min}} to {{max}} minutes"
     },
     "statuses": {
       "pending": "Ready",

@@ -611,6 +611,7 @@
     "common": {
       "unknown": "Desconocido",
       "estimateFallback": "Unos pocos minutos",
+      "estimateRange": "Aproximadamente {{min}} a {{max}} minutos",
       "unknownSize": "Tamano desconocido"
     },
     "statuses": {

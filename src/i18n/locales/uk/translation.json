@@ -611,6 +611,7 @@
     "common": {
       "unknown": "Невідомо",
       "estimateFallback": "Приблизно кілька хвилин",
+      "estimateRange": "Приблизно {{min}}–{{max}} хвилин",
       "unknownSize": "????????? ??????"
     },
     "statuses": {

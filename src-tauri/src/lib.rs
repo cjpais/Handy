@@ -438,6 +438,7 @@ pub fn run(cli_args: CliArgs) {
             commands::studio::delete_studio_job,
             commands::studio::open_studio_output_folder,
             commands::studio::retry_studio_job,
+            commands::studio::get_studio_supported_extensions,
             helpers::clamshell::is_laptop,
         ])
         .events(collect_events![managers::history::HistoryUpdatePayload,]);

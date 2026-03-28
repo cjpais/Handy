@@ -611,6 +611,7 @@
     "common": {
       "unknown": "알 수 없음",
       "estimateFallback": "약 몇 분",
+      "estimateRange": "약 {{min}}~{{max}}분",
       "unknownSize": "알 수 없는 크기"
     },
     "statuses": {

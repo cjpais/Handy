@@ -611,6 +611,7 @@
     "common": {
       "unknown": "לא ידוע",
       "estimateFallback": "כמה דקות",
+      "estimateRange": "כ-{{min}} עד {{max}} דקות",
       "unknownSize": "גודל לא ידוע"
     },
     "statuses": {

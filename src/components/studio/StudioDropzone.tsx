@@ -5,15 +5,15 @@ import { FileAudio, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 
-const MEDIA_EXTENSIONS = ["mp3", "wav", "m4a", "flac", "ogg"];
-
 interface StudioDropzoneProps {
   disabled?: boolean;
+  supportedExtensions: string[];
   onFileSelected: (path: string) => void | Promise<void>;
 }
 
 export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
   disabled = false,
+  supportedExtensions,
   onFileSelected,
 }) => {
   const { t } = useTranslation();
@@ -24,7 +24,7 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
     const selected = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: "Audio", extensions: MEDIA_EXTENSIONS }],
+      filters: [{ name: "Audio", extensions: supportedExtensions }],
     });
 
     if (typeof selected === "string") {
@@ -32,6 +32,10 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
     }
   };
 
+  // Tauri's webview extends the standard File object with a `path` property
+  // on drag-and-drop. This is not part of the Web API and may be unavailable
+  // on some platforms (e.g. certain Linux/Wayland configs). The fallback toast
+  // guides the user to "Choose File" via the native dialog instead.
   const readDroppedPath = (event: React.DragEvent<HTMLDivElement>) => {
     const file = event.dataTransfer.files?.[0] as File & { path?: string };
     return file?.path || null;
@@ -103,7 +107,8 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
       </Button>
       <p className="mt-4 text-xs text-text/50">
         {t("studio.dropzone.supported", {
-          defaultValue: "Supported: MP3, WAV, M4A, FLAC, OGG",
+          defaultValue: "Supported: {{extensions}}",
+          extensions: supportedExtensions.map((extension) => extension.toUpperCase()).join(", "),
         })}
       </p>
     </div>

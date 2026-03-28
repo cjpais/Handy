@@ -12,8 +12,6 @@ import { StudioJobView } from "./StudioJobView";
 import { StudioRecentList } from "./StudioRecentList";
 import { StudioSetupCard } from "./StudioSetupCard";
 
-const MEDIA_EXTENSIONS = ["mp3", "wav", "m4a", "flac", "ogg"];
-
 export const StudioHome: React.FC = () => {
   const { t } = useTranslation();
   const { settings } = useSettings();
@@ -62,7 +60,7 @@ export const StudioHome: React.FC = () => {
     const selected = await open({
       multiple: false,
       directory: false,
-      filters: [{ name: "Audio", extensions: MEDIA_EXTENSIONS }],
+      filters: [{ name: "Audio", extensions: studio.supportedExtensions }],
     });
 
     if (typeof selected === "string") {
@@ -260,6 +258,7 @@ export const StudioHome: React.FC = () => {
         />
       ) : (
         <StudioDropzone
+          supportedExtensions={studio.supportedExtensions}
           disabled={!settings?.selected_model || studio.isPreparing}
           onFileSelected={handlePrepare}
         />

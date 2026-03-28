@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/Alert";
 import {
   formatStudioBytes,
   formatStudioDuration,
+  formatStudioEstimate,
   formatStudioImportedAt,
 } from "@/lib/studioFormat";
 import type { StudioFormat, StudioJob } from "@/lib/types/studio";
@@ -106,11 +107,11 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
             <p>
               {t("studio.setup.estimate", {
                 defaultValue: "Estimate: {{value}}",
-                value:
-                  job.estimate_text ||
-                  t("studio.common.estimateFallback", {
-                    defaultValue: "About a few minutes",
-                  }),
+                value: formatStudioEstimate(
+                  job.estimate_min_minutes,
+                  job.estimate_max_minutes,
+                  t,
+                ),
               })}
             </p>
           </div>

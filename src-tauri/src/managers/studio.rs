@@ -159,7 +159,8 @@ pub struct StudioJob {
     pub updated_at: i64,
     pub completed_at: Option<i64>,
     pub output_files: Vec<StudioOutputFile>,
-    pub estimate_text: Option<String>,
+    pub estimate_min_minutes: Option<i64>,
+    pub estimate_max_minutes: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -348,7 +349,8 @@ impl StudioManager {
             updated_at: row.get("updated_at")?,
             completed_at: row.get("completed_at")?,
             output_files: self.get_output_files(&id).unwrap_or_default(),
-            estimate_text: None,
+            estimate_min_minutes: None,
+            estimate_max_minutes: None,
         })
     }
 
@@ -388,7 +390,9 @@ impl StudioManager {
         let rows = stmt.query_map([], |row| self.map_job(row))?;
         let mut jobs = rows.collect::<std::result::Result<Vec<_>, _>>()?;
         for job in &mut jobs {
-            job.estimate_text = Some(self.estimate_for_job(job));
+            let (min, max) = self.estimate_for_job(job);
+            job.estimate_min_minutes = Some(min);
+            job.estimate_max_minutes = Some(max);
         }
         Ok(StudioHomeData { jobs })
     }
@@ -403,7 +407,9 @@ impl StudioManager {
             )
             .optional()?;
         if let Some(job_ref) = job.as_mut() {
-            job_ref.estimate_text = Some(self.estimate_for_job(job_ref));
+            let (min, max) = self.estimate_for_job(job_ref);
+            job_ref.estimate_min_minutes = Some(min);
+            job_ref.estimate_max_minutes = Some(max);
         }
         Ok(job)
     }
@@ -455,7 +461,9 @@ impl StudioManager {
         let mut job = self
             .get_job(&job_id)?
             .ok_or_else(|| anyhow!("Failed to load prepared Studio job"))?;
-        job.estimate_text = Some(self.estimate_for_job(&job));
+        let (min, max) = self.estimate_for_job(&job);
+        job.estimate_min_minutes = Some(min);
+        job.estimate_max_minutes = Some(max);
 
         let _ = self.app_handle.emit(
             "studio-job-created",
@@ -463,7 +471,8 @@ impl StudioManager {
                 "job_id": job.id,
                 "file_name": job.source_name,
                 "duration_ms": job.media_duration_ms,
-                "estimate_text": job.estimate_text,
+                "estimate_min_minutes": job.estimate_min_minutes,
+                "estimate_max_minutes": job.estimate_max_minutes,
             }),
         );
 
@@ -546,7 +555,7 @@ impl StudioManager {
             .map_err(|error| anyhow!("Failed to open Studio output folder: {}", error))
     }
 
-    fn estimate_for_job(&self, job: &StudioJob) -> String {
+    fn estimate_for_job(&self, job: &StudioJob) -> (i64, i64) {
         let settings = get_settings(&self.app_handle);
         let mut factor = match job.model_id.as_str() {
             "large" | "breeze-asr" => 0.24,
@@ -573,9 +582,9 @@ impl StudioManager {
         }
 
         let seconds = ((job.media_duration_ms.max(0) as f64) / 1000.0) * factor + 15.0;
-        let min = (seconds / 60.0).floor().max(1.0);
-        let max = (min + 2.0).ceil();
-        format!("About {:.0} to {:.0} minutes", min, max)
+        let min = (seconds / 60.0).floor().max(1.0) as i64;
+        let max = (min as f64 + 2.0).ceil() as i64;
+        (min, max)
     }
 
     fn set_active_job(&self, job_id: &str) -> Result<Arc<AtomicBool>> {

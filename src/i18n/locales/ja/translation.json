@@ -611,6 +611,7 @@
     "common": {
       "unknown": "不明",
       "estimateFallback": "数分程度",
+      "estimateRange": "約{{min}}〜{{max}}分",
       "unknownSize": "サイズ不明"
     },
     "statuses": {

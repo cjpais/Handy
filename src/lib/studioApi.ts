@@ -30,4 +30,7 @@ export const studioApi = {
   retryJob(jobId: string) {
     return invoke<void>("retry_studio_job", { jobId });
   },
+  getSupportedExtensions() {
+    return invoke<string[]>("get_studio_supported_extensions");
+  },
 };

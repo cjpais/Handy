@@ -611,6 +611,7 @@
     "common": {
       "unknown": "Okänt",
       "estimateFallback": "Ungefär några minuter",
+      "estimateRange": "Ungefär {{min}} till {{max}} minuter",
       "unknownSize": "Okand storlek"
     },
     "statuses": {

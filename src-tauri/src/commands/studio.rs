@@ -1,4 +1,5 @@
 use crate::managers::studio::{StartStudioJobConfig, StudioHomeData, StudioJob, StudioManager};
+use crate::media::decode;
 use std::sync::Arc;
 use tauri::State;
 
@@ -88,4 +89,13 @@ pub async fn retry_studio_job(
     studio_manager
         .retry_job(&job_id)
         .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_studio_supported_extensions() -> Vec<String> {
+    decode::SUPPORTED_EXTENSIONS
+        .iter()
+        .map(|ext| (*ext).to_string())
+        .collect()
 }
