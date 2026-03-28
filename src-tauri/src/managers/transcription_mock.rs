@@ -3,10 +3,12 @@
 // Existing tests don't exercise transcription, so this is safe.
 
 use crate::managers::model::ModelManager;
+use crate::settings::AppSettings;
 use anyhow::Result;
 use serde::Serialize;
 use specta::Type;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tauri::AppHandle;
 
 #[derive(Clone, Debug, Serialize)]
@@ -24,12 +26,14 @@ pub struct LoadingGuard;
 pub struct TranscriptionManager {
     #[allow(dead_code)]
     app_handle: AppHandle,
+    dictation_active: Arc<Mutex<bool>>,
 }
 
 impl TranscriptionManager {
     pub fn new(app_handle: &AppHandle, _model_manager: Arc<ModelManager>) -> Result<Self> {
         Ok(Self {
             app_handle: app_handle.clone(),
+            dictation_active: Arc::new(Mutex::new(false)),
         })
     }
 
@@ -57,8 +61,28 @@ impl TranscriptionManager {
         None
     }
 
+    pub fn set_dictation_active(&self, active: bool) {
+        *self.dictation_active.lock().unwrap() = active;
+    }
+
+    pub fn is_dictation_active(&self) -> bool {
+        *self.dictation_active.lock().unwrap()
+    }
+
+    pub fn wait_for_dictation_idle_for(&self, _timeout: Duration) -> bool {
+        !self.is_dictation_active()
+    }
+
     pub fn transcribe(&self, _audio: Vec<f32>) -> Result<String> {
         Ok(String::new())
+    }
+
+    pub fn transcribe_with_settings(
+        &self,
+        audio: Vec<f32>,
+        _settings: AppSettings,
+    ) -> Result<String> {
+        self.transcribe(audio)
     }
 }
 
