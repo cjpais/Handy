@@ -203,16 +203,27 @@ pub async fn import_audio_file(
     check_cancelled(&app_handle, &cancellation_tokens, &import_id)?;
 
     // Stage 2: Transcribing
-    emit_progress(&app_handle, "transcribing", 20, "Transcribing audio...");
+    emit_progress(&app_handle, "transcribing", 20, "Loading model & transcribing...");
 
     // Calculate Duration
     let duration = samples.len() as f64 / 16000.0;
     debug!("Audio duration: {:.2}s", duration);
 
-    // Use upstream's transcribe method — it handles all engine types
-    let transcription_text = match transcription_state.transcribe(samples.clone()) {
-        Ok(text) => text,
-        Err(e) => {
+    // Initiate model load (required — transcribe() doesn't auto-load)
+    transcription_state.initiate_model_load();
+
+    // Clone samples before moving into blocking thread (we need them later for WAV save)
+    let samples_for_transcribe = samples.clone();
+
+    // Run transcription on a blocking thread (model inference is CPU-bound)
+    let tm = Arc::clone(&transcription_state);
+    let transcription_text = match tauri::async_runtime::spawn_blocking(move || {
+        tm.transcribe(samples_for_transcribe)
+    })
+    .await
+    {
+        Ok(Ok(text)) => text,
+        Ok(Err(e)) => {
             emit_progress(
                 &app_handle,
                 "failed",
@@ -221,6 +232,16 @@ pub async fn import_audio_file(
             );
             cancellation_tokens.cleanup(&import_id);
             return Err(format!("Transcription failed: {}", e));
+        }
+        Err(e) => {
+            emit_progress(
+                &app_handle,
+                "failed",
+                0,
+                &format!("Transcription task panicked: {}", e),
+            );
+            cancellation_tokens.cleanup(&import_id);
+            return Err(format!("Transcription task panicked: {}", e));
         }
     };
 
