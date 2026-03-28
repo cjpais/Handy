@@ -641,7 +641,9 @@
       "formats": "Formatos",
       "selectFormatWarning": "Selecciona al menos un formato de salida.",
       "start": "Iniciar",
-      "chooseAnotherFile": "Elegir otro archivo"
+      "chooseAnotherFile": "Elegir otro archivo",
+      "loadedFromRecent": "Loaded from Recent Jobs",
+      "importedAt": "Imported {{value}}"
     },
     "job": {
       "preparing": "Preparando...",
@@ -660,11 +662,27 @@
       "processError": "Este archivo no se pudo procesar",
       "preview": "Vista previa de la transcripción",
       "previewEmpty": "La vista previa de la transcripción aparecerá aquí.",
-      "outputFiles": "Archivos de salida"
+      "outputFiles": "Archivos de salida",
+      "loadedFromRecent": "Viewing from Recent Jobs",
+      "importedAt": "Imported {{value}}",
+      "activeBrowsingNotice": "Another Studio job is still running in the background.",
+      "returnToActive": "Return to active job"
     },
     "recent": {
       "title": "Trabajos recientes",
-      "delete": "Eliminar trabajo"
+      "delete": "Eliminar trabajo",
+      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
+      "clearAllConfirm": "Delete {{count}} recent jobs?",
+      "clearAllTitle": "Clear recent jobs",
+      "clearAllAction": "Delete all",
+      "clearAll": "Clear all recent jobs",
+      "viewing": "Viewing",
+      "details": "{{duration}} - {{size}} - Imported {{time}}",
+      "emptyFiltered": "No recent jobs match this status.",
+      "filters": {
+        "toggle": "Filter recent jobs",
+        "all": "All"
+      }
     }
   }
 }

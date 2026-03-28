@@ -1,34 +1,37 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { open } from "@tauri-apps/plugin-dialog";
+import { UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { useSettings } from "@/hooks/useSettings";
-import { useModelStore } from "@/stores/modelStore";
 import { useStudioStore } from "@/stores/studioStore";
 import { StudioDropzone } from "./StudioDropzone";
 import { StudioJobView } from "./StudioJobView";
 import { StudioRecentList } from "./StudioRecentList";
 import { StudioSetupCard } from "./StudioSetupCard";
 
+const MEDIA_EXTENSIONS = ["mp3", "wav", "m4a", "flac", "ogg"];
+
 export const StudioHome: React.FC = () => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const initializeStudio = useStudioStore((state) => state.initialize);
   const studio = useStudioStore();
-  const modelStore = useModelStore();
 
   React.useEffect(() => {
-    studio.initialize().catch((error) => {
+    initializeStudio().catch((error) => {
       console.error("Failed to initialize Studio:", error);
+      toast.error("Failed to initialize Studio", {
+        description: error instanceof Error ? error.message : String(error),
+      });
     });
-  }, [studio]);
+  }, [initializeStudio]);
 
-  React.useEffect(() => {
-    modelStore.initialize().catch((error) => {
-      console.error("Failed to initialize model store for Studio:", error);
-    });
-  }, [modelStore]);
-
-  const [outputFolder, setOutputFolder] = React.useState(studio.lastOutputFolder);
+  const [outputFolder, setOutputFolder] = React.useState(
+    studio.lastOutputFolder,
+  );
 
   React.useEffect(() => {
     if (studio.preparedJob) {
@@ -47,6 +50,18 @@ export const StudioHome: React.FC = () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       toast.error(message);
+    }
+  };
+
+  const handleChooseAnotherFile = async () => {
+    const selected = await open({
+      multiple: false,
+      directory: false,
+      filters: [{ name: "Audio", extensions: MEDIA_EXTENSIONS }],
+    });
+
+    if (typeof selected === "string") {
+      await handlePrepare(selected);
     }
   };
 
@@ -98,23 +113,89 @@ export const StudioHome: React.FC = () => {
     }
   };
 
+  const handleClearAllJobs = async (jobIds: string[]) => {
+    try {
+      await studio.clearRecentJobs(jobIds);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(message);
+    }
+  };
+
+  const handleSelectPreparedJob = async (jobId: string) => {
+    try {
+      await studio.selectRecentJob(jobId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(message);
+    }
+  };
+
+  const hasSeparateActiveJob =
+    !!studio.activeJob &&
+    (studio.activeJob.status === "running" ||
+      studio.activeJob.status === "paused") &&
+    studio.selectedRecentJobId !== studio.activeJob.id;
+
+  const displayedJob = studio.selectedJob ?? studio.activeJob;
+  const displayedJobIsActive =
+    !!displayedJob && studio.activeJob?.id === displayedJob.id;
+  const displayedJobStage = displayedJobIsActive
+    ? studio.currentStage
+    : displayedJob?.status === "done"
+      ? "done"
+      : displayedJob?.status === "error" || displayedJob?.status === "cancelled"
+        ? "error"
+        : displayedJob?.status === "paused"
+          ? "paused"
+          : displayedJob?.status === "running"
+            ? "transcribing"
+            : "idle";
+  const displayedJobStatusMessage = displayedJobIsActive
+    ? studio.statusMessage
+    : null;
+  const displayedJobPreparationProgress = displayedJobIsActive
+    ? studio.preparationProgress
+    : null;
+
   return (
     <div className="max-w-4xl w-full mx-auto space-y-5">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold">
-          {t("studio.title", { defaultValue: "Studio" })}
-        </h1>
-        <p className="text-sm text-text/60">
-          {t("studio.subtitle", {
-            defaultValue:
-              "Drop an audio file, choose output, start, wait, and get clean transcript files.",
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">
+            {t("studio.title", { defaultValue: "Studio" })}
+          </h1>
+          <p className="text-sm text-text/60">
+            {t("studio.subtitle", {
+              defaultValue:
+                "Drop an audio file, choose output, start, wait, and get clean transcript files.",
+            })}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="px-2"
+          onClick={() => void handleChooseAnotherFile()}
+          disabled={
+            !settings?.selected_model || studio.isPreparing || studio.isStarting
+          }
+          title={t("studio.dropzone.chooseFile", {
+            defaultValue: "Choose File",
           })}
-        </p>
+          aria-label={t("studio.dropzone.chooseFile", {
+            defaultValue: "Choose File",
+          })}
+        >
+          <UploadCloud className="h-4 w-4" />
+        </Button>
       </div>
       {!settings?.selected_model && (
         <Alert variant="warning">
           {t("studio.selectModelWarning", {
-            defaultValue: "Select a transcription model before starting Studio.",
+            defaultValue:
+              "Select a transcription model before starting Studio.",
           })}
         </Alert>
       )}
@@ -123,22 +204,33 @@ export const StudioHome: React.FC = () => {
         <Alert variant="error">{studio.error}</Alert>
       )}
 
-      {studio.activeJob ? (
-        <StudioJobView
-          job={studio.activeJob}
-          statusMessage={studio.statusMessage}
-          stage={studio.currentStage}
-          preparationProgress={studio.preparationProgress}
-          error={studio.error}
-          onCancel={handleCancel}
-          onRetry={() => handleRetry(studio.activeJob!.id)}
-          onOpenFolder={() => handleOpenFolder(studio.activeJob!.id)}
-        />
-      ) : studio.preparedJob ? (
+      {hasSeparateActiveJob && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
+          <span>
+            {t("studio.job.activeBrowsingNotice", {
+              defaultValue:
+                "Another Studio job is still running in the background.",
+            })}
+          </span>
+          <button
+            type="button"
+            className="cursor-pointer rounded-lg border border-blue-300/30 px-3 py-1 text-xs font-medium text-blue-100 transition-colors hover:bg-blue-400/10"
+            onClick={studio.returnToActiveJob}
+          >
+            {t("studio.job.returnToActive", {
+              defaultValue: "Return to active job",
+            })}
+          </button>
+        </div>
+      )}
+
+      {studio.preparedJob ? (
         <StudioSetupCard
+          key={`${studio.preparedJob.id}-${studio.preparedJobSelectionToken}`}
           job={studio.preparedJob}
           outputFolder={outputFolder}
           selectedFormats={studio.selectedFormats}
+          loadedFromRecent={studio.preparedJobOrigin === "recent"}
           onOutputFolderChange={(value) => {
             setOutputFolder(value);
             studio.setLastOutputFolder(value);
@@ -147,6 +239,19 @@ export const StudioHome: React.FC = () => {
           onStart={handleStart}
           onCancel={studio.clearPreparedJob}
           disabled={studio.isStarting}
+        />
+      ) : displayedJob ? (
+        <StudioJobView
+          key={`${displayedJob.id}-${studio.preparedJobSelectionToken}`}
+          job={displayedJob}
+          statusMessage={displayedJobStatusMessage}
+          stage={displayedJobStage}
+          preparationProgress={displayedJobPreparationProgress}
+          error={displayedJobIsActive ? studio.error : null}
+          loadedFromRecent={studio.selectedJob?.id === displayedJob.id}
+          onCancel={handleCancel}
+          onRetry={() => handleRetry(displayedJob.id)}
+          onOpenFolder={() => handleOpenFolder(displayedJob.id)}
         />
       ) : (
         <StudioDropzone
@@ -157,9 +262,13 @@ export const StudioHome: React.FC = () => {
 
       <StudioRecentList
         jobs={studio.recentJobs}
+        onSelectJob={handleSelectPreparedJob}
         onOpenFolder={handleOpenFolder}
         onRetry={handleRetry}
         onDelete={handleDeleteJob}
+        onClearAll={handleClearAllJobs}
+        selectedJobId={studio.selectedRecentJobId}
+        selectionToken={studio.preparedJobSelectionToken}
       />
     </div>
   );

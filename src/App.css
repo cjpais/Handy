@@ -106,3 +106,51 @@
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
 }
+
+@keyframes studio-selection-pulse {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--color-logo-primary), transparent 65%);
+  }
+  35% {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 4px
+      color-mix(in srgb, var(--color-logo-primary), transparent 82%);
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--color-logo-primary), transparent 100%);
+  }
+}
+
+@keyframes studio-setup-loaded {
+  0% {
+    opacity: 0.92;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.studio-recent-selected {
+  border-color: color-mix(in srgb, var(--color-logo-primary), transparent 35%);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-logo-primary), transparent 92%),
+      color-mix(in srgb, var(--color-logo-primary), transparent 97%)
+    ),
+    var(--color-background);
+}
+
+.studio-recent-pulse {
+  animation: studio-selection-pulse 900ms ease-out;
+}
+
+.studio-setup-loaded {
+  animation: studio-setup-loaded 280ms ease-out;
+}

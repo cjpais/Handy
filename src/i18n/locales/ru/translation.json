@@ -641,7 +641,9 @@
       "formats": "Форматы",
       "selectFormatWarning": "Выберите хотя бы один формат вывода.",
       "start": "Начать",
-      "chooseAnotherFile": "Выбрать другой файл"
+      "chooseAnotherFile": "Выбрать другой файл",
+      "loadedFromRecent": "Loaded from Recent Jobs",
+      "importedAt": "Imported {{value}}"
     },
     "job": {
       "preparing": "Подготовка...",
@@ -660,11 +662,27 @@
       "processError": "Этот файл не удалось обработать",
       "preview": "Предпросмотр транскрипции",
       "previewEmpty": "Предпросмотр транскрипции появится здесь.",
-      "outputFiles": "Выходные файлы"
+      "outputFiles": "Выходные файлы",
+      "loadedFromRecent": "Viewing from Recent Jobs",
+      "importedAt": "Imported {{value}}",
+      "activeBrowsingNotice": "Another Studio job is still running in the background.",
+      "returnToActive": "Return to active job"
     },
     "recent": {
       "title": "Последние задания",
-      "delete": "Удалить задание"
+      "delete": "Удалить задание",
+      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
+      "clearAllConfirm": "Delete {{count}} recent jobs?",
+      "clearAllTitle": "Clear recent jobs",
+      "clearAllAction": "Delete all",
+      "clearAll": "Clear all recent jobs",
+      "viewing": "Viewing",
+      "details": "{{duration}} - {{size}} - Imported {{time}}",
+      "emptyFiltered": "No recent jobs match this status.",
+      "filters": {
+        "toggle": "Filter recent jobs",
+        "all": "All"
+      }
     }
   }
 }

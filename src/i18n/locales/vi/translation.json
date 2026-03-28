@@ -641,7 +641,9 @@
       "formats": "Định dạng",
       "selectFormatWarning": "Chọn ít nhất một định dạng đầu ra.",
       "start": "Bắt đầu",
-      "chooseAnotherFile": "Chọn tệp khác"
+      "chooseAnotherFile": "Chọn tệp khác",
+      "loadedFromRecent": "Loaded from Recent Jobs",
+      "importedAt": "Imported {{value}}"
     },
     "job": {
       "preparing": "Đang chuẩn bị...",
@@ -660,11 +662,27 @@
       "processError": "Không thể xử lý tệp này",
       "preview": "Xem trước bản ghi",
       "previewEmpty": "Bản xem trước bản ghi sẽ xuất hiện ở đây.",
-      "outputFiles": "Tệp đầu ra"
+      "outputFiles": "Tệp đầu ra",
+      "loadedFromRecent": "Viewing from Recent Jobs",
+      "importedAt": "Imported {{value}}",
+      "activeBrowsingNotice": "Another Studio job is still running in the background.",
+      "returnToActive": "Return to active job"
     },
     "recent": {
       "title": "Công việc gần đây",
-      "delete": "Xóa công việc"
+      "delete": "Xóa công việc",
+      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
+      "clearAllConfirm": "Delete {{count}} recent jobs?",
+      "clearAllTitle": "Clear recent jobs",
+      "clearAllAction": "Delete all",
+      "clearAll": "Clear all recent jobs",
+      "viewing": "Viewing",
+      "details": "{{duration}} - {{size}} - Imported {{time}}",
+      "emptyFiltered": "No recent jobs match this status.",
+      "filters": {
+        "toggle": "Filter recent jobs",
+        "all": "All"
+      }
     }
   }
 }

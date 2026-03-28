@@ -5,6 +5,7 @@ use crate::managers::transcription::TranscriptionManager;
 use crate::media::decode;
 use crate::settings::{get_settings, AppSettings, WhisperAcceleratorSetting};
 use anyhow::{anyhow, bail, Result};
+use chrono::{Local, TimeZone};
 use log::{error, info, warn};
 use rusqlite::{params, Connection, OptionalExtension};
 use rusqlite_migration::{Migrations, M};
@@ -1048,6 +1049,7 @@ impl StudioManager {
             .and_then(|name| name.to_str())
             .unwrap_or("transcript")
             .to_string();
+        let export_timestamp_ms = Self::now_ms();
 
         let mut staged_files = Vec::new();
         for format in &job.output_formats {
@@ -1065,20 +1067,22 @@ impl StudioManager {
 
         let mut export_plan = Vec::new();
         for (format, staged_path) in staged_files {
-            let file_name = staged_path
+            let final_destination = resolve_export_destination(
+                Path::new(&output_folder),
+                &base_name,
+                &format,
+                export_timestamp_ms,
+            );
+            let file_name = final_destination
                 .file_name()
                 .and_then(|name| name.to_str())
-                .ok_or_else(|| anyhow!("Invalid staged export file name"))?
+                .ok_or_else(|| anyhow!("Invalid Studio export file name"))?
                 .to_string();
-            let final_destination = Path::new(&output_folder).join(&file_name);
-            if final_destination.exists() {
-                bail!(
-                    "Output file already exists: {}",
-                    final_destination.to_string_lossy()
-                );
-            }
             let temporary_destination =
                 Path::new(&output_folder).join(format!("{file_name}.handy-partial"));
+            if temporary_destination.exists() {
+                fs::remove_file(&temporary_destination)?;
+            }
             export_plan.push((
                 format,
                 staged_path,
@@ -1334,13 +1338,51 @@ fn panic_payload_to_message(payload: Box<dyn std::any::Any + Send>) -> String {
     }
 }
 
+fn export_collision_suffix(timestamp_ms: i64) -> String {
+    Local
+        .timestamp_millis_opt(timestamp_ms)
+        .single()
+        .unwrap_or_else(Local::now)
+        .format("%Y-%m-%d %H-%M-%S")
+        .to_string()
+}
+
+fn resolve_export_destination(
+    output_folder: &Path,
+    base_name: &str,
+    format: &str,
+    timestamp_ms: i64,
+) -> PathBuf {
+    let initial = output_folder.join(format!("{base_name}.{format}"));
+    if !initial.exists() {
+        return initial;
+    }
+
+    let suffix = export_collision_suffix(timestamp_ms);
+    for attempt in 0.. {
+        let file_name = if attempt == 0 {
+            format!("{base_name} ({suffix}).{format}")
+        } else {
+            format!("{base_name} ({suffix}) ({}).{format}", attempt + 1)
+        };
+        let candidate = output_folder.join(file_name);
+        if !candidate.exists() {
+            return candidate;
+        }
+    }
+
+    unreachable!("collision resolution loop should always return")
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        build_chunks, can_retry_with_available_source, panic_payload_to_message,
-        trim_overlap_prefix, ActiveJobCleanup, CHUNK_MS, CHUNK_SAMPLE_RATE,
+        build_chunks, can_retry_with_available_source, export_collision_suffix,
+        panic_payload_to_message, resolve_export_destination, trim_overlap_prefix,
+        ActiveJobCleanup, CHUNK_MS, CHUNK_SAMPLE_RATE,
     };
     use std::collections::HashMap;
+    use std::fs;
     use std::path::PathBuf;
     use std::sync::atomic::AtomicBool;
     use std::sync::{Arc, Mutex};
@@ -1449,5 +1491,67 @@ mod tests {
             Some(missing_wav.to_string_lossy().as_ref()),
             &missing_source,
         ));
+    }
+
+    #[test]
+    fn export_collision_suffix_uses_safe_timestamp_format() {
+        let suffix = export_collision_suffix(1_743_076_979_000);
+        assert!(suffix.contains('-'));
+        assert!(!suffix.contains(':'));
+    }
+
+    #[test]
+    fn resolve_export_destination_keeps_original_name_when_available() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let output_path =
+            resolve_export_destination(temp_dir.path(), "Let It Be", "srt", 1_743_076_979_000);
+
+        assert_eq!(
+            output_path.file_name().and_then(|name| name.to_str()),
+            Some("Let It Be.srt")
+        );
+    }
+
+    #[test]
+    fn resolve_export_destination_adds_timestamp_on_collision() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let original = temp_dir.path().join("Let It Be.srt");
+        fs::write(&original, "existing").expect("write existing file");
+
+        let output_path =
+            resolve_export_destination(temp_dir.path(), "Let It Be", "srt", 1_743_076_979_000);
+
+        assert_ne!(output_path, original);
+        assert!(output_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("")
+            .starts_with("Let It Be ("));
+        assert_eq!(
+            output_path.extension().and_then(|ext| ext.to_str()),
+            Some("srt")
+        );
+    }
+
+    #[test]
+    fn resolve_export_destination_adds_counter_when_timestamped_name_exists() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let original = temp_dir.path().join("Let It Be.srt");
+        fs::write(&original, "existing").expect("write existing file");
+
+        let timestamped =
+            resolve_export_destination(temp_dir.path(), "Let It Be", "srt", 1_743_076_979_000);
+        fs::write(&timestamped, "timestamped").expect("write timestamped file");
+
+        let next =
+            resolve_export_destination(temp_dir.path(), "Let It Be", "srt", 1_743_076_979_000);
+
+        assert_ne!(next, original);
+        assert_ne!(next, timestamped);
+        assert!(next
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("")
+            .contains(" (2).srt"));
     }
 }

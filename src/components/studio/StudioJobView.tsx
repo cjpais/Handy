@@ -12,6 +12,7 @@ interface StudioJobViewProps {
   stage: string;
   preparationProgress: number | null;
   error: string | null;
+  loadedFromRecent?: boolean;
   onCancel: () => Promise<void>;
   onRetry: () => Promise<void>;
   onOpenFolder: () => Promise<void>;
@@ -40,6 +41,27 @@ const formatDuration = (durationMs: number) => {
   return `${minutes}m ${seconds}s`;
 };
 
+const formatImportedAt = (timestamp: number) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+
+  return new Intl.DateTimeFormat(undefined, {
+    ...(sameDay
+      ? {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+        }
+      : {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }),
+  }).format(date);
+};
+
 const PREPARATION_STAGES = new Set([
   "preparing_audio",
   "opening_file",
@@ -55,6 +77,7 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
   stage,
   preparationProgress,
   error,
+  loadedFromRecent = false,
   onCancel,
   onRetry,
   onOpenFolder,
@@ -63,13 +86,29 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
   const isRunning = job.status === "running" || job.status === "paused";
   const isDone = job.status === "done";
   const isError = job.status === "error" || job.status === "cancelled";
+  const fallbackStatusMessage = isDone
+    ? t("studio.statuses.done", { defaultValue: "Done" })
+    : job.status === "error"
+      ? t("studio.statuses.error", { defaultValue: "Failed" })
+      : job.status === "cancelled"
+        ? t("studio.statuses.cancelled", { defaultValue: "Cancelled" })
+        : job.status === "paused"
+          ? t("studio.statuses.paused", { defaultValue: "Paused" })
+          : job.status === "running"
+            ? t("studio.statuses.running", { defaultValue: "Running" })
+            : job.status === "pending"
+              ? t("studio.statuses.pending", { defaultValue: "Ready" })
+              : t("studio.job.waiting", { defaultValue: "Waiting" });
   const isPreparing = PREPARATION_STAGES.has(stage);
   const preparationValue =
     isRunning && isPreparing && preparationProgress !== null
       ? Math.max(0, Math.min(100, preparationProgress))
       : null;
   const isIndeterminate =
-    isRunning && isPreparing && job.chunk_count <= 0 && preparationValue === null;
+    isRunning &&
+    isPreparing &&
+    job.chunk_count <= 0 &&
+    preparationValue === null;
   const progressLabel =
     preparationValue !== null
       ? `${preparationValue}%`
@@ -96,16 +135,33 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
   };
 
   return (
-    <div className="rounded-2xl border border-mid-gray/20 bg-background p-5">
+    <div
+      className={`rounded-2xl border border-mid-gray/20 bg-background p-5 ${
+        loadedFromRecent ? "studio-setup-loaded" : ""
+      }`}
+    >
       <div className="flex flex-col gap-4">
+        {loadedFromRecent && (
+          <div className="rounded-xl border border-logo-primary/30 bg-logo-primary/10 px-3 py-2 text-xs text-text/70">
+            <span className="font-medium text-text">
+              {t("studio.job.loadedFromRecent", {
+                defaultValue: "Viewing from Recent Jobs",
+              })}
+            </span>
+            <span className="ml-2 text-text/55">
+              {t("studio.job.importedAt", {
+                defaultValue: "Imported {{value}}",
+                value: formatImportedAt(job.created_at),
+              })}
+            </span>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">{job.source_name}</h2>
             <p className="mt-1 text-sm text-text/60">
-              {statusMessage ||
-                (isDone
-                  ? t("studio.job.done", { defaultValue: "Done" })
-                  : t("studio.job.waiting", { defaultValue: "Waiting" }))}
+              {statusMessage || fallbackStatusMessage}
             </p>
           </div>
           <div className="flex gap-2">
@@ -124,8 +180,12 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
               <Button
                 variant="secondary"
                 onClick={onOpenFolder}
-                title={t("studio.job.openFolder", { defaultValue: "Open output folder" })}
-                aria-label={t("studio.job.openFolder", { defaultValue: "Open output folder" })}
+                title={t("studio.job.openFolder", {
+                  defaultValue: "Open output folder",
+                })}
+                aria-label={t("studio.job.openFolder", {
+                  defaultValue: "Open output folder",
+                })}
               >
                 <FolderOpen className="h-4 w-4" />
               </Button>
@@ -135,7 +195,9 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
                 variant="secondary"
                 onClick={onRetry}
                 title={t("studio.job.retry", { defaultValue: "Retry job" })}
-                aria-label={t("studio.job.retry", { defaultValue: "Retry job" })}
+                aria-label={t("studio.job.retry", {
+                  defaultValue: "Retry job",
+                })}
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
@@ -169,11 +231,7 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
           <p>
             {t("studio.job.currentStep", {
               defaultValue: "Current step: {{value}}",
-              value:
-                statusMessage ||
-                (isDone
-                  ? t("studio.job.done", { defaultValue: "Done" })
-                  : t("studio.job.waiting", { defaultValue: "Waiting" })),
+              value: statusMessage || fallbackStatusMessage,
             })}
           </p>
         </div>

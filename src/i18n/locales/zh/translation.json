@@ -641,7 +641,9 @@
       "formats": "格式",
       "selectFormatWarning": "请至少选择一种输出格式。",
       "start": "开始",
-      "chooseAnotherFile": "选择其他文件"
+      "chooseAnotherFile": "选择其他文件",
+      "loadedFromRecent": "Loaded from Recent Jobs",
+      "importedAt": "Imported {{value}}"
     },
     "job": {
       "preparing": "准备中...",
@@ -660,11 +662,27 @@
       "processError": "无法处理此文件",
       "preview": "转录预览",
       "previewEmpty": "转录预览将在此处显示。",
-      "outputFiles": "输出文件"
+      "outputFiles": "输出文件",
+      "loadedFromRecent": "Viewing from Recent Jobs",
+      "importedAt": "Imported {{value}}",
+      "activeBrowsingNotice": "Another Studio job is still running in the background.",
+      "returnToActive": "Return to active job"
     },
     "recent": {
       "title": "最近任务",
-      "delete": "删除任务"
+      "delete": "删除任务",
+      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
+      "clearAllConfirm": "Delete {{count}} recent jobs?",
+      "clearAllTitle": "Clear recent jobs",
+      "clearAllAction": "Delete all",
+      "clearAll": "Clear all recent jobs",
+      "viewing": "Viewing",
+      "details": "{{duration}} - {{size}} - Imported {{time}}",
+      "emptyFiltered": "No recent jobs match this status.",
+      "filters": {
+        "toggle": "Filter recent jobs",
+        "all": "All"
+      }
     }
   }
 }

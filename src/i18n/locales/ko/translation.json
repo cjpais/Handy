@@ -641,7 +641,9 @@
       "formats": "형식",
       "selectFormatWarning": "하나 이상의 출력 형식을 선택하세요.",
       "start": "시작",
-      "chooseAnotherFile": "다른 파일 선택"
+      "chooseAnotherFile": "다른 파일 선택",
+      "loadedFromRecent": "Loaded from Recent Jobs",
+      "importedAt": "Imported {{value}}"
     },
     "job": {
       "preparing": "준비 중...",
@@ -660,11 +662,27 @@
       "processError": "이 파일을 처리할 수 없습니다",
       "preview": "트랜스크립트 미리보기",
       "previewEmpty": "트랜스크립트 미리보기가 여기에 표시됩니다.",
-      "outputFiles": "출력 파일"
+      "outputFiles": "출력 파일",
+      "loadedFromRecent": "Viewing from Recent Jobs",
+      "importedAt": "Imported {{value}}",
+      "activeBrowsingNotice": "Another Studio job is still running in the background.",
+      "returnToActive": "Return to active job"
     },
     "recent": {
       "title": "최근 작업",
-      "delete": "작업 삭제"
+      "delete": "작업 삭제",
+      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
+      "clearAllConfirm": "Delete {{count}} recent jobs?",
+      "clearAllTitle": "Clear recent jobs",
+      "clearAllAction": "Delete all",
+      "clearAll": "Clear all recent jobs",
+      "viewing": "Viewing",
+      "details": "{{duration}} - {{size}} - Imported {{time}}",
+      "emptyFiltered": "No recent jobs match this status.",
+      "filters": {
+        "toggle": "Filter recent jobs",
+        "all": "All"
+      }
     }
   }
 }

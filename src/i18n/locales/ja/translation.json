@@ -641,7 +641,9 @@
       "formats": "フォーマット",
       "selectFormatWarning": "少なくとも1つの出力フォーマットを選択してください。",
       "start": "開始",
-      "chooseAnotherFile": "別のファイルを選択"
+      "chooseAnotherFile": "別のファイルを選択",
+      "loadedFromRecent": "Loaded from Recent Jobs",
+      "importedAt": "Imported {{value}}"
     },
     "job": {
       "preparing": "準備中...",
@@ -660,11 +662,27 @@
       "processError": "このファイルを処理できませんでした",
       "preview": "文字起こしプレビュー",
       "previewEmpty": "文字起こしのプレビューがここに表示されます。",
-      "outputFiles": "出力ファイル"
+      "outputFiles": "出力ファイル",
+      "loadedFromRecent": "Viewing from Recent Jobs",
+      "importedAt": "Imported {{value}}",
+      "activeBrowsingNotice": "Another Studio job is still running in the background.",
+      "returnToActive": "Return to active job"
     },
     "recent": {
       "title": "最近のジョブ",
-      "delete": "ジョブを削除"
+      "delete": "ジョブを削除",
+      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
+      "clearAllConfirm": "Delete {{count}} recent jobs?",
+      "clearAllTitle": "Clear recent jobs",
+      "clearAllAction": "Delete all",
+      "clearAll": "Clear all recent jobs",
+      "viewing": "Viewing",
+      "details": "{{duration}} - {{size}} - Imported {{time}}",
+      "emptyFiltered": "No recent jobs match this status.",
+      "filters": {
+        "toggle": "Filter recent jobs",
+        "all": "All"
+      }
     }
   }
 }

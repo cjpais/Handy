@@ -12,6 +12,7 @@ interface StudioSetupCardProps {
   job: StudioJob;
   outputFolder: string;
   selectedFormats: StudioFormat[];
+  loadedFromRecent?: boolean;
   onOutputFolderChange: (value: string) => void;
   onFormatsChange: (value: StudioFormat[]) => void;
   onStart: () => Promise<void>;
@@ -34,10 +35,32 @@ const formatDuration = (durationMs: number) => {
   return `${minutes}m ${seconds}s`;
 };
 
+const formatImportedAt = (timestamp: number) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+
+  return new Intl.DateTimeFormat(undefined, {
+    ...(sameDay
+      ? {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+        }
+      : {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }),
+  }).format(date);
+};
+
 export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
   job,
   outputFolder,
   selectedFormats,
+  loadedFromRecent = false,
   onOutputFolderChange,
   onFormatsChange,
   onStart,
@@ -65,8 +88,28 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
   };
 
   return (
-    <div className="rounded-2xl border border-mid-gray/20 bg-background p-5">
+    <div
+      className={`rounded-2xl border border-mid-gray/20 bg-background p-5 ${
+        loadedFromRecent ? "studio-setup-loaded" : ""
+      }`}
+    >
       <div className="flex flex-col gap-5">
+        {loadedFromRecent && (
+          <div className="rounded-xl border border-logo-primary/30 bg-logo-primary/10 px-3 py-2 text-xs text-text/70">
+            <span className="font-medium text-text">
+              {t("studio.setup.loadedFromRecent", {
+                defaultValue: "Loaded from Recent Jobs",
+              })}
+            </span>
+            <span className="ml-2 text-text/55">
+              {t("studio.setup.importedAt", {
+                defaultValue: "Imported {{value}}",
+                value: formatImportedAt(job.created_at),
+              })}
+            </span>
+          </div>
+        )}
+
         <div>
           <h2 className="text-lg font-semibold">{job.source_name}</h2>
           <div className="mt-3 grid gap-2 text-sm text-text/65 sm:grid-cols-2">
@@ -107,7 +150,9 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
         <div className="space-y-3">
           <div>
             <p className="text-sm font-medium">
-              {t("studio.setup.outputFolder", { defaultValue: "Output folder" })}
+              {t("studio.setup.outputFolder", {
+                defaultValue: "Output folder",
+              })}
             </p>
             <div className="mt-2 flex gap-2">
               <div className="flex-1 rounded-lg border border-mid-gray/20 bg-mid-gray/5 px-3 py-2 text-sm text-text/70">
@@ -116,7 +161,11 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
                     defaultValue: "Choose where to save your transcript",
                   })}
               </div>
-              <Button variant="secondary" onClick={chooseFolder} disabled={disabled}>
+              <Button
+                variant="secondary"
+                onClick={chooseFolder}
+                disabled={disabled}
+              >
                 <FolderOpen className="h-4 w-4" />
               </Button>
             </div>
