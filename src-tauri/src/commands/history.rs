@@ -1,7 +1,10 @@
-use crate::actions::process_transcription_output;
-use crate::managers::{
-    history::{HistoryManager, PaginatedHistory},
-    transcription::TranscriptionManager,
+use crate::{
+    actions::process_transcription_output,
+    managers::{
+        history::{HistoryManager, PaginatedHistory},
+        transcription::TranscriptionManager,
+    },
+    settings::RecordingRetentionPeriod,
 };
 use std::sync::Arc;
 use tauri::{AppHandle, State};
@@ -129,21 +132,10 @@ pub async fn update_history_limit(
 pub async fn update_recording_retention_period(
     app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
-    period: String,
+    period: RecordingRetentionPeriod,
 ) -> Result<(), String> {
-    use crate::settings::RecordingRetentionPeriod;
-
-    let retention_period = match period.as_str() {
-        "never" => RecordingRetentionPeriod::Never,
-        "preserve_limit" => RecordingRetentionPeriod::PreserveLimit,
-        "days3" => RecordingRetentionPeriod::Days3,
-        "weeks2" => RecordingRetentionPeriod::Weeks2,
-        "months3" => RecordingRetentionPeriod::Months3,
-        _ => return Err(format!("Invalid retention period: {}", period)),
-    };
-
     let mut settings = crate::settings::get_settings(&app);
-    settings.recording_retention_period = retention_period;
+    settings.recording_retention_period = period;
     crate::settings::write_settings(&app, settings);
 
     history_manager
