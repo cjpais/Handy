@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { listen } from "@tauri-apps/api/event";
+import i18n from "@/i18n";
 import { studioApi } from "@/lib/studioApi";
 import type {
   StartStudioJobConfig,
@@ -41,6 +42,7 @@ type StudioStage =
   | "building_chunks"
   | "transcribing"
   | "writing_output_files"
+  | "stopping"
   | "paused"
   | "done"
   | "error";
@@ -55,6 +57,7 @@ const mapStage = (stage: string): StudioStage => {
     case "preparing_audio":
     case "transcribing":
     case "writing_output_files":
+    case "stopping":
     case "paused":
     case "done":
     case "error":
@@ -219,7 +222,9 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           (event) => {
             set((state) => ({
               currentStage: "paused",
-              statusMessage: "Paused while dictation is running",
+              statusMessage: i18n.t("studio.job.status.pausedForDictation", {
+                defaultValue: "Paused while dictation is running",
+              }),
               preparationProgress: null,
               activeJob:
                 state.activeJob?.id === event.payload.job_id
@@ -237,8 +242,13 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
           set((state) => ({
             currentStage: "transcribing",
             statusMessage:
-              state.statusMessage === "Paused while dictation is running"
-                ? "Resuming Studio"
+              state.statusMessage ===
+              i18n.t("studio.job.status.pausedForDictation", {
+                defaultValue: "Paused while dictation is running",
+              })
+                ? i18n.t("studio.job.status.resuming", {
+                    defaultValue: "Resuming Studio",
+                  })
                 : state.statusMessage,
             preparationProgress: null,
             activeJob:
@@ -265,7 +275,9 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
                   : state.selectedJob,
               preparedJob: null,
               currentStage: "done",
-              statusMessage: "Done",
+              statusMessage: i18n.t("studio.statuses.done", {
+                defaultValue: "Done",
+              }),
               preparationProgress: null,
               recentJobs: upsertJob(state.recentJobs, job),
             }));
@@ -285,7 +297,9 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
               preparedJob: null,
               currentStage: "error",
               error: event.payload.error,
-              statusMessage: "This file could not be processed",
+              statusMessage: i18n.t("studio.job.processError", {
+                defaultValue: "This file could not be processed",
+              }),
               preparationProgress: null,
               recentJobs: job
                 ? upsertJob(state.recentJobs, job)
@@ -366,14 +380,20 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   startPreparedJob: async (config: StartStudioJobConfig) => {
     const preparedJob = get().preparedJob;
     if (!preparedJob) {
-      throw new Error("No Studio job is ready to start");
+      throw new Error(
+        i18n.t("studio.errors.noPreparedJob", {
+          defaultValue: "No Studio job is ready to start",
+        }),
+      );
     }
 
     set({
       isStarting: true,
       error: null,
       currentStage: "preparing_audio",
-      statusMessage: "Preparing audio",
+      statusMessage: i18n.t("studio.job.stage.preparingAudio", {
+        defaultValue: "Preparing audio",
+      }),
       preparationProgress: 0,
     });
 
@@ -419,7 +439,12 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   cancelActiveJob: async () => {
     const activeJob = get().activeJob;
     if (!activeJob) return;
-    set({ statusMessage: "Stopping..." });
+    set({
+      currentStage: "stopping",
+      statusMessage: i18n.t("studio.job.status.stopping", {
+        defaultValue: "Stopping...",
+      }),
+    });
     await studioApi.cancelJob(activeJob.id);
   },
 
@@ -485,8 +510,13 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     if (failedCount > 0) {
       throw new Error(
         failedCount === 1
-          ? "One recent job could not be deleted."
-          : `${failedCount} recent jobs could not be deleted.`,
+          ? i18n.t("studio.recent.deleteOneFailed", {
+              defaultValue: "One recent job could not be deleted.",
+            })
+          : i18n.t("studio.recent.deleteManyFailed", {
+              defaultValue: "{{count}} recent jobs could not be deleted.",
+              count: failedCount,
+            }),
       );
     }
   },
@@ -495,7 +525,9 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
     set({
       error: null,
       currentStage: "preparing_audio",
-      statusMessage: "Preparing audio",
+      statusMessage: i18n.t("studio.job.stage.preparingAudio", {
+        defaultValue: "Preparing audio",
+      }),
       preparationProgress: 0,
     });
     await studioApi.retryJob(jobId);
@@ -513,7 +545,11 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
   selectRecentJob: async (jobId: string) => {
     const job = await studioApi.getJob(jobId);
     if (!job) {
-      throw new Error("Studio job not found");
+      throw new Error(
+        i18n.t("studio.errors.jobNotFound", {
+          defaultValue: "Studio job not found",
+        }),
+      );
     }
 
     if (job.status === "pending") {
@@ -574,7 +610,9 @@ export const useStudioStore = create<StudioStore>((set, get) => ({
       error: null,
       statusMessage:
         state.activeJob?.status === "paused"
-          ? "Paused while dictation is running"
+          ? i18n.t("studio.job.status.pausedForDictation", {
+              defaultValue: "Paused while dictation is running",
+            })
           : state.statusMessage,
       preparationProgress: null,
     })),

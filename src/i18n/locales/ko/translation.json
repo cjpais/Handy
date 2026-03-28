@@ -610,7 +610,8 @@
     "selectModelWarning": "스튜디오를 시작하기 전에 음성 인식 모델을 선택하세요.",
     "common": {
       "unknown": "알 수 없음",
-      "estimateFallback": "약 몇 분"
+      "estimateFallback": "약 몇 분",
+      "unknownSize": "알 수 없는 크기"
     },
     "statuses": {
       "pending": "준비됨",
@@ -629,7 +630,8 @@
       "title": "오디오 파일 드롭",
       "description": "한 번에 하나의 파일...",
       "chooseFile": "파일 선택",
-      "supported": "지원 형식: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "지원 형식: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "여기서는 이 드롭 항목을 읽을 수 없습니다. 대신 파일 선택을 사용하세요."
     },
     "setup": {
       "duration": "길이: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "하나 이상의 출력 형식을 선택하세요.",
       "start": "시작",
       "chooseAnotherFile": "다른 파일 선택",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "최근 작업에서 불러옴",
+      "importedAt": "{{value}}에 가져옴"
     },
     "job": {
       "preparing": "준비 중...",
@@ -663,26 +665,48 @@
       "preview": "트랜스크립트 미리보기",
       "previewEmpty": "트랜스크립트 미리보기가 여기에 표시됩니다.",
       "outputFiles": "출력 파일",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "최근 작업에서 보는 중",
+      "importedAt": "{{value}}에 가져옴",
+      "activeBrowsingNotice": "다른 Studio 작업이 백그라운드에서 아직 실행 중입니다.",
+      "returnToActive": "활성 작업으로 돌아가기",
+      "status": {
+        "stopping": "중지하는 중...",
+        "pausedForDictation": "받아쓰기가 실행 중이라 일시 중지됨",
+        "resuming": "Studio 다시 시작 중"
+      },
+      "stage": {
+        "preparingAudio": "오디오 준비 중",
+        "openingFile": "파일 여는 중",
+        "decodingAudio": "오디오 디코딩 중",
+        "resamplingAudio": "오디오 리샘플링 중",
+        "writingNormalizedAudio": "정규화된 오디오 쓰는 중",
+        "buildingChunks": "청크 생성 중",
+        "transcribing": "오디오 전사 중",
+        "writingOutputFiles": "출력 파일 쓰는 중"
+      }
     },
     "recent": {
       "title": "최근 작업",
       "delete": "작업 삭제",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "최근 작업 {{count}}개를 삭제할까요? 실행 중이거나 일시 중지된 작업은 유지됩니다.",
+      "clearAllConfirm": "최근 작업 {{count}}개를 삭제할까요?",
+      "clearAllTitle": "최근 작업 지우기",
+      "clearAllAction": "모두 삭제",
+      "clearAll": "최근 작업 모두 지우기",
+      "viewing": "보는 중",
+      "details": "{{duration}} - {{size}} - {{time}}에 가져옴",
+      "emptyFiltered": "이 상태와 일치하는 최근 작업이 없습니다.",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "최근 작업 필터",
+        "all": "전체"
+      },
+      "deleteOneFailed": "최근 작업 1개를 삭제할 수 없습니다.",
+      "deleteManyFailed": "최근 작업 {{count}}개를 삭제할 수 없습니다."
+    },
+    "errors": {
+      "initializeFailed": "Studio 초기화에 실패했습니다",
+      "jobNotFound": "Studio 작업을 찾을 수 없습니다",
+      "noPreparedJob": "시작할 준비가 된 Studio 작업이 없습니다"
     }
   }
 }

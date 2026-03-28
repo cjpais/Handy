@@ -610,7 +610,8 @@
     "selectModelWarning": "Selecione um modelo de transcrição antes de iniciar o Studio.",
     "common": {
       "unknown": "Desconhecido",
-      "estimateFallback": "Cerca de alguns minutos"
+      "estimateFallback": "Cerca de alguns minutos",
+      "unknownSize": "Tamanho desconhecido"
     },
     "statuses": {
       "pending": "Pronto",
@@ -629,7 +630,8 @@
       "title": "Solte um arquivo de áudio",
       "description": "Um arquivo de cada vez...",
       "chooseFile": "Escolher arquivo",
-      "supported": "Suportados: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "Suportados: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "Nao foi possivel ler este item solto aqui. Use Escolher arquivo em vez disso."
     },
     "setup": {
       "duration": "Duração: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "Selecione pelo menos um formato de saída.",
       "start": "Iniciar",
       "chooseAnotherFile": "Escolher outro arquivo",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "Carregado dos trabalhos recentes",
+      "importedAt": "Importado {{value}}"
     },
     "job": {
       "preparing": "Preparando...",
@@ -663,26 +665,48 @@
       "preview": "Prévia da transcrição",
       "previewEmpty": "A prévia da transcrição aparecerá aqui.",
       "outputFiles": "Arquivos de saída",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "Visualizando dos trabalhos recentes",
+      "importedAt": "Importado {{value}}",
+      "activeBrowsingNotice": "Outro trabalho do Studio ainda esta em execucao em segundo plano.",
+      "returnToActive": "Voltar ao trabalho ativo",
+      "status": {
+        "stopping": "Parando...",
+        "pausedForDictation": "Pausado enquanto o ditado esta ativo",
+        "resuming": "Retomando o Studio"
+      },
+      "stage": {
+        "preparingAudio": "Preparando audio",
+        "openingFile": "Abrindo arquivo",
+        "decodingAudio": "Decodificando audio",
+        "resamplingAudio": "Reamostrando audio",
+        "writingNormalizedAudio": "Gravando audio normalizado",
+        "buildingChunks": "Criando blocos",
+        "transcribing": "Transcrevendo audio",
+        "writingOutputFiles": "Gravando arquivos de saida"
+      }
     },
     "recent": {
       "title": "Trabalhos recentes",
       "delete": "Excluir trabalho",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "Excluir {{count}} trabalhos recentes? Os trabalhos em execucao ou pausados serao mantidos.",
+      "clearAllConfirm": "Excluir {{count}} trabalhos recentes?",
+      "clearAllTitle": "Limpar trabalhos recentes",
+      "clearAllAction": "Excluir tudo",
+      "clearAll": "Limpar todos os trabalhos recentes",
+      "viewing": "Visualizando",
+      "details": "{{duration}} - {{size}} - Importado {{time}}",
+      "emptyFiltered": "Nenhum trabalho recente corresponde a este status.",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "Filtrar trabalhos recentes",
+        "all": "Todos"
+      },
+      "deleteOneFailed": "Nao foi possivel excluir um trabalho recente.",
+      "deleteManyFailed": "Nao foi possivel excluir {{count}} trabalhos recentes."
+    },
+    "errors": {
+      "initializeFailed": "Falha ao inicializar o Studio",
+      "jobNotFound": "Trabalho do Studio nao encontrado",
+      "noPreparedJob": "Nenhum trabalho do Studio esta pronto para iniciar"
     }
   }
 }

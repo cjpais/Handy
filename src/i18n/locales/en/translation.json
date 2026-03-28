@@ -610,6 +610,7 @@
     "selectModelWarning": "Select a transcription model before starting Studio.",
     "common": {
       "unknown": "Unknown",
+      "unknownSize": "Unknown size",
       "estimateFallback": "About a few minutes"
     },
     "statuses": {
@@ -629,7 +630,8 @@
       "title": "Drop an audio file",
       "description": "One file at a time. Studio keeps the flow simple and reliable.",
       "chooseFile": "Choose File",
-      "supported": "Supported: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "Supported: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "This drop could not be read here. Use Choose File instead."
     },
     "setup": {
       "duration": "Duration: {{value}}",
@@ -663,6 +665,21 @@
       "preview": "Transcript preview",
       "previewEmpty": "Transcript preview will appear here.",
       "outputFiles": "Output files",
+      "status": {
+        "stopping": "Stopping...",
+        "pausedForDictation": "Paused while dictation is running",
+        "resuming": "Resuming Studio"
+      },
+      "stage": {
+        "preparingAudio": "Preparing audio",
+        "openingFile": "Opening file",
+        "decodingAudio": "Decoding audio",
+        "resamplingAudio": "Resampling audio",
+        "writingNormalizedAudio": "Writing normalized audio",
+        "buildingChunks": "Building chunks",
+        "transcribing": "Transcribing audio",
+        "writingOutputFiles": "Writing output files"
+      },
       "loadedFromRecent": "Viewing from Recent Jobs",
       "importedAt": "Imported {{value}}",
       "activeBrowsingNotice": "Another Studio job is still running in the background.",
@@ -676,6 +693,8 @@
       "clearAllTitle": "Clear recent jobs",
       "clearAllAction": "Delete all",
       "clearAll": "Clear all recent jobs",
+      "deleteOneFailed": "One recent job could not be deleted.",
+      "deleteManyFailed": "{{count}} recent jobs could not be deleted.",
       "viewing": "Viewing",
       "details": "{{duration}} - {{size}} - Imported {{time}}",
       "emptyFiltered": "No recent jobs match this status.",
@@ -683,6 +702,11 @@
         "toggle": "Filter recent jobs",
         "all": "All"
       }
+    },
+    "errors": {
+      "initializeFailed": "Failed to initialize Studio",
+      "jobNotFound": "Studio job not found",
+      "noPreparedJob": "No Studio job is ready to start"
     }
   }
 }

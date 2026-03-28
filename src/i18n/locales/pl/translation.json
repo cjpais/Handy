@@ -610,7 +610,8 @@
     "selectModelWarning": "Wybierz model transkrypcji przed uruchomieniem Studia.",
     "common": {
       "unknown": "Nieznane",
-      "estimateFallback": "Około kilku minut"
+      "estimateFallback": "Około kilku minut",
+      "unknownSize": "Nieznany rozmiar"
     },
     "statuses": {
       "pending": "Gotowe",
@@ -629,7 +630,8 @@
       "title": "Upuść plik audio",
       "description": "Jeden plik na raz...",
       "chooseFile": "Wybierz plik",
-      "supported": "Obsługiwane: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "Obsługiwane: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "Nie udalo sie odczytac tego elementu upuszczonego tutaj. Zamiast tego uzyj Wybierz plik."
     },
     "setup": {
       "duration": "Czas trwania: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "Wybierz co najmniej jeden format wyjściowy.",
       "start": "Uruchom",
       "chooseAnotherFile": "Wybierz inny plik",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "Wczytano z ostatnich zadan",
+      "importedAt": "Zaimportowano {{value}}"
     },
     "job": {
       "preparing": "Przygotowywanie...",
@@ -663,26 +665,48 @@
       "preview": "Podgląd transkrypcji",
       "previewEmpty": "Podgląd transkrypcji pojawi się tutaj.",
       "outputFiles": "Pliki wyjściowe",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "Widok z ostatnich zadan",
+      "importedAt": "Zaimportowano {{value}}",
+      "activeBrowsingNotice": "Inne zadanie Studio nadal dziala w tle.",
+      "returnToActive": "Wroc do aktywnego zadania",
+      "status": {
+        "stopping": "Zatrzymywanie...",
+        "pausedForDictation": "Wstrzymano, gdy dyktowanie jest aktywne",
+        "resuming": "Wznawianie Studio"
+      },
+      "stage": {
+        "preparingAudio": "Przygotowywanie audio",
+        "openingFile": "Otwieranie pliku",
+        "decodingAudio": "Dekodowanie audio",
+        "resamplingAudio": "Zmiana probkowania audio",
+        "writingNormalizedAudio": "Zapisywanie znormalizowanego audio",
+        "buildingChunks": "Tworzenie fragmentow",
+        "transcribing": "Transkrypcja audio",
+        "writingOutputFiles": "Zapisywanie plikow wyjsciowych"
+      }
     },
     "recent": {
       "title": "Ostatnie zadania",
       "delete": "Usuń zadanie",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "Usunac {{count}} ostatnich zadan? Uruchomione lub wstrzymane zadania zostana zachowane.",
+      "clearAllConfirm": "Usunac {{count}} ostatnich zadan?",
+      "clearAllTitle": "Wyczysc ostatnie zadania",
+      "clearAllAction": "Usun wszystko",
+      "clearAll": "Wyczysc wszystkie ostatnie zadania",
+      "viewing": "Podglad",
+      "details": "{{duration}} - {{size}} - Zaimportowano {{time}}",
+      "emptyFiltered": "Brak ostatnich zadan pasujacych do tego statusu.",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "Filtruj ostatnie zadania",
+        "all": "Wszystkie"
+      },
+      "deleteOneFailed": "Nie udalo sie usunac jednego ostatniego zadania.",
+      "deleteManyFailed": "Nie udalo sie usunac {{count}} ostatnich zadan."
+    },
+    "errors": {
+      "initializeFailed": "Nie udalo sie zainicjalizowac Studio",
+      "jobNotFound": "Nie znaleziono zadania Studio",
+      "noPreparedJob": "Nie ma zadania Studio gotowego do uruchomienia"
     }
   }
 }

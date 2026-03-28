@@ -610,7 +610,8 @@
     "selectModelWarning": "בחר מודל תמלול לפני הפעלת הסטודיו.",
     "common": {
       "unknown": "לא ידוע",
-      "estimateFallback": "כמה דקות"
+      "estimateFallback": "כמה דקות",
+      "unknownSize": "גודל לא ידוע"
     },
     "statuses": {
       "pending": "מוכן",
@@ -629,7 +630,8 @@
       "title": "גרור קובץ שמע",
       "description": "קובץ אחד בכל פעם. הסטודיו שומר על תהליך פשוט ואמין.",
       "chooseFile": "בחר קובץ",
-      "supported": "נתמך: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "נתמך: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "לא ניתן לקרוא את הפריט שנגרר כאן. השתמש בבחירת קובץ במקום."
     },
     "setup": {
       "duration": "משך: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "בחר לפחות פורמט פלט אחד.",
       "start": "התחל",
       "chooseAnotherFile": "בחר קובץ אחר",
-      "loadedFromRecent": "???? ??????? ???????",
-      "importedAt": "???? ?-{{value}}"
+      "loadedFromRecent": "נטען ממשימות אחרונות",
+      "importedAt": "יובא ב-{{value}}"
     },
     "job": {
       "preparing": "מכין...",
@@ -663,26 +665,48 @@
       "preview": "תצוגה מקדימה של התמלול",
       "previewEmpty": "תצוגה מקדימה של התמלול תופיע כאן.",
       "outputFiles": "קבצי פלט",
-      "loadedFromRecent": "???? ??????? ???????",
-      "importedAt": "???? ?-{{value}}",
-      "activeBrowsingNotice": "????? ?????? ???? ????? ??? ????.",
-      "returnToActive": "???? ?????? ??????"
+      "loadedFromRecent": "בצפייה ממשימות אחרונות",
+      "importedAt": "יובא ב-{{value}}",
+      "activeBrowsingNotice": "משימת Studio אחרת עדיין רצה ברקע.",
+      "returnToActive": "חזור למשימה הפעילה",
+      "status": {
+        "stopping": "עוצר...",
+        "pausedForDictation": "מושהה בזמן שהכתבה פעילה",
+        "resuming": "ממשיך את Studio"
+      },
+      "stage": {
+        "preparingAudio": "מכין שמע",
+        "openingFile": "פותח קובץ",
+        "decodingAudio": "מפענח שמע",
+        "resamplingAudio": "מדגם מחדש שמע",
+        "writingNormalizedAudio": "כותב שמע מנורמל",
+        "buildingChunks": "בונה מקטעים",
+        "transcribing": "מתמלל שמע",
+        "writingOutputFiles": "כותב קבצי פלט"
+      }
     },
     "recent": {
       "title": "משימות אחרונות",
       "delete": "מחק משימה",
-      "clearAllConfirmWithActive": "????? {{count}} ?????? ???????? ?????? ???? ?? ?????? ??????.",
-      "clearAllConfirm": "????? {{count}} ?????? ????????",
-      "clearAllTitle": "??? ?????? ???????",
-      "clearAllAction": "??? ???",
-      "clearAll": "??? ?? ?? ??????? ????????",
-      "viewing": "??????",
-      "details": "{{duration}} - {{size}} - ???? ?-{{time}}",
-      "emptyFiltered": "??? ?????? ??????? ??????? ?????? ???.",
+      "clearAllConfirmWithActive": "למחוק {{count}} משימות אחרונות? משימות פעילות או מושהות יישמרו.",
+      "clearAllConfirm": "למחוק {{count}} משימות אחרונות?",
+      "clearAllTitle": "נקה משימות אחרונות",
+      "clearAllAction": "מחק הכל",
+      "clearAll": "נקה את כל המשימות האחרונות",
+      "viewing": "בצפייה",
+      "details": "{{duration}} - {{size}} - יובא ב-{{time}}",
+      "emptyFiltered": "אין משימות אחרונות שתואמות לסטטוס הזה.",
       "filters": {
-        "toggle": "??? ?????? ???????",
-        "all": "???"
-      }
+        "toggle": "סנן משימות אחרונות",
+        "all": "הכל"
+      },
+      "deleteOneFailed": "לא ניתן היה למחוק משימה אחרונה אחת.",
+      "deleteManyFailed": "לא ניתן היה למחוק {{count}} משימות אחרונות."
+    },
+    "errors": {
+      "initializeFailed": "אתחול Studio נכשל",
+      "jobNotFound": "משימת Studio לא נמצאה",
+      "noPreparedJob": "אין משימת Studio שמוכנה להתחלה"
     }
   }
 }

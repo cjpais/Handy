@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { open } from "@tauri-apps/plugin-dialog";
 import { FileAudio, UploadCloud } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 
 const MEDIA_EXTENSIONS = ["mp3", "wav", "m4a", "flac", "ogg"];
@@ -61,7 +62,14 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
         const path = readDroppedPath(event);
         if (path) {
           await onFileSelected(path);
+          return;
         }
+        toast.error(
+          t("studio.dropzone.dropUnavailable", {
+            defaultValue:
+              "This drop could not be read here. Use Choose File instead.",
+          }),
+        );
       }}
       className={`rounded-2xl border-2 border-dashed p-8 text-center transition-colors ${
         dragging
@@ -81,7 +89,8 @@ export const StudioDropzone: React.FC<StudioDropzoneProps> = ({
       </h2>
       <p className="mt-2 text-sm text-text/60">
         {t("studio.dropzone.description", {
-          defaultValue: "One file at a time. Studio keeps the flow simple and reliable.",
+          defaultValue:
+            "One file at a time. Studio keeps the flow simple and reliable.",
         })}
       </p>
       <Button

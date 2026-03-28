@@ -443,11 +443,17 @@ impl TranscriptionManager {
         *self.dictation_active.lock().unwrap()
     }
 
-    pub fn wait_for_dictation_idle(&self) {
-        let mut guard = self.dictation_active.lock().unwrap();
-        while *guard {
-            guard = self.dictation_condvar.wait(guard).unwrap();
+    pub fn wait_for_dictation_idle_for(&self, timeout: Duration) -> bool {
+        let guard = self.dictation_active.lock().unwrap();
+        if !*guard {
+            return true;
         }
+
+        let (guard, _) = self
+            .dictation_condvar
+            .wait_timeout_while(guard, timeout, |active| *active)
+            .unwrap();
+        !*guard
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {

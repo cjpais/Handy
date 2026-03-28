@@ -3,6 +3,12 @@ import { useTranslation } from "react-i18next";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { Filter, FolderOpen, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import {
+  formatStudioBytes,
+  formatStudioDuration,
+  formatStudioImportedAt,
+  formatStudioRelativeTime,
+} from "@/lib/studioFormat";
 import type { StudioJob } from "@/lib/types/studio";
 
 interface StudioRecentListProps {
@@ -15,51 +21,6 @@ interface StudioRecentListProps {
   selectedJobId: string | null;
   selectionToken: number;
 }
-
-const formatRelativeTime = (timestamp: number) => {
-  const diff = Date.now() - timestamp;
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-};
-
-const formatDuration = (durationMs: number) => {
-  const totalSeconds = Math.round(durationMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}m ${seconds}s`;
-};
-
-const formatBytes = (bytes: number) => {
-  if (!bytes) return "Unknown size";
-  const mb = bytes / 1024 / 1024;
-  return `${mb.toFixed(0)} MB`;
-};
-
-const formatImportedAt = (timestamp: number) => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-
-  return new Intl.DateTimeFormat(undefined, {
-    ...(sameDay
-      ? {
-          hour: "numeric",
-          minute: "2-digit",
-          second: "2-digit",
-        }
-      : {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        }),
-  }).format(date);
-};
 
 export const StudioRecentList: React.FC<StudioRecentListProps> = ({
   jobs,
@@ -292,14 +253,14 @@ export const StudioRecentList: React.FC<StudioRecentListProps> = ({
                 </div>
                 <p className="text-xs text-text/55">
                   {statusLabel(job.status)} -{" "}
-                  {formatRelativeTime(job.created_at)}
+                  {formatStudioRelativeTime(job.created_at)}
                 </p>
                 <p className="mt-1 text-xs text-text/45">
                   {t("studio.recent.details", {
                     defaultValue: "{{duration}} - {{size}} - Imported {{time}}",
-                    duration: formatDuration(job.media_duration_ms),
-                    size: formatBytes(job.file_size_bytes),
-                    time: formatImportedAt(job.created_at),
+                    duration: formatStudioDuration(job.media_duration_ms),
+                    size: formatStudioBytes(job.file_size_bytes, t),
+                    time: formatStudioImportedAt(job.created_at),
                   })}
                 </p>
               </div>

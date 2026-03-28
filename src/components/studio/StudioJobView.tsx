@@ -4,6 +4,11 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { FolderOpen, RotateCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import {
+  formatStudioBytes,
+  formatStudioDuration,
+  formatStudioImportedAt,
+} from "@/lib/studioFormat";
 import type { StudioJob } from "@/lib/types/studio";
 
 interface StudioJobViewProps {
@@ -24,42 +29,6 @@ const progressPercentage = (job: StudioJob) => {
     0,
     Math.min(100, Math.round((job.chunks_completed / job.chunk_count) * 100)),
   );
-};
-
-const formatBytes = (bytes: number) => {
-  if (!bytes) return "Unknown size";
-  const gb = bytes / 1024 / 1024 / 1024;
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
-  const mb = bytes / 1024 / 1024;
-  return `${mb.toFixed(0)} MB`;
-};
-
-const formatDuration = (durationMs: number) => {
-  const totalSeconds = Math.round(durationMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}m ${seconds}s`;
-};
-
-const formatImportedAt = (timestamp: number) => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-
-  return new Intl.DateTimeFormat(undefined, {
-    ...(sameDay
-      ? {
-          hour: "numeric",
-          minute: "2-digit",
-          second: "2-digit",
-        }
-      : {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        }),
-  }).format(date);
 };
 
 const PREPARATION_STAGES = new Set([
@@ -115,7 +84,57 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
       : isIndeterminate
         ? t("studio.job.preparing", { defaultValue: "Preparing..." })
         : `${job.chunks_completed} / ${job.chunk_count || "?"}`;
-  const isStopping = statusMessage === "Stopping...";
+  const isStopping = stage === "stopping";
+  const resolvedStatusMessage = (() => {
+    if (stage === "stopping") {
+      return t("studio.job.status.stopping", { defaultValue: "Stopping..." });
+    }
+
+    switch (stage) {
+      case "preparing_audio":
+        return t("studio.job.stage.preparingAudio", {
+          defaultValue: "Preparing audio",
+        });
+      case "opening_file":
+        return t("studio.job.stage.openingFile", {
+          defaultValue: "Opening file",
+        });
+      case "decoding_audio":
+        return t("studio.job.stage.decodingAudio", {
+          defaultValue: "Decoding audio",
+        });
+      case "resampling_audio":
+        return t("studio.job.stage.resamplingAudio", {
+          defaultValue: "Resampling audio",
+        });
+      case "writing_normalized_audio":
+        return t("studio.job.stage.writingNormalizedAudio", {
+          defaultValue: "Writing normalized audio",
+        });
+      case "building_chunks":
+        return t("studio.job.stage.buildingChunks", {
+          defaultValue: "Building chunks",
+        });
+      case "transcribing":
+        return t("studio.job.stage.transcribing", {
+          defaultValue: "Transcribing audio",
+        });
+      case "writing_output_files":
+        return t("studio.job.stage.writingOutputFiles", {
+          defaultValue: "Writing output files",
+        });
+      case "paused":
+        return t("studio.job.status.pausedForDictation", {
+          defaultValue: "Paused while dictation is running",
+        });
+      case "done":
+      case "error":
+      case "idle":
+      case "ready":
+      default:
+        return statusMessage || fallbackStatusMessage;
+    }
+  })();
 
   const handleCancel = async () => {
     const confirmed = await confirm(
@@ -151,7 +170,7 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
             <span className="ml-2 text-text/55">
               {t("studio.job.importedAt", {
                 defaultValue: "Imported {{value}}",
-                value: formatImportedAt(job.created_at),
+                value: formatStudioImportedAt(job.created_at),
               })}
             </span>
           </div>
@@ -160,9 +179,7 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">{job.source_name}</h2>
-            <p className="mt-1 text-sm text-text/60">
-              {statusMessage || fallbackStatusMessage}
-            </p>
+            <p className="mt-1 text-sm text-text/60">{resolvedStatusMessage}</p>
           </div>
           <div className="flex gap-2">
             {isRunning && (
@@ -209,13 +226,13 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
           <p>
             {t("studio.job.duration", {
               defaultValue: "Duration: {{value}}",
-              value: formatDuration(job.media_duration_ms),
+              value: formatStudioDuration(job.media_duration_ms),
             })}
           </p>
           <p>
             {t("studio.job.size", {
               defaultValue: "Size: {{value}}",
-              value: formatBytes(job.file_size_bytes),
+              value: formatStudioBytes(job.file_size_bytes, t),
             })}
           </p>
           <p>
@@ -231,7 +248,7 @@ export const StudioJobView: React.FC<StudioJobViewProps> = ({
           <p>
             {t("studio.job.currentStep", {
               defaultValue: "Current step: {{value}}",
-              value: statusMessage || fallbackStatusMessage,
+              value: resolvedStatusMessage,
             })}
           </p>
         </div>

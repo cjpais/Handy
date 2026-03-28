@@ -23,11 +23,16 @@ export const StudioHome: React.FC = () => {
   React.useEffect(() => {
     initializeStudio().catch((error) => {
       console.error("Failed to initialize Studio:", error);
-      toast.error("Failed to initialize Studio", {
-        description: error instanceof Error ? error.message : String(error),
-      });
+      toast.error(
+        t("studio.errors.initializeFailed", {
+          defaultValue: "Failed to initialize Studio",
+        }),
+        {
+          description: error instanceof Error ? error.message : String(error),
+        },
+      );
     });
-  }, [initializeStudio]);
+  }, [initializeStudio, t]);
 
   const [outputFolder, setOutputFolder] = React.useState(
     studio.lastOutputFolder,
@@ -135,7 +140,7 @@ export const StudioHome: React.FC = () => {
     !!studio.activeJob &&
     (studio.activeJob.status === "running" ||
       studio.activeJob.status === "paused") &&
-    studio.selectedRecentJobId !== studio.activeJob.id;
+    studio.selectedJob !== null;
 
   const displayedJob = studio.selectedJob ?? studio.activeJob;
   const displayedJobIsActive =

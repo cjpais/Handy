@@ -610,7 +610,8 @@
     "selectModelWarning": "اختر نموذج التفريغ قبل بدء الاستوديو.",
     "common": {
       "unknown": "غير معروف",
-      "estimateFallback": "حوالي بضع دقائق"
+      "estimateFallback": "حوالي بضع دقائق",
+      "unknownSize": "حجم غير معروف"
     },
     "statuses": {
       "pending": "جاهز",
@@ -629,7 +630,8 @@
       "title": "أسقط ملفاً صوتياً",
       "description": "ملف واحد في كل مرة...",
       "chooseFile": "اختر ملفاً",
-      "supported": "المدعوم: MP3، WAV، M4A، FLAC، OGG"
+      "supported": "المدعوم: MP3، WAV، M4A، FLAC، OGG",
+      "dropUnavailable": "تعذر قراءة هذا العنصر المُفلت هنا. استخدم اختيار ملف بدلًا من ذلك."
     },
     "setup": {
       "duration": "المدة: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "اختر صيغة إخراج واحدة على الأقل.",
       "start": "بدء",
       "chooseAnotherFile": "اختر ملفاً آخر",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "تم التحميل من المهام الأخيرة",
+      "importedAt": "تم الاستيراد {{value}}"
     },
     "job": {
       "preparing": "...جارٍ التحضير",
@@ -663,26 +665,48 @@
       "preview": "معاينة النص المفرّغ",
       "previewEmpty": "ستظهر معاينة النص المفرّغ هنا.",
       "outputFiles": "ملفات الإخراج",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "عرض من المهام الأخيرة",
+      "importedAt": "تم الاستيراد {{value}}",
+      "activeBrowsingNotice": "لا تزال مهمة Studio أخرى قيد التشغيل في الخلفية.",
+      "returnToActive": "العودة إلى المهمة النشطة",
+      "status": {
+        "stopping": "جارٍ الإيقاف...",
+        "pausedForDictation": "متوقف مؤقتًا أثناء تشغيل الإملاء",
+        "resuming": "جارٍ استئناف Studio"
+      },
+      "stage": {
+        "preparingAudio": "جارٍ تحضير الصوت",
+        "openingFile": "جارٍ فتح الملف",
+        "decodingAudio": "جارٍ فك ترميز الصوت",
+        "resamplingAudio": "جارٍ إعادة أخذ عينات الصوت",
+        "writingNormalizedAudio": "جارٍ كتابة الصوت المطبع",
+        "buildingChunks": "جارٍ إنشاء المقاطع",
+        "transcribing": "جارٍ تفريغ الصوت",
+        "writingOutputFiles": "جارٍ كتابة ملفات الإخراج"
+      }
     },
     "recent": {
       "title": "المهام الأخيرة",
       "delete": "حذف المهمة",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "هل تريد حذف {{count}} من المهام الأخيرة؟ سيتم الاحتفاظ بالمهام قيد التشغيل أو المتوقفة مؤقتًا.",
+      "clearAllConfirm": "هل تريد حذف {{count}} من المهام الأخيرة؟",
+      "clearAllTitle": "مسح المهام الأخيرة",
+      "clearAllAction": "حذف الكل",
+      "clearAll": "مسح كل المهام الأخيرة",
+      "viewing": "قيد العرض",
+      "details": "{{duration}} - {{size}} - تم الاستيراد {{time}}",
+      "emptyFiltered": "لا توجد مهام أخيرة تطابق هذه الحالة.",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "تصفية المهام الأخيرة",
+        "all": "الكل"
+      },
+      "deleteOneFailed": "تعذر حذف مهمة أخيرة واحدة.",
+      "deleteManyFailed": "تعذر حذف {{count}} من المهام الأخيرة."
+    },
+    "errors": {
+      "initializeFailed": "فشل تهيئة Studio",
+      "jobNotFound": "تعذر العثور على مهمة Studio",
+      "noPreparedJob": "لا توجد مهمة Studio جاهزة للبدء"
     }
   }
 }

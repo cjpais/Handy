@@ -16,17 +16,22 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_opener::OpenerExt;
 
 const CHUNK_MS: i64 = 10_000;
 const CHUNK_SAMPLE_RATE: usize = 16_000;
 const CHUNK_OVERLAP_MS: i64 = 750;
+const DICTATION_WAIT_POLL_MS: u64 = 250;
+const SUPPORTED_OUTPUT_FORMATS: &[&str] = &["txt", "srt", "vtt"];
 
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
-static MIGRATIONS: &[M] = &[M::up(
-    "CREATE TABLE IF NOT EXISTS studio_jobs (
+static MIGRATIONS: &[M] = &[
+    M::up(
+        "CREATE TABLE IF NOT EXISTS studio_jobs (
         id TEXT PRIMARY KEY,
         source_path TEXT NOT NULL,
         source_name TEXT NOT NULL,
@@ -72,7 +77,19 @@ static MIGRATIONS: &[M] = &[M::up(
         created_at INTEGER NOT NULL,
         FOREIGN KEY(job_id) REFERENCES studio_jobs(id) ON DELETE CASCADE
     );",
-)];
+    ),
+    M::up(
+        "DELETE FROM studio_exports
+         WHERE rowid NOT IN (
+            SELECT MAX(rowid)
+            FROM studio_exports
+            GROUP BY job_id, format
+         );
+
+         CREATE UNIQUE INDEX IF NOT EXISTS idx_studio_exports_job_format
+         ON studio_exports(job_id, format);",
+    ),
+];
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Type, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -188,6 +205,7 @@ pub struct StudioManager {
     jobs_dir: PathBuf,
     active_job_id: Arc<Mutex<Option<String>>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
+    worker_handles: Arc<Mutex<HashMap<String, JoinHandle<()>>>>,
 }
 
 struct ActiveJobCleanup {
@@ -245,6 +263,7 @@ impl StudioManager {
             jobs_dir,
             active_job_id: Arc::new(Mutex::new(None)),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
+            worker_handles: Arc::new(Mutex::new(HashMap::new())),
         };
 
         manager.init_database()?;
@@ -352,6 +371,14 @@ impl StudioManager {
             })
         })?;
         Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
+    }
+
+    fn get_output_file_map(&self, job_id: &str) -> Result<HashMap<String, StudioOutputFile>> {
+        Ok(self
+            .get_output_files(job_id)?
+            .into_iter()
+            .map(|file| (file.format.clone(), file))
+            .collect())
     }
 
     pub fn list_jobs(&self) -> Result<StudioHomeData> {
@@ -552,8 +579,9 @@ impl StudioManager {
     }
 
     fn set_active_job(&self, job_id: &str) -> Result<Arc<AtomicBool>> {
+        self.reap_finished_workers();
         let mut active = self.active_job_id.lock().unwrap();
-        if active.as_deref().is_some() && active.as_deref() != Some(job_id) {
+        if active.as_deref().is_some() {
             bail!("Studio already has an active job");
         }
 
@@ -570,29 +598,92 @@ impl StudioManager {
         clear_active_job_state(&self.active_job_id, &self.cancel_flags, job_id);
     }
 
+    fn reap_finished_workers(&self) {
+        let finished_job_ids = {
+            let handles = self.worker_handles.lock().unwrap();
+            handles
+                .iter()
+                .filter_map(|(job_id, handle)| handle.is_finished().then_some(job_id.clone()))
+                .collect::<Vec<_>>()
+        };
+
+        if finished_job_ids.is_empty() {
+            return;
+        }
+
+        let mut handles = self.worker_handles.lock().unwrap();
+        for job_id in finished_job_ids {
+            if let Some(handle) = handles.remove(&job_id) {
+                if let Err(error) = handle.join() {
+                    warn!(
+                        "Failed to join finished Studio worker for {}: {:?}",
+                        job_id, error
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn shutdown(&self) {
+        {
+            let flags = self.cancel_flags.lock().unwrap();
+            for flag in flags.values() {
+                flag.store(true, Ordering::Relaxed);
+            }
+        }
+
+        let handles = {
+            let mut handles = self.worker_handles.lock().unwrap();
+            handles
+                .drain()
+                .map(|(_, handle)| handle)
+                .collect::<Vec<_>>()
+        };
+
+        for handle in handles {
+            if let Err(error) = handle.join() {
+                warn!("Failed to join Studio worker during shutdown: {:?}", error);
+            }
+        }
+    }
+
     fn start_or_retry_job(
         &self,
         job_id: &str,
         config: StartStudioJobConfig,
         resume_requested: bool,
     ) -> Result<()> {
-        if config.output_formats.is_empty() {
-            bail!("Select at least one output format");
+        let normalized_output_folder = normalize_output_folder(&config.output_folder)?;
+        let normalized_output_formats = normalize_output_formats(&config.output_formats)?;
+
+        let job = self
+            .get_job(job_id)?
+            .ok_or_else(|| anyhow!("Studio job not found"))?;
+
+        if resume_requested {
+            if !matches!(
+                job.status,
+                StudioJobStatus::Cancelled | StudioJobStatus::Error
+            ) {
+                bail!("Only failed or cancelled Studio jobs can be retried");
+            }
+        } else if job.status != StudioJobStatus::Pending {
+            bail!("This Studio job is no longer ready to start");
         }
 
         let cancel_flag = self.set_active_job(job_id)?;
         let mut setup_cleanup = ActiveJobCleanup::new(self, job_id);
         let setup_result = (|| -> Result<()> {
             let now = Self::now_ms();
-            let output_formats_json = serde_json::to_string(&config.output_formats)?;
+            let output_formats_json = serde_json::to_string(&normalized_output_formats)?;
 
             let conn = self.get_connection()?;
             conn.execute(
                 "UPDATE studio_jobs
                  SET output_folder = ?1, output_formats = ?2, status = ?3, error_message = NULL, updated_at = ?4
-                 WHERE id = ?5",
+                WHERE id = ?5",
                 params![
-                    &config.output_folder,
+                    &normalized_output_folder,
                     output_formats_json,
                     StudioJobStatus::Running.as_str(),
                     now,
@@ -610,23 +701,28 @@ impl StudioManager {
 
         let manager = self.clone();
         let job_id = job_id.to_string();
-        std::thread::spawn(move || {
-            let thread_cleanup = ActiveJobCleanup::new(&manager, job_id.clone());
+        let worker_job_id = job_id.clone();
+        let worker_handle = std::thread::spawn(move || {
+            let thread_cleanup = ActiveJobCleanup::new(&manager, worker_job_id.clone());
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                manager.run_job(&job_id, resume_requested, cancel_flag.clone())
+                manager.run_job(&worker_job_id, resume_requested, cancel_flag.clone())
             }));
 
             match result {
                 Ok(Ok(())) => {}
                 Ok(Err(error)) => {
-                    manager.report_job_failure(&job_id, error.to_string());
+                    manager.report_job_failure(&worker_job_id, error.to_string());
                 }
                 Err(payload) => {
-                    manager.report_job_failure(&job_id, panic_payload_to_message(payload));
+                    manager.report_job_failure(&worker_job_id, panic_payload_to_message(payload));
                 }
             }
             drop(thread_cleanup);
         });
+        self.worker_handles
+            .lock()
+            .unwrap()
+            .insert(job_id.to_string(), worker_handle);
 
         Ok(())
     }
@@ -746,7 +842,18 @@ impl StudioManager {
                     "studio-job-paused",
                     serde_json::json!({ "job_id": job_id, "reason": "dictation" }),
                 );
-                tm.wait_for_dictation_idle();
+                while tm.is_dictation_active() {
+                    if cancel_flag.load(Ordering::Relaxed) {
+                        self.finish_cancelled_job(job_id)?;
+                        return Ok(());
+                    }
+
+                    let dictation_cleared = tm
+                        .wait_for_dictation_idle_for(Duration::from_millis(DICTATION_WAIT_POLL_MS));
+                    if dictation_cleared {
+                        break;
+                    }
+                }
             }
 
             if paused {
@@ -1029,6 +1136,20 @@ impl StudioManager {
             .output_folder
             .clone()
             .ok_or_else(|| anyhow!("Studio job has no output folder"))?;
+        let output_formats = normalize_output_formats(&job.output_formats)?;
+        let existing_output_files = self.get_output_file_map(job_id)?;
+        if output_formats.iter().all(|format| {
+            existing_output_files
+                .get(format)
+                .map(|file| Path::new(&file.output_path).exists())
+                .unwrap_or(false)
+        }) {
+            return Ok(output_formats
+                .iter()
+                .filter_map(|format| existing_output_files.get(format).cloned())
+                .collect());
+        }
+
         let staged_dir = self.jobs_dir.join(job_id).join("staged");
         fs::create_dir_all(&staged_dir)?;
         fs::create_dir_all(&output_folder)?;
@@ -1052,13 +1173,13 @@ impl StudioManager {
         let export_timestamp_ms = Self::now_ms();
 
         let mut staged_files = Vec::new();
-        for format in &job.output_formats {
+        for format in &output_formats {
             let staged_path = staged_dir.join(format!("{base_name}.{format}"));
             match format.as_str() {
                 "txt" => txt::write(&staged_path, &job.transcript_text)?,
                 "srt" => srt::write(&staged_path, &subtitle_chunks)?,
                 "vtt" => vtt::write(&staged_path, &subtitle_chunks)?,
-                other => warn!("Skipping unsupported Studio export format: {}", other),
+                other => bail!("Unsupported Studio export format: {}", other),
             }
             if staged_path.exists() {
                 staged_files.push((format.clone(), staged_path));
@@ -1067,12 +1188,17 @@ impl StudioManager {
 
         let mut export_plan = Vec::new();
         for (format, staged_path) in staged_files {
-            let final_destination = resolve_export_destination(
-                Path::new(&output_folder),
-                &base_name,
-                &format,
-                export_timestamp_ms,
-            );
+            let final_destination = existing_output_files
+                .get(&format)
+                .map(|file| PathBuf::from(&file.output_path))
+                .unwrap_or_else(|| {
+                    resolve_export_destination(
+                        Path::new(&output_folder),
+                        &base_name,
+                        &format,
+                        export_timestamp_ms,
+                    )
+                });
             let file_name = final_destination
                 .file_name()
                 .and_then(|name| name.to_str())
@@ -1092,10 +1218,18 @@ impl StudioManager {
         }
 
         let conn = self.get_connection()?;
-        conn.execute(
-            "DELETE FROM studio_exports WHERE job_id = ?1",
-            params![job_id],
-        )?;
+        let created_at = Self::now_ms();
+        for (format, _, _, final_destination) in &export_plan {
+            let output_path = final_destination.to_string_lossy().to_string();
+            let export_id = Self::create_id("export");
+            conn.execute(
+                "INSERT INTO studio_exports (id, job_id, format, output_path, created_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5)
+                 ON CONFLICT(job_id, format) DO UPDATE
+                 SET output_path = excluded.output_path",
+                params![export_id, job_id, format, output_path, created_at],
+            )?;
+        }
 
         let mut temporary_paths = Vec::new();
         for (_, staged_path, temporary_destination, _) in &export_plan {
@@ -1108,14 +1242,9 @@ impl StudioManager {
             temporary_paths.push(temporary_destination.clone());
         }
 
-        let created_at = Self::now_ms();
-        let mut finalized_paths = Vec::new();
         let mut output_files = Vec::new();
         for (format, _, temporary_destination, final_destination) in export_plan {
-            if let Err(error) = fs::rename(&temporary_destination, &final_destination) {
-                for path in &finalized_paths {
-                    let _ = fs::remove_file(path);
-                }
+            if let Err(error) = move_file(&temporary_destination, &final_destination) {
                 let _ = fs::remove_file(&temporary_destination);
                 for temp_path in &temporary_paths {
                     if temp_path != &temporary_destination {
@@ -1126,18 +1255,6 @@ impl StudioManager {
             }
 
             let output_path = final_destination.to_string_lossy().to_string();
-            conn.execute(
-                "INSERT INTO studio_exports (id, job_id, format, output_path, created_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![
-                    Self::create_id("export"),
-                    job_id,
-                    &format,
-                    &output_path,
-                    created_at
-                ],
-            )?;
-            finalized_paths.push(final_destination.clone());
             output_files.push(StudioOutputFile {
                 format,
                 file_name: final_destination
@@ -1288,6 +1405,36 @@ fn can_retry_with_available_source(working_wav_path: Option<&str>, source_path: 
     working_wav_path.map(Path::new).is_some_and(Path::exists) || source_path.exists()
 }
 
+fn normalize_output_folder(output_folder: &str) -> Result<String> {
+    let trimmed = output_folder.trim();
+    if trimmed.is_empty() {
+        bail!("Choose an output folder before starting Studio");
+    }
+    Ok(trimmed.to_string())
+}
+
+fn normalize_output_formats(output_formats: &[String]) -> Result<Vec<String>> {
+    let mut normalized = Vec::new();
+    for format in output_formats {
+        let trimmed = format.trim().to_ascii_lowercase();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if !SUPPORTED_OUTPUT_FORMATS.contains(&trimmed.as_str()) {
+            bail!("Unsupported Studio export format: {}", format);
+        }
+        if !normalized.contains(&trimmed) {
+            normalized.push(trimmed);
+        }
+    }
+
+    if normalized.is_empty() {
+        bail!("Select at least one output format");
+    }
+
+    Ok(normalized)
+}
+
 fn settings_fingerprint(settings: &AppSettings) -> Result<String> {
     Ok(serde_json::json!({
         "model_id": settings.selected_model,
@@ -1378,8 +1525,9 @@ fn resolve_export_destination(
 mod tests {
     use super::{
         build_chunks, can_retry_with_available_source, export_collision_suffix,
-        panic_payload_to_message, resolve_export_destination, trim_overlap_prefix,
-        ActiveJobCleanup, CHUNK_MS, CHUNK_SAMPLE_RATE,
+        normalize_output_folder, normalize_output_formats, panic_payload_to_message,
+        resolve_export_destination, trim_overlap_prefix, ActiveJobCleanup, CHUNK_MS,
+        CHUNK_SAMPLE_RATE,
     };
     use std::collections::HashMap;
     use std::fs;
@@ -1553,5 +1701,39 @@ mod tests {
             .and_then(|name| name.to_str())
             .unwrap_or("")
             .contains(" (2).srt"));
+    }
+
+    #[test]
+    fn normalize_output_folder_rejects_blank_values() {
+        let error = normalize_output_folder("   ").expect_err("blank folder should fail");
+        assert!(error.to_string().contains("output folder"));
+    }
+
+    #[test]
+    fn normalize_output_folder_trims_whitespace() {
+        let normalized =
+            normalize_output_folder("  C:\\Users\\tomer\\recordings  ").expect("folder");
+        assert_eq!(normalized, "C:\\Users\\tomer\\recordings");
+    }
+
+    #[test]
+    fn normalize_output_formats_deduplicates_and_normalizes_case() {
+        let normalized = normalize_output_formats(&[
+            " TXT ".to_string(),
+            "srt".to_string(),
+            "txt".to_string(),
+            "VTT".to_string(),
+        ])
+        .expect("formats");
+
+        assert_eq!(normalized, vec!["txt", "srt", "vtt"]);
+    }
+
+    #[test]
+    fn normalize_output_formats_rejects_unknown_values() {
+        let error = normalize_output_formats(&["docx".to_string()]).expect_err("invalid format");
+        assert!(error
+            .to_string()
+            .contains("Unsupported Studio export format"));
     }
 }

@@ -610,7 +610,8 @@
     "selectModelWarning": "Välj en transkriptionsmodell innan du startar Studio.",
     "common": {
       "unknown": "Okänt",
-      "estimateFallback": "Ungefär några minuter"
+      "estimateFallback": "Ungefär några minuter",
+      "unknownSize": "Okand storlek"
     },
     "statuses": {
       "pending": "Redo",
@@ -629,7 +630,8 @@
       "title": "Släpp en ljudfil",
       "description": "En fil i taget...",
       "chooseFile": "Välj fil",
-      "supported": "Stöds: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "Stöds: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "Det gick inte att lasa detta slappa objekt har. Anvand Valj fil i stallet."
     },
     "setup": {
       "duration": "Längd: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "Välj minst ett utdataformat.",
       "start": "Starta",
       "chooseAnotherFile": "Välj en annan fil",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "Laddad fran senaste jobb",
+      "importedAt": "Importerad {{value}}"
     },
     "job": {
       "preparing": "Förbereder...",
@@ -663,26 +665,48 @@
       "preview": "Transkriptionsförhandsvisning",
       "previewEmpty": "Förhandsgranskning av transkription visas här.",
       "outputFiles": "Utdatafiler",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "Visas fran senaste jobb",
+      "importedAt": "Importerad {{value}}",
+      "activeBrowsingNotice": "Ett annat Studio-jobb kor fortfarande i bakgrunden.",
+      "returnToActive": "Ga tillbaka till aktivt jobb",
+      "status": {
+        "stopping": "Stoppar...",
+        "pausedForDictation": "Pausad medan diktering ar aktiv",
+        "resuming": "Aterupptar Studio"
+      },
+      "stage": {
+        "preparingAudio": "Forbereder ljud",
+        "openingFile": "Oppnar fil",
+        "decodingAudio": "Avkodar ljud",
+        "resamplingAudio": "Omsamplar ljud",
+        "writingNormalizedAudio": "Skriver normaliserat ljud",
+        "buildingChunks": "Bygger segment",
+        "transcribing": "Transkriberar ljud",
+        "writingOutputFiles": "Skriver utdatafiler"
+      }
     },
     "recent": {
       "title": "Senaste jobb",
       "delete": "Ta bort jobb",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "Ta bort {{count}} senaste jobb? Korande eller pausade jobb behalls.",
+      "clearAllConfirm": "Ta bort {{count}} senaste jobb?",
+      "clearAllTitle": "Rensa senaste jobb",
+      "clearAllAction": "Ta bort alla",
+      "clearAll": "Rensa alla senaste jobb",
+      "viewing": "Visas",
+      "details": "{{duration}} - {{size}} - Importerad {{time}}",
+      "emptyFiltered": "Inga senaste jobb matchar den har statusen.",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "Filtrera senaste jobb",
+        "all": "Alla"
+      },
+      "deleteOneFailed": "Ett senaste jobb kunde inte tas bort.",
+      "deleteManyFailed": "{{count}} senaste jobb kunde inte tas bort."
+    },
+    "errors": {
+      "initializeFailed": "Det gick inte att initialisera Studio",
+      "jobNotFound": "Studio-jobbet hittades inte",
+      "noPreparedJob": "Inget Studio-jobb ar redo att startas"
     }
   }
 }

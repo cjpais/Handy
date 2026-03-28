@@ -610,7 +610,8 @@
     "selectModelWarning": "スタジオを開始する前に文字起こしモデルを選択してください。",
     "common": {
       "unknown": "不明",
-      "estimateFallback": "数分程度"
+      "estimateFallback": "数分程度",
+      "unknownSize": "サイズ不明"
     },
     "statuses": {
       "pending": "準備完了",
@@ -629,7 +630,8 @@
       "title": "音声ファイルをドロップ",
       "description": "一度に1ファイルずつ...",
       "chooseFile": "ファイルを選択",
-      "supported": "対応形式: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "対応形式: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "ここではこのドロップを読み取れませんでした。代わりに「ファイルを選択」を使ってください。"
     },
     "setup": {
       "duration": "長さ: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "少なくとも1つの出力フォーマットを選択してください。",
       "start": "開始",
       "chooseAnotherFile": "別のファイルを選択",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "最近のジョブから読み込みました",
+      "importedAt": "{{value}} に取り込み"
     },
     "job": {
       "preparing": "準備中...",
@@ -663,26 +665,48 @@
       "preview": "文字起こしプレビュー",
       "previewEmpty": "文字起こしのプレビューがここに表示されます。",
       "outputFiles": "出力ファイル",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "最近のジョブを表示中",
+      "importedAt": "{{value}} に取り込み",
+      "activeBrowsingNotice": "別の Studio ジョブがバックグラウンドでまだ実行されています。",
+      "returnToActive": "アクティブなジョブに戻る",
+      "status": {
+        "stopping": "停止中...",
+        "pausedForDictation": "ディクテーションの実行中は一時停止",
+        "resuming": "Studio を再開中"
+      },
+      "stage": {
+        "preparingAudio": "音声を準備中",
+        "openingFile": "ファイルを開いています",
+        "decodingAudio": "音声をデコード中",
+        "resamplingAudio": "音声をリサンプリング中",
+        "writingNormalizedAudio": "正規化済み音声を書き込み中",
+        "buildingChunks": "チャンクを作成中",
+        "transcribing": "音声を文字起こし中",
+        "writingOutputFiles": "出力ファイルを書き込み中"
+      }
     },
     "recent": {
       "title": "最近のジョブ",
       "delete": "ジョブを削除",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "最近のジョブを {{count}} 件削除しますか？実行中または一時停止中のジョブは保持されます。",
+      "clearAllConfirm": "最近のジョブを {{count}} 件削除しますか？",
+      "clearAllTitle": "最近のジョブを消去",
+      "clearAllAction": "すべて削除",
+      "clearAll": "最近のジョブをすべて消去",
+      "viewing": "表示中",
+      "details": "{{duration}} - {{size}} - {{time}} に取り込み",
+      "emptyFiltered": "この状態に一致する最近のジョブはありません。",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "最近のジョブを絞り込む",
+        "all": "すべて"
+      },
+      "deleteOneFailed": "最近のジョブを 1 件削除できませんでした。",
+      "deleteManyFailed": "最近のジョブを {{count}} 件削除できませんでした。"
+    },
+    "errors": {
+      "initializeFailed": "Studio の初期化に失敗しました",
+      "jobNotFound": "Studio ジョブが見つかりません",
+      "noPreparedJob": "開始できる Studio ジョブがありません"
     }
   }
 }

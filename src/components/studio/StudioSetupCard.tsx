@@ -4,6 +4,11 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
+import {
+  formatStudioBytes,
+  formatStudioDuration,
+  formatStudioImportedAt,
+} from "@/lib/studioFormat";
 import type { StudioFormat, StudioJob } from "@/lib/types/studio";
 
 const FORMATS: StudioFormat[] = ["txt", "srt", "vtt"];
@@ -19,42 +24,6 @@ interface StudioSetupCardProps {
   onCancel: () => void;
   disabled?: boolean;
 }
-
-const formatBytes = (bytes: number) => {
-  if (!bytes) return "Unknown size";
-  const gb = bytes / 1024 / 1024 / 1024;
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
-  const mb = bytes / 1024 / 1024;
-  return `${mb.toFixed(0)} MB`;
-};
-
-const formatDuration = (durationMs: number) => {
-  const totalSeconds = Math.round(durationMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}m ${seconds}s`;
-};
-
-const formatImportedAt = (timestamp: number) => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-
-  return new Intl.DateTimeFormat(undefined, {
-    ...(sameDay
-      ? {
-          hour: "numeric",
-          minute: "2-digit",
-          second: "2-digit",
-        }
-      : {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit",
-        }),
-  }).format(date);
-};
 
 export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
   job,
@@ -104,7 +73,7 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
             <span className="ml-2 text-text/55">
               {t("studio.setup.importedAt", {
                 defaultValue: "Imported {{value}}",
-                value: formatImportedAt(job.created_at),
+                value: formatStudioImportedAt(job.created_at),
               })}
             </span>
           </div>
@@ -116,13 +85,13 @@ export const StudioSetupCard: React.FC<StudioSetupCardProps> = ({
             <p>
               {t("studio.setup.duration", {
                 defaultValue: "Duration: {{value}}",
-                value: formatDuration(job.media_duration_ms),
+                value: formatStudioDuration(job.media_duration_ms),
               })}
             </p>
             <p>
               {t("studio.setup.size", {
                 defaultValue: "Size: {{value}}",
-                value: formatBytes(job.file_size_bytes),
+                value: formatStudioBytes(job.file_size_bytes, t),
               })}
             </p>
             <p>

@@ -610,7 +610,8 @@
     "selectModelWarning": "Wähle vor dem Starten von Studio ein Transkriptionsmodell aus.",
     "common": {
       "unknown": "Unbekannt",
-      "estimateFallback": "Ungefähr ein paar Minuten"
+      "estimateFallback": "Ungefähr ein paar Minuten",
+      "unknownSize": "Unbekannte Grosse"
     },
     "statuses": {
       "pending": "Bereit",
@@ -629,7 +630,8 @@
       "title": "Audiodatei ablegen",
       "description": "Jeweils eine Datei...",
       "chooseFile": "Datei wählen",
-      "supported": "Unterstützt: MP3, WAV, M4A, FLAC, OGG"
+      "supported": "Unterstützt: MP3, WAV, M4A, FLAC, OGG",
+      "dropUnavailable": "Dieses abgelegte Element konnte hier nicht gelesen werden. Verwende stattdessen Datei auswahlen."
     },
     "setup": {
       "duration": "Dauer: {{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "Wähle mindestens ein Ausgabeformat aus.",
       "start": "Starten",
       "chooseAnotherFile": "Andere Datei wählen",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "Aus den letzten Jobs geladen",
+      "importedAt": "Importiert {{value}}"
     },
     "job": {
       "preparing": "Vorbereitung...",
@@ -663,26 +665,48 @@
       "preview": "Transkriptionsvorschau",
       "previewEmpty": "Transkriptionsvorschau erscheint hier.",
       "outputFiles": "Ausgabedateien",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "Aus den letzten Jobs angezeigt",
+      "importedAt": "Importiert {{value}}",
+      "activeBrowsingNotice": "Ein anderer Studio-Job lauft noch im Hintergrund.",
+      "returnToActive": "Zum aktiven Job zuruckkehren",
+      "status": {
+        "stopping": "Wird gestoppt...",
+        "pausedForDictation": "Pausiert, wahrend Diktat aktiv ist",
+        "resuming": "Studio wird fortgesetzt"
+      },
+      "stage": {
+        "preparingAudio": "Audio wird vorbereitet",
+        "openingFile": "Datei wird geoffnet",
+        "decodingAudio": "Audio wird dekodiert",
+        "resamplingAudio": "Audio wird neu abgetastet",
+        "writingNormalizedAudio": "Normalisiertes Audio wird geschrieben",
+        "buildingChunks": "Segmente werden erstellt",
+        "transcribing": "Audio wird transkribiert",
+        "writingOutputFiles": "Ausgabedateien werden geschrieben"
+      }
     },
     "recent": {
       "title": "Letzte Aufträge",
       "delete": "Auftrag löschen",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "{{count}} letzte Jobs loschen? Laufende oder pausierte Jobs bleiben erhalten.",
+      "clearAllConfirm": "{{count}} letzte Jobs loschen?",
+      "clearAllTitle": "Letzte Jobs leeren",
+      "clearAllAction": "Alle loschen",
+      "clearAll": "Alle letzten Jobs leeren",
+      "viewing": "Ansehen",
+      "details": "{{duration}} - {{size}} - Importiert {{time}}",
+      "emptyFiltered": "Keine letzten Jobs entsprechen diesem Status.",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "Letzte Jobs filtern",
+        "all": "Alle"
+      },
+      "deleteOneFailed": "Ein letzter Job konnte nicht geloscht werden.",
+      "deleteManyFailed": "{{count}} letzte Jobs konnten nicht geloscht werden."
+    },
+    "errors": {
+      "initializeFailed": "Studio konnte nicht initialisiert werden",
+      "jobNotFound": "Studio-Job nicht gefunden",
+      "noPreparedJob": "Kein Studio-Job ist startbereit"
     }
   }
 }

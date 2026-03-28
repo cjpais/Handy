@@ -610,7 +610,8 @@
     "selectModelWarning": "启动录音室前请选择转录模型。",
     "common": {
       "unknown": "未知",
-      "estimateFallback": "大约几分钟"
+      "estimateFallback": "大约几分钟",
+      "unknownSize": "大小未知"
     },
     "statuses": {
       "pending": "就绪",
@@ -629,7 +630,8 @@
       "title": "拖放音频文件",
       "description": "一次一个文件...",
       "chooseFile": "选择文件",
-      "supported": "支持的格式：MP3、WAV、M4A、FLAC、OGG"
+      "supported": "支持的格式：MP3、WAV、M4A、FLAC、OGG",
+      "dropUnavailable": "无法在此处读取拖放的内容。请改用“选择文件”。"
     },
     "setup": {
       "duration": "时长：{{value}}",
@@ -642,8 +644,8 @@
       "selectFormatWarning": "请至少选择一种输出格式。",
       "start": "开始",
       "chooseAnotherFile": "选择其他文件",
-      "loadedFromRecent": "Loaded from Recent Jobs",
-      "importedAt": "Imported {{value}}"
+      "loadedFromRecent": "已从最近任务加载",
+      "importedAt": "导入于 {{value}}"
     },
     "job": {
       "preparing": "准备中...",
@@ -663,26 +665,48 @@
       "preview": "转录预览",
       "previewEmpty": "转录预览将在此处显示。",
       "outputFiles": "输出文件",
-      "loadedFromRecent": "Viewing from Recent Jobs",
-      "importedAt": "Imported {{value}}",
-      "activeBrowsingNotice": "Another Studio job is still running in the background.",
-      "returnToActive": "Return to active job"
+      "loadedFromRecent": "正在查看最近任务",
+      "importedAt": "导入于 {{value}}",
+      "activeBrowsingNotice": "另一个 Studio 任务仍在后台运行。",
+      "returnToActive": "返回活动任务",
+      "status": {
+        "stopping": "正在停止...",
+        "pausedForDictation": "听写运行时已暂停",
+        "resuming": "正在恢复 Studio"
+      },
+      "stage": {
+        "preparingAudio": "正在准备音频",
+        "openingFile": "正在打开文件",
+        "decodingAudio": "正在解码音频",
+        "resamplingAudio": "正在重新采样音频",
+        "writingNormalizedAudio": "正在写入标准化音频",
+        "buildingChunks": "正在构建分段",
+        "transcribing": "正在转录音频",
+        "writingOutputFiles": "正在写入输出文件"
+      }
     },
     "recent": {
       "title": "最近任务",
       "delete": "删除任务",
-      "clearAllConfirmWithActive": "Delete {{count}} recent jobs? Running or paused jobs will be kept.",
-      "clearAllConfirm": "Delete {{count}} recent jobs?",
-      "clearAllTitle": "Clear recent jobs",
-      "clearAllAction": "Delete all",
-      "clearAll": "Clear all recent jobs",
-      "viewing": "Viewing",
-      "details": "{{duration}} - {{size}} - Imported {{time}}",
-      "emptyFiltered": "No recent jobs match this status.",
+      "clearAllConfirmWithActive": "要删除 {{count}} 个最近任务吗？正在运行或已暂停的任务将被保留。",
+      "clearAllConfirm": "要删除 {{count}} 个最近任务吗？",
+      "clearAllTitle": "清除最近任务",
+      "clearAllAction": "全部删除",
+      "clearAll": "清除所有最近任务",
+      "viewing": "查看中",
+      "details": "{{duration}} - {{size}} - 导入于 {{time}}",
+      "emptyFiltered": "没有与此状态匹配的最近任务。",
       "filters": {
-        "toggle": "Filter recent jobs",
-        "all": "All"
-      }
+        "toggle": "筛选最近任务",
+        "all": "全部"
+      },
+      "deleteOneFailed": "有 1 个最近任务无法删除。",
+      "deleteManyFailed": "有 {{count}} 个最近任务无法删除。"
+    },
+    "errors": {
+      "initializeFailed": "Studio 初始化失败",
+      "jobNotFound": "未找到 Studio 任务",
+      "noPreparedJob": "没有可开始的 Studio 任务"
     }
   }
 }
