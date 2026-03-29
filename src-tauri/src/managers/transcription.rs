@@ -595,6 +595,7 @@ impl TranscriptionManager {
                             let options = TranscribeOptions {
                                 language: lang,
                                 translate: settings.translate_to_english,
+                                ..Default::default()
                             };
                             canary_engine
                                 .transcribe(&audio, &options)
