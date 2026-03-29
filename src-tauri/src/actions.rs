@@ -368,13 +368,20 @@ impl ShortcutAction for TranscribeAction {
 
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
+        let rm = app.state::<Arc<AudioRecordingManager>>();
+
+        // Load ASR model and VAD model in parallel
         tm.initiate_model_load();
+        let rm_clone = Arc::clone(&rm);
+        std::thread::spawn(move || {
+            if let Err(e) = rm_clone.preload_vad() {
+                debug!("VAD pre-load failed: {}", e);
+            }
+        });
 
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
         show_recording_overlay(app);
-
-        let rm = app.state::<Arc<AudioRecordingManager>>();
 
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
