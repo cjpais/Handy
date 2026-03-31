@@ -7,7 +7,11 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent, RecordingErrorEvent, PasteErrorEvent } from "./lib/types/events";
+import {
+  ModelStateEvent,
+  RecordingErrorEvent,
+  PasteErrorEvent,
+} from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";

@@ -594,10 +594,8 @@ impl ShortcutAction for TranscribeAction {
                                         ),
                                         Err(e) => {
                                             error!("Failed to paste transcription: {}", e);
-                                            let _ = ah_clone.emit(
-                                                "paste-error",
-                                                PasteErrorEvent { detail: e },
-                                            );
+                                            let _ = ah_clone
+                                                .emit("paste-error", PasteErrorEvent { detail: e });
                                         }
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
