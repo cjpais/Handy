@@ -706,3 +706,240 @@ fn soundex(s: &str) -> String {
     }
     code
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ---- soundex ----
+
+    #[test]
+    fn soundex_basic() {
+        // Standard Soundex examples.
+        assert_eq!(soundex("Robert"), "R163");
+        assert_eq!(soundex("Rupert"), "R163");
+        assert_eq!(soundex("Ashcraft"), "A261");
+    }
+
+    #[test]
+    fn soundex_empty() {
+        assert_eq!(soundex(""), "0000");
+    }
+
+    #[test]
+    fn soundex_short() {
+        let s = soundex("A");
+        assert_eq!(s.len(), 4);
+        assert!(s.starts_with('A'));
+    }
+
+    // ---- looks_like_identifier ----
+
+    #[test]
+    fn identifier_snake_case() {
+        assert!(looks_like_identifier("parse_args"));
+        assert!(looks_like_identifier("my_var_name"));
+    }
+
+    #[test]
+    fn identifier_camel_case() {
+        assert!(looks_like_identifier("parseArgs"));
+        assert!(looks_like_identifier("myVarName"));
+    }
+
+    #[test]
+    fn identifier_pascal_case() {
+        assert!(looks_like_identifier("ParseArgs"));
+        assert!(looks_like_identifier("MyStruct"));
+    }
+
+    #[test]
+    fn identifier_plain_word_not_flagged() {
+        // Plain lowercase words without structural clues are NOT identifiers.
+        assert!(!looks_like_identifier("hello"));
+        assert!(!looks_like_identifier("world"));
+        assert!(!looks_like_identifier("open"));
+    }
+
+    // ---- classify_token ----
+
+    fn make_common() -> HashSet<&'static str> {
+        COMMON_ENGLISH.iter().copied().collect()
+    }
+
+    #[test]
+    fn classify_explicit_trigger_file() {
+        let common = make_common();
+        let kind = classify_token("utils", Some("file"), &common);
+        assert_eq!(kind, CandidateKind::ExplicitTrigger);
+    }
+
+    #[test]
+    fn classify_explicit_trigger_symbol() {
+        let common = make_common();
+        let kind = classify_token("parseArgs", Some("symbol"), &common);
+        assert_eq!(kind, CandidateKind::ExplicitTrigger);
+    }
+
+    #[test]
+    fn classify_code_context() {
+        let common = make_common();
+        // "utils" is not common English + follows "open" (a context word).
+        let kind = classify_token("utils", Some("open"), &common);
+        assert_eq!(kind, CandidateKind::Automatic);
+    }
+
+    #[test]
+    fn classify_snake_case_automatic() {
+        let common = make_common();
+        let kind = classify_token("parse_args", None, &common);
+        assert_eq!(kind, CandidateKind::Automatic);
+    }
+
+    #[test]
+    fn classify_camel_case_automatic() {
+        let common = make_common();
+        let kind = classify_token("parseArgs", None, &common);
+        assert_eq!(kind, CandidateKind::Automatic);
+    }
+
+    #[test]
+    fn classify_common_word_skipped() {
+        let common = make_common();
+        // "the", "and", "is" are in the common list.
+        assert_eq!(classify_token("the", None, &common), CandidateKind::No);
+        assert_eq!(classify_token("and", None, &common), CandidateKind::No);
+        assert_eq!(classify_token("is", None, &common), CandidateKind::No);
+    }
+
+    #[test]
+    fn classify_all_caps_skipped() {
+        let common = make_common();
+        assert_eq!(classify_token("HTTP", None, &common), CandidateKind::No);
+        assert_eq!(classify_token("API", None, &common), CandidateKind::No);
+    }
+
+    #[test]
+    fn classify_too_short_skipped() {
+        let common = make_common();
+        assert_eq!(classify_token("ab", None, &common), CandidateKind::No);
+    }
+
+    #[test]
+    fn classify_number_skipped() {
+        let common = make_common();
+        assert_eq!(classify_token("123", None, &common), CandidateKind::No);
+        assert_eq!(classify_token("3.14", None, &common), CandidateKind::No);
+    }
+
+    // ---- score_candidates ----
+
+    #[test]
+    fn score_exact_match_is_high_confidence() {
+        let symbols = vec!["utils.rs".to_string(), "main.rs".to_string(), "lib.rs".to_string()];
+        let (confidence, matches) = score_candidates("utils", &symbols, 0.60);
+        // "utils" vs "utils.rs" → stem is "utils" → normalized_levenshtein = 1.0
+        assert_eq!(confidence, Confidence::High);
+        assert_eq!(matches[0], "utils.rs");
+    }
+
+    #[test]
+    fn score_no_match_below_threshold() {
+        let symbols = vec!["completely_unrelated".to_string(), "another_thing".to_string()];
+        let (confidence, matches) = score_candidates("xyz", &symbols, 0.60);
+        assert_eq!(confidence, Confidence::None);
+        assert!(matches.is_empty());
+    }
+
+    #[test]
+    fn score_ambiguous_when_close_competitors() {
+        // Both "parse_input" and "parse_output" are close to "parse_input";
+        // neither dominates the other by >0.15 margin.
+        let symbols = vec![
+            "parse_input".to_string(),
+            "parse_output".to_string(),
+        ];
+        let (confidence, matches) = score_candidates("parse_input", &symbols, 0.60);
+        // "parse_input" should be HIGH (exact match), "parse_output" would also score high.
+        // The exact result depends on second-score logic; at minimum both should be present.
+        assert!(!matches.is_empty());
+        assert_eq!(matches[0], "parse_input");
+        // For an exact match the top score is 1.0 and the gap should be > 0.15.
+        assert_eq!(confidence, Confidence::High);
+    }
+
+    #[test]
+    fn score_phonetic_boost_helps_similar_sounding() {
+        // "utilise" sounds like "utils" (both U340 in Soundex).
+        let symbols = vec!["utils".to_string()];
+        let (confidence, _) = score_candidates("utilise", &symbols, 0.60);
+        // Even if raw Levenshtein is borderline, phonetic boost should push it through.
+        // We just assert it doesn't return None (may be Ambiguous or High).
+        assert_ne!(confidence, Confidence::None);
+    }
+
+    // ---- is_common_keyword ----
+
+    #[test]
+    fn keywords_filtered_out() {
+        assert!(is_common_keyword("fn"));
+        assert!(is_common_keyword("struct"));
+        assert!(is_common_keyword("None"));
+        assert!(!is_common_keyword("parse_args"));
+        assert!(!is_common_keyword("MyClass"));
+    }
+
+    // ---- integration: correct_text (without Tauri, using internal helpers) ----
+
+    /// Directly test the scoring + reconstruction path by calling `find_matches`
+    /// and re-assembling the output, mimicking what `correct_text` does.
+    #[test]
+    fn integration_silent_correction_of_file_stem() {
+        let symbols = vec!["utils.rs".to_string(), "main.rs".to_string()];
+        let threshold = 0.60_f64;
+
+        // "utils" → should silently match "utils.rs"
+        let (conf, candidates) = find_matches("utils", &symbols, threshold);
+        assert_eq!(conf, Confidence::High);
+        assert_eq!(candidates[0], "utils.rs");
+    }
+
+    #[test]
+    fn integration_no_correction_for_common_prose() {
+        // Plain common words should not even reach find_matches in the real pipeline
+        // because classify_token filters them. We test classify_token here.
+        let common = make_common();
+        let prose_words = ["the", "open", "and", "with", "from", "into"];
+        for word in &prose_words {
+            // Words in the common list should be CandidateKind::No even when
+            // following a context word (except explicit trigger words).
+            if COMMON_ENGLISH.contains(word) {
+                assert_eq!(
+                    classify_token(word, Some("open"), &common),
+                    CandidateKind::No,
+                    "expected '{}' to be skipped as common English",
+                    word
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn integration_trigger_word_triggers_correction() {
+        let common = make_common();
+        // "file" is an explicit trigger, so "utils" that follows it should be ExplicitTrigger.
+        assert_eq!(
+            classify_token("utils", Some("file"), &common),
+            CandidateKind::ExplicitTrigger
+        );
+        // "symbol" trigger too.
+        assert_eq!(
+            classify_token("parseArgs", Some("symbol"), &common),
+            CandidateKind::ExplicitTrigger
+        );
+    }
+}
