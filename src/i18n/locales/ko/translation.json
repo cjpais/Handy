@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "정확한 다국어 지원. 25개 유럽 언어. 번역 지원."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "크고 느리지만 매우 정확한 다국어 모델."
       }
     },
     "errors": {

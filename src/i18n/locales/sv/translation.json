@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Noggrann flerspråkig. 25 europeiska språk. Stöder översättning."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "En stor, långsammare, men mycket noggrann flerspråkig modell."
       }
     },
     "errors": {

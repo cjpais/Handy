@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Přesný vícejazyčný. 25 evropských jazyků. Podporuje překlad."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Velký, pomalejší, ale velmi přesný vícejazyčný model."
       }
     },
     "errors": {
