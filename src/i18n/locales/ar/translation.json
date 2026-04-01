@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "متعدد اللغات ودقيق. 25 لغة أوروبية. يدعم الترجمة."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "نموذج كبير وأبطأ، لكنه دقيق جداً ومتعدد اللغات."
       }
     },
     "errors": {

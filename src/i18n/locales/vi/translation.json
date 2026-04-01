@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Đa ngôn ngữ chính xác. 25 ngôn ngữ châu Âu. Hỗ trợ dịch thuật."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Mô hình lớn, chậm hơn, nhưng rất chính xác và đa ngôn ngữ."
       }
     },
     "errors": {

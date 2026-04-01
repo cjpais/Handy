@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Doğru çok dilli. 25 Avrupa dili. Çeviri desteği."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Büyük, daha yavaş, ancak çok doğru çok dilli bir model."
       }
     },
     "errors": {

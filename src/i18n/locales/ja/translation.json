@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "高精度な多言語対応。25のヨーロッパ言語。翻訳対応。"
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "大型で低速ですが、非常に高精度な多言語モデル。"
       }
     },
     "errors": {

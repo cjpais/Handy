@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "準確的多語言模型。25種歐洲語言。支援翻譯。"
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "大型模型，速度較慢，但多語言辨識非常準確。"
       }
     },
     "errors": {
