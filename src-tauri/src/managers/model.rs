@@ -588,8 +588,7 @@ impl ModelManager {
             ModelInfo {
                 id: "cohere-int8".to_string(),
                 name: "Cohere".to_string(),
-                description: "Multilingual. 14 languages across European, APAC, and MENA regions."
-                    .to_string(),
+                description: "A large, slower, but very accurate multilingual model.".to_string(),
                 filename: "cohere-int8".to_string(),
                 url: Some("https://blob.handy.computer/cohere-int8.tar.gz".to_string()),
                 sha256: Some(
@@ -601,7 +600,7 @@ impl ModelManager {
                 partial_size: 0,
                 is_directory: true,
                 engine_type: EngineType::Cohere,
-                accuracy_score: 0.85,
+                accuracy_score: 0.90,
                 speed_score: 0.60,
                 supports_translation: false,
                 is_recommended: false,
