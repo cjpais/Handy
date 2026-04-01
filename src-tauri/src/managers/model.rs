@@ -26,6 +26,7 @@ pub enum EngineType {
     SenseVoice,
     GigaAM,
     Canary,
+    Cohere,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -133,7 +134,7 @@ impl ModelManager {
                 sha256: Some(
                     "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b".to_string(),
                 ),
-                size_mb: 487,
+                size_mb: 465,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -161,7 +162,7 @@ impl ModelManager {
                 sha256: Some(
                     "79283fc1f9fe12ca3248543fbd54b73292164d8df5a16e095e2bceeaaabddf57".to_string(),
                 ),
-                size_mb: 492, // Approximate size
+                size_mb: 469,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -188,7 +189,7 @@ impl ModelManager {
                 sha256: Some(
                     "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69".to_string(),
                 ),
-                size_mb: 1600, // Approximate size
+                size_mb: 1549,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -215,7 +216,7 @@ impl ModelManager {
                 sha256: Some(
                     "d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1".to_string(),
                 ),
-                size_mb: 1100, // Approximate size
+                size_mb: 1031,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -243,7 +244,7 @@ impl ModelManager {
                 sha256: Some(
                     "8efbf0ce8a3f50fe332b7617da787fb81354b358c288b008d3bdef8359df64c6".to_string(),
                 ),
-                size_mb: 1080,
+                size_mb: 1030,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -271,7 +272,7 @@ impl ModelManager {
                 sha256: Some(
                     "ac9b9429984dd565b25097337a887bb7f0f8ac393573661c651f0e7d31563991".to_string(),
                 ),
-                size_mb: 473, // Approximate size for int8 quantized model
+                size_mb: 451,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -308,7 +309,7 @@ impl ModelManager {
                 sha256: Some(
                     "43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77".to_string(),
                 ),
-                size_mb: 478, // Approximate size for int8 quantized model
+                size_mb: 456,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -335,7 +336,7 @@ impl ModelManager {
                 sha256: Some(
                     "04bf6ab012cfceebd4ac7cf88c1b31d027bbdd3cd704649b692e2e935236b7e8".to_string(),
                 ),
-                size_mb: 58,
+                size_mb: 55,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -393,7 +394,7 @@ impl ModelManager {
                 sha256: Some(
                     "dbb3e1c1832bd88a4ac712f7449a136cc2c9a18c5fe33a12ed1b7cb1cfe9cdd5".to_string(),
                 ),
-                size_mb: 100,
+                size_mb: 99,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -457,7 +458,7 @@ impl ModelManager {
                 sha256: Some(
                     "171d611fe5d353a50bbb741b6f3ef42559b1565685684e9aa888ef563ba3e8a4".to_string(),
                 ),
-                size_mb: 160,
+                size_mb: 152,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -487,7 +488,7 @@ impl ModelManager {
                 sha256: Some(
                     "d872462268430db140b69b72e0fc4b787b194c1dbe51b58de39444d55b6da45b".to_string(),
                 ),
-                size_mb: 152,
+                size_mb: 151,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -558,7 +559,7 @@ impl ModelManager {
                 sha256: Some(
                     "02305b2a25f9cf3e7deaffa7f94df00efa44f442cd55c101c2cb9c000f904666".to_string(),
                 ),
-                size_mb: 692,
+                size_mb: 691,
                 is_downloaded: false,
                 is_downloading: false,
                 partial_size: 0,
@@ -569,6 +570,41 @@ impl ModelManager {
                 supports_translation: true,
                 is_recommended: false,
                 supported_languages: canary_1b_languages,
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        let cohere_languages: Vec<String> = vec![
+            "en", "fr", "de", "it", "es", "pt", "el", "nl", "pl", "zh", "ja", "ko", "vi", "ar",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        available_models.insert(
+            "cohere-int8".to_string(),
+            ModelInfo {
+                id: "cohere-int8".to_string(),
+                name: "Cohere".to_string(),
+                description: "Multilingual. 14 languages across European, APAC, and MENA regions."
+                    .to_string(),
+                filename: "cohere-int8".to_string(),
+                url: Some("https://blob.handy.computer/cohere-int8.tar.gz".to_string()),
+                sha256: Some(
+                    "ea2257d52434f3644574f187dcdcf666e302cd11b92866116ab8e14cd9c887f0".to_string(),
+                ),
+                size_mb: 1708,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Cohere,
+                accuracy_score: 0.85,
+                speed_score: 0.60,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: cohere_languages,
                 supports_language_selection: true,
                 is_custom: false,
             },
