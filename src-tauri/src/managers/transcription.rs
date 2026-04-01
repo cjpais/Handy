@@ -1,4 +1,5 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::identifier_correction::IdentifierCorrectionManager;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
@@ -691,7 +692,23 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = filtered_result;
+        // Apply identifier correction if enabled and index has been built.
+        let final_result = if settings.identifier_correction_enabled {
+            if let Some(ic) = self
+                .app_handle
+                .try_state::<std::sync::Arc<IdentifierCorrectionManager>>()
+            {
+                ic.correct_text(
+                    &self.app_handle,
+                    &filtered_result,
+                    settings.identifier_correction_threshold,
+                )
+            } else {
+                filtered_result
+            }
+        } else {
+            filtered_result
+        };
 
         if final_result.is_empty() {
             info!("Transcription result is empty");

@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod history;
+pub mod identifier_correction;
 pub mod models;
 pub mod transcription;
 

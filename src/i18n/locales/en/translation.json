@@ -352,6 +352,20 @@
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
+      },
+      "identifierCorrection": {
+        "title": "Identifier Correction",
+        "description": "Automatically correct misheard code identifiers (file names, function names, variable names) by fuzzy-matching against your project's codebase.",
+        "projectRoot": "Project Root",
+        "projectRootDescription": "Absolute path to the project directory to index for symbol matching.",
+        "projectRootPlaceholder": "/path/to/your/project",
+        "index": "Index",
+        "indexing": "Indexing…",
+        "refresh": "Refresh",
+        "noSymbols": "No symbols indexed yet.",
+        "symbolCount": "{{count}} symbols indexed",
+        "threshold": "Match Confidence",
+        "thresholdDescription": "Minimum fuzzy-match score for a symbol to be considered. Higher values are stricter and reduce false positives."
       }
     },
     "postProcessing": {
@@ -602,5 +616,14 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "identifierPicker": {
+    "ariaLabel": "Identifier correction picker",
+    "title": "Did you mean…",
+    "countdown": "{{seconds}}s",
+    "prompt": "Replace \"{{token}}\" with:",
+    "keepOriginal": "keep original",
+    "confirm": "Apply",
+    "dismiss": "Skip all"
   }
 }

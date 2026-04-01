@@ -17,6 +17,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
+import { IdentifierPicker } from "./components/identifier-picker/IdentifierPicker";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
@@ -267,6 +268,8 @@ function App() {
       </div>
       {/* Fixed footer at bottom */}
       <Footer />
+      {/* Identifier correction picker overlay — renders above everything else */}
+      <IdentifierPicker />
     </div>
   );
 }

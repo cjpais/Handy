@@ -20,6 +20,7 @@ import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
+import { IdentifierCorrectionSettings } from "../IdentifierCorrectionSettings";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -47,6 +48,7 @@ export const AdvancedSettings: React.FC = () => {
       <SettingsGroup title={t("settings.advanced.groups.transcription")}>
         <CustomWords descriptionMode="tooltip" grouped />
         <AppendTrailingSpace descriptionMode="tooltip" grouped={true} />
+        <IdentifierCorrectionSettings descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.advanced.groups.history")}>

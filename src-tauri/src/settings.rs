@@ -430,6 +430,19 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+
+    // ---- Identifier correction ----
+    /// Enable codebase-aware identifier correction after transcription.
+    #[serde(default)]
+    pub identifier_correction_enabled: bool,
+    /// Absolute path to the project root used for symbol indexing.
+    /// When None, correction is disabled regardless of the enabled flag.
+    #[serde(default)]
+    pub identifier_correction_project_root: Option<String>,
+    /// Minimum fuzzy-match score (0.0–1.0) for a symbol to be considered a
+    /// candidate.  Values around 0.55–0.65 work well in practice.
+    #[serde(default = "default_identifier_correction_threshold")]
+    pub identifier_correction_threshold: f64,
 }
 
 fn default_model() -> String {
@@ -477,6 +490,10 @@ fn default_log_level() -> LogLevel {
 
 fn default_word_correction_threshold() -> f64 {
     0.18
+}
+
+fn default_identifier_correction_threshold() -> f64 {
+    0.60
 }
 
 fn default_paste_delay_ms() -> u64 {

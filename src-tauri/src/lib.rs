@@ -1,6 +1,7 @@
 mod actions;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod apple_intelligence;
+mod identifier_correction;
 mod audio_feedback;
 pub mod audio_toolkit;
 pub mod cli;
@@ -26,6 +27,7 @@ use specta_typescript::{BigIntExportBehavior, Typescript};
 use tauri_specta::{collect_commands, collect_events, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
+use identifier_correction::IdentifierCorrectionManager;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
 use managers::model::ModelManager;
@@ -156,6 +158,23 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
+    // Initialize identifier correction manager and pre-build index if configured.
+    let identifier_correction_manager = Arc::new(IdentifierCorrectionManager::new());
+    {
+        let settings = get_settings(app_handle);
+        if settings.identifier_correction_enabled {
+            if let Some(root) = &settings.identifier_correction_project_root {
+                let path = std::path::PathBuf::from(root);
+                if path.is_dir() {
+                    let mgr = identifier_correction_manager.clone();
+                    std::thread::spawn(move || {
+                        mgr.rebuild_index(&path);
+                    });
+                }
+            }
+        }
+    }
+
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
 
@@ -164,6 +183,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(identifier_correction_manager.clone());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -418,6 +438,10 @@ pub fn run(cli_args: CliArgs) {
             commands::transcription::set_model_unload_timeout,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,
+            commands::identifier_correction::confirm_identifier_pick,
+            commands::identifier_correction::rebuild_identifier_index,
+            commands::identifier_correction::set_identifier_correction_settings,
+            commands::identifier_correction::get_identifier_index_size,
             commands::history::get_history_entries,
             commands::history::toggle_history_entry_saved,
             commands::history::get_audio_file_path,
@@ -427,7 +451,10 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
         ])
-        .events(collect_events![managers::history::HistoryUpdatePayload,]);
+        .events(collect_events![
+            managers::history::HistoryUpdatePayload,
+            identifier_correction::IdentifierPickNeededEvent,
+        ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     specta_builder
