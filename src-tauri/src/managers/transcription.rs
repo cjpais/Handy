@@ -614,6 +614,10 @@ impl TranscriptionManager {
                         LoadedEngine::Cohere(cohere_engine) => {
                             let lang = if validated_language == "auto" {
                                 None
+                            } else if validated_language == "zh-Hans"
+                                || validated_language == "zh-Hant"
+                            {
+                                Some("zh".to_string())
                             } else {
                                 Some(validated_language.clone())
                             };
