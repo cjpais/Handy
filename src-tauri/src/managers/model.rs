@@ -576,8 +576,8 @@ impl ModelManager {
         );
 
         let cohere_languages: Vec<String> = vec![
-            "en", "fr", "de", "it", "es", "pt", "el", "nl", "pl", "zh", "zh-Hans", "zh-Hant",
-            "ja", "ko", "vi", "ar",
+            "en", "fr", "de", "it", "es", "pt", "el", "nl", "pl", "zh", "zh-Hans", "zh-Hant", "ja",
+            "ko", "vi", "ar",
         ]
         .into_iter()
         .map(String::from)
