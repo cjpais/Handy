@@ -1,7 +1,28 @@
-use crate::settings::PostProcessProvider;
+use crate::settings::{PostProcessProvider, CUSTOM_LLM_BASE_URL_ENV};
 use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
+use std::env;
+
+/// Get the effective base URL for a provider.
+/// For the "custom" provider, checks the environment variable first.
+/// This is called fresh on each invocation to pick up runtime changes.
+fn get_effective_base_url(provider: &PostProcessProvider) -> String {
+    if provider.id == "custom" {
+        // Check environment variable for custom provider override
+        if let Ok(env_url) = env::var(CUSTOM_LLM_BASE_URL_ENV) {
+            let trimmed = env_url.trim();
+            if !trimmed.is_empty() {
+                debug!(
+                    "Using base URL from environment variable {}: {}",
+                    CUSTOM_LLM_BASE_URL_ENV, trimmed
+                );
+                return trimmed.trim_end_matches('/').to_string();
+            }
+        }
+    }
+    provider.base_url.trim_end_matches('/').to_string()
+}
 use serde_json::Value;
 
 #[derive(Debug, Serialize)]
@@ -102,6 +123,8 @@ pub async fn send_chat_completion(
     model: &str,
     prompt: String,
 ) -> Result<Option<String>, String> {
+    // Get effective base URL (checks env var for custom provider on each call)
+    let base_url = get_effective_base_url(provider);
     send_chat_completion_with_schema(provider, api_key, model, prompt, None, None).await
 }
 
@@ -116,7 +139,7 @@ pub async fn send_chat_completion_with_schema(
     system_prompt: Option<String>,
     json_schema: Option<Value>,
 ) -> Result<Option<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
+    let base_url = get_effective_base_url(provider);
     let url = format!("{}/chat/completions", base_url);
 
     debug!("Sending chat completion request to: {}", url);
@@ -192,7 +215,8 @@ pub async fn fetch_models(
     provider: &PostProcessProvider,
     api_key: String,
 ) -> Result<Vec<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
+    // Get effective base URL (checks env var for custom provider on each call)
+    let base_url = get_effective_base_url(provider);
     let url = format!("{}/models", base_url);
 
     debug!("Fetching models from: {}", url);
@@ -244,4 +268,107 @@ pub async fn fetch_models(
     }
 
     Ok(models)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::settings::PostProcessProvider;
+
+    #[test]
+    fn test_get_effective_base_url_custom_provider_with_env() {
+        // Set environment variable
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "http://custom-server:8080/v1");
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://custom-server:8080/v1");
+
+        // Clean up
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
+    }
+
+    #[test]
+    fn test_get_effective_base_url_custom_provider_without_env() {
+        // Ensure env var is not set
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://localhost:11434/v1");
+    }
+
+    #[test]
+    fn test_get_effective_base_url_custom_provider_with_empty_env() {
+        // Set empty environment variable
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "  ");
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://localhost:11434/v1");
+
+        // Clean up
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
+    }
+
+    #[test]
+    fn test_get_effective_base_url_non_custom_provider() {
+        // Set environment variable (should be ignored for non-custom provider)
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "http://custom-server:8080/v1");
+
+        let provider = PostProcessProvider {
+            id: "openai".to_string(),
+            label: "OpenAI".to_string(),
+            base_url: "https://api.openai.com/v1".to_string(),
+            allow_base_url_edit: false,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "https://api.openai.com/v1");
+
+        // Clean up
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
+    }
+
+    #[test]
+    fn test_get_effective_base_url_strips_trailing_slash() {
+        // Set environment variable with trailing slash
+        std::env::set_var(CUSTOM_LLM_BASE_URL_ENV, "http://custom-server:8080/v1/");
+
+        let provider = PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1/".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+        };
+
+        let result = get_effective_base_url(&provider);
+        assert_eq!(result, "http://custom-server:8080/v1");
+
+        // Clean up
+        std::env::remove_var(CUSTOM_LLM_BASE_URL_ENV);
+    }
 }
