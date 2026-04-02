@@ -7,7 +7,11 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
+import {
+  ModelStateEvent,
+  RecordingErrorEvent,
+  PasteErrorEvent,
+} from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -116,6 +120,18 @@ function App() {
           t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
         );
       }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // Listen for paste failures and show a toast
+  useEffect(() => {
+    const unlisten = listen<PasteErrorEvent>("paste-error", (event) => {
+      toast.error(t("errors.pasteFailedTitle"), {
+        description: event.payload.detail,
+      });
     });
     return () => {
       unlisten.then((fn) => fn());
