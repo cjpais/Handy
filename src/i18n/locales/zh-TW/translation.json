@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "載入中...",
     "save": "儲存",
     "cancel": "取消",
