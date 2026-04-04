@@ -357,6 +357,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::update_post_process_prompt,
             shortcut::delete_post_process_prompt,
             shortcut::set_post_process_selected_prompt,
+            shortcut::set_post_process_reasoning_effort,
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,

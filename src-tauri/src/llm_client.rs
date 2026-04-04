@@ -30,6 +30,8 @@ struct ChatCompletionRequest {
     messages: Vec<ChatMessage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     response_format: Option<ResponseFormat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning_effort: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,13 +103,16 @@ pub async fn send_chat_completion(
     api_key: String,
     model: &str,
     prompt: String,
+    reasoning_effort: Option<String>,
 ) -> Result<Option<String>, String> {
-    send_chat_completion_with_schema(provider, api_key, model, prompt, None, None).await
+    send_chat_completion_with_schema(provider, api_key, model, prompt, None, None, reasoning_effort)
+        .await
 }
 
 /// Send a chat completion request with structured output support
 /// When json_schema is provided, uses structured outputs mode
 /// system_prompt is used as the system message when provided
+/// reasoning_effort controls thinking mode for reasoning models (e.g., "none", "low", "medium", "high")
 pub async fn send_chat_completion_with_schema(
     provider: &PostProcessProvider,
     api_key: String,
@@ -115,6 +120,7 @@ pub async fn send_chat_completion_with_schema(
     user_content: String,
     system_prompt: Option<String>,
     json_schema: Option<Value>,
+    reasoning_effort: Option<String>,
 ) -> Result<Option<String>, String> {
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/chat/completions", base_url);
@@ -154,6 +160,7 @@ pub async fn send_chat_completion_with_schema(
         model: model.to_string(),
         messages,
         response_format,
+        reasoning_effort,
     };
 
     let response = client

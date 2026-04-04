@@ -394,6 +394,15 @@
           "placeholderWithOptions": "モデルを検索または選択",
           "placeholderNoOptions": "モデル名を入力",
           "refreshModels": "モデルを更新"
+        },
+        "reasoningEffort": {
+          "title": "推論レベル",
+          "description": "推論モデルの思考モードを制御します。思考が不要な場合は「なし」に設定すると高速になります。",
+          "default": "デフォルト（モデル依存）",
+          "none": "なし（最速）",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
         }
       },
       "prompts": {

@@ -25,6 +25,15 @@ import { useSettings } from "../../../hooks/useSettings";
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
   const state = usePostProcessProviderState();
+  const { getSetting, updateSetting } = useSettings();
+
+  const reasoningEffortOptions = [
+    { value: "", label: t("settings.postProcessing.api.reasoningEffort.default") },
+    { value: "none", label: t("settings.postProcessing.api.reasoningEffort.none") },
+    { value: "low", label: t("settings.postProcessing.api.reasoningEffort.low") },
+    { value: "medium", label: t("settings.postProcessing.api.reasoningEffort.medium") },
+    { value: "high", label: t("settings.postProcessing.api.reasoningEffort.high") },
+  ];
 
   return (
     <>
@@ -137,6 +146,28 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
               />
             </ResetButton>
           </div>
+        </SettingContainer>
+      )}
+
+      {state.isCustomProvider && (
+        <SettingContainer
+          title={t("settings.postProcessing.api.reasoningEffort.title")}
+          description={t("settings.postProcessing.api.reasoningEffort.description")}
+          descriptionMode="tooltip"
+          layout="horizontal"
+          grouped={true}
+        >
+          <Dropdown
+            selectedValue={getSetting("post_process_reasoning_effort") ?? ""}
+            options={reasoningEffortOptions}
+            onSelect={(value: string) =>
+              updateSetting(
+                "post_process_reasoning_effort",
+                value === "" ? null : value,
+              )
+            }
+            className="min-w-[200px]"
+          />
         </SettingContainer>
       )}
     </>
