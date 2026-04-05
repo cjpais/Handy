@@ -465,8 +465,12 @@ impl AudioRecordingManager {
 
                 // Pad if very short
                 let s_len = samples.len();
-                // debug!("Got {} samples", s_len);
-                if s_len < WHISPER_SAMPLE_RATE && s_len > 0 {
+                const MIN_SPEECH_SAMPLES: usize = 1600; // 100ms at 16kHz
+                if s_len < MIN_SPEECH_SAMPLES {
+                    // Too short to be real speech — SmoothedVad minimum real output is ~8000 samples
+                    // (15 prefill + 2 onset + 15 hangover frames). Anything shorter is leakage.
+                    Some(Vec::new())
+                } else if s_len < WHISPER_SAMPLE_RATE {
                     let mut padded = samples;
                     padded.resize(WHISPER_SAMPLE_RATE * 5 / 4, 0.0);
                     Some(padded)
