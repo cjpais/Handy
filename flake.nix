@@ -79,6 +79,13 @@
             ];
           };
           lib = pkgs.lib;
+          combinedAlsaPlugins = pkgs.symlinkJoin {
+            name = "combined-alsa-plugins";
+            paths = [
+              "${pkgs.pipewire}/lib/alsa-lib"
+              "${pkgs.alsa-plugins}/lib/alsa-lib"
+            ];
+          };
         in
         {
           handy = pkgs.rustPlatform.buildRustPackage {
@@ -178,7 +185,7 @@
             preFixup = ''
               gappsWrapperArgs+=(
                 --set WEBKIT_DISABLE_DMABUF_RENDERER 1
-                --set ALSA_PLUGIN_DIR "${pkgs.pipewire}/lib/alsa-lib:${pkgs.alsa-plugins}/lib/alsa-lib"
+                --set ALSA_PLUGIN_DIR "${combinedAlsaPlugins}"
                 --prefix LD_LIBRARY_PATH : "${
                   lib.makeLibraryPath [
                     pkgs.vulkan-loader
