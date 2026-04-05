@@ -126,8 +126,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .unwrap_or_default();
 
     // Cloud providers may reject unknown parameters in the request body
-    let reasoning_effort = if provider.id == "custom" {
-        settings.post_process_reasoning_effort.clone()
+    let reasoning_effort = if provider.id == "custom" && settings.post_process_disable_reasoning {
+        Some("none".to_string())
     } else {
         None
     };

@@ -395,14 +395,9 @@
           "placeholderNoOptions": "Type a model name",
           "refreshModels": "Refresh models"
         },
-        "reasoningEffort": {
-          "title": "Reasoning Effort",
-          "description": "Controls thinking mode for reasoning models. Set to 'None' for faster responses when thinking is not needed.",
-          "default": "Default (Model decides)",
-          "none": "None (Fastest)",
-          "low": "Low",
-          "medium": "Medium",
-          "high": "High"
+        "disableReasoning": {
+          "label": "Disable reasoning",
+          "description": "Skip thinking mode for faster responses. Recommended for post-processing, which rarely benefits from reasoning."
         }
       },
       "prompts": {

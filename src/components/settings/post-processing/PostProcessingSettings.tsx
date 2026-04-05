@@ -20,20 +20,13 @@ import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { ShortcutInput } from "../ShortcutInput";
+import { ToggleSwitch } from "../../ui/ToggleSwitch";
 import { useSettings } from "../../../hooks/useSettings";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
   const state = usePostProcessProviderState();
-  const { getSetting, updateSetting } = useSettings();
-
-  const reasoningEffortOptions = [
-    { value: "", label: t("settings.postProcessing.api.reasoningEffort.default") },
-    { value: "none", label: t("settings.postProcessing.api.reasoningEffort.none") },
-    { value: "low", label: t("settings.postProcessing.api.reasoningEffort.low") },
-    { value: "medium", label: t("settings.postProcessing.api.reasoningEffort.medium") },
-    { value: "high", label: t("settings.postProcessing.api.reasoningEffort.high") },
-  ];
+  const { getSetting, updateSetting, isUpdating } = useSettings();
 
   return (
     <>
@@ -150,25 +143,19 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
       )}
 
       {state.isCustomProvider && (
-        <SettingContainer
-          title={t("settings.postProcessing.api.reasoningEffort.title")}
-          description={t("settings.postProcessing.api.reasoningEffort.description")}
+        <ToggleSwitch
+          checked={getSetting("post_process_disable_reasoning") ?? true}
+          onChange={(disable) =>
+            updateSetting("post_process_disable_reasoning", disable)
+          }
+          isUpdating={isUpdating("post_process_disable_reasoning")}
+          label={t("settings.postProcessing.api.disableReasoning.label")}
+          description={t(
+            "settings.postProcessing.api.disableReasoning.description",
+          )}
           descriptionMode="tooltip"
-          layout="horizontal"
           grouped={true}
-        >
-          <Dropdown
-            selectedValue={getSetting("post_process_reasoning_effort") ?? ""}
-            options={reasoningEffortOptions}
-            onSelect={(value: string) =>
-              updateSetting(
-                "post_process_reasoning_effort",
-                value === "" ? null : value,
-              )
-            }
-            className="min-w-[200px]"
-          />
-        </SettingContainer>
+        />
       )}
     </>
   );
