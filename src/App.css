@@ -38,6 +38,10 @@
     transparent 70%
   );
 
+  /* Default accent colors for overlay */
+  --color-accent-bar: #ffe5ee;
+  --color-accent-hover: #faa2ca33;
+
   /* Apply colors */
   color: var(--color-text);
   background-color: var(--color-background);

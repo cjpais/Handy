@@ -9,6 +9,7 @@ import {
 import "./RecordingOverlay.css";
 import { commands } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
+import { applyAccentColor } from "@/lib/utils/accentColor";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "transcribing" | "processing";
@@ -25,8 +26,12 @@ const RecordingOverlay: React.FC = () => {
     const setupEventListeners = async () => {
       // Listen for show-overlay event from Rust
       const unlistenShow = await listen("show-overlay", async (event) => {
-        // Sync language from settings each time overlay is shown
+        // Sync language and accent color from settings each time overlay is shown
         await syncLanguageFromSettings();
+        const result = await commands.getAppSettings();
+        if (result.status === "ok") {
+          applyAccentColor(result.data.accent_color);
+        }
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
         setIsVisible(true);

@@ -423,6 +423,8 @@ pub struct AppSettings {
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
+    pub accent_color: String,
+    #[serde(default)]
     pub whisper_accelerator: WhisperAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
@@ -800,6 +802,7 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
+        accent_color: String::new(),
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),

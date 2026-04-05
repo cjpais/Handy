@@ -368,6 +368,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_keyboard_implementation_setting,
             shortcut::get_keyboard_implementation,
             shortcut::change_show_tray_icon_setting,
+            shortcut::change_accent_color_setting,
             shortcut::change_whisper_accelerator_setting,
             shortcut::change_ort_accelerator_setting,
             shortcut::change_whisper_gpu_device,

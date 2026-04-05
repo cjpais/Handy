@@ -1142,6 +1142,24 @@ pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), Stri
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_accent_color_setting(app: AppHandle, color: String) -> Result<(), String> {
+    // Empty string resets to default; otherwise must be #rrggbb
+    if !color.is_empty() {
+        let valid = color.len() == 7
+            && color.starts_with('#')
+            && color[1..].chars().all(|c| c.is_ascii_hexdigit());
+        if !valid {
+            return Err(format!("Invalid accent color: {color}"));
+        }
+    }
+    let mut s = settings::get_settings(&app);
+    s.accent_color = color;
+    settings::write_settings(&app, s);
+    Ok(())
+}
+
 /// Return which accelerators and GPU devices are available for this build.
 #[tauri::command]
 #[specta::specta]

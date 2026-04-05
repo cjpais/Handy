@@ -17,6 +17,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
+import { applyAccentColor } from "@/lib/utils/accentColor";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
@@ -54,6 +55,11 @@ function App() {
   useEffect(() => {
     initializeRTL(i18n.language);
   }, [i18n.language]);
+
+  // Apply accent color to root element
+  useEffect(() => {
+    applyAccentColor(settings?.accent_color);
+  }, [settings?.accent_color]);
 
   // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {

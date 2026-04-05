@@ -241,11 +241,17 @@
     "advanced": {
       "title": "Advanced",
       "groups": {
+        "appearance": "Appearance",
         "app": "App",
         "output": "Output",
         "transcription": "Transcription",
         "history": "History",
         "experimental": "Experimental"
+      },
+      "accentColor": {
+        "label": "Accent Color",
+        "description": "Choose the accent color used throughout the app.",
+        "reset": "Reset to default"
       },
       "experimentalToggle": {
         "label": "Experimental Features",

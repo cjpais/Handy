@@ -1,3 +1,16 @@
+/* Default accent colors (pink) */
+:root {
+  --color-accent-bar: #ffe5ee;
+  --color-accent-hover: #faa2ca33;
+  --color-logo-primary: #faa2ca;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-logo-primary: #f28cbb;
+  }
+}
+
 .recording-overlay {
   height: 36px;
   width: 172px;
@@ -41,7 +54,7 @@
 
 .bar {
   width: 6px;
-  background: #ffe5ee;
+  background: var(--color-accent-bar, #ffe5ee);
   max-height: 20px;
   border-radius: 2px;
   transition: height 80ms linear;
@@ -86,7 +99,7 @@
 }
 
 .cancel-button:hover {
-  background: #faa2ca33;
+  background: var(--color-accent-hover, #faa2ca33);
   transform: scale(1.05);
 }
 
