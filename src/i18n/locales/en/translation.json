@@ -394,10 +394,6 @@
           "placeholderWithOptions": "Search or select a model",
           "placeholderNoOptions": "Type a model name",
           "refreshModels": "Refresh models"
-        },
-        "disableReasoning": {
-          "label": "Disable reasoning",
-          "description": "Skip thinking mode for faster responses. Recommended for post-processing, which rarely benefits from reasoning."
         }
       },
       "prompts": {

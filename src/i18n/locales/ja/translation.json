@@ -394,10 +394,6 @@
           "placeholderWithOptions": "モデルを検索または選択",
           "placeholderNoOptions": "モデル名を入力",
           "refreshModels": "モデルを更新"
-        },
-        "disableReasoning": {
-          "label": "推論を無効化",
-          "description": "思考モードをスキップして応答を高速化します。後処理では通常推論の恩恵が少ないため推奨されます。"
         }
       },
       "prompts": {

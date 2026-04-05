@@ -394,10 +394,6 @@
           "placeholderWithOptions": "Cerca o scegli un modello",
           "placeholderNoOptions": "Digita il nome di un modello",
           "refreshModels": "Aggiorna modelli"
-        },
-        "disableReasoning": {
-          "label": "Disabilita ragionamento",
-          "description": "Salta la modalità di pensiero per risposte più rapide. Consigliato per la post-elaborazione, che raramente beneficia del ragionamento."
         }
       },
       "prompts": {

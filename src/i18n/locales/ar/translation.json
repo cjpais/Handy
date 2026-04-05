@@ -372,10 +372,6 @@
           "placeholderWithOptions": "ابحث عن نموذج أو اختره",
           "placeholderNoOptions": "اكتب اسم النموذج",
           "refreshModels": "تحديث النماذج"
-        },
-        "disableReasoning": {
-          "label": "تعطيل الاستدلال",
-          "description": "تخطي وضع التفكير للحصول على استجابات أسرع. موصى به للمعالجة اللاحقة التي نادرًا ما تستفيد من الاستدلال."
         }
       },
       "prompts": {

@@ -125,8 +125,10 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .cloned()
         .unwrap_or_default();
 
-    // Cloud providers may reject unknown parameters in the request body
-    let reasoning_effort = if provider.id == "custom" && settings.post_process_disable_reasoning {
+    // Always disable reasoning for custom providers: post-processing rarely
+    // benefits from thinking mode, and latency on local models is significant.
+    // Revisit if strict OpenAI-compat endpoints reject "none".
+    let reasoning_effort = if provider.id == "custom" {
         Some("none".to_string())
     } else {
         None

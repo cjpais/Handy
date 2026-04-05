@@ -105,8 +105,16 @@ pub async fn send_chat_completion(
     prompt: String,
     reasoning_effort: Option<String>,
 ) -> Result<Option<String>, String> {
-    send_chat_completion_with_schema(provider, api_key, model, prompt, None, None, reasoning_effort)
-        .await
+    send_chat_completion_with_schema(
+        provider,
+        api_key,
+        model,
+        prompt,
+        None,
+        None,
+        reasoning_effort,
+    )
+    .await
 }
 
 /// Send a chat completion request with structured output support

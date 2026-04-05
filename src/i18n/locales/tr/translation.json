@@ -394,10 +394,6 @@
           "placeholderWithOptions": "Model ara veya seç",
           "placeholderNoOptions": "Model adı yazın",
           "refreshModels": "Modelleri Yenile"
-        },
-        "disableReasoning": {
-          "label": "Akıl yürütmeyi devre dışı bırak",
-          "description": "Daha hızlı yanıtlar için düşünme modunu atlar. Akıl yürütmeden nadiren yararlanan işlem sonrası için önerilir."
         }
       },
       "prompts": {

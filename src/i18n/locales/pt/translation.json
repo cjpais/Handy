@@ -394,10 +394,6 @@
           "placeholderWithOptions": "Buscar ou selecionar um modelo",
           "placeholderNoOptions": "Digite o nome de um modelo",
           "refreshModels": "Atualizar modelos"
-        },
-        "disableReasoning": {
-          "label": "Desativar raciocínio",
-          "description": "Ignora o modo de pensamento para respostas mais rápidas. Recomendado para pós-processamento, que raramente se beneficia do raciocínio."
         }
       },
       "prompts": {

@@ -394,10 +394,6 @@
           "placeholderWithOptions": "Rechercher ou sélectionner un modèle",
           "placeholderNoOptions": "Tapez un nom de modèle",
           "refreshModels": "Actualiser les modèles"
-        },
-        "disableReasoning": {
-          "label": "Désactiver le raisonnement",
-          "description": "Ignore le mode de réflexion pour des réponses plus rapides. Recommandé pour le post-traitement, qui bénéficie rarement du raisonnement."
         }
       },
       "prompts": {
