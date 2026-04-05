@@ -72,6 +72,7 @@ sha2 = "0.10"
 transcribe-rs = { version = "0.3.8", features = ["whisper-cpp", "onnx"] }
 handy-keys = "0.2.4"
 ferrous-opencc = "0.2.3"
+arboard = { version = "3.6", features = ["image-data"] }
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
 specta-typescript = "0.0.9"

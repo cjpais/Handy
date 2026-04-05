@@ -1,9 +1,11 @@
+use arboard::Clipboard as ArboardClipboard;
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
+use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -11,6 +13,89 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
+
+enum SavedClipboard {
+    Files(Vec<std::path::PathBuf>),
+    Image {
+        rgba: Vec<u8>,
+        width: usize,
+        height: usize,
+    },
+    Html {
+        html: String,
+        alt_text: Option<String>,
+    },
+    Text(String),
+    Empty,
+}
+
+fn save_clipboard() -> SavedClipboard {
+    let Ok(mut clipboard) = ArboardClipboard::new() else {
+        return SavedClipboard::Empty;
+    };
+
+    if let Ok(files) = clipboard.get().file_list() {
+        if !files.is_empty() {
+            return SavedClipboard::Files(files);
+        }
+    }
+    if let Ok(image) = clipboard.get().image() {
+        return SavedClipboard::Image {
+            rgba: image.bytes.into_owned(),
+            width: image.width,
+            height: image.height,
+        };
+    }
+    if let Ok(html) = clipboard.get().html() {
+        if !html.is_empty() {
+            let alt = clipboard.get().text().ok();
+            return SavedClipboard::Html { html, alt_text: alt };
+        }
+    }
+    match clipboard.get().text() {
+        Ok(text) if !text.is_empty() => SavedClipboard::Text(text),
+        _ => SavedClipboard::Empty,
+    }
+}
+
+fn restore_clipboard(saved: SavedClipboard) {
+    match saved {
+        SavedClipboard::Empty => {}
+        SavedClipboard::Text(text) => {
+            #[cfg(target_os = "linux")]
+            if is_wayland() && is_wl_copy_available() {
+                let _ = write_clipboard_via_wl_copy(&text);
+                return;
+            }
+            if let Ok(mut clipboard) = ArboardClipboard::new() {
+                let _ = clipboard.set_text(&text);
+            }
+        }
+        SavedClipboard::Image {
+            rgba,
+            width,
+            height,
+        } => {
+            if let Ok(mut clipboard) = ArboardClipboard::new() {
+                let _ = clipboard.set_image(arboard::ImageData {
+                    bytes: Cow::Owned(rgba),
+                    width,
+                    height,
+                });
+            }
+        }
+        SavedClipboard::Html { html, alt_text } => {
+            if let Ok(mut clipboard) = ArboardClipboard::new() {
+                let _ = clipboard.set_html(&html, alt_text.as_ref());
+            }
+        }
+        SavedClipboard::Files(files) => {
+            if let Ok(mut clipboard) = ArboardClipboard::new() {
+                let _ = clipboard.set().file_list(&files);
+            }
+        }
+    }
+}
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
@@ -21,7 +106,7 @@ fn paste_via_clipboard(
     paste_delay_ms: u64,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-    let clipboard_content = clipboard.read_text().unwrap_or_default();
+    let saved = save_clipboard();
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
@@ -63,17 +148,8 @@ fn paste_via_clipboard(
 
     std::thread::sleep(std::time::Duration::from_millis(50));
 
-    // Restore original clipboard content
-    // On Wayland, prefer wl-copy for better compatibility
-    #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
-    } else {
-        let _ = clipboard.write_text(&clipboard_content);
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    let _ = clipboard.write_text(&clipboard_content);
+    // Restore original clipboard content (all formats: text, image, HTML, files)
+    restore_clipboard(saved);
 
     Ok(())
 }
