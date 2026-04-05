@@ -18,6 +18,9 @@ use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
 #[cfg(target_os = "linux")]
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
+#[cfg(target_os = "linux")]
+use std::env;
+
 #[cfg(target_os = "macos")]
 tauri_panel! {
     panel!(RecordingOverlayPanel {
@@ -67,6 +70,11 @@ fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow
 /// Returns true if layer shell was successfully initialized, false otherwise
 #[cfg(target_os = "linux")]
 fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
+
+    if env::var("HANDY_NO_GTK_LAYER_SHELL").is_ok() {
+        debug!("Skipping GTK layer shell init (HANDY_NO_GTK_LAYER_SHELL is set)");
+        return false;
+    }
 
     if !gtk_layer_shell::is_supported() {
         return false;
