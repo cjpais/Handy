@@ -125,6 +125,15 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .cloned()
         .unwrap_or_default();
 
+    // Always disable reasoning for custom providers: post-processing rarely
+    // benefits from thinking mode, and latency on local models is significant.
+    // Revisit if strict OpenAI-compat endpoints reject "none".
+    let reasoning_effort = if provider.id == "custom" {
+        Some("none".to_string())
+    } else {
+        None
+    };
+
     if provider.supports_structured_output {
         debug!("Using structured outputs for provider '{}'", provider.id);
 
@@ -195,6 +204,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             user_content,
             Some(system_prompt),
             Some(json_schema),
+            reasoning_effort.clone(),
         )
         .await
         {
@@ -244,8 +254,14 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     let processed_prompt = prompt.replace("${output}", transcription);
     debug!("Processed prompt length: {} chars", processed_prompt.len());
 
-    match crate::llm_client::send_chat_completion(&provider, api_key, &model, processed_prompt)
-        .await
+    match crate::llm_client::send_chat_completion(
+        &provider,
+        api_key,
+        &model,
+        processed_prompt,
+        reasoning_effort,
+    )
+    .await
     {
         Ok(Some(content)) => {
             let content = strip_invisible_chars(&content);
