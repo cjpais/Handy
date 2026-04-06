@@ -9,12 +9,20 @@ import {
 interface ModelDropdownProps {
   models: ModelInfo[];
   currentModelId: string;
+  externalOption?: {
+    id: string;
+    label: string;
+    description: string;
+    isActive: boolean;
+    onSelect: () => void;
+  };
   onModelSelect: (modelId: string) => void;
 }
 
 const ModelDropdown: React.FC<ModelDropdownProps> = ({
   models,
   currentModelId,
+  externalOption,
   onModelSelect,
 }) => {
   const { t } = useTranslation();
@@ -26,6 +34,41 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
 
   return (
     <div className="absolute bottom-full start-0 mb-2 w-64 max-h-[60vh] overflow-y-auto bg-background border border-mid-gray/20 rounded-lg shadow-lg py-2 z-50">
+      {externalOption && (
+        <div
+          onClick={externalOption.onSelect}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              externalOption.onSelect();
+            }
+          }}
+          tabIndex={0}
+          role="button"
+          className={`w-full px-3 py-2 text-start hover:bg-mid-gray/10 transition-colors cursor-pointer focus:outline-none ${
+            externalOption.isActive
+              ? "bg-logo-primary/10 text-logo-primary"
+              : ""
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-text/80">{externalOption.label}</div>
+              <div className="text-xs text-text/40 italic pe-4">
+                {externalOption.description}
+              </div>
+            </div>
+            {externalOption.isActive && (
+              <div className="text-xs text-logo-primary">
+                {t("modelSelector.active")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {externalOption && downloadedModels.length > 0 && (
+        <div className="my-2 border-t border-mid-gray/20" />
+      )}
       {downloadedModels.length > 0 ? (
         <div>
           {downloadedModels.map((model) => (

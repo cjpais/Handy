@@ -171,7 +171,19 @@
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
       "yourModels": "ダウンロード済みモデル",
-      "availableModels": "ダウンロード可能"
+      "availableModels": "ダウンロード可能",
+      "external": {
+        "apiKey": {
+          "title": "API key",
+          "placeholder": "Enter your ElevenLabs API key",
+          "required": "Enter your ElevenLabs API key.",
+          "verifying": "Verifying...",
+          "saveFailed": "Failed to save API key."
+        },
+        "addApiKey": "Add API key",
+        "cloudStorage": "Cloud"
+      },
+      "cloudModels": "Cloud Models"
     },
     "general": {
       "title": "一般",
@@ -597,7 +609,9 @@
     "noInputDevice": "オーディオ入力デバイスが検出されませんでした。マイクまたはヘッドセットを接続してから再試行してください。",
     "recordingFailed": "録音の開始に失敗しました: {{error}}",
     "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
-    "modelLoadFailedUnknown": "不明なモデル"
+    "modelLoadFailedUnknown": "不明なモデル",
+    "transcriptionFailedTitle": "Transcription failed",
+    "transcriptionFailedDefault": "The transcription request did not complete."
   },
   "appLanguage": {
     "title": "アプリケーション言語",

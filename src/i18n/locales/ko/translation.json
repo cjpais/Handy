@@ -236,7 +236,19 @@
         "translation": "번역",
         "allLanguages": "모든 언어"
       },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
+      "external": {
+        "apiKey": {
+          "title": "API key",
+          "placeholder": "Enter your ElevenLabs API key",
+          "required": "Enter your ElevenLabs API key.",
+          "verifying": "Verifying...",
+          "saveFailed": "Failed to save API key."
+        },
+        "addApiKey": "Add API key",
+        "cloudStorage": "Cloud"
+      },
+      "cloudModels": "Cloud Models"
     },
     "advanced": {
       "title": "고급",
@@ -597,7 +609,9 @@
     "noInputDevice": "오디오 입력 장치가 감지되지 않았습니다. 마이크 또는 헤드셋을 연결한 후 다시 시도해 주세요.",
     "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
     "modelLoadFailed": "모델을 불러오지 못했습니다: {{model}}",
-    "modelLoadFailedUnknown": "알 수 없는 모델"
+    "modelLoadFailedUnknown": "알 수 없는 모델",
+    "transcriptionFailedTitle": "Transcription failed",
+    "transcriptionFailedDefault": "The transcription request did not complete."
   },
   "appLanguage": {
     "title": "애플리케이션 언어",

@@ -171,7 +171,19 @@
       },
       "noModelsMatch": "Bu filtreyle eşleşen model yok.",
       "yourModels": "İndirilen modeller",
-      "availableModels": "İndirilebilir"
+      "availableModels": "İndirilebilir",
+      "external": {
+        "apiKey": {
+          "title": "API key",
+          "placeholder": "Enter your ElevenLabs API key",
+          "required": "Enter your ElevenLabs API key.",
+          "verifying": "Verifying...",
+          "saveFailed": "Failed to save API key."
+        },
+        "addApiKey": "Add API key",
+        "cloudStorage": "Cloud"
+      },
+      "cloudModels": "Cloud Models"
     },
     "general": {
       "title": "Genel",
@@ -597,7 +609,9 @@
     "noInputDevice": "Ses giriş aygıtı algılanamadı. Lütfen bir mikrofon veya kulaklık bağlayın ve tekrar deneyin.",
     "recordingFailed": "Kayıt başlatılamadı: {{error}}",
     "modelLoadFailed": "Model yüklenemedi: {{model}}",
-    "modelLoadFailedUnknown": "bilinmeyen model"
+    "modelLoadFailedUnknown": "bilinmeyen model",
+    "transcriptionFailedTitle": "Transcription failed",
+    "transcriptionFailedDefault": "The transcription request did not complete."
   },
   "appLanguage": {
     "title": "Uygulama Dili",

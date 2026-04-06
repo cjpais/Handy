@@ -1,12 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { ChevronDown, Globe } from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
+import { commands, type ModelInfo } from "@/bindings";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
-import type { ModelInfo } from "@/bindings";
+import { useSettings } from "../../../hooks/useSettings";
+import { ExternalTranscriptionModelCard } from "./ExternalTranscriptionModelCard";
+import {
+  ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+  getElevenLabsModelProfile,
+  hasTranscriptionProviderApiKey,
+} from "@/lib/utils/externalTranscriptionModel";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -19,8 +27,13 @@ export const ModelsSettings: React.FC = () => {
   const [languageFilter, setLanguageFilter] = useState("all");
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
+  const [elevenLabsApiKeySaving, setElevenLabsApiKeySaving] = useState(false);
+  const [elevenLabsApiKeyError, setElevenLabsApiKeyError] = useState<
+    string | null
+  >(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
+  const { getSetting, updateSetting, refreshSettings } = useSettings();
   const {
     models,
     currentModel,
@@ -35,6 +48,17 @@ export const ModelsSettings: React.FC = () => {
     selectModel,
     deleteModel,
   } = useModelStore();
+  const transcriptionProviderId =
+    getSetting("transcription_provider_id") || "local";
+  const transcriptionApiKeys = getSetting("transcription_api_keys") || {};
+  const usesLocalProvider = transcriptionProviderId === "local";
+  const isElevenLabsSelected =
+    transcriptionProviderId === ELEVENLABS_TRANSCRIPTION_PROVIDER_ID;
+  const hasElevenLabsApiKey = hasTranscriptionProviderApiKey(
+    ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+    transcriptionApiKeys,
+  );
+  const elevenLabsProfile = getElevenLabsModelProfile();
 
   // click outside handler for language dropdown
   useEffect(() => {
@@ -88,7 +112,7 @@ export const ModelsSettings: React.FC = () => {
     if (switchingModelId === modelId) {
       return "switching";
     }
-    if (modelId === currentModel) {
+    if (usesLocalProvider && modelId === currentModel) {
       return "active";
     }
     const model = models.find((m: ModelInfo) => m.id === modelId);
@@ -153,6 +177,94 @@ export const ModelsSettings: React.FC = () => {
     }
   };
 
+  const getErrorMessage = (error: unknown) => {
+    if (typeof error === "string") {
+      return error;
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return t("settings.models.external.apiKey.saveFailed", {
+      defaultValue: "Failed to save API key.",
+    });
+  };
+
+  const handleElevenLabsSelect = async () => {
+    setElevenLabsApiKeyError(null);
+    await updateSetting(
+      "transcription_provider_id",
+      ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+    );
+  };
+
+  const handleElevenLabsApiKeySave = async (apiKey: string) => {
+    const trimmedApiKey = apiKey.trim();
+
+    if (!trimmedApiKey) {
+      setElevenLabsApiKeyError(
+        t("settings.models.external.apiKey.required", {
+          defaultValue: "Enter your ElevenLabs API key.",
+        }),
+      );
+      return;
+    }
+
+    setElevenLabsApiKeySaving(true);
+    setElevenLabsApiKeyError(null);
+
+    try {
+      await invoke("verify_transcription_provider_api_key", {
+        providerId: ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+        apiKey: trimmedApiKey,
+      });
+
+      const saveResult = await commands.changeTranscriptionApiKeySetting(
+        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+        trimmedApiKey,
+      );
+      if (saveResult.status !== "ok") {
+        throw new Error(saveResult.error);
+      }
+
+      await refreshSettings();
+      await updateSetting(
+        "transcription_provider_id",
+        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+      );
+    } catch (error) {
+      setElevenLabsApiKeyError(getErrorMessage(error));
+    } finally {
+      setElevenLabsApiKeySaving(false);
+    }
+  };
+
+  const handleElevenLabsApiKeyRemove = async () => {
+    setElevenLabsApiKeySaving(true);
+    setElevenLabsApiKeyError(null);
+
+    try {
+      if (isElevenLabsSelected) {
+        await updateSetting("transcription_provider_id", "local");
+      }
+
+      const saveResult = await commands.changeTranscriptionApiKeySetting(
+        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+        "",
+      );
+      if (saveResult.status !== "ok") {
+        throw new Error(saveResult.error);
+      }
+
+      await refreshSettings();
+    } catch (error) {
+      setElevenLabsApiKeyError(getErrorMessage(error));
+    } finally {
+      setElevenLabsApiKeySaving(false);
+    }
+  };
+
   // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
@@ -183,8 +295,8 @@ export const ModelsSettings: React.FC = () => {
 
     // Sort: active model first, then non-custom, then custom at the bottom
     downloaded.sort((a, b) => {
-      if (a.id === currentModel) return -1;
-      if (b.id === currentModel) return 1;
+      if (usesLocalProvider && a.id === currentModel) return -1;
+      if (usesLocalProvider && b.id === currentModel) return 1;
       if (a.is_custom !== b.is_custom) return a.is_custom ? 1 : -1;
       return 0;
     });
@@ -215,108 +327,146 @@ export const ModelsSettings: React.FC = () => {
           {t("settings.models.description")}
         </p>
       </div>
-      {filteredModels.length > 0 ? (
-        <div className="space-y-6">
-          {/* Downloaded Models Section — header always visible so filter stays accessible */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-text/60">
-                {t("settings.models.yourModels")}
-              </h2>
-              {/* Language filter dropdown */}
-              <div className="relative" ref={languageDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                    languageFilter !== "all"
-                      ? "bg-logo-primary/20 text-logo-primary"
-                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-text/60">
+              {t("settings.models.yourModels")}
+            </h2>
+            <div className="relative" ref={languageDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  languageFilter !== "all"
+                    ? "bg-logo-primary/20 text-logo-primary"
+                    : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span className="max-w-[120px] truncate">
+                  {selectedLanguageLabel}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${
+                    languageDropdownOpen ? "rotate-180" : ""
                   }`}
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span className="max-w-[120px] truncate">
-                    {selectedLanguageLabel}
-                  </span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${
-                      languageDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+                />
+              </button>
 
-                {languageDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                    <div className="p-2 border-b border-mid-gray/40">
-                      <input
-                        ref={languageSearchInputRef}
-                        type="text"
-                        value={languageSearch}
-                        onChange={(e) => setLanguageSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            filteredLanguages.length > 0
-                          ) {
-                            setLanguageFilter(filteredLanguages[0].value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          } else if (e.key === "Escape") {
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }
-                        }}
-                        placeholder={t(
-                          "settings.general.language.searchPlaceholder",
-                        )}
-                        className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
+              {languageDropdownOpen && (
+                <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+                  <div className="p-2 border-b border-mid-gray/40">
+                    <input
+                      ref={languageSearchInputRef}
+                      type="text"
+                      value={languageSearch}
+                      onChange={(e) => setLanguageSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && filteredLanguages.length > 0) {
+                          setLanguageFilter(filteredLanguages[0].value);
+                          setLanguageDropdownOpen(false);
+                          setLanguageSearch("");
+                        } else if (e.key === "Escape") {
+                          setLanguageDropdownOpen(false);
+                          setLanguageSearch("");
+                        }
+                      }}
+                      placeholder={t(
+                        "settings.general.language.searchPlaceholder",
+                      )}
+                      className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLanguageFilter("all");
+                        setLanguageDropdownOpen(false);
+                        setLanguageSearch("");
+                      }}
+                      className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
+                        languageFilter === "all"
+                          ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                          : "hover:bg-mid-gray/10"
+                      }`}
+                    >
+                      {t("settings.models.filters.allLanguages")}
+                    </button>
+                    {filteredLanguages.map((lang) => (
                       <button
+                        key={lang.value}
                         type="button"
                         onClick={() => {
-                          setLanguageFilter("all");
+                          setLanguageFilter(lang.value);
                           setLanguageDropdownOpen(false);
                           setLanguageSearch("");
                         }}
                         className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                          languageFilter === "all"
+                          languageFilter === lang.value
                             ? "bg-logo-primary/20 text-logo-primary font-semibold"
                             : "hover:bg-mid-gray/10"
                         }`}
                       >
-                        {t("settings.models.filters.allLanguages")}
+                        {lang.label}
                       </button>
-                      {filteredLanguages.map((lang) => (
-                        <button
-                          key={lang.value}
-                          type="button"
-                          onClick={() => {
-                            setLanguageFilter(lang.value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                            languageFilter === lang.value
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                              : "hover:bg-mid-gray/10"
-                          }`}
-                        >
-                          {lang.label}
-                        </button>
-                      ))}
-                      {filteredLanguages.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-text/50 text-center">
-                          {t("settings.general.language.noResults")}
-                        </div>
-                      )}
-                    </div>
+                    ))}
+                    {filteredLanguages.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-text/50 text-center">
+                        {t("settings.general.language.noResults")}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-            {downloadedModels.map((model: ModelInfo) => (
+          </div>
+          {hasElevenLabsApiKey && (
+            <ExternalTranscriptionModelCard
+              profile={elevenLabsProfile}
+              isActive={isElevenLabsSelected}
+              isInstalled={true}
+              savedApiKey={
+                transcriptionApiKeys[ELEVENLABS_TRANSCRIPTION_PROVIDER_ID] || ""
+              }
+              apiKeySaving={elevenLabsApiKeySaving}
+              apiKeyError={elevenLabsApiKeyError}
+              isSwitching={
+                switchingModelId === ELEVENLABS_TRANSCRIPTION_PROVIDER_ID
+              }
+              onSelect={() => {
+                setSwitchingModelId(ELEVENLABS_TRANSCRIPTION_PROVIDER_ID);
+                void handleElevenLabsSelect().finally(() => {
+                  setSwitchingModelId(null);
+                });
+              }}
+              onSaveApiKey={handleElevenLabsApiKeySave}
+              onRemoveApiKey={handleElevenLabsApiKeyRemove}
+            />
+          )}
+          {downloadedModels.map((model: ModelInfo) => (
+            <ModelCard
+              key={model.id}
+              model={model}
+              status={getModelStatus(model.id)}
+              onSelect={handleModelSelect}
+              onDownload={handleModelDownload}
+              onDelete={handleModelDelete}
+              onCancel={handleModelCancel}
+              downloadProgress={getDownloadProgress(model.id)}
+              downloadSpeed={getDownloadSpeed(model.id)}
+              showRecommended={false}
+            />
+          ))}
+        </div>
+
+        {availableModels.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium text-text/60">
+              {t("settings.models.availableModels")}
+            </h2>
+            {availableModels.map((model: ModelInfo) => (
               <ModelCard
                 key={model.id}
                 model={model}
@@ -331,35 +481,35 @@ export const ModelsSettings: React.FC = () => {
               />
             ))}
           </div>
+        )}
 
-          {/* Available Models Section */}
-          {availableModels.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-sm font-medium text-text/60">
-                {t("settings.models.availableModels")}
-              </h2>
-              {availableModels.map((model: ModelInfo) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  status={getModelStatus(model.id)}
-                  onSelect={handleModelSelect}
-                  onDownload={handleModelDownload}
-                  onDelete={handleModelDelete}
-                  onCancel={handleModelCancel}
-                  downloadProgress={getDownloadProgress(model.id)}
-                  downloadSpeed={getDownloadSpeed(model.id)}
-                  showRecommended={false}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-text/50">
-          {t("settings.models.noModelsMatch")}
-        </div>
-      )}
+        {!hasElevenLabsApiKey && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium text-text/60">
+              {t("settings.models.cloudModels", {
+                defaultValue: "Cloud Models",
+              })}
+            </h2>
+            <ExternalTranscriptionModelCard
+              profile={elevenLabsProfile}
+              isActive={false}
+              isInstalled={false}
+              savedApiKey=""
+              apiKeySaving={elevenLabsApiKeySaving}
+              apiKeyError={elevenLabsApiKeyError}
+              onSelect={handleElevenLabsSelect}
+              onSaveApiKey={handleElevenLabsApiKeySave}
+              onRemoveApiKey={handleElevenLabsApiKeyRemove}
+            />
+          </div>
+        )}
+
+        {languageFilter !== "all" && filteredModels.length === 0 && (
+          <div className="text-center py-2 text-text/50">
+            {t("settings.models.noModelsMatch")}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

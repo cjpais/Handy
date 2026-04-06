@@ -1,6 +1,8 @@
 use crate::input;
 use crate::settings;
 use crate::settings::OverlayPosition;
+use serde::Serialize;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -32,6 +34,14 @@ tauri_panel! {
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
+const OVERLAY_ERROR_WIDTH: f64 = 360.0;
+const OVERLAY_ERROR_HEIGHT: f64 = 56.0;
+static OVERLAY_VISIBILITY_TOKEN: AtomicU64 = AtomicU64::new(0);
+
+#[derive(Clone, Serialize)]
+struct OverlayErrorPayload {
+    message: String,
+}
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -194,7 +204,11 @@ fn is_mouse_within_monitor(
 /// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
 /// converts PhysicalPosition using the scale factor of the monitor the window
 /// is *currently* on, which is wrong when moving cross-monitor.
-fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
+fn calculate_overlay_position_for_size(
+    app_handle: &AppHandle,
+    width: f64,
+    height: f64,
+) -> Option<(f64, f64)> {
     let monitor = get_monitor_with_cursor(app_handle)?;
     let scale = monitor.scale_factor();
     let monitor_x = monitor.position().x as f64 / scale;
@@ -204,15 +218,34 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 
     let settings = settings::get_settings(app_handle);
 
-    let x = monitor_x + (monitor_width - OVERLAY_WIDTH) / 2.0;
+    let x = monitor_x + (monitor_width - width) / 2.0;
     let y = match settings.overlay_position {
         OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
         OverlayPosition::Bottom | OverlayPosition::None => {
-            monitor_y + monitor_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
+            monitor_y + monitor_height - height - OVERLAY_BOTTOM_OFFSET
         }
     };
 
     Some((x, y))
+}
+
+fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
+    calculate_overlay_position_for_size(app_handle, OVERLAY_WIDTH, OVERLAY_HEIGHT)
+}
+
+fn next_overlay_token() -> u64 {
+    OVERLAY_VISIBILITY_TOKEN.fetch_add(1, Ordering::Relaxed) + 1
+}
+
+fn resize_overlay_window(app_handle: &AppHandle, width: f64, height: f64) {
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+
+        if let Some((x, y)) = calculate_overlay_position_for_size(app_handle, width, height) {
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+    }
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
@@ -320,7 +353,8 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         return;
     }
 
-    update_overlay_position(app_handle);
+    let _token = next_overlay_token();
+    resize_overlay_window(app_handle, OVERLAY_WIDTH, OVERLAY_HEIGHT);
 
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.show();
@@ -348,6 +382,39 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "processing");
 }
 
+pub fn show_error_overlay(app_handle: &AppHandle, message: String) {
+    let settings = settings::get_settings(app_handle);
+    if settings.overlay_position == OverlayPosition::None {
+        return;
+    }
+
+    let token = next_overlay_token();
+    resize_overlay_window(app_handle, OVERLAY_ERROR_WIDTH, OVERLAY_ERROR_HEIGHT);
+
+    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        let _ = overlay_window.show();
+
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&overlay_window);
+
+        let _ = overlay_window.emit("show-overlay-error", OverlayErrorPayload { message });
+
+        let window_clone = overlay_window.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(3200));
+            if OVERLAY_VISIBILITY_TOKEN.load(Ordering::Relaxed) != token {
+                return;
+            }
+            let _ = window_clone.emit("hide-overlay", ());
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            if OVERLAY_VISIBILITY_TOKEN.load(Ordering::Relaxed) != token {
+                return;
+            }
+            let _ = window_clone.hide();
+        });
+    }
+}
+
 /// Updates the overlay window position based on current settings
 pub fn update_overlay_position(app_handle: &AppHandle) {
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -365,6 +432,7 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
 
 /// Hides the recording overlay window with fade-out animation
 pub fn hide_recording_overlay(app_handle: &AppHandle) {
+    let token = next_overlay_token();
     // Always hide the overlay regardless of settings - if setting was changed while recording,
     // we still want to hide it properly
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
@@ -374,6 +442,9 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
         let window_clone = overlay_window.clone();
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(300));
+            if OVERLAY_VISIBILITY_TOKEN.load(Ordering::Relaxed) != token {
+                return;
+            }
             let _ = window_clone.hide();
         });
     }

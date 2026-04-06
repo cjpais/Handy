@@ -1,6 +1,10 @@
+use crate::elevenlabs_stt;
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
-use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use crate::settings::{
+    get_settings, write_settings, ModelUnloadTimeout, ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+    LOCAL_TRANSCRIPTION_PROVIDER_ID,
+};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
 
@@ -19,6 +23,26 @@ pub async fn get_model_info(
     model_id: String,
 ) -> Result<Option<ModelInfo>, String> {
     Ok(model_manager.get_model_info(&model_id))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn verify_transcription_provider_api_key(
+    provider_id: String,
+    api_key: String,
+) -> Result<(), String> {
+    match provider_id.as_str() {
+        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID => {
+            tauri::async_runtime::spawn_blocking(move || elevenlabs_stt::verify_api_key(&api_key))
+                .await
+                .map_err(|error| error.to_string())?
+                .map_err(|error| error.to_string())
+        }
+        _ => Err(format!(
+            "Unsupported remote transcription provider '{}'",
+            provider_id
+        )),
+    }
 }
 
 #[tauri::command]
@@ -102,6 +126,7 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     // when it reacts to events emitted by load_model.
     let mut settings = settings;
     settings.selected_model = model_id.to_string();
+    settings.transcription_provider_id = LOCAL_TRANSCRIPTION_PROVIDER_ID.to_string();
 
     // Reset language to auto if the new model doesn't support the currently selected language.
     // This prevents stale language settings from causing errors (e.g. Canary receiving zh-Hans)
@@ -193,20 +218,43 @@ pub async fn is_model_loading(
 #[tauri::command]
 #[specta::specta]
 pub async fn has_any_models_available(
+    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
     let models = model_manager.get_available_models();
-    Ok(models.iter().any(|m| m.is_downloaded))
+    if models.iter().any(|m| m.is_downloaded) {
+        return Ok(true);
+    }
+
+    let settings = get_settings(&app_handle);
+    let has_elevenlabs = settings
+        .transcription_api_keys
+        .get(ELEVENLABS_TRANSCRIPTION_PROVIDER_ID)
+        .map(|api_key| !api_key.trim().is_empty())
+        .unwrap_or(false);
+
+    Ok(has_elevenlabs)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn has_any_models_or_downloads(
+    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
     let models = model_manager.get_available_models();
-    // Return true if any models are downloaded OR if any downloads are in progress
-    Ok(models.iter().any(|m| m.is_downloaded))
+    if models.iter().any(|m| m.is_downloaded || m.is_downloading) {
+        return Ok(true);
+    }
+
+    let settings = get_settings(&app_handle);
+    let has_elevenlabs = settings
+        .transcription_api_keys
+        .get(ELEVENLABS_TRANSCRIPTION_PROVIDER_ID)
+        .map(|api_key| !api_key.trim().is_empty())
+        .unwrap_or(false);
+
+    Ok(has_elevenlabs)
 }
 
 #[tauri::command]

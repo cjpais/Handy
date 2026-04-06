@@ -16,15 +16,18 @@ mod tauri_impl;
 use log::{error, info, warn};
 use serde::Serialize;
 use specta::Type;
+use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
 
+use crate::managers::transcription::TranscriptionManager;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
     OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    APPLE_INTELLIGENCE_PROVIDER_ID, ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+    LOCAL_TRANSCRIPTION_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -820,6 +823,67 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
 pub fn change_experimental_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.experimental_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+fn validate_transcription_provider(provider_id: &str) -> Result<(), String> {
+    match provider_id {
+        LOCAL_TRANSCRIPTION_PROVIDER_ID | ELEVENLABS_TRANSCRIPTION_PROVIDER_ID => Ok(()),
+        _ => Err(format!(
+            "Unsupported transcription provider '{}'",
+            provider_id
+        )),
+    }
+}
+
+fn validate_remote_transcription_provider(provider_id: &str) -> Result<(), String> {
+    match provider_id {
+        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID => Ok(()),
+        _ => Err(format!(
+            "Unsupported remote transcription provider '{}'",
+            provider_id
+        )),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_transcription_provider_setting(
+    app: AppHandle,
+    provider_id: String,
+) -> Result<(), String> {
+    validate_transcription_provider(&provider_id)?;
+
+    let mut settings = settings::get_settings(&app);
+    settings.transcription_provider_id = provider_id.clone();
+    settings::write_settings(&app, settings);
+
+    if provider_id != LOCAL_TRANSCRIPTION_PROVIDER_ID {
+        if let Some(transcription_manager) = app.try_state::<Arc<TranscriptionManager>>() {
+            if let Err(error) = transcription_manager.unload_model() {
+                warn!(
+                    "Failed to unload local model after switching transcription provider: {}",
+                    error
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_transcription_api_key_setting(
+    app: AppHandle,
+    provider_id: String,
+    api_key: String,
+) -> Result<(), String> {
+    validate_remote_transcription_provider(&provider_id)?;
+
+    let mut settings = settings::get_settings(&app);
+    settings.transcription_api_keys.insert(provider_id, api_key);
     settings::write_settings(&app, settings);
     Ok(())
 }

@@ -6,6 +6,7 @@ pub mod audio_toolkit;
 pub mod cli;
 mod clipboard;
 mod commands;
+mod elevenlabs_stt;
 mod helpers;
 mod input;
 mod llm_client;
@@ -348,6 +349,8 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_auto_submit_key_setting,
             shortcut::change_post_process_enabled_setting,
             shortcut::change_experimental_enabled_setting,
+            shortcut::change_transcription_provider_setting,
+            shortcut::change_transcription_api_key_setting,
             shortcut::change_post_process_base_url_setting,
             shortcut::change_post_process_api_key_setting,
             shortcut::change_post_process_model_setting,
@@ -391,6 +394,7 @@ pub fn run(cli_args: CliArgs) {
             commands::initialize_shortcuts,
             commands::models::get_available_models,
             commands::models::get_model_info,
+            commands::models::verify_transcription_provider_api_key,
             commands::models::download_model,
             commands::models::delete_model,
             commands::models::cancel_download,

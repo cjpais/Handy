@@ -1,8 +1,10 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::elevenlabs_stt;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
+    ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
@@ -414,6 +416,13 @@ impl TranscriptionManager {
 
     /// Kicks off the model loading in a background thread if it's not already loaded
     pub fn initiate_model_load(&self) {
+        let settings = get_settings(&self.app_handle);
+        if !settings.uses_local_transcription_provider()
+            || settings.selected_model.trim().is_empty()
+        {
+            return;
+        }
+
         let mut is_loading = self.is_loading.lock().unwrap();
         if *is_loading || self.is_model_loaded() {
             return;
@@ -422,7 +431,6 @@ impl TranscriptionManager {
         *is_loading = true;
         let self_clone = self.clone();
         thread::spawn(move || {
-            let settings = get_settings(&self_clone.app_handle);
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
                 error!("Failed to load model: {}", e);
             }
@@ -458,6 +466,44 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
+        // Get current settings for configuration
+        let settings = get_settings(&self.app_handle);
+
+        if !settings.uses_local_transcription_provider() {
+            let raw_result = match settings.transcription_provider_id.as_str() {
+                ELEVENLABS_TRANSCRIPTION_PROVIDER_ID => {
+                    elevenlabs_stt::transcribe(&audio, &settings)?
+                }
+                other => {
+                    return Err(anyhow::anyhow!(
+                        "Unsupported transcription provider configured: {}",
+                        other
+                    ));
+                }
+            };
+
+            let filtered_result = filter_transcription_output(
+                &raw_result,
+                &settings.app_language,
+                &settings.custom_filler_words,
+            );
+
+            let et = std::time::Instant::now();
+            info!(
+                "Transcription completed in {}ms via {}",
+                (et - st).as_millis(),
+                settings.transcription_provider_id
+            );
+
+            if filtered_result.is_empty() {
+                info!("Transcription result is empty");
+            } else {
+                info!("Transcription result: {}", filtered_result);
+            }
+
+            return Ok(filtered_result);
+        }
+
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
@@ -471,9 +517,6 @@ impl TranscriptionManager {
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
         }
-
-        // Get current settings for configuration
-        let settings = get_settings(&self.app_handle);
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.

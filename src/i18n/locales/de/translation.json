@@ -158,7 +158,7 @@
     "models": {
       "title": "Transkriptionsmodelle",
       "description": "Wähle ein Transkriptionsmodell aus oder lade zusätzliche Modelle herunter. Verschiedene Modelle bieten unterschiedliche Genauigkeits- und Geschwindigkeitsstufen.",
-      "downloaded": "Heruntergeladen",
+      "downloaded": "Installiert",
       "available": "Zum Download verfügbar",
       "deleteConfirm": "Bist du sicher, dass du {{modelName}} löschen möchtest? Du musst es erneut herunterladen, um es zu verwenden.",
       "deleteActiveConfirm": "{{modelName}} ist dein aktives Modell. Das Löschen stoppt Transkriptionen, bis du ein neues Modell auswählst. Bist du sicher?",
@@ -170,8 +170,20 @@
         "allLanguages": "Alle Sprachen"
       },
       "noModelsMatch": "Keine Modelle entsprechen diesem Filter.",
-      "yourModels": "Heruntergeladene Modelle",
-      "availableModels": "Zum Download verfügbar"
+      "yourModels": "Installierte Modelle",
+      "availableModels": "Zum Download verfügbar",
+      "external": {
+        "apiKey": {
+          "title": "API-Schlüssel",
+          "placeholder": "Gib deinen ElevenLabs-API-Schlüssel ein",
+          "required": "Gib deinen ElevenLabs-API-Schlüssel ein.",
+          "verifying": "Wird überprüft...",
+          "saveFailed": "API-Schlüssel konnte nicht gespeichert werden."
+        },
+        "addApiKey": "API-Schlüssel hinzufügen",
+        "cloudStorage": "Cloud"
+      },
+      "cloudModels": "Cloud-Modelle"
     },
     "general": {
       "title": "Allgemein",
@@ -597,7 +609,9 @@
     "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließen Sie ein Mikrofon oder Headset an und versuchen Sie es erneut.",
     "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
-    "modelLoadFailedUnknown": "unbekanntes Modell"
+    "modelLoadFailedUnknown": "unbekanntes Modell",
+    "transcriptionFailedTitle": "Transkription fehlgeschlagen",
+    "transcriptionFailedDefault": "Die Transkriptionsanfrage wurde nicht abgeschlossen."
   },
   "appLanguage": {
     "title": "Anwendungssprache",

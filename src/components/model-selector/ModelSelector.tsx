@@ -4,11 +4,18 @@ import { listen } from "@tauri-apps/api/event";
 import { commands } from "@/bindings";
 import { getTranslatedModelName } from "../../lib/utils/modelTranslation";
 import { useModelStore } from "../../stores/modelStore";
+import { useSettings } from "../../hooks/useSettings";
 import ModelStatusButton from "./ModelStatusButton";
 import ModelDropdown from "./ModelDropdown";
 import DownloadProgressDisplay from "./DownloadProgressDisplay";
 
 import { ModelStateEvent } from "@/lib/types/events";
+import {
+  ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+  getActiveTranscriptionModelDisplayName,
+  getElevenLabsModelProfile,
+  hasTranscriptionProviderApiKey,
+} from "@/lib/utils/externalTranscriptionModel";
 
 type ModelStatus =
   | "ready"
@@ -26,6 +33,7 @@ interface ModelSelectorProps {
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const { t } = useTranslation();
+  const { getSetting, updateSetting } = useSettings();
   const {
     models,
     currentModel,
@@ -43,12 +51,26 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const transcriptionProviderId =
+    getSetting("transcription_provider_id") || "local";
+  const transcriptionApiKeys = getSetting("transcription_api_keys") || {};
+  const isElevenLabsSelected =
+    transcriptionProviderId === ELEVENLABS_TRANSCRIPTION_PROVIDER_ID;
+  const hasElevenLabsApiKey = hasTranscriptionProviderApiKey(
+    ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+    transcriptionApiKeys,
+  );
 
   const displayModelId = pendingModelId || currentModel;
 
   // Check model status when currentModel changes
   useEffect(() => {
     const checkStatus = async () => {
+      if (isElevenLabsSelected) {
+        setModelStatus(hasElevenLabsApiKey ? "ready" : "none");
+        return;
+      }
+
       if (currentModel) {
         try {
           const statusResult = await commands.getTranscriptionModelStatus();
@@ -66,7 +88,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
       }
     };
     checkStatus();
-  }, [currentModel]);
+  }, [currentModel, hasElevenLabsApiKey, isElevenLabsSelected]);
 
   useEffect(() => {
     // Listen for model loading lifecycle events
@@ -153,6 +175,22 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
     }
   };
 
+  const handleExternalSelect = async () => {
+    setShowModelDropdown(false);
+    setModelError(null);
+    try {
+      await updateSetting(
+        "transcription_provider_id",
+        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+      );
+      setModelStatus(hasElevenLabsApiKey ? "ready" : "none");
+    } catch (error) {
+      setModelStatus("error");
+      setModelError(String(error));
+      onError?.("Failed to switch transcription provider");
+    }
+  };
+
   const getModelDisplayText = (): string => {
     const verifyingKeys = Object.keys(verifyingModels);
     if (verifyingKeys.length > 0) {
@@ -198,6 +236,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
           count: progressValues.length,
         });
       }
+    }
+
+    if (isElevenLabsSelected) {
+      return hasElevenLabsApiKey
+        ? getActiveTranscriptionModelDisplayName(transcriptionProviderId) ||
+            getElevenLabsModelProfile().fullLabel
+        : t("settings.models.external.addApiKey", {
+            defaultValue: "ElevenLabs - Add API key",
+          });
     }
 
     const currentModelInfo = models.find((m) => m.id === displayModelId);
@@ -257,7 +304,21 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ onError }) => {
         {showModelDropdown && (
           <ModelDropdown
             models={models}
-            currentModelId={displayModelId}
+            currentModelId={isElevenLabsSelected ? "" : displayModelId}
+            externalOption={
+              hasElevenLabsApiKey || isElevenLabsSelected
+                ? {
+                    id: ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+                    label:
+                      getActiveTranscriptionModelDisplayName(
+                        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID,
+                      ) || getElevenLabsModelProfile().fullLabel,
+                    description: getElevenLabsModelProfile().description,
+                    isActive: isElevenLabsSelected,
+                    onSelect: handleExternalSelect,
+                  }
+                : undefined
+            }
             onModelSelect={handleModelSelect}
           />
         )}

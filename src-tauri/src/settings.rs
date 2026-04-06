@@ -9,6 +9,9 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const LOCAL_TRANSCRIPTION_PROVIDER_ID: &str = "local";
+pub const ELEVENLABS_TRANSCRIPTION_PROVIDER_ID: &str = "elevenlabs";
+pub const ELEVENLABS_DEFAULT_MODEL_ID: &str = "scribe_v2";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -351,6 +354,10 @@ pub struct AppSettings {
     pub update_checks_enabled: bool,
     #[serde(default = "default_model")]
     pub selected_model: String,
+    #[serde(default = "default_transcription_provider_id")]
+    pub transcription_provider_id: String,
+    #[serde(default = "default_transcription_api_keys")]
+    pub transcription_api_keys: SecretMap,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -434,6 +441,19 @@ pub struct AppSettings {
 
 fn default_model() -> String {
     "".to_string()
+}
+
+fn default_transcription_provider_id() -> String {
+    LOCAL_TRANSCRIPTION_PROVIDER_ID.to_string()
+}
+
+fn default_transcription_api_keys() -> SecretMap {
+    let mut map = HashMap::new();
+    map.insert(
+        ELEVENLABS_TRANSCRIPTION_PROVIDER_ID.to_string(),
+        String::new(),
+    );
+    SecretMap(map)
 }
 
 fn default_always_on_microphone() -> bool {
@@ -700,6 +720,30 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+fn ensure_transcription_defaults(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+
+    if settings.transcription_provider_id != LOCAL_TRANSCRIPTION_PROVIDER_ID
+        && settings.transcription_provider_id != ELEVENLABS_TRANSCRIPTION_PROVIDER_ID
+    {
+        settings.transcription_provider_id = default_transcription_provider_id();
+        changed = true;
+    }
+
+    if !settings
+        .transcription_api_keys
+        .contains_key(ELEVENLABS_TRANSCRIPTION_PROVIDER_ID)
+    {
+        settings.transcription_api_keys.insert(
+            ELEVENLABS_TRANSCRIPTION_PROVIDER_ID.to_string(),
+            String::new(),
+        );
+        changed = true;
+    }
+
+    changed
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -764,6 +808,8 @@ pub fn get_default_settings() -> AppSettings {
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
+        transcription_provider_id: default_transcription_provider_id(),
+        transcription_api_keys: default_transcription_api_keys(),
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,
@@ -808,6 +854,10 @@ pub fn get_default_settings() -> AppSettings {
 }
 
 impl AppSettings {
+    pub fn uses_local_transcription_provider(&self) -> bool {
+        self.transcription_provider_id == LOCAL_TRANSCRIPTION_PROVIDER_ID
+    }
+
     pub fn active_post_process_provider(&self) -> Option<&PostProcessProvider> {
         self.post_process_providers
             .iter()
@@ -874,7 +924,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    if ensure_post_process_defaults(&mut settings) | ensure_transcription_defaults(&mut settings) {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -898,7 +948,7 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    if ensure_post_process_defaults(&mut settings) | ensure_transcription_defaults(&mut settings) {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -954,6 +1004,10 @@ mod tests {
         settings
             .post_process_api_keys
             .insert("openai".to_string(), "sk-proj-secret-key-12345".to_string());
+        settings.transcription_api_keys.insert(
+            ELEVENLABS_TRANSCRIPTION_PROVIDER_ID.to_string(),
+            "el-secret-key-12345".to_string(),
+        );
         settings.post_process_api_keys.insert(
             "anthropic".to_string(),
             "sk-ant-secret-key-67890".to_string(),
@@ -966,6 +1020,7 @@ mod tests {
 
         assert!(!debug_output.contains("sk-proj-secret-key-12345"));
         assert!(!debug_output.contains("sk-ant-secret-key-67890"));
+        assert!(!debug_output.contains("el-secret-key-12345"));
         assert!(debug_output.contains("[REDACTED]"));
     }
 
@@ -975,5 +1030,17 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn transcription_defaults_include_elevenlabs() {
+        let settings = get_default_settings();
+        assert_eq!(
+            settings.transcription_provider_id,
+            LOCAL_TRANSCRIPTION_PROVIDER_ID
+        );
+        assert!(settings
+            .transcription_api_keys
+            .contains_key(ELEVENLABS_TRANSCRIPTION_PROVIDER_ID));
     }
 }

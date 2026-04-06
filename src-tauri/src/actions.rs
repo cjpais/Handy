@@ -27,6 +27,11 @@ struct RecordingErrorEvent {
     detail: Option<String>,
 }
 
+#[derive(Clone, serde::Serialize)]
+struct TranscriptionErrorEvent {
+    detail: Option<String>,
+}
+
 /// Drop guard that notifies the [`TranscriptionCoordinator`] when the
 /// transcription pipeline finishes — whether it completes normally or panics.
 struct FinishGuard(AppHandle);
@@ -61,6 +66,47 @@ fn strip_invisible_chars(s: &str) -> String {
 /// Removes `${output}` placeholder since the transcription is sent as the user message.
 fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
+}
+
+fn summarize_transcription_error_for_overlay(error_message: &str) -> String {
+    let normalized = error_message.trim();
+    let lowercase = normalized.to_lowercase();
+
+    if lowercase.contains("quota") || lowercase.contains("credits remaining") {
+        return "ElevenLabs quota exceeded".to_string();
+    }
+
+    if lowercase.contains("rate limit") {
+        return "ElevenLabs rate limited".to_string();
+    }
+
+    if lowercase.contains("missing speech-to-text permissions") {
+        return "ElevenLabs STT permission missing".to_string();
+    }
+
+    if lowercase.contains("authentication failed") {
+        return "ElevenLabs authentication failed".to_string();
+    }
+
+    if lowercase.contains("currently unavailable") {
+        return "ElevenLabs unavailable".to_string();
+    }
+
+    if lowercase.contains("timed out") {
+        return "ElevenLabs request timed out".to_string();
+    }
+
+    if lowercase.contains("couldn't reach elevenlabs")
+        || lowercase.contains("failed to reach elevenlabs")
+    {
+        return "No connection to ElevenLabs".to_string();
+    }
+
+    if lowercase.contains("elevenlabs request failed") {
+        return "ElevenLabs request failed".to_string();
+    }
+
+    "Transcription failed".to_string()
 }
 
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
@@ -518,9 +564,18 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save
+                    // Transcribe concurrently with WAV save on a blocking worker thread.
+                    // This avoids running sync network/model work on Tauri's async runtime.
                     let transcription_time = Instant::now();
-                    let transcription_result = tm.transcribe(samples);
+                    let tm_for_transcription = Arc::clone(&tm);
+                    let transcription_handle = tauri::async_runtime::spawn_blocking(move || {
+                        tm_for_transcription.transcribe(samples)
+                    });
+
+                    let transcription_result = match transcription_handle.await {
+                        Ok(result) => result,
+                        Err(e) => Err(anyhow::anyhow!("Transcription task panicked: {}", e)),
+                    };
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
@@ -601,6 +656,7 @@ impl ShortcutAction for TranscribeAction {
                         }
                         Err(err) => {
                             debug!("Global Shortcut Transcription error: {}", err);
+                            let error_message = err.to_string();
                             // Save entry with empty text so user can retry
                             if wav_saved {
                                 if let Err(save_err) = hm.save_entry(
@@ -613,7 +669,16 @@ impl ShortcutAction for TranscribeAction {
                                     error!("Failed to save failed history entry: {}", save_err);
                                 }
                             }
-                            utils::hide_recording_overlay(&ah);
+                            let _ = ah.emit(
+                                "transcription-error",
+                                TranscriptionErrorEvent {
+                                    detail: Some(error_message.clone()),
+                                },
+                            );
+                            utils::show_error_overlay(
+                                &ah,
+                                summarize_transcription_error_for_overlay(&error_message),
+                            );
                             change_tray_icon(&ah, TrayIconState::Idle);
                         }
                     }
@@ -691,3 +756,46 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+#[cfg(test)]
+mod tests {
+    use super::summarize_transcription_error_for_overlay;
+
+    #[test]
+    fn summarizes_quota_errors_for_overlay() {
+        assert_eq!(
+            summarize_transcription_error_for_overlay(
+                "ElevenLabs authentication failed: quota exceeded",
+            ),
+            "ElevenLabs quota exceeded"
+        );
+    }
+
+    #[test]
+    fn summarizes_connectivity_errors_for_overlay() {
+        assert_eq!(
+            summarize_transcription_error_for_overlay(
+                "Failed to reach ElevenLabs speech-to-text API: connection reset",
+            ),
+            "No connection to ElevenLabs"
+        );
+    }
+
+    #[test]
+    fn summarizes_provider_availability_errors_for_overlay() {
+        assert_eq!(
+            summarize_transcription_error_for_overlay(
+                "ElevenLabs is currently unavailable. Please try again in a moment.",
+            ),
+            "ElevenLabs unavailable"
+        );
+    }
+
+    #[test]
+    fn falls_back_to_generic_overlay_error_message() {
+        assert_eq!(
+            summarize_transcription_error_for_overlay("something unexpected happened"),
+            "Transcription failed"
+        );
+    }
+}

@@ -12,11 +12,15 @@ import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "transcribing" | "processing";
+interface OverlayErrorPayload {
+  message: string;
+}
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
-  const [state, setState] = useState<OverlayState>("recording");
+  const [state, setState] = useState<OverlayState | "error">("recording");
+  const [errorMessage, setErrorMessage] = useState("");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   const direction = getLanguageDirection(i18n.language);
@@ -29,8 +33,19 @@ const RecordingOverlay: React.FC = () => {
         await syncLanguageFromSettings();
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
+        setErrorMessage("");
         setIsVisible(true);
       });
+
+      const unlistenError = await listen<OverlayErrorPayload>(
+        "show-overlay-error",
+        async (event) => {
+          await syncLanguageFromSettings();
+          setState("error");
+          setErrorMessage(event.payload.message);
+          setIsVisible(true);
+        },
+      );
 
       // Listen for hide-overlay event from Rust
       const unlistenHide = await listen("hide-overlay", () => {
@@ -54,6 +69,7 @@ const RecordingOverlay: React.FC = () => {
       // Cleanup function
       return () => {
         unlistenShow();
+        unlistenError();
         unlistenHide();
         unlistenLevel();
       };
@@ -65,6 +81,8 @@ const RecordingOverlay: React.FC = () => {
   const getIcon = () => {
     if (state === "recording") {
       return <MicrophoneIcon />;
+    } else if (state === "error") {
+      return <CancelIcon />;
     } else {
       return <TranscriptionIcon />;
     }
@@ -73,11 +91,11 @@ const RecordingOverlay: React.FC = () => {
   return (
     <div
       dir={direction}
-      className={`recording-overlay ${isVisible ? "fade-in" : ""}`}
+      className={`recording-overlay ${isVisible ? "fade-in" : ""} ${state === "error" ? "error" : ""}`}
     >
       <div className="overlay-left">{getIcon()}</div>
 
-      <div className="overlay-middle">
+      <div className={`overlay-middle ${state === "error" ? "error" : ""}`}>
         {state === "recording" && (
           <div className="bars-container">
             {levels.map((v, i) => (
@@ -98,6 +116,11 @@ const RecordingOverlay: React.FC = () => {
         )}
         {state === "processing" && (
           <div className="transcribing-text">{t("overlay.processing")}</div>
+        )}
+        {state === "error" && (
+          <div className="error-text" title={errorMessage}>
+            {errorMessage}
+          </div>
         )}
       </div>
 

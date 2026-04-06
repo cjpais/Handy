@@ -1,6 +1,8 @@
 .recording-overlay {
-  height: 36px;
-  width: 172px;
+  height: 100%;
+  width: 100%;
+  min-height: 36px;
+  min-width: 172px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -12,6 +14,11 @@
   box-sizing: border-box;
 }
 
+.recording-overlay.error {
+  min-height: 56px;
+  background: #2b0c16e6;
+}
+
 .overlay-left {
   display: flex;
   align-items: center;
@@ -21,6 +28,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+}
+
+.overlay-middle.error {
+  justify-content: flex-start;
 }
 
 .overlay-right {
@@ -68,6 +80,18 @@
   50% {
     opacity: 1;
   }
+}
+
+.error-text {
+  color: white;
+  font-size: 12px;
+  line-height: 1.3;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .cancel-button {
