@@ -1,0 +1,71 @@
+<svg width="920" height="420" viewBox="0 0 920 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Artificial Analysis AA-WER comparison</title>
+  <desc id="desc">Bar chart comparing Scribe v2, Parakeet V3, Whisper Large, and Whisper Turbo on reference AA-WER. Lower is better.</desc>
+  <rect width="920" height="420" rx="16" fill="#0D1117"/>
+  <text x="40" y="42" fill="#F0F6FC" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="28" font-weight="700">
+    Artificial Analysis AA-WER reference
+  </text>
+  <text x="40" y="70" fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="16">
+    Lower is better. Scribe v2 is highlighted in green.
+  </text>
+
+  <line x1="110" y1="100" x2="110" y2="340" stroke="#30363D" stroke-width="2"/>
+  <line x1="110" y1="340" x2="870" y2="340" stroke="#30363D" stroke-width="2"/>
+
+  <g fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="14">
+    <text x="78" y="345">0</text>
+    <text x="78" y="307">1</text>
+    <text x="78" y="269">2</text>
+    <text x="78" y="231">3</text>
+    <text x="78" y="193">4</text>
+    <text x="78" y="155">5</text>
+    <text x="78" y="117">6</text>
+  </g>
+
+  <g stroke="#21262D" stroke-width="1">
+    <line x1="110" y1="302" x2="870" y2="302"/>
+    <line x1="110" y1="264" x2="870" y2="264"/>
+    <line x1="110" y1="226" x2="870" y2="226"/>
+    <line x1="110" y1="188" x2="870" y2="188"/>
+    <line x1="110" y1="150" x2="870" y2="150"/>
+    <line x1="110" y1="112" x2="870" y2="112"/>
+  </g>
+
+  <line x1="110" y1="252.6" x2="870" y2="252.6" stroke="#2DA44E" stroke-width="2" stroke-dasharray="8 8" opacity="0.6"/>
+  <text x="876" y="257" fill="#2DA44E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" font-weight="600" text-anchor="end">
+    Scribe baseline 2.3
+  </text>
+
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <rect x="155" y="252.6" width="120" height="87.4" rx="8" fill="#2DA44E"/>
+    <text x="215" y="240" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">2.3%</text>
+    <text x="215" y="368" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Scribe v2</text>
+    <text x="215" y="388" fill="#8B949E" font-size="13" text-anchor="middle">ElevenLabs</text>
+
+    <rect x="335" y="180.4" width="120" height="159.6" rx="8" fill="#8B949E"/>
+    <text x="395" y="168" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
+    <text x="395" y="368" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Parakeet V3</text>
+    <text x="395" y="388" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
+
+    <rect x="515" y="180.4" width="120" height="159.6" rx="8" fill="#8B949E"/>
+    <text x="575" y="168" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
+    <text x="575" y="368" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Large</text>
+    <text x="575" y="388" fill="#8B949E" font-size="13" text-anchor="middle">v3 reference</text>
+
+    <rect x="695" y="157.6" width="120" height="182.4" rx="8" fill="#8B949E"/>
+    <text x="755" y="145" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.8%</text>
+    <text x="755" y="368" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Turbo</text>
+    <text x="755" y="388" fill="#8B949E" font-size="13" text-anchor="middle">v3 turbo ref</text>
+  </g>
+
+  <text x="26" y="230" transform="rotate(-90 26 230)" fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="15" font-weight="600">
+    AA-WER %
+  </text>
+
+  <g transform="translate(40 92)">
+    <rect x="0" y="0" width="18" height="18" rx="4" fill="#2DA44E"/>
+    <text x="28" y="14" fill="#F0F6FC" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13">Scribe v2</text>
+    <rect x="118" y="0" width="18" height="18" rx="4" fill="#8B949E"/>
+    <text x="146" y="14" fill="#F0F6FC" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13">local references</text>
+  </g>
+</svg>
