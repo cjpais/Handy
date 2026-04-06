@@ -1,0 +1,81 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Speech-to-text free tier comparison</title>
+  <desc id="desc">Horizontal bar chart comparing approximate monthly free-tier transcription capacity for Azure Speech, ElevenLabs Scribe, Google Cloud Speech-to-Text, Amazon Transcribe, and Wispr Flow Basic. ElevenLabs is highlighted in green.</desc>
+  <rect width="960" height="540" rx="18" fill="#0D1117"/>
+
+  <text x="40" y="46" fill="#F0F6FC" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="30" font-weight="700">
+    Free-tier offer comparison
+  </text>
+  <text x="40" y="76" fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="16">
+    Approximate monthly transcription capacity normalized to minutes. ElevenLabs is highlighted in green.
+  </text>
+  <text x="40" y="98" fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13">
+    Wispr Flow is converted from 2,000 desktop words/week at ~150 wpm. Amazon's free tier is limited to the first 12 months.
+  </text>
+
+  <g transform="translate(40 116)">
+    <rect x="0" y="0" width="16" height="16" rx="4" fill="#2DA44E"/>
+    <text x="26" y="12.5" fill="#F0F6FC" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13">ElevenLabs</text>
+    <rect x="116" y="0" width="16" height="16" rx="4" fill="#98A2AE"/>
+    <text x="142" y="12.5" fill="#F0F6FC" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13">other providers</text>
+  </g>
+
+  <g stroke="#21262D" stroke-width="1">
+    <line x1="360" y1="158" x2="360" y2="474"/>
+    <line x1="464" y1="158" x2="464" y2="474"/>
+    <line x1="568" y1="158" x2="568" y2="474"/>
+    <line x1="672" y1="158" x2="672" y2="474"/>
+    <line x1="776" y1="158" x2="776" y2="474"/>
+    <line x1="880" y1="158" x2="880" y2="474"/>
+  </g>
+
+  <g stroke="#30363D" stroke-width="2">
+    <line x1="360" y1="158" x2="360" y2="474"/>
+    <line x1="360" y1="474" x2="880" y2="474"/>
+  </g>
+
+  <g fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13">
+    <text x="360" y="502" text-anchor="middle">0</text>
+    <text x="464" y="502" text-anchor="middle">60</text>
+    <text x="568" y="502" text-anchor="middle">120</text>
+    <text x="672" y="502" text-anchor="middle">180</text>
+    <text x="776" y="502" text-anchor="middle">240</text>
+    <text x="880" y="502" text-anchor="middle">300 min / mo</text>
+  </g>
+
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <text x="40" y="185" fill="#F0F6FC" font-size="18" font-weight="600">Azure Speech F0</text>
+    <text x="40" y="208" fill="#8B949E" font-size="13">cloud API</text>
+    <rect x="360" y="166" width="520" height="32" rx="10" fill="#98A2AE"/>
+    <rect x="892" y="165" width="56" height="34" rx="10" fill="#161B22" stroke="#30363D"/>
+    <text x="920" y="187" fill="#F0F6FC" font-size="14" font-weight="700" text-anchor="middle">300</text>
+
+    <text x="40" y="249" fill="#F0F6FC" font-size="18" font-weight="600">ElevenLabs Scribe</text>
+    <text x="40" y="272" fill="#8B949E" font-size="13">cloud API</text>
+    <rect x="360" y="230" width="260" height="32" rx="10" fill="#2DA44E"/>
+    <rect x="892" y="229" width="56" height="34" rx="10" fill="#152A1B" stroke="#2DA44E"/>
+    <text x="920" y="251" fill="#F0F6FC" font-size="14" font-weight="700" text-anchor="middle">150</text>
+
+    <text x="40" y="313" fill="#F0F6FC" font-size="18" font-weight="600">Google Cloud STT</text>
+    <text x="40" y="336" fill="#8B949E" font-size="13">cloud API</text>
+    <rect x="360" y="294" width="104" height="32" rx="10" fill="#98A2AE"/>
+    <rect x="892" y="293" width="56" height="34" rx="10" fill="#161B22" stroke="#30363D"/>
+    <text x="920" y="315" fill="#F0F6FC" font-size="14" font-weight="700" text-anchor="middle">60</text>
+
+    <text x="40" y="377" fill="#F0F6FC" font-size="18" font-weight="600">Amazon Transcribe</text>
+    <text x="40" y="400" fill="#8B949E" font-size="13">cloud API • 12-mo free tier</text>
+    <rect x="360" y="358" width="104" height="32" rx="10" fill="#98A2AE"/>
+    <rect x="892" y="357" width="56" height="34" rx="10" fill="#161B22" stroke="#30363D"/>
+    <text x="920" y="379" fill="#F0F6FC" font-size="14" font-weight="700" text-anchor="middle">60</text>
+
+    <text x="40" y="441" fill="#F0F6FC" font-size="18" font-weight="600">Wispr Flow Basic</text>
+    <text x="40" y="464" fill="#8B949E" font-size="13">desktop dictation</text>
+    <rect x="360" y="422" width="100" height="32" rx="10" fill="#98A2AE"/>
+    <rect x="892" y="421" width="56" height="34" rx="10" fill="#161B22" stroke="#30363D"/>
+    <text x="920" y="443" fill="#F0F6FC" font-size="14" font-weight="700" text-anchor="middle">58</text>
+  </g>
+
+  <text x="620" y="528" fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" text-anchor="middle">
+    Approximate free usage per month, normalized to minutes where possible
+  </text>
+</svg>
