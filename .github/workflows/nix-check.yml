@@ -4,7 +4,7 @@
 #    so compilation-breaking edits are caught by flake eval.
 # 2. Full nix build (~25 min) only runs when nix packaging files change.
 #
-# Setting up a Cachix binary cache would further reduce full-build times.
+# Build artifacts are pushed to Cachix so Nix users can skip local compilation.
 
 name: "nix build check"
 on:
@@ -48,7 +48,10 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - uses: DeterminateSystems/magic-nix-cache-action@565684385bcd71bad329742eefe8d12f2e765b39 # v13
+      - uses: cachix/cachix-action@v15
+        with:
+          name: handy
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       # Regenerate .nix/bun.nix from bun.lock and check if it matches
       # what's committed. A diff means the developer forgot to run
@@ -121,7 +124,7 @@ jobs:
       # sandbox issues, compilation failures) that flake eval alone misses.
       # On PRs: only runs when nix packaging files change (~25 min with cold cache).
       # On push to main and workflow_dispatch: always runs so every commit on
-      # main has a verified nix build before release.
+      # main has a verified nix build. cachix-action auto-pushes artifacts.
       - name: Build handy
         if: steps.bun-check.outputs.outdated != 'true' && steps.eval.outputs.failed != 'true' && (steps.nix-files.outputs.changed == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
         run: nix build .#handy -L --show-trace
