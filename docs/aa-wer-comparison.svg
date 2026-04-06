@@ -1,7 +1,7 @@
-<svg width="920" height="420" viewBox="0 0 920 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<svg width="920" height="450" viewBox="0 0 920 450" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">Artificial Analysis AA-WER comparison</title>
   <desc id="desc">Bar chart comparing Scribe v2, Parakeet V3, Whisper Large, and Whisper Turbo on reference AA-WER. Lower is better.</desc>
-  <rect width="920" height="420" rx="16" fill="#0D1117"/>
+  <rect width="920" height="450" rx="16" fill="#0D1117"/>
   <text x="40" y="42" fill="#F0F6FC" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="28" font-weight="700">
     Artificial Analysis AA-WER reference
   </text>
@@ -17,52 +17,52 @@
   </g>
 
   <g fill="#8B949E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="14">
-    <text x="78" y="347">0</text>
-    <text x="78" y="312">1</text>
-    <text x="78" y="277">2</text>
-    <text x="78" y="242">3</text>
-    <text x="78" y="207">4</text>
-    <text x="78" y="172">5</text>
+    <text x="78" y="365">0</text>
+    <text x="78" y="327">1</text>
+    <text x="78" y="289">2</text>
+    <text x="78" y="251">3</text>
+    <text x="78" y="213">4</text>
+    <text x="78" y="175">5</text>
     <text x="78" y="137">6</text>
   </g>
 
   <g stroke="#21262D" stroke-width="1">
-    <line x1="110" y1="307" x2="870" y2="307"/>
-    <line x1="110" y1="272" x2="870" y2="272"/>
-    <line x1="110" y1="237" x2="870" y2="237"/>
-    <line x1="110" y1="202" x2="870" y2="202"/>
-    <line x1="110" y1="167" x2="870" y2="167"/>
+    <line x1="110" y1="322" x2="870" y2="322"/>
+    <line x1="110" y1="284" x2="870" y2="284"/>
+    <line x1="110" y1="246" x2="870" y2="246"/>
+    <line x1="110" y1="208" x2="870" y2="208"/>
+    <line x1="110" y1="170" x2="870" y2="170"/>
     <line x1="110" y1="132" x2="870" y2="132"/>
   </g>
 
-  <line x1="110" y1="132" x2="110" y2="342" stroke="#30363D" stroke-width="2"/>
-  <line x1="110" y1="342" x2="870" y2="342" stroke="#30363D" stroke-width="2"/>
+  <line x1="110" y1="360" x2="870" y2="360" stroke="#30363D" stroke-width="2"/>
+  <line x1="110" y1="132" x2="110" y2="360" stroke="#30363D" stroke-width="2"/>
 
   <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-    <rect x="155" y="261.5" width="120" height="80.5" rx="8" fill="#2DA44E"/>
-    <text x="215" y="249" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">2.3%</text>
-    <text x="215" y="369" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Scribe v2</text>
-    <text x="215" y="389" fill="#8B949E" font-size="13" text-anchor="middle">cloud</text>
+    <rect x="155" y="272.6" width="120" height="87.4" rx="8" fill="#2DA44E"/>
+    <text x="215" y="260" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">2.3%</text>
+    <text x="215" y="389" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Scribe v2</text>
+    <text x="215" y="409" fill="#8B949E" font-size="13" text-anchor="middle">cloud</text>
 
-    <rect x="335" y="195" width="120" height="147" rx="8" fill="#8B949E"/>
-    <text x="395" y="183" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
-    <text x="395" y="369" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Parakeet V3</text>
-    <text x="395" y="389" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
+    <rect x="335" y="200.4" width="120" height="159.6" rx="8" fill="#8B949E"/>
+    <text x="395" y="188" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
+    <text x="395" y="389" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Parakeet V3</text>
+    <text x="395" y="409" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
 
-    <rect x="515" y="195" width="120" height="147" rx="8" fill="#8B949E"/>
-    <text x="575" y="183" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
-    <text x="575" y="369" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Large</text>
-    <text x="575" y="389" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
+    <rect x="515" y="200.4" width="120" height="159.6" rx="8" fill="#8B949E"/>
+    <text x="575" y="188" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
+    <text x="575" y="389" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Large</text>
+    <text x="575" y="409" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
 
-    <rect x="695" y="174" width="120" height="168" rx="8" fill="#8B949E"/>
-    <text x="755" y="162" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.8%</text>
-    <text x="755" y="369" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Turbo</text>
-    <text x="755" y="389" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
+    <rect x="695" y="177.6" width="120" height="182.4" rx="8" fill="#8B949E"/>
+    <text x="755" y="165" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.8%</text>
+    <text x="755" y="389" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Turbo</text>
+    <text x="755" y="409" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
   </g>
 
-  <line x1="110" y1="261.5" x2="870" y2="261.5" stroke="#2DA44E" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.9"/>
-  <rect x="718" y="247" width="136" height="22" rx="11" fill="#0D1117" stroke="#2DA44E" stroke-width="1"/>
-  <text x="786" y="262" fill="#2DA44E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" font-weight="700" text-anchor="middle">
+  <line x1="110" y1="272.6" x2="870" y2="272.6" stroke="#2DA44E" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.9"/>
+  <rect x="718" y="258" width="136" height="22" rx="11" fill="#0D1117" stroke="#2DA44E" stroke-width="1"/>
+  <text x="786" y="273" fill="#2DA44E" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" font-weight="700" text-anchor="middle">
     baseline 2.3
   </text>
 
