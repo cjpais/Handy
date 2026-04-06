@@ -42,7 +42,7 @@
     <rect x="155" y="261.5" width="120" height="80.5" rx="8" fill="#2DA44E"/>
     <text x="215" y="249" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">2.3%</text>
     <text x="215" y="369" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Scribe v2</text>
-    <text x="215" y="389" fill="#8B949E" font-size="13" text-anchor="middle">ElevenLabs</text>
+    <text x="215" y="389" fill="#8B949E" font-size="13" text-anchor="middle">cloud</text>
 
     <rect x="335" y="195" width="120" height="147" rx="8" fill="#8B949E"/>
     <text x="395" y="183" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
@@ -52,12 +52,12 @@
     <rect x="515" y="195" width="120" height="147" rx="8" fill="#8B949E"/>
     <text x="575" y="183" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.2%</text>
     <text x="575" y="369" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Large</text>
-    <text x="575" y="389" fill="#8B949E" font-size="13" text-anchor="middle">v3 reference</text>
+    <text x="575" y="389" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
 
     <rect x="695" y="174" width="120" height="168" rx="8" fill="#8B949E"/>
     <text x="755" y="162" fill="#F0F6FC" font-size="16" font-weight="700" text-anchor="middle">4.8%</text>
     <text x="755" y="369" fill="#F0F6FC" font-size="16" font-weight="600" text-anchor="middle">Whisper Turbo</text>
-    <text x="755" y="389" fill="#8B949E" font-size="13" text-anchor="middle">v3 turbo ref</text>
+    <text x="755" y="389" fill="#8B949E" font-size="13" text-anchor="middle">local</text>
   </g>
 
   <line x1="110" y1="261.5" x2="870" y2="261.5" stroke="#2DA44E" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.9"/>
