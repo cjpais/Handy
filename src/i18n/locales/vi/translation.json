@@ -593,7 +593,9 @@
     "noInputDevice": "Không phát hiện thiết bị đầu vào âm thanh nào. Vui lòng kết nối micrô hoặc tai nghe và thử lại.",
     "recordingFailed": "Không thể bắt đầu ghi âm: {{error}}",
     "modelLoadFailed": "Không thể tải mô hình: {{model}}",
-    "modelLoadFailedUnknown": "mô hình không xác định"
+    "modelLoadFailedUnknown": "mô hình không xác định",
+    "pasteFailedTitle": "Không thể dán văn bản",
+    "pasteFailed": "Không thể dán văn bản vào ứng dụng đang hoạt động."
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",

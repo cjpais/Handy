@@ -593,7 +593,9 @@
     "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
     "recordingFailed": "הפעלת ההקלטה נכשלה: {{error}}",
     "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
-    "modelLoadFailedUnknown": "מודל לא ידוע"
+    "modelLoadFailedUnknown": "מודל לא ידוע",
+    "pasteFailedTitle": "ההדבקה נכשלה",
+    "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל."
   },
   "appLanguage": {
     "title": "שפת האפליקציה",

@@ -593,7 +593,9 @@
     "noInputDevice": "Аудиоустройство ввода не обнаружено. Подключите микрофон или гарнитуру и попробуйте снова.",
     "recordingFailed": "Не удалось начать запись: {{error}}",
     "modelLoadFailed": "Не удалось загрузить модель: {{model}}",
-    "modelLoadFailedUnknown": "неизвестная модель"
+    "modelLoadFailedUnknown": "неизвестная модель",
+    "pasteFailedTitle": "Не удалось вставить текст",
+    "pasteFailed": "Не удалось вставить текст в активное приложение."
   },
   "appLanguage": {
     "title": "Язык приложения",

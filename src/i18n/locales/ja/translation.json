@@ -593,7 +593,9 @@
     "noInputDevice": "オーディオ入力デバイスが検出されませんでした。マイクまたはヘッドセットを接続してから再試行してください。",
     "recordingFailed": "録音の開始に失敗しました: {{error}}",
     "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
-    "modelLoadFailedUnknown": "不明なモデル"
+    "modelLoadFailedUnknown": "不明なモデル",
+    "pasteFailedTitle": "テキストの貼り付けに失敗しました",
+    "pasteFailed": "アクティブなアプリケーションにテキストを貼り付けられませんでした。"
   },
   "appLanguage": {
     "title": "アプリケーション言語",

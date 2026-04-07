@@ -7,11 +7,7 @@ import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
-import {
-  ModelStateEvent,
-  RecordingErrorEvent,
-  PasteErrorEvent,
-} from "./lib/types/events";
+import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
@@ -126,11 +122,14 @@ function App() {
     };
   }, [t]);
 
-  // Listen for paste failures and show a toast
+  // Listen for paste failures and show a toast.
+  // The technical error detail is logged to handy.log on the Rust side
+  // (see actions.rs `error!("Failed to paste transcription: ...")`),
+  // so we show a localized, user-friendly message here instead of the raw error.
   useEffect(() => {
-    const unlisten = listen<PasteErrorEvent>("paste-error", (event) => {
+    const unlisten = listen("paste-error", () => {
       toast.error(t("errors.pasteFailedTitle"), {
-        description: event.payload.detail,
+        description: t("errors.pasteFailed"),
       });
     });
     return () => {

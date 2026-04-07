@@ -593,7 +593,9 @@
     "noInputDevice": "Не виявлено жодного пристрою введення звуку. Підключіть мікрофон або гарнітуру та спробуйте знову.",
     "recordingFailed": "Не вдалося розпочати запис: {{error}}",
     "modelLoadFailed": "Не вдалося завантажити модель: {{model}}",
-    "modelLoadFailedUnknown": "невідома модель"
+    "modelLoadFailedUnknown": "невідома модель",
+    "pasteFailedTitle": "Не вдалося вставити текст",
+    "pasteFailed": "Не вдалося вставити текст до активної програми."
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",

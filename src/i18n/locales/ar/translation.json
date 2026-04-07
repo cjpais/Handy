@@ -593,7 +593,9 @@
     "noInputDevice": "لم يتم اكتشاف أي جهاز إدخال صوتي. يرجى توصيل ميكروفون أو سماعة رأس والمحاولة مرة أخرى.",
     "recordingFailed": "فشل في بدء التسجيل: {{error}}",
     "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
-    "modelLoadFailedUnknown": "نموذج غير معروف"
+    "modelLoadFailedUnknown": "نموذج غير معروف",
+    "pasteFailedTitle": "فشل لصق النص",
+    "pasteFailed": "تعذر لصق النص في التطبيق النشط."
   },
   "appLanguage": {
     "title": "لغة التطبيق",

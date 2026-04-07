@@ -593,7 +593,9 @@
     "noInputDevice": "Non è stato rilevato alcun dispositivo di ingresso audio. Collega un microfono o delle cuffie e riprova.",
     "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
     "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
-    "modelLoadFailedUnknown": "modello sconosciuto"
+    "modelLoadFailedUnknown": "modello sconosciuto",
+    "pasteFailedTitle": "Impossibile incollare il testo",
+    "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva."
   },
   "appLanguage": {
     "title": "Lingua Applicazione",
