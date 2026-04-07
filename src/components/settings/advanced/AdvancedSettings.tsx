@@ -10,6 +10,7 @@ import { ShowTrayIcon } from "../ShowTrayIcon";
 import { PasteMethodSetting } from "../PasteMethod";
 import { TypingToolSetting } from "../TypingTool";
 import { ClipboardHandlingSetting } from "../ClipboardHandling";
+import { ClipboardRestoreModeSetting } from "../ClipboardRestoreMode";
 import { AutoSubmit } from "../AutoSubmit";
 import { PostProcessingToggle } from "../PostProcessingToggle";
 import { AppendTrailingSpace } from "../AppendTrailingSpace";
@@ -66,6 +67,10 @@ export const AdvancedSettings: React.FC = () => {
           />
           <AccelerationSelector descriptionMode="tooltip" grouped={true} />
           <LazyStreamClose descriptionMode="tooltip" grouped={true} />
+          <ClipboardRestoreModeSetting
+            descriptionMode="tooltip"
+            grouped={true}
+          />
         </SettingsGroup>
       )}
     </div>

@@ -147,6 +147,16 @@ pub enum ClipboardHandling {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
+pub enum ClipboardRestoreMode {
+    /// Save and restore plain text only (legacy behavior).
+    TextOnly,
+    /// Save and restore text, HTML, images, and file lists via arboard.
+    /// Experimental — may behave inconsistently on some platforms.
+    AllFormats,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
 pub enum AutoSubmitKey {
     Enter,
     CtrlEnter,
@@ -198,6 +208,14 @@ impl Default for PasteMethod {
 impl Default for ClipboardHandling {
     fn default() -> Self {
         ClipboardHandling::DontModify
+    }
+}
+
+impl Default for ClipboardRestoreMode {
+    fn default() -> Self {
+        // Conservative default: behave exactly like the legacy code path.
+        // Users who want multi-format restore must opt in via experimental settings.
+        ClipboardRestoreMode::TextOnly
     }
 }
 
@@ -383,6 +401,8 @@ pub struct AppSettings {
     pub paste_method: PasteMethod,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
+    #[serde(default)]
+    pub clipboard_restore_mode: ClipboardRestoreMode,
     #[serde(default = "default_auto_submit")]
     pub auto_submit: bool,
     #[serde(default)]
@@ -780,6 +800,7 @@ pub fn get_default_settings() -> AppSettings {
         recording_retention_period: default_recording_retention_period(),
         paste_method: PasteMethod::default(),
         clipboard_handling: ClipboardHandling::default(),
+        clipboard_restore_mode: ClipboardRestoreMode::default(),
         auto_submit: default_auto_submit(),
         auto_submit_key: AutoSubmitKey::default(),
         post_process_enabled: default_post_process_enabled(),

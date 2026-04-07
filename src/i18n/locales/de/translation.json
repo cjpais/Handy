@@ -319,6 +319,14 @@
           "copyToClipboard": "In Zwischenablage kopieren"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Wiederherstellungsmodus der Zwischenablage",
+        "description": "Legt fest, was nach dem Einfügen in der Zwischenablage wiederhergestellt wird. Nur Text stellt reinen Text wieder her (die sichere Standardeinstellung). Alle Formate versucht zusätzlich, Bilder, HTML und kopierte Dateien wiederherzustellen — nützlich, wenn häufig diktiert wird, während sich formatierte Inhalte in der Zwischenablage befinden. Experimentell: Das Verhalten kann je nach Plattform variieren.",
+        "options": {
+          "textOnly": "Nur Text",
+          "allFormats": "Alle Formate (experimentell)"
+        }
+      },
       "autoSubmit": {
         "title": "Automatisch absenden",
         "description": "Sendet nach dem Einfügen von Text automatisch die ausgewählte Tastenkombination. Cmd+Enter gilt für macOS, während Windows/Linux Super+Enter verwenden.",

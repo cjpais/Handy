@@ -319,6 +319,14 @@
           "copyToClipboard": "Kopírovat do schránky"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Režim obnovy schránky",
+        "description": "Určuje, co se po vložení obnoví do schránky. 'Pouze text' obnoví prostý text (bezpečné výchozí nastavení). 'Všechny formáty' se navíc pokusí obnovit obrázky, HTML a zkopírované soubory — užitečné, pokud často diktujete, zatímco máte ve schránce formátovaný obsah. Experimentální: chování se může mezi platformami lišit.",
+        "options": {
+          "textOnly": "Pouze text",
+          "allFormats": "Všechny formáty (experimentální)"
+        }
+      },
       "autoSubmit": {
         "title": "Automatické odeslání",
         "description": "Automaticky odešle vybranou kombinaci kláves po vložení textu. Cmd+Enter platí pro macOS, zatímco Windows/Linux používají Super+Enter.",

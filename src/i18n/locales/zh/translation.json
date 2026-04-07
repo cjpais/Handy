@@ -319,6 +319,14 @@
           "copyToClipboard": "复制到剪贴板"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "剪贴板恢复模式",
+        "description": "控制粘贴后恢复到剪贴板的内容。\"仅文本\"会恢复纯文本（安全的默认设置）。\"所有格式\"还会尝试恢复图像、HTML 和复制的文件——如果你经常在剪贴板中有富文本内容时进行听写，这会很有用。实验性：行为可能因平台而异。",
+        "options": {
+          "textOnly": "仅文本",
+          "allFormats": "所有格式（实验性）"
+        }
+      },
       "autoSubmit": {
         "title": "自动提交",
         "description": "在文本插入后自动发送所选的按键组合。macOS 上使用 Cmd+Enter，Windows/Linux 上使用 Super+Enter。",

@@ -319,6 +319,14 @@
           "copyToClipboard": "Panoya Kopyala"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Pano Geri Yükleme Modu",
+        "description": "Yapıştırma sonrası panoda neyin geri yükleneceğini kontrol eder. Yalnızca Metin düz metni geri yükler (güvenli varsayılan). Tüm Biçimler ayrıca görüntüleri, HTML'yi ve kopyalanan dosyaları da geri yüklemeye çalışır — panonuzda biçimli içerik varken sık sık dikte ediyorsanız kullanışlıdır. Deneysel: davranış platformlar arasında farklılık gösterebilir.",
+        "options": {
+          "textOnly": "Yalnızca Metin",
+          "allFormats": "Tüm Biçimler (Deneysel)"
+        }
+      },
       "autoSubmit": {
         "title": "Otomatik Gönder",
         "description": "Metin eklendikten sonra seçilen tuş kombinasyonunu otomatik olarak gönderir. macOS'ta Cmd+Enter, Windows/Linux'ta Super+Enter geçerlidir.",

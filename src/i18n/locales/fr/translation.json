@@ -319,6 +319,14 @@
           "copyToClipboard": "Copier dans le presse-papiers"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Mode de restauration du presse-papiers",
+        "description": "Détermine ce qui est restauré dans le presse-papiers après le collage. Texte uniquement restaure le texte brut (l'option sûre par défaut). Tous les formats tente également de restaurer les images, le HTML et les fichiers copiés — utile si vous dictez souvent alors que du contenu enrichi se trouve dans votre presse-papiers. Expérimental : le comportement peut varier selon les plateformes.",
+        "options": {
+          "textOnly": "Texte uniquement",
+          "allFormats": "Tous les formats (expérimental)"
+        }
+      },
       "autoSubmit": {
         "title": "Envoi automatique",
         "description": "Envoie automatiquement la combinaison de touches sélectionnée après l'insertion du texte. Cmd+Enter s'applique sur macOS, tandis que Windows/Linux utilisent Super+Enter.",

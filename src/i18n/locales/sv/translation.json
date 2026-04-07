@@ -319,6 +319,14 @@
           "copyToClipboard": "Kopiera till urklipp"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Återställningsläge för urklipp",
+        "description": "Styr vad som återställs till urklipp efter inklistring. Endast text återställer vanlig text (det säkra standardvalet). Alla format försöker också återställa bilder, HTML och kopierade filer — användbart om du ofta dikterar medan du har formaterat innehåll i urklipp. Experimentellt: beteendet kan variera mellan plattformar.",
+        "options": {
+          "textOnly": "Endast text",
+          "allFormats": "Alla format (experimentellt)"
+        }
+      },
       "autoSubmit": {
         "title": "Skicka automatiskt",
         "description": "Skicka automatiskt den valda tangentkombinationen efter textinsättning. Cmd+Enter gäller på macOS, medan Windows/Linux använder Super+Enter.",

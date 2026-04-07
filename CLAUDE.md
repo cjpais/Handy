@@ -78,21 +78,43 @@ All user-facing strings must use i18next translations. ESLint enforces this (no 
 
 **Adding new text:**
 
-1. Add key to `src/i18n/locales/en/translation.json`
-2. Use in component: `const { t } = useTranslation(); t('key.path')`
+1. Add key to `src/i18n/locales/en/translation.json` (the source of truth)
+2. Add the same key to **every** other locale file under `src/i18n/locales/`. New keys must land in all languages in the same PR — translations do not ship separately.
+3. Run `bun run check:translations` to verify no locale is missing keys (this is the gate; CI/review will catch missing keys).
+4. Use in component: `const { t } = useTranslation(); t('key.path')`
+
+When translating, mirror the tone and terminology of nearby existing keys in each locale file rather than translating in isolation — the existing translations have already settled on conventions for recurring terms (e.g. "clipboard", "shortcut", "transcription").
 
 **File structure:**
 
 ```
 src/i18n/
 ├── index.ts           # i18n setup
-├── languages.ts       # Language metadata
+├── languages.ts       # Language metadata (canonical list of supported locales)
 └── locales/
-    ├── en/translation.json  # English (source)
-    ├── es/translation.json  # Spanish
-    ├── fr/translation.json  # French
-    └── vi/translation.json  # Vietnamese
+    ├── en/translation.json     # English (source of truth)
+    ├── zh/translation.json     # Simplified Chinese
+    ├── zh-TW/translation.json  # Traditional Chinese
+    ├── es/translation.json     # Spanish
+    ├── fr/translation.json     # French
+    ├── de/translation.json     # German
+    ├── ja/translation.json     # Japanese
+    ├── ko/translation.json     # Korean
+    ├── vi/translation.json     # Vietnamese
+    ├── pl/translation.json     # Polish
+    ├── it/translation.json     # Italian
+    ├── ru/translation.json     # Russian
+    ├── uk/translation.json     # Ukrainian
+    ├── pt/translation.json     # Portuguese
+    ├── cs/translation.json     # Czech
+    ├── tr/translation.json     # Turkish
+    ├── ar/translation.json     # Arabic (RTL)
+    ├── he/translation.json     # Hebrew (RTL)
+    ├── sv/translation.json     # Swedish
+    └── bg/translation.json     # Bulgarian
 ```
+
+`src/i18n/languages.ts` is the canonical source for the supported locale set — if it disagrees with this list, trust `languages.ts` and update this section.
 
 ## Code Style
 

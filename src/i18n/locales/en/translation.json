@@ -319,6 +319,14 @@
           "copyToClipboard": "Copy to Clipboard"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Clipboard Restore Mode",
+        "description": "Controls what gets restored to the clipboard after pasting. Text Only restores plain text (the safe default). All Formats also tries to restore images, HTML, and copied files — useful if you often dictate while rich content is on your clipboard. Experimental: behavior may vary across platforms.",
+        "options": {
+          "textOnly": "Text Only",
+          "allFormats": "All Formats (Experimental)"
+        }
+      },
       "autoSubmit": {
         "title": "Auto Submit",
         "description": "Automatically send the selected key combination after text insertion. Cmd+Enter applies on macOS, while Windows/Linux use Super+Enter.",

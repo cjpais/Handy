@@ -1,10 +1,12 @@
-use arboard::Clipboard as ArboardClipboard;
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
-use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+use crate::settings::{
+    get_settings, AutoSubmitKey, ClipboardHandling, ClipboardRestoreMode, PasteMethod,
+};
+use arboard::Clipboard as ArboardClipboard;
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
@@ -30,8 +32,15 @@ enum SavedClipboard {
 }
 
 fn save_clipboard() -> SavedClipboard {
-    let Ok(mut clipboard) = ArboardClipboard::new() else {
-        return SavedClipboard::Empty;
+    let mut clipboard = match ArboardClipboard::new() {
+        Ok(c) => c,
+        Err(e) => {
+            warn!(
+                "clipboard save: arboard init failed ({}), nothing to restore",
+                e
+            );
+            return SavedClipboard::Empty;
+        }
     };
 
     if let Ok(files) = clipboard.get().file_list() {
@@ -48,8 +57,14 @@ fn save_clipboard() -> SavedClipboard {
     }
     if let Ok(html) = clipboard.get().html() {
         if !html.is_empty() {
+            // Preserve the text/plain alternative so destination apps that prefer
+            // plain text (terminals, plain-paste modes, etc.) get the original
+            // rather than a synthesized-from-HTML version.
             let alt = clipboard.get().text().ok();
-            return SavedClipboard::Html { html, alt_text: alt };
+            return SavedClipboard::Html {
+                html,
+                alt_text: alt,
+            };
         }
     }
     match clipboard.get().text() {
@@ -59,40 +74,47 @@ fn save_clipboard() -> SavedClipboard {
 }
 
 fn restore_clipboard(saved: SavedClipboard) {
+    // Text restore on Wayland uses wl-copy for compatibility (especially with umlauts).
+    #[cfg(target_os = "linux")]
+    if let SavedClipboard::Text(ref text) = saved {
+        if is_wayland() && is_wl_copy_available() {
+            let _ = write_clipboard_via_wl_copy(text);
+            return;
+        }
+    }
+
+    let mut clipboard = match ArboardClipboard::new() {
+        Ok(c) => c,
+        Err(e) => {
+            warn!(
+                "clipboard restore: arboard init failed ({}), original clipboard not restored",
+                e
+            );
+            return;
+        }
+    };
+
     match saved {
         SavedClipboard::Empty => {}
         SavedClipboard::Text(text) => {
-            #[cfg(target_os = "linux")]
-            if is_wayland() && is_wl_copy_available() {
-                let _ = write_clipboard_via_wl_copy(&text);
-                return;
-            }
-            if let Ok(mut clipboard) = ArboardClipboard::new() {
-                let _ = clipboard.set_text(&text);
-            }
+            let _ = clipboard.set_text(&text);
         }
         SavedClipboard::Image {
             rgba,
             width,
             height,
         } => {
-            if let Ok(mut clipboard) = ArboardClipboard::new() {
-                let _ = clipboard.set_image(arboard::ImageData {
-                    bytes: Cow::Owned(rgba),
-                    width,
-                    height,
-                });
-            }
+            let _ = clipboard.set_image(arboard::ImageData {
+                bytes: Cow::Owned(rgba),
+                width,
+                height,
+            });
         }
         SavedClipboard::Html { html, alt_text } => {
-            if let Ok(mut clipboard) = ArboardClipboard::new() {
-                let _ = clipboard.set_html(&html, alt_text.as_ref());
-            }
+            let _ = clipboard.set_html(&html, alt_text.as_ref());
         }
         SavedClipboard::Files(files) => {
-            if let Ok(mut clipboard) = ArboardClipboard::new() {
-                let _ = clipboard.set().file_list(&files);
-            }
+            let _ = clipboard.set().file_list(&files);
         }
     }
 }
@@ -104,9 +126,16 @@ fn paste_via_clipboard(
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
     paste_delay_ms: u64,
+    restore_mode: ClipboardRestoreMode,
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
-    let saved = save_clipboard();
+    let saved = match restore_mode {
+        ClipboardRestoreMode::TextOnly => {
+            // Legacy path: text only, bit-for-bit compatible with pre-multiformat behavior.
+            SavedClipboard::Text(clipboard.read_text().unwrap_or_default())
+        }
+        ClipboardRestoreMode::AllFormats => save_clipboard(),
+    };
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
@@ -710,6 +739,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &app_handle,
                 &paste_method,
                 paste_delay_ms,
+                settings.clipboard_restore_mode,
             )?
         }
         PasteMethod::ExternalScript => {
