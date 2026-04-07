@@ -293,12 +293,13 @@
       },
       "pasteMethod": {
         "title": "Paste Method",
-        "description": "Choose how text is inserted. Direct: simulates typing via system input. None: skips paste, only updates history/clipboard.",
+        "description": "Choose how text is inserted. Direct uses fast system text insertion. Type sends keystrokes one character at a time. None skips insertion and only updates history or clipboard.",
         "options": {
           "clipboard": "Clipboard ({{modifier}}+V)",
           "clipboardCtrlShiftV": "Clipboard (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Clipboard (Shift+Insert)",
           "direct": "Direct",
+          "type": "Type",
           "none": "None",
           "externalScript": "External Script"
         },
@@ -306,7 +307,7 @@
       },
       "typingTool": {
         "title": "Typing Tool",
-        "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
+        "description": "Choose which Linux typing tool to use when Handy inserts text by simulated typing. Auto will automatically detect and use the best available tool for your system.",
         "options": {
           "auto": "Auto (Recommended)"
         }

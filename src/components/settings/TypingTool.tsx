@@ -42,9 +42,9 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
       return null;
     }
 
-    // Only show if paste method is "direct"
+    // Only show when text will be inserted via simulated typing
     const pasteMethod = getSetting("paste_method");
-    if (pasteMethod !== "direct") {
+    if (pasteMethod !== "direct" && pasteMethod !== "type") {
       return null;
     }
 

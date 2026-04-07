@@ -541,6 +541,22 @@ fn paste_direct(
     input::paste_text_direct(enigo, text)
 }
 
+fn type_text(
+    enigo: &mut Enigo,
+    text: &str,
+    #[cfg(target_os = "linux")] typing_tool: TypingTool,
+) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        if try_direct_typing_linux(text, typing_tool)? {
+            return Ok(());
+        }
+        info!("Falling back to enigo key events for typed text input");
+    }
+
+    input::type_text_key_events(enigo, text)
+}
+
 fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
     match key_type {
         AutoSubmitKey::Enter => {
@@ -627,6 +643,14 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 settings.typing_tool,
             )?;
         }
+        PasteMethod::Type => {
+            type_text(
+                &mut enigo,
+                &text,
+                #[cfg(target_os = "linux")]
+                settings.typing_tool,
+            )?;
+        }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(
                 &mut enigo,
@@ -681,7 +705,14 @@ mod tests {
     fn auto_submit_runs_for_active_paste_methods() {
         assert!(should_send_auto_submit(true, PasteMethod::CtrlV));
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
+        assert!(should_send_auto_submit(true, PasteMethod::Type));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    #[test]
+    fn type_is_a_distinct_active_paste_method() {
+        assert_ne!(PasteMethod::Type, PasteMethod::Direct);
+        assert_ne!(PasteMethod::Type, PasteMethod::None);
     }
 }

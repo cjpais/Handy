@@ -33,6 +33,10 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
           label: t("settings.advanced.pasteMethod.options.direct"),
         },
         {
+          value: "type",
+          label: t("settings.advanced.pasteMethod.options.type"),
+        },
+        {
           value: "none",
           label: t("settings.advanced.pasteMethod.options.none"),
         },

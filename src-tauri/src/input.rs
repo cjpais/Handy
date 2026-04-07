@@ -121,3 +121,15 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
 
     Ok(())
 }
+
+/// Types text by sending one key event per character.
+/// This is slower than `text()` but behaves more like real typing.
+pub fn type_text_key_events(enigo: &mut Enigo, text: &str) -> Result<(), String> {
+    for character in text.chars() {
+        enigo
+            .key(Key::Unicode(character), enigo::Direction::Click)
+            .map_err(|e| format!("Failed to type character {:?}: {}", character, e))?;
+    }
+
+    Ok(())
+}
