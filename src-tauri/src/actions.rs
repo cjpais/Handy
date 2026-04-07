@@ -125,13 +125,20 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .cloned()
         .unwrap_or_default();
 
-    // Always disable reasoning for custom providers: post-processing rarely
-    // benefits from thinking mode, and latency on local models is significant.
-    // Revisit if strict OpenAI-compat endpoints reject "none".
-    let reasoning_effort = if provider.id == "custom" {
-        Some("none".to_string())
-    } else {
-        None
+    // Disable reasoning for providers where post-processing rarely benefits from it.
+    // - custom: top-level reasoning_effort (works for local OpenAI-compat servers)
+    // - openrouter: nested reasoning object; exclude:true also keeps reasoning text
+    //   out of the response so it can't pollute structured-output JSON parsing
+    let (reasoning_effort, reasoning) = match provider.id.as_str() {
+        "custom" => (Some("none".to_string()), None),
+        "openrouter" => (
+            None,
+            Some(crate::llm_client::ReasoningConfig {
+                effort: Some("none".to_string()),
+                exclude: Some(true),
+            }),
+        ),
+        _ => (None, None),
     };
 
     if provider.supports_structured_output {
@@ -205,6 +212,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
             Some(system_prompt),
             Some(json_schema),
             reasoning_effort.clone(),
+            reasoning.clone(),
         )
         .await
         {
@@ -260,6 +268,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         &model,
         processed_prompt,
         reasoning_effort,
+        reasoning,
     )
     .await
     {

@@ -24,6 +24,14 @@ struct ResponseFormat {
     json_schema: JsonSchema,
 }
 
+#[derive(Debug, Serialize, Clone, Default)]
+pub struct ReasoningConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub effort: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exclude: Option<bool>,
+}
+
 #[derive(Debug, Serialize)]
 struct ChatCompletionRequest {
     model: String,
@@ -32,6 +40,8 @@ struct ChatCompletionRequest {
     response_format: Option<ResponseFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     reasoning_effort: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning: Option<ReasoningConfig>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -104,6 +114,7 @@ pub async fn send_chat_completion(
     model: &str,
     prompt: String,
     reasoning_effort: Option<String>,
+    reasoning: Option<ReasoningConfig>,
 ) -> Result<Option<String>, String> {
     send_chat_completion_with_schema(
         provider,
@@ -113,6 +124,7 @@ pub async fn send_chat_completion(
         None,
         None,
         reasoning_effort,
+        reasoning,
     )
     .await
 }
@@ -120,7 +132,8 @@ pub async fn send_chat_completion(
 /// Send a chat completion request with structured output support
 /// When json_schema is provided, uses structured outputs mode
 /// system_prompt is used as the system message when provided
-/// reasoning_effort controls thinking mode for reasoning models (e.g., "none", "low", "medium", "high")
+/// reasoning_effort sets the OpenAI-style top-level field (e.g., "none", "low", "medium", "high")
+/// reasoning sets the OpenRouter-style nested object (effort + exclude)
 pub async fn send_chat_completion_with_schema(
     provider: &PostProcessProvider,
     api_key: String,
@@ -129,6 +142,7 @@ pub async fn send_chat_completion_with_schema(
     system_prompt: Option<String>,
     json_schema: Option<Value>,
     reasoning_effort: Option<String>,
+    reasoning: Option<ReasoningConfig>,
 ) -> Result<Option<String>, String> {
     let base_url = provider.base_url.trim_end_matches('/');
     let url = format!("{}/chat/completions", base_url);
@@ -169,6 +183,7 @@ pub async fn send_chat_completion_with_schema(
         messages,
         response_format,
         reasoning_effort,
+        reasoning,
     };
 
     let response = client
