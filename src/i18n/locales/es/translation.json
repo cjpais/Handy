@@ -597,7 +597,9 @@
     "noInputDevice": "No se detectó ningún dispositivo de entrada de audio. Conecta un micrófono o auriculares e inténtalo de nuevo.",
     "recordingFailed": "Error al iniciar la grabación: {{error}}",
     "modelLoadFailed": "Error al cargar el modelo: {{model}}",
-    "modelLoadFailedUnknown": "modelo desconocido"
+    "modelLoadFailedUnknown": "modelo desconocido",
+    "pasteFailedTitle": "Error al pegar el texto",
+    "pasteFailed": "No se pudo pegar el texto en la aplicación activa."
   },
   "appLanguage": {
     "title": "Idioma de la aplicación",

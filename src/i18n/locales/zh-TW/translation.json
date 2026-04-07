@@ -597,7 +597,9 @@
     "noInputDevice": "未偵測到音訊輸入裝置。請連接麥克風或耳機後重試。",
     "recordingFailed": "錄音啟動失敗: {{error}}",
     "modelLoadFailed": "載入模型失敗: {{model}}",
-    "modelLoadFailedUnknown": "未知模型"
+    "modelLoadFailedUnknown": "未知模型",
+    "pasteFailedTitle": "貼上文字失敗",
+    "pasteFailed": "無法將文字貼上至目前作用中的應用程式。"
   },
   "appLanguage": {
     "title": "應用程式語言",

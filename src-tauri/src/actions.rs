@@ -612,7 +612,10 @@ impl ShortcutAction for TranscribeAction {
                                             "Text pasted successfully in {:?}",
                                             paste_time.elapsed()
                                         ),
-                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                        Err(e) => {
+                                            error!("Failed to paste transcription: {}", e);
+                                            let _ = ah_clone.emit("paste-error", ());
+                                        }
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
                                     change_tray_icon(&ah_clone, TrayIconState::Idle);

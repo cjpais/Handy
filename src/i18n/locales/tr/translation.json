@@ -597,7 +597,9 @@
     "noInputDevice": "Ses giriş aygıtı algılanamadı. Lütfen bir mikrofon veya kulaklık bağlayın ve tekrar deneyin.",
     "recordingFailed": "Kayıt başlatılamadı: {{error}}",
     "modelLoadFailed": "Model yüklenemedi: {{model}}",
-    "modelLoadFailedUnknown": "bilinmeyen model"
+    "modelLoadFailedUnknown": "bilinmeyen model",
+    "pasteFailedTitle": "Metin yapıştırılamadı",
+    "pasteFailed": "Metin etkin uygulamaya yapıştırılamadı."
   },
   "appLanguage": {
     "title": "Uygulama Dili",

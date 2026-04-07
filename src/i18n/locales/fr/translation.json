@@ -597,7 +597,9 @@
     "noInputDevice": "Aucun périphérique d'entrée audio n'a été détecté. Veuillez connecter un microphone ou un casque et réessayer.",
     "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
     "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
-    "modelLoadFailedUnknown": "modèle inconnu"
+    "modelLoadFailedUnknown": "modèle inconnu",
+    "pasteFailedTitle": "Échec du collage du texte",
+    "pasteFailed": "Le texte n'a pas pu être collé dans l'application active."
   },
   "appLanguage": {
     "title": "Langue de l'application",

@@ -597,7 +597,9 @@
     "noInputDevice": "Nebylo detekováno žádné zvukové vstupní zařízení. Připojte mikrofon nebo sluchátka a zkuste to znovu.",
     "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
     "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
-    "modelLoadFailedUnknown": "neznámý model"
+    "modelLoadFailedUnknown": "neznámý model",
+    "pasteFailedTitle": "Vložení textu se nezdařilo",
+    "pasteFailed": "Text nebylo možné vložit do aktivní aplikace."
   },
   "appLanguage": {
     "title": "Jazyk aplikace",

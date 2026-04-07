@@ -597,7 +597,9 @@
     "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließen Sie ein Mikrofon oder Headset an und versuchen Sie es erneut.",
     "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
-    "modelLoadFailedUnknown": "unbekanntes Modell"
+    "modelLoadFailedUnknown": "unbekanntes Modell",
+    "pasteFailedTitle": "Text konnte nicht eingefügt werden",
+    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden."
   },
   "appLanguage": {
     "title": "Anwendungssprache",

@@ -597,7 +597,9 @@
     "noInputDevice": "Nie wykryto żadnego urządzenia wejściowego audio. Podłącz mikrofon lub słuchawki i spróbuj ponownie.",
     "recordingFailed": "Nie udało się rozpocząć nagrywania: {{error}}",
     "modelLoadFailed": "Nie udało się załadować modelu: {{model}}",
-    "modelLoadFailedUnknown": "nieznany model"
+    "modelLoadFailedUnknown": "nieznany model",
+    "pasteFailedTitle": "Nie udało się wkleić tekstu",
+    "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji."
   },
   "appLanguage": {
     "title": "Język aplikacji",
