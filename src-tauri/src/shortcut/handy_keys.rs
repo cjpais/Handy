@@ -260,22 +260,11 @@ impl HandyKeysState {
     }
 
     /// Start recording mode for a specific binding
-    pub fn start_recording(&self, app: &AppHandle, binding_id: String) -> Result<(), String> {
+    pub fn start_recording(&self, _app: &AppHandle, binding_id: String) -> Result<(), String> {
         if self.is_recording.load(Ordering::SeqCst) {
             return Err("Already recording".into());
         }
 
-        // Create a new keyboard listener for recording
-        let listener = KeyboardListener::new()
-            .map_err(|e| format!("Failed to create keyboard listener: {}", e))?;
-
-        {
-            let mut recording = self
-                .recording_listener
-                .lock()
-                .map_err(|_| "Failed to lock recording_listener")?;
-            *recording = Some(listener);
-        }
         {
             let mut binding = self
                 .recording_binding_id
@@ -285,14 +274,35 @@ impl HandyKeysState {
         }
 
         self.is_recording.store(true, Ordering::SeqCst);
-        self.recording_running.store(true, Ordering::SeqCst);
 
-        // Start a thread to emit key events to the frontend
-        let app_clone = app.clone();
-        let recording_running = Arc::clone(&self.recording_running);
-        thread::spawn(move || {
-            Self::recording_loop(app_clone, recording_running);
-        });
+        // On Linux, rdev::grab() cannot run concurrently with the HotkeyManager's
+        // existing grab — a second grab attempt fails and retries every 2 seconds,
+        // causing periodic system freezes and no key events being captured. Key
+        // recording on Linux is handled via DOM keyboard events in the frontend.
+        // (Same reasoning as register_cancel_shortcut being disabled on Linux.)
+        #[cfg(not(target_os = "linux"))]
+        {
+            // Create a new keyboard listener for recording
+            let listener = KeyboardListener::new()
+                .map_err(|e| format!("Failed to create keyboard listener: {}", e))?;
+
+            {
+                let mut recording = self
+                    .recording_listener
+                    .lock()
+                    .map_err(|_| "Failed to lock recording_listener")?;
+                *recording = Some(listener);
+            }
+
+            self.recording_running.store(true, Ordering::SeqCst);
+
+            // Start a thread to emit key events to the frontend
+            let app_clone = _app.clone();
+            let recording_running = Arc::clone(&self.recording_running);
+            thread::spawn(move || {
+                Self::recording_loop(app_clone, recording_running);
+            });
+        }
 
         debug!("Started handy-keys recording mode");
         Ok(())
