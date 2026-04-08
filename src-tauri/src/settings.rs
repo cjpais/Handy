@@ -355,6 +355,10 @@ pub struct AppSettings {
     pub always_on_microphone: bool,
     #[serde(default)]
     pub selected_microphone: Option<String>,
+    /// Which input channel to use on the selected microphone device.
+    /// None means "average all channels" (original behavior).
+    #[serde(default)]
+    pub selected_channel: Option<u16>,
     #[serde(default)]
     pub clamshell_microphone: Option<String>,
     #[serde(default)]
@@ -766,6 +770,7 @@ pub fn get_default_settings() -> AppSettings {
         selected_model: "".to_string(),
         always_on_microphone: false,
         selected_microphone: None,
+        selected_channel: None,
         clamshell_microphone: None,
         selected_output_device: None,
         translate_to_english: false,

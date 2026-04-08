@@ -120,6 +120,7 @@ pub enum MicrophoneMode {
 fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
+    selected_channel: Option<u16>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let silero = SileroVad::new(vad_path, 0.3)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
@@ -130,6 +131,7 @@ fn create_audio_recorder(
     let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(Box::new(smoothed_vad))
+        .with_selected_channel(selected_channel)
         .with_level_callback({
             let app_handle = app_handle.clone();
             move |levels| {
@@ -274,9 +276,11 @@ impl AudioRecordingManager {
                     tauri::path::BaseDirectory::Resource,
                 )
                 .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {}", e))?;
+            let settings = get_settings(&self.app_handle);
             *recorder_opt = Some(create_audio_recorder(
                 vad_path.to_str().unwrap(),
                 &self.app_handle,
+                settings.selected_channel,
             )?);
         }
         Ok(())
@@ -410,10 +414,16 @@ impl AudioRecordingManager {
     }
 
     pub fn update_selected_device(&self) -> Result<(), anyhow::Error> {
-        // If currently open, restart the microphone stream to use the new device
-        if *self.is_open.lock().unwrap() {
+        // Force recreation of the recorder so it picks up any settings
+        // changes (device, channel selection, etc.)
+        let was_open = *self.is_open.lock().unwrap();
+        if was_open {
             self.close_generation.fetch_add(1, Ordering::SeqCst);
             self.stop_microphone_stream();
+        }
+        // Drop the old recorder so preload_vad creates a fresh one
+        *self.recorder.lock().unwrap() = None;
+        if was_open {
             self.start_microphone_stream()?;
         }
         Ok(())
