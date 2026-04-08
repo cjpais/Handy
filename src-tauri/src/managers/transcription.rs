@@ -458,7 +458,7 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
-        const RMS_SILENCE_THRESHOLD: f32 = 0.005;
+        const RMS_SILENCE_THRESHOLD: f32 = 0.001;
         let rms = (audio.iter().map(|&s| s * s).sum::<f32>() / audio.len() as f32).sqrt();
         if rms < RMS_SILENCE_THRESHOLD {
             debug!(
