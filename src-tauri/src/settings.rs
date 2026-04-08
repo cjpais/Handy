@@ -411,6 +411,8 @@ pub struct AppSettings {
     pub experimental_enabled: bool,
     #[serde(default)]
     pub lazy_stream_close: bool,
+    #[serde(default = "default_chunked_transcription_enabled")]
+    pub chunked_transcription_enabled: bool,
     #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
@@ -515,6 +517,10 @@ fn default_app_language() -> String {
 
 fn default_show_tray_icon() -> bool {
     true
+}
+
+fn default_chunked_transcription_enabled() -> bool {
+    false
 }
 
 fn default_post_process_provider_id() -> String {
@@ -794,6 +800,7 @@ pub fn get_default_settings() -> AppSettings {
         app_language: default_app_language(),
         experimental_enabled: false,
         lazy_stream_close: false,
+        chunked_transcription_enabled: default_chunked_transcription_enabled(),
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),

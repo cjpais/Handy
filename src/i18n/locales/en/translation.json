@@ -349,6 +349,10 @@
           "sec15": "After 15 seconds (Debug)"
         }
       },
+      "chunkingToggle": {
+        "label": "Enable Chunking",
+        "description": "Transcribe silence-delimited chunks while recording; faster but slightly less accurate."
+      },
       "customWords": {
         "title": "Custom Words",
         "description": "Add words that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",

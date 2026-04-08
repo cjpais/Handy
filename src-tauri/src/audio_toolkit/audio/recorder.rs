@@ -2,7 +2,8 @@ use std::{
     io::Error,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc, Arc, Mutex,
+        mpsc::{self, TrySendError},
+        Arc, Mutex,
     },
     time::Duration,
 };
@@ -36,6 +37,8 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    chunk_sender: Arc<Mutex<Option<mpsc::SyncSender<Vec<f32>>>>>,
+    chunk_send_had_errors: Arc<AtomicBool>,
 }
 
 impl AudioRecorder {
@@ -46,6 +49,8 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            chunk_sender: Arc::new(Mutex::new(None)),
+            chunk_send_had_errors: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -60,6 +65,18 @@ impl AudioRecorder {
     {
         self.level_cb = Some(Arc::new(cb));
         self
+    }
+
+    pub fn set_chunk_sender(&self, sender: Option<mpsc::SyncSender<Vec<f32>>>) {
+        if sender.is_some() {
+            self.chunk_send_had_errors.store(false, Ordering::Relaxed);
+        }
+        let mut guard = self.chunk_sender.lock().unwrap();
+        *guard = sender;
+    }
+
+    pub fn take_chunk_send_had_errors(&self) -> bool {
+        self.chunk_send_had_errors.swap(false, Ordering::Relaxed)
     }
 
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
@@ -83,6 +100,8 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let chunk_sender = Arc::clone(&self.chunk_sender);
+        let chunk_send_had_errors = Arc::clone(&self.chunk_send_had_errors);
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -159,7 +178,16 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     // Keep the stream alive while we process samples.
-                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag);
+                    run_consumer(
+                        sample_rate,
+                        vad,
+                        sample_rx,
+                        cmd_rx,
+                        level_cb,
+                        chunk_sender,
+                        chunk_send_had_errors,
+                        stop_flag,
+                    );
                     drop(stream);
                 }
                 Err(error_message) => {
@@ -398,6 +426,8 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    chunk_sender: Arc<Mutex<Option<mpsc::SyncSender<Vec<f32>>>>>,
+    chunk_send_had_errors: Arc<AtomicBool>,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -406,7 +436,11 @@ fn run_consumer(
         Duration::from_millis(30),
     );
 
+    const CHUNK_SILENCE_THRESHOLD_FRAMES: usize = 3;
+
     let mut processed_samples = Vec::<f32>::new();
+    let mut chunk_start = 0;
+    let mut silence_frames = 0;
     let mut recording = false;
 
     // ---------- spectrum visualisation setup ---------------------------- //
@@ -425,19 +459,23 @@ fn run_consumer(
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
-    ) {
+    ) -> bool {
         if !recording {
-            return;
+            return false;
         }
 
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    out_buf.extend_from_slice(buf);
+                    true
+                }
+                VadFrame::Noise => false,
             }
         } else {
             out_buf.extend_from_slice(samples);
+            true
         }
     }
 
@@ -461,7 +499,21 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            let is_speech = handle_frame(frame, recording, &vad, &mut processed_samples);
+            if is_speech {
+                silence_frames = 0;
+            } else if processed_samples.len() > chunk_start {
+                silence_frames += 1;
+                if silence_frames >= CHUNK_SILENCE_THRESHOLD_FRAMES {
+                    chunk_start = send_pending_chunk_samples(
+                        &processed_samples,
+                        &chunk_sender,
+                        &chunk_send_had_errors,
+                        chunk_start,
+                    );
+                    silence_frames = 0;
+                }
+            }
         });
 
         // non-blocking check for a command
@@ -475,6 +527,8 @@ fn run_consumer(
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
                     }
+                    chunk_start = 0;
+                    silence_frames = 0;
                 }
                 Cmd::Stop(reply_tx) => {
                     recording = false;
@@ -488,7 +542,7 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    let _ = handle_frame(frame, true, &vad, &mut processed_samples);
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -500,8 +554,15 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        let _ = handle_frame(frame, true, &vad, &mut processed_samples);
                     });
+
+                    chunk_start = send_pending_chunk_samples(
+                        &processed_samples,
+                        &chunk_sender,
+                        &chunk_send_had_errors,
+                        chunk_start,
+                    );
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
 
@@ -516,4 +577,31 @@ fn run_consumer(
             }
         }
     }
+}
+
+fn send_pending_chunk_samples(
+    samples: &[f32],
+    chunk_sender: &Arc<Mutex<Option<mpsc::SyncSender<Vec<f32>>>>>,
+    chunk_send_had_errors: &Arc<AtomicBool>,
+    start_idx: usize,
+) -> usize {
+    if start_idx >= samples.len() {
+        return start_idx;
+    }
+    let pending_chunk = samples[start_idx..].to_vec();
+    if !pending_chunk.is_empty() {
+        if let Some(sender) = chunk_sender.lock().unwrap().clone() {
+            match sender.try_send(pending_chunk) {
+                Ok(()) => {}
+                Err(TrySendError::Full(_)) => {
+                    chunk_send_had_errors.store(true, Ordering::Relaxed);
+                    log::warn!("Chunk queue is full; this chunk will be dropped");
+                }
+                Err(TrySendError::Disconnected(_)) => {
+                    chunk_send_had_errors.store(true, Ordering::Relaxed);
+                }
+            }
+        }
+    }
+    samples.len()
 }

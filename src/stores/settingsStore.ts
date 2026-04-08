@@ -143,6 +143,8 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   lazy_stream_close: (value) =>
     commands.changeLazyStreamCloseSetting(value as boolean),
+  chunked_transcription_enabled: (value) =>
+    commands.changeChunkedTranscriptionSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
   whisper_accelerator: (value) =>
@@ -197,6 +199,8 @@ export const useSettingsStore = create<SettingsStore>()(
             clamshell_microphone: settings.clamshell_microphone ?? "Default",
             selected_output_device:
               settings.selected_output_device ?? "Default",
+            chunked_transcription_enabled:
+              settings.chunked_transcription_enabled ?? false,
           };
           set({ settings: normalizedSettings, isLoading: false });
         } else {

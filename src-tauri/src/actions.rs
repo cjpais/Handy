@@ -2,6 +2,7 @@
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error};
+use crate::chunk_transcription::ChunkSessionState;
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -394,6 +395,22 @@ impl ShortcutAction for TranscribeAction {
         // Load model in the background
         let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
+        let chunk_state = app.state::<Arc<ChunkSessionState>>();
+        let settings = get_settings(app);
+        let chunking_enabled = settings.chunked_transcription_enabled;
+        if chunking_enabled {
+            match chunk_state.start(Arc::clone(&tm)) {
+                Ok(sender) => rm.set_chunk_sender(Some(sender)),
+                Err(err) => {
+                    rm.set_chunk_sender(None);
+                    chunk_state.abort();
+                    warn!("Chunk transcription session disabled: {}", err);
+                }
+            }
+        } else {
+            rm.set_chunk_sender(None);
+            chunk_state.abort();
+        }
 
         // Load ASR model and VAD model in parallel
         tm.initiate_model_load();
@@ -409,7 +426,6 @@ impl ShortcutAction for TranscribeAction {
         show_recording_overlay(app);
 
         // Get the microphone mode to determine audio feedback timing
-        let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
@@ -461,6 +477,8 @@ impl ShortcutAction for TranscribeAction {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
         } else {
+            rm.set_chunk_sender(None);
+            chunk_state.abort();
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
             utils::hide_recording_overlay(app);
@@ -500,6 +518,7 @@ impl ShortcutAction for TranscribeAction {
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        let chunk_state = Arc::clone(&app.state::<Arc<ChunkSessionState>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
@@ -522,6 +541,20 @@ impl ShortcutAction for TranscribeAction {
 
             let stop_recording_time = Instant::now();
             if let Some(samples) = rm.stop_recording(&binding_id) {
+                rm.set_chunk_sender(None);
+                let chunk_result = chunk_state.stop_and_collect();
+                let chunk_send_had_errors = rm.take_chunk_send_had_errors();
+                let chunk_had_errors = chunk_result.had_errors || chunk_send_had_errors;
+                if chunk_had_errors {
+                    warn!(
+                        "Chunk session had errors; falling back to full transcription for final output"
+                    );
+                }
+                let chunk_text = if chunk_result.complete && !chunk_had_errors {
+                    merge_chunk_transcripts(&chunk_result.transcripts)
+                } else {
+                    String::new()
+                };
                 debug!(
                     "Recording stopped and samples retrieved in {:?}, sample count: {}",
                     stop_recording_time.elapsed(),
@@ -545,7 +578,11 @@ impl ShortcutAction for TranscribeAction {
 
                     // Transcribe concurrently with WAV save
                     let transcription_time = Instant::now();
-                    let transcription_result = tm.transcribe(samples);
+                    let transcription_result = if chunk_text.trim().is_empty() {
+                        tm.transcribe(samples)
+                    } else {
+                        Ok(chunk_text)
+                    };
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
@@ -647,6 +684,8 @@ impl ShortcutAction for TranscribeAction {
                     }
                 }
             } else {
+                rm.set_chunk_sender(None);
+                chunk_state.stop_and_collect();
                 debug!("No samples retrieved from recording stop");
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
@@ -719,3 +758,18 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+fn merge_chunk_transcripts(chunks: &[String]) -> String {
+    let mut output = String::new();
+    for chunk in chunks {
+        let trimmed = chunk.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if !output.is_empty() && !output.ends_with(|c: char| c.is_whitespace()) {
+            output.push(' ');
+        }
+        output.push_str(trimmed);
+    }
+    output
+}

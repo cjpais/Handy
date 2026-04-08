@@ -4,7 +4,7 @@ use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::Manager;
 
@@ -149,6 +149,7 @@ pub struct AudioRecordingManager {
     app_handle: tauri::AppHandle,
 
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
+    chunk_sender: Arc<Mutex<Option<mpsc::SyncSender<Vec<f32>>>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
@@ -172,6 +173,7 @@ impl AudioRecordingManager {
             app_handle: app.clone(),
 
             recorder: Arc::new(Mutex::new(None)),
+            chunk_sender: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
@@ -274,10 +276,10 @@ impl AudioRecordingManager {
                     tauri::path::BaseDirectory::Resource,
                 )
                 .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {}", e))?;
-            *recorder_opt = Some(create_audio_recorder(
-                vad_path.to_str().unwrap(),
-                &self.app_handle,
-            )?);
+            let recorder = create_audio_recorder(vad_path.to_str().unwrap(), &self.app_handle)?;
+            let chunk_sender = self.chunk_sender.lock().unwrap().clone();
+            recorder.set_chunk_sender(chunk_sender);
+            *recorder_opt = Some(recorder);
         }
         Ok(())
     }
@@ -417,6 +419,24 @@ impl AudioRecordingManager {
             self.start_microphone_stream()?;
         }
         Ok(())
+    }
+
+    pub fn set_chunk_sender(&self, sender: Option<mpsc::SyncSender<Vec<f32>>>) {
+        {
+            let mut stored_sender = self.chunk_sender.lock().unwrap();
+            *stored_sender = sender.clone();
+        }
+
+        if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+            rec.set_chunk_sender(sender);
+        }
+    }
+
+    pub fn take_chunk_send_had_errors(&self) -> bool {
+        if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+            return rec.take_chunk_send_had_errors();
+        }
+        false
     }
 
     pub fn stop_recording(&self, binding_id: &str) -> Option<Vec<f32>> {
