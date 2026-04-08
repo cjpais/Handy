@@ -223,6 +223,7 @@
     "models": {
       "title": "음성 인식 모델",
       "description": "음성 인식 모델을 선택하거나 추가 모델을 다운로드하세요. 모델마다 정확도와 속도가 다릅니다.",
+      "searchPlaceholder": "모델 검색...",
       "yourModels": "다운로드된 모델",
       "availableModels": "다운로드 가능",
       "downloaded": "다운로드됨",
@@ -569,6 +570,7 @@
     "update": "업데이트",
     "close": "닫기",
     "open": "열기",
+    "clear": "지우기",
     "default": "기본값",
     "enabled": "활성화됨",
     "disabled": "비활성화됨",

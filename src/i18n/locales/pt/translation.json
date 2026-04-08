@@ -200,6 +200,7 @@
     "models": {
       "title": "Modelos de Transcrição",
       "description": "Selecione um modelo de transcrição ou baixe modelos adicionais. Diferentes modelos oferecem diferentes níveis de precisão e velocidade.",
+      "searchPlaceholder": "Buscar modelos...",
       "downloaded": "Baixados",
       "available": "Disponíveis para Download",
       "deleteConfirm": "Tem certeza de que deseja excluir {{modelName}}? Você precisará baixá-lo novamente para usá-lo.",
@@ -569,6 +570,7 @@
     "update": "Atualizar",
     "close": "Fechar",
     "open": "Abrir",
+    "clear": "Limpar",
     "default": "Padrão",
     "enabled": "Habilitado",
     "disabled": "Desabilitado",
