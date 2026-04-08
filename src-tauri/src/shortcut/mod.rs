@@ -1150,11 +1150,8 @@ pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), Stri
 /// stays responsive — see also the startup pre-warm in `lib.rs`.
 #[tauri::command]
 #[specta::specta]
-pub async fn get_available_accelerators(
-) -> crate::managers::transcription::AvailableAccelerators {
-    tauri::async_runtime::spawn_blocking(
-        crate::managers::transcription::get_available_accelerators,
-    )
-    .await
-    .expect("get_available_accelerators panicked")
+pub async fn get_available_accelerators() -> crate::managers::transcription::AvailableAccelerators {
+    tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
+        .await
+        .expect("get_available_accelerators panicked")
 }
