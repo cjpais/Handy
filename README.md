@@ -65,7 +65,7 @@ Handy is built as a Tauri application combining:
 - **Backend**: Rust for system integration, audio processing, and ML inference
 - **Core Libraries**:
   - `whisper-rs`: Local speech recognition with Whisper models
-  - `transcription-rs`: CPU-optimized speech recognition with Parakeet models
+  - `transcribe-rs`: CPU-optimized speech recognition with Parakeet models
   - `cpal`: Cross-platform audio I/O
   - `vad-rs`: Voice Activity Detection
   - `rdev`: Global keyboard shortcuts and system events
