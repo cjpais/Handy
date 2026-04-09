@@ -319,6 +319,14 @@
           "copyToClipboard": "Sao chép vào Clipboard"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Chế độ khôi phục Clipboard",
+        "description": "Kiểm soát nội dung được khôi phục vào clipboard sau khi dán. Chỉ Văn bản khôi phục văn bản thuần túy (cài đặt mặc định an toàn). Tất cả Định dạng cũng cố gắng khôi phục hình ảnh, HTML và các tệp đã sao chép — hữu ích nếu bạn thường đọc chính tả khi có nội dung định dạng trong clipboard. Thử nghiệm: hành vi có thể khác nhau giữa các nền tảng.",
+        "options": {
+          "textOnly": "Chỉ Văn bản",
+          "allFormats": "Tất cả Định dạng (Thử nghiệm)"
+        }
+      },
       "autoSubmit": {
         "title": "Gửi tự động",
         "description": "Tự động gửi tổ hợp phím đã chọn sau khi chèn văn bản. Cmd+Enter áp dụng trên macOS, còn Windows/Linux dùng Super+Enter.",

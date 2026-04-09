@@ -22,9 +22,9 @@ use tauri_plugin_autostart::ManagerExt;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
-    self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
-    APPLE_INTELLIGENCE_PROVIDER_ID,
+    self, get_settings, AutoSubmitKey, ClipboardHandling, ClipboardRestoreMode,
+    KeyboardImplementation, LLMPrompt, OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme,
+    TypingTool, APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
 
@@ -761,6 +761,26 @@ pub fn change_clipboard_handling_setting(app: AppHandle, handling: String) -> Re
         }
     };
     settings.clipboard_handling = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_clipboard_restore_mode_setting(app: AppHandle, mode: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match mode.as_str() {
+        "text_only" => ClipboardRestoreMode::TextOnly,
+        "all_formats" => ClipboardRestoreMode::AllFormats,
+        other => {
+            warn!(
+                "Invalid clipboard restore mode '{}', defaulting to text_only",
+                other
+            );
+            ClipboardRestoreMode::TextOnly
+        }
+    };
+    settings.clipboard_restore_mode = parsed;
     settings::write_settings(&app, settings);
     Ok(())
 }

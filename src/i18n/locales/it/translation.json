@@ -319,6 +319,14 @@
           "copyToClipboard": "Copia negli Appunti"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Modalità Ripristino Appunti",
+        "description": "Controlla cosa viene ripristinato negli appunti dopo aver incollato. Solo Testo ripristina il testo semplice (l'impostazione predefinita sicura). Tutti i Formati tenta anche di ripristinare immagini, HTML e file copiati — utile se detti spesso mentre hai contenuti formattati negli appunti. Sperimentale: il comportamento può variare tra le piattaforme.",
+        "options": {
+          "textOnly": "Solo Testo",
+          "allFormats": "Tutti i Formati (Sperimentale)"
+        }
+      },
       "autoSubmit": {
         "title": "Invio automatico",
         "description": "Invia automaticamente la combinazione di tasti selezionata dopo l'inserimento del testo. Cmd+Enter si applica su macOS, mentre Windows/Linux usano Super+Enter.",

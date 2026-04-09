@@ -319,6 +319,14 @@
           "copyToClipboard": "Copiar al Portapapeles"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Modo de Restauración del Portapapeles",
+        "description": "Controla qué se restaura en el portapapeles después de pegar. Solo Texto restaura texto sin formato (la opción segura predeterminada). Todos los Formatos también intenta restaurar imágenes, HTML y archivos copiados — útil si dictas con frecuencia mientras tienes contenido enriquecido en el portapapeles. Experimental: el comportamiento puede variar entre plataformas.",
+        "options": {
+          "textOnly": "Solo Texto",
+          "allFormats": "Todos los Formatos (Experimental)"
+        }
+      },
       "autoSubmit": {
         "title": "Envío automático",
         "description": "Envía automáticamente la combinación de teclas seleccionada después de insertar el texto. Cmd+Enter se aplica en macOS, mientras que Windows/Linux usan Super+Enter.",

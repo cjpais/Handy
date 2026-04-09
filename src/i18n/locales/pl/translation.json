@@ -319,6 +319,14 @@
           "copyToClipboard": "Kopiuj do schowka"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Tryb przywracania schowka",
+        "description": "Określa, co jest przywracane do schowka po wklejeniu. Tylko tekst przywraca zwykły tekst (bezpieczne ustawienie domyślne). Wszystkie formaty próbuje również przywrócić obrazy, HTML i skopiowane pliki — przydatne, jeśli często dyktujesz, gdy w schowku znajduje się sformatowana zawartość. Eksperymentalne: zachowanie może się różnić między platformami.",
+        "options": {
+          "textOnly": "Tylko tekst",
+          "allFormats": "Wszystkie formaty (eksperymentalne)"
+        }
+      },
       "autoSubmit": {
         "title": "Automatyczne wysyłanie",
         "description": "Automatycznie wysyła wybraną kombinację klawiszy po wstawieniu tekstu. Cmd+Enter dotyczy macOS, natomiast Windows/Linux używają Super+Enter.",

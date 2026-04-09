@@ -319,6 +319,14 @@
           "copyToClipboard": "複製到剪貼簿"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "剪貼簿還原模式",
+        "description": "控制貼上後還原到剪貼簿的內容。「僅文字」會還原純文字（安全的預設設定）。「所有格式」還會嘗試還原圖片、HTML 和複製的檔案——如果您經常在剪貼簿中有豐富內容時聽寫，這會很有用。實驗性：行為可能因平台而異。",
+        "options": {
+          "textOnly": "僅文字",
+          "allFormats": "所有格式（實驗性）"
+        }
+      },
       "autoSubmit": {
         "title": "自動送出",
         "description": "插入文字後自動發送指定的按鍵組合。macOS 為 Cmd+Enter，Windows/Linux 為 Super+Enter",

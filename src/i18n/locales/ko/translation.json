@@ -319,6 +319,14 @@
           "copyToClipboard": "클립보드에 복사"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "클립보드 복원 모드",
+        "description": "붙여넣기 후 클립보드에 복원되는 내용을 제어합니다. 텍스트만은 일반 텍스트를 복원합니다(안전한 기본값). 모든 형식은 이미지, HTML 및 복사된 파일도 복원하려고 시도합니다 — 클립보드에 서식 있는 콘텐츠가 있는 상태에서 자주 받아쓰기를 한다면 유용합니다. 실험적: 플랫폼에 따라 동작이 달라질 수 있습니다.",
+        "options": {
+          "textOnly": "텍스트만",
+          "allFormats": "모든 형식 (실험적)"
+        }
+      },
       "autoSubmit": {
         "title": "자동 제출",
         "description": "텍스트 삽입 후 선택한 키 조합을 자동으로 전송합니다. macOS에서는 Cmd+Enter가, Windows/Linux에서는 Super+Enter가 적용됩니다.",

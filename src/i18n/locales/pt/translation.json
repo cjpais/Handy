@@ -319,6 +319,14 @@
           "copyToClipboard": "Copiar para Área de Transferência"
         }
       },
+      "clipboardRestoreMode": {
+        "title": "Modo de Restauração da Área de Transferência",
+        "description": "Controla o que é restaurado na área de transferência após colar. Somente Texto restaura texto simples (a opção segura padrão). Todos os Formatos também tenta restaurar imagens, HTML e arquivos copiados — útil se você dita com frequência enquanto há conteúdo formatado na área de transferência. Experimental: o comportamento pode variar entre plataformas.",
+        "options": {
+          "textOnly": "Somente Texto",
+          "allFormats": "Todos os Formatos (Experimental)"
+        }
+      },
       "autoSubmit": {
         "title": "Envio automático",
         "description": "Envia automaticamente a combinação de teclas selecionada após a inserção do texto. Cmd+Enter aplica-se no macOS, enquanto Windows/Linux usam Super+Enter.",
