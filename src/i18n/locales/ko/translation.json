@@ -218,6 +218,10 @@
       "volume": {
         "title": "볼륨",
         "description": "오디오 피드백 사운드의 볼륨 조절"
+      },
+      "recordSystemAudio": {
+        "title": "시스템 오디오 녹음",
+        "description": "마이크와 혼합하여 컴퓨터에서 재생 중인 오디오도 캡처합니다 (Windows 전용)"
       }
     },
     "models": {

@@ -236,6 +236,10 @@
       "volume": {
         "title": "Ses Seviyesi",
         "description": "Sesli geri bildirimlerin ses seviyesini ayarlayın"
+      },
+      "recordSystemAudio": {
+        "title": "Sistem sesini kaydet",
+        "description": "Bilgisayarınızda çalan sesi de mikrofonunuzla karıştırarak kaydedin (yalnızca Windows)"
       }
     },
     "advanced": {

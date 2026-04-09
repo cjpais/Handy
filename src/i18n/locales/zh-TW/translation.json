@@ -236,6 +236,10 @@
       "volume": {
         "title": "音量",
         "description": "調整聲音回饋的音量"
+      },
+      "recordSystemAudio": {
+        "title": "錄製系統音訊",
+        "description": "同時擷取電腦播放的音訊，與麥克風混合（僅限 Windows）"
       }
     },
     "advanced": {

@@ -411,7 +411,11 @@ impl ShortcutAction for TranscribeAction {
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
-        debug!("Microphone mode - always_on: {}", is_always_on);
+        let is_loopback = rm.is_loopback_mode();
+        debug!(
+            "Microphone mode - always_on: {}, loopback: {}",
+            is_always_on, is_loopback
+        );
 
         let mut recording_error: Option<String> = None;
         if is_always_on {
@@ -419,11 +423,14 @@ impl ShortcutAction for TranscribeAction {
             debug!("Always-on mode: Playing audio feedback immediately");
             let rm_clone = Arc::clone(&rm);
             let app_clone = app.clone();
+            let loopback = is_loopback;
             // The blocking helper exits immediately if audio feedback is disabled,
             // so we can always reuse this thread to ensure mute happens right after playback.
             std::thread::spawn(move || {
                 play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                rm_clone.apply_mute();
+                if !loopback {
+                    rm_clone.apply_mute();
+                }
             });
 
             if let Err(e) = rm.try_start_recording(&binding_id) {
@@ -441,13 +448,14 @@ impl ShortcutAction for TranscribeAction {
                     // Small delay to ensure microphone stream is active
                     let app_clone = app.clone();
                     let rm_clone = Arc::clone(&rm);
+                    let loopback = is_loopback;
                     std::thread::spawn(move || {
                         std::thread::sleep(std::time::Duration::from_millis(100));
                         debug!("Handling delayed audio feedback/mute sequence");
-                        // Helper handles disabled audio feedback by returning early, so we reuse it
-                        // to keep mute sequencing consistent in every mode.
                         play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                        rm_clone.apply_mute();
+                        if !loopback {
+                            rm_clone.apply_mute();
+                        }
                     });
                 }
                 Err(e) => {
@@ -504,9 +512,12 @@ impl ShortcutAction for TranscribeAction {
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
 
-        // Unmute before playing audio feedback so the stop sound is audible
-        rm.remove_mute();
-
+        let is_loopback = rm.is_loopback_mode();
+        // Skip unmute in loopback mode — mute was never applied
+        if !is_loopback {
+            // Unmute before playing audio feedback so the stop sound is audible
+            rm.remove_mute();
+        }
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
 

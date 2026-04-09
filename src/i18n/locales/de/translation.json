@@ -236,6 +236,10 @@
       "volume": {
         "title": "Lautstärke",
         "description": "Lautstärke der Audio-Feedback-Töne anpassen"
+      },
+      "recordSystemAudio": {
+        "title": "Systemaudio aufnehmen",
+        "description": "Auch die Audiowiedergabe Ihres Computers aufnehmen, gemischt mit Ihrem Mikrofon (nur Windows)"
       }
     },
     "advanced": {

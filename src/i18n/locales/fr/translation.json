@@ -236,6 +236,10 @@
       "volume": {
         "title": "Volume",
         "description": "Ajuster le volume du signal sonore"
+      },
+      "recordSystemAudio": {
+        "title": "Enregistrer l'audio système",
+        "description": "Capturer également l'audio de votre ordinateur, mixé avec votre microphone (Windows uniquement)"
       }
     },
     "advanced": {

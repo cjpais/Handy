@@ -10,6 +10,7 @@ import { AudioFeedback } from "../AudioFeedback";
 import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
+import { RecordSystemAudio } from "../RecordSystemAudio";
 import { ModelSettingsCard } from "./ModelSettingsCard";
 
 export const GeneralSettings: React.FC = () => {
@@ -17,6 +18,9 @@ export const GeneralSettings: React.FC = () => {
   const { audioFeedbackEnabled, getSetting } = useSettings();
   const pushToTalk = getSetting("push_to_talk");
   const isLinux = type() === "linux";
+  const isWindows = type() === "windows";
+  const recordSystemAudio =
+    isWindows && getSetting("record_system_audio") === true;
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.general.title")}>
@@ -30,14 +34,21 @@ export const GeneralSettings: React.FC = () => {
       <ModelSettingsCard />
       <SettingsGroup title={t("settings.sound.title")}>
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
-        <MuteWhileRecording descriptionMode="tooltip" grouped={true} />
+        <MuteWhileRecording
+          descriptionMode="tooltip"
+          grouped={true}
+          disabled={recordSystemAudio}
+        />
         <AudioFeedback descriptionMode="tooltip" grouped={true} />
         <OutputDeviceSelector
           descriptionMode="tooltip"
           grouped={true}
-          disabled={!audioFeedbackEnabled}
+          disabled={!audioFeedbackEnabled && !recordSystemAudio}
         />
         <VolumeSlider disabled={!audioFeedbackEnabled} />
+        {isWindows && (
+          <RecordSystemAudio descriptionMode="tooltip" grouped={true} />
+        )}
       </SettingsGroup>
     </div>
   );

@@ -1,4 +1,6 @@
-use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
+use crate::audio_toolkit::{
+    list_input_devices, list_output_devices, vad::SmoothedVad, AudioRecorder, SileroVad,
+};
 use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
@@ -215,6 +217,25 @@ impl AudioRecordingManager {
         }
     }
 
+    fn get_effective_output_device(&self, settings: &AppSettings) -> Option<cpal::Device> {
+        let device_name = settings.selected_output_device.as_ref()?;
+
+        match list_output_devices() {
+            Ok(devices) => devices
+                .into_iter()
+                .find(|d| d.name == *device_name)
+                .map(|d| d.device),
+            Err(e) => {
+                debug!("Failed to list output devices, using default: {}", e);
+                None
+            }
+        }
+    }
+
+    pub fn is_loopback_mode(&self) -> bool {
+        cfg!(target_os = "windows") && get_settings(&self.app_handle).record_system_audio
+    }
+
     fn schedule_lazy_close(&self) {
         let gen = self.close_generation.fetch_add(1, Ordering::SeqCst) + 1;
         let app = self.app_handle.clone();
@@ -311,18 +332,40 @@ impl AudioRecordingManager {
             }
         }
 
+        let loopback_device = if cfg!(target_os = "windows") && settings.record_system_audio {
+            let dev = self.get_effective_output_device(&settings);
+            if dev.is_none() {
+                let has_any = list_output_devices()
+                    .map(|d| !d.is_empty())
+                    .unwrap_or(false);
+                if !has_any {
+                    return Err(anyhow::anyhow!("No output device found for loopback"));
+                }
+            }
+            dev
+        } else {
+            None
+        };
+
         // Ensure VAD is loaded if it wasn't for whatever reason
         self.preload_vad()?;
 
+        let has_loopback = loopback_device.is_some();
+
         let mut recorder_opt = self.recorder.lock().unwrap();
         if let Some(rec) = recorder_opt.as_mut() {
-            rec.open(selected_device)
+            rec.open(selected_device, loopback_device)
                 .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
         }
 
         *open_flag = true;
         info!(
-            "Microphone stream initialized in {:?}",
+            "{} stream initialized in {:?}",
+            if has_loopback {
+                "Mic+Loopback"
+            } else {
+                "Microphone"
+            },
             start_time.elapsed()
         );
         Ok(())
