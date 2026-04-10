@@ -33,6 +33,8 @@ use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
 use libc;
 #[cfg(unix)]
+use signal_hook::consts::SIGUSR2;
+#[cfg(unix)]
 use signal_hook::iterator::Signals;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
@@ -170,26 +172,23 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // after permissions are confirmed (on macOS) or after onboarding completes.
     // This matches the pattern used for Enigo initialization.
 
-    // Use POSIX real-time signals instead of SIGUSR1/SIGUSR2.
-    // WebKitGTK (embedded by Tauri) uses SIGUSR1 internally for its JavaScript
-    // engine's GC thread-suspension ("stop the world") via pthread_kill. Because
-    // signal-hook's self-pipe is inherited by WebKit child processes, those GC
-    // signals leak into Handy and trigger ghost transcription at predictable
-    // intervals (~2 min and ~7 min after startup). SIGRTMIN+N signals are not
-    // used by WebKit/JSC, so this eliminates the conflict.
+    // SIGUSR1 is NOT used here: WebKitGTK (embedded by Tauri) repurposes SIGUSR1
+    // for JavaScriptCore's GC "stop the world" thread suspension via pthread_kill.
+    // signal-hook's self-pipe is inherited by WebKit child processes on fork, so
+    // those intra-process GC signals leak back into Handy and trigger ghost
+    // transcription at predictable intervals (~2 min and ~7 min after startup).
+    // SIGRTMIN+1 is not used by WebKit/JSC and avoids the conflict.
     //
-    // Migration: if you used `pkill -USR1 handy` or `pkill -USR2 handy` in a
-    // custom shortcut, switch to `handy --toggle-post-process` or
-    // `handy --toggle-transcription` instead (D-Bus, no signals needed).
+    // SIGUSR2 is kept for backward compatibility with existing user shortcuts.
+    // Migration for SIGUSR1 users: switch `pkill -USR1 handy` to
+    // `handy --toggle-post-process` (D-Bus, no signal needed).
     #[cfg(unix)]
     let sig_post_process = libc::SIGRTMIN() + 1;
     #[cfg(unix)]
-    let sig_transcribe = libc::SIGRTMIN() + 2;
-    #[cfg(unix)]
-    let signals = Signals::new(&[sig_post_process, sig_transcribe]).unwrap();
+    let signals = Signals::new(&[sig_post_process, SIGUSR2]).unwrap();
     // Set up signal handlers for toggling transcription
     #[cfg(unix)]
-    signal_handle::setup_signal_handler(app_handle.clone(), signals, sig_transcribe, sig_post_process);
+    signal_handle::setup_signal_handler(app_handle.clone(), signals, sig_post_process);
 
     // Apply macOS Accessory policy if starting hidden and tray is available.
     // If the tray icon is disabled, keep the dock icon so the user can reopen.
