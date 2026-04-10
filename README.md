@@ -161,6 +161,7 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 
 - The recording overlay is disabled by default on Linux (`Overlay Position: None`) because certain compositors treat it as the active window. When the overlay is visible it can steal focus, which prevents Handy from pasting back into the application that triggered transcription. If you enable the overlay anyway, be aware that clipboard-based pasting might fail or end up in the wrong window.
 - If you are having trouble with the app, running with the environment variable `WEBKIT_DISABLE_DMABUF_RENDERER=1` may help
+- If Handy fails to start reliably on Linux, see [Troubleshooting → Linux Startup Crashes or Instability](#linux-startup-crashes-or-instability).
 - **Global keyboard shortcuts (Wayland):** On Wayland, system-level shortcuts must be configured through your desktop environment or window manager. Use the [CLI flags](#cli-parameters) as the command for your custom shortcut.
 
   **GNOME:**
@@ -409,6 +410,48 @@ Handy can auto-discover custom Whisper GGML models placed in the `models` direct
 - Community models are user-provided and may not receive troubleshooting assistance
 - The model must be a valid Whisper GGML format (`.bin` file)
 - Model name is derived from the filename (e.g., `my-custom-model.bin` → "My Custom Model")
+
+### Linux Startup Crashes or Instability
+
+If Handy fails to start reliably on Linux — for example, it crashes shortly after launch, never shows its window, or reports a Wayland protocol error — try the steps below in order.
+
+**1. Install (or reinstall) `gtk-layer-shell`**
+
+Handy uses `gtk-layer-shell` for its recording overlay and links against it at runtime. A missing or broken installation is the most common cause of startup failures and can manifest as a crash or a hang well before any window is shown. Make sure the runtime package is installed for your distro:
+
+| Distro        | Package to install    | Example command                        |
+| ------------- | --------------------- | -------------------------------------- |
+| Ubuntu/Debian | `libgtk-layer-shell0` | `sudo apt install libgtk-layer-shell0` |
+| Fedora/RHEL   | `gtk-layer-shell`     | `sudo dnf install gtk-layer-shell`     |
+| Arch Linux    | `gtk-layer-shell`     | `sudo pacman -S gtk-layer-shell`       |
+
+If it is already installed and you still see startup problems, try reinstalling it (e.g. `sudo pacman -S gtk-layer-shell` again) in case the library files were corrupted by a partial upgrade.
+
+**2. Disable the GTK layer shell overlay (`HANDY_NO_GTK_LAYER_SHELL`)**
+
+If installing the library does not help, you can skip `gtk-layer-shell` initialization entirely as a workaround. On some compositors (notably KDE Plasma under Wayland) it has been reported to interact poorly with the recording overlay. With this variable set, the overlay falls back to a regular always-on-top window:
+
+```bash
+HANDY_NO_GTK_LAYER_SHELL=1 handy
+```
+
+**3. Disable WebKit DMA-BUF renderer (`WEBKIT_DISABLE_DMABUF_RENDERER`)**
+
+On some GPU/driver combinations the WebKitGTK DMA-BUF renderer can cause the window to fail to render or to crash. Try:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 handy
+```
+
+**Making a workaround permanent**
+
+Once you've found a flag that helps, export it from your shell profile (`~/.bashrc`, `~/.zshenv`, …) or from the desktop autostart entry that launches Handy. If you launch Handy from a `.desktop` file, you can prefix the `Exec=` line, e.g.:
+
+```ini
+Exec=env HANDY_NO_GTK_LAYER_SHELL=1 handy
+```
+
+If a workaround helps you, please [open an issue](https://github.com/cjpais/Handy/issues) describing your distro, desktop environment, and session type — that information helps us narrow down the underlying bug.
 
 ### How to Contribute
 
