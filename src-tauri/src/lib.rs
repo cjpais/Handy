@@ -31,7 +31,7 @@ use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
-use signal_hook::consts::{SIGUSR1, SIGUSR2};
+use libc;
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -170,11 +170,26 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // after permissions are confirmed (on macOS) or after onboarding completes.
     // This matches the pattern used for Enigo initialization.
 
+    // Use POSIX real-time signals instead of SIGUSR1/SIGUSR2.
+    // WebKitGTK (embedded by Tauri) uses SIGUSR1 internally for its JavaScript
+    // engine's GC thread-suspension ("stop the world") via pthread_kill. Because
+    // signal-hook's self-pipe is inherited by WebKit child processes, those GC
+    // signals leak into Handy and trigger ghost transcription at predictable
+    // intervals (~2 min and ~7 min after startup). SIGRTMIN+N signals are not
+    // used by WebKit/JSC, so this eliminates the conflict.
+    //
+    // Migration: if you used `pkill -USR1 handy` or `pkill -USR2 handy` in a
+    // custom shortcut, switch to `handy --toggle-post-process` or
+    // `handy --toggle-transcription` instead (D-Bus, no signals needed).
     #[cfg(unix)]
-    let signals = Signals::new(&[SIGUSR1, SIGUSR2]).unwrap();
+    let sig_post_process = libc::SIGRTMIN() + 1;
+    #[cfg(unix)]
+    let sig_transcribe = libc::SIGRTMIN() + 2;
+    #[cfg(unix)]
+    let signals = Signals::new(&[sig_post_process, sig_transcribe]).unwrap();
     // Set up signal handlers for toggling transcription
     #[cfg(unix)]
-    signal_handle::setup_signal_handler(app_handle.clone(), signals);
+    signal_handle::setup_signal_handler(app_handle.clone(), signals, sig_transcribe, sig_post_process);
 
     // Apply macOS Accessory policy if starting hidden and tray is available.
     // If the tray icon is disabled, keep the dock icon so the user can reopen.
