@@ -66,13 +66,27 @@ fn update_gtk_layer_shell_anchors(overlay_window: &tauri::webview::WebviewWindow
     });
 }
 
+/// Returns true when the environment variable is set to a truthy value
+/// (e.g. "1", "true", "yes", "on").
+/// "0", "false", "no", "off" and empty string are treated as falsy (case-insensitive).
+/// Returns false when the variable is not set.
+#[cfg(target_os = "linux")]
+fn env_flag_enabled(name: &str) -> bool {
+    match env::var(name) {
+        Ok(v) => !matches!(
+            v.trim().to_ascii_lowercase().as_str(),
+            "" | "0" | "false" | "no" | "off"
+        ),
+        Err(_) => false,
+    }
+}
+
 /// Initializes GTK layer shell for Linux overlay window
 /// Returns true if layer shell was successfully initialized, false otherwise
 #[cfg(target_os = "linux")]
 fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool {
-
-    if env::var("HANDY_NO_GTK_LAYER_SHELL").is_ok() {
-        debug!("Skipping GTK layer shell init (HANDY_NO_GTK_LAYER_SHELL is set)");
+    if env_flag_enabled("HANDY_NO_GTK_LAYER_SHELL") {
+        debug!("Skipping GTK layer shell init (HANDY_NO_GTK_LAYER_SHELL is enabled)");
         return false;
     }
 
