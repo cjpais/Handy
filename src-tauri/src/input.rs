@@ -1,5 +1,7 @@
 use enigo::{Enigo, Key, Keyboard, Mouse, Settings};
+use log::debug;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
 
 /// Wrapper for Enigo to store in Tauri's managed state.
@@ -124,11 +126,60 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
 
 /// Types text by sending one key event per character.
 /// This is slower than `text()` but behaves more like real typing.
-pub fn type_text_key_events(enigo: &mut Enigo, text: &str) -> Result<(), String> {
-    for character in text.chars() {
+pub fn type_text_key_events(
+    enigo: &mut Enigo,
+    text: &str,
+    character_delay_ms: u64,
+    trace_characters: bool,
+) -> Result<(), String> {
+    let characters: Vec<char> = text.chars().collect();
+
+    if trace_characters {
+        debug!(
+            "Typed input starting: {} characters, delay={}ms",
+            characters.len(),
+            character_delay_ms
+        );
+    }
+
+    let started_at = Instant::now();
+
+    for (index, character) in characters.iter().copied().enumerate() {
+        let character_started_at = Instant::now();
+
+        if trace_characters {
+            debug!(
+                "Typed input char {}/{}: {:?} (U+{:04X})",
+                index + 1,
+                characters.len(),
+                character,
+                character as u32
+            );
+        }
+
         enigo
             .key(Key::Unicode(character), enigo::Direction::Click)
             .map_err(|e| format!("Failed to type character {:?}: {}", character, e))?;
+
+        if trace_characters {
+            debug!(
+                "Typed input char {}/{} sent in {}ms",
+                index + 1,
+                characters.len(),
+                character_started_at.elapsed().as_millis()
+            );
+        }
+
+        if character_delay_ms > 0 && index + 1 < characters.len() {
+            std::thread::sleep(Duration::from_millis(character_delay_ms));
+        }
+    }
+
+    if trace_characters {
+        debug!(
+            "Typed input finished in {}ms",
+            started_at.elapsed().as_millis()
+        );
     }
 
     Ok(())

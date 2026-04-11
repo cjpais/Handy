@@ -293,12 +293,13 @@
       },
       "pasteMethod": {
         "title": "Klistra-in-metod",
-        "description": "Välj hur text infogas. Direkt: simulerar skrivande via systeminmatning. Ingen: hoppar över klistra in, uppdaterar endast historik/urklipp.",
+        "description": "Välj hur text infogas. Direkt använder snabb systeminmatning. Skriv skickar tangenttryckningar ett tecken i taget. Ingen hoppar över infogning och uppdaterar bara historik eller urklipp.",
         "options": {
           "clipboard": "Urklipp ({{modifier}}+V)",
           "clipboardCtrlShiftV": "Urklipp (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Urklipp (Shift+Insert)",
           "direct": "Direkt",
+          "type": "Skriv",
           "none": "Ingen",
           "externalScript": "Externt skript"
         },
@@ -306,10 +307,14 @@
       },
       "typingTool": {
         "title": "Skrivverktyg",
-        "description": "Välj vilket Linux-skrivverktyg som ska användas för metoden Direkt klistra in. Auto kommer automatiskt att upptäcka och använda det bästa tillgängliga verktyget för ditt system.",
+        "description": "Välj vilket Linux-verktyg som ska användas när Handy infogar text via simulerat skrivande. Auto upptäcker och använder det bästa tillgängliga verktyget för ditt system.",
         "options": {
           "auto": "Auto (Rekommenderas)"
         }
+      },
+      "typedInputDelay": {
+        "title": "Fördröjning mellan tecken",
+        "description": "Fördröjning mellan tecken för klistra-in-metoden Skriv. Öka värdet om fjärr- eller värdapplikationer tappar, upprepar eller blandar om text. När Debug-loggning är aktiverad loggar Handy varje skickat tecken."
       },
       "clipboardHandling": {
         "title": "Hantering av urklipp",

@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{debug, info, Level};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -544,17 +544,32 @@ fn paste_direct(
 fn type_text(
     enigo: &mut Enigo,
     text: &str,
+    character_delay_ms: u64,
+    trace_characters: bool,
     #[cfg(target_os = "linux")] typing_tool: TypingTool,
 ) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
-        if try_direct_typing_linux(text, typing_tool)? {
-            return Ok(());
+        if character_delay_ms == 0 {
+            if try_direct_typing_linux(text, typing_tool)? {
+                if trace_characters {
+                    debug!(
+                        "Typed input used a Linux typing tool; per-character debug traces are unavailable for this path"
+                    );
+                }
+                return Ok(());
+            }
+        } else {
+            debug!(
+                "Bypassing Linux typing tools because typed input delay is set to {}ms",
+                character_delay_ms
+            );
         }
+
         info!("Falling back to enigo key events for typed text input");
     }
 
-    input::type_text_key_events(enigo, text)
+    input::type_text_key_events(enigo, text, character_delay_ms, trace_characters)
 }
 
 fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
@@ -608,6 +623,8 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
     let paste_delay_ms = settings.paste_delay_ms;
+    let typed_input_delay_ms = settings.typed_input_delay_ms;
+    let trace_typed_input = log::log_enabled!(Level::Debug);
 
     // Append trailing space if setting is enabled
     let text = if settings.append_trailing_space {
@@ -644,9 +661,18 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             )?;
         }
         PasteMethod::Type => {
+            if trace_typed_input {
+                debug!(
+                    "Type paste method selected: {} characters, character_delay={}ms",
+                    text.chars().count(),
+                    typed_input_delay_ms
+                );
+            }
             type_text(
                 &mut enigo,
                 &text,
+                typed_input_delay_ms,
+                trace_typed_input,
                 #[cfg(target_os = "linux")]
                 settings.typing_tool,
             )?;

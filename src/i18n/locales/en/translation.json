@@ -312,6 +312,10 @@
           "auto": "Auto (Recommended)"
         }
       },
+      "typedInputDelay": {
+        "title": "Typed Input Delay",
+        "description": "Delay between characters for the Type paste method. Increase this if remote or hosted apps drop, repeat, or reorder typed text. When Debug logging is enabled, Handy logs each typed character event."
+      },
       "clipboardHandling": {
         "title": "Clipboard Handling",
         "description": "Don't Modify Clipboard preserves your current clipboard contents after transcription. Copy to Clipboard leaves the transcription result in your clipboard after pasting.",
