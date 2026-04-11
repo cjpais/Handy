@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enigo Universal Test</title>
+</head>
+
+<body>
+    <h1>Conducted tests</h1>
+    <!-- Checkbox to disable WebSocket connection -->
+    <input type="checkbox" id="disableWS" name="disableWS" />
+    <label for="disableWS"> Disable WebSocket Connection</label><br>
+    <input type="checkbox" id="KeyDown" name="KeyDown">
+    <label for="KeyDown"> KeyDown</label><br>
+    <input type="checkbox" id="KeyUp" name="KeyUp">
+    <label for="KeyUp"> KeyUp</label><br>
+    <input type="checkbox" id="MouseDown" name="MouseDown">
+    <label for="MouseDown"> MouseDown</label><br>
+    <input type="checkbox" id="MouseUp" name="MouseUp">
+    <label for="MouseUp"> MouseUp</label><br>
+    <input type="checkbox" id="MouseMove" name="MouseMove">
+    <label for="MouseMove"> MouseMove</label><br>
+    <input type="checkbox" id="MouseScroll" name="MouseScroll">
+    <label for="MouseScroll"> MouseScroll</label><br>
+    <textarea id="text" name="text" rows="20" cols="50"></textarea><br>
+
+    <script>
+        let ignoreKeyEvents = false; // Flag to ignore key events
+        let ws; // WebSocket instance
+        let messageQueue = []; // Queue to store pending messages
+        let reconnectInterval = 1000; // Initial reconnect interval (1 second)
+
+        // Focus on the textarea when the page loads and initialize WebSocket if not disabled
+        window.onload = () => {
+            const textArea = document.getElementById('text');
+            textArea.focus();
+            // Only initialize the WebSocket if the disable checkbox is not checked
+            if (!document.getElementById('disableWS').checked) {
+                initializeWebSocket();
+            }
+        };
+
+        // Listen for changes on the disable checkbox
+        document.getElementById('disableWS').addEventListener('change', function () {
+            if (!this.checked) {
+                // If unchecked and there is no active WebSocket, attempt reconnect
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    console.log('WebSocket re-enabled via checkbox. Attempting to reconnect...');
+                    initializeWebSocket();
+                }
+            }
+        });
+
+        // Prevent other elements from gaining focus
+        document.addEventListener('focusin', (event) => {
+            const textArea = document.getElementById('text');
+            if (event.target !== textArea) {
+                event.preventDefault();
+                textArea.focus();
+            }
+        });
+
+        // Initialize or reconnect WebSocket
+        function initializeWebSocket() {
+            console.log('Attempting to connect WebSocket...');
+            ws = new WebSocket('ws://localhost:26541');
+
+            // Handle WebSocket open
+            ws.addEventListener('open', () => {
+                console.log('WebSocket connected');
+                flushMessageQueue(); // Send all pending messages
+            });
+
+            // Handle WebSocket close and attempt reconnection
+            ws.addEventListener('close', () => {
+                console.warn('WebSocket disconnected. Retrying...');
+                scheduleReconnect();
+            });
+
+            // Handle WebSocket errors
+            ws.addEventListener('error', (error) => {
+                console.error('WebSocket error:', error);
+                scheduleReconnect();
+            });
+
+            // Handle incoming WebSocket messages
+            ws.addEventListener('message', (event) => {
+                console.log('Received message:', event.data);
+
+                // Server asks to clear the text and focus on it
+                if (event.data === 'ClearText') {
+                    document.getElementById('text').value = '';
+                    document.getElementById('text').focus();
+                    // Set flag to ignore key events
+                    ignoreKeyEvents = true;
+                    sendMessage(`ReadyForText`);
+                }
+
+                // Server asks for the form's content
+                if (event.data === 'GetText') {
+                    const text = document.getElementById('text').value;
+
+                    // Send the form's content via WebSocket
+                    sendMessage(`Text(\"${text}\")`);
+
+                    // Reset flag after sending text, allowing key events again
+                    ignoreKeyEvents = false;
+                }
+            });
+        }
+
+        // Schedule a reconnect every second if WebSocket is not disabled
+        function scheduleReconnect() {
+            if (document.getElementById('disableWS').checked) {
+                console.log('WebSocket connection is disabled by checkbox.');
+                return;
+            }
+            setTimeout(() => {
+                // Only try to reconnect if still not connected
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    initializeWebSocket();
+                }
+            }, 1000); // Retry every 1000 milliseconds (1 second)
+        }
+
+        // Queue a message or send it directly if WebSocket is connected
+        function sendMessage(message) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+            } else {
+                messageQueue.push(message); // Store message in the queue
+            }
+        }
+
+        // Flush the message queue
+        function flushMessageQueue() {
+            while (messageQueue.length > 0) {
+                const message = messageQueue.shift();
+                ws.send(message);
+            }
+        }
+
+        // Helper function to handle events
+        const handleEvent = (eventType, data = '') => {
+            const message = `${eventType}${data}`;
+            console.log(message);
+            document.getElementById(eventType).checked = true;
+            sendMessage(message);
+        };
+
+        // document.addEventListener('open', (event) => handleEvent('Open', event));
+        // document.addEventListener('close', (event) => handleEvent('Close', event));
+
+        // Handle keydown events but ignore if flag is set
+        document.addEventListener('keydown', (event) => {
+            if (!ignoreKeyEvents) {
+
+                let debug_data = `key: ${event.key}, which: ${event.which}, charCode: ${event.charCode}, shiftKey: ${event.shiftKey}, ctrlKey: ${event.ctrlKey}, altKey: ${event.altKey}, metaKey: ${event.metaKey}, repeat: ${event.repeat}, isComposing: ${event.isComposing}, location: ${event.location}, bubbles: ${event.bubbles}, cancelable: ${event.cancelable}, defaultPrevented: ${event.defaultPrevented}, composed: ${event.composed}`;
+
+                handleEvent('KeyDown', `(\"${event.code}\", \"${debug_data}\")`);
+            }
+        });
+
+        // Handle keyup events but ignore if flag is set
+        document.addEventListener('keyup', (event) => {
+            if (!ignoreKeyEvents) {
+
+                let debug_data = `key: ${event.key}, which: ${event.which}, charCode: ${event.charCode}, shiftKey: ${event.shiftKey}, ctrlKey: ${event.ctrlKey}, altKey: ${event.altKey}, metaKey: ${event.metaKey}, repeat: ${event.repeat}, isComposing: ${event.isComposing}, location: ${event.location}, bubbles: ${event.bubbles}, cancelable: ${event.cancelable}, defaultPrevented: ${event.defaultPrevented}, composed: ${event.composed}`;
+
+                handleEvent('KeyUp', `(\"${event.code}\", \"${debug_data}\")`);
+            }
+        });
+
+        document.addEventListener('mousedown', (event) => handleEvent('MouseDown', `(${event.button})`));
+        document.addEventListener('mouseup', (event) => handleEvent('MouseUp', `(${event.button})`));
+        document.addEventListener('mousemove', (event) => handleEvent('MouseMove', `((${event.movementX},${event.movementY}),(${event.screenX},${event.screenY}))`));
+        document.addEventListener('wheel', (event) => handleEvent('MouseScroll', `(${event.deltaX},${event.deltaY})`));
+    </script>
+</body>
+
+</html>

@@ -111,6 +111,7 @@ transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan"] }
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
+enigo = { path = "../vendor/enigo" }
 
 [dev-dependencies]
 tempfile = "3"
