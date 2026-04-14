@@ -1,23 +1,40 @@
 /**
  * Canonicalize bun's internal node_modules symlinks for reproducible FOD hashes.
  *
- * Bun's isolated install strategy stores packages in node_modules/.bun/ with
- * versioned directory names (e.g. "packagename@1.2.3"). It then creates symlinks
- * in node_modules/.bun/node_modules/ pointing to these directories. The order of
- * symlink creation is non-deterministic, which breaks fixed-output derivation hashes.
+ * Isolated-install layout produced by `bun install --linker=isolated`:
  *
- * This script rebuilds all symlinks deterministically: sorted by name, picking the
- * highest semver version when multiple versions of the same package exist.
+ *   node_modules/
+ *   ├── react          → .bun/react@18.3.1/node_modules/react        (symlink)
+ *   ├── minimatch      → .bun/minimatch@3.1.2/node_modules/minimatch (symlink)
+ *   └── .bun/
+ *       ├── react@18.3.1/
+ *       │   └── node_modules/
+ *       │       └── react/                      ← real package content
+ *       ├── minimatch@3.1.2/
+ *       │   └── node_modules/
+ *       │       └── minimatch/                  ← real package content
+ *       └── node_modules/                       ← target of this script
+ *           ├── react      → ../react@18.3.1/node_modules/react
+ *           ├── minimatch  → ../minimatch@3.1.2/node_modules/minimatch
+ *           └── @babel/
+ *               └── core   → ../../@babel+core@7.28.5+…/node_modules/@babel/core
  *
- * Adapted from opencode (https://github.com/anomalyco/opencode), MIT license.
+ * Real package content lives in .bun/<pkg>@<ver>/node_modules/<pkg>/.
+ * The .bun/node_modules/ directory (linkRoot) holds only symlinks — it acts
+ * as a fallback upward-resolution path for packages inside .bun/.
+ *
+ * Bun's creation order for those symlinks is not guaranteed to be stable
+ * across hosts or filesystems, which can break fixed-output derivation hashes.
+ * This script reads the existing symlinks, removes them, and recreates them
+ * in lexicographic order while preserving the exact targets bun picked.
  */
 
-import { lstat, mkdir, readdir, rm, symlink } from "fs/promises";
-import { join, relative } from "path";
+import { lstat, mkdir, readdir, readlink, rm, symlink } from "fs/promises";
+import { join } from "path";
 
-type Entry = {
-  dir: string;
-  version: string;
+type LinkEntry = {
+  slug: string;
+  target: string;
 };
 
 async function isDirectory(path: string) {
@@ -29,76 +46,46 @@ async function isDirectory(path: string) {
   }
 }
 
-const isValidSemver = (v: string) => Bun.semver.satisfies(v, "x.x.x");
-
-function parseEntry(label: string) {
-  const marker = label.startsWith("@")
-    ? label.indexOf("@", 1)
-    : label.indexOf("@");
-  if (marker <= 0) return null;
-  const name = label.slice(0, marker).replace(/\+/g, "/");
-  const version = label.slice(marker + 1);
-  if (!name || !version) return null;
-  return { name, version };
+async function collectLinks(dir: string, prefix: string): Promise<LinkEntry[]> {
+  const result: LinkEntry[] = [];
+  const names = await readdir(dir);
+  for (const name of names) {
+    const full = join(dir, name);
+    const info = await lstat(full);
+    if (info.isSymbolicLink()) {
+      const target = await readlink(full);
+      const slug = prefix ? `${prefix}/${name}` : name;
+      result.push({ slug, target });
+    } else if (info.isDirectory() && !prefix && name.startsWith("@")) {
+      result.push(...(await collectLinks(full, name)));
+    }
+  }
+  return result;
 }
 
 const root = process.cwd();
-const bunRoot = join(root, "node_modules/.bun");
-const linkRoot = join(bunRoot, "node_modules");
+const linkRoot = join(root, "node_modules/.bun/node_modules");
 
-if (!(await isDirectory(bunRoot))) {
-  console.log("[canonicalize-node-modules] no .bun directory, skipping");
+if (!(await isDirectory(linkRoot))) {
+  console.log(
+    "[canonicalize-node-modules] no .bun/node_modules directory, skipping",
+  );
   process.exit(0);
 }
 
-const directories = (await readdir(bunRoot)).sort();
-const versions = new Map<string, Entry[]>();
-
-for (const entry of directories) {
-  const full = join(bunRoot, entry);
-  if (!(await isDirectory(full))) continue;
-  const parsed = parseEntry(entry);
-  if (!parsed) continue;
-  const list = versions.get(parsed.name) ?? [];
-  list.push({ dir: full, version: parsed.version });
-  versions.set(parsed.name, list);
-}
-
-const selections = new Map<string, Entry>();
-
-for (const [slug, list] of versions) {
-  list.sort((a, b) => {
-    const aValid = isValidSemver(a.version);
-    const bValid = isValidSemver(b.version);
-    if (aValid && bValid) return -Bun.semver.order(a.version, b.version);
-    if (aValid) return -1;
-    if (bValid) return 1;
-    return b.version.localeCompare(a.version);
-  });
-  const first = list[0];
-  if (first) selections.set(slug, first);
-}
+const entries = await collectLinks(linkRoot, "");
+entries.sort((a, b) => a.slug.localeCompare(b.slug));
 
 await rm(linkRoot, { recursive: true, force: true });
 await mkdir(linkRoot, { recursive: true });
 
-let count = 0;
-for (const [slug, entry] of Array.from(selections.entries()).sort((a, b) =>
-  a[0].localeCompare(b[0]),
-)) {
+for (const { slug, target } of entries) {
   const parts = slug.split("/");
   const leaf = parts.pop();
   if (!leaf) continue;
   const parent = join(linkRoot, ...parts);
   await mkdir(parent, { recursive: true });
-  const linkPath = join(parent, leaf);
-  const desired = join(entry.dir, "node_modules", slug);
-  if (!(await isDirectory(desired))) continue;
-  const relativeTarget = relative(parent, desired);
-  const resolved = relativeTarget.length === 0 ? "." : relativeTarget;
-  await rm(linkPath, { recursive: true, force: true });
-  await symlink(resolved, linkPath);
-  count++;
+  await symlink(target, join(parent, leaf));
 }
 
-console.log(`[canonicalize-node-modules] rebuilt ${count} links`);
+console.log(`[canonicalize-node-modules] rebuilt ${entries.length} links`);
