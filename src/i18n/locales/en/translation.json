@@ -306,7 +306,7 @@
       },
       "typingTool": {
         "title": "Typing Tool",
-        "description": "Choose which Linux typing tool to use for Direct paste method. Auto will automatically detect and use the best available tool for your system.",
+        "description": "Choose which Linux typing tool to use for Direct paste method. Auto prefers dotool (reliable on Wayland) over wtype. Note: multiline transcriptions are flattened to single-line for safety with direct typing tools.",
         "options": {
           "auto": "Auto (Recommended)"
         }
@@ -503,6 +503,10 @@
       "pasteDelay": {
         "title": "Paste Delay",
         "description": "Delay before sending paste keystroke (in milliseconds). Increase if wrong text is being pasted."
+      },
+      "typingDelay": {
+        "title": "Typing Delay",
+        "description": "Per-keystroke delay for direct typing tools like dotool (in milliseconds). Lower = faster typing, higher = more reliable on slow compositors. Default: 2ms."
       },
       "recordingBuffer": {
         "title": "Extra Recording Buffer",
