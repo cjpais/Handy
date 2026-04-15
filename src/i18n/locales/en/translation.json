@@ -258,11 +258,11 @@
       "acceleration": {
         "whisper": {
           "title": "Whisper Acceleration",
-          "description": "Hardware acceleration for Whisper models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
+          "description": "GPU acceleration for Whisper models only. Does not affect Parakeet, Canary, or Moonshine — those use ONNX Acceleration below. Auto uses Metal on macOS, Vulkan on Windows/Linux."
         },
         "ort": {
           "title": "ONNX Acceleration",
-          "description": "Hardware acceleration for ONNX models (Parakeet, Canary, Moonshine, etc.). DirectML on Windows is experimental. Models may fail to transcribe."
+          "description": "GPU acceleration for ONNX models: Parakeet, Canary, Moonshine, SenseVoice, etc. Does not affect Whisper models. Linux: ROCm (AMD) or CUDA (NVIDIA). Windows: DirectML. macOS: CPU only."
         },
         "gpuDevice": {
           "title": "GPU Device",
