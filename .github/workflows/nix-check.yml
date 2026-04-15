@@ -50,7 +50,7 @@ jobs:
 
       - uses: cachix/cachix-action@v15
         with:
-          name: handy
+          name: handy-computer
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
       # Regenerate .nix/bun.nix from bun.lock and check if it matches
