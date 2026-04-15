@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ask } from "@tauri-apps/plugin-dialog";
-import { ChevronDown, Globe } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Check,
+  ChevronDown,
+  Globe,
+} from "lucide-react";
 import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
@@ -13,6 +20,27 @@ const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
   return model.supported_languages.includes(langCode);
 };
 
+type SortOption = "default" | "accuracy" | "speed" | "size";
+type SortDirection = "desc" | "asc";
+
+const applySortComparator = (
+  a: ModelInfo,
+  b: ModelInfo,
+  sort: SortOption,
+  direction: SortDirection,
+): number => {
+  if (sort === "size") {
+    const diff = b.size_mb - a.size_mb;
+    return direction === "asc" ? -diff : diff;
+  }
+  const key = sort === "accuracy" ? "accuracy_score" : "speed_score";
+  if (a[key] === 0 && b[key] === 0) return 0;
+  if (a[key] === 0) return 1;
+  if (b[key] === 0) return -1;
+  const diff = b[key] - a[key];
+  return direction === "asc" ? -diff : diff;
+};
+
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
@@ -21,6 +49,10 @@ export const ModelsSettings: React.FC = () => {
   const [languageSearch, setLanguageSearch] = useState("");
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const languageSearchInputRef = useRef<HTMLInputElement>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("default");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
   const {
     models,
     currentModel,
@@ -45,6 +77,20 @@ export const ModelsSettings: React.FC = () => {
       ) {
         setLanguageDropdownOpen(false);
         setLanguageSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // click outside handler for sort dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(event.target as Node)
+      ) {
+        setSortDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -181,19 +227,35 @@ export const ModelsSettings: React.FC = () => {
       }
     }
 
-    // Sort: active model first, then non-custom, then custom at the bottom
+    // Sort: active model first, then by selected sort option
     downloaded.sort((a, b) => {
       if (a.id === currentModel) return -1;
       if (b.id === currentModel) return 1;
+      if (sortBy !== "default") {
+        return applySortComparator(a, b, sortBy, sortDirection);
+      }
       if (a.is_custom !== b.is_custom) return a.is_custom ? 1 : -1;
       return 0;
     });
+
+    if (sortBy !== "default") {
+      available.sort((a, b) =>
+        applySortComparator(a, b, sortBy, sortDirection),
+      );
+    }
 
     return {
       downloadedModels: downloaded,
       availableModels: available,
     };
-  }, [filteredModels, downloadingModels, extractingModels, currentModel]);
+  }, [
+    filteredModels,
+    downloadingModels,
+    extractingModels,
+    currentModel,
+    sortBy,
+    sortDirection,
+  ]);
 
   if (loading) {
     return (
@@ -223,97 +285,181 @@ export const ModelsSettings: React.FC = () => {
               <h2 className="text-sm font-medium text-text/60">
                 {t("settings.models.yourModels")}
               </h2>
-              {/* Language filter dropdown */}
-              <div className="relative" ref={languageDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setLanguageDropdownOpen(!languageDropdownOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                    languageFilter !== "all"
-                      ? "bg-logo-primary/20 text-logo-primary"
-                      : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
-                  }`}
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span className="max-w-[120px] truncate">
-                    {selectedLanguageLabel}
-                  </span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${
-                      languageDropdownOpen ? "rotate-180" : ""
+              <div className="flex items-center gap-2">
+                {/* Sort dropdown */}
+                <div className="relative" ref={sortDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                      sortBy !== "default"
+                        ? "bg-logo-primary/20 text-logo-primary"
+                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
                     }`}
-                  />
-                </button>
+                  >
+                    {sortBy !== "default" ? (
+                      sortDirection === "desc" ? (
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      ) : (
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      )
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5" />
+                    )}
+                    <span>{t(`settings.models.sort.${sortBy}`)}</span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        sortDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
 
-                {languageDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
-                    <div className="p-2 border-b border-mid-gray/40">
-                      <input
-                        ref={languageSearchInputRef}
-                        type="text"
-                        value={languageSearch}
-                        onChange={(e) => setLanguageSearch(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (
-                            e.key === "Enter" &&
-                            filteredLanguages.length > 0
-                          ) {
-                            setLanguageFilter(filteredLanguages[0].value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          } else if (e.key === "Escape") {
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
-                          }
-                        }}
-                        placeholder={t(
-                          "settings.general.language.searchPlaceholder",
-                        )}
-                        className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLanguageFilter("all");
-                          setLanguageDropdownOpen(false);
-                          setLanguageSearch("");
-                        }}
-                        className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                          languageFilter === "all"
-                            ? "bg-logo-primary/20 text-logo-primary font-semibold"
-                            : "hover:bg-mid-gray/10"
-                        }`}
-                      >
-                        {t("settings.models.filters.allLanguages")}
-                      </button>
-                      {filteredLanguages.map((lang) => (
+                  {sortDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-44 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden py-1">
+                      {(
+                        ["default", "accuracy", "speed", "size"] as SortOption[]
+                      ).map((option) => (
                         <button
-                          key={lang.value}
+                          key={option}
                           type="button"
                           onClick={() => {
-                            setLanguageFilter(lang.value);
-                            setLanguageDropdownOpen(false);
-                            setLanguageSearch("");
+                            if (option === sortBy && option !== "default") {
+                              setSortDirection((d) =>
+                                d === "desc" ? "asc" : "desc",
+                              );
+                            } else {
+                              setSortBy(option);
+                              setSortDirection("desc");
+                            }
+                            setSortDropdownOpen(false);
                           }}
-                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors ${
-                            languageFilter === lang.value
-                              ? "bg-logo-primary/20 text-logo-primary font-semibold"
+                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors flex items-center justify-between ${
+                            sortBy === option
+                              ? "bg-logo-primary/10 text-logo-primary"
                               : "hover:bg-mid-gray/10"
                           }`}
                         >
-                          {lang.label}
+                          <span>{t(`settings.models.sort.${option}`)}</span>
+                          {sortBy === option && option !== "default" && (
+                            <span className="flex items-center gap-1 text-logo-primary/70">
+                              {sortDirection === "desc" ? (
+                                <ArrowDown className="w-3 h-3" />
+                              ) : (
+                                <ArrowUp className="w-3 h-3" />
+                              )}
+                            </span>
+                          )}
+                          {sortBy === option && option === "default" && (
+                            <Check className="w-3 h-3 text-logo-primary/70" />
+                          )}
                         </button>
                       ))}
-                      {filteredLanguages.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-text/50 text-center">
-                          {t("settings.general.language.noResults")}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* Language filter dropdown */}
+                <div className="relative" ref={languageDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLanguageDropdownOpen(!languageDropdownOpen)
+                    }
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                      languageFilter !== "all"
+                        ? "bg-logo-primary/20 text-logo-primary"
+                        : "bg-mid-gray/10 text-text/60 hover:bg-mid-gray/20"
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span className="max-w-[120px] truncate">
+                      {selectedLanguageLabel}
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${
+                        languageDropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {languageDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-56 bg-background border border-mid-gray/80 rounded-lg shadow-lg z-50 overflow-hidden">
+                      <div className="p-2 border-b border-mid-gray/40">
+                        <input
+                          ref={languageSearchInputRef}
+                          type="text"
+                          value={languageSearch}
+                          onChange={(e) => setLanguageSearch(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key === "Enter" &&
+                              filteredLanguages.length > 0
+                            ) {
+                              setLanguageFilter(filteredLanguages[0].value);
+                              setLanguageDropdownOpen(false);
+                              setLanguageSearch("");
+                            } else if (e.key === "Escape") {
+                              setLanguageDropdownOpen(false);
+                              setLanguageSearch("");
+                            }
+                          }}
+                          placeholder={t(
+                            "settings.general.language.searchPlaceholder",
+                          )}
+                          className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLanguageFilter("all");
+                            setLanguageDropdownOpen(false);
+                            setLanguageSearch("");
+                          }}
+                          className={`w-full px-3 py-1.5 text-sm text-left transition-colors flex items-center justify-between ${
+                            languageFilter === "all"
+                              ? "bg-logo-primary/10 text-logo-primary"
+                              : "hover:bg-mid-gray/10"
+                          }`}
+                        >
+                          <span>
+                            {t("settings.models.filters.allLanguages")}
+                          </span>
+                          {languageFilter === "all" && (
+                            <Check className="w-3 h-3 text-logo-primary/70" />
+                          )}
+                        </button>
+                        {filteredLanguages.map((lang) => (
+                          <button
+                            key={lang.value}
+                            type="button"
+                            onClick={() => {
+                              setLanguageFilter(lang.value);
+                              setLanguageDropdownOpen(false);
+                              setLanguageSearch("");
+                            }}
+                            className={`w-full px-3 py-1.5 text-sm text-left transition-colors flex items-center justify-between ${
+                              languageFilter === lang.value
+                                ? "bg-logo-primary/10 text-logo-primary"
+                                : "hover:bg-mid-gray/10"
+                            }`}
+                          >
+                            <span>{lang.label}</span>
+                            {languageFilter === lang.value && (
+                              <Check className="w-3 h-3 text-logo-primary/70" />
+                            )}
+                          </button>
+                        ))}
+                        {filteredLanguages.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-text/50 text-center">
+                            {t("settings.general.language.noResults")}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {downloadedModels.map((model: ModelInfo) => (
