@@ -6,6 +6,7 @@ import {
   normalizeKey,
 } from "../../lib/utils/keyboard";
 import { ResetButton } from "../ui/ResetButton";
+import TrashIcon from "../icons/TrashIcon";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
@@ -26,8 +27,14 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
   disabled = false,
 }) => {
   const { t } = useTranslation();
-  const { getSetting, updateBinding, resetBinding, isUpdating, isLoading } =
-    useSettings();
+  const {
+    getSetting,
+    updateBinding,
+    resetBinding,
+    clearBinding,
+    isUpdating,
+    isLoading,
+  } = useSettings();
   const [keyPressed, setKeyPressed] = useState<string[]>([]);
   const [recordedKeys, setRecordedKeys] = useState<string[]>([]);
   const [editingShortcutId, setEditingShortcutId] = useState<string | null>(
@@ -284,13 +291,29 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
             className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
             onClick={() => startRecording(shortcutId)}
           >
-            {formatKeyCombination(binding.current_binding, osType)}
+            {binding.current_binding ? (
+              formatKeyCombination(binding.current_binding, osType)
+            ) : (
+              <span className="text-mid-gray/50 font-normal">
+                {t("settings.general.shortcut.notSet")}
+              </span>
+            )}
           </div>
         )}
-        <ResetButton
-          onClick={() => resetBinding(shortcutId)}
-          disabled={isUpdating(`binding_${shortcutId}`)}
-        />
+        {binding.default_binding ? (
+          <ResetButton
+            onClick={() => resetBinding(shortcutId)}
+            disabled={isUpdating(`binding_${shortcutId}`)}
+          />
+        ) : null}
+        {binding.current_binding && (
+          <ResetButton
+            onClick={() => clearBinding(shortcutId)}
+            disabled={isUpdating(`binding_${shortcutId}`)}
+          >
+            <TrashIcon width={16} height={16} />
+          </ResetButton>
+        )}
       </div>
     </SettingContainer>
   );

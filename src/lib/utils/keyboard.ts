@@ -168,38 +168,53 @@ const capitalizeKey = (key: string): string => {
   return key.replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
-/**
- * Format a single key part for display.
- * Handles _left/_right suffixes and capitalizes names.
- * e.g. "shift_left" -> "Left Shift", "option" -> "Option", "space" -> "Space"
- */
+const SYMBOL_MAP: Record<string, string> = {
+  ctrl: "⌃",
+  control: "⌃",
+  option: "⌥",
+  alt: "⌥",
+  shift: "⇧",
+  command: "⌘",
+  cmd: "⌘",
+  super: "⊞",
+  meta: "⌘",
+  tab: "⇥",
+  backspace: "⌫",
+  delete: "⌦",
+  enter: "↩",
+  return: "↩",
+  capslock: "⇪",
+  space: "Space",
+  esc: "Esc",
+  escape: "Esc",
+};
+
 const formatKeyPart = (part: string): string => {
-  const trimmed = part.trim();
+  const trimmed = part.trim().toLowerCase();
   if (!trimmed) return "";
 
-  if (trimmed.endsWith("_left")) {
-    const name = trimmed.slice(0, -5);
-    return `Left ${capitalizeKey(name)}`;
-  }
-  if (trimmed.endsWith("_right")) {
-    const name = trimmed.slice(0, -6);
-    return `Right ${capitalizeKey(name)}`;
-  }
+  const isLeft = trimmed.endsWith("_left");
+  const isRight = trimmed.endsWith("_right");
+  const base =
+    isLeft || isRight ? trimmed.slice(0, trimmed.lastIndexOf("_")) : trimmed;
 
-  return capitalizeKey(trimmed);
+  const symbol = SYMBOL_MAP[base] ?? capitalizeKey(base);
+  if (isLeft && SYMBOL_MAP[base]) return `L${symbol}`;
+  if (isRight && SYMBOL_MAP[base]) return `R${symbol}`;
+  return symbol;
 };
 
 /**
  * Get display-friendly key combination string for the current OS
  * Formats raw hotkey strings like "option_left+shift+space" into
- * human-readable form like "Left Option + Shift + Space"
+ * human-readable form like "⌥ ⇧ Space"
  */
 export const formatKeyCombination = (
   combination: string,
   _osType: OSType,
 ): string => {
   if (!combination) return "";
-  return combination.split("+").map(formatKeyPart).join(" + ");
+  return combination.split("+").map(formatKeyPart).join(" ");
 };
 
 /**
