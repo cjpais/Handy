@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "Stisk a mluv",
         "description": "Podržte pro nahrávání, uvolněte pro zastavení"
-      }
+      },
+      "shortcutsDisabledHint": "Vestavěné klávesové zkratky jsou zakázány. Místo toho nakonfigurujte kompozitor, aby spouštěl 'handy --toggle-transcription' na klávesovou zkratku (např. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Toto můžete změnit v Nastavení > Pokročilé > Experimentální > Implementace klávesnice."
     },
     "sound": {
       "title": "Zvuk",

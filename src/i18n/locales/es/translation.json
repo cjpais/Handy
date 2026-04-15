@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "Presionar para Hablar",
         "description": "Mantén presionado para grabar, suelta para detener"
-      }
+      },
+      "shortcutsDisabledHint": "Los atajos de teclado integrados están desactivados. Configura tu compositor para ejecutar 'handy --toggle-transcription' con una combinación de teclas (p. ej. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Puedes cambiar esto en Ajustes > Avanzado > Experimental > Implementación del teclado."
     },
     "sound": {
       "title": "Sonido",

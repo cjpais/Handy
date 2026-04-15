@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "プッシュトゥトーク",
         "description": "押し続けて録音、離して停止"
-      }
+      },
+      "shortcutsDisabledHint": "内蔵のホットキーは無効化されています。代わりにコンポジターを設定して、キーバインドで 'handy --toggle-transcription' を実行してください（例: Hyprland の場合 bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription）。これは 設定 > 詳細設定 > 実験的 > キーボード実装 で変更できます。"
     },
     "sound": {
       "title": "サウンド",
