@@ -51,7 +51,7 @@ jobs:
       - uses: cachix/cachix-action@v15
         with:
           name: handy
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
       # Regenerate .nix/bun.nix from bun.lock and check if it matches
       # what's committed. A diff means the developer forgot to run
