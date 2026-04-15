@@ -53,6 +53,10 @@ enum ManagerCommand {
         binding_id: String,
         response: Sender<Result<(), String>>,
     },
+    /// Re-register all hotkeys (e.g., after Windows session unlock invalidates hooks)
+    ReregisterAll {
+        response: Sender<Result<(), String>>,
+    },
     Shutdown,
 }
 
@@ -110,8 +114,8 @@ impl HandyKeysState {
     fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle) {
         info!("handy-keys manager thread started");
 
-        // Create the HotkeyManager in this thread
-        let manager = match HotkeyManager::new_with_blocking() {
+        // Create the HotkeyManager in this thread (mut: replaced on re-registration)
+        let mut manager = match HotkeyManager::new_with_blocking() {
             Ok(m) => m,
             Err(e) => {
                 error!("Failed to create HotkeyManager: {}", e);
@@ -164,6 +168,36 @@ impl HandyKeysState {
                             &binding_id,
                         );
                         let _ = response.send(result);
+                    }
+                    ManagerCommand::ReregisterAll { response } => {
+                        let result = Self::do_reregister_all(
+                            manager,
+                            &mut binding_to_hotkey,
+                            &mut hotkey_to_binding,
+                        );
+                        match result {
+                            Ok(new_manager) => {
+                                manager = new_manager;
+                                info!("handy-keys hooks re-registered successfully");
+                                let _ = response.send(Ok(()));
+                            }
+                            Err(e) => {
+                                error!("Failed to re-register handy-keys hooks: {}", e);
+                                // Manager was consumed; try to create a fresh one to keep running
+                                match HotkeyManager::new_with_blocking() {
+                                    Ok(m) => manager = m,
+                                    Err(e2) => {
+                                        error!(
+                                            "Failed to create fallback HotkeyManager: {}",
+                                            e2
+                                        );
+                                        let _ = response.send(Err(e));
+                                        break;
+                                    }
+                                }
+                                let _ = response.send(Err(e));
+                            }
+                        }
                     }
                     ManagerCommand::Shutdown => {
                         info!("handy-keys manager thread shutting down");
@@ -226,6 +260,47 @@ impl HandyKeysState {
         Ok(())
     }
 
+    /// Drop the old HotkeyManager, create a fresh one, and re-register all bindings.
+    /// This is needed after events that invalidate low-level keyboard hooks
+    /// (e.g., Windows session lock/unlock switches to the Winlogon secure desktop).
+    fn do_reregister_all(
+        old_manager: HotkeyManager,
+        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
+        hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
+    ) -> Result<HotkeyManager, String> {
+        // Collect bindings before dropping state
+        let bindings: Vec<(String, String)> = hotkey_to_binding
+            .values()
+            .map(|(id, hk)| (id.clone(), hk.clone()))
+            .collect();
+
+        // Clear old mappings and drop the old manager (releases invalidated hooks)
+        binding_to_hotkey.clear();
+        hotkey_to_binding.clear();
+        drop(old_manager);
+
+        // Create a fresh manager with new hooks
+        let new_manager = HotkeyManager::new_with_blocking()
+            .map_err(|e| format!("Failed to create new HotkeyManager: {}", e))?;
+
+        // Re-register all bindings
+        for (binding_id, hotkey_string) in &bindings {
+            Self::do_register(
+                &new_manager,
+                binding_to_hotkey,
+                hotkey_to_binding,
+                binding_id,
+                hotkey_string,
+            )?;
+        }
+
+        info!(
+            "Re-registered {} handy-keys binding(s)",
+            bindings.len()
+        );
+        Ok(new_manager)
+    }
+
     /// Register a shortcut binding
     pub fn register(&self, binding: &ShortcutBinding) -> Result<(), String> {
         let (tx, rx) = mpsc::channel();
@@ -257,6 +332,20 @@ impl HandyKeysState {
 
         rx.recv()
             .map_err(|_| "Failed to receive unregister response")?
+    }
+
+    /// Re-register all hotkeys with a fresh HotkeyManager.
+    /// Call this after events that invalidate hooks (e.g., Windows session unlock).
+    pub fn reregister_all(&self) -> Result<(), String> {
+        let (tx, rx) = mpsc::channel();
+        self.command_sender
+            .lock()
+            .map_err(|_| "Failed to lock command_sender")?
+            .send(ManagerCommand::ReregisterAll { response: tx })
+            .map_err(|_| "Failed to send reregister command")?;
+
+        rx.recv_timeout(std::time::Duration::from_secs(5))
+            .map_err(|_| "Timeout waiting for reregister response")?
     }
 
     /// Start recording mode for a specific binding
