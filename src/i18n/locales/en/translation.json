@@ -157,6 +157,7 @@
     },
     "general": {
       "title": "General",
+      "shortcutsDisabledHint": "Built-in hotkeys are disabled. Configure your compositor to run 'handy --toggle-transcription' on a keybind instead (e.g. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). You can change this in Settings > Advanced > Experimental > Keyboard Implementation.",
       "shortcut": {
         "title": "Handy Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
@@ -258,11 +259,11 @@
       "acceleration": {
         "whisper": {
           "title": "Whisper Acceleration",
-          "description": "Hardware acceleration for Whisper models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
+          "description": "GPU acceleration for Whisper models only. Does not affect Parakeet, Canary, or Moonshine — those use ONNX Acceleration below. Auto uses Metal on macOS, Vulkan on Windows/Linux."
         },
         "ort": {
           "title": "ONNX Acceleration",
-          "description": "Hardware acceleration for ONNX models (Parakeet, Canary, Moonshine, etc.). DirectML on Windows is experimental. Models may fail to transcribe."
+          "description": "GPU acceleration for ONNX models: Parakeet, Canary, Moonshine, SenseVoice, etc. Does not affect Whisper models. ROCm for AMD GPUs, CUDA for NVIDIA, DirectML for Windows."
         },
         "gpuDevice": {
           "title": "GPU Device",
@@ -492,7 +493,7 @@
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
+        "description": "Choose the keyboard shortcut backend. Select 'None' on Wayland to disable built-in hotkeys and use compositor keybindings instead (e.g. handy --toggle-transcription).",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {

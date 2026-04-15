@@ -168,6 +168,7 @@ pub enum RecordingRetentionPeriod {
 pub enum KeyboardImplementation {
     Tauri,
     HandyKeys,
+    None,
 }
 
 impl Default for KeyboardImplementation {
@@ -1053,5 +1054,23 @@ mod tests {
     fn typing_delay_missing_uses_default() {
         let settings = get_default_settings();
         assert_eq!(settings.typing_delay_ms, 2);
+    }
+
+    #[test]
+    fn keyboard_implementation_none_deserializes() {
+        let settings = settings_with_override(r#"{"keyboard_implementation": "none"}"#);
+        assert_eq!(
+            settings.keyboard_implementation,
+            KeyboardImplementation::None
+        );
+    }
+
+    #[test]
+    fn keyboard_implementation_default_is_not_none() {
+        let settings = get_default_settings();
+        assert_ne!(
+            settings.keyboard_implementation,
+            KeyboardImplementation::None
+        );
     }
 }

@@ -16,9 +16,18 @@ export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { audioFeedbackEnabled, getSetting } = useSettings();
   const pushToTalk = getSetting("push_to_talk");
+  const keyboardImpl = getSetting("keyboard_implementation") ?? "tauri";
+  const shortcutsDisabled = keyboardImpl === "none";
   const isLinux = type() === "linux";
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      {shortcutsDisabled ? (
+      <SettingsGroup title={t("settings.general.title")}>
+        <div className="px-4 py-3 text-sm text-muted-foreground">
+          {t("settings.general.shortcutsDisabledHint")}
+        </div>
+      </SettingsGroup>
+      ) : (
       <SettingsGroup title={t("settings.general.title")}>
         <ShortcutInput shortcutId="transcribe" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
@@ -27,6 +36,7 @@ export const GeneralSettings: React.FC = () => {
           <ShortcutInput shortcutId="cancel" grouped={true} />
         )}
       </SettingsGroup>
+      )}
       <ModelSettingsCard />
       <SettingsGroup title={t("settings.sound.title")}>
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
