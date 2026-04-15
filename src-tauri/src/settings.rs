@@ -337,7 +337,6 @@ impl std::ops::DerefMut for SecretMap {
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
     pub bindings: HashMap<String, ShortcutBinding>,
-    pub push_to_talk: bool,
     pub audio_feedback: bool,
     #[serde(default = "default_audio_feedback_volume")]
     pub audio_feedback_volume: f32,
@@ -763,10 +762,19 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "escape".to_string(),
         },
     );
+    bindings.insert(
+        "transcribe_with_push_to_talk".to_string(),
+        ShortcutBinding {
+            id: "transcribe_with_push_to_talk".to_string(),
+            name: "Push-to-Talk Shortcut".to_string(),
+            description: "Hold to record, release to transcribe.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,
-        push_to_talk: true,
         audio_feedback: false,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
@@ -866,6 +874,7 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
                 if updated {
                     debug!("Settings updated with new bindings");
                     store.set("settings", serde_json::to_value(&settings).unwrap());
+                    let _ = store.save();
                 }
 
                 settings
@@ -956,6 +965,67 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_include_push_to_talk_binding() {
+        let settings = get_default_settings();
+        let binding = settings
+            .bindings
+            .get("transcribe_with_push_to_talk")
+            .expect("transcribe_with_push_to_talk binding must be present in default settings");
+        assert_eq!(binding.id, "transcribe_with_push_to_talk");
+        // Default binding must be empty so the empty-binding guard skips registration
+        assert!(
+            binding.default_binding.is_empty(),
+            "default_binding should be empty to prevent automatic registration"
+        );
+        assert!(
+            binding.current_binding.is_empty(),
+            "current_binding should be empty to prevent automatic registration"
+        );
+    }
+
+    #[test]
+    fn default_settings_no_push_to_talk_bool_field() {
+        // Serialise default settings and confirm there is no legacy push_to_talk key.
+        let settings = get_default_settings();
+        let json = serde_json::to_value(&settings).expect("serialisation must not fail");
+        assert!(
+            json.get("push_to_talk").is_none(),
+            "AppSettings must not contain a push_to_talk field after the migration"
+        );
+    }
+
+    #[test]
+    fn deserialise_settings_without_push_to_talk_field() {
+        // Simulate loading persisted JSON that never had push_to_talk; must parse cleanly.
+        let json = serde_json::json!({
+            "bindings": {},
+            "audio_feedback": false
+        });
+        let result = serde_json::from_value::<AppSettings>(json);
+        assert!(
+            result.is_ok(),
+            "AppSettings must deserialise even when push_to_talk is absent: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn deserialise_settings_ignores_legacy_push_to_talk_field() {
+        // Old stored JSON may still contain push_to_talk:true; it must be silently ignored.
+        let json = serde_json::json!({
+            "bindings": {},
+            "audio_feedback": false,
+            "push_to_talk": true
+        });
+        let result = serde_json::from_value::<AppSettings>(json);
+        assert!(
+            result.is_ok(),
+            "AppSettings must deserialise when legacy push_to_talk field is present: {:?}",
+            result.err()
+        );
     }
 
     #[test]

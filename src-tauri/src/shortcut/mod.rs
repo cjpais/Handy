@@ -203,8 +203,46 @@ pub fn change_binding(
 
 #[tauri::command]
 #[specta::specta]
+pub fn clear_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
+    let mut settings = settings::get_settings(&app);
+    if let Some(b) = settings.bindings.get(&id).cloned() {
+        let _ = unregister_shortcut(&app, b.clone());
+        let mut cleared = b;
+        cleared.current_binding = String::new();
+        settings.bindings.insert(id, cleared.clone());
+        settings::write_settings(&app, settings);
+        return Ok(BindingResponse {
+            success: true,
+            binding: Some(cleared),
+            error: None,
+        });
+    }
+    Ok(BindingResponse {
+        success: false,
+        binding: None,
+        error: Some(format!("Binding '{}' not found", id)),
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn reset_binding(app: AppHandle, id: String) -> Result<BindingResponse, String> {
     let binding = settings::get_stored_binding(&app, &id);
+    if binding.default_binding.trim().is_empty() {
+        let mut settings = settings::get_settings(&app);
+        if let Some(b) = settings.bindings.get(&id).cloned() {
+            let _ = unregister_shortcut(&app, b.clone());
+            let mut cleared = b;
+            cleared.current_binding = String::new();
+            settings.bindings.insert(id, cleared.clone());
+            settings::write_settings(&app, settings);
+            return Ok(BindingResponse {
+                success: true,
+                binding: Some(cleared),
+                error: None,
+            });
+        }
+    }
     change_binding(app, id, binding.default_binding)
 }
 
@@ -405,6 +443,10 @@ fn register_all_shortcuts_for_implementation(
             .cloned()
             .unwrap_or_else(|| default_binding.clone());
 
+        if binding.current_binding.trim().is_empty() {
+            continue;
+        }
+
         // Validate the shortcut for the target implementation
         if let Err(e) =
             validate_shortcut_for_implementation(&binding.current_binding, implementation)
@@ -470,15 +512,6 @@ fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> 
 // ============================================================================
 // General Settings Commands
 // ============================================================================
-
-#[tauri::command]
-#[specta::specta]
-pub fn change_ptt_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    settings.push_to_talk = enabled;
-    settings::write_settings(&app, settings);
-    Ok(())
-}
 
 #[tauri::command]
 #[specta::specta]
