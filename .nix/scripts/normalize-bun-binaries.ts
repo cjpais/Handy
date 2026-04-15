@@ -65,32 +65,38 @@ async function collectBinLinks(binRoot: string): Promise<BinEntry[]> {
   return entries;
 }
 
-const root = process.cwd();
-const bunRoot = join(root, "node_modules/.bun");
+export async function normalizeBunBinaries(): Promise<void> {
+  const root = process.cwd();
+  const bunRoot = join(root, "node_modules/.bun");
 
-if (!(await isDirectory(bunRoot))) {
-  console.log("[normalize-bun-binaries] no .bun directory, skipping");
-  process.exit(0);
-}
-
-const bunEntries = (await readdir(bunRoot)).sort();
-let rewritten = 0;
-
-for (const entry of bunEntries) {
-  const binRoot = join(bunRoot, entry, "node_modules", ".bin");
-  if (!(await isDirectory(binRoot))) continue;
-
-  const bins = await collectBinLinks(binRoot);
-  if (bins.length === 0) continue;
-  bins.sort((a, b) => a.name.localeCompare(b.name));
-
-  await rm(binRoot, { recursive: true, force: true });
-  await mkdir(binRoot, { recursive: true });
-
-  for (const { name, target } of bins) {
-    await symlink(target, join(binRoot, name));
-    rewritten++;
+  if (!(await isDirectory(bunRoot))) {
+    console.log("[normalize-bun-binaries] no .bun directory, skipping");
+    return;
   }
+
+  const bunEntries = (await readdir(bunRoot)).sort();
+  let rewritten = 0;
+
+  for (const entry of bunEntries) {
+    const binRoot = join(bunRoot, entry, "node_modules", ".bin");
+    if (!(await isDirectory(binRoot))) continue;
+
+    const bins = await collectBinLinks(binRoot);
+    if (bins.length === 0) continue;
+    bins.sort((a, b) => a.name.localeCompare(b.name));
+
+    await rm(binRoot, { recursive: true, force: true });
+    await mkdir(binRoot, { recursive: true });
+
+    for (const { name, target } of bins) {
+      await symlink(target, join(binRoot, name));
+      rewritten++;
+    }
+  }
+
+  console.log(`[normalize-bun-binaries] rebuilt ${rewritten} links`);
 }
 
-console.log(`[normalize-bun-binaries] rebuilt ${rewritten} links`);
+if (import.meta.main) {
+  await normalizeBunBinaries();
+}

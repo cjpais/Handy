@@ -63,29 +63,35 @@ async function collectLinks(dir: string, prefix: string): Promise<LinkEntry[]> {
   return result;
 }
 
-const root = process.cwd();
-const linkRoot = join(root, "node_modules/.bun/node_modules");
+export async function canonicalizeNodeModules(): Promise<void> {
+  const root = process.cwd();
+  const linkRoot = join(root, "node_modules/.bun/node_modules");
 
-if (!(await isDirectory(linkRoot))) {
-  console.log(
-    "[canonicalize-node-modules] no .bun/node_modules directory, skipping",
-  );
-  process.exit(0);
+  if (!(await isDirectory(linkRoot))) {
+    console.log(
+      "[canonicalize-node-modules] no .bun/node_modules directory, skipping",
+    );
+    return;
+  }
+
+  const entries = await collectLinks(linkRoot, "");
+  entries.sort((a, b) => a.slug.localeCompare(b.slug));
+
+  await rm(linkRoot, { recursive: true, force: true });
+  await mkdir(linkRoot, { recursive: true });
+
+  for (const { slug, target } of entries) {
+    const parts = slug.split("/");
+    const leaf = parts.pop();
+    if (!leaf) continue;
+    const parent = join(linkRoot, ...parts);
+    await mkdir(parent, { recursive: true });
+    await symlink(target, join(parent, leaf));
+  }
+
+  console.log(`[canonicalize-node-modules] rebuilt ${entries.length} links`);
 }
 
-const entries = await collectLinks(linkRoot, "");
-entries.sort((a, b) => a.slug.localeCompare(b.slug));
-
-await rm(linkRoot, { recursive: true, force: true });
-await mkdir(linkRoot, { recursive: true });
-
-for (const { slug, target } of entries) {
-  const parts = slug.split("/");
-  const leaf = parts.pop();
-  if (!leaf) continue;
-  const parent = join(linkRoot, ...parts);
-  await mkdir(parent, { recursive: true });
-  await symlink(target, join(parent, leaf));
+if (import.meta.main) {
+  await canonicalizeNodeModules();
 }
-
-console.log(`[canonicalize-node-modules] rebuilt ${entries.length} links`);
