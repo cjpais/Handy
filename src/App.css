@@ -4,9 +4,9 @@
   /* Design tokens */
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
+  --color-background-ui: #11a06b;
+  --color-logo-primary: #18c384;
+  --color-logo-stroke: #0d5e3f;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
 }
@@ -57,8 +57,8 @@
     /* Colors - Dark Theme */
     --color-text: #fbfbfb;
     --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    --color-logo-primary: #20d692;
+    --color-logo-stroke: #a8f0d0;
   }
 }
 

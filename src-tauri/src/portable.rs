@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 use tauri::Manager;
 
-/// Portable mode support for Handy.
+/// Portable mode support for Uspeach.
 ///
 /// When a file named `portable` exists next to the executable, all user data
 /// (settings, models, recordings, database, logs) is stored in a `Data/`
@@ -27,7 +27,7 @@ pub fn init() {
             // empty/invalid marker alongside an existing Data/ dir, this is a
             // real portable install — upgrade the marker in place.
             eprintln!("[portable] upgrading legacy empty marker to magic string");
-            let _ = std::fs::write(&marker_path, "Handy Portable Mode");
+            let _ = std::fs::write(&marker_path, "Uspeach Portable Mode");
             true
         } else {
             false
@@ -95,7 +95,7 @@ pub fn store_path(relative: &str) -> PathBuf {
 /// Extracted for testability.
 fn is_valid_portable_marker(path: &std::path::Path) -> bool {
     std::fs::read_to_string(path)
-        .map(|s| s.trim().starts_with("Handy Portable Mode"))
+        .map(|s| s.trim().starts_with("Uspeach Portable Mode"))
         .unwrap_or(false)
 }
 
@@ -110,7 +110,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         let mut f = std::fs::File::create(&marker).unwrap();
-        write!(f, "Handy Portable Mode").unwrap();
+        write!(f, "Uspeach Portable Mode").unwrap();
         assert!(is_valid_portable_marker(&marker));
         std::fs::remove_dir_all(dir).unwrap();
     }
@@ -159,7 +159,7 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         let marker = dir.join("portable");
         let mut f = std::fs::File::create(&marker).unwrap();
-        write!(f, "  Handy Portable Mode\n").unwrap();
+        write!(f, "  Uspeach Portable Mode\n").unwrap();
         assert!(is_valid_portable_marker(&marker));
         std::fs::remove_dir_all(dir).unwrap();
     }

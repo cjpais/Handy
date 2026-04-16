@@ -1,11 +1,11 @@
 [package]
-name = "handy"
+name = "uspeach"
 version = "0.8.2"
-description = "Handy"
+description = "Uspeach"
 authors = ["cjpais"]
 edition = "2021"
 license = "MIT"
-default-run = "handy"
+default-run = "uspeach"
 
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
@@ -16,7 +16,7 @@ incremental = true # Compile your binary in smaller steps.
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "handy_app_lib"
+name = "uspeach_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 # [[bin]]
