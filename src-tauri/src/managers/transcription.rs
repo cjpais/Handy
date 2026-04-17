@@ -24,6 +24,8 @@ use transcribe_rs::{
         sense_voice::{SenseVoiceModel, SenseVoiceParams},
         Quantization,
     },
+    transcriber::{Transcriber, VadChunked, VadChunkedConfig},
+    vad::{SileroVad, SmoothedVad},
     whisper_cpp::{WhisperEngine, WhisperInferenceParams},
     SpeechModel, TranscribeOptions,
 };
@@ -46,6 +48,30 @@ enum LoadedEngine {
     Canary(CanaryModel),
     Cohere(CohereModel),
 }
+
+impl LoadedEngine {
+    /// Upcast to `&mut dyn SpeechModel` so chunked transcription can drive
+    /// any engine variant through the common trait.
+    fn as_speech_model(&mut self) -> &mut dyn SpeechModel {
+        match self {
+            LoadedEngine::Whisper(e) => e,
+            LoadedEngine::Parakeet(e) => e,
+            LoadedEngine::Moonshine(e) => e,
+            LoadedEngine::MoonshineStreaming(e) => e,
+            LoadedEngine::SenseVoice(e) => e,
+            LoadedEngine::GigaAM(e) => e,
+            LoadedEngine::Canary(e) => e,
+            LoadedEngine::Cohere(e) => e,
+        }
+    }
+}
+
+/// Audio sample rate used throughout the app (Whisper / all engines expect 16 kHz).
+const TRANSCRIBE_SAMPLE_RATE: f32 = 16_000.0;
+/// Anything longer than this is split into VAD chunks before transcription.
+/// This unblocks every engine that has a hard duration cap (Moonshine's 64 s, etc.)
+/// and is still safe for engines without a cap — they just see smaller chunks.
+const CHUNK_THRESHOLD_SECS: f32 = 30.0;
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
 /// Ensures the loading flag is always reset, even on early returns or panics.
@@ -523,8 +549,31 @@ impl TranscriptionManager {
             // Release the lock before transcribing — no mutex held during the engine call
             drop(engine_guard);
 
+            // If the recording is longer than the threshold, route through
+            // VAD-based chunking so we stay under every engine's hard cap
+            // (Moonshine is 64 s, see #1290). This is engine-agnostic: it
+            // works for any model that implements `SpeechModel`. Engines with
+            // no cap just see shorter chunks — still correct.
+            let audio_secs = audio.len() as f32 / TRANSCRIBE_SAMPLE_RATE;
+            let should_chunk = audio_secs > CHUNK_THRESHOLD_SECS;
+            if should_chunk {
+                info!(
+                    "Audio is {:.1}s (> {:.0}s), routing through VAD-chunked transcription",
+                    audio_secs, CHUNK_THRESHOLD_SECS
+                );
+            }
+
             let transcribe_result = catch_unwind(AssertUnwindSafe(
                 || -> Result<transcribe_rs::TranscriptionResult> {
+                    if should_chunk {
+                        return transcribe_chunked(
+                            engine.as_speech_model(),
+                            &audio,
+                            &self.app_handle,
+                            &validated_language,
+                            settings.translate_to_english,
+                        );
+                    }
                     match &mut engine {
                         LoadedEngine::Whisper(whisper_engine) => {
                             let whisper_language = if validated_language == "auto" {
@@ -731,6 +780,65 @@ impl TranscriptionManager {
 
         Ok(final_result)
     }
+}
+
+/// Batch-transcribe long audio via VAD-based chunking.
+///
+/// This is a narrow fix for #1290 (Moonshine's 64 s hard cap that silently
+/// truncates longer recordings). It routes any recording over 30 s through
+/// `VadChunked` so each transcribed chunk stays within every engine's window.
+///
+/// Engine-specific params (Whisper `initial_prompt` from custom_words,
+/// SenseVoice `use_itn`, etc.) are intentionally dropped here — we only
+/// forward `language` and `translate`. Short recordings keep their full
+/// per-engine parameterisation via the normal path.
+fn transcribe_chunked(
+    model: &mut dyn SpeechModel,
+    samples: &[f32],
+    app: &AppHandle,
+    validated_language: &str,
+    translate: bool,
+) -> Result<transcribe_rs::TranscriptionResult> {
+    let vad_path = app
+        .path()
+        .resolve(
+            "resources/models/silero_vad_v4.onnx",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {}", e))?;
+
+    let silero = SileroVad::new(&vad_path, 0.3)
+        .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
+    let vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
+
+    let config = VadChunkedConfig {
+        min_chunk_secs: 10.0,
+        max_chunk_secs: 30.0,
+        padding_secs: 0.0,
+        smart_split_search_secs: Some(3.0),
+        merge_separator: " ".into(),
+    };
+
+    // Normalise language the same way the single-shot Whisper path does, so
+    // chunked Whisper behaves the same as non-chunked Whisper.
+    let language = if validated_language == "auto" {
+        None
+    } else if validated_language == "zh-Hans" || validated_language == "zh-Hant" {
+        Some("zh".to_string())
+    } else {
+        Some(validated_language.to_string())
+    };
+
+    let options = TranscribeOptions {
+        language,
+        translate,
+        ..Default::default()
+    };
+
+    let mut transcriber = VadChunked::new(Box::new(vad), config, options);
+    transcriber
+        .transcribe(model, samples)
+        .map_err(|e| anyhow::anyhow!("Chunked transcription failed: {}", e))
 }
 
 /// Apply the user's accelerator preferences to the transcribe-rs global atomics.
