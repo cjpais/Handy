@@ -60,8 +60,6 @@
 
       # Shared environment variables for Rust/native builds
       commonEnv = pkgs: let lib = pkgs.lib; in {
-        LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-        BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${lib.getVersion pkgs.llvmPackages.libclang}/include -isystem ${pkgs.glibc.dev}/include";
         ORT_LIB_LOCATION = "${pkgs.onnxruntime}/lib";
         ORT_PREFER_DYNAMIC_LINK = "1";
         GST_PLUGIN_SYSTEM_PATH_1_0 = "${lib.makeSearchPathOutput "lib" "lib/gstreamer-1.0" (gstPlugins pkgs)}";
@@ -148,7 +146,7 @@
               pkgs.bun2nix.hook # Sets up node_modules from pre-fetched bun cache
               jq
               cmake
-              llvmPackages.libclang
+              rustPlatform.bindgenHook
               shaderc
             ];
 
@@ -246,13 +244,11 @@
               # Build tools
               cargo-tauri
               pkg-config
-              llvmPackages.libclang
+              rustPlatform.bindgenHook
               cmake
             ]);
 
             inherit (commonEnv pkgs)
-              LIBCLANG_PATH
-              BINDGEN_EXTRA_CLANG_ARGS
               ORT_LIB_LOCATION
               ORT_PREFER_DYNAMIC_LINK
               GST_PLUGIN_SYSTEM_PATH_1_0;
