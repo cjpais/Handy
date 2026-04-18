@@ -19,7 +19,6 @@ import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
-import { LazyStreamClose } from "../LazyStreamClose";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -65,7 +64,6 @@ export const AdvancedSettings: React.FC = () => {
             grouped={true}
           />
           <AccelerationSelector descriptionMode="tooltip" grouped={true} />
-          <LazyStreamClose descriptionMode="tooltip" grouped={true} />
         </SettingsGroup>
       )}
     </div>

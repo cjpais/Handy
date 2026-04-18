@@ -1,8 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { startTransition, useEffect, useState, useRef } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
+import { Home } from "lucide-react";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -11,6 +13,10 @@ import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
+import DoubaoHome from "./components/home/DoubaoHome";
+import StartupDeviceSearch, {
+  StartupHidMouseMonitorSnapshot,
+} from "./components/home/StartupDeviceSearch";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
@@ -19,6 +25,14 @@ import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
 
 type OnboardingStep = "accessibility" | "model" | "done";
+type MainView = "home" | "settings";
+type StartupView = "device-search" | "main";
+
+const emptyHidSnapshot: StartupHidMouseMonitorSnapshot = {
+  matched_devices: [],
+  last_error: null,
+  updated_at_unix_ms: null,
+};
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -36,6 +50,10 @@ function App() {
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
+  const [mainView, setMainView] = useState<MainView>("home");
+  const [startupView, setStartupView] = useState<StartupView>("device-search");
+  const [hidMonitorSnapshot, setHidMonitorSnapshot] =
+    useState<StartupHidMouseMonitorSnapshot>(emptyHidSnapshot);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -48,6 +66,41 @@ function App() {
 
   useEffect(() => {
     checkOnboardingStatus();
+  }, []);
+
+  useEffect(() => {
+    const applySnapshot = (snapshot: StartupHidMouseMonitorSnapshot) => {
+      setHidMonitorSnapshot(snapshot);
+      if (snapshot.matched_devices.length > 0) {
+        startTransition(() => {
+          setStartupView("main");
+        });
+      }
+    };
+
+    const loadSnapshot = async () => {
+      try {
+        const snapshot = await invoke<StartupHidMouseMonitorSnapshot>(
+          "get_hid_mouse_monitor_snapshot",
+        );
+        applySnapshot(snapshot);
+      } catch (error) {
+        console.warn("Failed to load HID monitor snapshot:", error);
+      }
+    };
+
+    loadSnapshot();
+
+    const unlisten = listen<StartupHidMouseMonitorSnapshot>(
+      "hid-mouse-detection-changed",
+      (event) => {
+        applySnapshot(event.payload);
+      },
+    );
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
   }, []);
 
   // Initialize RTL direction when language changes
@@ -107,30 +160,11 @@ function App() {
           defaultValue: t("errors.micPermissionDenied.generic"),
         });
         toast.error(t("errors.micPermissionDeniedTitle"), { description });
-      } else if (error_type === "no_input_device") {
-        toast.error(t("errors.noInputDeviceTitle"), {
-          description: t("errors.noInputDevice"),
-        });
       } else {
         toast.error(
           t("errors.recordingFailed", { error: detail ?? "Unknown error" }),
         );
       }
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [t]);
-
-  // Listen for paste failures and show a toast.
-  // The technical error detail is logged to handy.log on the Rust side
-  // (see actions.rs `error!("Failed to paste transcription: ...")`),
-  // so we show a localized, user-friendly message here instead of the raw error.
-  useEffect(() => {
-    const unlisten = listen("paste-error", () => {
-      toast.error(t("errors.pasteFailedTitle"), {
-        description: t("errors.pasteFailed"),
-      });
     });
     return () => {
       unlisten.then((fn) => fn());
@@ -247,10 +281,36 @@ function App() {
     return <Onboarding onModelSelected={handleModelSelected} />;
   }
 
+  if (startupView === "device-search") {
+    return (
+      <div dir={direction} className="h-screen overflow-hidden bg-background">
+        <StartupDeviceSearch
+          snapshot={hidMonitorSnapshot}
+          onRefreshSearch={() => {
+            invoke<StartupHidMouseMonitorSnapshot>(
+              "get_hid_mouse_monitor_snapshot",
+            )
+              .then((snapshot) => {
+                setHidMonitorSnapshot(snapshot);
+              })
+              .catch((error) => {
+                console.warn("Failed to refresh HID monitor snapshot:", error);
+              });
+          }}
+          onEnterMainPage={() => {
+            startTransition(() => {
+              setStartupView("main");
+            });
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       dir={direction}
-      className="h-screen flex flex-col select-none cursor-default"
+      className="h-screen overflow-hidden bg-background"
     >
       <Toaster
         theme="system"
@@ -264,24 +324,56 @@ function App() {
           },
         }}
       />
-      {/* Main content area that takes remaining space */}
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          activeSection={currentSection}
-          onSectionChange={setCurrentSection}
-        />
-        {/* Scrollable content area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col items-center p-4 gap-4">
-              <AccessibilityPermissions />
-              {renderSettingsContent(currentSection)}
+      <div className="relative h-full w-full">
+        <div className={mainView === "home" ? "h-full" : "hidden h-full"}>
+          <DoubaoHome
+            onOpenSettings={() => {
+              startTransition(() => {
+                setMainView("settings");
+              });
+            }}
+          />
+        </div>
+
+        <div
+          className={
+            mainView === "settings"
+              ? "flex h-full flex-col select-none cursor-default"
+              : "hidden h-full flex-col select-none cursor-default"
+          }
+        >
+          <div className="flex-1 flex overflow-hidden">
+            <Sidebar
+              activeSection={currentSection}
+              onSectionChange={setCurrentSection}
+            />
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto">
+                <div className="flex flex-col items-center p-4 gap-4">
+                  <AccessibilityPermissions />
+                  {renderSettingsContent(currentSection)}
+                </div>
+              </div>
             </div>
           </div>
+          <Footer
+            actionSlot={
+              <button
+                type="button"
+                onClick={() => {
+                  startTransition(() => {
+                    setMainView("home");
+                  });
+                }}
+                className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-xs font-medium text-white shadow-[0_10px_24px_rgba(14,116,214,0.22)] transition hover:bg-sky-500"
+              >
+                <Home className="h-3.5 w-3.5" />
+                <span>{t("home.backToHome", { defaultValue: "主页" })}</span>
+              </button>
+            }
+          />
         </div>
       </div>
-      {/* Fixed footer at bottom */}
-      <Footer />
     </div>
   );
 }

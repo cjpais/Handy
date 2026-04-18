@@ -1,0 +1,8 @@
+[package]
+name = "aimouse_device_init"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "aimouse_device_init"
+path = "src/lib.rs"

@@ -3,6 +3,7 @@ pub mod history;
 pub mod models;
 pub mod transcription;
 
+use crate::managers::hid_mouse::{HidMouseMonitorSnapshot, HidMouseMonitorState};
 use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
 use crate::utils::cancel_current_operation;
 use tauri::{AppHandle, Manager};
@@ -12,12 +13,6 @@ use tauri_plugin_opener::OpenerExt;
 #[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
     cancel_current_operation(&app);
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn is_portable() -> bool {
-    crate::portable::is_portable()
 }
 
 #[tauri::command]
@@ -39,6 +34,14 @@ pub fn get_app_settings(app: AppHandle) -> Result<AppSettings, String> {
 #[specta::specta]
 pub fn get_default_settings() -> Result<AppSettings, String> {
     Ok(crate::settings::get_default_settings())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_hid_mouse_monitor_snapshot(
+    state: tauri::State<'_, std::sync::Arc<HidMouseMonitorState>>,
+) -> Result<HidMouseMonitorSnapshot, String> {
+    Ok(state.snapshot())
 }
 
 #[tauri::command]

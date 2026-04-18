@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Přesný vícejazyčný. 25 evropských jazyků. Podporuje překlad."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Velký, pomalejší, ale velmi přesný vícejazyčný model."
       }
     },
     "errors": {
@@ -123,8 +119,6 @@
     "custom": "Vlastní",
     "active": "Aktivní",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
-    "verifying": "Ověřování {{modelName}}...",
-    "verifyingGeneric": "Ověřování...",
     "extracting": "Rozbaluji {{modelName}}...",
     "extractingMultiple": "Rozbaluji {{count}} modelů...",
     "extractingGeneric": "Rozbalování...",
@@ -251,10 +245,6 @@
         "label": "Experimentální funkce",
         "description": "Povolit experimentální funkce, které jsou stále ve vývoji."
       },
-      "lazyStreamClose": {
-        "label": "Ponechat mikrofon zapnutý mezi přepisy",
-        "description": "Ponechá stream mikrofonu otevřený po dobu 30 sekund po zastavení nahrávání, čímž se sníží latence při opakovaném přepisu. Může zhoršit kvalitu zvuku Bluetooth."
-      },
       "acceleration": {
         "whisper": {
           "title": "Akcelerace Whisper",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "Akcelerace ONNX",
           "description": "Hardwarová akcelerace pro modely ONNX (Parakeet, Canary, Moonshine atd.). DirectML na Windows je experimentální. Modely nemusí správně přepisovat."
-        },
-        "gpuDevice": {
-          "title": "GPU zařízení",
-          "description": "Vyberte, který GPU použít pro Whisper. Automaticky vybere dedikovaný GPU.",
-          "auto": "Automaticky"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "Po 10 minutách",
           "min15": "Po 15 minutách",
           "hour1": "Po 1 hodině",
-          "sec15": "Po 15 sekundách (Debug)"
+          "sec5": "Po 5 sekundách (Debug)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Uložit přepis",
       "unsave": "Odebrat z uložených",
       "delete": "Smazat záznam",
-      "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu.",
-      "retranscribe": "Přepsat znovu",
-      "retranscribeError": "Opětovný přepis se nezdařil. Zkuste to prosím znovu.",
-      "transcribing": "Přepisuji...",
-      "transcriptionFailed": "Přepis selhal. Můžete zkusit přepis znovu pomocí ikony opakování."
+      "deleteError": "Nepodařilo se smazat záznam. Zkuste to prosím znovu."
     },
     "debug": {
       "title": "Ladění",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Zpoždění vložení",
         "description": "Zpoždění před odesláním klávesy pro vložení (v milisekundách). Zvyšte, pokud se vkládá špatný text."
-      },
-      "recordingBuffer": {
-        "title": "Extra vyrovnávací paměť nahrávání",
-        "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "Stahování... {{progress}}%",
     "installing": "Instalace...",
     "preparing": "Příprava...",
-    "checkForUpdates": "Zkontrolovat aktualizace",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "Zkontrolovat aktualizace"
   },
   "common": {
     "loading": "Načítání...",
@@ -593,13 +567,9 @@
       "macos": "Povolte přístup k mikrofonu v Nastavení systému → Soukromí a zabezpečení → Mikrofon.",
       "linux": "Povolte přístup k mikrofonu v nastavení zvuku nebo soukromí vašeho systému."
     },
-    "noInputDeviceTitle": "Mikrofon nebyl nalezen",
-    "noInputDevice": "Nebylo detekováno žádné zvukové vstupní zařízení. Připojte mikrofon nebo sluchátka a zkuste to znovu.",
     "recordingFailed": "Nepodařilo se spustit nahrávání: {{error}}",
     "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
-    "modelLoadFailedUnknown": "neznámý model",
-    "pasteFailedTitle": "Vložení textu se nezdařilo",
-    "pasteFailed": "Text nebylo možné vložit do aktivní aplikace."
+    "modelLoadFailedUnknown": "neznámý model"
   },
   "appLanguage": {
     "title": "Jazyk aplikace",

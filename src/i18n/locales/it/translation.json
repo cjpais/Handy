@@ -3,7 +3,7 @@
     "settings": "Impostazioni...",
     "checkUpdates": "Verifica aggiornamenti...",
     "copyLastTranscript": "Copia l'ultima trascrizione",
-    "unloadModel": "Rilascia modello",
+    "unloadModel": "Scarica modello",
     "model": "Modello",
     "quit": "Esci",
     "cancel": "Annulla"
@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Multilingue accurato. 25 lingue europee. Supporta la traduzione."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Un modello grande, più lento, ma molto accurato e multilingue."
       }
     },
     "errors": {
@@ -124,8 +120,6 @@
     "active": "Attivo",
     "switching": "Cambio...",
     "noModelsAvailable": "Nessun modello disponibile",
-    "verifying": "Verifica di {{modelName}}...",
-    "verifyingGeneric": "Verifica...",
     "extracting": "Estrazione di {{modelName}}...",
     "extractingMultiple": "Estrazione di {{count}} modelli...",
     "extractingGeneric": "Estrazione...",
@@ -251,10 +245,6 @@
         "label": "Funzionalità Sperimentali",
         "description": "Abilita le funzionalità sperimentali ancora in fase di sviluppo."
       },
-      "lazyStreamClose": {
-        "label": "Mantieni il microfono aperto tra le trascrizioni",
-        "description": "Mantiene lo stream del microfono aperto per 30 secondi dopo l'arresto della registrazione, riducendo la latenza per trascrizioni consecutive. Potrebbe degradare la qualità audio Bluetooth."
-      },
       "acceleration": {
         "whisper": {
           "title": "Accelerazione Whisper",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "Accelerazione ONNX",
           "description": "Accelerazione hardware per i modelli ONNX (Parakeet, Canary, Moonshine, ecc.). DirectML su Windows è sperimentale. I modelli potrebbero non riuscire a trascrivere."
-        },
-        "gpuDevice": {
-          "title": "Dispositivo GPU",
-          "description": "Seleziona quale GPU utilizzare per l'inferenza Whisper. Auto sceglie la GPU dedicata.",
-          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "Dopo 10 minuti",
           "min15": "Dopo 15 minuti",
           "hour1": "Dopo 1 ora",
-          "sec15": "Dopo 15 secondi (Debug)"
+          "sec5": "Dopo 5 secondi (Debug)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Salva la trascrizione",
       "unsave": "Rimuovi dai salvataggi",
       "delete": "Elimina elemento",
-      "deleteError": "Errore nell'eliminazione dell'elemento. Riprova.",
-      "retranscribe": "Ri-trascrivere",
-      "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
-      "transcribing": "Trascrizione in corso...",
-      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione."
+      "deleteError": "Errore nell'eliminazione dell'elemento. Riprova."
     },
     "debug": {
       "title": "Debug",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Ritardo incolla",
         "description": "Ritardo prima dell'invio del tasto incolla (in millisecondi). Aumentare se viene incollato il testo sbagliato."
-      },
-      "recordingBuffer": {
-        "title": "Buffer di registrazione extra",
-        "description": "Tempo extra (in millisecondi) per continuare a registrare dopo aver rilasciato il tasto, per catturare l'audio finale. 0 = nessun buffer extra."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "Download... {{progress}}%",
     "installing": "Installazione...",
     "preparing": "Preparazione...",
-    "checkForUpdates": "Controlla aggiornamenti",
-    "portableUpdateTitle": "Aggiornamento manuale necessario",
-    "portableUpdateMessage": "Le installazioni portatili non possono essere aggiornate automaticamente. Per aggiornare: scarica l'ultima versione del programma di installazione NSIS da GitHub Releases, installala nella stessa cartella, quindi copia la cartella Data/ (impostazioni, modelli, registrazioni) dalla vecchia versione a quella nuova..",
-    "portableUpdateButton": "Apri i rilasci su GitHub"
+    "checkForUpdates": "Controlla aggiornamenti"
   },
   "common": {
     "loading": "Caricamento...",
@@ -593,13 +567,9 @@
       "macos": "Concedi l'accesso al microfono in Impostazioni di Sistema → Privacy e sicurezza → Microfono.",
       "linux": "Concedi l'accesso al microfono nelle impostazioni audio o sulla privacy del tuo sistema."
     },
-    "noInputDeviceTitle": "Nessun microfono trovato",
-    "noInputDevice": "Non è stato rilevato alcun dispositivo di ingresso audio. Collega un microfono o delle cuffie e riprova.",
     "recordingFailed": "Impossibile avviare la registrazione: {{error}}",
     "modelLoadFailed": "Impossibile caricare il modello: {{model}}",
-    "modelLoadFailedUnknown": "modello sconosciuto",
-    "pasteFailedTitle": "Impossibile incollare il testo",
-    "pasteFailed": "Non è stato possibile incollare il testo nell'applicazione attiva."
+    "modelLoadFailedUnknown": "modello sconosciuto"
   },
   "appLanguage": {
     "title": "Lingua Applicazione",

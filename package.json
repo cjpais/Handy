@@ -1,13 +1,13 @@
 {
   "name": "handy-app",
   "private": true,
-  "version": "0.8.2",
+  "version": "0.7.10",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri",
+    "tauri": "node scripts/tauri-wrapper.mjs",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write . && cd src-tauri && cargo fmt",

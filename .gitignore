@@ -26,8 +26,6 @@ dist-ssr
 *.sln
 *.sw?
 
-.claude/
-
 /target/
 recording_*
 .crush/
@@ -42,3 +40,24 @@ blob-report/
 
 # Nix build output
 result
+/.github/ISSUE_TEMPLATE/bug_report.md
+/.github/ISSUE_TEMPLATE/config.yml
+/.github/ISSUE_TEMPLATE/feature_request.md
+/.github/workflows/build-test.yml
+/.github/workflows/build.yml
+/.github/workflows/lint.yml
+/.github/workflows/nix-check.yml
+/.github/workflows/playwright.yml
+/.github/workflows/pr-test-build.yml
+/.github/workflows/prettier.yml
+/.github/workflows/release.yml
+/.github/workflows/test.yml
+/.github/FUNDING.yml
+/.github/PULL_REQUEST_TEMPLATE.md
+/.nix/bun-lock-hash
+/.nix/bun.nix
+/.vs
+/.vscode/extensions.json
+/nix/hm-module.nix
+/nix/module.nix
+/src-tauri/HID-BLE-Rust/target/debug

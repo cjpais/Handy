@@ -9,6 +9,12 @@ import type {
   OrtAcceleratorSetting,
 } from "@/bindings";
 
+const WHISPER_LABELS: Record<WhisperAcceleratorSetting, string> = {
+  auto: "Auto",
+  cpu: "CPU",
+  gpu: "GPU",
+};
+
 const ORT_LABELS: Record<OrtAcceleratorSetting, string> = {
   auto: "Auto",
   cpu: "CPU",
@@ -20,34 +26,6 @@ const ORT_LABELS: Record<OrtAcceleratorSetting, string> = {
 interface AccelerationSelectorProps {
   descriptionMode?: "tooltip" | "inline";
   grouped?: boolean;
-}
-
-/**
- * Whisper dropdown encodes accelerator + device in a single value:
- *   "auto"   → accelerator=auto,  gpu_device=-1
- *   "cpu"    → accelerator=cpu,   gpu_device=-1
- *   "gpu:0"  → accelerator=gpu,   gpu_device=0
- *   "gpu:1"  → accelerator=gpu,   gpu_device=1
- */
-function encodeWhisperValue(
-  accelerator: WhisperAcceleratorSetting,
-  gpuDevice: number,
-): string {
-  if (accelerator === "cpu") return "cpu";
-  if (accelerator === "gpu" && gpuDevice >= 0) return `gpu:${gpuDevice}`;
-  return "auto";
-}
-
-function decodeWhisperValue(value: string): {
-  accelerator: WhisperAcceleratorSetting;
-  gpuDevice: number;
-} {
-  if (value === "cpu") return { accelerator: "cpu", gpuDevice: -1 };
-  if (value.startsWith("gpu:")) {
-    const id = parseInt(value.slice(4), 10);
-    return { accelerator: "gpu", gpuDevice: id };
-  }
-  return { accelerator: "auto", gpuDevice: -1 };
 }
 
 export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
@@ -62,29 +40,13 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
 
   useEffect(() => {
     commands.getAvailableAccelerators().then((available) => {
-      // Build combined Whisper options: Auto, [GPU devices...], CPU
-      const opts: DropdownOption[] = [
-        {
-          value: "auto",
-          label: t("settings.advanced.acceleration.gpuDevice.auto"),
-        },
-      ];
-
-      for (const dev of available.gpu_devices) {
-        const vramLabel =
-          dev.total_vram_mb >= 1024
-            ? `${(dev.total_vram_mb / 1024).toFixed(1)} GB`
-            : `${dev.total_vram_mb} MB`;
-        opts.push({
-          value: `gpu:${dev.id}`,
-          label: `${dev.name} (${vramLabel})`,
-        });
-      }
-
-      opts.push({ value: "cpu", label: "CPU" });
-      setWhisperOptions(opts);
-
-      // ORT options (unchanged)
+      setWhisperOptions(
+        available.whisper.map((v) => ({
+          value: v,
+          label: WHISPER_LABELS[v as WhisperAcceleratorSetting] ?? v,
+        })),
+      );
+      // Always include "auto" for ORT even though available() only returns compiled-in backends
       const ortVals = available.ort.includes("auto")
         ? available.ort
         : ["auto", ...available.ort];
@@ -95,21 +57,10 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
         })),
       );
     });
-  }, [t]);
+  }, []);
 
-  const currentAccelerator = getSetting("whisper_accelerator") ?? "auto";
-  const currentGpuDevice = getSetting("whisper_gpu_device") ?? -1;
-  const currentWhisper = encodeWhisperValue(
-    currentAccelerator as WhisperAcceleratorSetting,
-    currentGpuDevice as number,
-  );
+  const currentWhisper = getSetting("whisper_accelerator") ?? "auto";
   const currentOrt = getSetting("ort_accelerator") ?? "auto";
-
-  const handleWhisperChange = async (value: string) => {
-    const { accelerator, gpuDevice } = decodeWhisperValue(value);
-    await updateSetting("whisper_accelerator", accelerator);
-    await updateSetting("whisper_gpu_device", gpuDevice);
-  };
 
   return (
     <>
@@ -123,11 +74,13 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
         <Dropdown
           options={whisperOptions}
           selectedValue={currentWhisper}
-          onSelect={handleWhisperChange}
-          disabled={
-            isUpdating("whisper_accelerator") ||
-            isUpdating("whisper_gpu_device")
+          onSelect={(value) =>
+            updateSetting(
+              "whisper_accelerator",
+              value as WhisperAcceleratorSetting,
+            )
           }
+          disabled={isUpdating("whisper_accelerator")}
         />
       </SettingContainer>
       {ortOptions.length > 2 && (

@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Multilíngue preciso. 25 idiomas europeus. Suporta tradução."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Um modelo grande, mais lento, mas muito preciso e multilíngue."
       }
     },
     "errors": {
@@ -123,8 +119,6 @@
     "custom": "Personalizado",
     "active": "Ativo",
     "noModelsAvailable": "Nenhum modelo disponível",
-    "verifying": "Verificando {{modelName}}...",
-    "verifyingGeneric": "Verificando...",
     "extracting": "Extraindo {{modelName}}...",
     "extractingMultiple": "Extraindo {{count}} modelos...",
     "extractingGeneric": "Extraindo...",
@@ -251,10 +245,6 @@
         "label": "Recursos Experimentais",
         "description": "Ativar recursos experimentais que ainda estão em desenvolvimento."
       },
-      "lazyStreamClose": {
-        "label": "Manter microfone aberto entre transcrições",
-        "description": "Mantém o fluxo do microfone aberto por 30 segundos após parar a gravação, reduzindo a latência em transcrições consecutivas. Pode degradar a qualidade do áudio Bluetooth enquanto ativo."
-      },
       "acceleration": {
         "whisper": {
           "title": "Aceleração Whisper",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "Aceleração ONNX",
           "description": "Aceleração por hardware para modelos ONNX (Parakeet, Canary, Moonshine, etc.). DirectML no Windows é experimental. Os modelos podem falhar na transcrição."
-        },
-        "gpuDevice": {
-          "title": "Dispositivo GPU",
-          "description": "Selecione qual GPU usar para inferência do Whisper. Auto escolhe a GPU dedicada.",
-          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "Após 10 minutos",
           "min15": "Após 15 minutos",
           "hour1": "Após 1 hora",
-          "sec15": "Após 15 segundos (Depuração)"
+          "sec5": "Após 5 segundos (Depuração)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Salvar transcrição",
       "unsave": "Remover dos salvos",
       "delete": "Excluir entrada",
-      "deleteError": "Falha ao excluir entrada. Por favor, tente novamente.",
-      "retranscribe": "Re-transcrever",
-      "retranscribeError": "Falha ao re-transcrever. Por favor, tente novamente.",
-      "transcribing": "Transcrevendo...",
-      "transcriptionFailed": "A transcrição falhou. Você pode re-transcrever usando o ícone de tentar novamente."
+      "deleteError": "Falha ao excluir entrada. Por favor, tente novamente."
     },
     "debug": {
       "title": "Depuração",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Atraso de colagem",
         "description": "Atraso antes de enviar a tecla de colar (em milissegundos). Aumente se o texto errado estiver sendo colado."
-      },
-      "recordingBuffer": {
-        "title": "Buffer de gravação extra",
-        "description": "Tempo extra (em milissegundos) para continuar gravando após soltar a tecla, para capturar áudio restante. 0 = sem buffer extra."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "Baixando... {{progress}}%",
     "installing": "Instalando...",
     "preparing": "Preparando...",
-    "checkForUpdates": "Verificar atualizações",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "Verificar atualizações"
   },
   "common": {
     "loading": "Carregando...",
@@ -593,13 +567,9 @@
       "macos": "Conceda o acesso ao microfone em Ajustes do Sistema → Privacidade e Segurança → Microfone.",
       "linux": "Conceda o acesso ao microfone nas configurações de som ou privacidade do seu sistema."
     },
-    "noInputDeviceTitle": "Nenhum microfone encontrado",
-    "noInputDevice": "Nenhum dispositivo de entrada de áudio foi detectado. Conecte um microfone ou fone de ouvido e tente novamente.",
     "recordingFailed": "Falha ao iniciar a gravação: {{error}}",
     "modelLoadFailed": "Falha ao carregar o modelo: {{model}}",
-    "modelLoadFailedUnknown": "modelo desconhecido",
-    "pasteFailedTitle": "Falha ao colar o texto",
-    "pasteFailed": "Não foi possível colar o texto no aplicativo ativo."
+    "modelLoadFailedUnknown": "modelo desconhecido"
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",

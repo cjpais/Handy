@@ -62,22 +62,17 @@
   }
 }
 
-/* macOS - tint native overlay scrollbar thumb */
-:root[data-platform="macos"] {
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-
-/* Custom Scrollbar - only on Windows/Linux; macOS uses native overlay scrollbars */
-:root:not([data-platform="macos"]) ::-webkit-scrollbar {
+/* Custom Scrollbar */
+::-webkit-scrollbar {
   width: 14px;
   height: 14px;
 }
 
-:root:not([data-platform="macos"]) ::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
 
-:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb);
   border-radius: 20px;
   border: 3px solid transparent;
@@ -87,7 +82,7 @@
   min-height: 32px;
 }
 
-:root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background-color: var(--scrollbar-thumb-hover);
 }
 

@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Точная многоязычная. 25 европейских языков. Поддержка перевода."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Большая, медленная, но очень точная многоязычная модель."
       }
     },
     "errors": {
@@ -124,8 +120,6 @@
     "active": "Активный",
     "switching": "Переключение...",
     "noModelsAvailable": "Нет доступных моделей",
-    "verifying": "Проверка {{modelName}}...",
-    "verifyingGeneric": "Проверка...",
     "extracting": "Извлечение {{modelName}}...",
     "extractingMultiple": "Извлечение моделей {{count}}...",
     "extractingGeneric": "Извлечение...",
@@ -251,10 +245,6 @@
         "label": "Экспериментальные функции",
         "description": "Включить экспериментальные функции, которые находятся в разработке."
       },
-      "lazyStreamClose": {
-        "label": "Оставлять микрофон включённым между транскрипциями",
-        "description": "Оставляет поток микрофона открытым в течение 30 секунд после остановки записи, уменьшая задержку при последовательных транскрипциях. Может ухудшить качество звука Bluetooth."
-      },
       "acceleration": {
         "whisper": {
           "title": "Ускорение Whisper",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "Ускорение ONNX",
           "description": "Аппаратное ускорение для моделей ONNX (Parakeet, Canary, Moonshine и др.). DirectML на Windows является экспериментальным. Модели могут не выполнять транскрипцию."
-        },
-        "gpuDevice": {
-          "title": "Устройство GPU",
-          "description": "Выберите GPU для инференса Whisper. Авто выбирает выделенный GPU.",
-          "auto": "Авто"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "Через 10 минут",
           "min15": "Через 15 минут",
           "hour1": "Через 1 час",
-          "sec15": "Через 15 секунд (отладка)"
+          "sec5": "Через 5 секунд (отладка)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Сохранить транскрипцию",
       "unsave": "Удалить из сохраненных",
       "delete": "Удалить запись",
-      "deleteError": "Не удалось удалить запись. Пожалуйста, попробуйте еще раз.",
-      "retranscribe": "Перетранскрибировать",
-      "retranscribeError": "Не удалось перетранскрибировать. Пожалуйста, попробуйте снова.",
-      "transcribing": "Транскрибирование...",
-      "transcriptionFailed": "Транскрипция не удалась. Вы можете перетранскрибировать, используя значок повтора."
+      "deleteError": "Не удалось удалить запись. Пожалуйста, попробуйте еще раз."
     },
     "debug": {
       "title": "Отлаживать",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Задержка вставки",
         "description": "Задержка перед отправкой нажатия клавиши вставки (в миллисекундах). Увеличьте, если вставляется неправильный текст."
-      },
-      "recordingBuffer": {
-        "title": "Дополнительный буфер записи",
-        "description": "Дополнительное время (в миллисекундах) для продолжения записи после отпускания клавиши, чтобы захватить завершающий звук. 0 = без дополнительного буфера."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "Загрузка... {{progress}} %",
     "installing": "Установка...",
     "preparing": "Подготовка...",
-    "checkForUpdates": "Проверить наличие обновлений",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "Проверить наличие обновлений"
   },
   "common": {
     "loading": "Загрузка...",
@@ -593,13 +567,9 @@
       "macos": "Предоставьте доступ к микрофону в Системные настройки → Конфиденциальность и безопасность → Микрофон.",
       "linux": "Предоставьте доступ к микрофону в настройках звука или конфиденциальности вашей системы."
     },
-    "noInputDeviceTitle": "Микрофон не найден",
-    "noInputDevice": "Аудиоустройство ввода не обнаружено. Подключите микрофон или гарнитуру и попробуйте снова.",
     "recordingFailed": "Не удалось начать запись: {{error}}",
     "modelLoadFailed": "Не удалось загрузить модель: {{model}}",
-    "modelLoadFailedUnknown": "неизвестная модель",
-    "pasteFailedTitle": "Не удалось вставить текст",
-    "pasteFailed": "Не удалось вставить текст в активное приложение."
+    "modelLoadFailedUnknown": "неизвестная модель"
   },
   "appLanguage": {
     "title": "Язык приложения",

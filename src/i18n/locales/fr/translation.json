@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Multilingue précis. 25 langues européennes. Supporte la traduction."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Un modèle volumineux, plus lent, mais très précis et multilingue."
       }
     },
     "errors": {
@@ -124,8 +120,6 @@
     "active": "Actif",
     "switching": "Changement...",
     "noModelsAvailable": "Aucun modèle disponible",
-    "verifying": "Vérification de {{modelName}}...",
-    "verifyingGeneric": "Vérification...",
     "extracting": "Extraction de {{modelName}}...",
     "extractingMultiple": "Extraction de {{count}} modèles...",
     "extractingGeneric": "Extraction...",
@@ -251,10 +245,6 @@
         "label": "Fonctionnalités Expérimentales",
         "description": "Activer les fonctionnalités expérimentales encore en développement."
       },
-      "lazyStreamClose": {
-        "label": "Garder le micro ouvert entre les transcriptions",
-        "description": "Maintient le flux du microphone ouvert pendant 30 secondes après l'arrêt de l'enregistrement, réduisant la latence pour les transcriptions consécutives. Peut dégrader la qualité audio Bluetooth."
-      },
       "acceleration": {
         "whisper": {
           "title": "Accélération Whisper",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "Accélération ONNX",
           "description": "Accélération matérielle pour les modèles ONNX (Parakeet, Canary, Moonshine, etc.). DirectML sur Windows est expérimental. Les modèles peuvent échouer à transcrire."
-        },
-        "gpuDevice": {
-          "title": "Appareil GPU",
-          "description": "Sélectionnez le GPU à utiliser pour l'inférence Whisper. Auto choisit le GPU dédié.",
-          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "Après 10 minutes",
           "min15": "Après 15 minutes",
           "hour1": "Après 1 heure",
-          "sec15": "Après 15 secondes (Débogage)"
+          "sec5": "Après 5 secondes (Débogage)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Enregistrer la transcription",
       "unsave": "Retirer des favoris",
       "delete": "Supprimer l'entrée",
-      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer.",
-      "retranscribe": "Re-transcrire",
-      "retranscribeError": "Impossible de re-transcrire. Veuillez réessayer.",
-      "transcribing": "Transcription en cours...",
-      "transcriptionFailed": "La transcription a échoué. Vous pouvez re-transcrire en utilisant l'icône de réessai."
+      "deleteError": "Échec de la suppression de l'entrée. Veuillez réessayer."
     },
     "debug": {
       "title": "Débogage",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Délai de collage",
         "description": "Délai avant l'envoi de la touche de collage (en millisecondes). Augmentez si le mauvais texte est collé."
-      },
-      "recordingBuffer": {
-        "title": "Tampon d'enregistrement supplémentaire",
-        "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "Téléchargement... {{progress}}%",
     "installing": "Installation...",
     "preparing": "Préparation...",
-    "checkForUpdates": "Rechercher des mises à jour",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "Rechercher des mises à jour"
   },
   "common": {
     "loading": "Chargement...",
@@ -593,13 +567,9 @@
       "macos": "Accordez l'accès au microphone dans Réglages du système → Confidentialité et sécurité → Microphone.",
       "linux": "Accordez l'accès au microphone dans les paramètres de son ou de confidentialité de votre système."
     },
-    "noInputDeviceTitle": "Aucun microphone trouvé",
-    "noInputDevice": "Aucun périphérique d'entrée audio n'a été détecté. Veuillez connecter un microphone ou un casque et réessayer.",
     "recordingFailed": "Échec du démarrage de l'enregistrement : {{error}}",
     "modelLoadFailed": "Échec du chargement du modèle : {{model}}",
-    "modelLoadFailedUnknown": "modèle inconnu",
-    "pasteFailedTitle": "Échec du collage du texte",
-    "pasteFailed": "Le texte n'a pas pu être collé dans l'application active."
+    "modelLoadFailedUnknown": "modèle inconnu"
   },
   "appLanguage": {
     "title": "Langue de l'application",

@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "高精度な多言語対応。25のヨーロッパ言語。翻訳対応。"
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "大型で低速ですが、非常に高精度な多言語モデル。"
       }
     },
     "errors": {
@@ -124,8 +120,6 @@
     "active": "アクティブ",
     "switching": "切替中...",
     "noModelsAvailable": "利用可能なモデルがありません",
-    "verifying": "{{modelName}}を検証中...",
-    "verifyingGeneric": "検証中...",
     "extracting": "{{modelName}}を展開中...",
     "extractingMultiple": "{{count}}個のモデルを展開中...",
     "extractingGeneric": "展開中...",
@@ -251,10 +245,6 @@
         "label": "実験的機能",
         "description": "まだ開発中の実験的機能を有効にします。"
       },
-      "lazyStreamClose": {
-        "label": "文字起こし間でマイクを開いたままにする",
-        "description": "録音停止後30秒間マイクストリームを開いたままにし、連続した文字起こしの遅延を軽減します。Bluetooth音声品質に影響する場合があります。"
-      },
       "acceleration": {
         "whisper": {
           "title": "Whisper アクセラレーション",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "ONNX アクセラレーション",
           "description": "ONNX モデルのハードウェアアクセラレーション（Parakeet、Canary、Moonshine など）。Windows の DirectML は実験的です。モデルの文字起こしに失敗する場合があります。"
-        },
-        "gpuDevice": {
-          "title": "GPUデバイス",
-          "description": "Whisper推論に使用するGPUを選択します。自動は専用GPUを選択します。",
-          "auto": "自動"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "10分後",
           "min15": "15分後",
           "hour1": "1時間後",
-          "sec15": "15秒後（デバッグ）"
+          "sec5": "5秒後（デバッグ）"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "文字起こしを保存",
       "unsave": "保存から削除",
       "delete": "エントリーを削除",
-      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。",
-      "retranscribe": "再文字起こし",
-      "retranscribeError": "再文字起こしに失敗しました。もう一度お試しください。",
-      "transcribing": "文字起こし中...",
-      "transcriptionFailed": "文字起こしに失敗しました。リトライアイコンを使用して再文字起こしできます。"
+      "deleteError": "エントリーの削除に失敗しました。もう一度お試しください。"
     },
     "debug": {
       "title": "デバッグ",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "貼り付け遅延",
         "description": "貼り付けキー送信前の遅延（ミリ秒）。間違ったテキストが貼り付けられる場合は増やしてください。"
-      },
-      "recordingBuffer": {
-        "title": "追加録音バッファ",
-        "description": "キーを離した後に録音を続ける追加時間（ミリ秒）。末尾の音声を捕捉するため。0 = 追加バッファなし。"
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "ダウンロード中... {{progress}}%",
     "installing": "インストール中...",
     "preparing": "準備中...",
-    "checkForUpdates": "アップデートを確認",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "アップデートを確認"
   },
   "common": {
     "loading": "読み込み中...",
@@ -593,13 +567,9 @@
       "macos": "システム設定 → プライバシーとセキュリティ → マイクでマイクへのアクセスを許可してください。",
       "linux": "システムのサウンドまたはプライバシー設定でマイクへのアクセスを許可してください。"
     },
-    "noInputDeviceTitle": "マイクが見つかりません",
-    "noInputDevice": "オーディオ入力デバイスが検出されませんでした。マイクまたはヘッドセットを接続してから再試行してください。",
     "recordingFailed": "録音の開始に失敗しました: {{error}}",
     "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
-    "modelLoadFailedUnknown": "不明なモデル",
-    "pasteFailedTitle": "テキストの貼り付けに失敗しました",
-    "pasteFailed": "アクティブなアプリケーションにテキストを貼り付けられませんでした。"
+    "modelLoadFailedUnknown": "不明なモデル"
   },
   "appLanguage": {
     "title": "アプリケーション言語",

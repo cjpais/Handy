@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Точна багатомовна. 25 європейських мов. Підтримує переклад."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Велика, повільніша, але дуже точна багатомовна модель."
       }
     },
     "errors": {
@@ -123,8 +119,6 @@
     "custom": "Користувацька",
     "active": "Активна",
     "noModelsAvailable": "Немає доступних моделей",
-    "verifying": "Перевірка {{modelName}}...",
-    "verifyingGeneric": "Перевірка...",
     "extracting": "Розпакування {{modelName}}...",
     "extractingMultiple": "Розпакування {{count}} моделей...",
     "extractingGeneric": "Розпакування...",
@@ -251,10 +245,6 @@
         "label": "Експериментальні функції",
         "description": "Увімкнути експериментальні функції, які ще в розробці."
       },
-      "lazyStreamClose": {
-        "label": "Залишати мікрофон увімкненим між транскрипціями",
-        "description": "Залишає потік мікрофона відкритим протягом 30 секунд після зупинки запису, зменшуючи затримку при послідовних транскрипціях. Може погіршити якість звуку Bluetooth."
-      },
       "acceleration": {
         "whisper": {
           "title": "Прискорення Whisper",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "Прискорення ONNX",
           "description": "Апаратне прискорення для моделей ONNX (Parakeet, Canary, Moonshine тощо). DirectML на Windows є експериментальним. Моделі можуть не виконувати транскрипцію."
-        },
-        "gpuDevice": {
-          "title": "Пристрій GPU",
-          "description": "Виберіть GPU для інференсу Whisper. Автоматично обирає виділений GPU.",
-          "auto": "Авто"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "Через 10 хвилин",
           "min15": "Через 15 хвилин",
           "hour1": "Через 1 годину",
-          "sec15": "Через 15 секунд (Дебаг)"
+          "sec5": "Через 5 секунд (Дебаг)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Зберегти транскрипцію",
       "unsave": "Видалити зі збережених",
       "delete": "Видалити запис",
-      "deleteError": "Не вдалося видалити запис. Спробуйте ще раз.",
-      "retranscribe": "Перетранскрибувати",
-      "retranscribeError": "Не вдалося перетранскрибувати. Будь ласка, спробуйте ще раз.",
-      "transcribing": "Транскрибування...",
-      "transcriptionFailed": "Транскрипція не вдалася. Ви можете перетранскрибувати за допомогою іконки повтору."
+      "deleteError": "Не вдалося видалити запис. Спробуйте ще раз."
     },
     "debug": {
       "title": "Дебаг",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Затримка вставки",
         "description": "Затримка перед надсиланням натискання клавіші вставки (у мілісекундах). Збільшіть, якщо вставляється неправильний текст."
-      },
-      "recordingBuffer": {
-        "title": "Додатковий буфер запису",
-        "description": "Додатковий час (у мілісекундах) для продовження запису після відпускання клавіші, щоб захопити завершальний звук. 0 = без додаткового буфера."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "Завантаження... {{progress}}%",
     "installing": "Встановлення...",
     "preparing": "Підготовка...",
-    "checkForUpdates": "Перевірити оновлення",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "Перевірити оновлення"
   },
   "common": {
     "loading": "Завантаження...",
@@ -593,13 +567,9 @@
       "macos": "Надайте доступ до мікрофона в Системні налаштування → Конфіденційність і безпека → Мікрофон.",
       "linux": "Надайте доступ до мікрофона в налаштуваннях звуку або конфіденційності вашої системи."
     },
-    "noInputDeviceTitle": "Мікрофон не знайдено",
-    "noInputDevice": "Не виявлено жодного пристрою введення звуку. Підключіть мікрофон або гарнітуру та спробуйте знову.",
     "recordingFailed": "Не вдалося розпочати запис: {{error}}",
     "modelLoadFailed": "Не вдалося завантажити модель: {{model}}",
-    "modelLoadFailedUnknown": "невідома модель",
-    "pasteFailedTitle": "Не вдалося вставити текст",
-    "pasteFailed": "Не вдалося вставити текст до активної програми."
+    "modelLoadFailedUnknown": "невідома модель"
   },
   "appLanguage": {
     "title": "Мова інтерфейсу",

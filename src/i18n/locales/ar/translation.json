@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "متعدد اللغات ودقيق. 25 لغة أوروبية. يدعم الترجمة."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "نموذج كبير وأبطأ، لكنه دقيق جداً ومتعدد اللغات."
       }
     },
     "errors": {
@@ -123,8 +119,6 @@
     "custom": "مخصص",
     "active": "نشط",
     "noModelsAvailable": "لا توجد نماذج متاحة",
-    "verifying": "جارٍ التحقق من {{modelName}}...",
-    "verifyingGeneric": "جارٍ التحقق...",
     "extracting": "...جاري استخراج {{modelName}}",
     "extractingMultiple": "...جاري استخراج {{count}} من النماذج",
     "extractingGeneric": "...جاري الاستخراج",
@@ -229,10 +223,6 @@
         "label": "الميزات التجريبية",
         "description": ".تمكين الميزات التجريبية التي لا تزال قيد التطوير"
       },
-      "lazyStreamClose": {
-        "label": "إبقاء الميكروفون مفتوحًا بين عمليات النسخ",
-        "description": "يبقي بث الميكروفون مفتوحًا لمدة 30 ثانية بعد توقف التسجيل، مما يقلل التأخير عند النسخ المتتالي. قد يؤثر على جودة صوت البلوتوث أثناء التفعيل."
-      },
       "acceleration": {
         "whisper": {
           "title": "تسريع Whisper",
@@ -241,11 +231,6 @@
         "ort": {
           "title": "تسريع ONNX",
           "description": "تسريع الأجهزة لنماذج ONNX (Parakeet، Canary، Moonshine، إلخ). DirectML على Windows تجريبي. قد تفشل النماذج في النسخ."
-        },
-        "gpuDevice": {
-          "title": "جهاز GPU",
-          "description": "حدد وحدة معالجة الرسومات المستخدمة لاستدلال Whisper. يختار تلقائي وحدة GPU المخصصة.",
-          "auto": "تلقائي"
         }
       },
       "startHidden": {
@@ -324,7 +309,7 @@
           "min10": "بعد 10 دقائق",
           "min15": "بعد 15 دقيقة",
           "hour1": "بعد ساعة واحدة",
-          "sec15": "بعد 15 ثوانٍ (تصحيح أخطاء)"
+          "sec5": "بعد 5 ثوانٍ (تصحيح أخطاء)"
         }
       },
       "customWords": {
@@ -405,11 +390,7 @@
       "save": "حفظ التفريغ",
       "unsave": "إزالة من المحفوظات",
       "delete": "حذف الإدخال",
-      "deleteError": ".فشل حذف الإدخال. يرجى المحاولة مرة أخرى",
-      "retranscribe": "إعادة النسخ",
-      "retranscribeError": "فشلت إعادة النسخ. يرجى المحاولة مرة أخرى.",
-      "transcribing": "جارٍ النسخ...",
-      "transcriptionFailed": "فشل النسخ. يمكنك إعادة النسخ باستخدام أيقونة إعادة المحاولة."
+      "deleteError": ".فشل حذف الإدخال. يرجى المحاولة مرة أخرى"
     },
     "debug": {
       "title": "تصحيح الأخطاء",
@@ -481,10 +462,6 @@
       "pasteDelay": {
         "title": "تأخير اللصق",
         "description": "التأخير قبل إرسال ضغطة مفتاح اللصق (بالمللي ثانية). قم بزيادتها إذا تم لصق نص خاطئ."
-      },
-      "recordingBuffer": {
-        "title": "مخزن التسجيل الإضافي",
-        "description": "وقت إضافي (بالمللي ثانية) للاستمرار في التسجيل بعد تحرير المفتاح، لالتقاط الصوت المتبقي. 0 = لا مخزن إضافي."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "...جاري التنزيل {{progress}}%",
     "installing": "...جاري التثبيت",
     "preparing": "...جاري التحضير",
-    "checkForUpdates": "التحقق من وجود تحديثات",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "التحقق من وجود تحديثات"
   },
   "common": {
     "loading": "...جاري التحميل",
@@ -593,13 +567,9 @@
       "macos": "امنح الوصول إلى الميكروفون في إعدادات النظام ← الخصوصية والأمان ← الميكروفون.",
       "linux": "امنح الوصول إلى الميكروفون في إعدادات الصوت أو الخصوصية في نظامك."
     },
-    "noInputDeviceTitle": "لم يتم العثور على ميكروفون",
-    "noInputDevice": "لم يتم اكتشاف أي جهاز إدخال صوتي. يرجى توصيل ميكروفون أو سماعة رأس والمحاولة مرة أخرى.",
     "recordingFailed": "فشل في بدء التسجيل: {{error}}",
     "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
-    "modelLoadFailedUnknown": "نموذج غير معروف",
-    "pasteFailedTitle": "فشل لصق النص",
-    "pasteFailed": "تعذر لصق النص في التطبيق النشط."
+    "modelLoadFailedUnknown": "نموذج غير معروف"
   },
   "appLanguage": {
     "title": "لغة التطبيق",

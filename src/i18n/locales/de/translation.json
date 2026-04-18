@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Genaue mehrsprachige Erkennung. 25 europäische Sprachen. Unterstützt Übersetzung."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Ein großes, langsameres, aber sehr genaues mehrsprachiges Modell."
       }
     },
     "errors": {
@@ -124,8 +120,6 @@
     "active": "Aktiv",
     "switching": "Wechseln...",
     "noModelsAvailable": "Keine Modelle verfügbar",
-    "verifying": "Überprüfung von {{modelName}}...",
-    "verifyingGeneric": "Überprüfung...",
     "extracting": "Entpacke {{modelName}}...",
     "extractingMultiple": "Entpacke {{count}} Modelle...",
     "extractingGeneric": "Wird entpackt...",
@@ -251,10 +245,6 @@
         "label": "Experimentelle Funktionen",
         "description": "Experimentelle Funktionen aktivieren, die sich noch in Entwicklung befinden."
       },
-      "lazyStreamClose": {
-        "label": "Mikrofon zwischen Transkriptionen offen halten",
-        "description": "Hält den Mikrofon-Stream nach dem Aufnahmestopp 30 Sekunden lang offen, um die Latenz bei aufeinanderfolgenden Transkriptionen zu verringern. Kann die Bluetooth-Audioqualität beeinträchtigen."
-      },
       "acceleration": {
         "whisper": {
           "title": "Whisper-Beschleunigung",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "ONNX-Beschleunigung",
           "description": "Hardwarebeschleunigung für ONNX-Modelle (Parakeet, Canary, Moonshine usw.). DirectML unter Windows ist experimentell. Modelle können bei der Transkription fehlschlagen."
-        },
-        "gpuDevice": {
-          "title": "GPU-Gerät",
-          "description": "Wählen Sie die GPU für die Whisper-Inferenz. Auto wählt die dedizierte GPU.",
-          "auto": "Auto"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "Nach 10 Minuten",
           "min15": "Nach 15 Minuten",
           "hour1": "Nach 1 Stunde",
-          "sec15": "Nach 15 Sekunden (Debug)"
+          "sec5": "Nach 5 Sekunden (Debug)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Transkription speichern",
       "unsave": "Aus Gespeicherten entfernen",
       "delete": "Eintrag löschen",
-      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut.",
-      "retranscribe": "Erneut transkribieren",
-      "retranscribeError": "Erneute Transkription fehlgeschlagen. Bitte versuche es erneut.",
-      "transcribing": "Transkribiere...",
-      "transcriptionFailed": "Transkription fehlgeschlagen. Du kannst über das Wiederholen-Symbol erneut transkribieren."
+      "deleteError": "Eintrag konnte nicht gelöscht werden. Bitte versuche es erneut."
     },
     "debug": {
       "title": "Debug",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Einfügeverzögerung",
         "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhen Sie den Wert, wenn falscher Text eingefügt wird."
-      },
-      "recordingBuffer": {
-        "title": "Zusätzlicher Aufnahmepuffer",
-        "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiterzuzeichnen, um nachlaufendes Audio aufzunehmen. 0 = kein zusätzlicher Puffer."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "Wird heruntergeladen... {{progress}}%",
     "installing": "Wird installiert...",
     "preparing": "Wird vorbereitet...",
-    "checkForUpdates": "Nach Updates suchen",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "Nach Updates suchen"
   },
   "common": {
     "loading": "Wird geladen...",
@@ -593,13 +567,9 @@
       "macos": "Erteilen Sie den Mikrofonzugriff in Systemeinstellungen → Datenschutz & Sicherheit → Mikrofon.",
       "linux": "Erteilen Sie den Mikrofonzugriff in den Sound- oder Datenschutzeinstellungen Ihres Systems."
     },
-    "noInputDeviceTitle": "Kein Mikrofon gefunden",
-    "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließen Sie ein Mikrofon oder Headset an und versuchen Sie es erneut.",
     "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
-    "modelLoadFailedUnknown": "unbekanntes Modell",
-    "pasteFailedTitle": "Text konnte nicht eingefügt werden",
-    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden."
+    "modelLoadFailedUnknown": "unbekanntes Modell"
   },
   "appLanguage": {
     "title": "Anwendungssprache",

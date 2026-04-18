@@ -3,7 +3,6 @@ use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 use specta::Type;
 use std::collections::HashMap;
-use std::fmt;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
 
@@ -124,7 +123,7 @@ pub enum ModelUnloadTimeout {
     Min10,
     Min15,
     Hour1,
-    Sec15, // Debug mode only
+    Sec5, // Debug mode only
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -181,7 +180,7 @@ impl Default for KeyboardImplementation {
 
 impl Default for ModelUnloadTimeout {
     fn default() -> Self {
-        ModelUnloadTimeout::Min5
+        ModelUnloadTimeout::Never
     }
 }
 
@@ -217,7 +216,7 @@ impl ModelUnloadTimeout {
             ModelUnloadTimeout::Min10 => Some(10),
             ModelUnloadTimeout::Min15 => Some(15),
             ModelUnloadTimeout::Hour1 => Some(60),
-            ModelUnloadTimeout::Sec15 => Some(0), // Special case for debug - handled separately
+            ModelUnloadTimeout::Sec5 => Some(0), // Special case for debug - handled separately
         }
     }
 
@@ -225,7 +224,7 @@ impl ModelUnloadTimeout {
         match self {
             ModelUnloadTimeout::Never => None,
             ModelUnloadTimeout::Immediately => Some(0), // Special case for immediate unloading
-            ModelUnloadTimeout::Sec15 => Some(15),
+            ModelUnloadTimeout::Sec5 => Some(5),
             _ => self.to_minutes().map(|m| m * 60),
         }
     }
@@ -305,34 +304,6 @@ impl Default for OrtAcceleratorSetting {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Type)]
-#[serde(transparent)]
-pub(crate) struct SecretMap(HashMap<String, String>);
-
-impl fmt::Debug for SecretMap {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let redacted: HashMap<&String, &str> = self
-            .0
-            .iter()
-            .map(|(k, v)| (k, if v.is_empty() { "" } else { "[REDACTED]" }))
-            .collect();
-        redacted.fmt(f)
-    }
-}
-
-impl std::ops::Deref for SecretMap {
-    type Target = HashMap<String, String>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for SecretMap {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -394,7 +365,7 @@ pub struct AppSettings {
     #[serde(default = "default_post_process_providers")]
     pub post_process_providers: Vec<PostProcessProvider>,
     #[serde(default = "default_post_process_api_keys")]
-    pub post_process_api_keys: SecretMap,
+    pub post_process_api_keys: HashMap<String, String>,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
     #[serde(default = "default_post_process_prompts")]
@@ -410,8 +381,6 @@ pub struct AppSettings {
     #[serde(default)]
     pub experimental_enabled: bool,
     #[serde(default)]
-    pub lazy_stream_close: bool,
-    #[serde(default)]
     pub keyboard_implementation: KeyboardImplementation,
     #[serde(default = "default_show_tray_icon")]
     pub show_tray_icon: bool,
@@ -426,10 +395,6 @@ pub struct AppSettings {
     pub whisper_accelerator: WhisperAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
-    #[serde(default = "default_whisper_gpu_device")]
-    pub whisper_gpu_device: i32,
-    #[serde(default)]
-    pub extra_recording_buffer_ms: u64,
 }
 
 fn default_model() -> String {
@@ -602,12 +567,12 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
     providers
 }
 
-fn default_post_process_api_keys() -> SecretMap {
+fn default_post_process_api_keys() -> HashMap<String, String> {
     let mut map = HashMap::new();
     for provider in default_post_process_providers() {
         map.insert(provider.id, String::new());
     }
-    SecretMap(map)
+    map
 }
 
 fn default_model_for_provider(provider_id: &str) -> String {
@@ -634,10 +599,6 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
         name: "Improve Transcriptions".to_string(),
         prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
     }]
-}
-
-fn default_whisper_gpu_device() -> i32 {
-    -1 // auto
 }
 
 fn default_typing_tool() -> TypingTool {
@@ -774,7 +735,7 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
-        model_unload_timeout: ModelUnloadTimeout::default(),
+        model_unload_timeout: ModelUnloadTimeout::Never,
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),
@@ -793,7 +754,6 @@ pub fn get_default_settings() -> AppSettings {
         append_trailing_space: false,
         app_language: default_app_language(),
         experimental_enabled: false,
-        lazy_stream_close: false,
         keyboard_implementation: KeyboardImplementation::default(),
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
@@ -802,8 +762,6 @@ pub fn get_default_settings() -> AppSettings {
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
-        whisper_gpu_device: default_whisper_gpu_device(),
-        extra_recording_buffer_ms: 0,
     }
 }
 
@@ -946,34 +904,5 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
-    }
-
-    #[test]
-    fn debug_output_redacts_api_keys() {
-        let mut settings = get_default_settings();
-        settings
-            .post_process_api_keys
-            .insert("openai".to_string(), "sk-proj-secret-key-12345".to_string());
-        settings.post_process_api_keys.insert(
-            "anthropic".to_string(),
-            "sk-ant-secret-key-67890".to_string(),
-        );
-        settings
-            .post_process_api_keys
-            .insert("empty_provider".to_string(), "".to_string());
-
-        let debug_output = format!("{:?}", settings);
-
-        assert!(!debug_output.contains("sk-proj-secret-key-12345"));
-        assert!(!debug_output.contains("sk-ant-secret-key-67890"));
-        assert!(debug_output.contains("[REDACTED]"));
-    }
-
-    #[test]
-    fn secret_map_debug_redacts_values() {
-        let map = SecretMap(HashMap::from([("key".into(), "secret".into())]));
-        let out = format!("{:?}", map);
-        assert!(!out.contains("secret"));
-        assert!(out.contains("[REDACTED]"));
     }
 }

@@ -282,26 +282,13 @@ impl AudioRecorder {
     fn get_preferred_config(
         device: &cpal::Device,
     ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
-        // Use the device's native/default sample rate and let the FrameResampler
-        // in run_consumer() downsample to 16kHz. This avoids forcing hardware into
-        // a non-native rate which can cause issues on some devices (Bluetooth
-        // codecs, certain ALSA drivers, etc.).
-        let default_config = device.default_input_config()?;
-        let target_rate = default_config.sample_rate();
-
-        // Try to find the best sample format at the device's default rate
-        let supported_configs = match device.supported_input_configs() {
-            Ok(configs) => configs,
-            Err(e) => {
-                log::warn!("Could not enumerate input configs ({e}), using device default");
-                return Ok(default_config);
-            }
-        };
+        let supported_configs = device.supported_input_configs()?;
         let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
 
+        // Try to find a config that supports 16kHz, prioritizing better formats
         for config_range in supported_configs {
-            if config_range.min_sample_rate() <= target_rate
-                && config_range.max_sample_rate() >= target_rate
+            if config_range.min_sample_rate().0 <= constants::WHISPER_SAMPLE_RATE
+                && config_range.max_sample_rate().0 >= constants::WHISPER_SAMPLE_RATE
             {
                 match best_config {
                     None => best_config = Some(config_range),
@@ -323,15 +310,11 @@ impl AudioRecorder {
         }
 
         if let Some(config) = best_config {
-            return Ok(config.with_sample_rate(target_rate));
+            return Ok(config.with_sample_rate(cpal::SampleRate(constants::WHISPER_SAMPLE_RATE)));
         }
 
-        // Fall back to device default if no config matched (exotic/virtual devices)
-        log::warn!(
-            "No supported config matched device default rate {:?}, using default config",
-            target_rate
-        );
-        Ok(default_config)
+        // If no config supports 16kHz, fall back to default
+        Ok(device.default_input_config()?)
     }
 }
 
@@ -342,16 +325,9 @@ pub fn is_microphone_access_denied(error_message: &str) -> bool {
         || normalized.contains("0x80070005")
 }
 
-pub fn is_no_input_device_error(error_message: &str) -> bool {
-    let normalized = error_message.to_lowercase();
-    normalized.contains("no input device found")
-        || (normalized.contains("failed to fetch preferred config")
-            && normalized.contains("coreaudio"))
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
+    use super::is_microphone_access_denied;
 
     #[test]
     fn detects_access_is_denied() {
@@ -371,24 +347,6 @@ mod tests {
     #[test]
     fn does_not_match_unrelated_errors() {
         assert!(!is_microphone_access_denied("device not found"));
-    }
-
-    #[test]
-    fn detects_no_input_device() {
-        assert!(is_no_input_device_error("No input device found"));
-    }
-
-    #[test]
-    fn detects_coreaudio_config_error() {
-        assert!(is_no_input_device_error(
-            "Failed to fetch preferred config: A backend-specific error has occurred: An unknown error unknown to the coreaudio-rs API occurred"
-        ));
-    }
-
-    #[test]
-    fn does_not_match_other_errors_for_no_device() {
-        assert!(!is_no_input_device_error("permission denied"));
-        assert!(!is_no_input_device_error("device not found"));
     }
 }
 

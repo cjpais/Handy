@@ -18,7 +18,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     downloadModel,
     selectModel,
     downloadingModels,
-    verifyingModels,
     extractingModels,
     downloadProgress,
     downloadStats,
@@ -27,21 +26,15 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
   const isDownloading = selectedModelId !== null;
 
-  // Watch for the selected model to finish downloading + verifying + extracting
+  // Watch for the selected model to finish downloading + extracting
   useEffect(() => {
     if (!selectedModelId) return;
 
     const model = models.find((m) => m.id === selectedModelId);
     const stillDownloading = selectedModelId in downloadingModels;
-    const stillVerifying = selectedModelId in verifyingModels;
     const stillExtracting = selectedModelId in extractingModels;
 
-    if (
-      model?.is_downloaded &&
-      !stillDownloading &&
-      !stillVerifying &&
-      !stillExtracting
-    ) {
+    if (model?.is_downloaded && !stillDownloading && !stillExtracting) {
       // Model is ready — select it and transition
       selectModel(selectedModelId).then((success) => {
         if (success) {
@@ -56,7 +49,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
     selectedModelId,
     models,
     downloadingModels,
-    verifyingModels,
     extractingModels,
     selectModel,
     onModelSelected,
@@ -65,17 +57,15 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
   const handleDownloadModel = async (modelId: string) => {
     setSelectedModelId(modelId);
 
-    // Error toast is handled centrally by the model-download-failed event listener
-    // in modelStore — no toast here to avoid duplicates.
     const success = await downloadModel(modelId);
     if (!success) {
+      toast.error(t("onboarding.downloadFailed"));
       setSelectedModelId(null);
     }
   };
 
   const getModelStatus = (modelId: string): ModelCardStatus => {
     if (modelId in extractingModels) return "extracting";
-    if (modelId in verifyingModels) return "verifying";
     if (modelId in downloadingModels) return "downloading";
     return "downloadable";
   };

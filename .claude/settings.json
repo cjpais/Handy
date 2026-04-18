@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo clean:*)",
+      "Bash(rustup show:*)",
+      "Bash(rustc --version)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\haiwen\\AppData\\Roaming\\com.pais.handy"
+    ]
+  }
+}

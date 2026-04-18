@@ -4,7 +4,11 @@ import { getVersion } from "@tauri-apps/api/app";
 import ModelSelector from "../model-selector";
 import UpdateChecker from "../update-checker";
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  actionSlot?: React.ReactNode;
+}
+
+const Footer: React.FC<FooterProps> = ({ actionSlot }) => {
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -28,12 +32,15 @@ const Footer: React.FC = () => {
           <ModelSelector />
         </div>
 
-        {/* Update Status */}
-        <div className="flex items-center gap-1">
-          <UpdateChecker />
-          <span>•</span>
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span>v{version}</span>
+        <div className="flex items-center gap-3">
+          {actionSlot}
+
+          <div className="flex items-center gap-1">
+            <UpdateChecker />
+            <span>•</span>
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <span>v{version}</span>
+          </div>
         </div>
       </div>
     </div>

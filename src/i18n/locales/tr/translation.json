@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Doğru çok dilli. 25 Avrupa dili. Çeviri desteği."
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "Büyük, daha yavaş, ancak çok doğru çok dilli bir model."
       }
     },
     "errors": {
@@ -123,8 +119,6 @@
     "custom": "Özel",
     "active": "Aktif",
     "noModelsAvailable": "Kullanılabilir model yok",
-    "verifying": "{{modelName}} doğrulanıyor...",
-    "verifyingGeneric": "Doğrulanıyor...",
     "extracting": "{{modelName}} çıkarılıyor...",
     "extractingMultiple": "{{count}} model çıkarılıyor...",
     "extractingGeneric": "Çıkarılıyor...",
@@ -251,10 +245,6 @@
         "label": "Deneysel Özellikler",
         "description": "Hala geliştirme aşamasında olan deneysel özellikleri etkinleştir."
       },
-      "lazyStreamClose": {
-        "label": "Transkripsiyonlar arasında mikrofonu açık tut",
-        "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
-      },
       "acceleration": {
         "whisper": {
           "title": "Whisper Hızlandırma",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "ONNX Hızlandırma",
           "description": "ONNX modelleri için donanım hızlandırma (Parakeet, Canary, Moonshine vb.). Windows'ta DirectML deneyseldir. Modeller transkripsiyon yapamayabilir."
-        },
-        "gpuDevice": {
-          "title": "GPU Aygıtı",
-          "description": "Whisper çıkarımı için hangi GPU'nun kullanılacağını seçin. Otomatik, özel GPU'yu seçer.",
-          "auto": "Otomatik"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "10 dakika sonra",
           "min15": "15 dakika sonra",
           "hour1": "1 saat sonra",
-          "sec15": "15 saniye sonra (Debug)"
+          "sec5": "5 saniye sonra (Debug)"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "Transkripsiyonu kaydet",
       "unsave": "Kaydedilenlerden kaldır",
       "delete": "Kaydı sil",
-      "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin.",
-      "retranscribe": "Yeniden yazıya dök",
-      "retranscribeError": "Yeniden yazıya dökme başarısız oldu. Lütfen tekrar deneyin.",
-      "transcribing": "Yazıya döküyor...",
-      "transcriptionFailed": "Transkripsiyon başarısız oldu. Yeniden deneme simgesini kullanarak tekrar yazıya dökebilirsiniz."
+      "deleteError": "Kayıt silinemedi. Lütfen tekrar deneyin."
     },
     "debug": {
       "title": "Hata Ayıklama",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "Yapıştırma gecikmesi",
         "description": "Yapıştırma tuşu göndermeden önce gecikme (milisaniye cinsinden). Yanlış metin yapıştırılıyorsa artırın."
-      },
-      "recordingBuffer": {
-        "title": "Ekstra kayıt tamponu",
-        "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "İndiriliyor... %{{progress}}",
     "installing": "Yükleniyor...",
     "preparing": "Hazırlanıyor...",
-    "checkForUpdates": "Güncellemeleri kontrol et",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "Güncellemeleri kontrol et"
   },
   "common": {
     "loading": "Yükleniyor...",
@@ -593,13 +567,9 @@
       "macos": "Sistem Ayarları → Gizlilik ve Güvenlik → Mikrofon bölümünden mikrofon erişimini verin.",
       "linux": "Sisteminizin ses veya gizlilik ayarlarından mikrofon erişimini verin."
     },
-    "noInputDeviceTitle": "Mikrofon bulunamadı",
-    "noInputDevice": "Ses giriş aygıtı algılanamadı. Lütfen bir mikrofon veya kulaklık bağlayın ve tekrar deneyin.",
     "recordingFailed": "Kayıt başlatılamadı: {{error}}",
     "modelLoadFailed": "Model yüklenemedi: {{model}}",
-    "modelLoadFailedUnknown": "bilinmeyen model",
-    "pasteFailedTitle": "Metin yapıştırılamadı",
-    "pasteFailed": "Metin etkin uygulamaya yapıştırılamadı."
+    "modelLoadFailedUnknown": "bilinmeyen model"
   },
   "appLanguage": {
     "title": "Uygulama Dili",

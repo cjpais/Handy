@@ -134,8 +134,19 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
 
     setupListener();
 
+    // Handle escape key to cancel
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelRecording();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
     return () => {
       cleanup = true;
+      window.removeEventListener("keydown", handleKeyDown);
       if (unlistenRef.current) {
         unlistenRef.current();
         unlistenRef.current = null;

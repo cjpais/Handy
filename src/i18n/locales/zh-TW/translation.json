@@ -88,10 +88,6 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "準確的多語言模型。25種歐洲語言。支援翻譯。"
-      },
-      "cohere-int8": {
-        "name": "Cohere",
-        "description": "大型模型，速度較慢，但多語言辨識非常準確。"
       }
     },
     "errors": {
@@ -124,8 +120,6 @@
     "active": "使用中",
     "switching": "切換中...",
     "noModelsAvailable": "沒有可用的模型",
-    "verifying": "正在驗證 {{modelName}}...",
-    "verifyingGeneric": "正在驗證...",
     "extracting": "正在解壓 {{modelName}}...",
     "extractingMultiple": "正在解壓 {{count}} 個模型...",
     "extractingGeneric": "解壓中...",
@@ -251,10 +245,6 @@
         "label": "實驗性功能",
         "description": "啟用仍在開發中的實驗性功能"
       },
-      "lazyStreamClose": {
-        "label": "在轉錄之間保持麥克風開啟",
-        "description": "錄音停止後保持麥克風串流開啟30秒，減少連續轉錄時的延遲。啟用時可能會降低藍牙音訊品質。"
-      },
       "acceleration": {
         "whisper": {
           "title": "Whisper 加速",
@@ -263,11 +253,6 @@
         "ort": {
           "title": "ONNX 加速",
           "description": "ONNX 模型的硬體加速（Parakeet、Canary、Moonshine 等）。Windows 上的 DirectML 為實驗性功能。模型可能無法正常轉錄。"
-        },
-        "gpuDevice": {
-          "title": "GPU 裝置",
-          "description": "選擇用於 Whisper 推理的 GPU。自動選擇獨立 GPU。",
-          "auto": "自動"
         }
       },
       "startHidden": {
@@ -346,7 +331,7 @@
           "min10": "10 分鐘後",
           "min15": "15 分鐘後",
           "hour1": "1 小時後",
-          "sec15": "15 秒後（偵錯）"
+          "sec5": "5 秒後（偵錯）"
         }
       },
       "customWords": {
@@ -427,11 +412,7 @@
       "save": "儲存轉錄",
       "unsave": "從已儲存中移除",
       "delete": "刪除條目",
-      "deleteError": "刪除條目失敗，請重試",
-      "retranscribe": "重新轉錄",
-      "retranscribeError": "重新轉錄失敗，請重試。",
-      "transcribing": "轉錄中...",
-      "transcriptionFailed": "轉錄失敗。您可以使用重試圖示重新轉錄。"
+      "deleteError": "刪除條目失敗，請重試"
     },
     "debug": {
       "title": "偵錯",
@@ -503,10 +484,6 @@
       "pasteDelay": {
         "title": "貼上延遲",
         "description": "發送貼上按鍵前的延遲（毫秒）。如果貼上了錯誤的文字，請增加此值"
-      },
-      "recordingBuffer": {
-        "title": "額外錄音緩衝",
-        "description": "放開按鍵後繼續錄音的額外時間（毫秒），以捕捉尾音。0 = 無額外緩衝。"
       }
     },
     "about": {
@@ -551,10 +528,7 @@
     "downloading": "下載中... {{progress}}%",
     "installing": "安裝中...",
     "preparing": "準備中...",
-    "checkForUpdates": "檢查更新",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "checkForUpdates": "檢查更新"
   },
   "common": {
     "loading": "載入中...",
@@ -593,13 +567,9 @@
       "macos": "在系統設定 → 隱私與安全性 → 麥克風中授予麥克風存取權限。",
       "linux": "在系統的聲音或隱私設定中授予麥克風存取權限。"
     },
-    "noInputDeviceTitle": "找不到麥克風",
-    "noInputDevice": "未偵測到音訊輸入裝置。請連接麥克風或耳機後重試。",
     "recordingFailed": "錄音啟動失敗: {{error}}",
     "modelLoadFailed": "載入模型失敗: {{model}}",
-    "modelLoadFailedUnknown": "未知模型",
-    "pasteFailedTitle": "貼上文字失敗",
-    "pasteFailed": "無法將文字貼上至目前作用中的應用程式。"
+    "modelLoadFailedUnknown": "未知模型"
   },
   "appLanguage": {
     "title": "應用程式語言",
