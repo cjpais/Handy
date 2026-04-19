@@ -6,6 +6,7 @@ import type { ModelCardStatus } from "@/components/onboarding";
 import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
+import { useSettings } from "@/hooks/useSettings";
 import type { ModelInfo } from "@/bindings";
 
 // check if model supports a language based on its supported_languages list
@@ -15,8 +16,12 @@ const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
 
 export const ModelsSettings: React.FC = () => {
   const { t } = useTranslation();
+  const { getSetting } = useSettings();
   const [switchingModelId, setSwitchingModelId] = useState<string | null>(null);
-  const [languageFilter, setLanguageFilter] = useState("all");
+  const savedLanguage = getSetting("selected_language");
+  const initialFilter =
+    savedLanguage && savedLanguage !== "auto" ? savedLanguage : "all";
+  const [languageFilter, setLanguageFilter] = useState(initialFilter);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState("");
   const languageDropdownRef = useRef<HTMLDivElement>(null);
