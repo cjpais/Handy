@@ -213,6 +213,9 @@ pub fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<()
     rm.update_selected_device()
         .map_err(|e| format!("Failed to update selected device: {}", e))?;
 
+    // Refresh tray menu to update the microphone checkmark
+    crate::tray::update_tray_menu(&app, &crate::tray::TrayIconState::Idle, None);
+
     Ok(())
 }
 

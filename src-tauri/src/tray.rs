@@ -1,3 +1,4 @@
+use crate::audio_toolkit::audio::list_input_devices;
 use crate::managers::history::{HistoryEntry, HistoryManager};
 use crate::managers::model::ModelManager;
 use crate::managers::transcription::TranscriptionManager;
@@ -177,6 +178,47 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
     )
     .expect("failed to create unload model item");
 
+    // Build microphone submenu
+    let current_mic = settings
+        .selected_microphone
+        .as_deref()
+        .unwrap_or("default");
+
+    let mic_submenu = {
+        let submenu = Submenu::with_id(app, "mic_submenu", &strings.microphone, true)
+            .expect("failed to create mic submenu");
+
+        let default_item = CheckMenuItem::with_id(
+            app,
+            "mic_select:default",
+            "Default",
+            true,
+            current_mic == "default",
+            None::<&str>,
+        )
+        .expect("failed to create default mic item");
+        let _ = submenu.append(&default_item);
+
+        if let Ok(devices) = list_input_devices() {
+            for device in &devices {
+                let item_id = format!("mic_select:{}", device.name);
+                let is_active = current_mic == device.name;
+                let item = CheckMenuItem::with_id(
+                    app,
+                    &item_id,
+                    &device.name,
+                    true,
+                    is_active,
+                    None::<&str>,
+                )
+                .expect("failed to create mic item");
+                let _ = submenu.append(&item);
+            }
+        }
+
+        submenu
+    };
+
     let menu = match state {
         TrayIconState::Recording | TrayIconState::Transcribing => {
             let cancel_i = MenuItem::with_id(app, "cancel", &strings.cancel, true, None::<&str>)
@@ -207,6 +249,8 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                 &separator(),
                 &model_submenu,
                 &unload_model_i,
+                &separator(),
+                &mic_submenu,
                 &separator(),
                 &settings_i,
                 &check_updates_i,

@@ -591,6 +591,11 @@ export const useSettingsStore = create<SettingsStore>()(
       listen("model-state-changed", () => {
         get().refreshSettings();
       });
+
+      // Re-fetch settings when microphone is switched via tray or shortcut.
+      listen("microphone-switched", () => {
+        get().refreshSettings();
+      });
     },
   })),
 );

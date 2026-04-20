@@ -763,6 +763,16 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: "escape".to_string(),
         },
     );
+    bindings.insert(
+        "switch_microphone".to_string(),
+        ShortcutBinding {
+            id: "switch_microphone".to_string(),
+            name: "Switch Microphone".to_string(),
+            description: "Cycles to the next available microphone input.".to_string(),
+            default_binding: "".to_string(),
+            current_binding: "".to_string(),
+        },
+    );
 
     AppSettings {
         bindings,

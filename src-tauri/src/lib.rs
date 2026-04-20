@@ -238,6 +238,27 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             "quit" => {
                 app.exit(0);
             }
+            id if id.starts_with("mic_select:") => {
+                let device_name = id.strip_prefix("mic_select:").unwrap().to_string();
+                let mut s = settings::get_settings(app);
+                let current = s.selected_microphone.as_deref().unwrap_or("default");
+                if device_name == current {
+                    return;
+                }
+                s.selected_microphone = if device_name == "default" {
+                    None
+                } else {
+                    Some(device_name.clone())
+                };
+                settings::write_settings(app, s);
+                let rm = app.state::<Arc<AudioRecordingManager>>();
+                if let Err(e) = rm.update_selected_device() {
+                    log::error!("Failed to switch mic via tray: {}", e);
+                }
+                let display = if device_name == "default" { "Default".to_string() } else { device_name };
+                let _ = app.emit("microphone-switched", display);
+                tray::update_tray_menu(app, &tray::TrayIconState::Idle, None);
+            }
             id if id.starts_with("model_select:") => {
                 let model_id = id.strip_prefix("model_select:").unwrap().to_string();
                 let current_model = settings::get_settings(app).selected_model;

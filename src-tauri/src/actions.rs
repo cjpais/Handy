@@ -1,6 +1,7 @@
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
+use crate::audio_toolkit::audio::list_input_devices;
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
@@ -696,6 +697,61 @@ impl ShortcutAction for TestAction {
     }
 }
 
+// Switch Microphone Action
+struct SwitchMicrophoneAction;
+
+impl ShortcutAction for SwitchMicrophoneAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        let devices = match list_input_devices() {
+            Ok(d) => d,
+            Err(e) => {
+                error!("Failed to list input devices: {}", e);
+                return;
+            }
+        };
+
+        let settings = get_settings(app);
+        let current = settings
+            .selected_microphone
+            .as_deref()
+            .unwrap_or("default");
+
+        // Build ordered list: "default" followed by device names
+        let mut names: Vec<String> = vec!["default".to_string()];
+        names.extend(devices.iter().map(|d| d.name.clone()));
+
+        let current_idx = names.iter().position(|n| n == current).unwrap_or(0);
+        let next_idx = (current_idx + 1) % names.len();
+        let next_name = &names[next_idx];
+
+        let mut new_settings = settings.clone();
+        new_settings.selected_microphone = if next_name == "default" {
+            None
+        } else {
+            Some(next_name.clone())
+        };
+        crate::settings::write_settings(app, new_settings);
+
+        let rm = app.state::<Arc<AudioRecordingManager>>();
+        if let Err(e) = rm.update_selected_device() {
+            error!("Failed to switch microphone: {}", e);
+        }
+
+        let display_name = if next_name == "default" {
+            "Default".to_string()
+        } else {
+            next_name.clone()
+        };
+        debug!("Switched microphone to: {}", display_name);
+        let _ = app.emit("microphone-switched", display_name);
+
+        // Refresh tray menu to update the checkmark
+        crate::tray::update_tray_menu(app, &TrayIconState::Idle, None);
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {}
+}
+
 // Static Action Map
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -716,6 +772,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "test".to_string(),
         Arc::new(TestAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "switch_microphone".to_string(),
+        Arc::new(SwitchMicrophoneAction) as Arc<dyn ShortcutAction>,
     );
     map
 });
