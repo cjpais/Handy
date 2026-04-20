@@ -181,6 +181,15 @@ fn build_apple_intelligence_bridge() {
     let status = Command::new("xcrun")
         .args([
             "swiftc",
+            // Without this flag swiftc treats single-file input as script
+            // mode and emits its own `_main` symbol into the .o, which can
+            // win the link against Rust's main under some linkers (e.g.
+            // open-source ld64 used in nixpkgs' Darwin stdenv), producing a
+            // binary whose main() is a 5-instruction no-op that returns 0.
+            // `-parse-as-library` keeps the compilation in library mode so
+            // no `_main` is emitted. See:
+            //   https://forums.swift.org/t/main-in-a-single-swift-file/63079
+            "-parse-as-library",
             "-target",
             "arm64-apple-macosx11.0",
             "-sdk",
