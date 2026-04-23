@@ -459,8 +459,8 @@
         "title": "Размер истории",
         "description": "Максимальное количество записей истории, которые можно сохранить",
         "entries": "записи",
-        "warningTitle": "Recordings may be removed",
-        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
+        "warningTitle": "Записи могут быть удалены",
+        "warningDescription": "Записи сверх нового лимита будут удалены при следующей записи."
       },
       "recordingRetention": {
         "title": "Автоматическое удаление записей",
@@ -471,8 +471,8 @@
         "weeks2": "Через 2 недели",
         "months3": "Через 3 месяца",
         "placeholder": "Выберите срок хранения...",
-        "warningTitle": "Auto-delete enabled",
-        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
+        "warningTitle": "Автоматическое удаление включено",
+        "warningDescription": "Записи старше периода хранения будут удалены при следующей записи."
       },
       "alwaysOnMicrophone": {
         "label": "Всегда включенный микрофон",

@@ -459,8 +459,8 @@
         "title": "Limite de Histórico",
         "description": "Número máximo de entradas de histórico a manter",
         "entries": "entradas",
-        "warningTitle": "Recordings may be removed",
-        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
+        "warningTitle": "Gravações poderão ser removidas",
+        "warningDescription": "Entradas acima do novo limite serão excluídas na próxima gravação."
       },
       "recordingRetention": {
         "title": "Excluir Gravações Automaticamente",
@@ -471,8 +471,8 @@
         "weeks2": "Após 2 semanas",
         "months3": "Após 3 meses",
         "placeholder": "Selecionar período de retenção...",
-        "warningTitle": "Auto-delete enabled",
-        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
+        "warningTitle": "Exclusão automática ativada",
+        "warningDescription": "Gravações mais antigas que o período de retenção serão excluídas na próxima gravação."
       },
       "alwaysOnMicrophone": {
         "label": "Microfone Sempre Ativo",

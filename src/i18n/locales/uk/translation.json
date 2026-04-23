@@ -459,8 +459,8 @@
         "title": "Ліміт історії",
         "description": "Максимальна кількість записів в історії",
         "entries": "записів",
-        "warningTitle": "Recordings may be removed",
-        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
+        "warningTitle": "Записи можуть бути видалені",
+        "warningDescription": "Записи понад новий ліміт буде видалено під час наступного запису."
       },
       "recordingRetention": {
         "title": "Автовидалення записів",
@@ -471,8 +471,8 @@
         "weeks2": "Через 2 тижні",
         "months3": "Через 3 місяці",
         "placeholder": "Оберіть період зберігання...",
-        "warningTitle": "Auto-delete enabled",
-        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
+        "warningTitle": "Автоматичне видалення увімкнено",
+        "warningDescription": "Записи, старші за період зберігання, буде видалено під час наступного запису."
       },
       "alwaysOnMicrophone": {
         "label": "Постійно активний мікрофон",

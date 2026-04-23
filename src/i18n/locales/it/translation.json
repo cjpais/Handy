@@ -459,8 +459,8 @@
         "title": "Limite della Cronologia",
         "description": "Massimo numero di elementi da conservare nella cronologia",
         "entries": "elementi",
-        "warningTitle": "Recordings may be removed",
-        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
+        "warningTitle": "Le registrazioni potrebbero essere rimosse",
+        "warningDescription": "Le voci oltre il nuovo limite verranno eliminate alla prossima registrazione."
       },
       "recordingRetention": {
         "title": "Eliminazione Automatica Registrazioni",
@@ -471,8 +471,8 @@
         "weeks2": "Dopo 2 settimane",
         "months3": "Dopo 3 mesi",
         "placeholder": "Seleziona periodo di conservazione...",
-        "warningTitle": "Auto-delete enabled",
-        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
+        "warningTitle": "Eliminazione automatica attivata",
+        "warningDescription": "Le registrazioni più vecchie del periodo di conservazione verranno eliminate alla prossima registrazione."
       },
       "alwaysOnMicrophone": {
         "label": "Microfono Sempre Attivo",

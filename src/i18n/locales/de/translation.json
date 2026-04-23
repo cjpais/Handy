@@ -459,8 +459,8 @@
         "title": "Verlaufslimit",
         "description": "Maximale Anzahl der Verlaufseinträge",
         "entries": "Einträge",
-        "warningTitle": "Recordings may be removed",
-        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
+        "warningTitle": "Aufnahmen werden möglicherweise entfernt",
+        "warningDescription": "Einträge über dem neuen Limit werden bei der nächsten Aufnahme gelöscht."
       },
       "recordingRetention": {
         "title": "Aufnahmen automatisch löschen",
@@ -471,8 +471,8 @@
         "weeks2": "Nach 2 Wochen",
         "months3": "Nach 3 Monaten",
         "placeholder": "Aufbewahrungszeitraum auswählen...",
-        "warningTitle": "Auto-delete enabled",
-        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
+        "warningTitle": "Automatisches Löschen aktiviert",
+        "warningDescription": "Aufnahmen, die älter als der Aufbewahrungszeitraum sind, werden bei der nächsten Aufnahme gelöscht."
       },
       "alwaysOnMicrophone": {
         "label": "Mikrofon immer aktiv",

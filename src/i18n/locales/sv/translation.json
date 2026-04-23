@@ -459,8 +459,8 @@
         "title": "Historikgräns",
         "description": "Maximalt antal historikposter som ska sparas",
         "entries": "poster",
-        "warningTitle": "Recordings may be removed",
-        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
+        "warningTitle": "Inspelningar kan tas bort",
+        "warningDescription": "Poster som överskrider den nya gränsen raderas vid nästa inspelning."
       },
       "recordingRetention": {
         "title": "Radera inspelningar automatiskt",
@@ -471,8 +471,8 @@
         "weeks2": "Efter 2 veckor",
         "months3": "Efter 3 månader",
         "placeholder": "Välj lagringsperiod...",
-        "warningTitle": "Auto-delete enabled",
-        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
+        "warningTitle": "Automatisk radering aktiverad",
+        "warningDescription": "Inspelningar äldre än lagringsperioden raderas vid nästa inspelning."
       },
       "alwaysOnMicrophone": {
         "label": "Alltid påslagen mikrofon",

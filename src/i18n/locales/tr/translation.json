@@ -459,8 +459,8 @@
         "title": "Geçmiş Limiti",
         "description": "Saklanacak maksimum geçmiş kaydı sayısı",
         "entries": "kayıt",
-        "warningTitle": "Recordings may be removed",
-        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
+        "warningTitle": "Kayıtlar silinebilir",
+        "warningDescription": "Yeni sınırı aşan girişler bir sonraki kayıtta silinecektir."
       },
       "recordingRetention": {
         "title": "Kayıtları Otomatik Sil",
@@ -471,8 +471,8 @@
         "weeks2": "2 hafta sonra",
         "months3": "3 ay sonra",
         "placeholder": "Saklama süresi seçin...",
-        "warningTitle": "Auto-delete enabled",
-        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
+        "warningTitle": "Otomatik silme etkinleştirildi",
+        "warningDescription": "Saklama süresinden eski kayıtlar bir sonraki kayıtta silinecektir."
       },
       "alwaysOnMicrophone": {
         "label": "Mikrofon Her Zaman Açık",
