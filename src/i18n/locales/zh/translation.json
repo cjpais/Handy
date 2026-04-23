@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "历史记录上限",
         "description": "保留的最大历史条目数",
-        "entries": "条"
+        "entries": "条",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "自动删除录音",
@@ -468,7 +470,9 @@
         "days3": "3 天后",
         "weeks2": "2 周后",
         "months3": "3 个月后",
-        "placeholder": "选择保留期限..."
+        "placeholder": "选择保留期限...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "麦克风常开",

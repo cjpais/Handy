@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "Лимит на историята",
         "description": "Максимален брой записи в историята за пазене",
-        "entries": "записа"
+        "entries": "записа",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "Автоматично изтриване на записи",
@@ -468,7 +470,9 @@
         "days3": "След 3 дни",
         "weeks2": "След 2 седмици",
         "months3": "След 3 месеца",
-        "placeholder": "Изберете период на съхранение..."
+        "placeholder": "Изберете период на съхранение...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "Постоянно активен микрофон",

@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "히스토리 제한",
         "description": "보관할 최대 히스토리 항목 수",
-        "entries": "항목"
+        "entries": "항목",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "녹음 자동 삭제",
@@ -468,7 +470,9 @@
         "days3": "3일 후",
         "weeks2": "2주 후",
         "months3": "3개월 후",
-        "placeholder": "보관 기간 선택..."
+        "placeholder": "보관 기간 선택...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "항상 켜진 마이크",
