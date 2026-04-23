@@ -53,10 +53,6 @@ enum ManagerCommand {
         binding_id: String,
         response: Sender<Result<(), String>>,
     },
-    /// Re-register all hotkeys (e.g., after Windows session unlock invalidates hooks)
-    ReregisterAll {
-        response: Sender<Result<(), String>>,
-    },
     Shutdown,
 }
 
@@ -74,9 +70,6 @@ pub struct HandyKeysState {
     recording_binding_id: Mutex<Option<String>>,
     /// Flag to stop recording loop
     recording_running: Arc<AtomicBool>,
-    /// Handle to the Windows session watcher thread (detects lock/unlock)
-    #[cfg(target_os = "windows")]
-    session_watcher_hwnd: Mutex<Option<isize>>,
 }
 
 /// Key event sent to frontend during recording mode
@@ -110,8 +103,6 @@ impl HandyKeysState {
             is_recording: AtomicBool::new(false),
             recording_binding_id: Mutex::new(None),
             recording_running: Arc::new(AtomicBool::new(false)),
-            #[cfg(target_os = "windows")]
-            session_watcher_hwnd: Mutex::new(None),
         })
     }
 
@@ -119,8 +110,8 @@ impl HandyKeysState {
     fn manager_thread(cmd_rx: Receiver<ManagerCommand>, app: AppHandle) {
         info!("handy-keys manager thread started");
 
-        // Create the HotkeyManager in this thread (mut: replaced on re-registration)
-        let mut manager = match HotkeyManager::new_with_blocking() {
+        // Create the HotkeyManager in this thread
+        let manager = match HotkeyManager::new_with_blocking() {
             Ok(m) => m,
             Err(e) => {
                 error!("Failed to create HotkeyManager: {}", e);
@@ -173,36 +164,6 @@ impl HandyKeysState {
                             &binding_id,
                         );
                         let _ = response.send(result);
-                    }
-                    ManagerCommand::ReregisterAll { response } => {
-                        let result = Self::do_reregister_all(
-                            manager,
-                            &mut binding_to_hotkey,
-                            &mut hotkey_to_binding,
-                        );
-                        match result {
-                            Ok(new_manager) => {
-                                manager = new_manager;
-                                info!("handy-keys hooks re-registered successfully");
-                                let _ = response.send(Ok(()));
-                            }
-                            Err(e) => {
-                                error!("Failed to re-register handy-keys hooks: {}", e);
-                                // Manager was consumed; try to create a fresh one to keep running
-                                match HotkeyManager::new_with_blocking() {
-                                    Ok(m) => manager = m,
-                                    Err(e2) => {
-                                        error!(
-                                            "Failed to create fallback HotkeyManager: {}",
-                                            e2
-                                        );
-                                        let _ = response.send(Err(e));
-                                        break;
-                                    }
-                                }
-                                let _ = response.send(Err(e));
-                            }
-                        }
                     }
                     ManagerCommand::Shutdown => {
                         info!("handy-keys manager thread shutting down");
@@ -265,47 +226,6 @@ impl HandyKeysState {
         Ok(())
     }
 
-    /// Drop the old HotkeyManager, create a fresh one, and re-register all bindings.
-    /// This is needed after events that invalidate low-level keyboard hooks
-    /// (e.g., Windows session lock/unlock switches to the Winlogon secure desktop).
-    fn do_reregister_all(
-        old_manager: HotkeyManager,
-        binding_to_hotkey: &mut HashMap<String, HotkeyId>,
-        hotkey_to_binding: &mut HashMap<HotkeyId, (String, String)>,
-    ) -> Result<HotkeyManager, String> {
-        // Collect bindings before dropping state
-        let bindings: Vec<(String, String)> = hotkey_to_binding
-            .values()
-            .map(|(id, hk)| (id.clone(), hk.clone()))
-            .collect();
-
-        // Clear old mappings and drop the old manager (releases invalidated hooks)
-        binding_to_hotkey.clear();
-        hotkey_to_binding.clear();
-        drop(old_manager);
-
-        // Create a fresh manager with new hooks
-        let new_manager = HotkeyManager::new_with_blocking()
-            .map_err(|e| format!("Failed to create new HotkeyManager: {}", e))?;
-
-        // Re-register all bindings
-        for (binding_id, hotkey_string) in &bindings {
-            Self::do_register(
-                &new_manager,
-                binding_to_hotkey,
-                hotkey_to_binding,
-                binding_id,
-                hotkey_string,
-            )?;
-        }
-
-        info!(
-            "Re-registered {} handy-keys binding(s)",
-            bindings.len()
-        );
-        Ok(new_manager)
-    }
-
     /// Register a shortcut binding
     pub fn register(&self, binding: &ShortcutBinding) -> Result<(), String> {
         let (tx, rx) = mpsc::channel();
@@ -337,20 +257,6 @@ impl HandyKeysState {
 
         rx.recv()
             .map_err(|_| "Failed to receive unregister response")?
-    }
-
-    /// Re-register all hotkeys with a fresh HotkeyManager.
-    /// Call this after events that invalidate hooks (e.g., Windows session unlock).
-    pub fn reregister_all(&self) -> Result<(), String> {
-        let (tx, rx) = mpsc::channel();
-        self.command_sender
-            .lock()
-            .map_err(|_| "Failed to lock command_sender")?
-            .send(ManagerCommand::ReregisterAll { response: tx })
-            .map_err(|_| "Failed to send reregister command")?;
-
-        rx.recv_timeout(std::time::Duration::from_secs(5))
-            .map_err(|_| "Timeout waiting for reregister response")?
     }
 
     /// Start recording mode for a specific binding
@@ -451,14 +357,6 @@ impl HandyKeysState {
         debug!("Stopped handy-keys recording mode");
         Ok(())
     }
-
-    /// Store the session watcher window handle for cleanup on drop
-    #[cfg(target_os = "windows")]
-    pub fn set_session_watcher_hwnd(&self, hwnd: isize) {
-        if let Ok(mut guard) = self.session_watcher_hwnd.lock() {
-            *guard = Some(hwnd);
-        }
-    }
 }
 
 impl Drop for HandyKeysState {
@@ -466,29 +364,6 @@ impl Drop for HandyKeysState {
         // Signal recording to stop
         self.recording_running.store(false, Ordering::SeqCst);
         self.is_recording.store(false, Ordering::SeqCst);
-
-        // Tear down the session watcher by posting WM_CLOSE to its message-only window.
-        // The wndproc handles WM_CLOSE by calling DestroyWindow, which posts WM_DESTROY,
-        // which calls PostQuitMessage to exit the GetMessageW loop.
-        #[cfg(target_os = "windows")]
-        {
-            use windows::Win32::Foundation::HWND;
-            use windows::Win32::UI::WindowsAndMessaging::{PostMessageW, WM_CLOSE};
-
-            if let Ok(guard) = self.session_watcher_hwnd.lock() {
-                if let Some(raw) = *guard {
-                    let hwnd = HWND(raw as *mut _);
-                    unsafe {
-                        let _ = PostMessageW(
-                            hwnd,
-                            WM_CLOSE,
-                            windows::Win32::Foundation::WPARAM(0),
-                            windows::Win32::Foundation::LPARAM(0),
-                        );
-                    }
-                }
-            }
-        }
 
         // Send shutdown command
         if let Ok(sender) = self.command_sender.lock() {
@@ -501,118 +376,6 @@ impl Drop for HandyKeysState {
                 let _ = h.join();
             }
         }
-    }
-}
-
-/// Start a background thread that listens for Windows session change events.
-/// When the user unlocks their session (Win+L -> sign back in), the low-level
-/// keyboard hooks installed by handy-keys are silently invalidated. This watcher
-/// detects `WTS_SESSION_UNLOCK` and triggers a full hook re-registration.
-#[cfg(target_os = "windows")]
-fn start_session_watcher(app: &AppHandle) {
-    use std::ptr;
-    use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
-    use windows::Win32::System::RemoteDesktop::WTSRegisterSessionNotification;
-    use windows::Win32::UI::WindowsAndMessaging::{
-        CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetMessageW,
-        RegisterClassW, HWND_MESSAGE, MSG, WINDOW_EX_STYLE, WINDOW_STYLE, WM_DESTROY,
-        WNDCLASSW,
-    };
-
-    // WTS constants not yet in the windows crate's generated bindings
-    const NOTIFY_FOR_THIS_SESSION: u32 = 0;
-    const WM_WTSSESSION_CHANGE: u32 = 0x02B1;
-    const WTS_SESSION_UNLOCK: usize = 0x8;
-
-    let app_handle = app.clone();
-
-    thread::spawn(move || {
-        unsafe {
-            // Register a minimal window class for our message-only window
-            let class_name: Vec<u16> = "HandySessionWatcher\0"
-                .encode_utf16()
-                .collect();
-            let wnd_class = WNDCLASSW {
-                lpfnWndProc: Some(wndproc_stub),
-                lpszClassName: windows::core::PCWSTR(class_name.as_ptr()),
-                ..Default::default()
-            };
-            RegisterClassW(&wnd_class);
-
-            // Create a message-only window (HWND_MESSAGE parent = invisible, no taskbar)
-            let hwnd = CreateWindowExW(
-                WINDOW_EX_STYLE::default(),
-                windows::core::PCWSTR(class_name.as_ptr()),
-                windows::core::PCWSTR(ptr::null()),
-                WINDOW_STYLE::default(),
-                0,
-                0,
-                0,
-                0,
-                Some(HWND_MESSAGE),
-                None,
-                None,
-                None,
-            );
-
-            if hwnd.is_err() {
-                error!("Failed to create session watcher window");
-                return;
-            }
-            let hwnd = hwnd.unwrap();
-
-            // Register for session change notifications
-            if let Err(e) = WTSRegisterSessionNotification(hwnd, NOTIFY_FOR_THIS_SESSION) {
-                error!("WTSRegisterSessionNotification failed: {}", e);
-                let _ = DestroyWindow(hwnd);
-                return;
-            }
-
-            info!("Windows session watcher started (hwnd={:?})", hwnd);
-
-            // Store the HWND in state so Drop can post WM_QUIT to tear us down
-            if let Some(state) = app_handle.try_state::<HandyKeysState>() {
-                state.set_session_watcher_hwnd(hwnd.0 as isize);
-            }
-
-            // Message pump -- blocks until WM_QUIT
-            let mut msg = MSG::default();
-            while GetMessageW(&mut msg, None, 0, 0).as_bool() {
-                if msg.message == WM_WTSSESSION_CHANGE
-                    && msg.wParam == WPARAM(WTS_SESSION_UNLOCK)
-                {
-                    info!("Session unlock detected -- re-registering handy-keys hooks");
-                    if let Some(state) = app_handle.try_state::<HandyKeysState>() {
-                        match state.reregister_all() {
-                            Ok(()) => info!("Hooks re-registered after session unlock"),
-                            Err(e) => error!("Hook re-registration failed: {}", e),
-                        }
-                    }
-                }
-                DispatchMessageW(&msg);
-            }
-
-            // Cleanup
-            let _ = windows::Win32::System::RemoteDesktop::WTSUnRegisterSessionNotification(hwnd);
-            let _ = DestroyWindow(hwnd);
-            info!("Windows session watcher stopped");
-        }
-    });
-
-    /// Minimal window procedure -- forwards everything to DefWindowProcW.
-    /// Session change messages arrive via GetMessageW, not the wndproc,
-    /// so this only handles WM_DESTROY for a clean exit.
-    unsafe extern "system" fn wndproc_stub(
-        hwnd: HWND,
-        msg: u32,
-        wparam: WPARAM,
-        lparam: LPARAM,
-    ) -> LRESULT {
-        if msg == WM_DESTROY {
-            windows::Win32::UI::WindowsAndMessaging::PostQuitMessage(0);
-            return LRESULT(0);
-        }
-        DefWindowProcW(hwnd, msg, wparam, lparam)
     }
 }
 
@@ -690,12 +453,6 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
     }
 
     app.manage(state);
-
-    // On Windows, start listening for session lock/unlock events so we can
-    // re-register keyboard hooks after the user returns from the lock screen.
-    #[cfg(target_os = "windows")]
-    start_session_watcher(app);
-
     info!("handy-keys shortcuts initialized");
     Ok(())
 }
