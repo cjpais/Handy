@@ -21,18 +21,12 @@ export const RecordingRetentionPeriodSelector: React.FC<RecordingRetentionPeriod
     const historyLimit = getSetting("history_limit") || 5;
 
     const handleRetentionPeriodSelect = async (period: string) => {
-      if (
-        selectedRetentionPeriod === "never" &&
-        period !== "never"
-      ) {
-        toast.warning(
-          t("settings.debug.recordingRetention.warningTitle"),
-          {
-            description: t(
-              "settings.debug.recordingRetention.warningDescription",
-            ),
-          },
-        );
+      if (selectedRetentionPeriod === "never" && period !== "never") {
+        toast.warning(t("settings.debug.recordingRetention.warningTitle"), {
+          description: t(
+            "settings.debug.recordingRetention.warningDescription",
+          ),
+        });
       }
       await updateSetting(
         "recording_retention_period",
