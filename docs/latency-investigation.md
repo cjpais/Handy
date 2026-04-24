@@ -235,3 +235,179 @@ not the hot thing.
 * Numbers are specific to Studio Display USB mic. Built-in MacBook mic
   would likely show a faster cold floor (50–100ms) and similar warm path.
   Worth re-running on a different mic to confirm the pattern.
+
+## Upstream issue #1283: "v0.7.9 was faster" — and what we found when we looked
+
+Issue: <https://github.com/cjpais/Handy/issues/1283>
+
+domdomegg [bisected the `Microphone stream initialized in X.XXms` log across
+Handy releases][bisection] with push-to-talk and `always_on_microphone=false`:
+
+[bisection]: https://github.com/cjpais/Handy/issues/1283#issuecomment-4236423275
+
+| Version | Built-in mic | Brio 500 (USB) |
+|---|---|---|
+| **v0.7.9** | **16–21ms** | **22–32ms** |
+| v0.7.10 | 133–175ms | 332–362ms |
+| v0.7.11 | 123–144ms | 334–371ms |
+| v0.7.12 | 140–142ms | 380–416ms |
+| v0.8.0 | 154–163ms | 394–399ms |
+| v0.8.2 | 159–165ms | 394–425ms |
+
+That looks like a 10–20× regression, dramatic especially at the v0.7.9 → v0.7.10
+step. It's also flatly inconsistent with everything we know about macOS
+audio initialization — Apple's own docs and the [m13v comment in the same
+thread][m13v] both place the CoreAudio HAL I/O unit cold-spin-up at
+hundreds of ms, and our native-Swift AVAudioEngine harness measured ~500ms
+of pure `engine.start()` on the same machine. 16ms for a true cold-open on
+a USB mic is not physically plausible.
+
+[m13v]: https://github.com/cjpais/Handy/issues/1283#issuecomment-4233676810
+
+### What actually changed between v0.7.9 and v0.7.10
+
+Code analysis of the 11 commits between the two tags; `settings.rs`
+defaults are identical (`always_on_microphone = false` in both), and
+`managers/audio.rs::start_microphone_stream` is byte-for-byte unchanged —
+including the `start_time = Instant::now() … info!("Microphone stream
+initialized in …")` log. The only material change on the hot path is
+PR [#945 "Handle microphone init failure without aborting"][pr945],
+which restructured `AudioRecorder::open()` in
+`src-tauri/src/audio_toolkit/audio/recorder.rs`:
+
+[pr945]: https://github.com/cjpais/Handy/pull/945
+
+**v0.7.9 `open()`** (async / fire-and-forget):
+
+```rust
+pub fn open(&mut self, device: Option<Device>) -> Result<(), _> {
+    // ... channel setup ...
+    let worker = std::thread::spawn(move || {
+        let config = AudioRecorder::get_preferred_config(&thread_device)
+            .expect("failed to fetch preferred config");
+        let stream = match config.sample_format() { /* build_stream */ };
+        stream.play().expect("failed to start stream");
+        run_consumer(...);
+    });
+
+    self.device = Some(device);
+    self.cmd_tx = Some(cmd_tx);
+    self.worker_handle = Some(worker);
+    Ok(())   // ← returns immediately; the CPAL work is still running
+}
+```
+
+**v0.7.10 `open()`** (synchronous handshake):
+
+```rust
+pub fn open(&mut self, device: Option<Device>) -> Result<(), _> {
+    // ... channel setup ...
+    let (init_tx, init_rx) = mpsc::sync_channel::<Result<(), String>>(1);
+
+    let worker = std::thread::spawn(move || {
+        let init_result = (|| {
+            let config = AudioRecorder::get_preferred_config(&thread_device)?;
+            let stream = build_stream_typed(...)?;
+            stream.play()?;   // ← real CoreAudio / HAL I/O cold-spin happens here
+            Ok((stream, sample_rate))
+        })();
+        match init_result {
+            Ok((stream, _)) => {
+                let _ = init_tx.send(Ok(()));
+                run_consumer(...);
+            }
+            Err(msg) => { let _ = init_tx.send(Err(msg)); }
+        }
+    });
+
+    match init_rx.recv() {
+        Ok(Ok(())) => { /* assign fields, Ok */ }   // ← blocks until worker finishes stream.play()
+        // ... error paths ...
+    }
+}
+```
+
+The goal of PR #945 was error propagation — in a release build with
+`panic = "abort"`, the v0.7.9 `.expect("failed to start stream")` would
+terminate the process if CPAL couldn't open the device (notably, when
+Windows privacy blocked the mic). The fix converted every panic path in
+the worker into a real `Result`, and added the init channel so `open()`
+could return a real `Err` to the caller. Converting the worker to
+synchronous init is a correct fix for the reliability problem it solved.
+
+### So the "500ms regression" isn't a runtime regression
+
+It's an **observability correction**. The work done between keypress and
+first-sample-available is the same: CoreAudio allocates the HAL I/O unit,
+negotiates formats with the device, and starts producing buffers. That
+still takes ~150–500ms depending on the mic.
+
+What changed is which of those milliseconds `Microphone stream initialized
+in X.XXms` actually measures:
+
+* **v0.7.9**: measured `mpsc::channel` creation + `std::thread::spawn` +
+  three struct-field assignments. Real stream startup continued in the
+  background after the log fired. The "16ms" was honest about what
+  `open()` took to return, but misleading about when the mic was ready.
+* **v0.7.10+**: measures `mpsc::channel` creation + thread spawn +
+  blocking until the worker's `stream.play()` has returned. That is
+  actual mic readiness. The "500ms" is the CoreAudio HAL cold-open cost,
+  always present, finally reported.
+
+This matches cjpais' reaction in the thread ("I don't recall much changing
+in that path") — because the runtime behaviour didn't really change.
+
+### Consequences for what the user perceives
+
+In **v0.7.9**, because `open()` returned in ~16ms but the CPAL stream
+wasn't actually producing samples for another ~480ms:
+
+* Tone plays at ~116ms post-keypress (100ms hardcoded sleep + 16ms open).
+* Samples start flowing at ~500ms post-keypress.
+* The first ~400ms of any speech after the tone is silently lost.
+* Short press-and-release cycles (<500ms) produced effectively empty
+  recordings — the `Cmd::Start`/`Cmd::Stop` pair was queued against a
+  worker that hadn't started producing samples yet.
+
+In **v0.7.10+**, `open()` blocks honestly:
+
+* Tone plays at ~600ms post-keypress (open ~500ms + 100ms sleep).
+* Samples flow from before the tone plays.
+* No lost first words.
+* The press feels laggier because it *is* honest about when the mic is
+  actually live — the user waits for feedback instead of losing audio.
+
+The upstream cjpais correctly described v0.7.9's real model in the thread:
+*"This was the default way in initial versions of Handy to eliminate
+latency"* — though "eliminate" is partly true (the log reported it
+eliminated) and partly a mirage (samples still took 500ms to appear).
+
+### Implication for our spike
+
+1. **Don't revert to the v0.7.9 approach.** The synchronous handshake is
+   a correctness win and we shouldn't drop it to chase the old
+   "16ms" number — that number wasn't measuring anything useful and the
+   UX costs (lost first words, silent empty recordings on quick presses)
+   were real.
+2. **The 500ms cold-open problem that Handy's cold path still pays is
+   genuine, not artificial.** Our Swift harness confirmed that cost
+   independently via AVAudioEngine. Any fix has to move the cost (always-on
+   or pre-warm or warm-on-focus) rather than eliminate it in-place.
+3. **Consider renaming the log.** "Microphone stream initialized" sounds
+   like a platform-level fact; it's actually measuring Handy's
+   `start_microphone_stream()` wall-clock. Something like
+   `start_microphone_stream() returned in` would at least not mislead the
+   next bisector.
+
+### Related thread context worth keeping
+
+* m13v's [pattern recommendation][m13v] (always-on engine + small circular
+  ring buffer for pre-roll + VAD-gated retention) matches the
+  "tap-always-installed, flag-gated" design the Swift harness is pointing
+  toward.
+* cjpais' [response][response]: the pattern is already in Handy as the
+  experimental "always on microphone" toggle (Cmd+Shift+D); they chose
+  not to ship it by default because users get unnerved by a permanently
+  hot mic indicator. UX decision, not a technical limitation.
+
+[response]: https://github.com/cjpais/Handy/issues/1283#issuecomment-4234077982
