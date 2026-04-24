@@ -1,0 +1,237 @@
+# Handy shortcut→tone latency investigation
+
+*Working document, not for commit. Captures state-of-knowledge, where we got it wrong, and what to measure next.*
+
+## What we actually know
+
+### Measurements from the installed app (Rob's Mac, Studio Display USB mic)
+
+Real numbers from `~/Library/Logs/com.pais.handy/handy.log`. Every line is a real press.
+
+**Cold path (`lazy_stream_close = false`, every press cold-opens the mic stream):**
+
+| Metric | Observed |
+|---|---|
+| `Microphone stream initialized` (`start_microphone_stream`) | **624–711ms**, steady ~650ms ±30ms |
+| `Recording started in` (`try_start_recording` end-to-end) | +~0–2ms on top |
+| `TranscribeAction::start completed` (synchronous Rust part) | +~10ms on top |
+
+Seven presses spread across ~15 minutes all paid ~650ms. `lazy_stream_close=false` was closing the stream on every stop.
+
+**Warm path (`lazy_stream_close = true`, back-to-back within 30s):**
+
+| Press | `TranscribeAction::start completed` |
+|---|---|
+| #1 (cold, post-restart) | 663ms |
+| #2 (warm, 17s later) | 7.0ms |
+| #3 (warm) | 8.9ms |
+| #4 (warm) | 6.6ms |
+
+`try_start_recording` on warm path is microseconds — it's just an mpsc send to a running worker thread.
+
+### Where I got it wrong
+
+I read "7ms" and declared the warm path "essentially instant." **That number measures only the synchronous Rust work in `TranscribeAction::start` — it completes the moment the tone-playing thread is *spawned*, not when the tone plays.**
+
+The tone path runs entirely *after* `start_time.elapsed()` is logged:
+
+```rust
+std::thread::spawn(move || {
+    std::thread::sleep(Duration::from_millis(100));     // ← 100ms hard sleep
+    play_feedback_sound_blocking(&app_clone, Start);    // ← cold rodio output every press
+    rm_clone.apply_mute();
+});
+```
+
+So the real warm-path keypress→tone-audible budget is roughly:
+
+| Stage | Estimate |
+|---|---|
+| Rust synchronous (the "7ms" I quoted) | ~8ms |
+| Hard sleep before tone | 100ms |
+| `host.output_devices()` + `OutputStreamBuilder::open_stream()` — **cold every press** | ~50–150ms |
+| WAV decode (`symphonia` probe + `rodio::play`) | ~5–15ms |
+| CoreAudio scheduling → first sample to speaker | ~10–20ms |
+| **Total** | **~175–290ms** |
+
+Those numbers are estimates, not measurements. **We have not measured the tone tail.** That's the gap in our data, and it's the thing Rob is actually hearing. The warm-path logs contain no timing between `TranscribeAction::start completed` and the moment audio hits the speaker.
+
+### What does still hold
+
+* `lazy_stream_close=true` eliminated the ~650ms cold input-stream open on back-to-back presses. That is a real, measured, ~100× win — just not the full story.
+* The remaining perceived lag on the warm path is in the *output* audio path and the hardcoded sleep, not the input/recording path.
+* First press of each session is still cold — another ~650ms that we have not yet attacked.
+
+## What we don't know (and should)
+
+1. **How much of the ~180–290ms warm-path tone tail is the 100ms sleep, vs rodio cold-open, vs scheduling?** Instrumentation could answer this inside Handy.
+2. **How low can this go in principle on macOS?** That is, what's the platform floor vs Handy's choices? We have no baseline.
+3. **Is the ~650ms cold input-stream open a cpal cost, a CoreAudio cost, or a USB-mic hardware cost?** Without a non-cpal reference, we can't tell.
+4. **Does keeping an `AudioUnit` initialized but not started give us a faster warm re-start than lazy_stream_close's full-stream retention?** Open question.
+
+Answering 2 and 3 before writing more Rust is the right move. Otherwise we'll keep optimizing the wrong layer.
+
+## Proposal: a native-Swift perf harness
+
+Rob's idea, written out:
+
+### Goals
+
+A standalone, minimal program — not part of Handy — that exercises the same pipeline (global hotkey → start recording → play tone → capture wav) on the same Mac with the same microphone, using native macOS APIs directly. No Rust, no cpal, no rodio. Numbers from this become the baseline we compare Handy against.
+
+### What to measure
+
+Every run, write a single line per event with monotonic timestamps (mach_absolute_time or ContinuousClock). At minimum:
+
+* **t0** — keypress received from the hotkey handler
+* **t1** — audio input session/engine fully started
+* **t2** — first input sample callback fires
+* **t3** — tone playback scheduled (sink.play / AVAudioPlayer.play)
+* **t4** — first audible tone sample hits the output (can approximate via AVAudioPlayer.deviceCurrentTime or audio render callback timestamps)
+* **t5** — tone playback finishes
+* **t6** — key released (for push-to-talk equivalent) / second press (for toggle equivalent)
+* **t7** — stop() returns, wav flushed to disk
+
+Report: t1-t0, t2-t0, t4-t0, t7-t6, plus cold vs warm runs.
+
+### Matrix to run
+
+For each combination:
+
+* **Mic**: built-in MacBook mic, Studio Display USB mic, Bluetooth headset (if handy).
+* **Start strategy**: cold (create + start engine every press) vs warm (pre-created engine, start/stop only).
+* **API**: AVAudioEngine, AudioToolbox/AudioUnit direct. Optionally AVAudioSession.
+* **Buffer size**: default, 512, 256, 128 samples — see how low latency scales.
+
+Key hypothesis to disconfirm: *the ~650ms cold-open is inherent to CoreAudio / USB-audio on this Mac.* If the Swift harness can cold-open AVAudioEngine in, say, 40ms on the Studio Display mic, cpal's overhead is the story and we know where to fix it. If Swift also pays ~500ms+, we stop trying to shave the cold-open and instead redesign around "don't cold-open."
+
+### Approach outline
+
+* SwiftPM executable target in `tools/macos-audio-perf/`. Runs as a background AppKit app (`NSApplication`, `.accessory` activation policy, no dock icon) so we get an event loop for the Carbon hotkey.
+* Hotkey: Carbon `RegisterEventHotKey` + `InstallEventHandler` against the application event target. This is technically deprecated (since 10.8) but remains stable and is the *only* macOS global-hotkey path that does not require Accessibility permission — which matters because we want the harness to run without TCC prompts. Note: on macOS 15 Sequoia+, at least one modifier must be something other than Shift or Option; `Cmd+Shift+<key>` is fine. Handy itself goes through `rdev` / `handy-keys` / `tauri-plugin-global-shortcut`, which ultimately use `CGEventTap` (Accessibility-gated); the perf harness deliberately takes a simpler, lower-layer path.
+* Input: AVAudioEngine (actively maintained on macOS, straightforward API). Install a tap on `engine.inputNode` with `installTap(onBus:0, bufferSize:1024, format: inputNode.outputFormat(forBus: 0)) { buffer, when in ... }`. The `when` is an `AVAudioTime` whose `hostTime` is mach ticks at the first sample in the buffer — authoritative timing for when audio actually started flowing. Record to disk with `AVAudioFile(forWriting:)` + `file.write(from: buffer)` inside the tap.
+* Output: generate a short sine tone into an `AVAudioPCMBuffer` at startup (no file I/O on the hot path). Attach an `AVAudioPlayerNode` to the same engine, connect to `engine.mainMixerNode`, `scheduleBuffer(_:)` + `play()` to fire the tone. Using the same engine as input means no second stream to cold-open.
+* Timestamps: `mach_absolute_time()` (or `DispatchTime.now().uptimeNanoseconds` which wraps it) for Swift-side points — ns precision, safe in audio callbacks. Convert tap's `AVAudioTime.hostTime` the same way. All timestamps as u64 ns; deltas computed at log-write time.
+* `AVAudioSession` is iOS-only in practice — `sharedInstance` is unavailable on macOS. No session configuration needed; we just use AVAudioEngine directly against the current default input/output devices.
+* Note on device routing: AVAudioEngine's `inputNode` wraps the *current system default input*. Since your Handy mic setting is "Default" and the system default is the Studio Display mic, the harness picks it up automatically — no device-id plumbing required for a first pass.
+* Output: append one CSV row per press to `tools/macos-audio-perf/perf.csv` with cold/warm flag, mic name, each timestamp. Easy to grep/plot later.
+
+### What we'd do with the results
+
+* Compare Swift cold-open vs Handy/cpal cold-open on the same mic. Difference tells us how much of Handy's 650ms is cpal vs CoreAudio.
+* Compare Swift warm-restart (engine pre-built, `.start()` on already-configured engine) vs Handy's `lazy_stream_close` path. Tells us whether keeping the engine initialized but inactive (as opposed to fully-running like Handy does today) is competitive.
+* Establish the real tone tail: keypress → tone audible, for a pre-loaded tone through a warm output node. That's our "instantaneous feels" target.
+
+### Scope discipline
+
+The harness is for **measurement only**. It doesn't need VAD, transcription, overlay, settings, or multiple bindings. It's one hotkey, one mic, one tone, one wav. Resist feature creep — every addition risks adding noise to the numbers.
+
+If we want to preserve this work long-term, it lives in its own directory (e.g. `tools/macos-audio-perf/`) with its own README. Not part of the Handy build.
+
+## What to do with the Rust changes from this session
+
+On this branch (`recorder-open-tests`):
+
+* `test(audio): add AudioRecorder lifecycle coverage` — solid, stays. Safety net for later refactors regardless of which fix we land.
+* `chore: pin bun 1.3.13 via .mise.toml` — also solid, stays. Independent of the latency work.
+
+Nothing else has been committed. The "skip 100ms sleep on warm path" and "pre-warm rodio output" changes were not written — stopped before touching code, which is where this document picks up.
+
+## Decisions (2026-04-24)
+
+* Harness lives in-repo at `tools/macos-audio-perf/`, its own SwiftPM target.
+* Mic: Studio Display USB mic (same as Handy's current default).
+* API: AVAudioEngine first. AudioUnit/AudioToolbox is a follow-up if we need to explain a delta between the harness and Handy.
+* Collette writes the first version of the harness.
+
+## Results (2026-04-24)
+
+Harness driven by `--auto` mode (autonomous press/stop cycles, random 1–3s hold,
+1s idle between). Five iterations per mode. Same Mac and mic as Handy.
+
+### Cold — `AVAudioEngine` rebuilt every press
+
+| metric | min | median | mean | max |
+|---|---|---|---|---|
+| engine_start_ms | 468.06 | 492.06 | 485.90 | 495.90 |
+| first_sample_ms (swift) | 644.20 | 670.32 | 534.21* | 679.15 |
+| tone_play_call_ms | 654.70 | 680.66 | 542.55* | 689.61 |
+| tap_host_ms | 527.94 | 553.82 | 441.13* | 562.85 |
+
+\* One press out of five produced zero samples (CoreAudio release/reacquire
+glitch between rapid cold cycles) which dragged the means. Medians are the
+honest signal.
+
+### Warm — engine started once at init, kept running
+
+| metric | min | median | mean | max |
+|---|---|---|---|---|
+| engine_start_ms | 0 | 0 | 0 | 0 |
+| first_sample_ms (swift) | 104.26 | 106.50 | 107.60 | 115.00 |
+| tone_play_call_ms | 104.27 | 106.50 | 109.72 | 125.51 |
+| tap_host_ms | **−12.01** | **−9.89** | **−8.70** | **−1.27** |
+
+### Reading these numbers
+
+1. **The cold-path 640ms we measured in Handy is the platform floor on this
+   mic, not a cpal problem.** Native Swift + AVAudioEngine cold-opens pay
+   ~490ms in `engine.start()` and ~180ms more before the first sample
+   callback arrives. Total ~670ms, essentially identical to Handy's 640ms.
+   No Rust-level change to the cold-open path can beat this.
+
+2. **The warm path — engine kept running between presses — gives 107ms
+   end-to-end on this mic with native APIs.** That's 6× better than the
+   cold path and 2–3× better than what Handy achieves today with
+   `lazy_stream_close = true`. Handy's warm path costs more because it:
+   * still `.stop()`s and `.start()`s the cpal stream on press boundaries
+     (not fully warm)
+   * adds a 100ms hard sleep before tone playback
+   * cold-opens the rodio output stream per press
+
+3. **`tap_host_ms` = −10ms in warm mode is informative, not a bug.** The
+   engine has been capturing audio continuously, so the first buffer
+   delivered to a newly-installed tap contains samples that were captured
+   ~10ms *before* our keypress. The hardware is producing samples the whole
+   time; we just weren't looking until the press.
+
+4. **Most of the remaining 105ms in warm mode is `installTap()` latency**,
+   not hardware latency. Since the audio is already flowing, installing a
+   tap is fundamentally a bookkeeping operation — but AVAudioEngine appears
+   to take ~5 buffer periods (≈100ms at 1024 frames @ 48kHz) to actually
+   route audio to the new tap. A cheaper design: install the tap once at
+   engine start and gate file-writing with a `recording?` flag. The
+   keypress becomes a single atomic boolean flip.
+
+## Implications for Handy
+
+Two concrete avenues emerge:
+
+1. **Stay with cpal, but adopt the "always-running, tap-once" pattern.**
+   Instead of Handy's current "open stream when recording starts, close it
+   after" model (or even lazy_stream_close's "hold it open for 30s"), keep
+   the stream open indefinitely at app launch and gate sample retention
+   behind a state flag. This maps to always_on_microphone semantics but
+   without the current implementation's cost structure. Target: match the
+   Swift harness's ~100ms warm-path number, or beat it.
+
+2. **Parallel the ~500ms cold open.** For the "first press of each session"
+   case, there's no way to make cold-open fast, so move it out of the
+   critical path: pre-warm the stream at app launch (or on main-window
+   focus), so the first press the user makes is already on the warm path.
+   Tradeoff: mic indicator lights up earlier.
+
+The 100ms sleep in Handy is a red herring in light of these numbers — it's
+100ms on top of a 500–640ms stream-open operation. Worth cleaning up but
+not the hot thing.
+
+### Flakes and unknowns
+
+* One press in five in cold mode produced zero samples (`samples_written=0`,
+  no tap callbacks fired) with no error from `engine.start()`. Likely a
+  CoreAudio hiccup between rapid cold engine cycles. Not investigated.
+* We haven't measured a "tap-always-installed" mode inside the harness.
+  That's the next natural experiment — if it drops warm-path below 30ms,
+  we've quantified the remaining headroom.
+* Numbers are specific to Studio Display USB mic. Built-in MacBook mic
+  would likely show a faster cold floor (50–100ms) and similar warm path.
+  Worth re-running on a different mic to confirm the pattern.
