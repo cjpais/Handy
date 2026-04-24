@@ -158,6 +158,7 @@
     "models": {
       "title": "Modèles de Transcription",
       "description": "Sélectionnez un modèle de transcription ou téléchargez des modèles supplémentaires. Différents modèles offrent différents niveaux de précision et de vitesse.",
+      "searchPlaceholder": "Rechercher des modeles...",
       "downloaded": "Téléchargés",
       "available": "Disponibles au Téléchargement",
       "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {{modelName}} ? Vous devrez le télécharger à nouveau pour l'utiliser.",
@@ -569,6 +570,7 @@
     "update": "Mettre à jour",
     "close": "Fermer",
     "open": "Ouvrir",
+    "clear": "Effacer",
     "default": "Par défaut",
     "enabled": "Activé",
     "disabled": "Désactivé",
