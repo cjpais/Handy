@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "Appuyer pour parler",
         "description": "Maintenez pour enregistrer, relâchez pour arrêter"
-      }
+      },
+      "shortcutsDisabledHint": "Les raccourcis clavier intégrés sont désactivés. Configurez plutôt votre compositeur pour exécuter 'handy --toggle-transcription' sur une combinaison de touches (par exemple Hyprland : bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Vous pouvez modifier ceci dans Paramètres > Avancé > Expérimental > Gestion du clavier."
     },
     "sound": {
       "title": "Son",

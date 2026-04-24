@@ -168,6 +168,7 @@ pub enum RecordingRetentionPeriod {
 pub enum KeyboardImplementation {
     Tauri,
     HandyKeys,
+    None,
 }
 
 impl Default for KeyboardImplementation {
@@ -985,5 +986,39 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    /// Serialize default settings, apply a JSON override, and deserialize back.
+    /// This mirrors real-world settings persistence where missing fields get defaults.
+    fn settings_with_keyboard_override(override_json: &str) -> AppSettings {
+        let defaults = get_default_settings();
+        let mut value: serde_json::Value = serde_json::to_value(&defaults).unwrap();
+        let overrides: serde_json::Value = serde_json::from_str(override_json).unwrap();
+        if let (serde_json::Value::Object(ref mut map), serde_json::Value::Object(ovr)) =
+            (&mut value, overrides)
+        {
+            for (k, v) in ovr {
+                map.insert(k, v);
+            }
+        }
+        serde_json::from_value(value).unwrap()
+    }
+
+    #[test]
+    fn keyboard_implementation_none_deserializes() {
+        let settings = settings_with_keyboard_override(r#"{"keyboard_implementation": "none"}"#);
+        assert_eq!(
+            settings.keyboard_implementation,
+            KeyboardImplementation::None
+        );
+    }
+
+    #[test]
+    fn keyboard_implementation_default_is_not_none() {
+        let settings = get_default_settings();
+        assert_ne!(
+            settings.keyboard_implementation,
+            KeyboardImplementation::None
+        );
     }
 }

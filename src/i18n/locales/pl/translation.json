@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Przytrzymaj, aby nagrywać, puść, aby zatrzymać"
-      }
+      },
+      "shortcutsDisabledHint": "Wbudowane skróty klawiszowe są wyłączone. Zamiast tego skonfiguruj swój kompozytor, aby uruchamiał 'handy --toggle-transcription' pod skrótem klawiszowym (np. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Możesz to zmienić w Ustawieniach > Zaawansowane > Eksperymentalne > Implementacja klawiatury."
     },
     "sound": {
       "title": "Dźwięk",

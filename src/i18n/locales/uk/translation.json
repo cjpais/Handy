@@ -195,7 +195,8 @@
       "pushToTalk": {
         "label": "Утримувати для запису (Push To Talk)",
         "description": "Утримуйте для запису, відпустіть для зупинки"
-      }
+      },
+      "shortcutsDisabledHint": "Вбудовані гарячі клавіші вимкнені. Натомість налаштуйте ваш композитор на запуск 'handy --toggle-transcription' за комбінацією клавіш (наприклад, Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Це можна змінити в Налаштування > Розширені > Експериментальне > Реалізація клавіатури."
     },
     "models": {
       "title": "Моделі транскрипції",

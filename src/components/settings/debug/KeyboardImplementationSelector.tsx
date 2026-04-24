@@ -1,14 +1,23 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { type } from "@tauri-apps/plugin-os";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Dropdown, type DropdownOption } from "../../ui/Dropdown";
 import { useSettings } from "../../../hooks/useSettings";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
 
+// "None" is Linux-only: Tauri + Handy Keys both work reliably on macOS and Windows,
+// so exposing an option that disables all built-in hotkeys there would be a footgun.
+// On Linux (particularly Wayland) the compositor-keybind workflow is a legitimate fallback.
+const isLinux = type() === "linux";
+
 const KEYBOARD_IMPLEMENTATION_OPTIONS: DropdownOption[] = [
   { value: "tauri", label: "Tauri Global Shortcut" },
   { value: "handy_keys", label: "Handy Keys" },
+  ...(isLinux
+    ? [{ value: "none", label: "None (Compositor Only)" } as DropdownOption]
+    : []),
 ];
 
 interface KeyboardImplementationSelectorProps {
