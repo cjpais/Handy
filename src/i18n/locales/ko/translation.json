@@ -507,6 +507,10 @@
         "appData": "앱 데이터:",
         "models": "모델:",
         "settings": "설정:"
+      },
+      "typingDelay": {
+        "title": "입력 지연",
+        "description": "dotool 같은 직접 입력 도구의 키 입력당 지연 시간(밀리초). 낮음 = 빠른 입력, 높음 = 느린 컴포지터에서 더 안정적. 기본값: 2ms."
       }
     },
     "about": {

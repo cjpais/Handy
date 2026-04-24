@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
         "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
+      },
+      "typingDelay": {
+        "title": "Tippverzögerung",
+        "description": "Verzögerung pro Tastendruck für direkte Eingabetools wie dotool (in Millisekunden). Niedriger = schnelleres Tippen, höher = zuverlässiger auf langsamen Compositoren. Standard: 2 ms."
       }
     },
     "about": {

@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -11,6 +11,13 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[cfg(target_os = "linux")]
 use crate::utils::{is_kde_wayland, is_wayland};
+
+/// Configuration for Linux direct-typing tools (dotool, wtype, etc).
+#[cfg(target_os = "linux")]
+struct LinuxTypingConfig {
+    tool: TypingTool,
+    delay_ms: u64,
+}
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
@@ -120,10 +127,10 @@ fn try_send_key_combo_linux(paste_method: &PasteMethod) -> Result<bool, String> 
 /// Attempts to type text directly using Linux-native tools.
 /// Returns `Ok(true)` if a native tool handled it, `Ok(false)` to fall back to enigo.
 #[cfg(target_os = "linux")]
-fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<bool, String> {
+fn try_direct_typing_linux(text: &str, config: &LinuxTypingConfig) -> Result<bool, String> {
     // If user specified a tool, try only that one
-    if preferred_tool != TypingTool::Auto {
-        return match preferred_tool {
+    if config.tool != TypingTool::Auto {
+        return match config.tool {
             TypingTool::Wtype if is_wtype_available() => {
                 info!("Using user-specified wtype");
                 type_text_via_wtype(text)?;
@@ -136,7 +143,7 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
             }
             TypingTool::Dotool if is_dotool_available() => {
                 info!("Using user-specified dotool");
-                type_text_via_dotool(text)?;
+                type_text_via_dotool(text, config.delay_ms)?;
                 Ok(true)
             }
             TypingTool::Ydotool if is_ydotool_available() => {
@@ -151,7 +158,7 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
             }
             _ => Err(format!(
                 "Typing tool {:?} is not available on this system",
-                preferred_tool
+                config.tool
             )),
         };
     }
@@ -173,7 +180,7 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
         }
         if is_dotool_available() {
             info!("Using dotool for direct text input");
-            type_text_via_dotool(text)?;
+            type_text_via_dotool(text, config.delay_ms)?;
             return Ok(true);
         }
         if is_ydotool_available() {
@@ -231,11 +238,21 @@ fn is_wtype_available() -> bool {
         .unwrap_or(false)
 }
 
-/// Check if dotool is available (another Wayland text input tool)
+/// Check if dotool is available (uinput-based, works on both Wayland and X11)
 #[cfg(target_os = "linux")]
 fn is_dotool_available() -> bool {
     Command::new("which")
         .arg("dotool")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+/// Check if dotoolc is available (daemon client for dotoold)
+#[cfg(target_os = "linux")]
+fn is_dotoolc_available() -> bool {
+    Command::new("which")
+        .arg("dotoolc")
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false)
@@ -317,33 +334,159 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
 }
 
 /// Type text directly via dotool (works on both Wayland and X11 via uinput).
+/// Prefers dotoolc (daemon client, faster) when dotoold is running,
+/// falls back to standalone dotool if dotoolc fails.
+///
+/// `delay_ms` controls inter-keystroke timing: split evenly between
+/// typedelay (gap between keys) and typehold (key press duration).
 #[cfg(target_os = "linux")]
-fn type_text_via_dotool(text: &str) -> Result<(), String> {
+fn type_text_via_dotool(text: &str, delay_ms: u64) -> Result<(), String> {
+    // Try dotoolc first (reuses daemon's virtual device), fall back to dotool
+    if is_dotoolc_available() {
+        match run_dotool_cmd("dotoolc", text, delay_ms) {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                warn!("dotoolc failed (dotoold may not be running): {}", e);
+                info!("Falling back to standalone dotool");
+            }
+        }
+    }
+    run_dotool_cmd("dotool", text, delay_ms)
+}
+
+/// Sanitize text for dotool stdin to prevent command injection.
+/// dotool interprets each line as a separate command, so newlines in
+/// transcript text could inject arbitrary commands (e.g. `keydelay 9999`).
+/// Control characters (tabs, escapes, etc.) are replaced with spaces, then
+/// all whitespace is collapsed to single spaces. This is intentional:
+/// dotool commands are whitespace-delimited, so extra spaces could cause
+/// parse issues. Speech-to-text output rarely contains meaningful
+/// multi-space formatting.
+#[cfg(target_os = "linux")]
+fn sanitize_dotool_text(text: &str) -> String {
+    text.chars()
+        .map(|c| if c.is_control() { ' ' } else { c })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Run a dotool/dotoolc command with the given text and delay settings.
+/// Times out after 5 seconds to prevent hangs if the daemon socket is unhealthy.
+#[cfg(target_os = "linux")]
+fn run_dotool_cmd(cmd_name: &str, text: &str, delay_ms: u64) -> Result<(), String> {
     use std::io::Write;
     use std::process::Stdio;
 
-    let mut child = Command::new("dotool")
+    let sanitized = sanitize_dotool_text(text);
+
+    let mut child = Command::new(cmd_name)
         .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Failed to spawn dotool: {}", e))?;
+        .map_err(|e| format!("Failed to spawn {}: {}", cmd_name, e))?;
 
-    if let Some(mut stdin) = child.stdin.take() {
-        // dotool uses "type <text>" command
-        writeln!(stdin, "type {}", text)
-            .map_err(|e| format!("Failed to write to dotool stdin: {}", e))?;
-    }
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| format!("Failed to open stdin for {}", cmd_name))?;
+    let half_delay = delay_ms / 2;
+    writeln!(stdin, "typedelay {}", half_delay)
+        .map_err(|e| format!("Failed to write to {} stdin: {}", cmd_name, e))?;
+    writeln!(stdin, "typehold {}", delay_ms - half_delay)
+        .map_err(|e| format!("Failed to write to {} stdin: {}", cmd_name, e))?;
+    writeln!(stdin, "type {}", sanitized)
+        .map_err(|e| format!("Failed to write to {} stdin: {}", cmd_name, e))?;
+    drop(stdin); // Child sees EOF and finishes
 
-    let output = child
-        .wait_with_output()
-        .map_err(|e| format!("Failed to wait for dotool: {}", e))?;
+    // Wait with timeout to prevent indefinite hang if daemon socket is unhealthy.
+    // Poll try_wait() to avoid spawning a thread that can leak if the child hangs.
+    //
+    // Budget = grace period + (chars * max(delay_ms, 1) * 2 for safety margin).
+    // The `max(delay_ms, 1)` floor ensures long transcriptions at delay=0 still
+    // get per-char headroom beyond the fixed grace period. Unhealthy daemons exit
+    // in milliseconds, so this only extends the window for legitimate typing.
+    let per_char_ms = delay_ms.max(1);
+    let typing_budget_ms = (sanitized.chars().count() as u64)
+        .saturating_mul(per_char_ms)
+        .saturating_mul(2);
+    let timeout = Duration::from_millis(DOTOOL_TIMEOUT_GRACE_MS.saturating_add(typing_budget_ms));
+    let deadline = std::time::Instant::now() + timeout;
+    let exit_status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) => {
+                if std::time::Instant::now() >= deadline {
+                    // Before declaring timeout, check one more time — the process may
+                    // have just exited between the last try_wait() and the deadline check.
+                    match child.try_wait() {
+                        Ok(Some(status)) => break status,
+                        _ => {
+                            if let Err(e) = child.kill() {
+                                info!("{} kill failed (may have already exited): {}", cmd_name, e);
+                            }
+                            let _ = child.wait(); // Reap zombie regardless
+                            let stderr = read_child_stderr(&mut child);
+                            return Err(format_dotool_error(
+                                cmd_name,
+                                "timed out",
+                                &timeout,
+                                &stderr,
+                            ));
+                        }
+                    }
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Err(e) => {
+                return Err(format!("Failed to wait for {}: {}", cmd_name, e));
+            }
+        }
+    };
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("dotool failed: {}", stderr));
+    if !exit_status.success() {
+        let stderr = read_child_stderr(&mut child);
+        let detail = format!("exited with status {}", exit_status);
+        return Err(format_dotool_error(cmd_name, &detail, &timeout, &stderr));
     }
 
     Ok(())
 }
+
+/// Drain stderr from a dotool child process. Returns an empty string if stderr
+/// wasn't piped or the read failed — callers surface whatever we got.
+#[cfg(target_os = "linux")]
+fn read_child_stderr(child: &mut std::process::Child) -> String {
+    use std::io::Read;
+    let Some(mut stderr) = child.stderr.take() else {
+        return String::new();
+    };
+    let mut buf = String::new();
+    let _ = stderr.read_to_string(&mut buf);
+    buf.trim().to_string()
+}
+
+/// Format a dotool error with stderr context when available.
+#[cfg(target_os = "linux")]
+fn format_dotool_error(cmd_name: &str, detail: &str, timeout: &Duration, stderr: &str) -> String {
+    if stderr.is_empty() {
+        if detail == "timed out" {
+            format!("{} timed out after {:?}", cmd_name, timeout)
+        } else {
+            format!("{} {}", cmd_name, detail)
+        }
+    } else if detail == "timed out" {
+        format!("{} timed out after {:?}: {}", cmd_name, timeout, stderr)
+    } else {
+        format!("{} {}: {}", cmd_name, detail, stderr)
+    }
+}
+
+/// Grace period added to the dotool typing deadline. Covers socket setup,
+/// process spawn, and completion latency beyond raw keystroke time.
+#[cfg(target_os = "linux")]
+const DOTOOL_TIMEOUT_GRACE_MS: u64 = 5_000;
 
 /// Type text directly via ydotool (uinput-based, requires ydotoold daemon).
 #[cfg(target_os = "linux")]
@@ -528,14 +671,17 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
 fn paste_direct(
     enigo: &mut Enigo,
     text: &str,
-    #[cfg(target_os = "linux")] typing_tool: TypingTool,
+    #[cfg(target_os = "linux")] config: &LinuxTypingConfig,
 ) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
-        if try_direct_typing_linux(text, typing_tool)? {
+        if try_direct_typing_linux(text, config)? {
             return Ok(());
         }
-        info!("Falling back to enigo for direct text input");
+        warn!(
+            "No native typing tool available. Falling back to enigo (may be unreliable on Wayland). \
+             Install dotool (recommended) or ydotool for reliable direct typing."
+        );
     }
 
     input::paste_text_direct(enigo, text)
@@ -624,7 +770,10 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 &mut enigo,
                 &text,
                 #[cfg(target_os = "linux")]
-                settings.typing_tool,
+                &LinuxTypingConfig {
+                    tool: settings.typing_tool,
+                    delay_ms: settings.typing_delay_ms,
+                },
             )?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
@@ -683,5 +832,85 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_sanitization_prevents_command_injection() {
+        let malicious = "hello\nkeydelay 9999\ntype pwned";
+        let sanitized = sanitize_dotool_text(malicious);
+        assert_eq!(sanitized, "hello keydelay 9999 type pwned");
+        assert!(!sanitized.contains('\n'));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_sanitization_handles_crlf() {
+        let sanitized = sanitize_dotool_text("line one\r\nline two\r\n");
+        assert_eq!(sanitized, "line one line two");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_sanitization_strips_control_chars() {
+        let with_controls = "hello\x07world\x1b[31mred";
+        let sanitized = sanitize_dotool_text(with_controls);
+        assert!(!sanitized.chars().any(|c| c.is_control()));
+        assert!(sanitized.contains("hello"));
+        assert!(sanitized.contains("world"));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_sanitization_preserves_unicode() {
+        let unicode = "café résumé naïve";
+        let sanitized = sanitize_dotool_text(unicode);
+        assert_eq!(sanitized, "café résumé naïve");
+    }
+
+    #[test]
+    fn dotool_delay_halving_is_correct() {
+        // Even delay splits evenly
+        let delay: u64 = 4;
+        let half = delay / 2;
+        let remainder = delay - half;
+        assert_eq!(half, 2);
+        assert_eq!(remainder, 2);
+
+        // Odd delay: no millisecond lost
+        let delay: u64 = 5;
+        let half = delay / 2;
+        let remainder = delay - half;
+        assert_eq!(half + remainder, 5);
+
+        // Zero delay
+        let delay: u64 = 0;
+        let half = delay / 2;
+        let remainder = delay - half;
+        assert_eq!(half, 0);
+        assert_eq!(remainder, 0);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn dotool_timeout_scales_with_text_and_delay() {
+        // Compute the effective timeout the way run_dotool_cmd does so long
+        // transcriptions aren't killed mid-typing.
+        fn timeout_ms(chars: u64, delay_ms: u64) -> u64 {
+            DOTOOL_TIMEOUT_GRACE_MS.saturating_add(chars.saturating_mul(delay_ms).saturating_mul(2))
+        }
+
+        // Empty text still gets the grace period
+        assert_eq!(timeout_ms(0, 2), DOTOOL_TIMEOUT_GRACE_MS);
+
+        // 1000 chars at 50ms/key ≈ 50s of typing → needs >50s timeout
+        let t = timeout_ms(1_000, 50);
+        assert!(
+            t >= 100_000,
+            "expected ≥100s for 1000 chars @ 50ms, got {t}ms"
+        );
+
+        // Overflow safety
+        assert_eq!(timeout_ms(u64::MAX, u64::MAX), u64::MAX);
     }
 }

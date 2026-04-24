@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Tampon d'enregistrement supplémentaire",
         "description": "Temps supplémentaire (en millisecondes) pour continuer l'enregistrement après avoir relâché la touche, pour capturer l'audio restant. 0 = pas de tampon supplémentaire."
+      },
+      "typingDelay": {
+        "title": "Délai de frappe",
+        "description": "Délai par touche pour les outils de saisie directe comme dotool (en millisecondes). Plus bas = frappe plus rapide, plus haut = plus fiable sur les compositeurs lents. Par défaut : 2 ms."
       }
     },
     "about": {

@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Dodatkowy bufor nagrywania",
         "description": "Dodatkowy czas (w milisekundach) na kontynuowanie nagrywania po zwolnieniu klawisza, aby przechwycić końcowy dźwięk. 0 = brak dodatkowego bufora."
+      },
+      "typingDelay": {
+        "title": "Opóźnienie pisania",
+        "description": "Opóźnienie na naciśnięcie klawisza dla bezpośrednich narzędzi do pisania jak dotool (w milisekundach). Niższe = szybsze pisanie, wyższe = bardziej niezawodne na wolnych kompozytorach. Domyślnie: 2 ms."
       }
     },
     "about": {
