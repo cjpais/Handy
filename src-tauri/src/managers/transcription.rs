@@ -458,6 +458,17 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
+        const RMS_SILENCE_THRESHOLD: f32 = 0.005;
+        let rms = (audio.iter().map(|&s| s * s).sum::<f32>() / audio.len() as f32).sqrt();
+        if rms < RMS_SILENCE_THRESHOLD {
+            debug!(
+                "Audio RMS {:.6} below silence threshold {:.4}; skipping transcription",
+                rms, RMS_SILENCE_THRESHOLD
+            );
+            self.maybe_unload_immediately("silent audio");
+            return Ok(String::new());
+        }
+
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
@@ -543,10 +554,21 @@ impl TranscriptionManager {
                             let params = WhisperInferenceParams {
                                 language: whisper_language,
                                 translate: settings.translate_to_english,
-                                initial_prompt: if settings.custom_words.is_empty() {
-                                    None
-                                } else {
-                                    Some(settings.custom_words.join(", "))
+                                initial_prompt: {
+                                    let mut parts = Vec::new();
+                                    if !settings.custom_words.is_empty() {
+                                        parts.push(settings.custom_words.join(", "));
+                                    }
+                                    if let Some(ref prompt) = settings.transcription_prompt {
+                                        if !prompt.trim().is_empty() {
+                                            parts.push(prompt.clone());
+                                        }
+                                    }
+                                    if parts.is_empty() {
+                                        None
+                                    } else {
+                                        Some(parts.join("\n\n"))
+                                    }
                                 },
                                 ..Default::default()
                             };

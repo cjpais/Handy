@@ -356,6 +356,28 @@
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
+      },
+      "transcriptionPrompt": {
+        "title": "Transcription Prompt",
+        "description": "Provide context or style hints to guide Whisper's punctuation, capitalization, and domain-specific vocabulary. Only applies to Whisper models.",
+        "placeholder": "e.g. Use proper punctuation and capitalization. This is a technical discussion about software engineering.",
+        "tokenBudgetHint": "Shares a token budget with Custom Words — a shorter prompt leaves more room for custom words.",
+        "languageWarning": "When Transcription Language is set to \"Auto\", a prompt may reduce language detection accuracy.",
+        "whisperOnly": "This setting only applies to Whisper models. It will be ignored for the currently selected model.",
+        "presets": {
+          "label": "Presets",
+          "none": "None",
+          "english": "English",
+          "spanish": "Español",
+          "french": "Français",
+          "german": "Deutsch",
+          "portuguese": "Português",
+          "italian": "Italiano",
+          "russian": "Русский",
+          "japanese": "日本語",
+          "chineseSimplified": "中文（简体）",
+          "chineseTraditional": "中文（繁體）"
+        }
       }
     },
     "postProcessing": {
