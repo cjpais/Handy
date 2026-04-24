@@ -236,6 +236,10 @@
       "volume": {
         "title": "עוצמת קול",
         "description": "כוונן את עוצמת צלילי המשוב"
+      },
+      "recordSystemAudio": {
+        "title": "הקלטת אודיו מערכתי",
+        "description": "לכוד גם אודיו המושמע במחשב, מעורבב עם המיקרופון (Windows בלבד)"
       }
     },
     "advanced": {

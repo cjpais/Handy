@@ -236,6 +236,10 @@
       "volume": {
         "title": "音量",
         "description": "音声フィードバックの音量を調整"
+      },
+      "recordSystemAudio": {
+        "title": "システム音声を録音",
+        "description": "パソコンで再生中の音声もマイクとミックスして録音します（Windowsのみ）"
       }
     },
     "advanced": {
