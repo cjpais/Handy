@@ -6,7 +6,8 @@
     "unloadModel": "Разтоварване на модела",
     "model": "Модел",
     "quit": "Изход",
-    "cancel": "Отказ"
+    "cancel": "Отказ",
+    "language": "Език"
   },
   "sidebar": {
     "general": "Общи",

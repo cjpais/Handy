@@ -6,7 +6,8 @@
     "unloadModel": "Décharger le modèle",
     "model": "Modèle",
     "quit": "Quitter",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "language": "Langue"
   },
   "sidebar": {
     "general": "Général",

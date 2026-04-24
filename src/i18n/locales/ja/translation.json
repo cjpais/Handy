@@ -6,7 +6,8 @@
     "unloadModel": "モデルをアンロード",
     "model": "モデル",
     "quit": "終了",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "language": "言語"
   },
   "sidebar": {
     "general": "一般",
