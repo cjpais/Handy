@@ -321,6 +321,11 @@ impl AudioRecordingManager {
         }
 
         *open_flag = true;
+        // This timing covers through cpal's stream.play() returning — i.e. the
+        // point cpal surfaces as "stream running." It does NOT guarantee the
+        // host audio device is producing samples yet; the first input callback
+        // fires asynchronously one buffer period later (hardware dependent,
+        // typically ~10–200ms on macOS, longer on Bluetooth/USB).
         info!(
             "Microphone stream initialized in {:?}",
             start_time.elapsed()
