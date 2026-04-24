@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "Verlaufslimit",
         "description": "Maximale Anzahl der Verlaufseinträge",
-        "entries": "Einträge"
+        "entries": "Einträge",
+        "warningTitle": "Aufnahmen werden möglicherweise entfernt",
+        "warningDescription": "Einträge über dem neuen Limit werden bei der nächsten Aufnahme gelöscht."
       },
       "recordingRetention": {
         "title": "Aufnahmen automatisch löschen",
@@ -468,7 +470,9 @@
         "days3": "Nach 3 Tagen",
         "weeks2": "Nach 2 Wochen",
         "months3": "Nach 3 Monaten",
-        "placeholder": "Aufbewahrungszeitraum auswählen..."
+        "placeholder": "Aufbewahrungszeitraum auswählen...",
+        "warningTitle": "Automatisches Löschen aktiviert",
+        "warningDescription": "Aufnahmen, die älter als der Aufbewahrungszeitraum sind, werden bei der nächsten Aufnahme gelöscht."
       },
       "alwaysOnMicrophone": {
         "label": "Mikrofon immer aktiv",

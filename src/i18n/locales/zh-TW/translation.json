@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "歷史紀錄上限",
         "description": "歷史紀錄的最大保留筆數",
-        "entries": "筆"
+        "entries": "筆",
+        "warningTitle": "錄音可能會被刪除",
+        "warningDescription": "超出新限制的項目將在下次錄音時刪除。"
       },
       "recordingRetention": {
         "title": "自動刪除錄音",
@@ -468,7 +470,9 @@
         "days3": "3 天後",
         "weeks2": "2 週後",
         "months3": "3 個月後",
-        "placeholder": "選擇保留期限..."
+        "placeholder": "選擇保留期限...",
+        "warningTitle": "已啟用自動刪除",
+        "warningDescription": "超過保留期限的錄音將在下次錄音時刪除。"
       },
       "alwaysOnMicrophone": {
         "label": "麥克風常開",

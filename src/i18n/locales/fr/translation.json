@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "Limite d'historique",
         "description": "Nombre maximum d'entrées d'historique à conserver",
-        "entries": "entrées"
+        "entries": "entrées",
+        "warningTitle": "Des enregistrements pourraient être supprimés",
+        "warningDescription": "Les entrées dépassant la nouvelle limite seront supprimées lors du prochain enregistrement."
       },
       "recordingRetention": {
         "title": "Suppression automatique des enregistrements",
@@ -468,7 +470,9 @@
         "days3": "Après 3 jours",
         "weeks2": "Après 2 semaines",
         "months3": "Après 3 mois",
-        "placeholder": "Sélectionner la période de conservation..."
+        "placeholder": "Sélectionner la période de conservation...",
+        "warningTitle": "Suppression automatique activée",
+        "warningDescription": "Les enregistrements plus anciens que la période de rétention seront supprimés lors du prochain enregistrement."
       },
       "alwaysOnMicrophone": {
         "label": "Microphone toujours actif",
