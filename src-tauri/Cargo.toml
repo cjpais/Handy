@@ -70,7 +70,7 @@ tar = "0.4.44"
 flate2 = "1.0"
 sha2 = "0.10"
 transcribe-rs = { version = "0.3.8", features = ["whisper-cpp", "onnx"] }
-handy-keys = "0.2.4"
+handy-keys = { git = "https://github.com/ChristophNoetel/handy-keys", branch = "fix/session-recovery" }
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
 specta = "=2.0.0-rc.22"
