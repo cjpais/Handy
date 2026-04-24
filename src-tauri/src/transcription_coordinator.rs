@@ -38,7 +38,7 @@ pub struct TranscriptionCoordinator {
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
-    id == "transcribe" || id == "transcribe_with_post_process"
+    id == "transcribe" || id == "transcribe_with_post_process" || id == "transcribe_with_push_to_talk"
 }
 
 impl TranscriptionCoordinator {
@@ -155,6 +155,44 @@ impl TranscriptionCoordinator {
         if self.tx.send(Command::ProcessingFinished).is_err() {
             warn!("Transcription coordinator channel closed");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_transcribe_binding;
+
+    #[test]
+    fn is_transcribe_binding_recognises_plain_transcribe() {
+        assert!(is_transcribe_binding("transcribe"));
+    }
+
+    #[test]
+    fn is_transcribe_binding_recognises_post_process() {
+        assert!(is_transcribe_binding("transcribe_with_post_process"));
+    }
+
+    #[test]
+    fn is_transcribe_binding_recognises_push_to_talk() {
+        assert!(
+            is_transcribe_binding("transcribe_with_push_to_talk"),
+            "transcribe_with_push_to_talk must be recognised as a transcribe binding"
+        );
+    }
+
+    #[test]
+    fn is_transcribe_binding_rejects_cancel() {
+        assert!(!is_transcribe_binding("cancel"));
+    }
+
+    #[test]
+    fn is_transcribe_binding_rejects_unknown() {
+        assert!(!is_transcribe_binding("unknown_action"));
+    }
+
+    #[test]
+    fn is_transcribe_binding_rejects_empty_string() {
+        assert!(!is_transcribe_binding(""));
     }
 }
 
