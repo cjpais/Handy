@@ -92,6 +92,8 @@
             src = self;
 
             cargoRoot = "src-tauri";
+            buildAndTestSubdir = "src-tauri";
+            tauriBundleType = "deb";
 
             cargoLock = {
               lockFile = ./src-tauri/Cargo.lock;
@@ -103,7 +105,7 @@
             };
 
             postPatch = ''
-              ${pkgs.jq}/bin/jq 'del(.build.beforeBuildCommand) | .bundle.createUpdaterArtifacts = false' \
+              ${pkgs.jq}/bin/jq '.bundle.createUpdaterArtifacts = false' \
                 src-tauri/tauri.conf.json > $TMPDIR/tauri.conf.json
               cp $TMPDIR/tauri.conf.json src-tauri/tauri.conf.json
 
@@ -150,26 +152,9 @@
               shaderc
             ];
 
-            preBuild = ''
-              # bun2nix.hook has already set up node_modules from pre-fetched cache.
-              # Build the frontend with bun (tsc + vite).
-              export HOME=$TMPDIR
-              bun run build
-            '';
-
             # Tests require runtime resources (audio devices, model files, GPU/Vulkan)
             # not available in the Nix build sandbox
             doCheck = false;
-
-            # The tauri hook's installPhase expects target/ in cwd, but our
-            # cargoRoot puts it under src-tauri/. Override to extract the DEB.
-            installPhase = ''
-              runHook preInstall
-              mkdir -p $out
-              cd src-tauri
-              mv target/${pkgs.stdenv.hostPlatform.rust.rustcTarget}/release/bundle/deb/*/data/usr/* $out/
-              runHook postInstall
-            '';
 
             buildInputs = commonNativeDeps pkgs ++ (with pkgs; [
               glib-networking
