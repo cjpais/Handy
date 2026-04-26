@@ -225,6 +225,16 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
         .unwrap_or_else(|| "default".to_string()))
 }
 
+/// Returns the friendly name of the AI mouse receiver's microphone endpoint
+/// when the receiver is currently plugged in, otherwise `None`. The frontend
+/// uses this to relabel the "Default" option in the microphone picker and
+/// to disable selection — recording is locked to the AI mouse mic.
+#[tauri::command]
+#[specta::specta]
+pub fn get_ai_mouse_microphone_name() -> Option<String> {
+    AudioRecordingManager::ai_mouse_microphone_name()
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn get_available_output_devices() -> Result<Vec<AudioDevice>, String> {

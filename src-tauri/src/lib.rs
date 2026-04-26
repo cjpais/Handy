@@ -28,8 +28,8 @@ use tauri_specta::{collect_commands, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
-use managers::history::HistoryManager;
 use managers::hid_mouse::start_hid_mouse_monitor;
+use managers::history::HistoryManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
@@ -86,8 +86,15 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
-fn show_main_window(app: &AppHandle) {
+fn show_main_window_impl(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
+        let was_visible = main_window.is_visible().unwrap_or(false);
+        let was_minimized = main_window.is_minimized().unwrap_or(false);
+        log::info!(
+            "Showing main window (visible: {}, minimized: {})",
+            was_visible,
+            was_minimized
+        );
         if let Err(e) = main_window.unminimize() {
             log::error!("Failed to unminimize webview window: {}", e);
         }
@@ -111,6 +118,24 @@ fn show_main_window(app: &AppHandle) {
         "Main window not found. Webview labels: {:?}",
         webview_labels
     );
+}
+
+#[cfg(target_os = "windows")]
+fn show_main_window(app: &AppHandle) {
+    let app_handle = app.clone();
+    if let Err(error) = app.run_on_main_thread(move || {
+        show_main_window_impl(&app_handle);
+    }) {
+        log::error!(
+            "Failed to schedule main window show on UI thread: {}",
+            error
+        );
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn show_main_window(app: &AppHandle) {
+    show_main_window_impl(app);
 }
 
 #[allow(unused_variables)]
@@ -168,6 +193,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(history_manager.clone());
     app_handle.manage(start_hid_mouse_monitor(app_handle));
 
+    // Pre-load the selected model in background so it is ready on first use.
+    transcription_manager.initiate_model_load();
+
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
     // after permissions are confirmed (on macOS) or after onboarding completes.
@@ -208,6 +236,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         .icon_as_template(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "settings" => {
+                show_main_window(app);
+            }
+            "open_main_window" => {
                 show_main_window(app);
             }
             "check_updates" => {
@@ -362,6 +393,8 @@ pub fn run(cli_args: CliArgs) {
         shortcut::change_mute_while_recording_setting,
         shortcut::change_append_trailing_space_setting,
         shortcut::change_app_language_setting,
+        shortcut::change_proxy_url_setting,
+        shortcut::change_ai_channels_setting,
         shortcut::change_update_checks_setting,
         shortcut::change_keyboard_implementation_setting,
         shortcut::get_keyboard_implementation,
@@ -387,10 +420,13 @@ pub fn run(cli_args: CliArgs) {
         commands::initialize_enigo,
         commands::initialize_shortcuts,
         commands::models::get_available_models,
+        commands::models::get_model_dir_path,
         commands::models::get_model_info,
+        commands::models::open_model_dir,
         commands::models::download_model,
         commands::models::delete_model,
         commands::models::cancel_download,
+        commands::models::set_model_storage_path,
         commands::models::set_active_model,
         commands::models::get_current_model,
         commands::models::get_transcription_model_status,
@@ -404,6 +440,7 @@ pub fn run(cli_args: CliArgs) {
         commands::audio::get_available_microphones,
         commands::audio::set_selected_microphone,
         commands::audio::get_selected_microphone,
+        commands::audio::get_ai_mouse_microphone_name,
         commands::audio::get_available_output_devices,
         commands::audio::set_selected_output_device,
         commands::audio::get_selected_output_device,
@@ -499,13 +536,17 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
+            // Read settings up-front so we can apply persisted webview options
+            // (e.g. proxy_url) at window creation.
+            let mut settings = get_settings(&app.handle());
+
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                     .title("美声智能AI")
-                    .inner_size(1024.0, 768.0)
-                    .min_inner_size(1024.0, 768.0)
+                    .inner_size(1200.0, 860.0)
+                    .min_inner_size(1200.0, 860.0)
                     .resizable(true)
                     .maximizable(false)
                     .visible(false);
@@ -514,9 +555,25 @@ pub fn run(cli_args: CliArgs) {
                 win_builder = win_builder.data_directory(data_dir.join("webview"));
             }
 
-            win_builder.build()?;
+            if let Some(ref raw) = settings.proxy_url {
+                match tauri::Url::parse(raw) {
+                    Ok(url) => {
+                        log::info!("Applying webview proxy: {url}");
+                        // On Windows, proxy is configured via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
+                        // in main() before WebView2 initialises — includes a loopback bypass list
+                        // so the app UI (localhost / tauri.localhost) always loads directly.
+                        #[cfg(not(target_os = "windows"))]
+                        {
+                            win_builder = win_builder.proxy_url(url);
+                        }
+                    }
+                    Err(e) => {
+                        log::warn!("Ignoring invalid proxy_url '{raw}': {e}");
+                    }
+                }
+            }
 
-            let mut settings = get_settings(&app.handle());
+            win_builder.build()?;
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
             if cli_args.debug {

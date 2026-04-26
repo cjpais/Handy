@@ -59,22 +59,41 @@ pub struct DownloadProgress {
 
 pub struct ModelManager {
     app_handle: AppHandle,
-    models_dir: PathBuf,
+    models_dir: Mutex<PathBuf>,
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
 }
 
 impl ModelManager {
-    pub fn new(app_handle: &AppHandle) -> Result<Self> {
-        // Create models directory in app data
-        let models_dir = crate::portable::app_data_dir(app_handle)
+    pub fn default_models_dir(app_handle: &AppHandle) -> Result<PathBuf> {
+        Ok(crate::portable::app_data_dir(app_handle)
             .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?
-            .join("models");
+            .join("models"))
+    }
 
-        if !models_dir.exists() {
-            fs::create_dir_all(&models_dir)?;
+    pub fn resolve_models_dir(app_handle: &AppHandle) -> Result<PathBuf> {
+        let settings = get_settings(app_handle);
+        let configured = settings
+            .model_storage_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|path| !path.is_empty())
+            .map(PathBuf::from);
+
+        Ok(configured.unwrap_or(Self::default_models_dir(app_handle)?))
+    }
+
+    fn ensure_models_dir(path: &Path) -> Result<()> {
+        if !path.exists() {
+            fs::create_dir_all(path)?;
         }
+        Ok(())
+    }
+
+    pub fn new(app_handle: &AppHandle) -> Result<Self> {
+        let models_dir = Self::resolve_models_dir(app_handle)?;
+        Self::ensure_models_dir(&models_dir)?;
 
         let mut available_models = HashMap::new();
 
@@ -269,7 +288,7 @@ impl ModelManager {
                 accuracy_score: 0.80,
                 speed_score: 0.85,
                 supports_translation: false,
-                is_recommended: true,
+                is_recommended: false,
                 supported_languages: parakeet_v3_languages,
                 supports_language_selection: false,
                 is_custom: false,
@@ -403,7 +422,7 @@ impl ModelManager {
                 accuracy_score: 0.65,
                 speed_score: 0.95,
                 supports_translation: false,
-                is_recommended: false,
+                is_recommended: true,
                 supported_languages: sense_voice_languages,
                 supports_language_selection: true,
                 is_custom: false,
@@ -509,7 +528,7 @@ impl ModelManager {
 
         let manager = Self {
             app_handle: app_handle.clone(),
-            models_dir,
+            models_dir: Mutex::new(models_dir),
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             extracting_models: Arc::new(Mutex::new(HashSet::new())),
@@ -527,6 +546,10 @@ impl ModelManager {
         Ok(manager)
     }
 
+    pub fn get_models_dir(&self) -> PathBuf {
+        self.models_dir.lock().unwrap().clone()
+    }
+
     pub fn get_available_models(&self) -> Vec<ModelInfo> {
         let models = self.available_models.lock().unwrap();
         models.values().cloned().collect()
@@ -537,7 +560,145 @@ impl ModelManager {
         models.get(model_id).cloned()
     }
 
+    pub fn has_active_transfers(&self) -> bool {
+        let downloading = {
+            let models = self.available_models.lock().unwrap();
+            models.values().any(|model| model.is_downloading)
+        };
+
+        if downloading {
+            return true;
+        }
+
+        !self.extracting_models.lock().unwrap().is_empty()
+    }
+
+    fn refresh_custom_models(&self, models_dir: &Path) -> Result<()> {
+        let mut models = self.available_models.lock().unwrap();
+        let custom_ids: Vec<String> = models
+            .iter()
+            .filter(|(_, model)| model.is_custom)
+            .map(|(id, _)| id.clone())
+            .collect();
+
+        for id in custom_ids {
+            models.remove(&id);
+        }
+
+        Self::discover_custom_whisper_models(models_dir, &mut models)?;
+        Ok(())
+    }
+
+    fn canonical_for_compare(path: &Path) -> PathBuf {
+        fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+    }
+
+    fn validate_directory_change(old_dir: &Path, new_dir: &Path) -> Result<()> {
+        let old_cmp = Self::canonical_for_compare(old_dir);
+        let new_cmp = Self::canonical_for_compare(new_dir);
+
+        if old_cmp != new_cmp && (new_cmp.starts_with(&old_cmp) || old_cmp.starts_with(&new_cmp)) {
+            return Err(anyhow::anyhow!(
+                "Model directory cannot be nested inside the current model directory"
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {
+        fs::create_dir_all(dst)?;
+
+        for entry in fs::read_dir(src)? {
+            let entry = entry?;
+            let src_path = entry.path();
+            let dst_path = dst.join(entry.file_name());
+
+            if entry.file_type()?.is_dir() {
+                Self::copy_dir_all(&src_path, &dst_path)?;
+            } else {
+                fs::copy(&src_path, &dst_path)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn move_path(src: &Path, dst: &Path) -> Result<()> {
+        match fs::rename(src, dst) {
+            Ok(()) => Ok(()),
+            Err(rename_error) => {
+                warn!(
+                    "Falling back to copy for model asset move from {:?} to {:?}: {}",
+                    src, dst, rename_error
+                );
+
+                if src.is_dir() {
+                    Self::copy_dir_all(src, dst)?;
+                    fs::remove_dir_all(src)?;
+                } else {
+                    fs::copy(src, dst)?;
+                    fs::remove_file(src)?;
+                }
+
+                Ok(())
+            }
+        }
+    }
+
+    fn migrate_models_dir_contents(&self, old_dir: &Path, new_dir: &Path) -> Result<()> {
+        if !old_dir.exists()
+            || Self::canonical_for_compare(old_dir) == Self::canonical_for_compare(new_dir)
+        {
+            return Ok(());
+        }
+
+        for entry in fs::read_dir(old_dir)? {
+            let entry = entry?;
+            let src_path = entry.path();
+            let dst_path = new_dir.join(entry.file_name());
+
+            if dst_path.exists() {
+                return Err(anyhow::anyhow!(
+                    "Target model directory already contains {}",
+                    dst_path.display()
+                ));
+            }
+
+            Self::move_path(&src_path, &dst_path)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_models_dir(&self, new_dir: PathBuf) -> Result<PathBuf> {
+        Self::ensure_models_dir(&new_dir)?;
+
+        let old_dir = self.get_models_dir();
+        let old_cmp = Self::canonical_for_compare(&old_dir);
+        let new_cmp = Self::canonical_for_compare(&new_dir);
+
+        if old_cmp != new_cmp {
+            Self::validate_directory_change(&old_dir, &new_dir)?;
+            self.migrate_models_dir_contents(&old_dir, &new_dir)?;
+        }
+
+        {
+            let mut models_dir = self.models_dir.lock().unwrap();
+            *models_dir = new_dir.clone();
+        }
+
+        self.refresh_custom_models(&new_dir)?;
+        self.migrate_bundled_models()?;
+        self.update_download_status()?;
+        self.auto_select_model_if_needed()?;
+
+        Ok(new_dir)
+    }
+
     fn migrate_bundled_models(&self) -> Result<()> {
+        let models_dir = self.get_models_dir();
+
         // Check for bundled models and copy them to user directory
         let bundled_models = ["ggml-small.bin"]; // Add other bundled models here if any
 
@@ -549,7 +710,7 @@ impl ModelManager {
 
             if let Ok(bundled_path) = bundled_path {
                 if bundled_path.exists() {
-                    let user_path = self.models_dir.join(filename);
+                    let user_path = models_dir.join(filename);
 
                     // Only copy if user doesn't already have the model
                     if !user_path.exists() {
@@ -565,16 +726,15 @@ impl ModelManager {
     }
 
     fn update_download_status(&self) -> Result<()> {
+        let models_dir = self.get_models_dir();
         let mut models = self.available_models.lock().unwrap();
 
         for model in models.values_mut() {
             if model.is_directory {
                 // For directory-based models, check if the directory exists
-                let model_path = self.models_dir.join(&model.filename);
-                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
-                let extracting_path = self
-                    .models_dir
-                    .join(format!("{}.extracting", &model.filename));
+                let model_path = models_dir.join(&model.filename);
+                let partial_path = models_dir.join(format!("{}.partial", &model.filename));
+                let extracting_path = models_dir.join(format!("{}.extracting", &model.filename));
 
                 // Clean up any leftover .extracting directories from interrupted extractions
                 // But only if this model is NOT currently being extracted
@@ -598,8 +758,8 @@ impl ModelManager {
                 }
             } else {
                 // For file-based models (existing logic)
-                let model_path = self.models_dir.join(&model.filename);
-                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                let model_path = models_dir.join(&model.filename);
+                let partial_path = models_dir.join(format!("{}.partial", &model.filename));
 
                 model.is_downloaded = model_path.exists();
                 model.is_downloading = false;
@@ -787,13 +947,12 @@ impl ModelManager {
         let model_info =
             model_info.ok_or_else(|| anyhow::anyhow!("Model not found: {}", model_id))?;
 
+        let models_dir = self.get_models_dir();
         let url = model_info
             .url
             .ok_or_else(|| anyhow::anyhow!("No download URL for model"))?;
-        let model_path = self.models_dir.join(&model_info.filename);
-        let partial_path = self
-            .models_dir
-            .join(format!("{}.partial", &model_info.filename));
+        let model_path = models_dir.join(&model_info.filename);
+        let partial_path = models_dir.join(format!("{}.partial", &model_info.filename));
 
         // Don't download if complete version already exists
         if model_path.exists() {
@@ -1025,9 +1184,9 @@ impl ModelManager {
 
             // Use a temporary extraction directory to ensure atomic operations
             let temp_extract_dir = self
-                .models_dir
+                .get_models_dir()
                 .join(format!("{}.extracting", &model_info.filename));
-            let final_model_dir = self.models_dir.join(&model_info.filename);
+            let final_model_dir = self.get_models_dir().join(&model_info.filename);
 
             // Clean up any previous incomplete extraction
             if temp_extract_dir.exists() {
@@ -1141,10 +1300,9 @@ impl ModelManager {
 
         debug!("ModelManager: Found model info: {:?}", model_info);
 
-        let model_path = self.models_dir.join(&model_info.filename);
-        let partial_path = self
-            .models_dir
-            .join(format!("{}.partial", &model_info.filename));
+        let models_dir = self.get_models_dir();
+        let model_path = models_dir.join(&model_info.filename);
+        let partial_path = models_dir.join(format!("{}.partial", &model_info.filename));
         debug!("ModelManager: Model path: {:?}", model_path);
         debug!("ModelManager: Partial path: {:?}", partial_path);
 
@@ -1215,10 +1373,9 @@ impl ModelManager {
             ));
         }
 
-        let model_path = self.models_dir.join(&model_info.filename);
-        let partial_path = self
-            .models_dir
-            .join(format!("{}.partial", &model_info.filename));
+        let models_dir = self.get_models_dir();
+        let model_path = models_dir.join(&model_info.filename);
+        let partial_path = models_dir.join(format!("{}.partial", &model_info.filename));
 
         if model_info.is_directory {
             // For directory-based models, ensure the directory exists and is complete

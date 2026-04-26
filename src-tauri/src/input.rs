@@ -113,11 +113,14 @@ pub fn send_paste_shift_insert(enigo: &mut Enigo) -> Result<(), String> {
 }
 
 /// Pastes text directly using the enigo text method.
-/// This tries to use system input methods if possible, otherwise simulates keystrokes one by one.
+/// On Windows this uses SendInput with KEYEVENTF_UNICODE per character, which
+/// works in Electron/Chromium apps where Ctrl+V can race with clipboard restore.
 pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
+    log::info!("paste_text_direct: typing {} chars via enigo.text()", text.chars().count());
+    let t0 = std::time::Instant::now();
     enigo
         .text(text)
         .map_err(|e| format!("Failed to send text directly: {}", e))?;
-
+    log::info!("paste_text_direct: done in {:?}", t0.elapsed());
     Ok(())
 }

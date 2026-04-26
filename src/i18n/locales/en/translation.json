@@ -6,7 +6,8 @@
     "unloadModel": "Unload Model",
     "model": "Model",
     "quit": "Quit",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "openMainWindow": "Open Main Window"
   },
   "sidebar": {
     "general": "General",
@@ -215,7 +216,10 @@
         "title": "Microphone",
         "description": "Select your preferred microphone device",
         "placeholder": "Select microphone...",
-        "loading": "Loading..."
+        "loading": "Loading...",
+        "aiMouseLabel": "AI mouse microphone ({{name}})",
+        "aiMouseLocked": "Locked to the AI mouse microphone ({{name}}).",
+        "aiMouseMissing": "AI mouse receiver not detected — recording is unavailable. Plug it in and refresh."
       },
       "audioFeedback": {
         "label": "Audio Feedback",
@@ -239,6 +243,7 @@
         "output": "Output",
         "transcription": "Transcription",
         "history": "History",
+        "network": "Network",
         "experimental": "Experimental"
       },
       "experimentalToggle": {
@@ -266,6 +271,24 @@
       "showTrayIcon": {
         "label": "Show Tray Icon",
         "description": "Display the Handy icon in the system tray."
+      },
+      "proxy": {
+        "title": "Web Proxy",
+        "description": "Configure an HTTP or SOCKS5 proxy for the embedded AI chat pages (useful for reaching ChatGPT and other blocked sites). Changes take effect after restarting the app.",
+        "enable": "Enable proxy",
+        "savedRestart": "Saved. Restart the app for the proxy to take effect.",
+        "restartNow": "Restart now",
+        "errors": {
+          "empty": "Proxy URL cannot be empty.",
+          "invalid": "Invalid proxy URL. Must start with http:// or socks5://",
+          "unreachable": "Proxy {{addr}} is not reachable. Make sure the proxy service is running."
+        }
+      },
+      "aiChannels": {
+        "title": "AI Channel Management",
+        "description": "Choose which AI platforms appear on the home page and adjust their display order.",
+        "hide": "Hide",
+        "show": "Show"
       },
       "overlay": {
         "title": "Overlay Position",
@@ -496,6 +519,17 @@
         "title": "App Data Directory",
         "description": "Location where Handy stores its data"
       },
+      "modelDirectory": {
+        "title": "Model Directory",
+        "description": "Downloaded and custom speech models are stored here",
+        "changeButton": "Change Location",
+        "resetButton": "Use Default",
+        "hint": "Changing this folder moves existing models to the new location. This is blocked while a model download or extraction is in progress.",
+        "selectTitle": "Select Model Directory",
+        "updated": "Model directory updated",
+        "loadError": "Failed to load model directory",
+        "updateError": "Failed to update model directory"
+      },
       "sourceCode": {
         "title": "Source Code",
         "description": "View source code and contribute",
@@ -532,6 +566,7 @@
   },
   "common": {
     "loading": "Loading...",
+    "saving": "Saving...",
     "save": "Save",
     "cancel": "Cancel",
     "reset": "Reset",
@@ -542,6 +577,8 @@
     "create": "Create",
     "update": "Update",
     "close": "Close",
+    "error": "An error occurred",
+    "retry": "Retry",
     "open": "Open",
     "default": "Default",
     "enabled": "Enabled",
@@ -578,5 +615,13 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "home": {
+    "titleSuffix": " Home",
+    "refresh": "Refresh",
+    "openSettings": "Settings",
+    "iframeTitle": "{{title}} Chat",
+    "loading": "Loading...",
+    "loadingHint": "First load may take a moment"
   }
 }

@@ -1,8 +1,10 @@
 use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command]
 #[specta::specta]
@@ -10,6 +12,99 @@ pub async fn get_available_models(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<Vec<ModelInfo>, String> {
     Ok(model_manager.get_available_models())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_model_dir_path(
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<String, String> {
+    Ok(model_manager.get_models_dir().to_string_lossy().to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn open_model_dir(
+    app_handle: AppHandle,
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<(), String> {
+    let path = model_manager.get_models_dir();
+    app_handle
+        .opener()
+        .open_path(path.to_string_lossy().to_string(), None::<String>)
+        .map_err(|e| format!("Failed to open model directory: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_model_storage_path(
+    app_handle: AppHandle,
+    model_manager: State<'_, Arc<ModelManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    path: Option<String>,
+) -> Result<String, String> {
+    if model_manager.has_active_transfers() {
+        return Err(
+            "Cannot change model directory while a download or extraction is in progress"
+                .to_string(),
+        );
+    }
+
+    let requested_path = path
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from);
+
+    let target_dir = requested_path
+        .clone()
+        .unwrap_or(ModelManager::default_models_dir(&app_handle).map_err(|e| e.to_string())?);
+
+    let default_dir = ModelManager::default_models_dir(&app_handle).map_err(|e| e.to_string())?;
+    let store_path = if target_dir == default_dir {
+        None
+    } else {
+        Some(target_dir.to_string_lossy().to_string())
+    };
+
+    let previous_settings = get_settings(&app_handle);
+    let previous_path = previous_settings.model_storage_path.clone();
+
+    let mut updated_settings = previous_settings;
+    updated_settings.model_storage_path = store_path;
+    write_settings(&app_handle, updated_settings);
+
+    if transcription_manager.is_model_loaded() {
+        if let Err(error) = transcription_manager.unload_model() {
+            let mut rollback_settings = get_settings(&app_handle);
+            rollback_settings.model_storage_path = previous_path;
+            write_settings(&app_handle, rollback_settings);
+            return Err(format!("Failed to unload active model: {}", error));
+        }
+    }
+
+    match model_manager.set_models_dir(target_dir.clone()) {
+        Ok(models_dir) => {
+            let _ = app_handle.emit(
+                "model-state-changed",
+                ModelStateEvent {
+                    event_type: "models_dir_changed".to_string(),
+                    model_id: None,
+                    model_name: None,
+                    error: None,
+                },
+            );
+            Ok(models_dir.to_string_lossy().to_string())
+        }
+        Err(error) => {
+            let mut rollback_settings = get_settings(&app_handle);
+            rollback_settings.model_storage_path = previous_path;
+            write_settings(&app_handle, rollback_settings);
+            Err(error.to_string())
+        }
+    }
 }
 
 #[tauri::command]

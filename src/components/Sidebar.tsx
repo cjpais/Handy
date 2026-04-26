@@ -1,7 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
-import HandyTextLogo from "./icons/HandyTextLogo";
 import HandyHand from "./icons/HandyHand";
 import { useSettings } from "../hooks/useSettings";
 import {
@@ -93,9 +92,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
-      <HandyTextLogo width={120} className="m-4" />
-      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
+    <div className="flex flex-col w-40 h-full border-e border-white/[0.06] items-center px-2 bg-[#100d18]">
+      <div className="m-4 text-3xl font-bold text-logo-primary tracking-wide">
+        美声AI
+      </div>
+      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-white/[0.06]">
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;

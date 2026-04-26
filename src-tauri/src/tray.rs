@@ -95,12 +95,20 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
 
     // Create common menu items
     let version_label = if cfg!(debug_assertions) {
-        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+        format!("美声智能 v{} (Dev)", env!("CARGO_PKG_VERSION"))
     } else {
-        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+        format!("美声智能 v{}", env!("CARGO_PKG_VERSION"))
     };
     let version_i = MenuItem::with_id(app, "version", &version_label, false, None::<&str>)
         .expect("failed to create version item");
+    let open_main_i = MenuItem::with_id(
+        app,
+        "open_main_window",
+        &strings.open_main_window,
+        true,
+        None::<&str>,
+    )
+    .expect("failed to create open main window item");
     let settings_i = MenuItem::with_id(
         app,
         "settings",
@@ -178,6 +186,8 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                 &[
                     &version_i,
                     &separator(),
+                    &open_main_i,
+                    &separator(),
                     &cancel_i,
                     &separator(),
                     &copy_last_transcript_i,
@@ -194,6 +204,8 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
             app,
             &[
                 &version_i,
+                &separator(),
+                &open_main_i,
                 &separator(),
                 &copy_last_transcript_i,
                 &separator(),

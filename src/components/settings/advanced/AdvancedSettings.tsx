@@ -19,6 +19,9 @@ import { ExperimentalToggle } from "../ExperimentalToggle";
 import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
+import { ProxySetting } from "../ProxySetting";
+
+import { AiChannelsSetting } from "../AiChannelsSetting";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -54,6 +57,11 @@ export const AdvancedSettings: React.FC = () => {
           descriptionMode="tooltip"
           grouped={true}
         />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.advanced.groups.network")}>
+        <ProxySetting descriptionMode="tooltip" grouped={true} />
+        <AiChannelsSetting descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
 
       {experimentalEnabled && (

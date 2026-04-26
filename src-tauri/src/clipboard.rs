@@ -22,6 +22,11 @@ fn paste_via_clipboard(
 ) -> Result<(), String> {
     let clipboard = app_handle.clipboard();
     let clipboard_content = clipboard.read_text().unwrap_or_default();
+    info!(
+        "paste_via_clipboard: text_len={}, prev_clipboard_len={}",
+        text.chars().count(),
+        clipboard_content.chars().count()
+    );
 
     // Write text to clipboard first
     // On Wayland, prefer wl-copy for better compatibility (especially with umlauts)
@@ -41,8 +46,30 @@ fn paste_via_clipboard(
         .map_err(|e| format!("Failed to write to clipboard: {}", e));
 
     write_result?;
+    info!("paste_via_clipboard: clipboard write OK, sleeping {paste_delay_ms}ms");
 
     std::thread::sleep(Duration::from_millis(paste_delay_ms));
+
+    // Verify clipboard actually contains our text before sending paste keystroke.
+    // Some apps (Electron-based, like Doubao) intercept clipboard updates async,
+    // and the OS clipboard may not have settled yet.
+    match clipboard.read_text() {
+        Ok(actual) if actual == text => {
+            info!("paste_via_clipboard: clipboard contents verified");
+        }
+        Ok(actual) => {
+            log::warn!(
+                "paste_via_clipboard: clipboard mismatch — expected {} chars, got {} chars; retrying write",
+                text.chars().count(),
+                actual.chars().count()
+            );
+            let _ = clipboard.write_text(text);
+            std::thread::sleep(Duration::from_millis(paste_delay_ms.max(100)));
+        }
+        Err(e) => {
+            log::warn!("paste_via_clipboard: clipboard read failed: {e}");
+        }
+    }
 
     // Send paste key combo
     #[cfg(target_os = "linux")]
@@ -60,20 +87,21 @@ fn paste_via_clipboard(
             _ => return Err("Invalid paste method for clipboard paste".into()),
         }
     }
+    info!("paste_via_clipboard: Ctrl+V sent");
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
-
-    // Restore original clipboard content
-    // On Wayland, prefer wl-copy for better compatibility
-    #[cfg(target_os = "linux")]
-    if is_wayland() && is_wl_copy_available() {
-        let _ = write_clipboard_via_wl_copy(&clipboard_content);
-    } else {
-        let _ = clipboard.write_text(&clipboard_content);
-    }
-
-    #[cfg(not(target_os = "linux"))]
-    let _ = clipboard.write_text(&clipboard_content);
+    // Restore the original clipboard contents in a background thread after a
+    // long delay. Electron/Chromium apps (e.g. Doubao) read the clipboard
+    // ASYNCHRONOUSLY in response to Ctrl+V — if we restore the previous
+    // clipboard too early, the app pastes the OLD content instead of our
+    // transcription. 1500ms is conservative but reliable across renderers.
+    let clipboard_for_restore = app_handle.clone();
+    let prev_text = clipboard_content.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let cb = clipboard_for_restore.clipboard();
+        let _ = cb.write_text(&prev_text);
+        info!("paste_via_clipboard: clipboard restored (delayed 1500ms)");
+    });
 
     Ok(())
 }

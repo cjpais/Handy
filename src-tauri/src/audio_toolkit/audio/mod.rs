@@ -1,10 +1,12 @@
 // Re-export all audio components
+mod ai_mouse_mic;
 mod device;
 mod recorder;
 mod resampler;
 mod utils;
 mod visualizer;
 
+pub use ai_mouse_mic::find_ai_mouse_microphone_name;
 pub use device::{list_input_devices, list_output_devices, CpalDeviceInfo};
 pub use recorder::{is_microphone_access_denied, AudioRecorder};
 pub use resampler::FrameResampler;

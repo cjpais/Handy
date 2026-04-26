@@ -1,11 +1,17 @@
-use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
+use crate::audio_toolkit::{
+    find_ai_mouse_microphone_name, list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad,
+};
 use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
+
+#[cfg(windows)]
+use crate::managers::hid_mouse::HidMouseMonitorState;
 
 fn set_mute(mute: bool) {
     // Expected behavior:
@@ -148,6 +154,9 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
+    /// Lock-free gate: set to false immediately when stop is requested so
+    /// inject_hid_audio() stops flooding the channel before rec.stop() returns.
+    hid_inject_active: Arc<AtomicBool>,
     did_mute: Arc<Mutex<bool>>,
 }
 
@@ -170,6 +179,7 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
+            hid_inject_active: Arc::new(AtomicBool::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
         };
 
@@ -183,30 +193,82 @@ impl AudioRecordingManager {
 
     /* ---------- helper methods --------------------------------------------- */
 
-    fn get_effective_microphone_device(&self, settings: &AppSettings) -> Option<cpal::Device> {
-        // Check if we're in clamshell mode and have a clamshell microphone configured
-        let use_clamshell_mic = if let Ok(is_clamshell) = clamshell::is_clamshell() {
-            is_clamshell && settings.clamshell_microphone.is_some()
-        } else {
-            false
-        };
+    /// Returns `true` when an AI mouse is connected via HID and its audio
+    /// arrives over the private HID protocol rather than as a WASAPI endpoint.
+    fn hid_mouse_is_active(&self) -> bool {
+        #[cfg(windows)]
+        {
+            self.app_handle
+                .try_state::<Arc<HidMouseMonitorState>>()
+                .map(|s| !s.snapshot().matched_devices.is_empty())
+                .unwrap_or(false)
+        }
+        #[cfg(not(windows))]
+        false
+    }
 
-        let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref().unwrap()
-        } else {
-            settings.selected_microphone.as_ref()?
-        };
+    /// Resolve the microphone cpal device this app is allowed to use.
+    ///
+    /// When an AI mouse is active and sends audio over HID, we skip WASAPI
+    /// enumeration entirely and return `None`; the recorder will be opened in
+    /// HID injection mode.  When no HID mouse is detected we fall back to the
+    /// WASAPI endpoint exposed by the receiver dongle.
+    fn get_effective_microphone_device(
+        &self,
+        _settings: &AppSettings,
+    ) -> Result<Option<cpal::Device>, String> {
+        if self.hid_mouse_is_active() {
+            info!("HID mouse active — using HID audio injection mode (no WASAPI device)");
+            return Ok(None);
+        }
 
-        // Find the device by name
-        match list_input_devices() {
-            Ok(devices) => devices
-                .into_iter()
-                .find(|d| d.name == *device_name)
-                .map(|d| d.device),
-            Err(e) => {
-                debug!("Failed to list devices, using default: {}", e);
-                None
+        // Legacy path: look for the USB Audio Class endpoint via WASAPI.
+        let mouse_mic_name = find_ai_mouse_microphone_name().ok_or_else(|| {
+            "未检测到鼠标麦克风：请确认 AI 鼠标接收器已正确插入 USB 端口。".to_string()
+        })?;
+
+        let devices = list_input_devices()
+            .map_err(|e| format!("枚举音频输入设备失败：{e}"))?;
+
+        let chosen = devices
+            .into_iter()
+            .find(|d| d.name == mouse_mic_name)
+            .map(|d| d.device);
+
+        match chosen {
+            Some(device) => {
+                info!("Using AI mouse microphone: {mouse_mic_name}");
+                Ok(Some(device))
             }
+            None => {
+                warn!(
+                    "AI mouse mic '{mouse_mic_name}' is registered with WASAPI but cpal didn't list it; \
+                     the receiver may have just been plugged in — please retry."
+                );
+                Err(format!(
+                    "未能打开鼠标麦克风（系统已识别为 \"{mouse_mic_name}\" 但 cpal 暂未枚举到）。请稍候重试，或重新插拔 AI 鼠标接收器。"
+                ))
+            }
+        }
+    }
+
+    /// Public probe used by the frontend (e.g. settings UI) to learn the
+    /// current AI mouse mic friendly name, or `None` when the receiver is
+    /// unplugged.
+    pub fn ai_mouse_microphone_name() -> Option<String> {
+        find_ai_mouse_microphone_name()
+    }
+
+    /// Inject f32 mono 16 kHz samples produced by the HID ADPCM decoder into
+    /// the active recorder. No-op when not in HID injection mode or not recording.
+    pub fn inject_hid_audio(&self, samples: Vec<f32>) {
+        // Lock-free gate: cleared atomically before rec.stop() is called so
+        // HID frames stop entering the channel immediately, without any lock.
+        if !self.hid_inject_active.load(Ordering::Relaxed) {
+            return;
+        }
+        if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+            rec.inject_samples(samples);
         }
     }
 
@@ -257,19 +319,32 @@ impl AudioRecordingManager {
             .map_err(|e| anyhow::anyhow!("Failed to resolve VAD path: {}", e))?;
         let mut recorder_opt = self.recorder.lock().unwrap();
 
+        let settings = get_settings(&self.app_handle);
+        let mic_device = self
+            .get_effective_microphone_device(&settings)
+            .map_err(|e| anyhow::anyhow!(e))?;
+
         if recorder_opt.is_none() {
-            *recorder_opt = Some(create_audio_recorder(
-                vad_path.to_str().unwrap(),
-                &self.app_handle,
-            )?);
+            // In HID injection mode skip VAD — ADPCM audio is pre-filtered by
+            // the mouse firmware; VAD may misclassify compressed artifacts as
+            // noise and swallow all samples.
+            let rec = if mic_device.is_none() {
+                AudioRecorder::new()
+                    .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
+                    .with_level_callback({
+                        let app_handle = self.app_handle.clone();
+                        move |levels| {
+                            crate::utils::emit_levels(&app_handle, &levels);
+                        }
+                    })
+            } else {
+                create_audio_recorder(vad_path.to_str().unwrap(), &self.app_handle)?
+            };
+            *recorder_opt = Some(rec);
         }
 
-        // Get the selected device from settings, considering clamshell mode
-        let settings = get_settings(&self.app_handle);
-        let selected_device = self.get_effective_microphone_device(&settings);
-
         if let Some(rec) = recorder_opt.as_mut() {
-            rec.open(selected_device)
+            rec.open(mic_device)
                 .map_err(|e| anyhow::anyhow!("Failed to open recorder: {}", e))?;
         }
 
@@ -348,6 +423,7 @@ impl AudioRecordingManager {
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
                 if rec.start().is_ok() {
                     *self.is_recording.lock().unwrap() = true;
+                    self.hid_inject_active.store(true, Ordering::Relaxed);
                     *state = RecordingState::Recording {
                         binding_id: binding_id.to_string(),
                     };
@@ -380,9 +456,30 @@ impl AudioRecordingManager {
                 *state = RecordingState::Idle;
                 drop(state);
 
+                // Stop HID injection atomically before calling rec.stop().
+                self.hid_inject_active.store(false, Ordering::Relaxed);
+                *self.is_recording.lock().unwrap() = false;
+
+                // Wake the consumer thread: it blocks on sample_rx.recv() and
+                // won't see Cmd::Stop until at least one chunk arrives.
+                // EndOfStream is handled as `continue` in the top-level loop,
+                // so after processing it the consumer checks cmd_rx and finds Stop.
+                {
+                    let rec_guard = self.recorder.lock().unwrap();
+                    if let Some(rec) = rec_guard.as_ref() {
+                        rec.send_end_of_stream();
+                    }
+                }
+                info!("stop_recording: hid gate closed + EOS sent, calling rec.stop()…");
+
+                let t0 = Instant::now();
                 let samples = if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                    info!("stop_recording: recorder lock acquired, sending Cmd::Stop");
                     match rec.stop() {
-                        Ok(buf) => buf,
+                        Ok(buf) => {
+                            info!("stop_recording: rec.stop() returned {} samples in {:?}", buf.len(), t0.elapsed());
+                            buf
+                        }
                         Err(e) => {
                             error!("stop() failed: {e}");
                             Vec::new()
@@ -392,8 +489,6 @@ impl AudioRecordingManager {
                     error!("Recorder not available");
                     Vec::new()
                 };
-
-                *self.is_recording.lock().unwrap() = false;
 
                 // In on-demand mode turn the mic off again
                 if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {

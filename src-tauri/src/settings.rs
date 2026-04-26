@@ -186,11 +186,14 @@ impl Default for ModelUnloadTimeout {
 
 impl Default for PasteMethod {
     fn default() -> Self {
-        // Default to CtrlV for macOS and Windows, Direct for Linux
-        #[cfg(target_os = "linux")]
-        return PasteMethod::Direct;
-        #[cfg(not(target_os = "linux"))]
+        // Default to Direct (per-character SendInput on Windows, ydotool/wtype
+        // on Linux). Direct typing avoids clipboard-restore races that break
+        // pasting in Electron/Chromium apps (e.g. Doubao) and is the right
+        // foundation for future real-time character-by-character output.
+        #[cfg(target_os = "macos")]
         return PasteMethod::CtrlV;
+        #[cfg(not(target_os = "macos"))]
+        return PasteMethod::Direct;
     }
 }
 
@@ -322,6 +325,8 @@ pub struct AppSettings {
     pub update_checks_enabled: bool,
     #[serde(default = "default_model")]
     pub selected_model: String,
+    #[serde(default)]
+    pub model_storage_path: Option<String>,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -395,6 +400,17 @@ pub struct AppSettings {
     pub whisper_accelerator: WhisperAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
+    #[serde(default)]
+    pub proxy_url: Option<String>,
+    #[serde(default)]
+    pub ai_channels: Option<Vec<AiChannelConfig>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(debug_assertions, derive(specta::Type))]
+pub struct AiChannelConfig {
+    pub id: String,
+    pub visible: bool,
 }
 
 fn default_model() -> String {
@@ -725,6 +741,7 @@ pub fn get_default_settings() -> AppSettings {
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
+        model_storage_path: None,
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,
@@ -762,6 +779,8 @@ pub fn get_default_settings() -> AppSettings {
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
+        proxy_url: None,
+        ai_channels: None,
     }
 }
 

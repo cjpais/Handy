@@ -246,7 +246,7 @@ impl MoserHidStartupHandler {
                     host.mouse_recording_stop()?;
                 }
             }
-            (35, 3) | (48, 3) => {
+            (35, 3) => {
                 if self.debounce.should_return() {
                     return Ok(());
                 }
@@ -266,7 +266,7 @@ impl MoserHidStartupHandler {
                     }
                 }
             }
-            (35, 4) | (48, 4) => {
+            (35, 4) => {
                 host.send_bytes_mouse_recording_stop()?;
                 host.mouse_recording_stop()?;
             }
@@ -293,10 +293,12 @@ impl MoserHidStartupHandler {
         data: &[u8],
         host: &mut H,
     ) -> Result<(), H::Error> {
+        if data.is_empty() {
+            return Ok(());
+        }
         if data.len() < 63 || data[0] != 0x3C {
             return Ok(());
         }
-
         let adpcm = &data[1..61];
         let pcm = host.decode_adpcm_to_pcm(adpcm)?;
         host.append_pcm(&pcm)?;

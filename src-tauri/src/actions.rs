@@ -436,27 +436,49 @@ impl ShortcutAction for TranscribeAction {
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
             let binding_id = binding_id.clone(); // Clone for the inner async task
-            debug!(
-                "Starting async transcription task for binding: {}",
+            log::info!(
+                "TranscribeAction::stop — async task started for binding: {}",
                 binding_id
             );
 
             let stop_recording_time = Instant::now();
-            if let Some(samples) = rm.stop_recording(&binding_id) {
-                debug!(
-                    "Recording stopped and samples retrieved in {:?}, sample count: {}",
-                    stop_recording_time.elapsed(),
-                    samples.len()
-                );
+            let samples_opt = rm.stop_recording(&binding_id);
+            log::info!(
+                "stop_recording() returned in {:?}: {}",
+                stop_recording_time.elapsed(),
+                match &samples_opt {
+                    Some(s) => format!("Some({} samples, {:.2}s of audio)", s.len(), s.len() as f32 / 16000.0),
+                    None => "None".to_string(),
+                }
+            );
 
+            // Debug: save the raw HID audio to a WAV file for playback verification.
+            // Saved to <app-log-dir>/hid_audio/YYYYMMDD_HHMMSS.wav
+            if let Some(s) = &samples_opt {
+                if !s.is_empty() {
+                    let wav_dir = crate::portable::app_log_dir(&ah)
+                        .map(|d| d.join("hid_audio"))
+                        .unwrap_or_else(|_| std::env::temp_dir().join("handy_hid_audio"));
+                    let _ = std::fs::create_dir_all(&wav_dir);
+                    let ts = chrono::Local::now().format("%Y%m%d_%H%M%S").to_string();
+                    let wav_path = wav_dir.join(format!("{ts}.wav"));
+                    match crate::audio_toolkit::save_wav_file(&wav_path, s).await {
+                        Ok(()) => log::info!("DEBUG WAV saved → {}", wav_path.display()),
+                        Err(e) => log::warn!("DEBUG WAV save failed: {e}"),
+                    }
+                }
+            }
+
+            if let Some(samples) = samples_opt {
                 let transcription_time = Instant::now();
+                log::info!("Calling tm.transcribe() with {} samples…", samples.len());
                 let samples_clone = samples.clone(); // Clone for history saving
                 match tm.transcribe(samples) {
                     Ok(transcription) => {
-                        debug!(
-                            "Transcription completed in {:?}: '{}'",
+                        log::info!(
+                            "transcribe() finished in {:?} → {:?}",
                             transcription_time.elapsed(),
-                            transcription
+                            if transcription.len() > 120 { format!("{}…", &transcription[..120]) } else { transcription.clone() }
                         );
                         if !transcription.is_empty() {
                             let settings = get_settings(&ah);
@@ -543,13 +565,13 @@ impl ShortcutAction for TranscribeAction {
                         }
                     }
                     Err(err) => {
-                        debug!("Global Shortcut Transcription error: {}", err);
+                        log::error!("transcribe() error: {}", err);
                         utils::hide_recording_overlay(&ah);
                         change_tray_icon(&ah, TrayIconState::Idle);
                     }
                 }
             } else {
-                debug!("No samples retrieved from recording stop");
+                log::info!("stop_recording() returned None — no active recording matched binding '{}'", binding_id);
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }

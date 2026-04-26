@@ -54,11 +54,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Colors - Dark Theme */
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
+    /* Colors - Dark Theme (紫灰深色) */
+    --color-text: #ede9f4;
+    --color-background: #16131f;
     --color-logo-primary: #f28cbb;
     --color-logo-stroke: #fad1ed;
+    --color-mid-gray: #7a7490;
   }
 }
 

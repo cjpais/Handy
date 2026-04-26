@@ -14,13 +14,22 @@ import { ModelSettingsCard } from "./ModelSettingsCard";
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
   const { audioFeedbackEnabled } = useSettings();
+
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.general.title")}>
+    <div className="max-w-2xl w-full mx-auto space-y-5 pb-6">
+
+      {/* 快捷键 & 录音行为 */}
+      <SettingsGroup
+        title={t("settings.general.title")}
+      >
         <ShortcutInput shortcutId="transcribe" grouped={true} />
         <PushToTalk descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
+
+      {/* 模型相关设置（语言 / 翻译） */}
       <ModelSettingsCard />
+
+      {/* 声音 */}
       <SettingsGroup title={t("settings.sound.title")}>
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />

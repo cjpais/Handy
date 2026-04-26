@@ -15,7 +15,9 @@ use tar::Archive;
 use tokio::sync::mpsc;
 use transcribe_rs::{
     engines::{
-        parakeet::{ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity},
+        parakeet::{
+            ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
+        },
         whisper::{WhisperEngine, WhisperInferenceParams},
     },
     TranscriptionEngine,
@@ -198,8 +200,7 @@ impl AppState {
     }
 
     fn model_partial_path(&self, spec: &ModelSpec) -> PathBuf {
-        self.models_dir
-            .join(format!("{}.partial", spec.filename))
+        self.models_dir.join(format!("{}.partial", spec.filename))
     }
 
     fn model_extracting_path(&self, spec: &ModelSpec) -> PathBuf {
@@ -568,7 +569,8 @@ async fn handle_request(
                 let state_cloned = state.clone();
                 let out_tx_cloned = out_tx.clone();
                 tokio::spawn(async move {
-                    let res = download_and_prepare_model(&state_cloned, &spec, &url, out_tx_cloned).await;
+                    let res =
+                        download_and_prepare_model(&state_cloned, &spec, &url, out_tx_cloned).await;
 
                     let mut downloading = state_cloned.is_downloading.lock().unwrap();
                     *downloading = None;
@@ -701,9 +703,8 @@ async fn download_and_prepare_model(
     let partial_path = state.model_partial_path(spec);
 
     // 用 std::fs 以简化依赖（tokio::fs 在 windows 上也 ok，但这里写法更直接）
-    let mut file = File::create(&partial_path).with_context(|| {
-        format!("create partial file: {}", partial_path.to_string_lossy())
-    })?;
+    let mut file = File::create(&partial_path)
+        .with_context(|| format!("create partial file: {}", partial_path.to_string_lossy()))?;
 
     let mut downloaded: u64 = 0;
     let mut last_emit = Instant::now();
@@ -777,7 +778,12 @@ async fn download_and_prepare_model(
     Ok(())
 }
 
-fn emit_progress(out_tx: &mpsc::UnboundedSender<serde_json::Value>, model_id: &str, downloaded: u64, total: Option<u64>) {
+fn emit_progress(
+    out_tx: &mpsc::UnboundedSender<serde_json::Value>,
+    model_id: &str,
+    downloaded: u64,
+    total: Option<u64>,
+) {
     let (percentage, total_opt) = match total {
         Some(t) if t > 0 => (Some(downloaded as f64 / t as f64 * 100.0), Some(t)),
         _ => (None, None),

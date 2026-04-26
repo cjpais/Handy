@@ -1045,6 +1045,57 @@ pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Re
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_proxy_url_setting(app: AppHandle, url: Option<String>) -> Result<(), String> {
+    let trimmed = url.and_then(|value| {
+        let t = value.trim().to_string();
+        if t.is_empty() {
+            None
+        } else {
+            Some(t)
+        }
+    });
+
+    if let Some(ref value) = trimmed {
+        let parsed = tauri::Url::parse(value).map_err(|_| format!("PROXY_URL_INVALID:{value}"))?;
+        let host = parsed
+            .host_str()
+            .ok_or_else(|| format!("PROXY_URL_INVALID:{value}"))?;
+        let port = parsed
+            .port_or_known_default()
+            .ok_or_else(|| format!("PROXY_URL_INVALID:{value}"))?;
+        let addr = format!("{host}:{port}");
+
+        let addrs = std::net::ToSocketAddrs::to_socket_addrs(&addr)
+            .map_err(|_| format!("PROXY_UNREACHABLE:{addr}"))?
+            .collect::<Vec<_>>();
+        let reachable = addrs.iter().any(|a| {
+            std::net::TcpStream::connect_timeout(a, std::time::Duration::from_millis(1500)).is_ok()
+        });
+        if !reachable {
+            return Err(format!("PROXY_UNREACHABLE:{addr}"));
+        }
+    }
+
+    let mut settings = settings::get_settings(&app);
+    settings.proxy_url = trimmed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_ai_channels_setting(
+    app: AppHandle,
+    channels: Option<Vec<settings::AiChannelConfig>>,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.ai_channels = channels;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_app_language_setting(app: AppHandle, language: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.app_language = language.clone();

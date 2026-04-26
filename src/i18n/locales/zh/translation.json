@@ -6,7 +6,8 @@
     "unloadModel": "卸载模型",
     "model": "模型",
     "quit": "退出",
-    "cancel": "取消"
+    "cancel": "取消",
+    "openMainWindow": "打开主界面"
   },
   "sidebar": {
     "general": "通用",
@@ -96,7 +97,7 @@
     },
     "permissions": {
       "title": "需要权限",
-      "description": "Handy 需要一些权限才能正常工作。",
+      "description": "美声智能 需要一些权限才能正常工作。",
       "microphone": {
         "title": "麦克风访问",
         "description": "需要听取您的语音进行转录。"
@@ -170,7 +171,7 @@
     "general": {
       "title": "通用",
       "shortcut": {
-        "title": "Handy 快捷键",
+        "title": "美声智能 快捷键",
         "description": "配置启动语音转文字录制的键盘快捷键",
         "loading": "加载快捷键中...",
         "none": "未配置快捷键",
@@ -215,7 +216,10 @@
         "title": "麦克风",
         "description": "选择您偏好的麦克风设备",
         "placeholder": "选择麦克风...",
-        "loading": "加载中..."
+        "loading": "加载中...",
+        "aiMouseLabel": "鼠标麦克风 ({{name}})",
+        "aiMouseLocked": "已锁定为 AI 鼠标麦克风（{{name}}）。",
+        "aiMouseMissing": "未检测到 AI 鼠标接收器，无法录音。请插入接收器后刷新。"
       },
       "audioFeedback": {
         "label": "音频反馈",
@@ -239,6 +243,7 @@
         "output": "输出",
         "transcription": "转录",
         "history": "历史",
+        "network": "网络",
         "experimental": "实验性"
       },
       "experimentalToggle": {
@@ -261,11 +266,29 @@
       },
       "autostart": {
         "label": "开机启动",
-        "description": "登录计算机时自动启动 Handy。"
+        "description": "登录计算机时自动启动 美声智能。"
       },
       "showTrayIcon": {
         "label": "显示托盘图标",
-        "description": "在系统托盘中显示 Handy 图标。"
+        "description": "在系统托盘中显示 美声智能 图标。"
+      },
+      "proxy": {
+        "title": "网页代理",
+        "description": "为内嵌 AI 对话网页配置 HTTP 或 SOCKS5 代理,用于访问被墙站点(例如 ChatGPT)。修改后需要重启应用生效。",
+        "enable": "启用代理",
+        "savedRestart": "已保存,重启应用后代理生效",
+        "restartNow": "立即重启",
+        "errors": {
+          "empty": "代理地址不能为空",
+          "invalid": "代理地址无效,需为 http:// 或 socks5:// 开头的完整 URL",
+          "unreachable": "代理 {{addr}} 无法连接,请确认代理服务正在运行"
+        }
+      },
+      "aiChannels": {
+        "title": "AI 频道管理",
+        "description": "选择在主页显示哪些 AI 平台，并调整排列顺序。",
+        "hide": "隐藏",
+        "show": "显示"
       },
       "overlay": {
         "title": "悬浮窗位置",
@@ -426,7 +449,7 @@
       },
       "updateChecks": {
         "label": "检查更新",
-        "description": "自动检查 Handy 的新版本"
+        "description": "自动检查 美声智能 的新版本"
       },
       "soundTheme": {
         "label": "声音主题",
@@ -490,11 +513,22 @@
       "title": "关于",
       "version": {
         "title": "版本",
-        "description": "Handy 的当前版本"
+        "description": "美声智能 的当前版本"
       },
       "appDataDirectory": {
         "title": "应用数据目录",
-        "description": "Handy 存储数据的位置"
+        "description": "美声智能 存储数据的位置"
+      },
+      "modelDirectory": {
+        "title": "模型目录",
+        "description": "下载的模型和自定义语音模型会存放在这里",
+        "changeButton": "修改位置",
+        "resetButton": "恢复默认",
+        "hint": "修改目录时会把现有模型迁移到新位置。下载或解压进行中时不能切换目录。",
+        "selectTitle": "选择模型目录",
+        "updated": "模型目录已更新",
+        "loadError": "加载模型目录失败",
+        "updateError": "更新模型目录失败"
       },
       "sourceCode": {
         "title": "源代码",
@@ -503,7 +537,7 @@
       },
       "supportDevelopment": {
         "title": "支持开发",
-        "description": "帮助我们继续开发 Handy",
+        "description": "帮助我们继续开发 美声智能",
         "button": "捐赠"
       },
       "acknowledgments": {
@@ -511,7 +545,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
-          "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+          "details": "美声智能 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
       }
     }
@@ -532,6 +566,7 @@
   },
   "common": {
     "loading": "加载中...",
+    "saving": "保存中...",
     "save": "保存",
     "cancel": "取消",
     "reset": "重置",
@@ -542,6 +577,8 @@
     "create": "创建",
     "update": "更新",
     "close": "关闭",
+    "error": "操作失败",
+    "retry": "重试",
     "open": "打开",
     "default": "默认",
     "enabled": "已启用",
@@ -554,7 +591,7 @@
   },
   "accessibility": {
     "permissionsRequired": "需要辅助功能权限",
-    "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
+    "permissionsDescription": "美声智能 需要辅助功能权限才能输入转录的文字。",
     "openSettings": "打开系统设置",
     "dismiss": "关闭"
   },
@@ -573,10 +610,18 @@
   },
   "appLanguage": {
     "title": "应用语言",
-    "description": "更改 Handy 界面的语言"
+    "description": "更改 美声智能 界面的语言"
   },
   "overlay": {
     "transcribing": "正在转录...",
     "processing": "处理中..."
+  },
+  "home": {
+    "titleSuffix": "主页",
+    "refresh": "刷新",
+    "openSettings": "设置",
+    "iframeTitle": "{{title}} 聊天",
+    "loading": "正在加载...",
+    "loadingHint": "首次加载可能会稍慢一些"
   }
 }

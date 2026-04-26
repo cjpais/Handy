@@ -147,6 +147,12 @@ const settingUpdaters: {
     ),
   ort_accelerator: (value) =>
     commands.changeOrtAcceleratorSetting(value as OrtAcceleratorSetting),
+  proxy_url: (value) =>
+    commands.changeProxyUrlSetting((value as string | null) ?? null),
+  ai_channels: (value) =>
+    commands.changeAiChannelsSetting(
+      value as import("@/bindings").AiChannelConfig[] | null,
+    ),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

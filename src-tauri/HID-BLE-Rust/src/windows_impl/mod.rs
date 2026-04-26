@@ -9,4 +9,4 @@ pub use ble_device_init::WindowsBleDeviceInitAdapter;
 pub use logger::StdoutLogger;
 pub use manufacturer_resolver::{ManufacturerRule, WindowsManufacturerResolver};
 pub use usb_helper::WindowsUsbHidProvider;
-pub use yzw_hogp_usage::WindowsHidStarter;
+pub use yzw_hogp_usage::{HidDataCallback, MoserDispatcher, WindowsHidStarter};
