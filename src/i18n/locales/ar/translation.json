@@ -277,6 +277,7 @@
           "clipboardCtrlShiftV": "الحافظة (Ctrl+Shift+V)",
           "clipboardShiftInsert": "الحافظة (Shift+Insert)",
           "direct": "مباشر",
+          "directCompatibility": "Direct (Slow)",
           "none": "بلا",
           "externalScript": "نص برمجي خارجي"
         },

@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Клипборд (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Клипборд (Shift+Insert)",
           "direct": "Директно",
+          "directCompatibility": "Direct (Slow)",
           "none": "Няма",
           "externalScript": "Външен скрипт"
         },

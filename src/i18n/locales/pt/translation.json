@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Área de Transferência (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Área de Transferência (Shift+Insert)",
           "direct": "Direto",
+          "directCompatibility": "Direct (Slow)",
           "none": "Nenhum",
           "externalScript": "Script externo"
         },
