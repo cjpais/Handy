@@ -458,6 +458,17 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
+        const RMS_SILENCE_THRESHOLD: f32 = 0.001;
+        let rms = (audio.iter().map(|&s| s * s).sum::<f32>() / audio.len() as f32).sqrt();
+        if rms < RMS_SILENCE_THRESHOLD {
+            debug!(
+                "Audio RMS {:.6} below silence threshold {:.4}; skipping transcription",
+                rms, RMS_SILENCE_THRESHOLD
+            );
+            self.maybe_unload_immediately("silent audio");
+            return Ok(String::new());
+        }
+
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
