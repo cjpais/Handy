@@ -261,6 +261,16 @@ impl AudioRecordingManager {
 
     /// Inject f32 mono 16 kHz samples produced by the HID ADPCM decoder into
     /// the active recorder. No-op when not in HID injection mode or not recording.
+    /// Snapshot the audio captured so far in the current recording. Used by
+    /// the streaming transcriber. Returns an empty Vec when not recording.
+    pub fn snapshot_live_audio(&self) -> Vec<f32> {
+        if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+            rec.snapshot_live_buffer()
+        } else {
+            Vec::new()
+        }
+    }
+
     pub fn inject_hid_audio(&self, samples: Vec<f32>) {
         // Lock-free gate: cleared atomically before rec.stop() is called so
         // HID frames stop entering the channel immediately, without any lock.

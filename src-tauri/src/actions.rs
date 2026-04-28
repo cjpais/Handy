@@ -382,6 +382,22 @@ impl ShortcutAction for TranscribeAction {
         if recording_error.is_none() {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
+
+            // Kick off the streaming typer when the user has it enabled. The
+            // handle is parked in Tauri state until stop() retrieves it.
+            if get_settings(app).streaming_typing {
+                let handle = crate::streaming_typing::spawn(app.clone());
+                if let Some(slot) = app
+                    .try_state::<std::sync::Mutex<
+                        Option<crate::streaming_typing::StreamingTypingHandle>,
+                    >>()
+                {
+                    if let Ok(mut guard) = slot.lock() {
+                        // Replace whatever was there (defensive — there shouldn't be one).
+                        *guard = Some(handle);
+                    }
+                }
+            }
         } else {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
@@ -416,6 +432,14 @@ impl ShortcutAction for TranscribeAction {
         let stop_time = Instant::now();
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
 
+        // Take the streaming typing handle (if any) so we can stop it on the
+        // background task and read whatever it has typed so far.
+        let streaming_handle = app
+            .try_state::<std::sync::Mutex<
+                Option<crate::streaming_typing::StreamingTypingHandle>,
+            >>()
+            .and_then(|s| s.lock().ok().and_then(|mut g| g.take()));
+
         let ah = app.clone();
         let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
         let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
@@ -440,6 +464,22 @@ impl ShortcutAction for TranscribeAction {
                 "TranscribeAction::stop — async task started for binding: {}",
                 binding_id
             );
+
+            // Stop the streaming typer (if any) and capture what it has typed
+            // so far — we'll diff the canonical transcription against it
+            // instead of re-pasting the whole thing.
+            let already_typed = streaming_handle
+                .map(|h| {
+                    let s = h.stop();
+                    log::info!("[streaming] stopped, already_typed={:?}",
+                        if s.chars().count() > 60 {
+                            format!("{}…", s.chars().take(60).collect::<String>())
+                        } else { s.clone() }
+                    );
+                    s
+                })
+                .unwrap_or_default();
+            let streaming_was_active = !already_typed.is_empty();
 
             let stop_recording_time = Instant::now();
             let samples_opt = rm.stop_recording(&binding_id);
@@ -539,16 +579,38 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             });
 
-                            // Paste the final text (either processed or original)
+                            // Paste the final text. When streaming was active,
+                            // reconcile what's already on screen against the
+                            // canonical transcription via backspace-and-retype
+                            // — otherwise the streaming output (which used a
+                            // smaller, possibly less accurate sliding-window
+                            // pass) would be left untouched while we paste a
+                            // duplicate of the same text below it.
                             let ah_clone = ah.clone();
                             let paste_time = Instant::now();
+                            let paste_text = final_text.clone();
+                            let already_typed_for_paste = already_typed.clone();
                             ah.run_on_main_thread(move || {
-                                match utils::paste(final_text, ah_clone.clone()) {
-                                    Ok(()) => debug!(
-                                        "Text pasted successfully in {:?}",
-                                        paste_time.elapsed()
-                                    ),
-                                    Err(e) => error!("Failed to paste transcription: {}", e),
+                                if streaming_was_active {
+                                    match crate::streaming_typing::reconcile(
+                                        &ah_clone,
+                                        &already_typed_for_paste,
+                                        &paste_text,
+                                    ) {
+                                        Ok(()) => debug!(
+                                            "Streaming reconcile completed in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Streaming reconcile failed: {e}"),
+                                    }
+                                } else {
+                                    match utils::paste(paste_text, ah_clone.clone()) {
+                                        Ok(()) => debug!(
+                                            "Text pasted successfully in {:?}",
+                                            paste_time.elapsed()
+                                        ),
+                                        Err(e) => error!("Failed to paste transcription: {}", e),
+                                    }
                                 }
                                 // Hide the overlay after transcription is complete
                                 utils::hide_recording_overlay(&ah_clone);

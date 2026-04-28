@@ -357,6 +357,12 @@ pub struct AppSettings {
     pub recording_retention_period: RecordingRetentionPeriod,
     #[serde(default)]
     pub paste_method: PasteMethod,
+    /// Stream the transcription out character-by-character while the user is
+    /// still talking (sliding-window re-transcription every ~500 ms, diff +
+    /// append + backspace correction). Falls back to one-shot post-recording
+    /// output when false.
+    #[serde(default = "default_streaming_typing")]
+    pub streaming_typing: bool,
     #[serde(default)]
     pub clipboard_handling: ClipboardHandling,
     #[serde(default = "default_auto_submit")]
@@ -466,6 +472,10 @@ fn default_paste_delay_ms() -> u64 {
 
 fn default_auto_submit() -> bool {
     false
+}
+
+fn default_streaming_typing() -> bool {
+    true
 }
 
 fn default_history_limit() -> usize {
@@ -757,6 +767,7 @@ pub fn get_default_settings() -> AppSettings {
         history_limit: default_history_limit(),
         recording_retention_period: default_recording_retention_period(),
         paste_method: PasteMethod::default(),
+        streaming_typing: default_streaming_typing(),
         clipboard_handling: ClipboardHandling::default(),
         auto_submit: default_auto_submit(),
         auto_submit_key: AutoSubmitKey::default(),

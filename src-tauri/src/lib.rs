@@ -16,6 +16,7 @@ mod settings;
 #[path = "shortcut/mod.rs"]
 mod shortcut;
 mod signal_handle;
+mod streaming_typing;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
@@ -587,6 +588,12 @@ pub fn run(cli_args: CliArgs) {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
+            // Streaming typing session state (Some only while a streaming
+            // recording is in flight). Stored in Tauri state so start/stop in
+            // actions.rs can hand the handle off.
+            app.manage(std::sync::Mutex::new(
+                Option::<streaming_typing::StreamingTypingHandle>::None,
+            ));
 
             initialize_core_logic(&app_handle);
 

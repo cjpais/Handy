@@ -40,6 +40,10 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    /// Live mirror of the post-VAD audio currently being recorded. Streaming
+    /// transcription reads this without disturbing the consumer thread. Cleared
+    /// on Cmd::Start, drained at Cmd::Stop into the returned Vec.
+    live_buffer: Arc<Mutex<Vec<f32>>>,
 }
 
 impl AudioRecorder {
@@ -52,7 +56,15 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            live_buffer: Arc::new(Mutex::new(Vec::new())),
         })
+    }
+
+    /// Snapshot the audio that has been captured so far in the current
+    /// recording. Used by the streaming transcriber to feed Whisper sliding
+    /// windows of audio every ~500 ms without interrupting the recording.
+    pub fn snapshot_live_buffer(&self) -> Vec<f32> {
+        self.live_buffer.lock().unwrap().clone()
     }
 
     /// Push f32 mono samples (at 16 kHz) directly into the recording pipeline.
@@ -101,6 +113,7 @@ impl AudioRecorder {
 
         let vad = self.vad.clone();
         let level_cb = self.level_cb.clone();
+        let live_buffer_for_consumer = self.live_buffer.clone();
 
         let worker = match device {
             // ── cpal capture path ────────────────────────────────────────── //
@@ -108,6 +121,7 @@ impl AudioRecorder {
                 let (init_tx, init_rx) = mpsc::sync_channel::<Result<(), String>>(1);
                 let thread_device = dev.clone();
                 let sample_tx_for_thread = sample_tx.clone();
+                let live_buffer_for_thread = live_buffer_for_consumer.clone();
 
                 let worker = std::thread::spawn(move || {
                     let stop_flag = Arc::new(AtomicBool::new(false));
@@ -183,7 +197,7 @@ impl AudioRecorder {
                     match init_result {
                         Ok((stream, sample_rate)) => {
                             let _ = init_tx.send(Ok(()));
-                            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag, false);
+                            run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag, false, live_buffer_for_thread);
                             drop(stream);
                         }
                         Err(msg) => {
@@ -233,6 +247,7 @@ impl AudioRecorder {
                         level_cb,
                         stop_flag,
                         true, // hid_mode: short drain timeout, no EndOfStream sentinel
+                        live_buffer_for_consumer,
                     );
                 })
             }
@@ -409,6 +424,7 @@ fn run_consumer(
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     stop_flag: Arc<AtomicBool>,
     hid_mode: bool,
+    live_buffer: Arc<Mutex<Vec<f32>>>,
 ) {
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
@@ -482,6 +498,9 @@ fn run_consumer(
                             frame_resampler.finish(&mut |frame: &[f32]| {
                                 handle_frame(frame, true, &vad, &mut processed_samples)
                             });
+                            if let Ok(mut lb) = live_buffer.lock() {
+                                lb.clear();
+                            }
                             let _ = reply_tx.send(std::mem::take(&mut processed_samples));
                             stop_flag.store(false, Ordering::Relaxed);
                         }
@@ -514,9 +533,19 @@ fn run_consumer(
         }
 
         // ---------- existing pipeline ------------------------------------ //
+        let prev_len = processed_samples.len();
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
             handle_frame(frame, recording, &vad, &mut processed_samples)
         });
+
+        // Mirror newly-appended samples to the live buffer so the streaming
+        // transcriber can snapshot mid-recording without locking the consumer.
+        if recording && processed_samples.len() > prev_len {
+            let new_slice = &processed_samples[prev_len..];
+            if let Ok(mut lb) = live_buffer.lock() {
+                lb.extend_from_slice(new_slice);
+            }
+        }
 
         // non-blocking check for a command
         while let Ok(cmd) = cmd_rx.try_recv() {
@@ -524,6 +553,9 @@ fn run_consumer(
                 Cmd::Start => {
                     stop_flag.store(false, Ordering::Relaxed);
                     processed_samples.clear();
+                    if let Ok(mut lb) = live_buffer.lock() {
+                        lb.clear();
+                    }
                     recording = true;
                     visualizer.reset();
                     if let Some(v) = &vad {
@@ -568,6 +600,9 @@ fn run_consumer(
                         handle_frame(frame, true, &vad, &mut processed_samples)
                     });
 
+                    if let Ok(mut lb) = live_buffer.lock() {
+                        lb.clear();
+                    }
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
 
                     // Resume the audio callback so the consumer loop can continue
