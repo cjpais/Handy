@@ -231,6 +231,56 @@ fn get_filler_words_for_language(lang: &str) -> &'static [&'static str] {
 
 static MULTI_SPACE_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s{2,}").unwrap());
 
+const REPEATED_FILLER_WORDS: &[&str] = &[
+    "uh", "um", "uhm", "umm", "uhh", "ah", "eh", "hm", "hmm", "mm", "mmm", "mh",
+];
+
+fn is_repeated_filler_token(token: &str) -> bool {
+    let normalized = token
+        .trim_matches(|c: char| !c.is_alphanumeric())
+        .to_lowercase();
+
+    REPEATED_FILLER_WORDS.contains(&normalized.as_str())
+}
+
+/// Collapses consecutive filler bursts to one token.
+///
+/// Parakeet can turn a single pause into many filler tokens with mixed
+/// punctuation (for example, "uh, uh. UH, uh"). This is intentionally narrower
+/// than general filler removal: it only acts on 3+ consecutive filler-like
+/// tokens and leaves isolated fillers for the existing language/custom logic.
+fn collapse_repeated_filler_runs(text: &str) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.is_empty() {
+        return text.to_string();
+    }
+
+    let mut result: Vec<&str> = Vec::with_capacity(words.len());
+    let mut i = 0;
+
+    while i < words.len() {
+        if is_repeated_filler_token(words[i]) {
+            let mut count = 1;
+            while i + count < words.len() && is_repeated_filler_token(words[i + count]) {
+                count += 1;
+            }
+
+            if count >= 3 {
+                result.push(words[i]);
+                i += count;
+            } else {
+                result.extend_from_slice(&words[i..i + count]);
+                i += count;
+            }
+        } else {
+            result.push(words[i]);
+            i += 1;
+        }
+    }
+
+    result.join(" ")
+}
+
 /// Collapses repeated words (3+ repetitions) to a single instance.
 /// E.g., "wh wh wh wh" -> "wh", "I I I I" -> "I"
 fn collapse_stutters(text: &str) -> String {
@@ -291,6 +341,11 @@ pub fn filter_transcription_output(
     custom_filler_words: &Option<Vec<String>>,
 ) -> String {
     let mut filtered = text.to_string();
+
+    // Collapse Parakeet-style filler bursts before normal filler removal. This
+    // keeps custom "disable filler removal" users from receiving 10+ filler
+    // tokens while preserving isolated fillers for the existing rules below.
+    filtered = collapse_repeated_filler_runs(&filtered);
 
     // Build filler patterns from custom list or language defaults
     let patterns: Vec<Regex> = match custom_filler_words {
@@ -408,6 +463,29 @@ mod tests {
         let text = "This is a completely normal sentence.";
         let result = filter_transcription_output(text, "en", &None);
         assert_eq!(result, "This is a completely normal sentence.");
+    }
+
+    #[test]
+    fn test_filter_collapses_parakeet_filler_punctuation_burst() {
+        let custom = Some(vec![]);
+        let text = "uh, uh. UH, uh";
+        let result = filter_transcription_output(text, "en", &custom);
+        assert_eq!(result, "uh,");
+    }
+
+    #[test]
+    fn test_filter_collapses_mixed_filler_burst() {
+        let custom = Some(vec![]);
+        let text = "I think um uh hmm uh this works";
+        let result = filter_transcription_output(text, "en", &custom);
+        assert_eq!(result, "I think um this works");
+    }
+
+    #[test]
+    fn test_filter_filler_burst_keeps_non_filler_repetitions() {
+        let text = "that that that works";
+        let result = collapse_repeated_filler_runs(text);
+        assert_eq!(result, "that that that works");
     }
 
     #[test]
