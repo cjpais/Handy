@@ -2413,7 +2413,7 @@ dependencies = [
 
 [[package]]
 name = "handy"
-version = "0.8.1"
+version = "0.8.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -6992,9 +6992,9 @@ dependencies = [
 
 [[package]]
 name = "transcribe-rs"
-version = "0.3.3"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8af54b24283d1548883a79f258c75c0e02938f5d66073b84b99dcaf00cb06f7"
+checksum = "b231bc9bd1b20be89583a49c3885dfa7d7323299564ee78eddf83db04f2b337b"
 dependencies = [
  "base64 0.22.1",
  "derive_builder",

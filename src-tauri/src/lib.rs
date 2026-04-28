@@ -201,6 +201,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
             )
             .unwrap(),
         )
+        .tooltip(tray::tray_tooltip())
         .show_menu_on_left_click(true)
         .icon_as_template(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -547,6 +548,17 @@ pub fn run(cli_args: CliArgs) {
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 
             initialize_core_logic(&app_handle);
+
+            // Pre-warm GPU/accelerator enumeration on a background thread.
+            // The first call into transcribe_rs::whisper_cpp::gpu::list_gpu_devices
+            // loads the Metal/Vulkan backend and probes devices, which can take
+            // several seconds. Without this, that cost is paid synchronously the
+            // first time the user opens the Advanced settings page (which calls
+            // the get_available_accelerators command), causing a UI freeze.
+            // Result is cached in a OnceLock inside the transcription manager.
+            std::thread::spawn(|| {
+                let _ = crate::managers::transcription::get_available_accelerators();
+            });
 
             // Hide tray icon if --no-tray was passed
             if cli_args.no_tray {

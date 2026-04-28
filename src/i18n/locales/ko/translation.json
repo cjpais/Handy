@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "정확한 다국어 지원. 25개 유럽 언어. 번역 지원."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "크고 느리지만 매우 정확한 다국어 모델."
       }
     },
     "errors": {
@@ -594,7 +598,9 @@
     "noInputDevice": "오디오 입력 장치가 감지되지 않았습니다. 마이크 또는 헤드셋을 연결한 후 다시 시도해 주세요.",
     "recordingFailed": "녹음을 시작하지 못했습니다: {{error}}",
     "modelLoadFailed": "모델을 불러오지 못했습니다: {{model}}",
-    "modelLoadFailedUnknown": "알 수 없는 모델"
+    "modelLoadFailedUnknown": "알 수 없는 모델",
+    "pasteFailedTitle": "텍스트 붙여넣기 실패",
+    "pasteFailed": "활성 애플리케이션에 텍스트를 붙여넣을 수 없습니다."
   },
   "appLanguage": {
     "title": "애플리케이션 언어",

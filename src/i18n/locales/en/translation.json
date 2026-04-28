@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Accurate multilingual. 25 European languages. Supports translation."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "A large, slower, but very accurate multilingual model."
       }
     },
     "errors": {
@@ -594,7 +598,9 @@
     "noInputDevice": "No audio input device was detected. Please connect a microphone or headset and try again.",
     "recordingFailed": "Failed to start recording: {{error}}",
     "modelLoadFailed": "Failed to load model: {{model}}",
-    "modelLoadFailedUnknown": "unknown model"
+    "modelLoadFailedUnknown": "unknown model",
+    "pasteFailedTitle": "Failed to Paste Text",
+    "pasteFailed": "Text could not be pasted into the active application."
   },
   "appLanguage": {
     "title": "Application Language",

@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Multilíngue preciso. 25 idiomas europeus. Suporta tradução."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Um modelo grande, mais lento, mas muito preciso e multilíngue."
       }
     },
     "errors": {
@@ -594,7 +598,9 @@
     "noInputDevice": "Nenhum dispositivo de entrada de áudio foi detectado. Conecte um microfone ou fone de ouvido e tente novamente.",
     "recordingFailed": "Falha ao iniciar a gravação: {{error}}",
     "modelLoadFailed": "Falha ao carregar o modelo: {{model}}",
-    "modelLoadFailedUnknown": "modelo desconhecido"
+    "modelLoadFailedUnknown": "modelo desconhecido",
+    "pasteFailedTitle": "Falha ao colar o texto",
+    "pasteFailed": "Não foi possível colar o texto no aplicativo ativo."
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",

@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "准确的多语言模型。25种欧洲语言。支持翻译。"
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "大型模型，速度较慢，但多语言识别非常准确。"
       }
     },
     "errors": {
@@ -594,7 +598,9 @@
     "noInputDevice": "未检测到音频输入设备。请连接麦克风或耳机后重试。",
     "recordingFailed": "录音启动失败: {{error}}",
     "modelLoadFailed": "加载模型失败: {{model}}",
-    "modelLoadFailedUnknown": "未知模型"
+    "modelLoadFailedUnknown": "未知模型",
+    "pasteFailedTitle": "粘贴文本失败",
+    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。"
   },
   "appLanguage": {
     "title": "应用语言",

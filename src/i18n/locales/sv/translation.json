@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Noggrann flerspråkig. 25 europeiska språk. Stöder översättning."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "En stor, långsammare, men mycket noggrann flerspråkig modell."
       }
     },
     "errors": {
@@ -594,7 +598,9 @@
     "modelLoadFailed": "Misslyckades med att ladda modell: {{model}}",
     "modelLoadFailedUnknown": "okänd modell",
     "noInputDeviceTitle": "Ingen mikrofon hittades",
-    "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen."
+    "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
+    "pasteFailedTitle": "Det gick inte att klistra in texten",
+    "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet."
   },
   "appLanguage": {
     "title": "Applikationsspråk",

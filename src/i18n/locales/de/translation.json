@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "Genaue mehrsprachige Erkennung. 25 europäische Sprachen. Unterstützt Übersetzung."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "Ein großes, langsameres, aber sehr genaues mehrsprachiges Modell."
       }
     },
     "errors": {
@@ -99,11 +103,11 @@
       "description": "Handy benötigt einige Berechtigungen, um richtig zu funktionieren.",
       "microphone": {
         "title": "Mikrofonzugriff",
-        "description": "Erforderlich, um Ihre Stimme für die Transkription zu hören."
+        "description": "Erforderlich, um deine Stimme für die Transkription zu hören."
       },
       "accessibility": {
         "title": "Bedienungshilfen-Zugriff",
-        "description": "Erforderlich, um transkribierten Text in Ihre Anwendungen einzugeben."
+        "description": "Erforderlich, um transkribierten Text in deine Anwendungen einzugeben."
       },
       "grant": "Berechtigung erteilen",
       "granted": "Erteilt",
@@ -181,7 +185,7 @@
         "bindings": {
           "transcribe": {
             "name": "Transkriptions-Tastenkürzel",
-            "description": "Das Tastenkürzel zum Aufnehmen und Transkribieren Ihrer Stimme."
+            "description": "Das Tastenkürzel zum Aufnehmen und Transkribieren deiner Stimme."
           },
           "cancel": {
             "name": "Abbrechen-Tastenkürzel",
@@ -189,7 +193,7 @@
           },
           "transcribe_with_post_process": {
             "name": "Nachbearbeitungs-Tastenkürzel",
-            "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf Ihre Transkription anwendet."
+            "description": "Optional: Ein dediziertes Tastenkürzel, das immer die KI-Nachbearbeitung auf deine Transkription anwendet."
           }
         },
         "errors": {
@@ -262,7 +266,7 @@
         },
         "gpuDevice": {
           "title": "GPU-Gerät",
-          "description": "Wählen Sie die GPU für die Whisper-Inferenz. Auto wählt die dedizierte GPU.",
+          "description": "Wähle die GPU für die Whisper-Inferenz. Auto wählt die dedizierte GPU.",
           "auto": "Auto"
         }
       },
@@ -302,7 +306,7 @@
       },
       "typingTool": {
         "title": "Eingabetool",
-        "description": "Wählen Sie, welches Linux-Eingabetool für die Direkt-Einfügen-Methode verwendet werden soll. Auto erkennt und verwendet automatisch das beste verfügbare Tool für Ihr System.",
+        "description": "Wähle, welches Linux-Eingabetool für die Direkt-Einfügen-Methode verwendet werden soll. Auto erkennt und verwendet automatisch das beste verfügbare Tool für dein System.",
         "options": {
           "auto": "Auto (Empfohlen)"
         }
@@ -498,11 +502,11 @@
       },
       "pasteDelay": {
         "title": "Einfügeverzögerung",
-        "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhen Sie den Wert, wenn falscher Text eingefügt wird."
+        "description": "Verzögerung vor dem Senden des Einfüge-Tastendrucks (in Millisekunden). Erhöhe den Wert, wenn falscher Text eingefügt wird."
       },
       "recordingBuffer": {
         "title": "Zusätzlicher Aufnahmepuffer",
-        "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiterzuzeichnen, um nachlaufendes Audio aufzunehmen. 0 = kein zusätzlicher Puffer."
+        "description": "Zusätzliche Zeit (in Millisekunden), um nach dem Loslassen der Taste weiter aufzunehmen, um nachlaufendes Audio zu erfassen. 0 = kein zusätzlicher Puffer."
       }
     },
     "about": {
@@ -548,9 +552,9 @@
     "installing": "Wird installiert...",
     "preparing": "Wird vorbereitet...",
     "checkForUpdates": "Nach Updates suchen",
-    "portableUpdateTitle": "Manual update required",
-    "portableUpdateMessage": "Portable installs cannot be updated automatically. To update: download the latest NSIS installer from GitHub Releases, install it to the same folder, then copy your Data/ folder (settings, models, recordings) from the old version to the new one.",
-    "portableUpdateButton": "Open GitHub Releases"
+    "portableUpdateTitle": "Manuelles Update erforderlich",
+    "portableUpdateMessage": "Portable Installationen können nicht automatisch aktualisiert werden. Zum Aktualisieren: Lade den neuesten NSIS-Installer von GitHub Releases herunter, installiere ihn im selben Ordner und kopiere dann deinen Data/-Ordner (Einstellungen, Modelle, Aufnahmen) von der alten Version in die neue.",
+    "portableUpdateButton": "GitHub Releases öffnen"
   },
   "common": {
     "appName": "Handy",
@@ -585,16 +589,18 @@
     "loadDirectory": "Fehler beim Laden des Verzeichnisses: {{error}}",
     "micPermissionDeniedTitle": "Mikrofonzugriff verweigert",
     "micPermissionDenied": {
-      "generic": "Der Mikrofonzugriff wurde vom Betriebssystem verweigert. Bitte erteilen Sie die Mikrofonberechtigung in Ihren Systemeinstellungen.",
-      "windows": "Aktivieren Sie den Mikrofonzugriff unter Einstellungen → Datenschutz und Sicherheit → Mikrofon (einschließlich Desktop-App-Zugriff).",
-      "macos": "Erteilen Sie den Mikrofonzugriff in Systemeinstellungen → Datenschutz & Sicherheit → Mikrofon.",
-      "linux": "Erteilen Sie den Mikrofonzugriff in den Sound- oder Datenschutzeinstellungen Ihres Systems."
+      "generic": "Der Mikrofonzugriff wurde vom Betriebssystem verweigert. Bitte erteile die Mikrofonberechtigung in deinen Systemeinstellungen.",
+      "windows": "Aktiviere den Mikrofonzugriff unter Einstellungen → Datenschutz und Sicherheit → Mikrofon (einschließlich Desktop-App-Zugriff).",
+      "macos": "Erteile den Mikrofonzugriff in Systemeinstellungen → Datenschutz & Sicherheit → Mikrofon.",
+      "linux": "Erteile den Mikrofonzugriff in den Sound- oder Datenschutzeinstellungen deines Systems."
     },
     "noInputDeviceTitle": "Kein Mikrofon gefunden",
-    "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließen Sie ein Mikrofon oder Headset an und versuchen Sie es erneut.",
+    "noInputDevice": "Es wurde kein Audio-Eingabegerät erkannt. Bitte schließe ein Mikrofon oder Headset an und versuche es erneut.",
     "recordingFailed": "Aufnahme konnte nicht gestartet werden: {{error}}",
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
-    "modelLoadFailedUnknown": "unbekanntes Modell"
+    "modelLoadFailedUnknown": "unbekanntes Modell",
+    "pasteFailedTitle": "Text konnte nicht eingefügt werden",
+    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden."
   },
   "appLanguage": {
     "title": "Anwendungssprache",

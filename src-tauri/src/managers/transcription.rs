@@ -17,6 +17,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use transcribe_rs::{
     onnx::{
         canary::CanaryModel,
+        cohere::CohereModel,
         gigaam::GigaAMModel,
         moonshine::{MoonshineModel, MoonshineVariant, StreamingModel},
         parakeet::{ParakeetModel, ParakeetParams, TimestampGranularity},
@@ -43,6 +44,7 @@ enum LoadedEngine {
     SenseVoice(SenseVoiceModel),
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
+    Cohere(CohereModel),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -367,6 +369,14 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::Canary(engine)
             }
+            EngineType::Cohere => {
+                let engine = CohereModel::load(&model_path, &Quantization::Int8).map_err(|e| {
+                    let error_msg = format!("Failed to load cohere model {}: {}", model_id, e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::Cohere(engine)
+            }
         };
 
         // Update the current engine and model ID
@@ -595,10 +605,29 @@ impl TranscriptionManager {
                             let options = TranscribeOptions {
                                 language: lang,
                                 translate: settings.translate_to_english,
+                                ..Default::default()
                             };
                             canary_engine
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
+                        }
+                        LoadedEngine::Cohere(cohere_engine) => {
+                            let lang = if validated_language == "auto" {
+                                None
+                            } else if validated_language == "zh-Hans"
+                                || validated_language == "zh-Hant"
+                            {
+                                Some("zh".to_string())
+                            } else {
+                                Some(validated_language.clone())
+                            };
+                            let options = TranscribeOptions {
+                                language: lang,
+                                ..Default::default()
+                            };
+                            cohere_engine
+                                .transcribe(&audio, &options)
+                                .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
                         }
                     }
                 },
@@ -752,6 +781,16 @@ fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
     use transcribe_rs::whisper_cpp::gpu::list_gpu_devices;
 
     GPU_DEVICES.get_or_init(|| {
+        // ggml's Vulkan backend uses FMA3 instructions internally.
+        // On older CPUs without FMA3 (e.g. Sandy Bridge Xeons) this causes
+        // a SIGILL crash that cannot be caught. Skip enumeration entirely
+        // on those CPUs — GPU-accelerated whisper won't work there anyway.
+        #[cfg(target_arch = "x86_64")]
+        if !std::arch::is_x86_feature_detected!("fma") {
+            warn!("CPU lacks FMA3 support — skipping GPU device enumeration");
+            return Vec::new();
+        }
+
         list_gpu_devices()
             .into_iter()
             .map(|d| GpuDeviceOption {

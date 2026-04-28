@@ -88,6 +88,10 @@
       "canary-1b-v2": {
         "name": "Canary 1B v2",
         "description": "רב-לשוני ומדויק. 25 שפות אירופיות. תומך בתרגום."
+      },
+      "cohere-int8": {
+        "name": "Cohere",
+        "description": "מודל גדול, איטי יותר, אך מדויק מאוד ורב-לשוני."
       }
     },
     "errors": {
@@ -594,7 +598,9 @@
     "noInputDevice": "לא זוהה התקן קלט שמע. חבר מיקרופון או אוזנייה ונסה שוב.",
     "recordingFailed": "הפעלת ההקלטה נכשלה: {{error}}",
     "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
-    "modelLoadFailedUnknown": "מודל לא ידוע"
+    "modelLoadFailedUnknown": "מודל לא ידוע",
+    "pasteFailedTitle": "ההדבקה נכשלה",
+    "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל."
   },
   "appLanguage": {
     "title": "שפת האפליקציה",
