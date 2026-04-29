@@ -5,8 +5,13 @@
       "name": "Transcribe Keyboard Shortcut",
       "description": "Converts your speech into text.",
       "default_binding": "Platform-specific: ctrl+space (Windows/Linux), alt+space (macOS)"
+    },
+    "transcribe_with_push_to_talk": {
+      "id": "transcribe_with_push_to_talk",
+      "name": "Push-to-Talk Shortcut",
+      "description": "Hold to record, release to transcribe.",
+      "default_binding": ""
     }
   },
-  "push_to_talk": true,
   "selected_language": "auto"
 }

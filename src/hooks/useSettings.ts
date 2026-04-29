@@ -25,6 +25,7 @@ interface UseSettingsReturn {
   // Binding-specific actions
   updateBinding: (id: string, binding: string) => Promise<void>;
   resetBinding: (id: string) => Promise<void>;
+  clearBinding: (id: string) => Promise<void>;
 
   // Convenience getters
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
@@ -68,6 +69,7 @@ export const useSettings = (): UseSettingsReturn => {
     refreshOutputDevices: store.refreshOutputDevices,
     updateBinding: store.updateBinding,
     resetBinding: store.resetBinding,
+    clearBinding: store.clearBinding,
     getSetting: store.getSetting,
     setPostProcessProvider: store.setPostProcessProvider,
     updatePostProcessBaseUrl: store.updatePostProcessBaseUrl,

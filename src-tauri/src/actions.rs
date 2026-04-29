@@ -696,6 +696,29 @@ impl ShortcutAction for TestAction {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::ACTION_MAP;
+
+    #[test]
+    fn action_map_contains_transcribe_with_push_to_talk() {
+        assert!(
+            ACTION_MAP.contains_key("transcribe_with_push_to_talk"),
+            "ACTION_MAP must have an entry for transcribe_with_push_to_talk"
+        );
+    }
+
+    #[test]
+    fn action_map_contains_all_expected_bindings() {
+        for id in &["transcribe", "transcribe_with_post_process", "transcribe_with_push_to_talk", "cancel"] {
+            assert!(
+                ACTION_MAP.contains_key(*id),
+                "ACTION_MAP is missing expected binding '{id}'"
+            );
+        }
+    }
+}
+
 // Static Action Map
 pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -708,6 +731,12 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "transcribe_with_post_process".to_string(),
         Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_with_push_to_talk".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
