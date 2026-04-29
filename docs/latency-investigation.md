@@ -411,3 +411,186 @@ eliminated) and partly a mirage (samples still took 500ms to appear).
   hot mic indicator. UX decision, not a technical limitation.
 
 [response]: https://github.com/cjpais/Handy/issues/1283#issuecomment-4234077982
+
+## External prior art: macos-mic-keepwarm (2026-04-24)
+
+Rob found [drewburchfield/macos-mic-keepwarm][keepwarm], a standalone
+open-source utility that attacks the same hardware-sleep problem from the
+opposite end: instead of measuring latency, it eliminates it by holding
+the mic open permanently. Cloned to `~/src/oss/macos-mic-keepwarm/` for
+analysis.
+
+[keepwarm]: https://github.com/drewburchfield/macos-mic-keepwarm
+
+### What it does
+
+A single-file (~650 LOC) SwiftPM executable that runs as a LaunchAgent.
+It opens an `AVCaptureSession` on the system default input mic, installs
+an `AVCaptureAudioDataOutput` delegate, and *discards every sample*.
+Nothing is recorded, stored, or transmitted. The sole effect: the mic
+hardware stays powered and the Bluetooth SCO channel stays negotiated,
+so the *next* app that opens the mic (SuperWhisper, Handy, macOS
+Dictation, etc.) gets instant activation instead of a 2–5s cold-start.
+
+### Architecture comparison: keep-warm vs our harness
+
+| Dimension | macos-mic-keepwarm | Our handy-audio-perf harness |
+|---|---|---|
+| *Purpose* | Production keep-warm daemon | Measurement harness |
+| *Framework* | AVCaptureSession + AVCaptureAudioDataOutput | AVAudioEngine + installTap |
+| *Audio layer* | AVFoundation capture pipeline (CMIO) | AVAudioEngine (wraps AudioUnit) |
+| *Lifecycle* | Runs continuously at login, never stops | Run-on-demand, press-by-press |
+| *Samples* | Received and immediately discarded | Written to WAV files on disk |
+| *Tone playback* | None | Pre-loaded 880 Hz sine via AVAudioPlayerNode |
+| *Device tracking* | CoreAudio property listeners + debounced restart | None (uses default at launch) |
+| *Bluetooth handling* | Extensive — debounced restart, background teardown, deadlock avoidance | None |
+| *Recovery* | Heartbeat timer (5s), auto-restart on stall | None |
+| *Timing* | Date() for logging only | mach_absolute_time() for sub-ms precision |
+| *Hotkey* | None (daemon, not interactive) | Carbon RegisterEventHotKey |
+| *Build* | SwiftPM, universal binary (arm64 + x86_64) | SwiftPM, debug-only local builds |
+| *LOC* | ~650 | ~700 |
+
+### The interesting API choice: AVCaptureSession vs AVAudioEngine
+
+Our harness used `AVAudioEngine` because we wanted to measure the full
+recording pipeline (tap → file write → tone playback) through a single
+engine. keep-warm uses `AVCaptureSession` + `AVCaptureAudioDataOutput`
+instead, which is the higher-level AVFoundation capture API (the same
+one backing the Camera app, screen recording, etc.).
+
+This is a meaningful difference:
+
+* **AVCaptureSession** wraps CoreMedia I/O (CMIO), which manages the
+  hardware lifecycle independently from the audio render graph.
+  Starting/stopping capture is the session's job; there's no
+  `AudioUnit` exposed to the caller. The delegate receives
+  `CMSampleBuffer`s on a dispatch queue, not `AVAudioPCMBuffer`s on
+  the audio render thread.
+* **AVAudioEngine** wraps an `AUAudioUnit` graph. `installTap()` hooks
+  into the render thread, and `engine.start()` spins up the underlying
+  AudioUnit. It gives finer timing control (`AVAudioTime.hostTime`)
+  but couples input and output into one graph.
+
+For a keep-warm daemon that just needs to hold hardware open and discard
+samples, AVCaptureSession is the right call — simpler lifecycle, no
+render graph to manage, and the delegate callback on `.main` queue
+makes heartbeat/recovery logic trivial.
+
+For our *measurement* harness, AVAudioEngine was the right call — we
+needed `AVAudioTime.hostTime` for authoritative sample timestamps, and
+sharing one engine for input + output let us measure tone-playback
+latency without a second stream cold-open.
+
+### What keep-warm teaches us about Handy
+
+**1. The "hardware sleep" problem is real, documented, and filed with Apple.**
+
+keep-warm's author filed [FB21969131][feedback] with Apple (Feb 2026),
+documenting the 2–5s hardware sleep on Apple Silicon, the Bluetooth SCO
+negotiation delay, and proposing three API additions
+(`prepareForCapture()`, `kAudioDevicePropertyStandbyMode`,
+`maintainsStandbyState`). Apple hasn't responded yet.
+
+[feedback]: APPLE_FEEDBACK.md
+
+This confirms our harness finding: the ~500ms cold-open on Rob's Studio
+Display mic is *not* even the worst case. On Apple Silicon with
+Bluetooth, it can be 2–5s. The platform provides no API to pre-warm
+without actually opening the stream.
+
+**2. The "always-on, discard samples" pattern works in production.**
+
+keep-warm is shipping exactly the pattern our harness results pointed
+toward (and that m13v recommended in the #1283 thread): hold the mic
+open, throw away audio you don't need, gate retention on a flag. The
+difference is that keep-warm does it as an external daemon, not inside
+the app itself.
+
+For Handy, the equivalent would be:
+
+* Keep the cpal input stream open at app launch (the existing
+  `always_on_microphone` toggle, currently experimental).
+* Don't write samples to the ring buffer until the user presses the
+  hotkey — just let cpal's callback run and discard.
+* On press, flip a flag; samples start accumulating immediately.
+* On release, flip the flag back.
+
+This is what cjpais already built behind `Cmd+Shift+D`. The blocker
+isn't technical — it's the UX concern about the permanent mic indicator.
+
+**3. Bluetooth teardown is a landmine we haven't stepped on yet.**
+
+keep-warm's most battle-hardened code is its session teardown path:
+
+* `AVCaptureSession.stopRunning()` can deadlock when a Bluetooth
+  device disconnects during capture. CoreAudio's `HALB_Guard` waits
+  on a condition variable for the dead device, blocking the calling
+  thread indefinitely.
+* keep-warm's fix: tear down the CMIO graph (remove inputs/outputs)
+  on the main thread *first* to release the semaphore coreaudiod
+  depends on, *then* dispatch `stopRunning()` to a background thread.
+  If it hangs, it's a leaked thread, not a frozen process.
+* A 10-second watchdog logs a warning if `stopRunning()` doesn't
+  return, and the heartbeat timer will eventually restart the session
+  on a new device anyway.
+
+Handy's `lazy_stream_close` path (and the proposed always-on path)
+will hit this same deadlock if users have AirPods. Handy's cpal-based
+stream stop is synchronous today. Worth proactively adding a timeout
+or background-thread teardown when we implement the always-on pattern.
+
+**4. Device change debouncing is necessary, not optional.**
+
+keep-warm debounces device changes by 3 seconds after discovering that
+Bluetooth handoffs fire multiple rapid device-change events before the
+new device is actually ready. Without the debounce, the session thrashes
+(start → fail → retry → start → fail) during the SCO negotiation
+window.
+
+Handy doesn't currently listen for device changes at all — it picks the
+device at recording start. If we move to an always-on model, we'll need
+device-change handling, and keep-warm's 3-second debounce is a tested
+starting point.
+
+**5. Virtual audio plugins (Teams, Zoom) are a real-world complication.**
+
+keep-warm documents that HAL plugins from Teams and Zoom
+(`/Library/Audio/Plug-Ins/HAL/`) add startup latency and cause
+`coreaudiod` to consume 36.8% CPU when idle. This is a real factor for
+users who have conferencing apps installed — and it's outside Handy's
+control. Worth noting in troubleshooting docs.
+
+### What keep-warm *doesn't* tell us
+
+* **Warm-start latency numbers.** keep-warm doesn't measure the latency
+  from "another app opens the mic" to "first sample arrives" when the
+  hardware is already warm. That's exactly what our harness measures.
+  The two projects are complementary: keep-warm ensures the hardware
+  is warm, our harness quantifies how much that's worth.
+
+* **Whether AVCaptureSession-based warm-keeping benefits AVAudioEngine
+  / cpal consumers.** The hardware warm state should be shared (it's a
+  CoreAudio HAL property, not an API-specific one), but we haven't
+  confirmed that keep-warm running alongside Handy actually eliminates
+  Handy's cold-open cost. That's a simple experiment: run keep-warm,
+  wait 60s, then do a cold press in Handy and check the
+  `Microphone stream initialized in` log. If it drops from ~500ms to
+  ~50ms, the answer is yes and we could recommend keep-warm as a
+  stopgap while Handy moves to always-on.
+
+### Possible next steps informed by keep-warm
+
+* [ ] **Experiment**: run keep-warm alongside Handy, measure whether
+  Handy's cold-open cost drops (tests whether hardware warm state is
+  shared across API boundaries).
+* [ ] **Experiment**: add a "tap-always-installed, flag-gated" mode to
+  our harness. If warm-path drops below 30ms (vs current 107ms from
+  `installTap()` latency), that's the design target for Handy.
+* [ ] **Design note**: when Handy moves to always-on, add Bluetooth
+  teardown resilience (background-thread stop, timeout watchdog) per
+  keep-warm's battle-tested pattern.
+* [ ] **Design note**: add device-change listeners with debouncing when
+  implementing always-on mode.
+* [ ] **Troubleshooting**: document the Teams/Zoom HAL plugin issue in
+  Handy's troubleshooting section, since it affects cold-open latency
+  regardless of what Handy does.
