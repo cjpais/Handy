@@ -2,6 +2,10 @@ use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, 
 use crate::helpers::clamshell;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
+#[cfg(target_os = "macos")]
+use cpal::traits::DeviceTrait;
+#[cfg(target_os = "macos")]
+use cpal::traits::HostTrait;
 use log::{debug, error, info};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -188,6 +192,25 @@ impl AudioRecordingManager {
 
     /* ---------- helper methods --------------------------------------------- */
 
+    #[cfg(target_os = "macos")]
+    fn is_likely_bluetooth_input(name: &str) -> bool {
+        let normalized = name.to_lowercase();
+        normalized.contains("airpods") || normalized.contains("bluetooth")
+    }
+
+    #[cfg(target_os = "macos")]
+    fn non_bluetooth_priority(name: &str) -> u8 {
+        let normalized = name.to_lowercase();
+        if normalized.contains("built-in")
+            || normalized.contains("internal")
+            || normalized.contains("macbook")
+        {
+            2
+        } else {
+            1
+        }
+    }
+
     fn get_effective_microphone_device(&self, settings: &AppSettings) -> Option<cpal::Device> {
         // Check if we're in clamshell mode and have a clamshell microphone configured
         let use_clamshell_mic = if let Ok(is_clamshell) = clamshell::is_clamshell() {
@@ -196,18 +219,54 @@ impl AudioRecordingManager {
             false
         };
 
-        let device_name = if use_clamshell_mic {
-            settings.clamshell_microphone.as_ref().unwrap()
-        } else {
-            settings.selected_microphone.as_ref()?
-        };
-
-        // Find the device by name
         match list_input_devices() {
-            Ok(devices) => devices
-                .into_iter()
-                .find(|d| d.name == *device_name)
-                .map(|d| d.device),
+            Ok(devices) => {
+                // Preserve explicit user choices exactly (selected/clamshell).
+                if use_clamshell_mic {
+                    let device_name = settings.clamshell_microphone.as_ref().unwrap();
+                    return devices
+                        .iter()
+                        .find(|d| d.name == *device_name)
+                        .map(|d| d.device.clone());
+                }
+
+                if let Some(device_name) = settings.selected_microphone.as_ref() {
+                    return devices
+                        .iter()
+                        .find(|d| d.name == *device_name)
+                        .map(|d| d.device.clone());
+                }
+
+                // For default mic on macOS, avoid Bluetooth input routes when possible.
+                // Opening a Bluetooth headset mic can trigger profile switches that pause
+                // or alter playback in some media apps.
+                #[cfg(target_os = "macos")]
+                {
+                    let host = crate::audio_toolkit::get_cpal_host();
+                    let default_name = host.default_input_device().and_then(|d| d.name().ok());
+
+                    if default_name
+                        .as_deref()
+                        .map(Self::is_likely_bluetooth_input)
+                        .unwrap_or(false)
+                    {
+                        if let Some(fallback) = devices
+                            .iter()
+                            .filter(|d| !Self::is_likely_bluetooth_input(&d.name))
+                            .max_by_key(|d| Self::non_bluetooth_priority(&d.name))
+                            .map(|d| d.device.clone())
+                        {
+                            info!(
+                                "Default microphone appears to be Bluetooth; using non-Bluetooth fallback"
+                            );
+                            return Some(fallback);
+                        }
+                    }
+                }
+
+                // Keep existing behavior for default mic: let recorder resolve host default.
+                None
+            }
             Err(e) => {
                 debug!("Failed to list devices, using default: {}", e);
                 None
