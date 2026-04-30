@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "履歴上限",
         "description": "保持する履歴エントリーの最大数",
-        "entries": "件"
+        "entries": "件",
+        "warningTitle": "録音が削除される可能性があります",
+        "warningDescription": "新しい上限を超えるエントリは、次の録音時に削除されます。"
       },
       "recordingRetention": {
         "title": "録音の自動削除",
@@ -468,7 +470,9 @@
         "days3": "3日後",
         "weeks2": "2週間後",
         "months3": "3ヶ月後",
-        "placeholder": "保持期間を選択..."
+        "placeholder": "保持期間を選択...",
+        "warningTitle": "自動削除が有効になりました",
+        "warningDescription": "保持期間より古い録音は、次の録音時に削除されます。"
       },
       "alwaysOnMicrophone": {
         "label": "マイク常時オン",

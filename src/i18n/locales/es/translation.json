@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "Límite de Historial",
         "description": "Número máximo de entradas de historial a conservar",
-        "entries": "entradas"
+        "entries": "entradas",
+        "warningTitle": "Las grabaciones podrían eliminarse",
+        "warningDescription": "Las entradas que superen el nuevo límite se eliminarán en la próxima grabación."
       },
       "recordingRetention": {
         "title": "Eliminación automática de grabaciones",
@@ -468,7 +470,9 @@
         "days3": "Después de 3 días",
         "weeks2": "Después de 2 semanas",
         "months3": "Después de 3 meses",
-        "placeholder": "Seleccionar período de retención..."
+        "placeholder": "Seleccionar período de retención...",
+        "warningTitle": "Eliminación automática activada",
+        "warningDescription": "Las grabaciones anteriores al periodo de retención se eliminarán en la próxima grabación."
       },
       "alwaysOnMicrophone": {
         "label": "Micrófono Siempre Activo",
