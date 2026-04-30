@@ -250,13 +250,41 @@ pub fn get_available_output_devices() -> Result<Vec<AudioDevice>, String> {
 #[specta::specta]
 pub fn set_selected_output_device(app: AppHandle, device_name: String) -> Result<(), String> {
     let mut settings = get_settings(&app);
+    let is_loopback = cfg!(target_os = "windows") && settings.record_system_audio;
+
     settings.selected_output_device = if device_name == "default" {
         None
     } else {
         Some(device_name)
     };
     write_settings(&app, settings);
+
+    if is_loopback {
+        let rm = app.state::<Arc<AudioRecordingManager>>();
+        rm.update_selected_device().map_err(|e| e.to_string())?;
+    }
+
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_record_system_audio(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.record_system_audio = enabled;
+    write_settings(&app, settings);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.update_selected_device().map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_record_system_audio(app: AppHandle) -> Result<bool, String> {
+    let settings = get_settings(&app);
+    Ok(settings.record_system_audio)
 }
 
 #[tauri::command]

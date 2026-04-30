@@ -236,6 +236,10 @@
       "volume": {
         "title": "Volume",
         "description": "Regola il volume del feedback audio"
+      },
+      "recordSystemAudio": {
+        "title": "Registra audio di sistema",
+        "description": "Cattura anche l'audio in riproduzione sul computer, mixato con il microfono (solo Windows)"
       }
     },
     "advanced": {
