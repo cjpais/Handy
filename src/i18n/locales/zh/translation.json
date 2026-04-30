@@ -394,6 +394,10 @@
           "placeholderWithOptions": "搜索或选择模型",
           "placeholderNoOptions": "输入模型名称",
           "refreshModels": "刷新模型"
+        },
+        "disableReasoning": {
+          "label": "禁用推理",
+          "description": "跳过思考模式以获得更快的响应。建议用于后处理，因为它很少从推理中受益。"
         }
       },
       "prompts": {

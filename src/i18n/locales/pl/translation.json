@@ -394,6 +394,10 @@
           "placeholderWithOptions": "Wyszukaj lub wybierz model",
           "placeholderNoOptions": "Wpisz nazwę modelu",
           "refreshModels": "Odśwież modele"
+        },
+        "disableReasoning": {
+          "label": "Wyłącz rozumowanie",
+          "description": "Pomija tryb myślenia dla szybszych odpowiedzi. Zalecane dla przetwarzania końcowego, które rzadko korzysta z rozumowania."
         }
       },
       "prompts": {

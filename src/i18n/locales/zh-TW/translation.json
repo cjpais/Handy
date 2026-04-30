@@ -394,6 +394,10 @@
           "placeholderWithOptions": "搜尋或選擇模型",
           "placeholderNoOptions": "輸入模型名稱",
           "refreshModels": "重新整理模型"
+        },
+        "disableReasoning": {
+          "label": "停用推理",
+          "description": "跳過思考模式以獲得更快的回應。建議用於後處理，因為它很少從推理中受益。"
         }
       },
       "prompts": {
