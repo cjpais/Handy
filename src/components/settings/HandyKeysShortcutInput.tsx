@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import { formatKeyCombination } from "../../lib/utils/keyboard";
+import { formatKeyCombination, getKeyName } from "../../lib/utils/keyboard";
 import { ResetButton } from "../ui/ResetButton";
 import { SettingContainer } from "../ui/SettingContainer";
 import { useSettings } from "../../hooks/useSettings";
@@ -151,6 +151,93 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
     cancelRecording,
     t,
   ]);
+
+  // On Linux, rdev::grab() conflicts with HotkeyManager — use DOM keyboard events
+  // for recording instead of the backend handy-keys-event stream.
+  useEffect(() => {
+    if (!isRecording || osType !== "linux") return;
+
+    const MODIFIER_CODES = new Set([
+      "ControlLeft",
+      "ControlRight",
+      "AltLeft",
+      "AltRight",
+      "ShiftLeft",
+      "ShiftRight",
+      "MetaLeft",
+      "MetaRight",
+      "OSLeft",
+      "OSRight",
+    ]);
+
+    const buildHotkeyString = (e: KeyboardEvent): string | null => {
+      // Let the Escape handler in the other effect deal with cancellation
+      if (e.code === "Escape") return null;
+      // Don't emit modifier-only presses as a committable shortcut
+      if (MODIFIER_CODES.has(e.code)) return null;
+
+      const parts: string[] = [];
+      if (e.ctrlKey) parts.push("ctrl");
+      if (e.altKey) parts.push("alt");
+      if (e.shiftKey) parts.push("shift");
+      if (e.metaKey) parts.push("super");
+
+      const key = getKeyName(e, osType);
+      if (!key || ["ctrl", "alt", "shift", "super"].includes(key)) return null;
+      parts.push(key);
+      return parts.join("+");
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const hotkey = buildHotkeyString(e);
+      if (hotkey) {
+        e.preventDefault();
+        currentKeysRef.current = hotkey;
+        setCurrentKeys(hotkey);
+      }
+    };
+
+    const handleKeyUp = async (e: KeyboardEvent) => {
+      if (!currentKeysRef.current || MODIFIER_CODES.has(e.code)) return;
+      // Escape is handled separately (cancels recording)
+      if (e.code === "Escape") return;
+
+      e.preventDefault();
+      const keysToCommit = currentKeysRef.current;
+
+      try {
+        await updateBinding(shortcutId, keysToCommit);
+      } catch (error) {
+        console.error("Failed to change binding:", error);
+        toast.error(
+          t("settings.general.shortcut.errors.set", {
+            error: String(error),
+          }),
+        );
+        if (originalBinding) {
+          try {
+            await updateBinding(shortcutId, originalBinding);
+          } catch (resetError) {
+            console.error("Failed to reset binding:", resetError);
+            toast.error(t("settings.general.shortcut.errors.reset"));
+          }
+        }
+      }
+
+      await commands.stopHandyKeysRecording().catch(console.error);
+      setIsRecording(false);
+      setCurrentKeys("");
+      currentKeysRef.current = "";
+      setOriginalBinding("");
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [isRecording, osType, shortcutId, originalBinding, updateBinding, t]);
 
   // Handle click outside
   useEffect(() => {
