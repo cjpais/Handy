@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "Bas Konuş",
         "description": "Kaydetmek için basılı tutun, durdurmak için bırakın"
-      }
+      },
+      "shortcutsDisabledHint": "Yerleşik kısayol tuşları devre dışı. Bunun yerine birleştiricinizi bir kısayola 'handy --toggle-transcription' çalıştıracak şekilde yapılandırın (örn. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Bunu Ayarlar > Gelişmiş > Deneysel > Klavye Uygulaması bölümünden değiştirebilirsiniz."
     },
     "sound": {
       "title": "Ses",

@@ -195,7 +195,8 @@
       "pushToTalk": {
         "label": "Pressionar para Falar",
         "description": "Segure para gravar, solte para parar"
-      }
+      },
+      "shortcutsDisabledHint": "As teclas de atalho integradas estão desativadas. Em vez disso, configure seu compositor para executar 'handy --toggle-transcription' em uma combinação de teclas (por ex. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Você pode alterar isso em Configurações > Avançado > Experimental > Implementação do Teclado."
     },
     "models": {
       "title": "Modelos de Transcrição",

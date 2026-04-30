@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "Premi per Parlare",
         "description": "Tieni premuto per parlare, rilascia per interrompere"
-      }
+      },
+      "shortcutsDisabledHint": "Le scorciatoie da tastiera integrate sono disabilitate. Configura invece il tuo compositor per eseguire 'handy --toggle-transcription' con una combinazione di tasti (es. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Puoi modificarlo in Impostazioni > Avanzate > Sperimentale > Implementazione tastiera."
     },
     "sound": {
       "title": "Suono",

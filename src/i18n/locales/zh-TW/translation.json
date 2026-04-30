@@ -195,7 +195,8 @@
       "pushToTalk": {
         "label": "按住說話",
         "description": "按住錄製，放開停止"
-      }
+      },
+      "shortcutsDisabledHint": "內建熱鍵已停用。請改為設定合成器在某個鍵位上執行 'handy --toggle-transcription'（例如 Hyprland：bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription）。您可以在 設定 > 進階 > 實驗性 > 鍵盤實作 中變更此設定。"
     },
     "models": {
       "title": "轉錄模型",
