@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "クリップボード (Ctrl+Shift+V)",
           "clipboardShiftInsert": "クリップボード (Shift+Insert)",
           "direct": "直接",
+          "directCompatibility": "Direct (Slow)",
           "none": "なし",
           "externalScript": "外部スクリプト"
         },

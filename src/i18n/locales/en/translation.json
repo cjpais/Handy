@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Clipboard (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Clipboard (Shift+Insert)",
           "direct": "Direct",
+          "directCompatibility": "Direct (Slow)",
           "none": "None",
           "externalScript": "External Script"
         },

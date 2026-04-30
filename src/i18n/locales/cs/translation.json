@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Schránka (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Schránka (Shift+Insert)",
           "direct": "Přímé",
+          "directCompatibility": "Direct (Slow)",
           "none": "Žádné",
           "externalScript": "Externí skript"
         },

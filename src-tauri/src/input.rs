@@ -1,6 +1,9 @@
 use enigo::{Enigo, Key, Keyboard, Mouse, Settings};
 use std::sync::Mutex;
+use std::time::Duration;
 use tauri::{AppHandle, Manager};
+
+const SLOW_TYPE_KEY_DELAY_MS: u64 = 15;
 
 /// Wrapper for Enigo to store in Tauri's managed state.
 /// Enigo is wrapped in a Mutex since it requires mutable access.
@@ -120,4 +123,143 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to send text directly: {}", e))?;
 
     Ok(())
+}
+
+/// Types text as individual keyboard clicks with short pauses between keys.
+/// This compatibility path is slower than `text()`, but remote desktop clients
+/// tend to handle it more like physical keyboard input.
+pub fn paste_text_slow(enigo: &mut Enigo, text: &str) -> Result<(), String> {
+    for ch in text.chars() {
+        match slow_type_key_for_char(ch) {
+            Some(SlowTypeKey::Key { key, shift }) => {
+                if shift {
+                    enigo
+                        .key(Key::Shift, enigo::Direction::Press)
+                        .map_err(|e| format!("Failed to press Shift key: {}", e))?;
+                }
+
+                let key_result = enigo
+                    .key(key, enigo::Direction::Click)
+                    .map_err(|e| format!("Failed to click key for '{}': {}", ch, e));
+
+                if shift {
+                    enigo
+                        .key(Key::Shift, enigo::Direction::Release)
+                        .map_err(|e| format!("Failed to release Shift key: {}", e))?;
+                }
+
+                key_result?;
+            }
+            Some(SlowTypeKey::TextFallback(text)) => {
+                enigo
+                    .text(text)
+                    .map_err(|e| format!("Failed to send fallback text for '{}': {}", ch, e))?;
+            }
+            None => {
+                return Err(format!(
+                    "Character '{}' is not supported by slow direct typing",
+                    ch
+                ));
+            }
+        }
+
+        std::thread::sleep(Duration::from_millis(SLOW_TYPE_KEY_DELAY_MS));
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, PartialEq)]
+enum SlowTypeKey {
+    Key { key: Key, shift: bool },
+    TextFallback(&'static str),
+}
+
+fn slow_type_key_for_char(ch: char) -> Option<SlowTypeKey> {
+    let (key, shift) = match ch {
+        'a'..='z' | '0'..='9' => (Key::Unicode(ch), false),
+        'A'..='Z' => (Key::Unicode(ch.to_ascii_lowercase()), true),
+        ' ' => (Key::Space, false),
+        '\n' | '\r' => (Key::Return, false),
+        '\t' => (Key::Tab, false),
+        '!' => (Key::Unicode('1'), true),
+        '@' => (Key::Unicode('2'), true),
+        '#' => (Key::Unicode('3'), true),
+        '$' => (Key::Unicode('4'), true),
+        '%' => (Key::Unicode('5'), true),
+        '^' => (Key::Unicode('6'), true),
+        '&' => (Key::Unicode('7'), true),
+        '*' => (Key::Unicode('8'), true),
+        '(' => (Key::Unicode('9'), true),
+        ')' => (Key::Unicode('0'), true),
+        '-' => (Key::Unicode('-'), false),
+        '_' => (Key::Unicode('-'), true),
+        '=' => (Key::Unicode('='), false),
+        '+' => (Key::Unicode('='), true),
+        '[' => (Key::Unicode('['), false),
+        '{' => (Key::Unicode('['), true),
+        ']' => (Key::Unicode(']'), false),
+        '}' => (Key::Unicode(']'), true),
+        '\\' => (Key::Unicode('\\'), false),
+        '|' => (Key::Unicode('\\'), true),
+        ';' => (Key::Unicode(';'), false),
+        ':' => (Key::Unicode(';'), true),
+        '\'' => (Key::Unicode('\''), false),
+        '"' => (Key::Unicode('\''), true),
+        ',' => (Key::Unicode(','), false),
+        '<' => (Key::Unicode(','), true),
+        '.' => (Key::Unicode('.'), false),
+        '>' => (Key::Unicode('.'), true),
+        '/' => (Key::Unicode('/'), false),
+        '?' => (Key::Unicode('/'), true),
+        '`' => (Key::Unicode('`'), false),
+        '~' => (Key::Unicode('`'), true),
+        '\u{2019}' => return Some(SlowTypeKey::TextFallback("'")),
+        '\u{201c}' | '\u{201d}' => return Some(SlowTypeKey::TextFallback("\"")),
+        _ => return None,
+    };
+
+    Some(SlowTypeKey::Key { key, shift })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slow_type_maps_common_transcription_text() {
+        assert_eq!(
+            slow_type_key_for_char('T'),
+            Some(SlowTypeKey::Key {
+                key: Key::Unicode('t'),
+                shift: true
+            })
+        );
+        assert_eq!(
+            slow_type_key_for_char(','),
+            Some(SlowTypeKey::Key {
+                key: Key::Unicode(','),
+                shift: false
+            })
+        );
+        assert_eq!(
+            slow_type_key_for_char('?'),
+            Some(SlowTypeKey::Key {
+                key: Key::Unicode('/'),
+                shift: true
+            })
+        );
+        assert_eq!(
+            slow_type_key_for_char(' '),
+            Some(SlowTypeKey::Key {
+                key: Key::Space,
+                shift: false
+            })
+        );
+    }
+
+    #[test]
+    fn slow_type_rejects_unsupported_characters() {
+        assert_eq!(slow_type_key_for_char('\u{00e9}'), None);
+    }
 }

@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Appunti (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Appunti (Shift+Insert)",
           "direct": "Diretto",
+          "directCompatibility": "Direct (Slow)",
           "none": "Nessuno",
           "externalScript": "Script esterno"
         },

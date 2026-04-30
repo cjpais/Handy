@@ -685,6 +685,7 @@ pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(),
     let parsed = match method.as_str() {
         "ctrl_v" => PasteMethod::CtrlV,
         "direct" => PasteMethod::Direct,
+        "direct_compatibility" => PasteMethod::DirectCompatibility,
         "none" => PasteMethod::None,
         "shift_insert" => PasteMethod::ShiftInsert,
         "ctrl_shift_v" => PasteMethod::CtrlShiftV,

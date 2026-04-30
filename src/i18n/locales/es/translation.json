@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Portapapeles (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Portapapeles (Shift+Insert)",
           "direct": "Directo",
+          "directCompatibility": "Direct (Slow)",
           "none": "Ninguno",
           "externalScript": "Script externo"
         },

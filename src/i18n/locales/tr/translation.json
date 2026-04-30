@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Pano (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Pano (Shift+Insert)",
           "direct": "Doğrudan",
+          "directCompatibility": "Direct (Slow)",
           "none": "Yok",
           "externalScript": "Harici Betik"
         },

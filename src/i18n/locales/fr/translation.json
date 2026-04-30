@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Presse-papiers (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Presse-papiers (Shift+Insert)",
           "direct": "Direct",
+          "directCompatibility": "Direct (Slow)",
           "none": "Aucun",
           "externalScript": "Script externe"
         },
