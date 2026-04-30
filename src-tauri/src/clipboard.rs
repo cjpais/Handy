@@ -14,7 +14,7 @@ use crate::utils::{is_kde_wayland, is_wayland};
 
 /// Pastes text using the clipboard: saves current content, writes text, sends paste keystroke, restores clipboard.
 fn paste_via_clipboard(
-    enigo: &mut Enigo,
+    enigo: &mut Option<&mut Enigo>,
     text: &str,
     app_handle: &AppHandle,
     paste_method: &PasteMethod,
@@ -53,11 +53,13 @@ fn paste_via_clipboard(
 
     // Fall back to enigo if no native tool handled it
     if !key_combo_sent {
-        match paste_method {
-            PasteMethod::CtrlV => input::send_paste_ctrl_v(enigo)?,
-            PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(enigo)?,
-            PasteMethod::ShiftInsert => input::send_paste_shift_insert(enigo)?,
-            _ => return Err("Invalid paste method for clipboard paste".into()),
+        if let Some(e) = enigo.as_mut() {
+            match paste_method {
+                PasteMethod::CtrlV => input::send_paste_ctrl_v(e)?,
+                PasteMethod::CtrlShiftV => input::send_paste_ctrl_shift_v(e)?,
+                PasteMethod::ShiftInsert => input::send_paste_shift_insert(e)?,
+                _ => return Err("Invalid paste method for clipboard paste".into()),
+            }
         }
     }
 
@@ -526,7 +528,7 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
 
 /// Types text directly by simulating individual key presses.
 fn paste_direct(
-    enigo: &mut Enigo,
+    enigo: &mut Option<&mut Enigo>,
     text: &str,
     #[cfg(target_os = "linux")] typing_tool: TypingTool,
 ) -> Result<(), String> {
@@ -538,46 +540,54 @@ fn paste_direct(
         info!("Falling back to enigo for direct text input");
     }
 
-    input::paste_text_direct(enigo, text)
+    if let Some(e) = enigo.as_mut() {
+        input::paste_text_direct(e, text)?;
+    }
+    Ok(())
 }
 
-fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), String> {
-    match key_type {
-        AutoSubmitKey::Enter => {
-            enigo
-                .key(Key::Return, Direction::Press)
-                .map_err(|e| format!("Failed to press Return key: {}", e))?;
-            enigo
-                .key(Key::Return, Direction::Release)
-                .map_err(|e| format!("Failed to release Return key: {}", e))?;
-        }
-        AutoSubmitKey::CtrlEnter => {
-            enigo
-                .key(Key::Control, Direction::Press)
-                .map_err(|e| format!("Failed to press Control key: {}", e))?;
-            enigo
-                .key(Key::Return, Direction::Press)
-                .map_err(|e| format!("Failed to press Return key: {}", e))?;
-            enigo
-                .key(Key::Return, Direction::Release)
-                .map_err(|e| format!("Failed to release Return key: {}", e))?;
-            enigo
-                .key(Key::Control, Direction::Release)
-                .map_err(|e| format!("Failed to release Control key: {}", e))?;
-        }
-        AutoSubmitKey::CmdEnter => {
-            enigo
-                .key(Key::Meta, Direction::Press)
-                .map_err(|e| format!("Failed to press Meta/Cmd key: {}", e))?;
-            enigo
-                .key(Key::Return, Direction::Press)
-                .map_err(|e| format!("Failed to press Return key: {}", e))?;
-            enigo
-                .key(Key::Return, Direction::Release)
-                .map_err(|e| format!("Failed to release Return key: {}", e))?;
-            enigo
-                .key(Key::Meta, Direction::Release)
-                .map_err(|e| format!("Failed to release Meta/Cmd key: {}", e))?;
+fn send_return_key(
+    enigo: &mut Option<&mut Enigo>,
+    key_type: AutoSubmitKey
+) -> Result<(), String> {
+    if let Some(e) = enigo.as_mut() {
+        match key_type {
+            AutoSubmitKey::Enter => {
+                e
+                    .key(Key::Return, Direction::Press)
+                    .map_err(|err| format!("Failed to press Return key: {}", err))?;
+                e
+                    .key(Key::Return, Direction::Release)
+                    .map_err(|err| format!("Failed to release Return key: {}", err))?;
+            }
+            AutoSubmitKey::CtrlEnter => {
+                e
+                    .key(Key::Control, Direction::Press)
+                    .map_err(|err| format!("Failed to press Control key: {}", err))?;
+                e
+                    .key(Key::Return, Direction::Press)
+                    .map_err(|err| format!("Failed to press Return key: {}", err))?;
+                e
+                    .key(Key::Return, Direction::Release)
+                    .map_err(|err| format!("Failed to release Return key: {}", err))?;
+                e
+                    .key(Key::Control, Direction::Release)
+                    .map_err(|err| format!("Failed to release Control key: {}", err))?;
+            }
+            AutoSubmitKey::CmdEnter => {
+                e
+                    .key(Key::Meta, Direction::Press)
+                    .map_err(|err| format!("Failed to press Meta/Cmd key: {}", err))?;
+                e
+                    .key(Key::Return, Direction::Press)
+                    .map_err(|err| format!("Failed to press Return key: {}", err))?;
+                e
+                    .key(Key::Return, Direction::Release)
+                    .map_err(|err| format!("Failed to release Return key: {}", err))?;
+                e
+                    .key(Key::Meta, Direction::Release)
+                    .map_err(|err| format!("Failed to release Meta/Cmd key: {}", err))?;
+            }
         }
     }
 
@@ -605,36 +615,66 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         paste_method, paste_delay_ms
     );
 
-    // Get the managed Enigo instance
-    let enigo_state = app_handle
-        .try_state::<EnigoState>()
-        .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
-
     // Perform the paste operation
     match paste_method {
         PasteMethod::None => {
             info!("PasteMethod::None selected - skipping paste action");
         }
         PasteMethod::Direct => {
-            paste_direct(
-                &mut enigo,
-                &text,
-                #[cfg(target_os = "linux")]
-                settings.typing_tool,
-            )?;
+            // Try to get enigo, but proceed with None if not available
+            // Primary methods (wtype, xdotool, etc.) will still work
+            match app_handle.try_state::<EnigoState>() {
+                Some(enigo_state) => {
+                    let mut enigo_guard = enigo_state.0.lock()
+                        .map_err(|e| format!("Failed to lock Enigo mutex: {}", e))?;
+                    let mut enigo_opt: Option<&mut Enigo> = Some(&mut *enigo_guard);
+                    paste_direct(
+                        &mut enigo_opt,
+                        &text,
+                        #[cfg(target_os = "linux")]
+                        settings.typing_tool,
+                    )?;
+                }
+                None => {
+                    log::warn!("Enigo state not initialized, trying primary method only");
+                    let mut enigo_opt: Option<&mut Enigo> = None;
+                    paste_direct(
+                        &mut enigo_opt,
+                        &text,
+                        #[cfg(target_os = "linux")]
+                        settings.typing_tool,
+                    )?;
+                }
+            }
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            paste_via_clipboard(
-                &mut enigo,
-                &text,
-                &app_handle,
-                &paste_method,
-                paste_delay_ms,
-            )?
+            // Try to get enigo, but proceed with None if not available
+            // Primary methods (wtype, dotool, etc.) will still work
+            match app_handle.try_state::<EnigoState>() {
+                Some(enigo_state) => {
+                    let mut enigo_guard = enigo_state.0.lock()
+                        .map_err(|e| format!("Failed to lock Enigo mutex: {}", e))?;
+                    let mut enigo_opt: Option<&mut Enigo> = Some(&mut *enigo_guard);
+                    paste_via_clipboard(
+                        &mut enigo_opt,
+                        &text,
+                        &app_handle,
+                        &paste_method,
+                        paste_delay_ms,
+                    )?
+                }
+                None => {
+                    log::warn!("Enigo state not initialized, trying primary method only");
+                    let mut enigo_opt: Option<&mut Enigo> = None;
+                    paste_via_clipboard(
+                        &mut enigo_opt,
+                        &text,
+                        &app_handle,
+                        &paste_method,
+                        paste_delay_ms,
+                    )?
+                }
+            }
         }
         PasteMethod::ExternalScript => {
             let script_path = settings
@@ -648,7 +688,17 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
-        send_return_key(&mut enigo, settings.auto_submit_key)?;
+        match app_handle.try_state::<EnigoState>() {
+            Some(enigo_state) => {
+                let mut enigo_guard = enigo_state.0.lock()
+                    .map_err(|e| format!("Failed to lock Enigo mutex: {}", e))?;
+                let mut enigo_opt: Option<&mut Enigo> = Some(&mut *enigo_guard);
+                send_return_key(&mut enigo_opt, settings.auto_submit_key)?;
+            }
+            None => {
+                log::warn!("Enigo state not initialized, cannot send auto-submit key");
+            }
+        }
     }
 
     // After pasting, optionally copy to clipboard based on settings
