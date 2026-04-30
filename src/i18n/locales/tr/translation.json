@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Ekstra kayıt tamponu",
         "description": "Tuşu bıraktıktan sonra arka plandaki sesi yakalamak için kaydı sürdürme süresi (milisaniye). 0 = ekstra tampon yok."
+      },
+      "typingDelay": {
+        "title": "Yazma gecikmesi",
+        "description": "dotool gibi doğrudan yazma araçları için tuş vuruşu başına gecikme (milisaniye cinsinden). Daha düşük = daha hızlı yazma, daha yüksek = yavaş birleştiricilerde daha güvenilir. Varsayılan: 2 ms."
       }
     },
     "about": {

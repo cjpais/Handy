@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Extra vyrovnávací paměť nahrávání",
         "description": "Extra čas (v milisekundách) pro pokračování nahrávání po uvolnění klávesy, pro zachycení zbývajícího zvuku. 0 = žádná extra vyrovnávací paměť."
+      },
+      "typingDelay": {
+        "title": "Zpoždění psaní",
+        "description": "Zpoždění mezi stisky kláves pro přímé nástroje pro psaní jako dotool (v milisekundách). Nižší = rychlejší psaní, vyšší = spolehlivější na pomalých kompozitorech. Výchozí: 2 ms."
       }
     },
     "about": {
