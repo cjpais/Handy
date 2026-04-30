@@ -557,6 +557,7 @@
     "portableUpdateButton": "פתח את GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "טוען...",
     "save": "שמור",
     "cancel": "ביטול",
