@@ -6,7 +6,8 @@
     "unloadModel": "Вивантажити модель",
     "model": "Модель",
     "quit": "Вийти",
-    "cancel": "Скасувати"
+    "cancel": "Скасувати",
+    "language": "Мова"
   },
   "sidebar": {
     "general": "Загальні",

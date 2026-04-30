@@ -93,6 +93,352 @@ fn version_label() -> String {
     }
 }
 
+/// Human-readable name for a language code (matches frontend labels).
+fn language_name(code: &str) -> &str {
+    match code {
+        "auto" => "Auto Detect",
+        "en" => "English",
+        "zh-Hans" => "Simplified Chinese",
+        "zh-Hant" => "Traditional Chinese",
+        "yue" => "Cantonese",
+        "de" => "German",
+        "es" => "Spanish",
+        "ru" => "Russian",
+        "ko" => "Korean",
+        "fr" => "French",
+        "ja" => "Japanese",
+        "pt" => "Portuguese",
+        "tr" => "Turkish",
+        "pl" => "Polish",
+        "ca" => "Catalan",
+        "nl" => "Dutch",
+        "ar" => "Arabic",
+        "sv" => "Swedish",
+        "it" => "Italian",
+        "id" => "Indonesian",
+        "hi" => "Hindi",
+        "fi" => "Finnish",
+        "vi" => "Vietnamese",
+        "he" => "Hebrew",
+        "uk" => "Ukrainian",
+        "el" => "Greek",
+        "ms" => "Malay",
+        "cs" => "Czech",
+        "ro" => "Romanian",
+        "da" => "Danish",
+        "hu" => "Hungarian",
+        "ta" => "Tamil",
+        "no" => "Norwegian",
+        "th" => "Thai",
+        "ur" => "Urdu",
+        "hr" => "Croatian",
+        "bg" => "Bulgarian",
+        "lt" => "Lithuanian",
+        "la" => "Latin",
+        "mi" => "Maori",
+        "ml" => "Malayalam",
+        "cy" => "Welsh",
+        "sk" => "Slovak",
+        "te" => "Telugu",
+        "fa" => "Persian",
+        "lv" => "Latvian",
+        "bn" => "Bengali",
+        "sr" => "Serbian",
+        "az" => "Azerbaijani",
+        "sl" => "Slovenian",
+        "kn" => "Kannada",
+        "et" => "Estonian",
+        "mk" => "Macedonian",
+        "br" => "Breton",
+        "eu" => "Basque",
+        "is" => "Icelandic",
+        "hy" => "Armenian",
+        "ne" => "Nepali",
+        "mn" => "Mongolian",
+        "bs" => "Bosnian",
+        "kk" => "Kazakh",
+        "sq" => "Albanian",
+        "sw" => "Swahili",
+        "gl" => "Galician",
+        "mr" => "Marathi",
+        "pa" => "Punjabi",
+        "si" => "Sinhala",
+        "km" => "Khmer",
+        "sn" => "Shona",
+        "yo" => "Yoruba",
+        "so" => "Somali",
+        "af" => "Afrikaans",
+        "oc" => "Occitan",
+        "ka" => "Georgian",
+        "be" => "Belarusian",
+        "tg" => "Tajik",
+        "sd" => "Sindhi",
+        "gu" => "Gujarati",
+        "am" => "Amharic",
+        "yi" => "Yiddish",
+        "lo" => "Lao",
+        "uz" => "Uzbek",
+        "fo" => "Faroese",
+        "ht" => "Haitian Creole",
+        "ps" => "Pashto",
+        "tk" => "Turkmen",
+        "nn" => "Nynorsk",
+        "mt" => "Maltese",
+        "sa" => "Sanskrit",
+        "lb" => "Luxembourgish",
+        "my" => "Myanmar",
+        "bo" => "Tibetan",
+        "tl" => "Tagalog",
+        "mg" => "Malagasy",
+        "as" => "Assamese",
+        "tt" => "Tatar",
+        "haw" => "Hawaiian",
+        "ln" => "Lingala",
+        "ha" => "Hausa",
+        "ba" => "Bashkir",
+        "jw" => "Javanese",
+        "su" => "Sundanese",
+        _ => code,
+    }
+}
+
+/// Build the language submenu for the tray menu.
+fn build_language_submenu(
+    app: &AppHandle,
+    settings: &settings::AppSettings,
+    model_manager: &ModelManager,
+    strings: &crate::tray_i18n::TrayStrings,
+) -> Submenu<tauri::Wry> {
+    let current_model_id = &settings.selected_model;
+    let current_language = &settings.selected_language;
+    let model_info = model_manager.get_model_info(current_model_id);
+
+    let supports_selection = model_info
+        .as_ref()
+        .map(|m| m.supports_language_selection)
+        .unwrap_or(true);
+    let supported_languages: Vec<String> = model_info
+        .as_ref()
+        .map(|m| m.supported_languages.clone())
+        .unwrap_or_default();
+
+    // Determine which languages to show
+    let languages: Vec<String> = if supported_languages.is_empty() {
+        // Model claims all languages (e.g. Whisper)
+        vec![
+            "auto".to_string(),
+            "en".to_string(),
+            "zh-Hans".to_string(),
+            "zh-Hant".to_string(),
+            "yue".to_string(),
+            "de".to_string(),
+            "es".to_string(),
+            "ru".to_string(),
+            "ko".to_string(),
+            "fr".to_string(),
+            "ja".to_string(),
+            "pt".to_string(),
+            "tr".to_string(),
+            "pl".to_string(),
+            "ca".to_string(),
+            "nl".to_string(),
+            "ar".to_string(),
+            "sv".to_string(),
+            "it".to_string(),
+            "id".to_string(),
+            "hi".to_string(),
+            "fi".to_string(),
+            "vi".to_string(),
+            "he".to_string(),
+            "uk".to_string(),
+            "el".to_string(),
+            "ms".to_string(),
+            "cs".to_string(),
+            "ro".to_string(),
+            "da".to_string(),
+            "hu".to_string(),
+            "ta".to_string(),
+            "no".to_string(),
+            "th".to_string(),
+            "ur".to_string(),
+            "hr".to_string(),
+            "bg".to_string(),
+            "lt".to_string(),
+            "la".to_string(),
+            "mi".to_string(),
+            "ml".to_string(),
+            "cy".to_string(),
+            "sk".to_string(),
+            "te".to_string(),
+            "fa".to_string(),
+            "lv".to_string(),
+            "bn".to_string(),
+            "sr".to_string(),
+            "az".to_string(),
+            "sl".to_string(),
+            "kn".to_string(),
+            "et".to_string(),
+            "mk".to_string(),
+            "br".to_string(),
+            "eu".to_string(),
+            "is".to_string(),
+            "hy".to_string(),
+            "ne".to_string(),
+            "mn".to_string(),
+            "bs".to_string(),
+            "kk".to_string(),
+            "sq".to_string(),
+            "sw".to_string(),
+            "gl".to_string(),
+            "mr".to_string(),
+            "pa".to_string(),
+            "si".to_string(),
+            "km".to_string(),
+            "sn".to_string(),
+            "yo".to_string(),
+            "so".to_string(),
+            "af".to_string(),
+            "oc".to_string(),
+            "ka".to_string(),
+            "be".to_string(),
+            "tg".to_string(),
+            "sd".to_string(),
+            "gu".to_string(),
+            "am".to_string(),
+            "yi".to_string(),
+            "lo".to_string(),
+            "uz".to_string(),
+            "fo".to_string(),
+            "ht".to_string(),
+            "ps".to_string(),
+            "tk".to_string(),
+            "nn".to_string(),
+            "mt".to_string(),
+            "sa".to_string(),
+            "lb".to_string(),
+            "my".to_string(),
+            "bo".to_string(),
+            "tl".to_string(),
+            "mg".to_string(),
+            "as".to_string(),
+            "tt".to_string(),
+            "haw".to_string(),
+            "ln".to_string(),
+            "ha".to_string(),
+            "ba".to_string(),
+            "jw".to_string(),
+            "su".to_string(),
+        ]
+    } else {
+        // Start with auto, then add supported languages
+        let mut langs = vec!["auto".to_string()];
+        for l in &supported_languages {
+            if l != "auto" {
+                langs.push(l.clone());
+            }
+        }
+        langs
+    };
+
+    let language_label = if !supports_selection {
+        format!("{} ({})", strings.language, "Auto")
+    } else {
+        let active_name = language_name(current_language);
+        format!("{} ({})", strings.language, active_name)
+    };
+
+    let submenu = Submenu::with_id(app, "language_submenu", &language_label, supports_selection)
+        .expect("failed to create language submenu");
+
+    if !supports_selection {
+        return submenu;
+    }
+
+    let show_recent = languages.len() > 10;
+
+    // Add auto detect first
+    {
+        let is_active = current_language == "auto";
+        let item_id = "language_select:auto";
+        let item = CheckMenuItem::with_id(
+            app,
+            item_id,
+            language_name("auto"),
+            true,
+            is_active,
+            None::<&str>,
+        )
+        .expect("failed to create language item");
+        let _ = submenu.append(&item);
+    }
+
+    // Build recent section if applicable
+    let displayed_recent: std::collections::HashSet<String> = if show_recent {
+        let supported_set: std::collections::HashSet<_> = languages.iter().cloned().collect();
+        let recent: Vec<_> = settings
+            .recent_languages
+            .iter()
+            .filter(|l| supported_set.contains(l.as_str()) && *l != "auto")
+            .take(5)
+            .cloned()
+            .collect();
+
+        if !recent.is_empty() {
+            let separator = PredefinedMenuItem::separator(app).expect("failed to create separator");
+            let _ = submenu.append(&separator);
+
+            for code in &recent {
+                let is_active = current_language == code;
+                let item_id = format!("language_select:{}", code);
+                let item = CheckMenuItem::with_id(
+                    app,
+                    &item_id,
+                    language_name(code),
+                    true,
+                    is_active,
+                    None::<&str>,
+                )
+                .expect("failed to create language item");
+                let _ = submenu.append(&item);
+            }
+        }
+
+        recent.into_iter().collect()
+    } else {
+        std::collections::HashSet::new()
+    };
+
+    // Full alphabetical list
+    let mut sorted_languages: Vec<_> = languages.iter().filter(|l| *l != "auto").collect();
+    sorted_languages.sort_by(|a, b| language_name(a).cmp(language_name(b)));
+
+    if !sorted_languages.is_empty() {
+        let separator = PredefinedMenuItem::separator(app).expect("failed to create separator");
+        let _ = submenu.append(&separator);
+
+        for code in sorted_languages {
+            // Skip items already shown in the recent section
+            if show_recent && displayed_recent.contains(code) {
+                continue;
+            }
+            let is_active = current_language == code;
+            let item_id = format!("language_select:{}", code);
+            let item = CheckMenuItem::with_id(
+                app,
+                &item_id,
+                language_name(code),
+                true,
+                is_active,
+                None::<&str>,
+            )
+            .expect("failed to create language item");
+            let _ = submenu.append(&item);
+        }
+    }
+
+    submenu
+}
+
 pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&str>) {
     let settings = settings::get_settings(app);
 
@@ -168,6 +514,8 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
         submenu
     };
 
+    let language_submenu = build_language_submenu(app, &settings, &model_manager, &strings);
+
     let unload_model_i = MenuItem::with_id(
         app,
         "unload_model",
@@ -206,6 +554,7 @@ pub fn update_tray_menu(app: &AppHandle, state: &TrayIconState, locale: Option<&
                 &copy_last_transcript_i,
                 &separator(),
                 &model_submenu,
+                &language_submenu,
                 &unload_model_i,
                 &separator(),
                 &settings_i,

@@ -6,7 +6,8 @@
     "unloadModel": "تفريغ النموذج",
     "model": "النموذج",
     "quit": "إنهاء",
-    "cancel": "إلغاء"
+    "cancel": "إلغاء",
+    "language": "اللغة"
   },
   "sidebar": {
     "general": "عام",
