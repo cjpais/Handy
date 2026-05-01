@@ -1,9 +1,6 @@
 use enigo::{Enigo, Key, Keyboard, Mouse, Settings};
 use std::sync::Mutex;
-use std::time::Duration;
 use tauri::{AppHandle, Manager};
-
-const SLOW_TYPE_KEY_DELAY_MS: u64 = 15;
 
 /// Wrapper for Enigo to store in Tauri's managed state.
 /// Enigo is wrapped in a Mutex since it requires mutable access.
@@ -128,7 +125,7 @@ pub fn paste_text_direct(enigo: &mut Enigo, text: &str) -> Result<(), String> {
 /// Types text as individual keyboard clicks with short pauses between keys.
 /// This compatibility path is slower than `text()`, but remote desktop clients
 /// tend to handle it more like physical keyboard input.
-pub fn paste_text_slow(enigo: &mut Enigo, text: &str) -> Result<(), String> {
+pub fn paste_text_slow(enigo: &mut Enigo, text: &str, delay_ms: u64) -> Result<(), String> {
     for ch in text.chars() {
         match slow_type_key_for_char(ch) {
             Some(SlowTypeKey::Key { key, shift }) => {
@@ -163,7 +160,9 @@ pub fn paste_text_slow(enigo: &mut Enigo, text: &str) -> Result<(), String> {
             }
         }
 
-        std::thread::sleep(Duration::from_millis(SLOW_TYPE_KEY_DELAY_MS));
+        if delay_ms > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+        }
     }
 
     Ok(())

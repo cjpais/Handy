@@ -628,7 +628,7 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
             )?;
         }
         PasteMethod::DirectCompatibility => {
-            input::paste_text_slow(&mut enigo, &text)?;
+            input::paste_text_slow(&mut enigo, &text, settings.slow_direct_typing_delay_ms)?;
         }
         PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
             paste_via_clipboard(

@@ -303,7 +303,16 @@
           "none": "Žádné",
           "externalScript": "Externí skript"
         },
-        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh"
+        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh",
+        "slowDirectDelay": "Typing delay",
+        "slowDirectDelayOptions": {
+          "0": "Instant (0ms)",
+          "5": "Fast (5ms)",
+          "10": "Balanced (10ms)",
+          "15": "Compatible (15ms)",
+          "25": "Slow (25ms)",
+          "50": "Very slow (50ms)"
+        }
       },
       "typingTool": {
         "title": "Nástroj pro psaní",

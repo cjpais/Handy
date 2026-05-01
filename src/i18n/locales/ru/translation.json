@@ -303,7 +303,16 @@
           "none": "Нет",
           "externalScript": "Внешний скрипт"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "slowDirectDelay": "Typing delay",
+        "slowDirectDelayOptions": {
+          "0": "Instant (0ms)",
+          "5": "Fast (5ms)",
+          "10": "Balanced (10ms)",
+          "15": "Compatible (15ms)",
+          "25": "Slow (25ms)",
+          "50": "Very slow (50ms)"
+        }
       },
       "typingTool": {
         "title": "Инструмент ввода",

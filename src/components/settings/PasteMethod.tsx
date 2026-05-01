@@ -7,6 +7,11 @@ import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
 
+const SLOW_DIRECT_DELAY_OPTIONS = [0, 5, 10, 15, 25, 50].map((value) => ({
+  value: value.toString(),
+  label: value.toString(),
+}));
+
 interface PasteMethodProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
@@ -74,6 +79,7 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
     const selectedMethod = (getSetting("paste_method") ||
       "ctrl_v") as PasteMethod;
     const externalScriptPath = getSetting("external_script_path") || "";
+    const slowDirectDelayMs = getSetting("slow_direct_typing_delay_ms") ?? 15;
 
     const pasteMethodOptions = getPasteMethodOptions(osType);
 
@@ -106,6 +112,26 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
               )}
               disabled={isUpdating("external_script_path")}
             />
+          )}
+          {selectedMethod === "direct_compatibility" && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-text/80">
+                {t("settings.advanced.pasteMethod.slowDirectDelay")}
+              </span>
+              <Dropdown
+                options={SLOW_DIRECT_DELAY_OPTIONS.map((option) => ({
+                  ...option,
+                  label: t(
+                    `settings.advanced.pasteMethod.slowDirectDelayOptions.${option.value}`,
+                  ),
+                }))}
+                selectedValue={slowDirectDelayMs.toString()}
+                onSelect={(value) =>
+                  updateSetting("slow_direct_typing_delay_ms", Number(value))
+                }
+                disabled={isUpdating("slow_direct_typing_delay_ms")}
+              />
+            </div>
           )}
         </div>
       </SettingContainer>
