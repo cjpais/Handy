@@ -394,6 +394,10 @@
           "placeholderWithOptions": "Modell suchen oder auswählen",
           "placeholderNoOptions": "Modellnamen eingeben",
           "refreshModels": "Modelle aktualisieren"
+        },
+        "disableReasoning": {
+          "label": "Reasoning deaktivieren",
+          "description": "Überspringt den Denkmodus für schnellere Antworten. Empfohlen für die Nachbearbeitung, die selten von Reasoning profitiert."
         }
       },
       "prompts": {
