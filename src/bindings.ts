@@ -397,6 +397,11 @@ async changeWhisperGpuDevice(device: number) : Promise<Result<null, string>> {
 },
 /**
  * Return which accelerators and GPU devices are available for this build.
+ * 
+ * First-call cost is dominated by enumerating GPU devices through the
+ * whisper.cpp Metal/Vulkan backend, which loads dynamic libraries and
+ * probes hardware. Run it on the blocking pool so the webview thread
+ * stays responsive — see also the startup pre-warm in `lib.rs`.
  */
 async getAvailableAccelerators() : Promise<AvailableAccelerators> {
     return await TAURI_INVOKE("get_available_accelerators");
