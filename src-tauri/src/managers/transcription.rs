@@ -24,6 +24,8 @@ use transcribe_rs::{
         sense_voice::{SenseVoiceModel, SenseVoiceParams},
         Quantization,
     },
+    transcriber::{Transcriber, VadChunked, VadChunkedConfig},
+    vad::{SileroVad, SmoothedVad},
     whisper_cpp::{WhisperEngine, WhisperInferenceParams},
     SpeechModel, TranscribeOptions,
 };
@@ -42,7 +44,7 @@ enum LoadedEngine {
     Moonshine(MoonshineModel),
     MoonshineStreaming(StreamingModel),
     SenseVoice(SenseVoiceModel),
-    GigaAM(GigaAMModel),
+    GigaAM(GigaAMModel, VadChunked),
     Canary(CanaryModel),
     Cohere(CohereModel),
 }
@@ -359,7 +361,27 @@ impl TranscriptionManager {
                     emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
                 })?;
-                LoadedEngine::GigaAM(engine)
+                // GigaAM-v3 was trained on ≤25-30s segments; longer audio breaks
+                // the model. Wrap inference in a VadChunked so the model only
+                // sees short chunks. See `build_longform_chunker` below.
+                let vad_path = self
+                    .app_handle
+                    .path()
+                    .resolve(
+                        "resources/models/silero_vad_v4.onnx",
+                        tauri::path::BaseDirectory::Resource,
+                    )
+                    .map_err(|e| {
+                        let error_msg = format!("Failed to resolve Silero VAD path: {}", e);
+                        emit_loading_failed(&error_msg);
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                let chunker = build_longform_chunker(&vad_path).map_err(|e| {
+                    let error_msg = format!("Failed to build longform chunker: {}", e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(e)
+                })?;
+                LoadedEngine::GigaAM(engine, chunker)
             }
             EngineType::Canary => {
                 let engine = CanaryModel::load(&model_path, &Quantization::Int8).map_err(|e| {
@@ -593,8 +615,8 @@ impl TranscriptionManager {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
-                        LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
+                        LoadedEngine::GigaAM(gigaam_engine, chunker) => chunker
+                            .transcribe(gigaam_engine, &audio)
                             .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
                         LoadedEngine::Canary(canary_engine) => {
                             let lang = if validated_language == "auto" {
@@ -731,6 +753,37 @@ impl TranscriptionManager {
 
         Ok(final_result)
     }
+}
+
+/// Build a `VadChunked` chunker tuned for long-form ASR.
+///
+/// Targets CTC models trained on short segments (≤25-30s) — currently only
+/// GigaAM-v3 in Handy, but other models with the same limitation can reuse
+/// this same builder. If parameters need to differ between models, promote
+/// the hardcoded values to function arguments.
+///
+/// Algorithm reference: Sber's `segment_audio_file` in
+/// <https://github.com/salute-developers/GigaAM/blob/main/gigaam/vad_utils.py>.
+fn build_longform_chunker(vad_path: &std::path::Path) -> Result<VadChunked, anyhow::Error> {
+    let silero = SileroVad::new(vad_path, 0.3)
+        .map_err(|e| anyhow::anyhow!("Failed to load Silero VAD for longform chunker: {}", e))?;
+    // SmoothedVad: prefill=15 (450ms history before onset, recovers attack of
+    // first word), hangover=30 (900ms patience after speech ends — emulates
+    // Sber's greedy packing of pyannote segments separated by short pauses),
+    // onset=2 (60ms of consecutive speech required to confirm onset).
+    let smoothed = SmoothedVad::new(Box::new(silero), 15, 30, 2);
+    let config = VadChunkedConfig {
+        min_chunk_secs: 0.2,                // = Sber's `new_chunk_threshold`
+        max_chunk_secs: 30.0,               // = Sber's `strict_limit_duration`
+        padding_secs: 0.0,                  // Sber pipeline does not pad; CTC tolerates raw edges
+        smart_split_search_secs: Some(3.0), // upgrade over Sber's uniform-time split
+        merge_separator: " ".into(),
+    };
+    Ok(VadChunked::new(
+        Box::new(smoothed),
+        config,
+        TranscribeOptions::default(),
+    ))
 }
 
 /// Apply the user's accelerator preferences to the transcribe-rs global atomics.
