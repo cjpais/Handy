@@ -200,6 +200,7 @@
     "models": {
       "title": "מודלי תמלול",
       "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
+      "searchPlaceholder": "Search models...",
       "yourModels": "מודלים שהורדו",
       "availableModels": "זמינים להורדה",
       "downloaded": "הורד",
@@ -569,6 +570,7 @@
     "update": "עדכן",
     "close": "סגור",
     "open": "פתח",
+    "clear": "Clear",
     "default": "ברירת מחדל",
     "enabled": "פעיל",
     "disabled": "כבוי",

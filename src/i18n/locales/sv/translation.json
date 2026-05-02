@@ -200,6 +200,7 @@
     "models": {
       "title": "Transkriptionsmodeller",
       "description": "Välj en transkriptionsmodell eller ladda ner ytterligare modeller. Olika modeller erbjuder varierande nivåer av noggrannhet och hastighet.",
+      "searchPlaceholder": "Search models...",
       "yourModels": "Nedladdade modeller",
       "availableModels": "Tillgängliga att ladda ner",
       "downloaded": "Nedladdad",
@@ -569,6 +570,7 @@
     "update": "Uppdatera",
     "close": "Stäng",
     "open": "Öppna",
+    "clear": "Clear",
     "default": "Standard",
     "enabled": "Aktiverad",
     "disabled": "Inaktiverad",

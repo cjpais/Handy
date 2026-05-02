@@ -200,6 +200,7 @@
     "models": {
       "title": "Transcription Models",
       "description": "Select a transcription model or download additional models. Different models offer varying levels of accuracy and speed.",
+      "searchPlaceholder": "Search models...",
       "yourModels": "Downloaded Models",
       "availableModels": "Available to Download",
       "downloaded": "Downloaded",
@@ -569,6 +570,7 @@
     "update": "Update",
     "close": "Close",
     "open": "Open",
+    "clear": "Clear",
     "default": "Default",
     "enabled": "Enabled",
     "disabled": "Disabled",

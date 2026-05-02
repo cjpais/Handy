@@ -158,6 +158,7 @@
     "models": {
       "title": "Modely přepisu",
       "description": "Vyberte model přepisu nebo stáhněte další modely. Různé modely nabízejí různé úrovně přesnosti a rychlosti.",
+      "searchPlaceholder": "Search models...",
       "downloaded": "Staženo",
       "available": "K dispozici ke stažení",
       "deleteConfirm": "Opravdu chcete smazat {{modelName}}? Pro opětovné použití jej budete muset znovu stáhnout.",
@@ -569,6 +570,7 @@
     "update": "Aktualizovat",
     "close": "Zavřít",
     "open": "Otevřít",
+    "clear": "Clear",
     "default": "Výchozí",
     "enabled": "Zapnuto",
     "disabled": "Vypnuto",
