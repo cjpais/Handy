@@ -274,6 +274,10 @@
         "label": "Starta dold",
         "description": "Starta i systemfältet utan att öppna fönstret."
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "Starta vid uppstart",
         "description": "Starta Handy automatiskt när du loggar in på din dator."

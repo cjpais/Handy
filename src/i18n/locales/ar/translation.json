@@ -252,6 +252,10 @@
         "label": "بدء مخفي",
         "description": ".التشغيل في صينية النظام دون فتح النافذة"
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "التشغيل عند بدء التشغيل",
         "description": ".بدء تشغيل Handy تلقائياً عند تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك"

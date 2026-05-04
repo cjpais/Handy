@@ -274,6 +274,10 @@
         "label": "Avvia in Background",
         "description": "Avvia l'applicazione in background senza aprire la finestra."
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "Avvia all'Accensione",
         "description": "Avvia Handy automaticamente quando accedi al computer."

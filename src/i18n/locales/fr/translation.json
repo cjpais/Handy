@@ -274,6 +274,10 @@
         "label": "Démarrer masqué",
         "description": "Lancer dans la barre système sans ouvrir la fenêtre."
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "Lancer au démarrage",
         "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."

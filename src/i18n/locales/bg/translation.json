@@ -274,6 +274,10 @@
         "label": "Стартиране скрито",
         "description": "Стартиране в системната област без отваряне на прозореца."
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "Стартиране със системата",
         "description": "Автоматично стартиране на Handy при влизане в профила ви."

@@ -274,6 +274,10 @@
         "label": "隱藏啟動",
         "description": "啟動至系統匣而不開啟視窗"
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "開機啟動",
         "description": "登入電腦時自動啟動 Handy"

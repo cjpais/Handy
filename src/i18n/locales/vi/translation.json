@@ -274,6 +274,10 @@
         "label": "Khởi động ẩn",
         "description": "Khởi động vào khay hệ thống mà không mở cửa sổ."
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "Khởi động cùng hệ thống",
         "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."

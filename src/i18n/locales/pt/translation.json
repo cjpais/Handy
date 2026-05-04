@@ -274,6 +274,10 @@
         "label": "Iniciar Oculto",
         "description": "Iniciar na bandeja do sistema sem abrir a janela."
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "Iniciar na Inicialização",
         "description": "Iniciar automaticamente o Handy quando você fizer login no seu computador."

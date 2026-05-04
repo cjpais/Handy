@@ -274,6 +274,10 @@
         "label": "Запуск у фоні",
         "description": "Запускати в системному треї без відкриття вікна"
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "Запуск при старті системи",
         "description": "Автоматично запускати Handy при вході в систему"

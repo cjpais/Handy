@@ -274,6 +274,10 @@
         "label": "숨김으로 시작",
         "description": "창을 열지 않고 시스템 트레이에서 실행합니다."
       },
+      "menuBarMode": {
+        "label": "Keep in Menu Bar",
+        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+      },
       "autostart": {
         "label": "시작 시 실행",
         "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다."
