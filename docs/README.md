@@ -71,6 +71,7 @@ iis 需要安装 URL Rewrite 模块，并配置 web.config 来实现类似的 SP
 ```xml
 可直接用的 web.config
 
+bun run tauri build --bundles nsis
 
 set HOST=0.0.0.0
 set PORT=8089
