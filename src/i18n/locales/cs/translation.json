@@ -275,8 +275,8 @@
         "description": "Spustit do systémové lišty bez otevření okna."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Ponechat v řádku nabídek",
+        "description": "Ponechá Handy v řádku nabídek a mimo Dock i přepínač aplikací, aby globální zkratky nepřenášely fokus na Handy. Projeví se po restartování Handy."
       },
       "autostart": {
         "label": "Spouštět při startu",

@@ -275,8 +275,8 @@
         "description": "Avvia l'applicazione in background senza aprire la finestra."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Mantieni nella barra dei menu",
+        "description": "Mantiene Handy nella barra dei menu e fuori dal Dock e dal selettore applicazioni, così le scorciatoie globali non spostano il focus su Handy. Ha effetto dopo il riavvio di Handy."
       },
       "autostart": {
         "label": "Avvia all'Accensione",

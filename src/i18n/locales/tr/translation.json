@@ -275,8 +275,8 @@
         "description": "Pencereyi açmadan sistem tepsisinde başlatır."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Menü Çubuğunda Tut",
+        "description": "Handy'yi menü çubuğunda tutar; Dock ve uygulama değiştiricinin dışında bırakarak global kısayolların odağı Handy'ye çekmesini önler. Handy yeniden başlatıldıktan sonra etkili olur."
       },
       "autostart": {
         "label": "Başlangıçta Çalıştır",

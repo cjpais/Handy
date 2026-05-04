@@ -275,8 +275,8 @@
         "description": "In den Systembereich starten, ohne das Fenster zu öffnen."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "In der Menüleiste behalten",
+        "description": "Handy in der Menüleiste behalten und aus Dock und App-Umschalter ausblenden, damit globale Tastenkürzel den Fokus nicht auf Handy ziehen. Wird nach einem Neustart von Handy wirksam."
       },
       "autostart": {
         "label": "Beim Start ausführen",

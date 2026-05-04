@@ -275,8 +275,8 @@
         "description": "הפעל לתוך מגש המערכת בלי לפתוח את החלון."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "השאר בשורת התפריטים",
+        "description": "השאר את Handy בשורת התפריטים ומחוץ ל-Dock ולמחליף היישומים, כדי שקיצורי דרך גלובליים לא יעבירו אליו את המיקוד. נכנס לתוקף לאחר הפעלה מחדש של Handy."
       },
       "autostart": {
         "label": "הפעל עם עליית המערכת",

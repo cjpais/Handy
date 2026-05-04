@@ -275,8 +275,8 @@
         "description": "Khởi động vào khay hệ thống mà không mở cửa sổ."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Giữ trong thanh menu",
+        "description": "Giữ Handy trong thanh menu và ngoài Dock cũng như trình chuyển đổi ứng dụng để phím tắt toàn cục không kéo tiêu điểm về Handy. Có hiệu lực sau khi khởi động lại Handy."
       },
       "autostart": {
         "label": "Khởi động cùng hệ thống",

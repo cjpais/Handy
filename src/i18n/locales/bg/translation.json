@@ -275,8 +275,8 @@
         "description": "Стартиране в системната област без отваряне на прозореца."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Оставане в лентата с менюта",
+        "description": "Дръжте Handy в лентата с менюта и извън Dock и превключвателя на приложения, за да не отнемат глобалните клавишни комбинации фокуса. Влиза в сила след рестартиране на Handy."
       },
       "autostart": {
         "label": "Стартиране със системата",

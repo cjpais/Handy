@@ -253,8 +253,8 @@
         "description": ".التشغيل في صينية النظام دون فتح النافذة"
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "الإبقاء في شريط القوائم",
+        "description": ".أبقِ Handy في شريط القوائم وخارج Dock ومبدّل التطبيقات حتى لا تسحب الاختصارات العامة التركيز. يسري ذلك بعد إعادة تشغيل Handy"
       },
       "autostart": {
         "label": "التشغيل عند بدء التشغيل",

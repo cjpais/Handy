@@ -275,8 +275,8 @@
         "description": "Lancer dans la barre système sans ouvrir la fenêtre."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Garder dans la barre des menus",
+        "description": "Garde Handy dans la barre des menus et hors du Dock et du sélecteur d'applications afin que les raccourcis globaux ne ramènent pas le focus sur Handy. Prend effet après le redémarrage de Handy."
       },
       "autostart": {
         "label": "Lancer au démarrage",

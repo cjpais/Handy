@@ -275,8 +275,8 @@
         "description": "Starta i systemfältet utan att öppna fönstret."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Behåll i menyraden",
+        "description": "Behåller Handy i menyraden och utanför Dock och appväxlaren så att globala genvägar inte flyttar fokus till Handy. Börjar gälla efter att Handy har startats om."
       },
       "autostart": {
         "label": "Starta vid uppstart",

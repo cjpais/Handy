@@ -275,8 +275,8 @@
         "description": "창을 열지 않고 시스템 트레이에서 실행합니다."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "메뉴 막대에 유지",
+        "description": "Handy를 메뉴 막대에 유지하고 Dock과 앱 전환기에서 제외하여 전역 단축키가 포커스를 가져오지 않게 합니다. Handy를 다시 시작한 후 적용됩니다."
       },
       "autostart": {
         "label": "시작 시 실행",

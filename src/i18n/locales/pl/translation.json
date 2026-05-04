@@ -275,8 +275,8 @@
         "description": "Uruchom w zasobniku systemowym bez otwierania okna."
       },
       "menuBarMode": {
-        "label": "Keep in Menu Bar",
-        "description": "Keep Handy in the menu bar and out of the Dock and app switcher so global shortcuts do not pull focus. Takes effect after Handy restarts."
+        "label": "Pozostaw w pasku menu",
+        "description": "Pozostawia Handy na pasku menu, poza Dockiem i przełącznikiem aplikacji, aby globalne skróty nie przenosiły fokusu na Handy. Zacznie działać po ponownym uruchomieniu Handy."
       },
       "autostart": {
         "label": "Uruchamiaj przy starcie",
