@@ -5,6 +5,8 @@ use std::thread;
 use rdev::{listen, Button, Event, EventType};
 #[cfg(target_os = "macos")]
 use tauri::AppHandle;
+#[cfg(target_os = "macos")]
+use tauri::Manager;
 
 #[cfg(target_os = "macos")]
 use crate::TranscriptionCoordinator;
