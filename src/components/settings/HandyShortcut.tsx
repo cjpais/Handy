@@ -313,17 +313,17 @@ export const HandyShortcut: React.FC<HandyShortcutProps> = ({
       disabled={disabled}
       layout="horizontal"
     >
-      <div className="flex items-center space-x-1">
+      <div className="flex w-full min-w-0 items-center space-x-1 sm:w-auto">
         {editingShortcutId === shortcutId ? (
           <div
             ref={(ref) => setShortcutRef(shortcutId, ref)}
-            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded min-w-[120px] text-center"
+            className="min-w-0 max-w-full px-2 py-1 text-center text-sm font-semibold break-words border border-logo-primary bg-logo-primary/30 rounded sm:min-w-[120px]"
           >
             {formatCurrentKeys()}
           </div>
         ) : (
           <div
-            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
+            className="min-w-0 max-w-full px-2 py-1 text-sm font-semibold break-words bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary"
             onClick={() => startRecording(shortcutId)}
           >
             {formatKeyCombination(binding.current_binding, osType)}

@@ -110,7 +110,9 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
 
   // Horizontal layout
   return (
-    <div className={`flex items-center justify-between gap-4 ${baseClasses}`}>
+    <div
+      className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${baseClasses}`}
+    >
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           <h3 className={labelClasses}>{title}</h3>
@@ -124,7 +126,9 @@ export const SettingContainer: React.FC<SettingContainerProps> = ({
           <p className={descClasses}>{description}</p>
         )}
       </div>
-      <div className="relative shrink-0">{children}</div>
+      <div className="relative w-full min-w-0 sm:w-auto sm:shrink-0">
+        {children}
+      </div>
     </div>
   );
 };
