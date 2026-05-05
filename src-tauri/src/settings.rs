@@ -412,8 +412,7 @@ pub struct AppSettings {
     pub ai_channels: Option<Vec<AiChannelConfig>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(debug_assertions, derive(specta::Type))]
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct AiChannelConfig {
     pub id: String,
     pub visible: bool,

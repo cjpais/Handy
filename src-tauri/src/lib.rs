@@ -65,6 +65,30 @@ fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     }
 }
 
+pub(crate) fn app_webview_url(path: &str) -> tauri::WebviewUrl {
+    let normalized = match path.trim_start_matches('/') {
+        "" => "index.html",
+        value => value,
+    };
+
+    #[cfg(dev)]
+    {
+        tauri::WebviewUrl::App(normalized.into())
+    }
+
+    #[cfg(not(dev))]
+    {
+        #[cfg(any(windows, target_os = "android"))]
+        let base = "http://tauri.localhost";
+        #[cfg(not(any(windows, target_os = "android")))]
+        let base = "tauri://localhost";
+
+        let url = tauri::Url::parse(&format!("{base}/{normalized}"))
+            .expect("invalid bundled webview URL");
+        tauri::WebviewUrl::External(url)
+    }
+}
+
 fn build_console_filter() -> env_filter::Filter {
     let mut builder = EnvFilterBuilder::new();
 
@@ -543,8 +567,11 @@ pub fn run(cli_args: CliArgs) {
 
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)
-            let mut win_builder =
-                tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
+            let mut win_builder = tauri::WebviewWindowBuilder::new(
+                app,
+                "main",
+                app_webview_url("index.html"),
+            )
                     .title("美声智能AI")
                     .inner_size(1200.0, 860.0)
                     .min_inner_size(1200.0, 860.0)

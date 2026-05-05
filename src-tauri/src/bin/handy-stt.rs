@@ -14,13 +14,11 @@ use std::time::{Duration, Instant};
 use tar::Archive;
 use tokio::sync::mpsc;
 use transcribe_rs::{
-    engines::{
-        parakeet::{
-            ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
-        },
-        whisper::{WhisperEngine, WhisperInferenceParams},
+    onnx::{
+        parakeet::{ParakeetModel, ParakeetParams, TimestampGranularity},
+        Quantization,
     },
-    TranscriptionEngine,
+    whisper_cpp::{WhisperEngine, WhisperInferenceParams},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -156,7 +154,7 @@ struct DownloadProgress {
 
 enum LoadedEngine {
     Whisper(WhisperEngine),
-    Parakeet(ParakeetEngine),
+    Parakeet(ParakeetModel),
 }
 
 struct AppState {
@@ -236,12 +234,7 @@ impl AppState {
 
     fn unload_model(&self) -> Result<()> {
         let mut guard = self.engine.lock().unwrap();
-        if let Some((_id, mut loaded_engine)) = guard.take() {
-            match &mut loaded_engine {
-                LoadedEngine::Whisper(engine) => engine.unload_model(),
-                LoadedEngine::Parakeet(engine) => engine.unload_model(),
-            };
-        }
+        let _ = guard.take();
         Ok(())
     }
 
@@ -260,16 +253,12 @@ impl AppState {
 
         let loaded = match spec.engine_type {
             EngineType::Whisper => {
-                let mut engine = WhisperEngine::new();
-                engine
-                    .load_model(&model_path)
+                let engine = WhisperEngine::load(&model_path)
                     .map_err(|e| anyhow!("failed to load whisper model {model_id}: {e}"))?;
                 LoadedEngine::Whisper(engine)
             }
             EngineType::Parakeet => {
-                let mut engine = ParakeetEngine::new();
-                engine
-                    .load_model_with_params(&model_path, ParakeetModelParams::int8())
+                let engine = ParakeetModel::load(&model_path, &Quantization::Int8)
                     .map_err(|e| anyhow!("failed to load parakeet model {model_id}: {e}"))?;
                 LoadedEngine::Parakeet(engine)
             }
@@ -314,17 +303,17 @@ impl AppState {
                 };
 
                 whisper
-                    .transcribe_samples(samples_16k, Some(params))
+                    .transcribe_with(&samples_16k, &params)
                     .map_err(|e| anyhow!("whisper transcription failed: {e}"))?
             }
             LoadedEngine::Parakeet(parakeet) => {
-                let params = ParakeetInferenceParams {
-                    timestamp_granularity: TimestampGranularity::Segment,
+                let params = ParakeetParams {
+                    timestamp_granularity: Some(TimestampGranularity::Segment),
                     ..Default::default()
                 };
 
                 parakeet
-                    .transcribe_samples(samples_16k, Some(params))
+                    .transcribe_with(&samples_16k, &params)
                     .map_err(|e| anyhow!("parakeet transcription failed: {e}"))?
             }
         };

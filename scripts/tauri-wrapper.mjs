@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import os from "node:os";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 function isWindows() {
@@ -87,6 +86,21 @@ function commandExists(command) {
   return result.status === 0;
 }
 
+function resolveLocalBin(command) {
+  const names = isWindows()
+    ? [`${command}.exe`, `${command}.cmd`, `${command}.bunx`, command]
+    : [command];
+
+  for (const name of names) {
+    const candidate = path.join(process.cwd(), "node_modules", ".bin", name);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return command;
+}
+
 function shouldApplyLocalBuildConfig(args) {
   return args.length > 0 && args[0] === "build";
 }
@@ -105,22 +119,41 @@ function maybeAddUnsignedBuildConfig(args) {
   if (hasConfigOverride(args)) return args;
   if (commandExists("trusted-signing-cli")) return args;
 
-  const baseConfigPath = path.join(process.cwd(), "src-tauri", "tauri.conf.json");
+  const projectRoot = process.cwd();
+  const baseConfigPath = path.join(projectRoot, "src-tauri", "tauri.conf.json");
   if (!existsSync(baseConfigPath)) return args;
 
-  const config = JSON.parse(readFileSync(baseConfigPath, "utf8"));
-  if (!config?.bundle?.windows?.signCommand) return args;
-  config.bundle.windows.signCommand = "where.exe /q cmd";
-  config.bundle.createUpdaterArtifacts = false;
+  const baseConfig = JSON.parse(readFileSync(baseConfigPath, "utf8"));
+  if (!baseConfig?.bundle?.windows?.signCommand) return args;
+
+  const tmpDir = mkdtempSync(path.join(projectRoot, "src-tauri", "tauri-wrapper-"));
+
+  const config = {
+    build: {
+      // Tauri treats quoted --cwd values literally on Windows, so keep the
+      // path unquoted here and use Bun's supported flag order.
+      beforeBuildCommand: `bun run --cwd ${projectRoot} build`,
+      frontendDist: "../dist",
+    },
+    bundle: {
+      createUpdaterArtifacts: false,
+      windows: {
+        signCommand: "where.exe /q cmd",
+      },
+    },
+  };
+
   if (!hasBundlesOverride(args)) {
     config.bundle.targets = "nsis";
   }
 
-  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "handy-tauri-"));
   const tmpConfigPath = path.join(tmpDir, "tauri.local.conf.json");
   writeFileSync(tmpConfigPath, JSON.stringify(config, null, 2), "utf8");
 
   console.log("[tauri-wrapper] trusted-signing-cli not found, using local unsigned NSIS build config.");
+  process.on("exit", () => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
   return [...args, "--config", tmpConfigPath];
 }
 
@@ -140,7 +173,7 @@ if (isWindows()) {
 }
 
 const args = maybeAddUnsignedBuildConfig(process.argv.slice(2));
-const tauriCommand = "tauri";
+const tauriCommand = resolveLocalBin("tauri");
 const result = spawnSync(tauriCommand, args, {
   stdio: "inherit",
   env: process.env,

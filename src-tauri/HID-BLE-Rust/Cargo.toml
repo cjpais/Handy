@@ -12,3 +12,6 @@ log = "0.4"
 
 [target.'cfg(windows)'.dependencies]
 hidapi = { version = "2", default-features = false, features = ["windows-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+hidapi = { version = "2", default-features = false, features = ["macos-shared-device"] }

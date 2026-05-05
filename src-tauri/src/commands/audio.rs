@@ -1,6 +1,7 @@
 use crate::audio_feedback;
 use crate::audio_toolkit::audio::{list_input_devices, list_output_devices};
 use crate::managers::audio::{AudioRecordingManager, MicrophoneMode};
+use crate::managers::hid_mouse::HidMouseMonitorState;
 use crate::settings::{get_settings, write_settings};
 use log::warn;
 use serde::{Deserialize, Serialize};
@@ -225,14 +226,31 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
         .unwrap_or_else(|| "default".to_string()))
 }
 
-/// Returns the friendly name of the AI mouse receiver's microphone endpoint
-/// when the receiver is currently plugged in, otherwise `None`. The frontend
-/// uses this to relabel the "Default" option in the microphone picker and
-/// to disable selection — recording is locked to the AI mouse mic.
+/// Returns the AI mouse audio source label when available. Prefer the system
+/// microphone endpoint name when the receiver exposes one; otherwise fall back
+/// to a synthetic HID label while private-HID audio is active.
 #[tauri::command]
 #[specta::specta]
-pub fn get_ai_mouse_microphone_name() -> Option<String> {
-    AudioRecordingManager::ai_mouse_microphone_name()
+pub fn get_ai_mouse_microphone_name(app: AppHandle) -> Option<String> {
+    if let Some(name) = AudioRecordingManager::ai_mouse_microphone_name() {
+        return Some(name);
+    }
+
+    app.try_state::<Arc<HidMouseMonitorState>>()
+        .and_then(|state| {
+            state
+                .snapshot()
+                .matched_devices
+                .into_iter()
+                .next()
+                .map(|device| {
+                    if device.type_name.is_empty() {
+                        "AI Mouse (HID)".to_string()
+                    } else {
+                        format!("{} (HID)", device.type_name)
+                    }
+                })
+        })
 }
 
 #[tauri::command]

@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tauri::Manager;
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 use crate::managers::hid_mouse::HidMouseMonitorState;
 
 fn set_mute(mute: bool) {
@@ -196,14 +196,14 @@ impl AudioRecordingManager {
     /// Returns `true` when an AI mouse is connected via HID and its audio
     /// arrives over the private HID protocol rather than as a WASAPI endpoint.
     fn hid_mouse_is_active(&self) -> bool {
-        #[cfg(windows)]
+        #[cfg(any(windows, target_os = "macos"))]
         {
             self.app_handle
                 .try_state::<Arc<HidMouseMonitorState>>()
                 .map(|s| !s.snapshot().matched_devices.is_empty())
                 .unwrap_or(false)
         }
-        #[cfg(not(windows))]
+        #[cfg(not(any(windows, target_os = "macos")))]
         false
     }
 
@@ -227,8 +227,7 @@ impl AudioRecordingManager {
             "未检测到鼠标麦克风：请确认 AI 鼠标接收器已正确插入 USB 端口。".to_string()
         })?;
 
-        let devices = list_input_devices()
-            .map_err(|e| format!("枚举音频输入设备失败：{e}"))?;
+        let devices = list_input_devices().map_err(|e| format!("枚举音频输入设备失败：{e}"))?;
 
         let chosen = devices
             .into_iter()
@@ -487,7 +486,11 @@ impl AudioRecordingManager {
                     info!("stop_recording: recorder lock acquired, sending Cmd::Stop");
                     match rec.stop() {
                         Ok(buf) => {
-                            info!("stop_recording: rec.stop() returned {} samples in {:?}", buf.len(), t0.elapsed());
+                            info!(
+                                "stop_recording: rec.stop() returned {} samples in {:?}",
+                                buf.len(),
+                                t0.elapsed()
+                            );
                             buf
                         }
                         Err(e) => {

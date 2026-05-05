@@ -2428,6 +2428,7 @@ version = "0.7.10"
 dependencies = [
  "aimouse_device_init",
  "anyhow",
+ "base64 0.22.1",
  "chrono",
  "clap",
  "cpal",

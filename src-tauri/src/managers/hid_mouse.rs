@@ -7,17 +7,25 @@ use serde::Serialize;
 use specta::Type;
 use tauri::{AppHandle, Emitter, Manager};
 
-#[cfg(windows)]
+#[cfg(target_os = "macos")]
+use aimouse_device_init::macos_impl::{
+    MacosHidStarter as PlatformHidStarter,
+    MacosManufacturerResolver as PlatformManufacturerResolver,
+    MacosUsbHidProvider as PlatformUsbHidProvider, MoserDispatcher,
+};
+#[cfg(any(windows, target_os = "macos"))]
 use aimouse_device_init::models::Mouser;
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 use aimouse_device_init::moser_hid_startup::{
     ButtonFunctionDefinition, ConnectionMode, HandlerConfig, MoserHost,
 };
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 use aimouse_device_init::ports::{HidStarter, ManufacturerResolver, UsbHidProvider};
 #[cfg(windows)]
 use aimouse_device_init::windows_impl::{
-    MoserDispatcher, WindowsHidStarter, WindowsManufacturerResolver, WindowsUsbHidProvider,
+    MoserDispatcher, WindowsHidStarter as PlatformHidStarter,
+    WindowsManufacturerResolver as PlatformManufacturerResolver,
+    WindowsUsbHidProvider as PlatformUsbHidProvider,
 };
 
 #[derive(Debug, Clone, Serialize, Type, PartialEq, Eq, Default)]
@@ -73,28 +81,28 @@ impl HidMouseMonitorState {
 pub fn start_hid_mouse_monitor(app: &AppHandle) -> Arc<HidMouseMonitorState> {
     let state = Arc::new(HidMouseMonitorState::new());
 
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "macos"))]
     {
-        let starter = Arc::new(WindowsHidStarter::new());
+        let starter = Arc::new(PlatformHidStarter::new());
         install_hid_dispatcher(app.clone(), Arc::clone(&starter));
-        spawn_windows_hid_mouse_monitor(app.clone(), Arc::clone(&state), Arc::clone(&starter));
+        spawn_hid_mouse_monitor(app.clone(), Arc::clone(&state), Arc::clone(&starter));
     }
 
-    #[cfg(not(windows))]
-    log::info!("HID mouse monitor is only enabled on Windows");
+    #[cfg(not(any(windows, target_os = "macos")))]
+    log::info!("HID mouse monitor is only enabled on Windows and macOS");
 
     state
 }
 
-#[cfg(windows)]
-fn spawn_windows_hid_mouse_monitor(
+#[cfg(any(windows, target_os = "macos"))]
+fn spawn_hid_mouse_monitor(
     app: AppHandle,
     state: Arc<HidMouseMonitorState>,
-    starter: Arc<WindowsHidStarter>,
+    starter: Arc<PlatformHidStarter>,
 ) {
     thread::spawn(move || {
-        let provider = WindowsUsbHidProvider::default();
-        let resolver = WindowsManufacturerResolver::with_default_rules();
+        let provider = PlatformUsbHidProvider::default();
+        let resolver = PlatformManufacturerResolver::with_default_rules();
         let poll_interval = Duration::from_secs(5);
         let mut previous = HidMouseMonitorSnapshot::default();
         let mut has_emitted_snapshot = false;
@@ -165,8 +173,8 @@ fn spawn_windows_hid_mouse_monitor(
 /// Installs the parser/dispatcher callback on the HID starter. Every HID
 /// input report is forwarded into a [`MoserHidStartupHandler`] which, when it
 /// recognises a voice-key press/release, triggers Handy's transcribe shortcut.
-#[cfg(windows)]
-fn install_hid_dispatcher(app: AppHandle, starter: Arc<WindowsHidStarter>) {
+#[cfg(any(windows, target_os = "macos"))]
+fn install_hid_dispatcher(app: AppHandle, starter: Arc<PlatformHidStarter>) {
     // Manufacturer == 1 is the only USB-receiver branch the parser actually
     // executes (the C# code's `Manufacturer == 0` branch is intentionally
     // skipped in the Rust port). Match the rule we declared for the receiver.
@@ -197,21 +205,20 @@ fn install_hid_dispatcher(app: AppHandle, starter: Arc<WindowsHidStarter>) {
 /// Each press pulse is interpreted by the coordinator as a toggle: idle →
 /// recording, recording → idle.
 // ── IMA ADPCM step table ─────────────────────────────────────────────────── //
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 static IMA_STEP_TABLE: [i32; 89] = [
-    7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60,
-    66, 73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371,
-    408, 449, 494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878,
-    2066, 2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845,
-    8630, 9493, 10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086,
-    29794, 32767,
+    7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66,
+    73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449,
+    494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272,
+    2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493,
+    10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
 ];
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 static IMA_INDEX_TABLE: [i32; 16] = [-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8];
 
 /// Decode one IMA ADPCM nibble given the running predictor and step_index.
 /// Returns the new (predicted_sample, step_index).
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn ima_decode_nibble(nibble: u8, predicted: i32, step_index: i32) -> (i32, i32) {
     let step = IMA_STEP_TABLE[step_index as usize];
     let sign = nibble & 0x8;
@@ -235,7 +242,7 @@ fn ima_decode_nibble(nibble: u8, predicted: i32, step_index: i32) -> (i32, i32) 
     (new_predicted, new_index)
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 struct HandyMoserHost {
     app: AppHandle,
     /// Tracks the recording intent we last asserted, so a duplicated `start`
@@ -252,14 +259,14 @@ struct HandyMoserHost {
     adpcm_step_index: i32,
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 const HANDY_HID_TRANSITION_DEBOUNCE: Duration = Duration::from_millis(300);
 
 /// The AI mouse sends audio at 8 000 Hz mono; Whisper needs 16 000 Hz.
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 const HID_AUDIO_SAMPLE_RATE: u32 = 8000;
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 impl HandyMoserHost {
     fn new(app: AppHandle) -> Self {
         Self {
@@ -294,10 +301,7 @@ impl HandyMoserHost {
     /// regardless of the user's setting — releases coming from the HID
     /// parser are intentionally swallowed.
     fn pulse_transcribe(&self) {
-        if let Some(coordinator) = self
-            .app
-            .try_state::<crate::TranscriptionCoordinator>()
-        {
+        if let Some(coordinator) = self.app.try_state::<crate::TranscriptionCoordinator>() {
             coordinator.send_input("transcribe", "hid-mouse-voice", true, false);
         } else {
             log::warn!("TranscriptionCoordinator missing — HID voice key dropped");
@@ -305,7 +309,7 @@ impl HandyMoserHost {
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 impl MoserHost for HandyMoserHost {
     type Error = ();
 
@@ -387,6 +391,16 @@ impl MoserHost for HandyMoserHost {
             if let Some(main_window) = app_handle.get_webview_window("main") {
                 let _ = main_window.hide();
             }
+
+            #[cfg(target_os = "macos")]
+            {
+                let settings = crate::settings::get_settings(&app_handle);
+                let tray_visible =
+                    settings.show_tray_icon && !app_handle.state::<crate::CliArgs>().no_tray;
+                if tray_visible {
+                    let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                }
+            }
         });
         Ok(())
     }
@@ -433,11 +447,15 @@ impl MoserHost for HandyMoserHost {
     }
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn show_main_window_from_mouse(app: &AppHandle) {
     let app_handle = app.clone();
     let _ = app.run_on_main_thread(move || {
         if let Some(main_window) = app_handle.get_webview_window("main") {
+            #[cfg(target_os = "macos")]
+            {
+                let _ = app_handle.set_activation_policy(tauri::ActivationPolicy::Regular);
+            }
             if let Err(error) = main_window.unminimize() {
                 log::error!("Failed to unminimize main window from HID mouse: {}", error);
             }
@@ -451,7 +469,7 @@ fn show_main_window_from_mouse(app: &AppHandle) {
     });
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn scan_matching_hid_mice<U, R>(provider: &U, resolver: &R) -> Result<Vec<DetectedHidMouse>, String>
 where
     U: UsbHidProvider,
@@ -510,7 +528,7 @@ where
     Ok(matched_devices)
 }
 
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "macos"))]
 fn log_snapshot_change(previous: &HidMouseMonitorSnapshot, next: &HidMouseMonitorSnapshot) {
     match (&previous.last_error, &next.last_error) {
         (None, Some(error)) => log::error!("HID mouse monitor failed: {}", error),

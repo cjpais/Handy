@@ -52,6 +52,7 @@ cpal = "0.16.0"
 anyhow = "1.0.95"
 rubato = "0.16.2"
 hound = "3.5.1"
+base64 = "0.22"
 log = "0.4.25"
 env_filter = "0.1.0"
 tokio = "1.43.0"
@@ -86,9 +87,11 @@ tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.10.0"
 
+[target.'cfg(any(windows, target_os = "macos"))'.dependencies]
+aimouse_device_init = { path = "HID-BLE-Rust" }
+
 [target.'cfg(windows)'.dependencies]
 transcribe-rs = { version = "0.3.1", features = ["ort-directml"] }
-aimouse_device_init = { path = "HID-BLE-Rust" }
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
