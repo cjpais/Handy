@@ -168,7 +168,13 @@ impl Default for MacosHidStarter {
 
 impl HidStarter for MacosHidStarter {
     fn hid_startup(&self, vid: u16, pid: u16, manufacturer_id: i32) -> Result<(), InitDeviceError> {
-        self.inner.hid_startup(vid, pid, manufacturer_id)
+        self.inner.hid_startup_with_filter(
+            vid,
+            pid,
+            manufacturer_id,
+            "macos-vendor-defined",
+            |usage_page, _usage| usage_page >= 0xFF00,
+        )
     }
 }
 

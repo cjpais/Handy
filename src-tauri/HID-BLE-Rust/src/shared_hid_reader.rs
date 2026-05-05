@@ -69,16 +69,18 @@ impl SharedHidStarter {
             reg.running.push(ReaderEntry { key, stop });
         }
     }
-}
 
-impl Default for SharedHidStarter {
-    fn default() -> Self {
-        Self::new("hid-reader")
-    }
-}
-
-impl HidStarter for SharedHidStarter {
-    fn hid_startup(&self, vid: u16, pid: u16, manufacturer_id: i32) -> Result<(), InitDeviceError> {
+    pub fn hid_startup_with_filter<F>(
+        &self,
+        vid: u16,
+        pid: u16,
+        manufacturer_id: i32,
+        filter_description: &str,
+        mut filter: F,
+    ) -> Result<(), InitDeviceError>
+    where
+        F: FnMut(u16, u16) -> bool,
+    {
         let api = HidApi::new()
             .map_err(|e| InitDeviceError::Provider(format!("HidApi::new failed: {e}")))?;
 
@@ -88,6 +90,20 @@ impl HidStarter for SharedHidStarter {
             .filter(|d| d.vendor_id() == vid && d.product_id() == pid)
         {
             let path = info.path().to_string_lossy().to_string();
+            let usage_page = info.usage_page();
+            let usage = info.usage();
+
+            if !filter(usage_page, usage) {
+                log::debug!(
+                    "HID skip interface (vid={:04X} pid={:04X} usage_page={:#06X} usage={:#06X}) due to filter: {}",
+                    vid,
+                    pid,
+                    usage_page,
+                    usage,
+                    filter_description
+                );
+                continue;
+            }
 
             if self.already_running(&path) {
                 continue;
@@ -100,22 +116,28 @@ impl HidStarter for SharedHidStarter {
                         "HID open_path failed (vid={:04X} pid={:04X} usage_page={:#06X} usage={:#06X}): {e}",
                         vid,
                         pid,
-                        info.usage_page(),
-                        info.usage(),
+                        usage_page,
+                        usage,
                     );
                     continue;
                 }
             };
 
             let _ = device.set_blocking_mode(true);
+            log::info!(
+                "HID opening interface: vid={:04X} pid={:04X} usage_page={:#06X} usage={:#06X} path={}",
+                vid,
+                pid,
+                usage_page,
+                usage,
+                path
+            );
 
             let stop = Arc::new(AtomicBool::new(false));
             let callback_slot = Arc::clone(&self.callback);
             let registry = Arc::clone(&self.registry);
             let stop_for_thread = Arc::clone(&stop);
             let path_for_thread = path.clone();
-            let usage_page = info.usage_page();
-            let usage = info.usage();
             let thread_name_prefix = self.thread_name_prefix;
 
             thread::Builder::new()
@@ -129,7 +151,6 @@ impl HidStarter for SharedHidStarter {
                         usage_page,
                         usage,
                     );
-                    // Self-cleanup so we can re-open later if device reappears.
                     if let Ok(mut reg) = registry.lock() {
                         reg.running.retain(|e| e.key != path_for_thread);
                     }
@@ -142,19 +163,32 @@ impl HidStarter for SharedHidStarter {
 
         if opened == 0 {
             return Err(InitDeviceError::Provider(format!(
-                "No HID interfaces opened for VID_{:04X} PID_{:04X} (manufacturer_id={})",
-                vid, pid, manufacturer_id
+                "No HID interfaces opened for VID_{:04X} PID_{:04X} (manufacturer_id={}, filter={})",
+                vid, pid, manufacturer_id, filter_description
             )));
         }
 
         log::info!(
-            "HID starter opened {} interface(s) for VID_{:04X} PID_{:04X} (manufacturer_id={})",
+            "HID starter opened {} interface(s) for VID_{:04X} PID_{:04X} (manufacturer_id={}, filter={})",
             opened,
             vid,
             pid,
-            manufacturer_id
+            manufacturer_id,
+            filter_description
         );
         Ok(())
+    }
+}
+
+impl Default for SharedHidStarter {
+    fn default() -> Self {
+        Self::new("hid-reader")
+    }
+}
+
+impl HidStarter for SharedHidStarter {
+    fn hid_startup(&self, vid: u16, pid: u16, manufacturer_id: i32) -> Result<(), InitDeviceError> {
+        self.hid_startup_with_filter(vid, pid, manufacturer_id, "all-interfaces", |_, _| true)
     }
 }
 
