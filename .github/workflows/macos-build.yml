@@ -56,9 +56,9 @@ jobs:
       - name: Build macOS app
         run: |
           if [ "${{ inputs.bundle }}" = "app-and-dmg" ]; then
-            bun run tauri build --target aarch64-apple-darwin --bundles app,dmg
+            bun run tauri build --target aarch64-apple-darwin --bundles app,dmg --config '{"bundle":{"createUpdaterArtifacts":false}}'
           else
-            bun run tauri build --target aarch64-apple-darwin --bundles app
+            bun run tauri build --target aarch64-apple-darwin --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
           fi
 
       - name: Upload macOS artifacts
@@ -100,9 +100,9 @@ jobs:
       - name: Build macOS app
         run: |
           if [ "${{ inputs.bundle }}" = "app-and-dmg" ]; then
-            bun run tauri build --target x86_64-apple-darwin --bundles app,dmg
+            bun run tauri build --target x86_64-apple-darwin --bundles app,dmg --config '{"bundle":{"createUpdaterArtifacts":false}}'
           else
-            bun run tauri build --target x86_64-apple-darwin --bundles app
+            bun run tauri build --target x86_64-apple-darwin --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
           fi
 
       - name: Upload macOS artifacts
