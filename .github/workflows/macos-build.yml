@@ -53,6 +53,16 @@ jobs:
           mkdir -p src-tauri/resources/models
           curl -L -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
 
+      - name: Compute artifact metadata
+        shell: bash
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -n 1)"
+          ARTIFACT_NAME="handy-macos-v${VERSION}-${{ inputs.bundle }}-aarch64-run${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+          echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
+          echo "HANDY_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
+
       - name: Build macOS app
         run: |
           if [ "${{ inputs.bundle }}" = "app-and-dmg" ]; then
@@ -64,11 +74,25 @@ jobs:
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-aarch64-apple-darwin
+          name: ${{ env.ARTIFACT_NAME }}
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: warn
+
+      - name: Write workflow summary
+        shell: bash
+        run: |
+          {
+            echo "## Apple Silicon artifact"
+            echo ""
+            echo "- Name: \`${ARTIFACT_NAME}\`"
+            echo "- Version: \`${HANDY_VERSION}\`"
+            echo "- Bundle: \`${{ inputs.bundle }}\`"
+            echo "- Target: \`aarch64-apple-darwin\`"
+            echo "- Run: \`${GITHUB_RUN_NUMBER}\`"
+            echo "- Commit: \`${SHORT_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   intel:
     name: Build Intel
@@ -97,6 +121,16 @@ jobs:
           mkdir -p src-tauri/resources/models
           curl -L -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
 
+      - name: Compute artifact metadata
+        shell: bash
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -n 1)"
+          ARTIFACT_NAME="handy-macos-v${VERSION}-${{ inputs.bundle }}-x64-run${GITHUB_RUN_NUMBER}-${SHORT_SHA}"
+          echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
+          echo "HANDY_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
+
       - name: Build macOS app
         run: |
           if [ "${{ inputs.bundle }}" = "app-and-dmg" ]; then
@@ -108,8 +142,22 @@ jobs:
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-x86_64-apple-darwin
+          name: ${{ env.ARTIFACT_NAME }}
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
             src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           if-no-files-found: warn
+
+      - name: Write workflow summary
+        shell: bash
+        run: |
+          {
+            echo "## Intel artifact"
+            echo ""
+            echo "- Name: \`${ARTIFACT_NAME}\`"
+            echo "- Version: \`${HANDY_VERSION}\`"
+            echo "- Bundle: \`${{ inputs.bundle }}\`"
+            echo "- Target: \`x86_64-apple-darwin\`"
+            echo "- Run: \`${GITHUB_RUN_NUMBER}\`"
+            echo "- Commit: \`${SHORT_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
