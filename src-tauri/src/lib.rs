@@ -31,6 +31,8 @@ use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::hid_mouse::start_hid_mouse_monitor;
 use managers::history::HistoryManager;
+#[cfg(target_os = "macos")]
+use managers::macos_mouse_fallback::start_macos_mouse_button_fallback;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
@@ -217,6 +219,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
     app_handle.manage(start_hid_mouse_monitor(app_handle));
+
+    #[cfg(target_os = "macos")]
+    start_macos_mouse_button_fallback(app_handle.clone());
 
     // Pre-load the selected model in background so it is ready on first use.
     transcription_manager.initiate_model_load();
