@@ -12,6 +12,14 @@ on:
           - both
           - apple-silicon
           - intel
+      bundle:
+        description: "Bundle type"
+        required: true
+        default: "app"
+        type: choice
+        options:
+          - app
+          - app-and-dmg
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.arch }}
@@ -46,7 +54,12 @@ jobs:
           curl -L -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
 
       - name: Build macOS app
-        run: bun run tauri build --target aarch64-apple-darwin
+        run: |
+          if [ "${{ inputs.bundle }}" = "app-and-dmg" ]; then
+            bun run tauri build --target aarch64-apple-darwin --bundles app,dmg
+          else
+            bun run tauri build --target aarch64-apple-darwin --bundles app
+          fi
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -55,7 +68,7 @@ jobs:
           path: |
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
             src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-          if-no-files-found: error
+          if-no-files-found: warn
 
   intel:
     name: Build Intel
@@ -85,7 +98,12 @@ jobs:
           curl -L -o src-tauri/resources/models/silero_vad_v4.onnx https://blob.handy.computer/silero_vad_v4.onnx
 
       - name: Build macOS app
-        run: bun run tauri build --target x86_64-apple-darwin
+        run: |
+          if [ "${{ inputs.bundle }}" = "app-and-dmg" ]; then
+            bun run tauri build --target x86_64-apple-darwin --bundles app,dmg
+          else
+            bun run tauri build --target x86_64-apple-darwin --bundles app
+          fi
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -94,4 +112,4 @@ jobs:
           path: |
             src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
             src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-          if-no-files-found: error
+          if-no-files-found: warn
