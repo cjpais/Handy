@@ -356,6 +356,16 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "learnedCorrections": {
+        "title": "Correzioni Apprese",
+        "description": "Correzioni imparate dalle tue modifiche. Quando modifichi una trascrizione, il sistema impara a correggere automaticamente errori simili nelle trascrizioni future.",
+        "loading": "Caricamento correzioni...",
+        "empty": "Nessuna correzione appresa ancora. Modifica una trascrizione nella Cronologia per insegnare al sistema.",
+        "clearAll": "Cancella Tutto",
+        "clearError": "Impossibile cancellare le correzioni",
+        "cleared": "Cancellate {{count}} correzioni",
+        "remove": "Rimuovi correzione per {{word}}"
       }
     },
     "postProcessing": {
@@ -431,7 +441,15 @@
       "retranscribe": "Ri-trascrivere",
       "retranscribeError": "Impossibile ri-trascrivere. Riprova.",
       "transcribing": "Trascrizione in corso...",
-      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione."
+      "transcriptionFailed": "Trascrizione fallita. Puoi ri-trascrivere usando l'icona di ripetizione.",
+      "edit": "Correggi trascrizione",
+      "cancel": "Annulla",
+      "saveAndLearn": "Salva e Impara",
+      "learned": "Imparata {{count}} correzione:",
+      "learned_plural": "Imparate {{count}} correzioni:",
+      "confirm": "Conferma",
+      "dismiss": "Ignora",
+      "updateError": "Impossibile aggiornare la trascrizione"
     },
     "debug": {
       "title": "Debug",

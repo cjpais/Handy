@@ -1,6 +1,7 @@
 use crate::actions::process_transcription_output;
 use crate::managers::{
-    history::{HistoryManager, PaginatedHistory},
+    corrections::{CorrectionDiff, CorrectionsManager, LearnedCorrection},
+    history::{HistoryEntry, HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
 };
 use std::sync::Arc;
@@ -127,28 +128,74 @@ pub async fn update_history_limit(
 #[tauri::command]
 #[specta::specta]
 pub async fn update_recording_retention_period(
-    app: AppHandle,
+    _app: AppHandle,
     history_manager: State<'_, Arc<HistoryManager>>,
-    period: String,
+    _period: String,
 ) -> Result<(), String> {
-    use crate::settings::RecordingRetentionPeriod;
-
-    let retention_period = match period.as_str() {
-        "never" => RecordingRetentionPeriod::Never,
-        "preserve_limit" => RecordingRetentionPeriod::PreserveLimit,
-        "days3" => RecordingRetentionPeriod::Days3,
-        "weeks2" => RecordingRetentionPeriod::Weeks2,
-        "months3" => RecordingRetentionPeriod::Months3,
-        _ => return Err(format!("Invalid retention period: {}", period)),
-    };
-
-    let mut settings = crate::settings::get_settings(&app);
-    settings.recording_retention_period = retention_period;
-    crate::settings::write_settings(&app, settings);
-
     history_manager
         .cleanup_old_entries()
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn update_transcription_text(
+    _app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+    new_text: String,
+) -> Result<HistoryEntry, String> {
+    history_manager
+        .update_transcription_text(id, new_text)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn learn_corrections_from_edit(
+    app: AppHandle,
+    corrections_manager: State<'_, Arc<CorrectionsManager>>,
+    original_text: String,
+    corrected_text: String,
+) -> Result<Vec<CorrectionDiff>, String> {
+    corrections_manager
+        .learn_from_diff_llm(&app, &original_text, &corrected_text)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_learned_corrections(
+    _app: AppHandle,
+    corrections_manager: State<'_, Arc<CorrectionsManager>>,
+) -> Result<Vec<LearnedCorrection>, String> {
+    corrections_manager
+        .get_all_corrections()
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_learned_correction(
+    _app: AppHandle,
+    corrections_manager: State<'_, Arc<CorrectionsManager>>,
+    id: i64,
+) -> Result<(), String> {
+    corrections_manager
+        .delete_correction(id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clear_learned_corrections(
+    _app: AppHandle,
+    corrections_manager: State<'_, Arc<CorrectionsManager>>,
+) -> Result<usize, String> {
+    corrections_manager
+        .clear_all_corrections()
+        .map_err(|e| e.to_string())
 }

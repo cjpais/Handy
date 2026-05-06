@@ -356,6 +356,16 @@
         "add": "Thêm",
         "remove": "Xóa {{word}}",
         "duplicate": "\"{{word}}\" đã tồn tại"
+      },
+      "learnedCorrections": {
+        "title": "Learned Corrections",
+        "description": "Corrections learned from your edits. When you edit a transcription, the system learns to automatically fix similar mistakes in future transcriptions.",
+        "loading": "Loading corrections...",
+        "empty": "No corrections learned yet. Edit a transcription in History to teach the system.",
+        "clearAll": "Clear All",
+        "clearError": "Failed to clear corrections",
+        "cleared": "Cleared {{count}} corrections",
+        "remove": "Remove correction for {{word}}"
       }
     },
     "postProcessing": {
@@ -431,7 +441,15 @@
       "retranscribe": "Phiên âm lại",
       "retranscribeError": "Không thể phiên âm lại. Vui lòng thử lại.",
       "transcribing": "Đang phiên âm...",
-      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại."
+      "transcriptionFailed": "Phiên âm thất bại. Bạn có thể phiên âm lại bằng biểu tượng thử lại.",
+      "edit": "Correct transcription",
+      "cancel": "Cancel",
+      "saveAndLearn": "Save & Learn",
+      "learned": "Learned {{count}} correction:",
+      "learned_plural": "Learned {{count}} corrections:",
+      "confirm": "Confirm",
+      "dismiss": "Dismiss",
+      "updateError": "Failed to update transcription"
     },
     "debug": {
       "title": "Gỡ lỗi",

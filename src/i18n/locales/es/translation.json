@@ -356,6 +356,16 @@
         "add": "Agregar",
         "remove": "Eliminar {{word}}",
         "duplicate": "\"{{word}}\" ya existe"
+      },
+      "learnedCorrections": {
+        "title": "Learned Corrections",
+        "description": "Corrections learned from your edits. When you edit a transcription, the system learns to automatically fix similar mistakes in future transcriptions.",
+        "loading": "Loading corrections...",
+        "empty": "No corrections learned yet. Edit a transcription in History to teach the system.",
+        "clearAll": "Clear All",
+        "clearError": "Failed to clear corrections",
+        "cleared": "Cleared {{count}} corrections",
+        "remove": "Remove correction for {{word}}"
       }
     },
     "postProcessing": {
@@ -431,7 +441,15 @@
       "retranscribe": "Re-transcribir",
       "retranscribeError": "No se pudo re-transcribir. Por favor, inténtalo de nuevo.",
       "transcribing": "Transcribiendo...",
-      "transcriptionFailed": "La transcripción falló. Puedes re-transcribir usando el ícono de reintentar."
+      "transcriptionFailed": "La transcripción falló. Puedes re-transcribir usando el ícono de reintentar.",
+      "edit": "Correct transcription",
+      "cancel": "Cancel",
+      "saveAndLearn": "Save & Learn",
+      "learned": "Learned {{count}} correction:",
+      "learned_plural": "Learned {{count}} corrections:",
+      "confirm": "Confirm",
+      "dismiss": "Dismiss",
+      "updateError": "Failed to update transcription"
     },
     "debug": {
       "title": "Depuración",

@@ -356,6 +356,16 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "learnedCorrections": {
+        "title": "Learned Corrections",
+        "description": "Corrections learned from your edits. When you edit a transcription, the system learns to automatically fix similar mistakes in future transcriptions.",
+        "loading": "Loading corrections...",
+        "empty": "No corrections learned yet. Edit a transcription in History to teach the system.",
+        "clearAll": "Clear All",
+        "clearError": "Failed to clear corrections",
+        "cleared": "Cleared {{count}} corrections",
+        "remove": "Remove correction for {{word}}"
       }
     },
     "postProcessing": {
@@ -431,7 +441,15 @@
       "retranscribe": "다시 전사",
       "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "edit": "Correct transcription",
+      "cancel": "Cancel",
+      "saveAndLearn": "Save & Learn",
+      "learned": "Learned {{count}} correction:",
+      "learned_plural": "Learned {{count}} corrections:",
+      "confirm": "Confirm",
+      "dismiss": "Dismiss",
+      "updateError": "Failed to update transcription"
     },
     "debug": {
       "title": "디버그",

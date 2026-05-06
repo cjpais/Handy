@@ -31,6 +31,17 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
+    M::up(
+        "CREATE TABLE IF NOT EXISTS learned_corrections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            original_word TEXT NOT NULL,
+            corrected_word TEXT NOT NULL,
+            count INTEGER NOT NULL DEFAULT 1,
+            created_at INTEGER NOT NULL,
+            last_used_at INTEGER NOT NULL,
+            UNIQUE(original_word)
+        );",
+    ),
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
@@ -315,6 +326,42 @@ impl HistoryManager {
             )?;
 
         debug!("Updated transcription for history entry {}", id);
+
+        if let Err(e) = (HistoryUpdatePayload::Updated {
+            entry: entry.clone(),
+        })
+        .emit(&self.app_handle)
+        {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(entry)
+    }
+
+    pub fn update_transcription_text(
+        &self,
+        id: i64,
+        new_text: String,
+    ) -> Result<HistoryEntry> {
+        let conn = self.get_connection()?;
+        let updated = conn.execute(
+            "UPDATE transcription_history SET transcription_text = ?1 WHERE id = ?2",
+            params![new_text, id],
+        )?;
+
+        if updated == 0 {
+            return Err(anyhow!("History entry {} not found", id));
+        }
+
+        let entry = conn
+            .query_row(
+                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                 FROM transcription_history WHERE id = ?1",
+                params![id],
+                Self::map_history_entry,
+            )?;
+
+        debug!("Updated transcription text for history entry {}", id);
 
         if let Err(e) = (HistoryUpdatePayload::Updated {
             entry: entry.clone(),

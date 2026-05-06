@@ -355,10 +355,17 @@
         "placeholder": "Добавете дума",
         "add": "Добавяне",
         "remove": "Премахване на {{word}}",
-        "duplicate": "„{{word}}“ вече съществува"
+        "duplicate": "„{{word}}“ вече съществува",
+      "learnedCorrections": {
+        "description": "Corrections learned from your edits. When you edit a transcription, the system learns to automatically fix similar mistakes in future transcriptions.",
+        "loading": "Loading corrections...",
+        "empty": "No corrections learned yet. Edit a transcription in History to teach the system.",
+        "clearAll": "Clear All",
+        "clearError": "Failed to clear corrections",
+        "cleared": "Cleared {{count}} corrections",
+        "remove": "Remove correction for {{word}}"
       }
     },
-    "postProcessing": {
       "title": "Постобработка",
       "hotkey": {
         "title": "Бърз клавиш"
@@ -431,7 +438,15 @@
       "retranscribe": "Повторна транскрипция",
       "retranscribeError": "Повторната транскрипция не бе успешна. Опитайте отново.",
       "transcribing": "Транскрибиране...",
-      "transcriptionFailed": "Транскрипцията не бе успешна. Можете да опитате отново с иконата за повторен опит."
+      "transcriptionFailed": "Транскрипцията не бе успешна. Можете да опитате отново с иконата за повторен опит.",
+      "edit": "Correct transcription",
+      "cancel": "Cancel",
+      "saveAndLearn": "Save & Learn",
+      "learned": "Learned {{count}} correction:",
+      "learned_plural": "Learned {{count}} corrections:",
+      "confirm": "Confirm",
+      "dismiss": "Dismiss",
+      "updateError": "Failed to update transcription"
     },
     "debug": {
       "title": "Отстраняване",

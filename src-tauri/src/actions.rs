@@ -3,6 +3,7 @@ use crate::apple_intelligence;
 use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, SoundType};
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error};
 use crate::managers::audio::AudioRecordingManager;
+use crate::managers::corrections::CorrectionsManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
@@ -358,6 +359,15 @@ pub(crate) async fn process_transcription_output(
 
     if let Some(converted_text) = maybe_convert_chinese_variant(&settings, transcription).await {
         final_text = converted_text;
+    }
+
+    if let Some(cm) = app.try_state::<Arc<CorrectionsManager>>() {
+        if let Ok(corrected) = cm.apply_corrections(&final_text) {
+            if corrected != final_text {
+                debug!("Applied learned corrections to transcription");
+                final_text = corrected;
+            }
+        }
     }
 
     if post_process {
