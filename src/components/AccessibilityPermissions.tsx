@@ -5,6 +5,7 @@ import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
 } from "tauri-plugin-macos-permissions-api";
+import { commands } from "@/bindings";
 
 // Define permission state type
 type PermissionState = "request" | "verify" | "granted";
@@ -29,6 +30,18 @@ const AccessibilityPermissions: React.FC = () => {
     const hasPermissions: boolean = await checkAccessibilityPermission();
     setHasAccessibility(hasPermissions);
     setPermissionState(hasPermissions ? "granted" : "verify");
+
+    if (hasPermissions) {
+      try {
+        await Promise.all([
+          commands.initializeEnigo(),
+          commands.initializeShortcuts(),
+        ]);
+      } catch (error) {
+        console.warn("Failed to initialize after accessibility grant:", error);
+      }
+    }
+
     return hasPermissions;
   };
 
@@ -72,12 +85,12 @@ const AccessibilityPermissions: React.FC = () => {
     request: {
       text: t("accessibility.openSettings"),
       className:
-        "px-2 py-1 text-sm font-semibold bg-mid-gray/10 border  border-mid-gray/80 hover:bg-logo-primary/10 rounded cursor-pointer hover:border-logo-primary",
+        "rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50",
     },
     verify: {
       text: t("accessibility.openSettings"),
       className:
-        "bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1 px-3 rounded-md text-sm flex items-center justify-center cursor-pointer",
+        "flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:border-slate-400 hover:bg-slate-50",
     },
     granted: null,
   };
@@ -85,16 +98,16 @@ const AccessibilityPermissions: React.FC = () => {
   const config = buttonConfig[permissionState] as ButtonConfig;
 
   return (
-    <div className="p-4 w-full rounded-lg border border-mid-gray">
-      <div className="flex justify-between items-center gap-2">
-        <div className="">
-          <p className="text-sm font-medium">
+    <div className="w-full rounded-[24px] border border-amber-200 bg-amber-50/80 p-4 shadow-[0_10px_28px_rgba(217,119,6,0.08)]">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-800">
             {t("accessibility.permissionsDescription")}
           </p>
         </div>
         <button
           onClick={handleButtonClick}
-          className={`min-h-10 ${config.className}`}
+          className={`min-h-10 rounded-full ${config.className}`}
         >
           {config.text}
         </button>

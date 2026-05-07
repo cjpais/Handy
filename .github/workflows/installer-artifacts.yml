@@ -1,0 +1,41 @@
+name: "Installer Artifacts"
+
+# Manual unsigned builds for downloading platform installers from Actions
+# artifacts. Production signing and release publishing stay in release.yml.
+
+on: workflow_dispatch
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-installers:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-26"
+            args: "--target aarch64-apple-darwin"
+            target: "aarch64-apple-darwin"
+          - platform: "macos-26-intel"
+            args: "--target x86_64-apple-darwin"
+            target: "x86_64-apple-darwin"
+          - platform: "windows-latest"
+            args: ""
+            target: "x86_64-pc-windows-msvc"
+          - platform: "windows-11-arm"
+            args: "--target aarch64-pc-windows-msvc"
+            target: "aarch64-pc-windows-msvc"
+
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: ${{ matrix.platform }}
+      target: ${{ matrix.target }}
+      build-args: ${{ matrix.args }}
+      asset-prefix: "curano-ai-dictate"
+      upload-artifacts: true
+      sign-binaries: false
+    secrets: inherit

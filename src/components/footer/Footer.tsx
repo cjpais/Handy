@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { getVersion } from "@tauri-apps/api/app";
-
-import ModelSelector from "../model-selector";
 import UpdateChecker from "../update-checker";
 
 const Footer: React.FC = () => {
+  const { t } = useTranslation();
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -22,13 +22,17 @@ const Footer: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full border-t border-mid-gray/20 pt-3">
-      <div className="flex justify-between items-center text-xs px-4 pb-3 text-text/60">
-        <div className="flex items-center gap-4">
-          <ModelSelector />
+    <div className="mt-4 w-full rounded-[24px] border border-slate-200 bg-white/90 px-5 py-3 shadow-[0_14px_36px_rgba(15,23,42,0.05)]">
+      <div className="flex items-center justify-between gap-4 text-xs text-slate-500">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-slate-900">
+            {t("workspace.title")}
+          </span>
+          <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 font-semibold text-red-700">
+            {t("workspace.liveSttDefault")}
+          </span>
         </div>
 
-        {/* Update Status */}
         <div className="flex items-center gap-1">
           <UpdateChecker />
           <span>•</span>

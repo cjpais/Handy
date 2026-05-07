@@ -1,5 +1,5 @@
 {
-  description = "Handy - A free, open source, and extensible speech-to-text application that works completely offline";
+  description = "Curano AI Dictate - A Curano AI fork of Handy that works completely offline";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -179,8 +179,8 @@
             '';
 
             meta = {
-              description = "A free, open source, and extensible speech-to-text application that works completely offline";
-              homepage = "https://github.com/cjpais/Handy";
+              description = "Curano AI Dictate, a Curano AI fork of Handy that works completely offline";
+              homepage = "https://github.com/elenik72/Curano-AI-Dictate";
               license = lib.licenses.mit;
               mainProgram = "handy";
               platforms = supportedSystems;
@@ -244,7 +244,7 @@
             XDG_DATA_DIRS = "${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:${pkgs.hicolor-icon-theme}/share";
 
             shellHook = ''
-              echo "Handy development environment"
+              echo "Curano AI Dictate development environment"
               bun install
               echo "Run 'bun run tauri dev' to start"
             '';

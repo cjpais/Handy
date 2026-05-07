@@ -9,21 +9,23 @@ import { useOsType } from "../../hooks/useOsType";
 import { commands } from "@/bindings";
 import { toast } from "sonner";
 
-interface HandyKeysShortcutInputProps {
+interface NativeKeysShortcutInputProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
   shortcutId: string;
   disabled?: boolean;
 }
 
-interface HandyKeysEvent {
+interface NativeKeysEvent {
   modifiers: string[];
   key: string | null;
   is_key_down: boolean;
   hotkey_string: string;
 }
 
-export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
+export const NativeKeysShortcutInput: React.FC<
+  NativeKeysShortcutInputProps
+> = ({
   descriptionMode = "tooltip",
   grouped = false,
   shortcutId,
@@ -80,7 +82,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
 
     const setupListener = async () => {
       // Listen for key events from backend
-      const unlisten = await listen<HandyKeysEvent>(
+      const unlisten = await listen<NativeKeysEvent>(
         "handy-keys-event",
         async (event) => {
           if (cleanup) return;
@@ -205,7 +207,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">
+        <div className="text-sm text-slate-500">
           {t("settings.general.shortcut.loading")}
         </div>
       </SettingContainer>
@@ -221,7 +223,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">
+        <div className="text-sm text-slate-500">
           {t("settings.general.shortcut.none")}
         </div>
       </SettingContainer>
@@ -237,7 +239,7 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">
+        <div className="text-sm text-slate-500">
           {t("settings.general.shortcut.none")}
         </div>
       </SettingContainer>
@@ -263,17 +265,17 @@ export const HandyKeysShortcutInput: React.FC<HandyKeysShortcutInputProps> = ({
       disabled={disabled}
       layout="horizontal"
     >
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center gap-2">
         {isRecording ? (
           <div
             ref={shortcutRef}
-            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded-md"
+            className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-[0_0_0_4px_rgba(254,226,226,0.9)]"
           >
             {formatCurrentKeys()}
           </div>
         ) : (
           <div
-            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
+            className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-[background-color,border-color,box-shadow] hover:border-slate-400 hover:bg-slate-50"
             onClick={startRecording}
           >
             {formatKeyCombination(binding.current_binding, osType)}

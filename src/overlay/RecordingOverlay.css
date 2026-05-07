@@ -1,10 +1,11 @@
 .recording-overlay {
-  height: 36px;
-  width: 172px;
+  min-height: 56px;
+  width: 420px;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  padding: 6px;
+  gap: 10px;
+  padding: 8px 12px;
   background: #000000cc;
   border-radius: 18px;
   opacity: 0;
@@ -18,6 +19,8 @@
 }
 
 .overlay-middle {
+  min-width: 0;
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,6 +61,33 @@
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   animation: transcribing-pulse 1.5s infinite ease-in-out;
+}
+
+.livestt-text {
+  color: white;
+  font-size: 13px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 17px;
+  max-width: 340px;
+  max-height: 52px;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.livestt-text-partial {
+  opacity: 0.72;
+}
+
+.livestt-text-final,
+.livestt-text-ended {
+  opacity: 1;
+}
+
+.livestt-text-error {
+  color: #fecaca;
 }
 
 @keyframes transcribing-pulse {

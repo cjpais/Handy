@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { WordCorrectionThreshold } from "./WordCorrectionThreshold";
 import { LogLevelSelector } from "./LogLevelSelector";
+import { LogConsole } from "./LogConsole";
 import { PasteDelay } from "./PasteDelay";
 import { RecordingBuffer } from "./RecordingBuffer";
 import { SettingsGroup } from "../../ui/SettingsGroup";
@@ -14,7 +15,10 @@ export const DebugSettings: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="max-w-3xl w-full mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
+      <SettingsGroup title={t("settings.debug.logs.title")}>
+        <LogConsole />
+      </SettingsGroup>
       <SettingsGroup title={t("settings.debug.title")}>
         <LogLevelSelector grouped={true} />
         <UpdateChecksToggle descriptionMode="tooltip" grouped={true} />

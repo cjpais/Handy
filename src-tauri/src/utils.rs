@@ -25,6 +25,16 @@ pub fn cancel_current_operation(app: &AppHandle) {
     let recording_was_active = audio_manager.is_recording();
     audio_manager.cancel_recording();
 
+    let livestt_was_active = if let Some(livestt_manager) =
+        app.try_state::<Arc<crate::livestt::session::LiveSttSessionManager>>()
+    {
+        let livestt_was_active = livestt_manager.is_active();
+        let _ = livestt_manager.cancel_session();
+        livestt_was_active
+    } else {
+        false
+    };
+
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
@@ -35,7 +45,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
 
     // Notify coordinator so it can keep lifecycle state coherent.
     if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
-        coordinator.notify_cancel(recording_was_active);
+        coordinator.notify_cancel(recording_was_active || livestt_was_active);
     }
 
     info!("Operation cancellation completed - returned to idle state");

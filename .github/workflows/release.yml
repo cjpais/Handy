@@ -49,7 +49,7 @@ jobs:
           - platform: "macos-26" # for Arm based macs (M1 and above). Uses macOS 26 for Apple Intelligence SDK.
             args: "--target aarch64-apple-darwin"
             target: "aarch64-apple-darwin"
-          - platform: "macos-latest" # for Intel based macs.
+          - platform: "macos-26-intel" # for Intel based macs.
             args: "--target x86_64-apple-darwin"
             target: "x86_64-apple-darwin"
           - platform: "ubuntu-22.04" # Build .deb on 22.04

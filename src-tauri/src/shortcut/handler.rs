@@ -52,10 +52,14 @@ pub fn handle_shortcut_event(
         return;
     };
 
-    // Cancel binding: only fires when recording and key is pressed
+    // Cancel binding: fires when local recording or a LiveSTT session is active.
     if binding_id == "cancel" {
         let audio_manager = app.state::<Arc<AudioRecordingManager>>();
-        if audio_manager.is_recording() && is_pressed {
+        let livestt_active = app
+            .try_state::<Arc<crate::livestt::session::LiveSttSessionManager>>()
+            .map(|manager| manager.is_active())
+            .unwrap_or(false);
+        if (audio_manager.is_recording() || livestt_active) && is_pressed {
             action.start(app, binding_id, hotkey_string);
         }
         return;

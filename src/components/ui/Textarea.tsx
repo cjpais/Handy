@@ -11,7 +11,7 @@ export const Textarea: React.FC<TextareaProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 rounded-md text-start transition-[background-color,border-color] duration-150 hover:bg-logo-primary/10 hover:border-logo-primary focus:outline-none focus:bg-logo-primary/10 focus:border-logo-primary resize-y";
+    "rounded-xl border border-slate-300 bg-white text-start text-sm font-medium text-slate-900 transition-[border-color,box-shadow] duration-150 placeholder:text-slate-400 hover:border-slate-400 focus:border-red-400 focus:outline-none focus:ring-4 focus:ring-red-100 resize-y";
 
   const variantClasses = {
     default: "px-3 py-2 min-h-[100px]",

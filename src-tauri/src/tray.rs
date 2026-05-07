@@ -87,9 +87,9 @@ pub fn tray_tooltip() -> String {
 
 fn version_label() -> String {
     if cfg!(debug_assertions) {
-        format!("Handy v{} (Dev)", env!("CARGO_PKG_VERSION"))
+        format!("Curano Dictate v{} (Dev)", env!("CARGO_PKG_VERSION"))
     } else {
-        format!("Handy v{}", env!("CARGO_PKG_VERSION"))
+        format!("Curano Dictate v{}", env!("CARGO_PKG_VERSION"))
     }
 }
 
@@ -273,7 +273,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::last_transcript_text;
-    use crate::managers::history::HistoryEntry;
+    use crate::managers::history::{HistoryEntry, HistoryProvider};
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
         HistoryEntry {
@@ -286,6 +286,9 @@ mod tests {
             post_processed_text: post_processed.map(|text| text.to_string()),
             post_process_prompt: None,
             post_process_requested: false,
+            provider: HistoryProvider::Local,
+            livestt_session_id: None,
+            livestt_consultation_id: None,
         }
     }
 

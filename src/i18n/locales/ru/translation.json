@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "Требуются разрешения",
-      "description": "Handy требуются некоторые разрешения для корректной работы.",
+      "description": "Curano AI Dictate требуются некоторые разрешения для корректной работы.",
       "microphone": {
         "title": "Доступ к микрофону",
         "description": "Необходим для прослушивания вашего голоса для транскрипции."
@@ -176,7 +176,7 @@
     "general": {
       "title": "Общие",
       "shortcut": {
-        "title": "Ярлыки Handy",
+        "title": "Ярлыки Curano AI Dictate",
         "description": "Настройте сочетания клавиш для запуска записи речи в текст",
         "loading": "Загрузка ярлыков...",
         "none": "Ярлыки не настроены",
@@ -213,6 +213,27 @@
       "pushToTalk": {
         "label": "Нажми и говори",
         "description": "Удерживайте, чтобы записать, отпустите, чтобы остановить"
+      },
+      "speechmike": {
+        "title": "Philips SpeechMike",
+        "status": "Статус устройства",
+        "connected": "Подключено",
+        "disconnected": "Не подключено",
+        "notConnected": "Не подключено",
+        "unknownDevice": "Philips SpeechMike",
+        "blockedTitle": "Канал кнопок заблокирован",
+        "blockedBy": "Закройте следующие приложения и переподключите устройство: {{processes}}",
+        "blockedUnknown": "Другое приложение удерживает HID-канал. Закройте его и переподключите устройство.",
+        "autoSelect": "Авто-выбор как микрофон",
+        "autoSelectDescription": "Автоматически устанавливать SpeechMike как активный микрофон при подключении. Отключите, чтобы сохранить текущий выбор микрофона.",
+        "buttonMapping": "Использовать кнопки устройства для записи",
+        "buttonMappingDescription": "Назначить физические кнопки (REC, STOP, EOL, Trigger) на действия записи Curano.",
+        "mappingTable": "Назначение кнопок",
+        "actionTranscribe": "Начать / остановить запись (переключатель или нажми-говори)",
+        "actionCancel": "Отменить текущую запись",
+        "actionPostProcess": "Запись с AI-постобработкой",
+        "actionTranscribePtt": "Начать / остановить запись (нажми-говори)",
+        "learnSpeechControl": "О SpeechControl SDK (Windows)"
       }
     },
     "sound": {
@@ -276,11 +297,11 @@
       },
       "autostart": {
         "label": "Запускать при старте",
-        "description": "Автоматически запускать Handy при входе в систему."
+        "description": "Автоматически запускать Curano AI Dictate при входе в систему."
       },
       "showTrayIcon": {
         "label": "Показать значок в трее",
-        "description": "Отображать значок Handy в системном трее."
+        "description": "Отображать значок Curano AI Dictate в системном трее."
       },
       "overlay": {
         "title": "Позиция индикатора",
@@ -431,10 +452,35 @@
       "retranscribe": "Перетранскрибировать",
       "retranscribeError": "Не удалось перетранскрибировать. Пожалуйста, попробуйте снова.",
       "transcribing": "Транскрибирование...",
-      "transcriptionFailed": "Транскрипция не удалась. Вы можете перетранскрибировать, используя значок повтора."
+      "transcriptionFailed": "Транскрипция не удалась. Вы можете перетранскрибировать, используя значок повтора.",
+      "providers": {
+        "local": "Local",
+        "livestt": "LiveSTT"
+      }
     },
     "debug": {
       "title": "Отлаживать",
+      "logs": {
+        "title": "Живые логи",
+        "copyAll": "Скопировать всё",
+        "clear": "Очистить",
+        "pause": "Пауза",
+        "paused": "На паузе",
+        "openLogDir": "Открыть папку логов",
+        "entries": "записей",
+        "filter": {
+          "level": {
+            "title": "Уровень"
+          },
+          "text": {
+            "placeholder": "Фильтр..."
+          }
+        },
+        "sources": {
+          "rust": "rust",
+          "front": "front"
+        }
+      },
       "logDirectory": {
         "title": "Каталог журналов",
         "description": "Место хранения файлов журналов"
@@ -445,7 +491,7 @@
       },
       "updateChecks": {
         "label": "Проверять наличие обновлений",
-        "description": "Автоматически проверять наличие новых версий Handy"
+        "description": "Автоматически проверять наличие новых версий Curano AI Dictate"
       },
       "soundTheme": {
         "label": "Звуковая тема",
@@ -513,20 +559,20 @@
       "title": "О программе",
       "version": {
         "title": "Версия",
-        "description": "Текущая версия Handy"
+        "description": "Текущая версия Curano AI Dictate"
       },
       "appDataDirectory": {
         "title": "Каталог данных приложения",
-        "description": "Место, где Handy хранит свои данные"
+        "description": "Место, где Curano AI Dictate хранит свои данные"
       },
       "sourceCode": {
         "title": "Исходный код",
-        "description": "Просмотреть исходный код и внести свой вклад",
+        "description": "View the Curano AI Dictate source code. Forked from Handy.",
         "button": "Посмотреть на GitHub"
       },
       "supportDevelopment": {
         "title": "Поддержка развития",
-        "description": "Помогите нам продолжать развитие Handy",
+        "description": "Помогите нам продолжать развитие Curano AI Dictate",
         "button": "Поддержать"
       },
       "acknowledgments": {
@@ -534,7 +580,63 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "Высокопроизводительная модель автоматического распознавания речи OpenAI Whisper",
-          "details": "Handy использует Whisper.cpp для быстрого локального преобразования речи в текст. Спасибо великолепной работе Георгия Герганова и участников."
+          "details": "Curano AI Dictate использует Whisper.cpp для быстрого локального преобразования речи в текст. Спасибо великолепной работе Георгия Герганова и участников."
+        }
+      }
+    },
+    "transcriptionBackend": {
+      "title": "Transcription Backend",
+      "selector": {
+        "title": "Backend",
+        "description": "Choose whether transcription uses the local model or the configured Curano LiveSTT server."
+      },
+      "options": {
+        "local": "Local model",
+        "livestt": "Curano LiveSTT"
+      },
+      "privacy": {
+        "local": "Local mode processes audio on this device.",
+        "livestt": "Curano LiveSTT mode sends microphone audio to the configured Curano LiveSTT server."
+      },
+      "livestt": {
+        "title": "Curano LiveSTT",
+        "serverUrl": {
+          "title": "Server URL",
+          "description": "Base URL for the Curano LiveSTT server. Do not include the /api path.",
+          "placeholder": "https://grandedoc-server-98243818959.europe-west6.run.app",
+          "error": "Server URL must start with http:// or https://."
+        },
+        "auth": {
+          "title": "Authentication",
+          "description": "Sign in to the configured Curano LiveSTT server. Access tokens are kept in memory only.",
+          "authenticated": "Authenticated",
+          "unauthenticated": "Not authenticated",
+          "updating": "Working..."
+        },
+        "username": {
+          "placeholder": "Username"
+        },
+        "password": {
+          "placeholder": "Password"
+        },
+        "login": "Login",
+        "logout": "Logout",
+        "loginSuccess": "Login succeeded.",
+        "loginError": "Login failed: {{error}}",
+        "loginErrorSafe": "Login failed. Check the server URL and credentials.",
+        "logoutSuccess": "Logged out.",
+        "logoutError": "Logout failed: {{error}}",
+        "logoutErrorSafe": "Logout failed. Please try again.",
+        "consultationId": {
+          "title": "Consultation ID",
+          "description": "Optional numeric consultation ID to attach to LiveSTT sessions.",
+          "placeholder": "Optional",
+          "error": "Consultation ID must be a positive integer or empty."
+        },
+        "finalizeTimeout": {
+          "title": "Finalize Timeout",
+          "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",
+          "error": "Finalize timeout must be between 1 and 120000 milliseconds."
         }
       }
     }
@@ -580,7 +682,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Требуются разрешения на доступ",
-    "permissionsDescription": "Handy необходимы разрешения на доступ для ввода расшифрованного текста.",
+    "permissionsDescription": "Curano AI Dictate необходимы разрешения на доступ для ввода расшифрованного текста.",
     "openSettings": "Открыть настройки системы",
     "dismiss": "Увольнять"
   },
@@ -603,10 +705,22 @@
   },
   "appLanguage": {
     "title": "Язык приложения",
-    "description": "Изменить язык интерфейса Handy"
+    "description": "Изменить язык интерфейса Curano AI Dictate"
   },
   "overlay": {
     "transcribing": "Расшифровка...",
-    "processing": "Обработка..."
+    "processing": "Обработка...",
+    "livesttError": "LiveSTT error: {{message}}"
+  },
+  "workspace": {
+    "title": "Curano AI Dictate",
+    "liveStt": "Live STT",
+    "localModel": "Local model",
+    "liveSttDefault": "Live STT default",
+    "settingsIntroTitle": "Settings-first startup",
+    "settingsIntroDescription": "The model-selection onboarding step is removed. Curano AI Dictate now opens directly into settings, with backend, local model, microphone, and transcription preferences managed here.",
+    "settingsPanelEyebrow": "Workspace Settings",
+    "settingsPanelTitle": "Dictation Settings",
+    "settingsNavDescription": "Switch sections to configure backend, local model, history, and advanced dictation preferences."
   }
 }

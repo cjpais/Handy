@@ -1,4 +1,4 @@
-; Custom NSIS template for Handy with portable mode support.
+; Custom NSIS template for Curano AI Dictate with portable mode support.
 ; Based on tauri-apps/tauri@tauri-v2.9.1 crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi
 ; Portable changes are marked with "; --- PORTABLE MODE ---" comments.
 ;
@@ -217,7 +217,7 @@ Function PageLeaveInstallType
   ${NSD_GetState} $InstallTypeRadioPortable $0
   ${If} $0 = ${BST_CHECKED}
     StrCpy $PortableMode 1
-    ; --- PORTABLE MODE --- Switch default directory to Desktop\Handy for portable
+    ; --- PORTABLE MODE --- Switch default directory to Desktop\${PRODUCTNAME} for portable
     ${If} $INSTDIR == "${PLACEHOLDER_INSTALL_DIR}"
     ${OrIf} $INSTDIR == "$LOCALAPPDATA\${PRODUCTNAME}"
       StrCpy $INSTDIR "$DESKTOP\${PRODUCTNAME}"
@@ -588,7 +588,7 @@ Function .onInit
 
   ; --- PORTABLE MODE --- Auto-detect portable mode during updates.
   ; Preserve portable installs that use either the current magic-string marker
-  ; or the legacy empty marker created by older Handy releases. Require Data/
+  ; or the legacy empty marker created by older upstream releases. Require Data/
   ; for the legacy empty-marker case so stale scoop side-effect files do not
   ; accidentally opt an updater run into portable mode.
   ${If} $PortableMode <> 1
@@ -597,7 +597,7 @@ Function .onInit
     FileOpen $1 "$INSTDIR\portable" r
     FileRead $1 $2
     FileClose $1
-    ${If} $2 == "Handy Portable Mode"
+    ${If} $2 == "Curano AI Dictate Portable Mode"
       StrCpy $PortableMode 1
     ${OrIf} $2 == ""
     ${AndIf} ${FileExists} "$INSTDIR\Data"
@@ -768,7 +768,7 @@ Section Install
   ; --- PORTABLE MODE --- Create portable marker and Data directory
   ${If} $PortableMode = 1
     FileOpen $0 "$INSTDIR\portable" w
-    FileWrite $0 "Handy Portable Mode"
+    FileWrite $0 "Curano AI Dictate Portable Mode"
     FileClose $0
     CreateDirectory "$INSTDIR\Data"
     DetailPrint "Portable mode: created marker file and Data directory."

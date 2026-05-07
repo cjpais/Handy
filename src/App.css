@@ -2,13 +2,13 @@
 
 @theme {
   /* Design tokens */
-  --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6;
-  --color-mid-gray: #808080;
+  --color-text: #0f172a;
+  --color-background: #f4f7fb;
+  --color-background-ui: #dc2626;
+  --color-logo-primary: #fee2e2;
+  --color-logo-stroke: #7f1d1d;
+  --color-text-stroke: #ffffff;
+  --color-mid-gray: #64748b;
 }
 
 :root {
@@ -16,6 +16,9 @@
   font-size: 15px;
   line-height: 24px;
   font-weight: 400;
+  color-scheme: light;
+  font-family:
+    "Avenir Next", "Segoe UI", "Helvetica Neue", "IBM Plex Sans", sans-serif;
 
   /* Colors - Light Theme */
   /* --color-text: #0f0f0f;
@@ -54,11 +57,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Colors - Dark Theme */
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    --color-text: #0f172a;
+    --color-background: #f4f7fb;
+    --color-background-ui: #dc2626;
+    --color-logo-primary: #fee2e2;
+    --color-logo-stroke: #7f1d1d;
+    --color-text-stroke: #ffffff;
+    --color-mid-gray: #64748b;
   }
 }
 

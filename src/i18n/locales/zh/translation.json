@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "需要权限",
-      "description": "Handy 需要一些权限才能正常工作。",
+      "description": "Curano AI Dictate 需要一些权限才能正常工作。",
       "microphone": {
         "title": "麦克风访问",
         "description": "需要听取您的语音进行转录。"
@@ -176,7 +176,7 @@
     "general": {
       "title": "通用",
       "shortcut": {
-        "title": "Handy 快捷键",
+        "title": "Curano AI Dictate 快捷键",
         "description": "配置启动语音转文字录制的键盘快捷键",
         "loading": "加载快捷键中...",
         "none": "未配置快捷键",
@@ -213,6 +213,27 @@
       "pushToTalk": {
         "label": "按住说话",
         "description": "按住录制，松开停止"
+      },
+      "speechmike": {
+        "title": "Philips SpeechMike",
+        "status": "Device Status",
+        "connected": "Connected",
+        "disconnected": "Not connected",
+        "notConnected": "Not connected",
+        "unknownDevice": "Philips SpeechMike",
+        "blockedTitle": "Button channel is blocked",
+        "blockedBy": "Close the following application(s) and reconnect: {{processes}}",
+        "blockedUnknown": "Another application is holding the HID channel. Close it and reconnect the device.",
+        "autoSelect": "Auto-select as microphone",
+        "autoSelectDescription": "Automatically set SpeechMike as the active microphone when connected. Disable to keep your current microphone selection.",
+        "buttonMapping": "Use device buttons for recording",
+        "buttonMappingDescription": "Map hardware buttons (REC, STOP, EOL, Trigger) to Curano recording actions.",
+        "mappingTable": "Button mapping",
+        "actionTranscribe": "Start / stop recording (toggle or push-to-talk)",
+        "actionCancel": "Cancel current recording",
+        "actionPostProcess": "Record with AI post-processing",
+        "actionTranscribePtt": "Start / stop recording (push-to-talk)",
+        "learnSpeechControl": "Learn about SpeechControl SDK (Windows)"
       }
     },
     "sound": {
@@ -276,11 +297,11 @@
       },
       "autostart": {
         "label": "开机启动",
-        "description": "登录计算机时自动启动 Handy。"
+        "description": "登录计算机时自动启动 Curano AI Dictate。"
       },
       "showTrayIcon": {
         "label": "显示托盘图标",
-        "description": "在系统托盘中显示 Handy 图标。"
+        "description": "在系统托盘中显示 Curano AI Dictate 图标。"
       },
       "overlay": {
         "title": "悬浮窗位置",
@@ -431,10 +452,35 @@
       "retranscribe": "重新转录",
       "retranscribeError": "重新转录失败。请重试。",
       "transcribing": "转录中...",
-      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。"
+      "transcriptionFailed": "转录失败。您可以使用重试图标重新转录。",
+      "providers": {
+        "local": "Local",
+        "livestt": "LiveSTT"
+      }
     },
     "debug": {
       "title": "调试",
+      "logs": {
+        "title": "Live logs",
+        "copyAll": "Copy all",
+        "clear": "Clear",
+        "pause": "Pause",
+        "paused": "Paused",
+        "openLogDir": "Open log dir",
+        "entries": "entries",
+        "filter": {
+          "level": {
+            "title": "Level"
+          },
+          "text": {
+            "placeholder": "Filter..."
+          }
+        },
+        "sources": {
+          "rust": "rust",
+          "front": "front"
+        }
+      },
       "logDirectory": {
         "title": "日志目录",
         "description": "日志文件的存储位置"
@@ -445,7 +491,7 @@
       },
       "updateChecks": {
         "label": "检查更新",
-        "description": "自动检查 Handy 的新版本"
+        "description": "自动检查 Curano AI Dictate 的新版本"
       },
       "soundTheme": {
         "label": "声音主题",
@@ -513,20 +559,20 @@
       "title": "关于",
       "version": {
         "title": "版本",
-        "description": "Handy 的当前版本"
+        "description": "Curano AI Dictate 的当前版本"
       },
       "appDataDirectory": {
         "title": "应用数据目录",
-        "description": "Handy 存储数据的位置"
+        "description": "Curano AI Dictate 存储数据的位置"
       },
       "sourceCode": {
         "title": "源代码",
-        "description": "查看源代码并贡献",
+        "description": "View the Curano AI Dictate source code. Forked from Handy.",
         "button": "在 GitHub 上查看"
       },
       "supportDevelopment": {
         "title": "支持开发",
-        "description": "帮助我们继续开发 Handy",
+        "description": "帮助我们继续开发 Curano AI Dictate",
         "button": "捐赠"
       },
       "acknowledgments": {
@@ -534,7 +580,63 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
-          "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+          "details": "Curano AI Dictate 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+        }
+      }
+    },
+    "transcriptionBackend": {
+      "title": "Transcription Backend",
+      "selector": {
+        "title": "Backend",
+        "description": "Choose whether transcription uses the local model or the configured Curano LiveSTT server."
+      },
+      "options": {
+        "local": "Local model",
+        "livestt": "Curano LiveSTT"
+      },
+      "privacy": {
+        "local": "Local mode processes audio on this device.",
+        "livestt": "Curano LiveSTT mode sends microphone audio to the configured Curano LiveSTT server."
+      },
+      "livestt": {
+        "title": "Curano LiveSTT",
+        "serverUrl": {
+          "title": "Server URL",
+          "description": "Base URL for the Curano LiveSTT server. Do not include the /api path.",
+          "placeholder": "https://grandedoc-server-98243818959.europe-west6.run.app",
+          "error": "Server URL must start with http:// or https://."
+        },
+        "auth": {
+          "title": "Authentication",
+          "description": "Sign in to the configured Curano LiveSTT server. Access tokens are kept in memory only.",
+          "authenticated": "Authenticated",
+          "unauthenticated": "Not authenticated",
+          "updating": "Working..."
+        },
+        "username": {
+          "placeholder": "Username"
+        },
+        "password": {
+          "placeholder": "Password"
+        },
+        "login": "Login",
+        "logout": "Logout",
+        "loginSuccess": "Login succeeded.",
+        "loginError": "Login failed: {{error}}",
+        "loginErrorSafe": "Login failed. Check the server URL and credentials.",
+        "logoutSuccess": "Logged out.",
+        "logoutError": "Logout failed: {{error}}",
+        "logoutErrorSafe": "Logout failed. Please try again.",
+        "consultationId": {
+          "title": "Consultation ID",
+          "description": "Optional numeric consultation ID to attach to LiveSTT sessions.",
+          "placeholder": "Optional",
+          "error": "Consultation ID must be a positive integer or empty."
+        },
+        "finalizeTimeout": {
+          "title": "Finalize Timeout",
+          "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",
+          "error": "Finalize timeout must be between 1 and 120000 milliseconds."
         }
       }
     }
@@ -580,7 +682,7 @@
   },
   "accessibility": {
     "permissionsRequired": "需要辅助功能权限",
-    "permissionsDescription": "Handy 需要辅助功能权限才能输入转录的文字。",
+    "permissionsDescription": "Curano AI Dictate 需要辅助功能权限才能输入转录的文字。",
     "openSettings": "打开系统设置",
     "dismiss": "关闭"
   },
@@ -603,10 +705,22 @@
   },
   "appLanguage": {
     "title": "应用语言",
-    "description": "更改 Handy 界面的语言"
+    "description": "更改 Curano AI Dictate 界面的语言"
   },
   "overlay": {
     "transcribing": "正在转录...",
-    "processing": "处理中..."
+    "processing": "处理中...",
+    "livesttError": "LiveSTT error: {{message}}"
+  },
+  "workspace": {
+    "title": "Curano AI Dictate",
+    "liveStt": "Live STT",
+    "localModel": "Local model",
+    "liveSttDefault": "Live STT default",
+    "settingsIntroTitle": "Settings-first startup",
+    "settingsIntroDescription": "The model-selection onboarding step is removed. Curano AI Dictate now opens directly into settings, with backend, local model, microphone, and transcription preferences managed here.",
+    "settingsPanelEyebrow": "Workspace Settings",
+    "settingsPanelTitle": "Dictation Settings",
+    "settingsNavDescription": "Switch sections to configure backend, local model, history, and advanced dictation preferences."
   }
 }

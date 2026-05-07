@@ -27,11 +27,11 @@ export const AboutSettings: React.FC = () => {
     fetchVersion();
   }, []);
 
-  const handleDonateClick = async () => {
+  const handleProjectClick = async () => {
     try {
-      await openUrl("https://handy.computer/donate");
+      await openUrl("https://github.com/elenik72/Curano-AI-Dictate");
     } catch (error) {
-      console.error("Failed to open donate link:", error);
+      console.error("Failed to open project link:", error);
     }
   };
 
@@ -53,7 +53,7 @@ export const AboutSettings: React.FC = () => {
           description={t("settings.about.supportDevelopment.description")}
           grouped={true}
         >
-          <Button variant="primary" size="md" onClick={handleDonateClick}>
+          <Button variant="primary" size="md" onClick={handleProjectClick}>
             {t("settings.about.supportDevelopment.button")}
           </Button>
         </SettingContainer>
@@ -66,7 +66,9 @@ export const AboutSettings: React.FC = () => {
           <Button
             variant="secondary"
             size="md"
-            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+            onClick={() =>
+              openUrl("https://github.com/elenik72/Curano-AI-Dictate")
+            }
           >
             {t("settings.about.sourceCode.button")}
           </Button>

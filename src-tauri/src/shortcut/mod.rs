@@ -23,7 +23,7 @@ use tauri_plugin_autostart::ManagerExt;
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TranscriptionBackend, TypingTool,
     APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
@@ -39,13 +39,13 @@ pub fn init_shortcuts(app: &AppHandle) {
         KeyboardImplementation::Tauri => {
             tauri_impl::init_shortcuts(app);
         }
-        KeyboardImplementation::HandyKeys => {
+        KeyboardImplementation::NativeKeys => {
             if let Err(e) = handy_keys::init_shortcuts(app) {
                 error!("Failed to initialize handy-keys shortcuts: {}", e);
                 // Fall back to Tauri implementation and persist this fallback
                 warn!("Falling back to Tauri global shortcut implementation and saving fallback to settings");
 
-                // Update settings to persist the fallback so we don't retry HandyKeys on next launch
+                // Update settings to persist the fallback so we don't retry NativeKeys on next launch
                 let mut settings = settings::get_settings(app);
                 settings.keyboard_implementation = KeyboardImplementation::Tauri;
                 settings::write_settings(app, settings);
@@ -61,7 +61,7 @@ pub fn register_cancel_shortcut(app: &AppHandle) {
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::register_cancel_shortcut(app),
+        KeyboardImplementation::NativeKeys => handy_keys::register_cancel_shortcut(app),
     }
 }
 
@@ -70,7 +70,7 @@ pub fn unregister_cancel_shortcut(app: &AppHandle) {
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_cancel_shortcut(app),
-        KeyboardImplementation::HandyKeys => handy_keys::unregister_cancel_shortcut(app),
+        KeyboardImplementation::NativeKeys => handy_keys::unregister_cancel_shortcut(app),
     }
 }
 
@@ -79,7 +79,7 @@ pub fn register_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<()
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::register_shortcut(app, binding),
-        KeyboardImplementation::HandyKeys => handy_keys::register_shortcut(app, binding),
+        KeyboardImplementation::NativeKeys => handy_keys::register_shortcut(app, binding),
     }
 }
 
@@ -88,7 +88,7 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     let settings = get_settings(app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => tauri_impl::unregister_shortcut(app, binding),
-        KeyboardImplementation::HandyKeys => handy_keys::unregister_shortcut(app, binding),
+        KeyboardImplementation::NativeKeys => handy_keys::unregister_shortcut(app, binding),
     }
 }
 
@@ -282,8 +282,8 @@ pub fn change_keyboard_implementation_setting(
     settings.keyboard_implementation = new_impl;
     settings::write_settings(&app, settings);
 
-    // Initialize new implementation if needed (HandyKeys needs state)
-    if new_impl == KeyboardImplementation::HandyKeys {
+    // Initialize new implementation if needed (NativeKeys needs state)
+    if new_impl == KeyboardImplementation::NativeKeys {
         if initialize_handy_keys_with_rollback(&app)? {
             // Shortcuts already registered during init
             return Ok(ImplementationChangeResult {
@@ -321,7 +321,7 @@ pub fn get_keyboard_implementation(app: AppHandle) -> String {
     let settings = settings::get_settings(&app);
     match settings.keyboard_implementation {
         KeyboardImplementation::Tauri => "tauri".to_string(),
-        KeyboardImplementation::HandyKeys => "handy_keys".to_string(),
+        KeyboardImplementation::NativeKeys => "handy_keys".to_string(),
     }
 }
 
@@ -336,7 +336,7 @@ fn validate_shortcut_for_implementation(
 ) -> Result<(), String> {
     match implementation {
         KeyboardImplementation::Tauri => tauri_impl::validate_shortcut(raw),
-        KeyboardImplementation::HandyKeys => handy_keys::validate_shortcut(raw),
+        KeyboardImplementation::NativeKeys => handy_keys::validate_shortcut(raw),
     }
 }
 
@@ -344,7 +344,7 @@ fn validate_shortcut_for_implementation(
 fn parse_keyboard_implementation(s: &str) -> KeyboardImplementation {
     match s {
         "tauri" => KeyboardImplementation::Tauri,
-        "handy_keys" => KeyboardImplementation::HandyKeys,
+        "handy_keys" => KeyboardImplementation::NativeKeys,
         other => {
             warn!(
                 "Invalid keyboard implementation '{}', defaulting to tauri",
@@ -367,7 +367,7 @@ fn unregister_all_shortcuts(app: &AppHandle, implementation: KeyboardImplementat
 
         let result = match implementation {
             KeyboardImplementation::Tauri => tauri_impl::unregister_shortcut(app, binding),
-            KeyboardImplementation::HandyKeys => handy_keys::unregister_shortcut(app, binding),
+            KeyboardImplementation::NativeKeys => handy_keys::unregister_shortcut(app, binding),
         };
 
         if let Err(e) = result {
@@ -425,7 +425,7 @@ fn register_all_shortcuts_for_implementation(
         // Register with the appropriate implementation
         let result = match implementation {
             KeyboardImplementation::Tauri => tauri_impl::register_shortcut(app, binding),
-            KeyboardImplementation::HandyKeys => handy_keys::register_shortcut(app, binding),
+            KeyboardImplementation::NativeKeys => handy_keys::register_shortcut(app, binding),
         };
 
         if let Err(e) = result {
@@ -444,21 +444,21 @@ fn register_all_shortcuts_for_implementation(
     reset_bindings
 }
 
-/// Initialize HandyKeys if not already initialized, with rollback on failure
+/// Initialize NativeKeys if not already initialized, with rollback on failure
 fn initialize_handy_keys_with_rollback(app: &AppHandle) -> Result<bool, String> {
-    if app.try_state::<handy_keys::HandyKeysState>().is_some() {
+    if app.try_state::<handy_keys::NativeKeysState>().is_some() {
         return Ok(false); // Already initialized, caller should continue
     }
 
     if let Err(e) = handy_keys::init_shortcuts(app) {
-        error!("Failed to initialize HandyKeys: {}", e);
+        error!("Failed to initialize NativeKeys: {}", e);
         // Rollback to Tauri
         let mut settings = settings::get_settings(app);
         settings.keyboard_implementation = KeyboardImplementation::Tauri;
         settings::write_settings(app, settings);
         tauri_impl::init_shortcuts(app);
         return Err(format!(
-            "Failed to initialize HandyKeys: {}. Reverted to Tauri.",
+            "Failed to initialize NativeKeys: {}. Reverted to Tauri.",
             e
         ));
     }
@@ -536,6 +536,99 @@ pub fn change_selected_language_setting(app: AppHandle, language: String) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_transcription_backend_setting(
+    app: AppHandle,
+    backend: TranscriptionBackend,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let should_reset_livestt_state =
+        should_reset_livestt_state_for_backend_change(settings.transcription_backend, backend);
+
+    if should_reset_livestt_state {
+        clear_livestt_runtime_state(&app);
+    }
+
+    settings.transcription_backend = backend;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_livestt_server_url_setting(app: AppHandle, server_url: String) -> Result<(), String> {
+    let normalized = settings::normalize_livestt_server_url_for_settings(&server_url)?;
+    let mut settings = settings::get_settings(&app);
+
+    if !should_reset_livestt_state_for_server_url_change(&settings.livestt_server_url, &normalized)
+    {
+        return Ok(());
+    }
+
+    clear_livestt_runtime_state(&app);
+    settings.livestt_server_url = normalized;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+fn should_reset_livestt_state_for_backend_change(
+    current_backend: TranscriptionBackend,
+    next_backend: TranscriptionBackend,
+) -> bool {
+    current_backend == TranscriptionBackend::LiveStt
+        && next_backend != TranscriptionBackend::LiveStt
+}
+
+fn should_reset_livestt_state_for_server_url_change(
+    current_server_url: &str,
+    next_server_url: &str,
+) -> bool {
+    current_server_url != next_server_url
+}
+
+fn clear_livestt_runtime_state(app: &AppHandle) {
+    if let Some(auth_state) = app.try_state::<crate::livestt::auth::LiveSttAuthState>() {
+        auth_state.clear_tokens();
+    }
+
+    if let Some(manager) =
+        app.try_state::<std::sync::Arc<crate::livestt::session::LiveSttSessionManager>>()
+    {
+        let _ = manager.cancel_session();
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_livestt_consultation_id_setting(
+    app: AppHandle,
+    consultation_id: Option<String>,
+) -> Result<(), String> {
+    settings::validate_livestt_consultation_id(consultation_id.as_deref())?;
+    let mut settings = settings::get_settings(&app);
+    settings.livestt_consultation_id = consultation_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_livestt_finalize_timeout_ms_setting(
+    app: AppHandle,
+    timeout_ms: u64,
+) -> Result<(), String> {
+    settings::validate_livestt_finalize_timeout_ms(timeout_ms)?;
+    let mut settings = settings::get_settings(&app);
+    settings.livestt_finalize_timeout_ms = timeout_ms;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {
@@ -554,6 +647,43 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
     crate::utils::update_overlay_position(&app);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn backend_change_only_resets_livestt_state_when_switching_away_from_livestt() {
+        assert!(!should_reset_livestt_state_for_backend_change(
+            TranscriptionBackend::Local,
+            TranscriptionBackend::Local,
+        ));
+        assert!(!should_reset_livestt_state_for_backend_change(
+            TranscriptionBackend::Local,
+            TranscriptionBackend::LiveStt,
+        ));
+        assert!(!should_reset_livestt_state_for_backend_change(
+            TranscriptionBackend::LiveStt,
+            TranscriptionBackend::LiveStt,
+        ));
+        assert!(should_reset_livestt_state_for_backend_change(
+            TranscriptionBackend::LiveStt,
+            TranscriptionBackend::Local,
+        ));
+    }
+
+    #[test]
+    fn server_url_change_only_resets_livestt_state_when_value_changes() {
+        assert!(!should_reset_livestt_state_for_server_url_change(
+            "https://example.com",
+            "https://example.com",
+        ));
+        assert!(should_reset_livestt_state_for_server_url_change(
+            "https://example.com",
+            "https://other.example.com",
+        ));
+    }
 }
 
 #[tauri::command]

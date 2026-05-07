@@ -1,5 +1,5 @@
 {
-  "name": "handy-app",
+  "name": "curano-ai-dictate",
   "private": true,
   "version": "0.8.3",
   "type": "module",
@@ -17,6 +17,7 @@
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
     "check:translations": "bun scripts/check-translations.ts",
+    "livestt:mock": "node scripts/livestt_mock_server.mjs",
     "postinstall": "bun scripts/check-nix-deps.ts"
   },
   "dependencies": {

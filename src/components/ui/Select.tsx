@@ -39,28 +39,24 @@ type NonCreatableProps = {
 
 export type SelectProps = BaseProps & (CreatableProps | NonCreatableProps);
 
-const baseBackground =
-  "color-mix(in srgb, var(--color-mid-gray) 10%, transparent)";
-const hoverBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 12%, transparent)";
-const focusBackground =
-  "color-mix(in srgb, var(--color-logo-primary) 20%, transparent)";
-const neutralBorder =
-  "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)";
+const baseBackground = "#ffffff";
+const hoverBackground = "rgba(248, 250, 252, 1)";
+const focusBackground = "#ffffff";
+const neutralBorder = "rgba(203, 213, 225, 1)";
 
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
     minHeight: 40,
-    borderRadius: 6,
-    borderColor: state.isFocused ? "var(--color-logo-primary)" : neutralBorder,
-    boxShadow: state.isFocused ? "0 0 0 1px var(--color-logo-primary)" : "none",
+    borderRadius: 14,
+    borderColor: state.isFocused ? "#f87171" : neutralBorder,
+    boxShadow: state.isFocused ? "0 0 0 4px rgba(254, 226, 226, 1)" : "none",
     backgroundColor: state.isFocused ? focusBackground : baseBackground,
     fontSize: "0.875rem",
     color: "var(--color-text)",
     transition: "all 150ms ease",
     ":hover": {
-      borderColor: "var(--color-logo-primary)",
+      borderColor: "#94a3b8",
       backgroundColor: hoverBackground,
     },
   }),
@@ -79,28 +75,26 @@ const selectStyles: StylesConfig<SelectOption, false> = {
   }),
   dropdownIndicator: (base, state) => ({
     ...base,
-    color: state.isFocused
-      ? "var(--color-logo-primary)"
-      : "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+    color: state.isFocused ? "#dc2626" : "#64748b",
     ":hover": {
-      color: "var(--color-logo-primary)",
+      color: "#dc2626",
     },
   }),
   clearIndicator: (base) => ({
     ...base,
-    color: "color-mix(in srgb, var(--color-mid-gray) 80%, transparent)",
+    color: "#64748b",
     ":hover": {
-      color: "var(--color-logo-primary)",
+      color: "#dc2626",
     },
   }),
   menu: (provided) => ({
     ...provided,
     zIndex: 30,
-    backgroundColor: "var(--color-background)",
+    backgroundColor: "#ffffff",
     color: "var(--color-text)",
-    border:
-      "1px solid color-mix(in srgb, var(--color-mid-gray) 30%, transparent)",
-    boxShadow: "0 10px 30px rgba(15, 15, 15, 0.2)",
+    border: "1px solid rgba(226, 232, 240, 1)",
+    borderRadius: 16,
+    boxShadow: "0 18px 40px rgba(15, 23, 42, 0.12)",
   }),
   option: (base, state) => ({
     ...base,

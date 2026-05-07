@@ -337,6 +337,19 @@ jobs:
             '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      - name: Disable Windows signing for unsigned builds
+        if: runner.os == 'Windows' && !inputs.sign-binaries
+        shell: pwsh
+        run: |
+          $configPath = "src-tauri/tauri.conf.json"
+          $config = Get-Content $configPath -Raw | ConvertFrom-Json -Depth 100
+
+          if ($null -ne $config.bundle -and $null -ne $config.bundle.windows) {
+            $config.bundle.windows.PSObject.Properties.Remove("signCommand")
+          }
+
+          $config | ConvertTo-Json -Depth 100 | Set-Content $configPath -Encoding utf8
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:

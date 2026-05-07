@@ -6,6 +6,7 @@ import type {
   AudioDevice,
   WhisperAcceleratorSetting,
   OrtAcceleratorSetting,
+  TranscriptionBackend,
 } from "@/bindings";
 import { commands } from "@/bindings";
 
@@ -155,6 +156,14 @@ const settingUpdaters: {
     commands.changeWhisperGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  transcription_backend: (value) =>
+    commands.changeTranscriptionBackendSetting(value as TranscriptionBackend),
+  livestt_server_url: (value) =>
+    commands.changeLivesttServerUrlSetting(value as string),
+  livestt_consultation_id: (value) =>
+    commands.changeLivesttConsultationIdSetting(value as string | null),
+  livestt_finalize_timeout_ms: (value) =>
+    commands.changeLivesttFinalizeTimeoutMsSetting(value as number),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

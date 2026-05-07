@@ -11,6 +11,8 @@ import { useSettings } from "../../../hooks/useSettings";
 import { VolumeSlider } from "../VolumeSlider";
 import { MuteWhileRecording } from "../MuteWhileRecording";
 import { ModelSettingsCard } from "./ModelSettingsCard";
+import { SpeechMikeSettings } from "./SpeechMikeSettings";
+import { TranscriptionBackendSettings } from "./TranscriptionBackendSettings";
 
 export const GeneralSettings: React.FC = () => {
   const { t } = useTranslation();
@@ -27,6 +29,7 @@ export const GeneralSettings: React.FC = () => {
           <ShortcutInput shortcutId="cancel" grouped={true} />
         )}
       </SettingsGroup>
+      <TranscriptionBackendSettings />
       <ModelSettingsCard />
       <SettingsGroup title={t("settings.sound.title")}>
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
@@ -39,6 +42,7 @@ export const GeneralSettings: React.FC = () => {
         />
         <VolumeSlider disabled={!audioFeedbackEnabled} />
       </SettingsGroup>
+      <SpeechMikeSettings />
     </div>
   );
 };

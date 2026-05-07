@@ -1,11 +1,14 @@
 pub mod audio;
 pub mod history;
 pub mod models;
+pub mod speechmike;
 pub mod transcription;
 
+use crate::log_sink::{LogEntry, LogRing};
 use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
 use crate::utils::cancel_current_operation;
-use tauri::{AppHandle, Manager};
+use std::sync::Arc;
+use tauri::{AppHandle, Manager, State};
 use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command]
@@ -159,6 +162,19 @@ pub fn initialize_enigo(app: AppHandle) -> Result<(), String> {
             Err(format!("Failed to initialize input system: {}", e))
         }
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_log_buffer(state: State<'_, Arc<LogRing>>) -> Vec<LogEntry> {
+    state.get_all()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clear_log_buffer(state: State<'_, Arc<LogRing>>) -> Result<(), String> {
+    state.clear();
+    Ok(())
 }
 
 /// Marker state to track if shortcuts have been initialized.

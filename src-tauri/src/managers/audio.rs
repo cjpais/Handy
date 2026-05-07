@@ -1,5 +1,6 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
 use crate::helpers::clamshell;
+use crate::livestt::session::LiveSttAudioSender;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
@@ -120,13 +121,15 @@ pub enum MicrophoneMode {
 fn create_audio_recorder(
     vad_path: &str,
     app_handle: &tauri::AppHandle,
+    recording_chunk_sender: Arc<Mutex<Option<LiveSttAudioSender>>>,
 ) -> Result<AudioRecorder, anyhow::Error> {
     let silero = SileroVad::new(vad_path, 0.3)
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
     let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
 
-    // Recorder with VAD plus a spectrum-level callback that forwards updates to
-    // the frontend.
+    // Recorder with local VAD plus a spectrum-level callback that forwards
+    // updates to the frontend. The LiveSTT callback receives raw resampled
+    // 16 kHz mono frames before local VAD filtering.
     let recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(Box::new(smoothed_vad))
@@ -134,6 +137,18 @@ fn create_audio_recorder(
             let app_handle = app_handle.clone();
             move |levels| {
                 utils::emit_levels(&app_handle, &levels);
+            }
+        })
+        .with_recording_chunk_callback(move |chunk| {
+            let sender = match recording_chunk_sender.try_lock() {
+                Ok(sender) => sender.clone(),
+                Err(_) => {
+                    debug!("Dropped LiveSTT recording chunk because sender lock is busy");
+                    return;
+                }
+            };
+            if let Some(sender) = sender {
+                sender.try_send_chunk(chunk);
             }
         });
 
@@ -153,6 +168,7 @@ pub struct AudioRecordingManager {
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
     close_generation: Arc<AtomicU64>,
+    recording_chunk_sender: Arc<Mutex<Option<LiveSttAudioSender>>>,
 }
 
 impl AudioRecordingManager {
@@ -176,6 +192,7 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
             close_generation: Arc::new(AtomicU64::new(0)),
+            recording_chunk_sender: Arc::new(Mutex::new(None)),
         };
 
         // Always-on?  Open immediately.
@@ -277,6 +294,7 @@ impl AudioRecordingManager {
             *recorder_opt = Some(create_audio_recorder(
                 vad_path.to_str().unwrap(),
                 &self.app_handle,
+                self.recording_chunk_sender.clone(),
             )?);
         }
         Ok(())
@@ -349,6 +367,7 @@ impl AudioRecordingManager {
             // If still recording, stop first.
             if *self.is_recording.lock().unwrap() {
                 let _ = rec.stop();
+                *self.recording_chunk_sender.lock().unwrap() = None;
                 *self.is_recording.lock().unwrap() = false;
             }
             let _ = rec.close();
@@ -384,6 +403,22 @@ impl AudioRecordingManager {
     /* ---------- recording --------------------------------------------------- */
 
     pub fn try_start_recording(&self, binding_id: &str) -> Result<(), String> {
+        self.try_start_recording_inner(binding_id, None)
+    }
+
+    pub fn try_start_recording_with_chunk_sender(
+        &self,
+        binding_id: &str,
+        sender: LiveSttAudioSender,
+    ) -> Result<(), String> {
+        self.try_start_recording_inner(binding_id, Some(sender))
+    }
+
+    fn try_start_recording_inner(
+        &self,
+        binding_id: &str,
+        chunk_sender: Option<LiveSttAudioSender>,
+    ) -> Result<(), String> {
         let mut state = self.state.lock().unwrap();
 
         if let RecordingState::Idle = *state {
@@ -398,6 +433,7 @@ impl AudioRecordingManager {
                 }
             }
 
+            *self.recording_chunk_sender.lock().unwrap() = chunk_sender;
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
                 if rec.start().is_ok() {
                     *self.is_recording.lock().unwrap() = true;
@@ -408,6 +444,7 @@ impl AudioRecordingManager {
                     return Ok(());
                 }
             }
+            *self.recording_chunk_sender.lock().unwrap() = None;
             Err("Recorder not available".to_string())
         } else {
             Err("Already recording".to_string())
@@ -456,6 +493,7 @@ impl AudioRecordingManager {
                     error!("Recorder not available");
                     Vec::new()
                 };
+                *self.recording_chunk_sender.lock().unwrap() = None;
 
                 *self.is_recording.lock().unwrap() = false;
 
@@ -497,8 +535,9 @@ impl AudioRecordingManager {
             *state = RecordingState::Idle;
             drop(state);
 
+            *self.recording_chunk_sender.lock().unwrap() = None;
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                let _ = rec.stop(); // Discard the result
+                let _ = rec.cancel(); // Discard the result
             }
 
             *self.is_recording.lock().unwrap() = false;

@@ -12,16 +12,34 @@ import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "transcribing" | "processing";
+type LiveSttTranscriptStatus = "partial" | "final" | "error" | "ended";
+
+type LiveSttTranscriptPayload = {
+  session_id: number;
+  text: string;
+};
+
+type LiveSttErrorPayload = {
+  session_id?: number | null;
+  error_code: string;
+  error_message: string;
+};
 
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
+  const [liveSttText, setLiveSttText] = useState("");
+  const [liveSttStatus, setLiveSttStatus] =
+    useState<LiveSttTranscriptStatus>("ended");
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   const direction = getLanguageDirection(i18n.language);
 
   useEffect(() => {
+    let isMounted = true;
+    let cleanup: (() => void) | undefined;
+
     const setupEventListeners = async () => {
       // Listen for show-overlay event from Rust
       const unlistenShow = await listen("show-overlay", async (event) => {
@@ -35,6 +53,8 @@ const RecordingOverlay: React.FC = () => {
       // Listen for hide-overlay event from Rust
       const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
+        setLiveSttText("");
+        setLiveSttStatus("ended");
       });
 
       // Listen for mic-level updates
@@ -51,16 +71,73 @@ const RecordingOverlay: React.FC = () => {
         setLevels(smoothed.slice(0, 9));
       });
 
+      const unlistenLiveSttStarted = await listen(
+        "livestt-session-started",
+        () => {
+          setLiveSttText("");
+          setLiveSttStatus("partial");
+        },
+      );
+
+      const unlistenLiveSttPartial = await listen<LiveSttTranscriptPayload>(
+        "livestt-partial",
+        (event) => {
+          setLiveSttText(event.payload.text);
+          setLiveSttStatus("partial");
+        },
+      );
+
+      const unlistenLiveSttFinal = await listen<LiveSttTranscriptPayload>(
+        "livestt-final",
+        (event) => {
+          setLiveSttText(event.payload.text);
+          setLiveSttStatus("final");
+        },
+      );
+
+      const unlistenLiveSttError = await listen<LiveSttErrorPayload>(
+        "livestt-error",
+        (event) => {
+          const message =
+            event.payload.error_message?.trim() || event.payload.error_code;
+          setLiveSttText(
+            t("overlay.livesttError", {
+              code: event.payload.error_code,
+              message,
+            }),
+          );
+          setLiveSttStatus("error");
+        },
+      );
+
+      const unlistenLiveSttEnded = await listen("livestt-session-ended", () => {
+        setLiveSttStatus("ended");
+      });
+
       // Cleanup function
-      return () => {
+      cleanup = () => {
         unlistenShow();
         unlistenHide();
         unlistenLevel();
+        unlistenLiveSttStarted();
+        unlistenLiveSttPartial();
+        unlistenLiveSttFinal();
+        unlistenLiveSttError();
+        unlistenLiveSttEnded();
       };
+
+      if (!isMounted) {
+        cleanup();
+      }
     };
 
     setupEventListeners();
-  }, []);
+
+    return () => {
+      isMounted = false;
+      cleanup?.();
+    };
+  }, [t]);
 
   const getIcon = () => {
     if (state === "recording") {
@@ -78,7 +155,11 @@ const RecordingOverlay: React.FC = () => {
       <div className="overlay-left">{getIcon()}</div>
 
       <div className="overlay-middle">
-        {state === "recording" && (
+        {liveSttText ? (
+          <div className={`livestt-text livestt-text-${liveSttStatus}`}>
+            {liveSttText}
+          </div>
+        ) : state === "recording" ? (
           <div className="bars-container">
             {levels.map((v, i) => (
               <div
@@ -92,11 +173,11 @@ const RecordingOverlay: React.FC = () => {
               />
             ))}
           </div>
-        )}
-        {state === "transcribing" && (
+        ) : null}
+        {!liveSttText && state === "transcribing" && (
           <div className="transcribing-text">{t("overlay.transcribing")}</div>
         )}
-        {state === "processing" && (
+        {!liveSttText && state === "processing" && (
           <div className="transcribing-text">{t("overlay.processing")}</div>
         )}
       </div>

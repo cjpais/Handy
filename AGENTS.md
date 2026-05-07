@@ -51,7 +51,7 @@ For detailed platform-specific build setup, see [BUILD.md](BUILD.md).
 
 ## Architecture Overview
 
-Handy is a cross-platform desktop speech-to-text application built with Tauri 2.x (Rust backend + React/TypeScript frontend).
+Curano AI Dictate is a Curano AI fork of Handy, a cross-platform desktop speech-to-text application built with Tauri 2.x (Rust backend + React/TypeScript frontend).
 
 ### Backend Structure (src-tauri/src/)
 
@@ -174,18 +174,18 @@ Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`
 
 ## CLI Parameters
 
-Handy supports command-line parameters on all platforms for integration with scripts, window managers, and autostart configurations.
+Curano AI Dictate supports command-line parameters on all platforms for integration with scripts, window managers, and autostart configurations.
 
 **Implementation:** `cli.rs` (definitions), `main.rs` (parsing), `lib.rs` (applying), `signal_handle.rs` (shared logic)
 
-| Flag                     | Description                                                    |
-| ------------------------ | -------------------------------------------------------------- |
-| `--toggle-transcription` | Toggle recording on/off on a running instance                  |
-| `--toggle-post-process`  | Toggle recording with post-processing on/off                   |
-| `--cancel`               | Cancel the current operation on a running instance             |
-| `--start-hidden`         | Launch without showing the main window (tray icon visible)     |
-| `--no-tray`              | Launch without system tray (closing window quits the app)      |
-| `--debug`                | Enable debug mode with verbose (Trace) logging                 |
+| Flag                     | Description                                                |
+| ------------------------ | ---------------------------------------------------------- |
+| `--toggle-transcription` | Toggle recording on/off on a running instance              |
+| `--toggle-post-process`  | Toggle recording with post-processing on/off               |
+| `--cancel`               | Cancel the current operation on a running instance         |
+| `--start-hidden`         | Launch without showing the main window (tray icon visible) |
+| `--no-tray`              | Launch without system tray (closing window quits the app)  |
+| `--debug`                | Enable debug mode with verbose (Trace) logging             |
 
 **Key design decisions:**
 
@@ -211,4 +211,4 @@ See the [Troubleshooting](README.md#troubleshooting) section in README.md.
 
 Follow [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow and [PR template](.github/PULL_REQUEST_TEMPLATE.md) when submitting pull requests. For translations, see [CONTRIBUTING_TRANSLATIONS.md](CONTRIBUTING_TRANSLATIONS.md).
 
-**Note:** Feature freeze is active — bug fixes are top priority. New features require community support via [Discussions](https://github.com/cjpais/Handy/discussions).
+**Note:** Feature freeze is active — bug fixes are top priority. New features require community support via [Discussions](https://github.com/elenik72/Curano-AI-Dictate/discussions).

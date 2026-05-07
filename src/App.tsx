@@ -1,24 +1,17 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { platform } from "@tauri-apps/plugin-os";
-import {
-  checkAccessibilityPermission,
-  checkMicrophonePermission,
-} from "tauri-plugin-macos-permissions-api";
+import { CircleDot, Sparkles } from "lucide-react";
 import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
-import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
 import { useSettings } from "./hooks/useSettings";
-import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
-
-type OnboardingStep = "accessibility" | "model" | "done";
 
 const renderSettingsContent = (section: SidebarSection) => {
   const ActiveComponent =
@@ -28,52 +21,38 @@ const renderSettingsContent = (section: SidebarSection) => {
 
 function App() {
   const { t, i18n } = useTranslation();
-  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep | null>(
-    null,
-  );
-  // Track if this is a returning user who just needs to grant permissions
-  // (vs a new user who needs full onboarding including model selection)
-  const [isReturningUser, setIsReturningUser] = useState(false);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
-  const { settings, updateSetting } = useSettings();
+  const { settings, updateSetting, refreshAudioDevices, refreshOutputDevices } =
+    useSettings();
   const direction = getLanguageDirection(i18n.language);
-  const refreshAudioDevices = useSettingsStore(
-    (state) => state.refreshAudioDevices,
-  );
-  const refreshOutputDevices = useSettingsStore(
-    (state) => state.refreshOutputDevices,
-  );
-  const hasCompletedPostOnboardingInit = useRef(false);
+  const hasCompletedAppInit = useRef(false);
+  const backend = settings?.transcription_backend ?? "live_stt";
+  const contentMaxWidth =
+    currentSection === "debug" ? "max-w-none" : "max-w-[1120px]";
 
-  useEffect(() => {
-    checkOnboardingStatus();
-  }, []);
-
-  // Initialize RTL direction when language changes
   useEffect(() => {
     initializeRTL(i18n.language);
   }, [i18n.language]);
 
-  // Initialize Enigo, shortcuts, and refresh audio devices when main app loads
   useEffect(() => {
-    if (onboardingStep === "done" && !hasCompletedPostOnboardingInit.current) {
-      hasCompletedPostOnboardingInit.current = true;
-      Promise.all([
-        commands.initializeEnigo(),
-        commands.initializeShortcuts(),
-      ]).catch((e) => {
-        console.warn("Failed to initialize:", e);
-      });
-      refreshAudioDevices();
-      refreshOutputDevices();
+    if (!settings || hasCompletedAppInit.current) {
+      return;
     }
-  }, [onboardingStep, refreshAudioDevices, refreshOutputDevices]);
 
-  // Handle keyboard shortcuts for debug mode toggle
+    hasCompletedAppInit.current = true;
+    Promise.all([
+      commands.initializeEnigo(),
+      commands.initializeShortcuts(),
+      refreshAudioDevices(),
+      refreshOutputDevices(),
+    ]).catch((error) => {
+      console.warn("Failed to initialize app shell:", error);
+    });
+  }, [refreshAudioDevices, refreshOutputDevices, settings]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Check for Ctrl+Shift+D (Windows/Linux) or Cmd+Shift+D (macOS)
       const isDebugShortcut =
         event.shiftKey &&
         event.key.toLowerCase() === "d" &&
@@ -86,16 +65,12 @@ function App() {
       }
     };
 
-    // Add event listener when component mounts
     document.addEventListener("keydown", handleKeyDown);
-
-    // Cleanup event listener when component unmounts
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [settings?.debug_mode, updateSetting]);
 
-  // Listen for recording errors from the backend and show a toast
   useEffect(() => {
     const unlisten = listen<RecordingErrorEvent>("recording-error", (event) => {
       const { error_type, detail } = event.payload;
@@ -117,27 +92,24 @@ function App() {
         );
       }
     });
+
     return () => {
       unlisten.then((fn) => fn());
     };
   }, [t]);
 
-  // Listen for paste failures and show a toast.
-  // The technical error detail is logged to handy.log on the Rust side
-  // (see actions.rs `error!("Failed to paste transcription: ...")`),
-  // so we show a localized, user-friendly message here instead of the raw error.
   useEffect(() => {
     const unlisten = listen("paste-error", () => {
       toast.error(t("errors.pasteFailedTitle"), {
         description: t("errors.pasteFailed"),
       });
     });
+
     return () => {
       unlisten.then((fn) => fn());
     };
   }, [t]);
 
-  // Listen for model loading failures and show a toast
   useEffect(() => {
     const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {
       if (event.payload.event_type === "loading_failed") {
@@ -152,136 +124,74 @@ function App() {
         );
       }
     });
+
     return () => {
       unlisten.then((fn) => fn());
     };
   }, [t]);
 
-  const revealMainWindowForPermissions = async () => {
-    try {
-      await commands.showMainWindowCommand();
-    } catch (e) {
-      console.warn("Failed to show main window for permission onboarding:", e);
-    }
-  };
-
-  const checkOnboardingStatus = async () => {
-    try {
-      // Check if they have any models available
-      const result = await commands.hasAnyModelsAvailable();
-      const hasModels = result.status === "ok" && result.data;
-      const currentPlatform = platform();
-
-      if (hasModels) {
-        // Returning user - check if they need to grant permissions first
-        setIsReturningUser(true);
-
-        if (currentPlatform === "macos") {
-          try {
-            const [hasAccessibility, hasMicrophone] = await Promise.all([
-              checkAccessibilityPermission(),
-              checkMicrophonePermission(),
-            ]);
-            if (!hasAccessibility || !hasMicrophone) {
-              await revealMainWindowForPermissions();
-              setOnboardingStep("accessibility");
-              return;
-            }
-          } catch (e) {
-            console.warn("Failed to check macOS permissions:", e);
-            // If we can't check, proceed to main app and let them fix it there
-          }
-        }
-
-        if (currentPlatform === "windows") {
-          try {
-            const microphoneStatus =
-              await commands.getWindowsMicrophonePermissionStatus();
-            if (
-              microphoneStatus.supported &&
-              microphoneStatus.overall_access === "denied"
-            ) {
-              await revealMainWindowForPermissions();
-              setOnboardingStep("accessibility");
-              return;
-            }
-          } catch (e) {
-            console.warn("Failed to check Windows microphone permissions:", e);
-            // If we can't check, proceed to main app and let them fix it there
-          }
-        }
-
-        setOnboardingStep("done");
-      } else {
-        // New user - start full onboarding
-        setIsReturningUser(false);
-        setOnboardingStep("accessibility");
-      }
-    } catch (error) {
-      console.error("Failed to check onboarding status:", error);
-      setOnboardingStep("accessibility");
-    }
-  };
-
-  const handleAccessibilityComplete = () => {
-    // Returning users already have models, skip to main app
-    // New users need to select a model
-    setOnboardingStep(isReturningUser ? "done" : "model");
-  };
-
-  const handleModelSelected = () => {
-    // Transition to main app - user has started a download
-    setOnboardingStep("done");
-  };
-
-  // Still checking onboarding status
-  if (onboardingStep === null) {
-    return null;
-  }
-
-  if (onboardingStep === "accessibility") {
-    return <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
-  }
-
-  if (onboardingStep === "model") {
-    return <Onboarding onModelSelected={handleModelSelected} />;
-  }
-
   return (
     <div
       dir={direction}
-      className="h-screen flex flex-col select-none cursor-default"
+      className="h-screen cursor-default select-none bg-[radial-gradient(circle_at_top_left,_rgba(254,226,226,0.55),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef3f8_100%)]"
     >
       <Toaster
-        theme="system"
+        theme="light"
         toastOptions={{
           unstyled: true,
           classNames: {
             toast:
-              "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-            title: "font-medium",
-            description: "text-mid-gray",
+              "rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(15,23,42,0.12)] flex items-center gap-3 text-sm text-slate-800",
+            title: "font-semibold text-slate-900",
+            description: "text-slate-500",
           },
         }}
       />
-      {/* Main content area that takes remaining space */}
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar
-          activeSection={currentSection}
-          onSectionChange={setCurrentSection}
-        />
-        {/* Scrollable content area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col items-center p-4 gap-4">
-              <AccessibilityPermissions />
-              {renderSettingsContent(currentSection)}
+
+      <div className="flex h-full flex-col p-5">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-[32px] border border-slate-200 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+          <Sidebar
+            activeSection={currentSection}
+            onSectionChange={setCurrentSection}
+          />
+
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="border-b border-slate-200 px-8 py-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="max-w-3xl">
+                  <h1 className="text-3xl font-semibold tracking-[-0.03em] text-slate-950">
+                    {t("workspace.title")}
+                  </h1>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {t("workspace.liveSttDefault")}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700">
+                    <CircleDot className="h-3.5 w-3.5" />
+                    {backend === "live_stt"
+                      ? t("workspace.liveStt")
+                      : t("workspace.localModel")}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div
+                className={`mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 p-6`}
+              >
+                <AccessibilityPermissions />
+                {renderSettingsContent(currentSection)}
+              </div>
             </div>
           </div>
         </div>
+
+        <Footer />
       </div>
-      {/* Fixed footer at bottom */}
-      <Footer />
     </div>
   );
 }

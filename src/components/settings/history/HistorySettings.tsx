@@ -352,11 +352,20 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   };
 
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
+  const providerLabel = t(`settings.history.providers.${entry.provider}`);
 
   return (
     <div className="px-4 py-2 pb-5 flex flex-col gap-3">
       <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-sm font-medium truncate">{formattedDate}</p>
+          <span
+            className="shrink-0 rounded border border-mid-gray/20 px-1.5 py-0.5 text-[10px] font-medium uppercase text-text/50"
+            title={providerLabel}
+          >
+            {providerLabel}
+          </span>
+        </div>
         <div className="flex items-center">
           <IconButton
             onClick={handleCopyText}

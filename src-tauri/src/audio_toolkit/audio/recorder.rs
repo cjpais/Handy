@@ -18,10 +18,14 @@ use crate::audio_toolkit::{
     vad::{self, VadFrame},
     VoiceActivityDetector,
 };
+use crate::livestt::audio::PcmChunkAccumulator;
 
 enum Cmd {
     Start,
-    Stop(mpsc::Sender<Vec<f32>>),
+    Stop {
+        reply_tx: mpsc::Sender<Vec<f32>>,
+        flush_remainder: bool,
+    },
     Shutdown,
 }
 
@@ -36,6 +40,7 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    recording_chunk_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
 }
 
 impl AudioRecorder {
@@ -46,6 +51,7 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            recording_chunk_cb: None,
         })
     }
 
@@ -59,6 +65,14 @@ impl AudioRecorder {
         F: Fn(Vec<f32>) + Send + Sync + 'static,
     {
         self.level_cb = Some(Arc::new(cb));
+        self
+    }
+
+    pub fn with_recording_chunk_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(Vec<f32>) + Send + Sync + 'static,
+    {
+        self.recording_chunk_cb = Some(Arc::new(cb));
         self
     }
 
@@ -83,6 +97,7 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let recording_chunk_cb = self.recording_chunk_cb.clone();
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -159,7 +174,15 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     // Keep the stream alive while we process samples.
-                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag);
+                    run_consumer(
+                        sample_rate,
+                        vad,
+                        sample_rx,
+                        cmd_rx,
+                        level_cb,
+                        recording_chunk_cb,
+                        stop_flag,
+                    );
                     drop(stream);
                 }
                 Err(error_message) => {
@@ -205,9 +228,23 @@ impl AudioRecorder {
     pub fn stop(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         let (resp_tx, resp_rx) = mpsc::channel();
         if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Stop(resp_tx))?;
+            tx.send(Cmd::Stop {
+                reply_tx: resp_tx,
+                flush_remainder: true,
+            })?;
         }
         Ok(resp_rx.recv()?) // wait for the samples
+    }
+
+    pub fn cancel(&self) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
+        let (resp_tx, resp_rx) = mpsc::channel();
+        if let Some(tx) = &self.cmd_tx {
+            tx.send(Cmd::Stop {
+                reply_tx: resp_tx,
+                flush_remainder: false,
+            })?;
+        }
+        Ok(resp_rx.recv()?)
     }
 
     pub fn close(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -351,7 +388,32 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
+    use std::sync::{Arc, Mutex};
+
+    use super::{
+        emit_livestt_recording_frame, finalize_livestt_recording, handle_local_recording_frame,
+        is_microphone_access_denied, is_no_input_device_error, RecordingChunkEmitter,
+    };
+    use crate::audio_toolkit::vad::{VadFrame, VoiceActivityDetector};
+    use crate::livestt::audio::{PcmChunkAccumulator, LIVESTT_CHUNK_SAMPLES};
+
+    struct NoiseVad;
+
+    impl VoiceActivityDetector for NoiseVad {
+        fn push_frame<'a>(&'a mut self, _frame: &'a [f32]) -> anyhow::Result<VadFrame<'a>> {
+            Ok(VadFrame::Noise)
+        }
+    }
+
+    fn collect_chunks() -> (RecordingChunkEmitter, Arc<Mutex<Vec<Vec<f32>>>>) {
+        let emitted = Arc::new(Mutex::new(Vec::<Vec<f32>>::new()));
+        let emitted_clone = emitted.clone();
+        let emitter = RecordingChunkEmitter::new(Some(Arc::new(move |chunk| {
+            emitted_clone.lock().unwrap().push(chunk);
+        })));
+
+        (emitter, emitted)
+    }
 
     #[test]
     fn detects_access_is_denied() {
@@ -390,6 +452,50 @@ mod tests {
         assert!(!is_no_input_device_error("permission denied"));
         assert!(!is_no_input_device_error("device not found"));
     }
+
+    #[test]
+    fn livestt_emission_uses_raw_resampled_frame_before_vad_filtering() {
+        let (emitter, emitted) = collect_chunks();
+        let mut chunk_accumulator = PcmChunkAccumulator::new();
+        let vad: Option<Arc<Mutex<Box<dyn VoiceActivityDetector>>>> =
+            Some(Arc::new(Mutex::new(Box::new(NoiseVad))));
+        let mut processed_samples = Vec::new();
+        let frame = vec![0.25; LIVESTT_CHUNK_SAMPLES];
+
+        emit_livestt_recording_frame(&frame, true, &mut chunk_accumulator, &emitter);
+        handle_local_recording_frame(&frame, true, &vad, &mut processed_samples);
+
+        assert!(processed_samples.is_empty());
+        let emitted = emitted.lock().unwrap();
+        assert_eq!(emitted.len(), 1);
+        assert_eq!(emitted[0], frame);
+    }
+
+    #[test]
+    fn livestt_finalize_flushes_remainder_on_normal_stop() {
+        let (emitter, emitted) = collect_chunks();
+        let mut chunk_accumulator = PcmChunkAccumulator::new();
+
+        emit_livestt_recording_frame(&[0.1, 0.2, 0.3], true, &mut chunk_accumulator, &emitter);
+        finalize_livestt_recording(true, &mut chunk_accumulator, &emitter);
+
+        let emitted = emitted.lock().unwrap();
+        assert_eq!(emitted.len(), 1);
+        assert_eq!(emitted[0], vec![0.1, 0.2, 0.3]);
+        assert_eq!(chunk_accumulator.flush(), None);
+    }
+
+    #[test]
+    fn livestt_finalize_discards_remainder_on_cancel() {
+        let (emitter, emitted) = collect_chunks();
+        let mut chunk_accumulator = PcmChunkAccumulator::new();
+
+        emit_livestt_recording_frame(&[0.1, 0.2, 0.3], true, &mut chunk_accumulator, &emitter);
+        finalize_livestt_recording(false, &mut chunk_accumulator, &emitter);
+
+        assert!(emitted.lock().unwrap().is_empty());
+        assert_eq!(chunk_accumulator.flush(), None);
+    }
 }
 
 fn run_consumer(
@@ -398,6 +504,7 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    recording_chunk_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -408,6 +515,8 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut chunk_accumulator = PcmChunkAccumulator::new();
+    let chunk_emitter = RecordingChunkEmitter::new(recording_chunk_cb);
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -419,27 +528,6 @@ fn run_consumer(
         400.0,  // vocal_min_hz
         4000.0, // vocal_max_hz
     );
-
-    fn handle_frame(
-        samples: &[f32],
-        recording: bool,
-        vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
-        out_buf: &mut Vec<f32>,
-    ) {
-        if !recording {
-            return;
-        }
-
-        if let Some(vad_arc) = vad {
-            let mut det = vad_arc.lock().unwrap();
-            match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
-            }
-        } else {
-            out_buf.extend_from_slice(samples);
-        }
-    }
 
     loop {
         let chunk = match sample_rx.recv() {
@@ -460,8 +548,11 @@ fn run_consumer(
         }
 
         // ---------- existing pipeline ------------------------------------ //
+        // LiveSTT receives raw resampled 16 kHz mono frames before local VAD
+        // filtering. Local transcription continues to use VAD-filtered samples.
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            emit_livestt_recording_frame(frame, recording, &mut chunk_accumulator, &chunk_emitter);
+            handle_local_recording_frame(frame, recording, &vad, &mut processed_samples)
         });
 
         // non-blocking check for a command
@@ -470,13 +561,17 @@ fn run_consumer(
                 Cmd::Start => {
                     stop_flag.store(false, Ordering::Relaxed);
                     processed_samples.clear();
+                    chunk_accumulator.reset();
                     recording = true;
                     visualizer.reset();
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
                     }
                 }
-                Cmd::Stop(reply_tx) => {
+                Cmd::Stop {
+                    reply_tx,
+                    flush_remainder,
+                } => {
                     recording = false;
                     stop_flag.store(true, Ordering::Relaxed);
 
@@ -488,7 +583,18 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    emit_livestt_recording_frame(
+                                        frame,
+                                        true,
+                                        &mut chunk_accumulator,
+                                        &chunk_emitter,
+                                    );
+                                    handle_local_recording_frame(
+                                        frame,
+                                        true,
+                                        &vad,
+                                        &mut processed_samples,
+                                    )
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -500,8 +606,19 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        emit_livestt_recording_frame(
+                            frame,
+                            true,
+                            &mut chunk_accumulator,
+                            &chunk_emitter,
+                        );
+                        handle_local_recording_frame(frame, true, &vad, &mut processed_samples)
                     });
+                    finalize_livestt_recording(
+                        flush_remainder,
+                        &mut chunk_accumulator,
+                        &chunk_emitter,
+                    );
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
 
@@ -511,9 +628,87 @@ fn run_consumer(
                 }
                 Cmd::Shutdown => {
                     stop_flag.store(true, Ordering::Relaxed);
+                    chunk_accumulator.reset();
                     return;
                 }
             }
+        }
+    }
+}
+
+fn emit_livestt_recording_frame(
+    frame: &[f32],
+    recording: bool,
+    chunk_accumulator: &mut PcmChunkAccumulator,
+    chunk_emitter: &RecordingChunkEmitter,
+) {
+    if !recording || !chunk_emitter.is_enabled() {
+        return;
+    }
+
+    let chunks = chunk_accumulator.push_samples(frame);
+    chunk_emitter.emit(chunks);
+}
+
+fn handle_local_recording_frame(
+    samples: &[f32],
+    recording: bool,
+    vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+    out_buf: &mut Vec<f32>,
+) {
+    if !recording {
+        return;
+    }
+
+    if let Some(vad_arc) = vad {
+        let mut det = vad_arc.lock().unwrap();
+        match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
+            VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
+            VadFrame::Noise => {}
+        }
+    } else {
+        out_buf.extend_from_slice(samples);
+    }
+}
+
+fn finalize_livestt_recording(
+    flush_remainder: bool,
+    chunk_accumulator: &mut PcmChunkAccumulator,
+    chunk_emitter: &RecordingChunkEmitter,
+) {
+    if flush_remainder {
+        chunk_emitter.flush(chunk_accumulator);
+    } else {
+        chunk_accumulator.reset();
+    }
+}
+
+struct RecordingChunkEmitter {
+    cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+}
+
+impl RecordingChunkEmitter {
+    fn new(cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>) -> Self {
+        Self { cb }
+    }
+
+    fn emit(&self, chunks: Vec<Vec<f32>>) {
+        let Some(cb) = &self.cb else {
+            return;
+        };
+
+        for chunk in chunks {
+            cb(chunk);
+        }
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.cb.is_some()
+    }
+
+    fn flush(&self, accumulator: &mut PcmChunkAccumulator) {
+        if let Some(remainder) = accumulator.flush() {
+            self.emit(vec![remainder]);
         }
     }
 }

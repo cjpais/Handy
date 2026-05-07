@@ -206,6 +206,8 @@ pub fn set_selected_microphone(app: AppHandle, device_name: String) -> Result<()
     } else {
         Some(device_name)
     };
+    // Mark as user-chosen so SpeechMike auto-select doesn't override this.
+    settings.selected_microphone_user_overridden = true;
     write_settings(&app, settings);
 
     // Update the audio manager to use the new device

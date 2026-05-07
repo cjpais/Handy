@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "권한 필요",
-      "description": "Handy가 제대로 작동하려면 몇 가지 권한이 필요합니다.",
+      "description": "Curano AI Dictate가 제대로 작동하려면 몇 가지 권한이 필요합니다.",
       "microphone": {
         "title": "마이크 접근",
         "description": "음성 인식을 위해 마이크 접근 권한이 필요합니다."
@@ -158,7 +158,7 @@
     "general": {
       "title": "일반",
       "shortcut": {
-        "title": "Handy 단축키",
+        "title": "Curano AI Dictate 단축키",
         "description": "음성-텍스트 녹음을 시작하는 키보드 단축키를 설정하세요",
         "loading": "단축키 로딩 중...",
         "none": "설정된 단축키 없음",
@@ -195,6 +195,27 @@
       "pushToTalk": {
         "label": "녹음 중 단축키 홀딩",
         "description": "누르고 있으면 녹음, 놓으면 정지"
+      },
+      "speechmike": {
+        "title": "Philips SpeechMike",
+        "status": "Device Status",
+        "connected": "Connected",
+        "disconnected": "Not connected",
+        "notConnected": "Not connected",
+        "unknownDevice": "Philips SpeechMike",
+        "blockedTitle": "Button channel is blocked",
+        "blockedBy": "Close the following application(s) and reconnect: {{processes}}",
+        "blockedUnknown": "Another application is holding the HID channel. Close it and reconnect the device.",
+        "autoSelect": "Auto-select as microphone",
+        "autoSelectDescription": "Automatically set SpeechMike as the active microphone when connected. Disable to keep your current microphone selection.",
+        "buttonMapping": "Use device buttons for recording",
+        "buttonMappingDescription": "Map hardware buttons (REC, STOP, EOL, Trigger) to Curano recording actions.",
+        "mappingTable": "Button mapping",
+        "actionTranscribe": "Start / stop recording (toggle or push-to-talk)",
+        "actionCancel": "Cancel current recording",
+        "actionPostProcess": "Record with AI post-processing",
+        "actionTranscribePtt": "Start / stop recording (push-to-talk)",
+        "learnSpeechControl": "Learn about SpeechControl SDK (Windows)"
       }
     },
     "sound": {
@@ -276,11 +297,11 @@
       },
       "autostart": {
         "label": "시작 시 실행",
-        "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다."
+        "description": "컴퓨터 로그인 시 Curano AI Dictate를 자동으로 시작합니다."
       },
       "showTrayIcon": {
         "label": "트레이 아이콘 표시",
-        "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
+        "description": "시스템 트레이에 Curano AI Dictate 아이콘을 표시합니다."
       },
       "overlay": {
         "title": "오버레이 위치",
@@ -431,10 +452,35 @@
       "retranscribe": "다시 전사",
       "retranscribeError": "다시 전사에 실패했습니다. 다시 시도해주세요.",
       "transcribing": "전사 중...",
-      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다."
+      "transcriptionFailed": "전사에 실패했습니다. 재시도 아이콘을 사용하여 다시 전사할 수 있습니다.",
+      "providers": {
+        "local": "Local",
+        "livestt": "LiveSTT"
+      }
     },
     "debug": {
       "title": "디버그",
+      "logs": {
+        "title": "Live logs",
+        "copyAll": "Copy all",
+        "clear": "Clear",
+        "pause": "Pause",
+        "paused": "Paused",
+        "openLogDir": "Open log dir",
+        "entries": "entries",
+        "filter": {
+          "level": {
+            "title": "Level"
+          },
+          "text": {
+            "placeholder": "Filter..."
+          }
+        },
+        "sources": {
+          "rust": "rust",
+          "front": "front"
+        }
+      },
       "logDirectory": {
         "title": "로그 디렉토리",
         "description": "로그 파일이 저장되는 위치"
@@ -445,7 +491,7 @@
       },
       "updateChecks": {
         "label": "업데이트 확인",
-        "description": "Handy의 새 버전을 자동으로 확인합니다"
+        "description": "Curano AI Dictate의 새 버전을 자동으로 확인합니다"
       },
       "soundTheme": {
         "label": "사운드 테마",
@@ -513,20 +559,20 @@
       "title": "정보",
       "version": {
         "title": "버전",
-        "description": "Handy의 현재 버전"
+        "description": "Curano AI Dictate의 현재 버전"
       },
       "appDataDirectory": {
         "title": "앱 데이터 디렉토리",
-        "description": "Handy가 데이터를 저장하는 위치"
+        "description": "Curano AI Dictate가 데이터를 저장하는 위치"
       },
       "sourceCode": {
         "title": "소스 코드",
-        "description": "소스 코드 보기 및 기여",
+        "description": "View the Curano AI Dictate source code. Forked from Handy.",
         "button": "GitHub에서 보기"
       },
       "supportDevelopment": {
         "title": "개발 지원",
-        "description": "Handy 개발을 계속할 수 있도록 도와주세요",
+        "description": "Curano AI Dictate 개발을 계속할 수 있도록 도와주세요",
         "button": "후원하기"
       },
       "acknowledgments": {
@@ -534,7 +580,63 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
-          "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
+          "details": "Curano AI Dictate는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
+        }
+      }
+    },
+    "transcriptionBackend": {
+      "title": "Transcription Backend",
+      "selector": {
+        "title": "Backend",
+        "description": "Choose whether transcription uses the local model or the configured Curano LiveSTT server."
+      },
+      "options": {
+        "local": "Local model",
+        "livestt": "Curano LiveSTT"
+      },
+      "privacy": {
+        "local": "Local mode processes audio on this device.",
+        "livestt": "Curano LiveSTT mode sends microphone audio to the configured Curano LiveSTT server."
+      },
+      "livestt": {
+        "title": "Curano LiveSTT",
+        "serverUrl": {
+          "title": "Server URL",
+          "description": "Base URL for the Curano LiveSTT server. Do not include the /api path.",
+          "placeholder": "https://grandedoc-server-98243818959.europe-west6.run.app",
+          "error": "Server URL must start with http:// or https://."
+        },
+        "auth": {
+          "title": "Authentication",
+          "description": "Sign in to the configured Curano LiveSTT server. Access tokens are kept in memory only.",
+          "authenticated": "Authenticated",
+          "unauthenticated": "Not authenticated",
+          "updating": "Working..."
+        },
+        "username": {
+          "placeholder": "Username"
+        },
+        "password": {
+          "placeholder": "Password"
+        },
+        "login": "Login",
+        "logout": "Logout",
+        "loginSuccess": "Login succeeded.",
+        "loginError": "Login failed: {{error}}",
+        "loginErrorSafe": "Login failed. Check the server URL and credentials.",
+        "logoutSuccess": "Logged out.",
+        "logoutError": "Logout failed: {{error}}",
+        "logoutErrorSafe": "Logout failed. Please try again.",
+        "consultationId": {
+          "title": "Consultation ID",
+          "description": "Optional numeric consultation ID to attach to LiveSTT sessions.",
+          "placeholder": "Optional",
+          "error": "Consultation ID must be a positive integer or empty."
+        },
+        "finalizeTimeout": {
+          "title": "Finalize Timeout",
+          "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",
+          "error": "Finalize timeout must be between 1 and 120000 milliseconds."
         }
       }
     }
@@ -580,7 +682,7 @@
   },
   "accessibility": {
     "permissionsRequired": "접근성 권한 필요",
-    "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
+    "permissionsDescription": "Curano AI Dictate는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
     "openSettings": "시스템 설정 열기",
     "dismiss": "닫기"
   },
@@ -603,10 +705,22 @@
   },
   "appLanguage": {
     "title": "애플리케이션 언어",
-    "description": "Handy 인터페이스의 언어를 변경하세요"
+    "description": "Curano AI Dictate 인터페이스의 언어를 변경하세요"
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
-    "processing": "처리 중..."
+    "processing": "처리 중...",
+    "livesttError": "LiveSTT error: {{message}}"
+  },
+  "workspace": {
+    "title": "Curano AI Dictate",
+    "liveStt": "Live STT",
+    "localModel": "Local model",
+    "liveSttDefault": "Live STT default",
+    "settingsIntroTitle": "Settings-first startup",
+    "settingsIntroDescription": "The model-selection onboarding step is removed. Curano AI Dictate now opens directly into settings, with backend, local model, microphone, and transcription preferences managed here.",
+    "settingsPanelEyebrow": "Workspace Settings",
+    "settingsPanelTitle": "Dictation Settings",
+    "settingsNavDescription": "Switch sections to configure backend, local model, history, and advanced dictation preferences."
   }
 }

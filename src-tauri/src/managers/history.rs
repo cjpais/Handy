@@ -31,7 +31,14 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
+    M::up(
+        "ALTER TABLE transcription_history ADD COLUMN provider TEXT NOT NULL DEFAULT 'local';
+         ALTER TABLE transcription_history ADD COLUMN livestt_session_id INTEGER;
+         ALTER TABLE transcription_history ADD COLUMN livestt_consultation_id INTEGER;",
+    ),
 ];
+
+const HISTORY_ENTRY_COLUMNS: &str = "id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested, provider, livestt_session_id, livestt_consultation_id";
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct PaginatedHistory {
@@ -52,6 +59,29 @@ pub enum HistoryUpdatePayload {
     Toggled { id: i64 },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum HistoryProvider {
+    Local,
+    Livestt,
+}
+
+impl HistoryProvider {
+    fn as_str(&self) -> &'static str {
+        match self {
+            HistoryProvider::Local => "local",
+            HistoryProvider::Livestt => "livestt",
+        }
+    }
+
+    fn from_str(value: &str) -> Self {
+        match value {
+            "livestt" => HistoryProvider::Livestt,
+            _ => HistoryProvider::Local,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct HistoryEntry {
     pub id: i64,
@@ -63,6 +93,34 @@ pub struct HistoryEntry {
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
     pub post_process_requested: bool,
+    pub provider: HistoryProvider,
+    pub livestt_session_id: Option<i64>,
+    pub livestt_consultation_id: Option<i64>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HistoryEntryMetadata {
+    pub provider: HistoryProvider,
+    pub livestt_session_id: Option<i64>,
+    pub livestt_consultation_id: Option<i64>,
+}
+
+impl HistoryEntryMetadata {
+    pub fn local() -> Self {
+        Self {
+            provider: HistoryProvider::Local,
+            livestt_session_id: None,
+            livestt_consultation_id: None,
+        }
+    }
+
+    pub fn livestt(session_id: Option<i64>, consultation_id: Option<i64>) -> Self {
+        Self {
+            provider: HistoryProvider::Livestt,
+            livestt_session_id: session_id,
+            livestt_consultation_id: consultation_id,
+        }
+    }
 }
 
 pub struct HistoryManager {
@@ -197,6 +255,7 @@ impl HistoryManager {
     }
 
     fn map_history_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<HistoryEntry> {
+        let provider: String = row.get("provider")?;
         Ok(HistoryEntry {
             id: row.get("id")?,
             file_name: row.get("file_name")?,
@@ -207,6 +266,9 @@ impl HistoryManager {
             post_processed_text: row.get("post_processed_text")?,
             post_process_prompt: row.get("post_process_prompt")?,
             post_process_requested: row.get("post_process_requested")?,
+            provider: HistoryProvider::from_str(&provider),
+            livestt_session_id: row.get("livestt_session_id")?,
+            livestt_consultation_id: row.get("livestt_consultation_id")?,
         })
     }
 
@@ -224,8 +286,30 @@ impl HistoryManager {
         post_processed_text: Option<String>,
         post_process_prompt: Option<String>,
     ) -> Result<HistoryEntry> {
+        self.save_entry_with_metadata(
+            file_name,
+            transcription_text,
+            post_process_requested,
+            post_processed_text,
+            post_process_prompt,
+            HistoryEntryMetadata::local(),
+        )
+    }
+
+    /// Save a new history entry with backend metadata.
+    /// The WAV file should already have been written to the recordings directory.
+    pub fn save_entry_with_metadata(
+        &self,
+        file_name: String,
+        transcription_text: String,
+        post_process_requested: bool,
+        post_processed_text: Option<String>,
+        post_process_prompt: Option<String>,
+        metadata: HistoryEntryMetadata,
+    ) -> Result<HistoryEntry> {
         let timestamp = Utc::now().timestamp();
         let title = self.format_timestamp_title(timestamp);
+        let provider = metadata.provider.as_str();
 
         let conn = self.get_connection()?;
         conn.execute(
@@ -237,8 +321,11 @@ impl HistoryManager {
                 transcription_text,
                 post_processed_text,
                 post_process_prompt,
-                post_process_requested
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                post_process_requested,
+                provider,
+                livestt_session_id,
+                livestt_consultation_id
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
             params![
                 &file_name,
                 timestamp,
@@ -248,6 +335,9 @@ impl HistoryManager {
                 &post_processed_text,
                 &post_process_prompt,
                 post_process_requested,
+                provider,
+                metadata.livestt_session_id,
+                metadata.livestt_consultation_id,
             ],
         )?;
 
@@ -261,6 +351,9 @@ impl HistoryManager {
             post_processed_text,
             post_process_prompt,
             post_process_requested,
+            provider: metadata.provider,
+            livestt_session_id: metadata.livestt_session_id,
+            livestt_consultation_id: metadata.livestt_consultation_id,
         };
 
         debug!("Saved history entry with id {}", entry.id);
@@ -292,12 +385,16 @@ impl HistoryManager {
             "UPDATE transcription_history
              SET transcription_text = ?1,
                  post_processed_text = ?2,
-                 post_process_prompt = ?3
-             WHERE id = ?4",
+                 post_process_prompt = ?3,
+                 provider = ?4,
+                 livestt_session_id = NULL,
+                 livestt_consultation_id = NULL
+             WHERE id = ?5",
             params![
                 transcription_text,
                 post_processed_text,
                 post_process_prompt,
+                HistoryProvider::Local.as_str(),
                 id
             ],
         )?;
@@ -306,13 +403,14 @@ impl HistoryManager {
             return Err(anyhow!("History entry {} not found", id));
         }
 
-        let entry = conn
-            .query_row(
-                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
-                 FROM transcription_history WHERE id = ?1",
-                params![id],
-                Self::map_history_entry,
-            )?;
+        let entry = conn.query_row(
+            &format!(
+                "SELECT {} FROM transcription_history WHERE id = ?1",
+                HISTORY_ENTRY_COLUMNS
+            ),
+            params![id],
+            Self::map_history_entry,
+        )?;
 
         debug!("Updated transcription for history entry {}", id);
 
@@ -458,13 +556,14 @@ impl HistoryManager {
         let mut entries: Vec<HistoryEntry> = match (cursor, limit) {
             (Some(cursor_id), Some(lim)) => {
                 let fetch_count = (lim + 1) as i64;
-                let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                let mut stmt = conn.prepare(&format!(
+                    "SELECT {}
                      FROM transcription_history
                      WHERE id < ?1
                      ORDER BY id DESC
                      LIMIT ?2",
-                )?;
+                    HISTORY_ENTRY_COLUMNS
+                ))?;
                 let result = stmt
                     .query_map(params![cursor_id, fetch_count], Self::map_history_entry)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -472,23 +571,25 @@ impl HistoryManager {
             }
             (None, Some(lim)) => {
                 let fetch_count = (lim + 1) as i64;
-                let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                let mut stmt = conn.prepare(&format!(
+                    "SELECT {}
                      FROM transcription_history
                      ORDER BY id DESC
                      LIMIT ?1",
-                )?;
+                    HISTORY_ENTRY_COLUMNS
+                ))?;
                 let result = stmt
                     .query_map(params![fetch_count], Self::map_history_entry)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
                 result
             }
             (_, None) => {
-                let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
+                let mut stmt = conn.prepare(&format!(
+                    "SELECT {}
                      FROM transcription_history
                      ORDER BY id DESC",
-                )?;
+                    HISTORY_ENTRY_COLUMNS
+                ))?;
                 let result = stmt
                     .query_map([], Self::map_history_entry)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -506,21 +607,14 @@ impl HistoryManager {
 
     #[cfg(test)]
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
-        let mut stmt = conn.prepare(
+        let mut stmt = conn.prepare(&format!(
             "SELECT
-                id,
-                file_name,
-                timestamp,
-                saved,
-                title,
-                transcription_text,
-                post_processed_text,
-                post_process_prompt,
-                post_process_requested
+                {}
              FROM transcription_history
              ORDER BY timestamp DESC
              LIMIT 1",
-        )?;
+            HISTORY_ENTRY_COLUMNS
+        ))?;
 
         let entry = stmt.query_row([], Self::map_history_entry).optional()?;
         Ok(entry)
@@ -533,22 +627,15 @@ impl HistoryManager {
     }
 
     fn get_latest_completed_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
-        let mut stmt = conn.prepare(
+        let mut stmt = conn.prepare(&format!(
             "SELECT
-                id,
-                file_name,
-                timestamp,
-                saved,
-                title,
-                transcription_text,
-                post_processed_text,
-                post_process_prompt,
-                post_process_requested
+                {}
              FROM transcription_history
              WHERE transcription_text != ''
              ORDER BY timestamp DESC
              LIMIT 1",
-        )?;
+            HISTORY_ENTRY_COLUMNS
+        ))?;
 
         let entry = stmt.query_row([], Self::map_history_entry).optional()?;
         Ok(entry)
@@ -587,20 +674,13 @@ impl HistoryManager {
 
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
-        let mut stmt = conn.prepare(
+        let mut stmt = conn.prepare(&format!(
             "SELECT
-                id,
-                file_name,
-                timestamp,
-                saved,
-                title,
-                transcription_text,
-                post_processed_text,
-                post_process_prompt,
-                post_process_requested
+                {}
              FROM transcription_history
              WHERE id = ?1",
-        )?;
+            HISTORY_ENTRY_COLUMNS
+        ))?;
 
         let entry = stmt.query_row([id], Self::map_history_entry).optional()?;
 
@@ -666,7 +746,10 @@ mod tests {
                 transcription_text TEXT NOT NULL,
                 post_processed_text TEXT,
                 post_process_prompt TEXT,
-                post_process_requested BOOLEAN NOT NULL DEFAULT 0
+                post_process_requested BOOLEAN NOT NULL DEFAULT 0,
+                provider TEXT NOT NULL DEFAULT 'local',
+                livestt_session_id INTEGER,
+                livestt_consultation_id INTEGER
             );",
         )
         .expect("create transcription_history table");
@@ -719,6 +802,9 @@ mod tests {
         assert_eq!(entry.timestamp, 200);
         assert_eq!(entry.transcription_text, "second");
         assert_eq!(entry.post_processed_text.as_deref(), Some("processed"));
+        assert_eq!(entry.provider, HistoryProvider::Local);
+        assert_eq!(entry.livestt_session_id, None);
+        assert_eq!(entry.livestt_consultation_id, None);
     }
 
     #[test]
@@ -733,5 +819,99 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn get_latest_entry_reads_livestt_metadata() {
+        let conn = setup_conn();
+        conn.execute(
+            "INSERT INTO transcription_history (
+                file_name,
+                timestamp,
+                saved,
+                title,
+                transcription_text,
+                post_processed_text,
+                post_process_prompt,
+                post_process_requested,
+                provider,
+                livestt_session_id,
+                livestt_consultation_id
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            params![
+                "handy-300.wav",
+                300,
+                false,
+                "Recording 300",
+                "live entry",
+                Option::<String>::None,
+                Option::<String>::None,
+                false,
+                "livestt",
+                123,
+                456,
+            ],
+        )
+        .expect("insert LiveSTT history entry");
+
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch latest entry")
+            .expect("entry exists");
+
+        assert_eq!(entry.transcription_text, "live entry");
+        assert_eq!(entry.provider, HistoryProvider::Livestt);
+        assert_eq!(entry.livestt_session_id, Some(123));
+        assert_eq!(entry.livestt_consultation_id, Some(456));
+    }
+
+    #[test]
+    fn migration_adds_provider_metadata_with_local_defaults() {
+        let mut conn = Connection::open_in_memory().expect("open in-memory db");
+        conn.execute_batch(
+            "CREATE TABLE transcription_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_name TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                saved BOOLEAN NOT NULL DEFAULT 0,
+                title TEXT NOT NULL,
+                transcription_text TEXT NOT NULL,
+                post_processed_text TEXT,
+                post_process_prompt TEXT,
+                post_process_requested BOOLEAN NOT NULL DEFAULT 0
+            );
+            INSERT INTO transcription_history (
+                file_name,
+                timestamp,
+                saved,
+                title,
+                transcription_text,
+                post_processed_text,
+                post_process_prompt,
+                post_process_requested
+            ) VALUES (
+                'handy-100.wav',
+                100,
+                0,
+                'Recording 100',
+                'old entry',
+                NULL,
+                NULL,
+                0
+            );
+            PRAGMA user_version = 4;",
+        )
+        .expect("create old schema");
+
+        let migrations = Migrations::new(MIGRATIONS.to_vec());
+        migrations.to_latest(&mut conn).expect("migrate schema");
+
+        let entry = HistoryManager::get_latest_entry_with_conn(&conn)
+            .expect("fetch latest entry")
+            .expect("entry exists");
+
+        assert_eq!(entry.transcription_text, "old entry");
+        assert_eq!(entry.provider, HistoryProvider::Local);
+        assert_eq!(entry.livestt_session_id, None);
+        assert_eq!(entry.livestt_consultation_id, None);
     }
 }

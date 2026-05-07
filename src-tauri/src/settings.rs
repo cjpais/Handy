@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::fmt;
 use tauri::AppHandle;
 use tauri_plugin_store::StoreExt;
+use url::{Host, Url};
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
@@ -167,7 +168,8 @@ pub enum RecordingRetentionPeriod {
 #[serde(rename_all = "snake_case")]
 pub enum KeyboardImplementation {
     Tauri,
-    HandyKeys,
+    #[serde(rename = "handy_keys")]
+    NativeKeys,
 }
 
 impl Default for KeyboardImplementation {
@@ -175,7 +177,7 @@ impl Default for KeyboardImplementation {
         #[cfg(target_os = "linux")]
         return KeyboardImplementation::Tauri;
         #[cfg(not(target_os = "linux"))]
-        return KeyboardImplementation::HandyKeys;
+        return KeyboardImplementation::NativeKeys;
     }
 }
 
@@ -271,6 +273,31 @@ pub enum TypingTool {
 impl Default for TypingTool {
     fn default() -> Self {
         TypingTool::Auto
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptionBackend {
+    Local,
+    LiveStt,
+}
+
+impl Default for TranscriptionBackend {
+    fn default() -> Self {
+        TranscriptionBackend::LiveStt
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum LiveSttAudioFormat {
+    Pcm,
+}
+
+impl Default for LiveSttAudioFormat {
+    fn default() -> Self {
+        LiveSttAudioFormat::Pcm
     }
 }
 
@@ -430,6 +457,34 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default)]
+    pub transcription_backend: TranscriptionBackend,
+    #[serde(default = "default_livestt_server_url")]
+    pub livestt_server_url: String,
+    #[serde(default)]
+    pub livestt_audio_format: LiveSttAudioFormat,
+    #[serde(default)]
+    pub livestt_consultation_id: Option<String>,
+    #[serde(default = "default_livestt_finalize_timeout_ms")]
+    pub livestt_finalize_timeout_ms: u64,
+    #[serde(default = "default_speechmike_auto_select")]
+    pub speechmike_auto_select: bool,
+    #[serde(default = "default_speechmike_button_mapping_enabled")]
+    pub speechmike_button_mapping_enabled: bool,
+    #[serde(default)]
+    pub speechmike_last_seen_name: Option<String>,
+    #[serde(default)]
+    pub selected_microphone_user_overridden: bool,
+    #[serde(default)]
+    pub livesttt_raw_hid_debug: bool,
+}
+
+fn default_speechmike_auto_select() -> bool {
+    true
+}
+
+fn default_speechmike_button_mapping_enabled() -> bool {
+    true
 }
 
 fn default_model() -> String {
@@ -453,7 +508,7 @@ fn default_autostart_enabled() -> bool {
 }
 
 fn default_update_checks_enabled() -> bool {
-    true
+    false
 }
 
 fn default_selected_language() -> String {
@@ -654,6 +709,101 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
+fn default_livestt_server_url() -> String {
+    "".to_string()
+}
+
+fn default_livestt_finalize_timeout_ms() -> u64 {
+    15_000
+}
+
+pub const MAX_LIVESTT_FINALIZE_TIMEOUT_MS: u64 = 120_000;
+
+fn livestt_server_url_scheme_error() -> String {
+    "LiveSTT server URL must use https, or http for localhost testing".to_string()
+}
+
+fn livestt_server_url_base_error() -> String {
+    "LiveSTT server URL must be a base URL without /api path, query, or fragment".to_string()
+}
+
+fn is_allowed_livestt_http_host(host: &Host<&str>) -> bool {
+    match host {
+        Host::Domain(domain) => domain.eq_ignore_ascii_case("localhost"),
+        Host::Ipv4(ip) => ip.octets() == [127, 0, 0, 1],
+        Host::Ipv6(ip) => ip.is_loopback(),
+    }
+}
+
+pub fn normalize_livestt_server_url(input: &str, required: bool) -> Result<String, String> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return if required {
+            Err("LiveSTT server URL is required".to_string())
+        } else {
+            Ok(String::new())
+        };
+    }
+
+    let url = Url::parse(trimmed).map_err(|_| livestt_server_url_scheme_error())?;
+
+    match url.scheme() {
+        "https" => {}
+        "http" => {
+            let host = url.host().ok_or_else(livestt_server_url_scheme_error)?;
+
+            if !is_allowed_livestt_http_host(&host) {
+                return Err(livestt_server_url_scheme_error());
+            }
+        }
+        _ => return Err(livestt_server_url_scheme_error()),
+    }
+
+    if !matches!(url.path(), "" | "/") || url.query().is_some() || url.fragment().is_some() {
+        return Err(livestt_server_url_base_error());
+    }
+
+    Ok(url.origin().ascii_serialization())
+}
+
+pub fn normalize_livestt_server_url_for_settings(input: &str) -> Result<String, String> {
+    normalize_livestt_server_url(input, false)
+}
+
+pub fn validate_livestt_server_url_required(input: &str) -> Result<String, String> {
+    normalize_livestt_server_url(input, true)
+}
+
+pub fn validate_livestt_finalize_timeout_ms(timeout_ms: u64) -> Result<(), String> {
+    if timeout_ms == 0 || timeout_ms > MAX_LIVESTT_FINALIZE_TIMEOUT_MS {
+        return Err(format!(
+            "LiveSTT finalize timeout must be between 1 and {} milliseconds",
+            MAX_LIVESTT_FINALIZE_TIMEOUT_MS
+        ));
+    }
+
+    Ok(())
+}
+
+pub fn validate_livestt_consultation_id(consultation_id: Option<&str>) -> Result<(), String> {
+    let Some(value) = consultation_id
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return Ok(());
+    };
+
+    let parsed = value
+        .parse::<u64>()
+        .map_err(|_| "LiveSTT consultation ID must be a positive integer or empty".to_string())?;
+
+    if parsed == 0 {
+        return Err("LiveSTT consultation ID must be a positive integer or empty".to_string());
+    }
+
+    Ok(())
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
     for provider in default_post_process_providers() {
@@ -814,6 +964,16 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
+        transcription_backend: TranscriptionBackend::default(),
+        livestt_server_url: default_livestt_server_url(),
+        livestt_audio_format: LiveSttAudioFormat::default(),
+        livestt_consultation_id: None,
+        livestt_finalize_timeout_ms: default_livestt_finalize_timeout_ms(),
+        speechmike_auto_select: default_speechmike_auto_select(),
+        speechmike_button_mapping_enabled: default_speechmike_button_mapping_enabled(),
+        speechmike_last_seen_name: None,
+        selected_microphone_user_overridden: false,
+        livesttt_raw_hid_debug: false,
     }
 }
 
@@ -956,6 +1116,147 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_submit);
         assert_eq!(settings.auto_submit_key, AutoSubmitKey::Enter);
+    }
+
+    #[test]
+    fn default_settings_use_livestt_transcription_backend() {
+        let settings = get_default_settings();
+        assert_eq!(
+            settings.transcription_backend,
+            TranscriptionBackend::LiveStt
+        );
+        assert_eq!(settings.livestt_server_url, "");
+        assert_eq!(settings.livestt_audio_format, LiveSttAudioFormat::Pcm);
+        assert_eq!(settings.livestt_consultation_id, None);
+        assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);
+    }
+
+    #[test]
+    fn missing_livestt_settings_deserialize_to_defaults() {
+        let mut value = serde_json::to_value(get_default_settings()).unwrap();
+        let object = value.as_object_mut().unwrap();
+        object.remove("transcription_backend");
+        object.remove("livestt_server_url");
+        object.remove("livestt_audio_format");
+        object.remove("livestt_consultation_id");
+        object.remove("livestt_finalize_timeout_ms");
+
+        let settings = serde_json::from_value::<AppSettings>(value).unwrap();
+
+        assert_eq!(
+            settings.transcription_backend,
+            TranscriptionBackend::LiveStt
+        );
+        assert_eq!(settings.livestt_server_url, "");
+        assert_eq!(settings.livestt_audio_format, LiveSttAudioFormat::Pcm);
+        assert_eq!(settings.livestt_consultation_id, None);
+        assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);
+    }
+
+    #[test]
+    fn livestt_server_url_settings_validation_allows_empty_values() {
+        assert_eq!(normalize_livestt_server_url_for_settings("").unwrap(), "");
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("   ").unwrap(),
+            ""
+        );
+    }
+
+    #[test]
+    fn livestt_server_url_required_validation_rejects_empty_value() {
+        assert_eq!(
+            validate_livestt_server_url_required("").unwrap_err(),
+            "LiveSTT server URL is required"
+        );
+    }
+
+    #[test]
+    fn livestt_server_url_accepts_https_base_urls() {
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("https://example.com").unwrap(),
+            "https://example.com"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("https://example.com/").unwrap(),
+            "https://example.com"
+        );
+    }
+
+    #[test]
+    fn livestt_server_url_accepts_local_http_urls() {
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("http://localhost:8787").unwrap(),
+            "http://localhost:8787"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("http://127.0.0.1:8787").unwrap(),
+            "http://127.0.0.1:8787"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("http://[::1]:8787").unwrap(),
+            "http://[::1]:8787"
+        );
+    }
+
+    #[test]
+    fn livestt_server_url_rejects_remote_http_and_unsupported_schemes() {
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("http://example.com").unwrap_err(),
+            "LiveSTT server URL must use https, or http for localhost testing"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("ws://example.com").unwrap_err(),
+            "LiveSTT server URL must use https, or http for localhost testing"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("wss://example.com").unwrap_err(),
+            "LiveSTT server URL must use https, or http for localhost testing"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("ftp://example.com").unwrap_err(),
+            "LiveSTT server URL must use https, or http for localhost testing"
+        );
+    }
+
+    #[test]
+    fn livestt_server_url_rejects_paths_queries_and_fragments() {
+        assert_eq!(
+            normalize_livestt_server_url_for_settings(
+                "https://example.com/api/ws/live-transcription",
+            )
+            .unwrap_err(),
+            "LiveSTT server URL must be a base URL without /api path, query, or fragment"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("https://example.com/auth/login")
+                .unwrap_err(),
+            "LiveSTT server URL must be a base URL without /api path, query, or fragment"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("https://example.com?x=1").unwrap_err(),
+            "LiveSTT server URL must be a base URL without /api path, query, or fragment"
+        );
+        assert_eq!(
+            normalize_livestt_server_url_for_settings("https://example.com#frag").unwrap_err(),
+            "LiveSTT server URL must be a base URL without /api path, query, or fragment"
+        );
+    }
+
+    #[test]
+    fn livestt_finalize_timeout_validation_bounds_value() {
+        assert!(validate_livestt_finalize_timeout_ms(1).is_ok());
+        assert!(validate_livestt_finalize_timeout_ms(MAX_LIVESTT_FINALIZE_TIMEOUT_MS).is_ok());
+        assert!(validate_livestt_finalize_timeout_ms(0).is_err());
+        assert!(validate_livestt_finalize_timeout_ms(MAX_LIVESTT_FINALIZE_TIMEOUT_MS + 1).is_err());
+    }
+
+    #[test]
+    fn livestt_consultation_id_validation_accepts_empty_or_positive_integer() {
+        assert!(validate_livestt_consultation_id(None).is_ok());
+        assert!(validate_livestt_consultation_id(Some("")).is_ok());
+        assert!(validate_livestt_consultation_id(Some("42")).is_ok());
+        assert!(validate_livestt_consultation_id(Some("0")).is_err());
+        assert!(validate_livestt_consultation_id(Some("abc")).is_err());
     }
 
     #[test]

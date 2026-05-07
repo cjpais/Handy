@@ -23,7 +23,7 @@ jobs:
           - platform: "macos-26"
             args: "--target aarch64-apple-darwin"
             target: "aarch64-apple-darwin"
-          - platform: "macos-latest"
+          - platform: "macos-26-intel"
             args: "--target x86_64-apple-darwin"
             target: "x86_64-apple-darwin"
           - platform: "ubuntu-22.04"

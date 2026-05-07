@@ -213,7 +213,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">
+        <div className="text-sm text-slate-500">
           {t("settings.general.shortcut.loading")}
         </div>
       </SettingContainer>
@@ -229,7 +229,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">
+        <div className="text-sm text-slate-500">
           {t("settings.general.shortcut.none")}
         </div>
       </SettingContainer>
@@ -245,7 +245,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
         descriptionMode={descriptionMode}
         grouped={grouped}
       >
-        <div className="text-sm text-mid-gray">
+        <div className="text-sm text-slate-500">
           {t("settings.general.shortcut.none")}
         </div>
       </SettingContainer>
@@ -271,17 +271,17 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
       disabled={disabled}
       layout="horizontal"
     >
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center gap-2">
         {editingShortcutId === shortcutId ? (
           <div
             ref={(ref) => setShortcutRef(shortcutId, ref)}
-            className="px-2 py-1 text-sm font-semibold border border-logo-primary bg-logo-primary/30 rounded-md"
+            className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-[0_0_0_4px_rgba(254,226,226,0.9)]"
           >
             {formatCurrentKeys()}
           </div>
         ) : (
           <div
-            className="px-2 py-1 text-sm font-semibold bg-mid-gray/10 border border-mid-gray/80 hover:bg-logo-primary/10 rounded-md cursor-pointer hover:border-logo-primary"
+            className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition-[background-color,border-color,box-shadow] hover:border-slate-400 hover:bg-slate-50"
             onClick={() => startRecording(shortcutId)}
           >
             {formatKeyCombination(binding.current_binding, osType)}

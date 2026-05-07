@@ -1,6 +1,8 @@
-# Contributing Translations to Handy
+# Contributing Translations to Curano AI Dictate
 
-Thank you for helping translate Handy! This guide explains how to add or improve translations.
+Thank you for helping translate Curano AI Dictate! This guide explains how to add or improve translations.
+
+Curano AI Dictate is a fork of Handy. Keep Handy unchanged when a string refers to the original upstream project or fork attribution.
 
 ## Quick Start
 
@@ -120,7 +122,7 @@ Found a typo or better translation?
 
 ### Don't:
 
-- Translate brand names (Handy, Whisper.cpp, OpenAI)
+- Translate brand names (Curano AI Dictate, Handy, Whisper.cpp, OpenAI)
 - Change or remove `{{variables}}`
 - Modify JSON keys
 - Add extra spaces or formatting
@@ -171,4 +173,4 @@ We'd love help with:
 
 ---
 
-Thank you for making Handy accessible to more people around the world!
+Thank you for making Curano AI Dictate accessible to more people around the world!

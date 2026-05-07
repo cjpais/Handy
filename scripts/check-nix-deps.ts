@@ -1,6 +1,6 @@
 // scripts/check-nix-deps.ts — Keep .nix/bun.nix in sync with bun.lock
 //
-// Handy uses bun2nix to generate per-package Nix fetchurl expressions from
+// Curano AI Dictate uses bun2nix to generate per-package Nix fetchurl expressions from
 // bun.lock. This replaces the old FOD (Fixed-Output Derivation) approach
 // where a single hash covered the entire node_modules — that hash would
 // break whenever the bun version in nixpkgs changed, even without any

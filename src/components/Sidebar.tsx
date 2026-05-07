@@ -1,8 +1,14 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, FlaskConical, History, Info, Sparkles, Cpu } from "lucide-react";
-import HandyTextLogo from "./icons/HandyTextLogo";
-import HandyHand from "./icons/HandyHand";
+import {
+  Cog,
+  FlaskConical,
+  History,
+  Info,
+  Sparkles,
+  Cpu,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useSettings } from "../hooks/useSettings";
 import {
   GeneralSettings,
@@ -34,7 +40,7 @@ interface SectionConfig {
 export const SECTIONS_CONFIG = {
   general: {
     labelKey: "sidebar.general",
-    icon: HandyHand,
+    icon: SlidersHorizontal,
     component: GeneralSettings,
     enabled: () => true,
   },
@@ -66,7 +72,7 @@ export const SECTIONS_CONFIG = {
     labelKey: "sidebar.debug",
     icon: FlaskConical,
     component: DebugSettings,
-    enabled: (settings) => settings?.debug_mode ?? false,
+    enabled: () => true,
   },
   about: {
     labelKey: "sidebar.about",
@@ -93,9 +99,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .map(([id, config]) => ({ id: id as SidebarSection, ...config }));
 
   return (
-    <div className="flex flex-col w-40 h-full border-e border-mid-gray/20 items-center px-2">
-      <HandyTextLogo width={120} className="m-4" />
-      <div className="flex flex-col w-full items-center gap-1 pt-2 border-t border-mid-gray/20">
+    <div className="flex h-full w-60 flex-col border-e border-slate-200 bg-slate-50/80 px-3 py-6">
+      <div className="flex flex-col gap-2 pt-2">
         {availableSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
@@ -103,16 +108,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <div
               key={section.id}
-              className={`flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer transition-colors ${
+              className={`flex w-full cursor-pointer items-center gap-3 rounded-2xl px-4 py-3 transition ${
                 isActive
-                  ? "bg-logo-primary/80"
-                  : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
+                  ? "bg-white text-slate-950 shadow-[0_10px_24px_rgba(15,23,42,0.08)]"
+                  : "text-slate-500 hover:bg-white/80 hover:text-slate-900"
               }`}
               onClick={() => onSectionChange(section.id)}
             >
-              <Icon width={24} height={24} className="shrink-0" />
+              <Icon width={18} height={18} className="shrink-0" />
               <p
-                className="text-sm font-medium truncate"
+                className="truncate text-sm font-medium"
                 title={t(section.labelKey)}
               >
                 {t(section.labelKey)}
