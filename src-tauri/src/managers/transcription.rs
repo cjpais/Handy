@@ -556,15 +556,70 @@ impl TranscriptionManager {
                                 .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
                         }
                         LoadedEngine::Parakeet(parakeet_engine) => {
+                            // Parakeet TDT 0.6B has a fixed positional-encoding budget
+                            // (~30s @ 16kHz). For longer recordings we slide a 25s
+                            // window with 1s overlap, transcribe each chunk, and
+                            // concatenate the text. Segments are dropped because
+                            // Handy only consumes `result.text` downstream.
+                            const PARAKEET_CHUNK_SAMPLES: usize = 25 * 16_000;
+                            const PARAKEET_OVERLAP_SAMPLES: usize = 16_000;
+                            const PARAKEET_MIN_TAIL_SAMPLES: usize = 8_000; // 0.5s
+
                             let params = ParakeetParams {
                                 timestamp_granularity: Some(TimestampGranularity::Segment),
                                 ..Default::default()
                             };
-                            parakeet_engine
-                                .transcribe_with(&audio, &params)
-                                .map_err(|e| {
-                                    anyhow::anyhow!("Parakeet transcription failed: {}", e)
+
+                            if audio.len() <= PARAKEET_CHUNK_SAMPLES {
+                                parakeet_engine
+                                    .transcribe_with(&audio, &params)
+                                    .map_err(|e| {
+                                        anyhow::anyhow!("Parakeet transcription failed: {}", e)
+                                    })
+                            } else {
+                                let step = PARAKEET_CHUNK_SAMPLES - PARAKEET_OVERLAP_SAMPLES;
+                                let mut combined_text = String::new();
+                                let mut start: usize = 0;
+                                let mut chunk_idx: usize = 0;
+                                while start < audio.len() {
+                                    let end =
+                                        (start + PARAKEET_CHUNK_SAMPLES).min(audio.len());
+                                    if end - start < PARAKEET_MIN_TAIL_SAMPLES {
+                                        break;
+                                    }
+                                    chunk_idx += 1;
+                                    debug!(
+                                        "Parakeet long-audio chunk {} ({}–{}s of {}s)",
+                                        chunk_idx,
+                                        start / 16_000,
+                                        end / 16_000,
+                                        audio.len() / 16_000
+                                    );
+                                    let chunk_result = parakeet_engine
+                                        .transcribe_with(&audio[start..end], &params)
+                                        .map_err(|e| {
+                                            anyhow::anyhow!(
+                                                "Parakeet transcription failed on chunk {} ({}–{}s): {}",
+                                                chunk_idx,
+                                                start / 16_000,
+                                                end / 16_000,
+                                                e
+                                            )
+                                        })?;
+                                    let trimmed = chunk_result.text.trim();
+                                    if !trimmed.is_empty() {
+                                        if !combined_text.is_empty() {
+                                            combined_text.push(' ');
+                                        }
+                                        combined_text.push_str(trimmed);
+                                    }
+                                    start += step;
+                                }
+                                Ok(transcribe_rs::TranscriptionResult {
+                                    text: combined_text,
+                                    segments: None,
                                 })
+                            }
                         }
                         LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
                             .transcribe(&audio, &TranscribeOptions::default())
