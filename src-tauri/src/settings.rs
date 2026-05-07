@@ -702,7 +702,7 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
 }
 
 fn default_whisper_gpu_device() -> i32 {
-    -1 // auto
+    -1
 }
 
 fn default_typing_tool() -> TypingTool {
@@ -710,7 +710,7 @@ fn default_typing_tool() -> TypingTool {
 }
 
 fn default_livestt_server_url() -> String {
-    "".to_string()
+    "https://api.curano.ch".to_string()
 }
 
 fn default_livestt_finalize_timeout_ms() -> u64 {
@@ -1125,7 +1125,7 @@ mod tests {
             settings.transcription_backend,
             TranscriptionBackend::LiveStt
         );
-        assert_eq!(settings.livestt_server_url, "");
+        assert_eq!(settings.livestt_server_url, "https://api.curano.ch");
         assert_eq!(settings.livestt_audio_format, LiveSttAudioFormat::Pcm);
         assert_eq!(settings.livestt_consultation_id, None);
         assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);
@@ -1147,7 +1147,7 @@ mod tests {
             settings.transcription_backend,
             TranscriptionBackend::LiveStt
         );
-        assert_eq!(settings.livestt_server_url, "");
+        assert_eq!(settings.livestt_server_url, "https://api.curano.ch");
         assert_eq!(settings.livestt_audio_format, LiveSttAudioFormat::Pcm);
         assert_eq!(settings.livestt_consultation_id, None);
         assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);

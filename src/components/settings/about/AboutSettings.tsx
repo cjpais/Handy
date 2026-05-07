@@ -77,19 +77,6 @@ export const AboutSettings: React.FC = () => {
         <AppDataDirectory descriptionMode="tooltip" grouped={true} />
         <LogDirectory grouped={true} />
       </SettingsGroup>
-
-      <SettingsGroup title={t("settings.about.acknowledgments.title")}>
-        <SettingContainer
-          title={t("settings.about.acknowledgments.whisper.title")}
-          description={t("settings.about.acknowledgments.whisper.description")}
-          grouped={true}
-          layout="stacked"
-        >
-          <div className="text-sm text-mid-gray">
-            {t("settings.about.acknowledgments.whisper.details")}
-          </div>
-        </SettingContainer>
-      </SettingsGroup>
     </div>
   );
 };

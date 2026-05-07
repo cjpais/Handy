@@ -574,14 +574,6 @@
         "title": "תמיכה בפיתוח",
         "description": "עזור לנו להמשיך לבנות את Curano AI Dictate",
         "button": "תרומה"
-      },
-      "acknowledgments": {
-        "title": "תודות",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
-          "details": "Curano AI Dictate משתמש ב-Whisper.cpp לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
-        }
       }
     },
     "transcriptionBackend": {

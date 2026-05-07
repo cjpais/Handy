@@ -574,14 +574,6 @@
         "title": "Apoiar o Desenvolvimento",
         "description": "Ajude-nos a continuar construindo o Curano AI Dictate",
         "button": "Doar"
-      },
-      "acknowledgments": {
-        "title": "Agradecimentos",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "Inferência de alto desempenho do modelo de reconhecimento automático de fala Whisper da OpenAI",
-          "details": "O Curano AI Dictate usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
-        }
       }
     },
     "transcriptionBackend": {

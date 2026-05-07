@@ -7,6 +7,10 @@ interface DebugPathsProps {
   grouped?: boolean;
 }
 
+const APP_DATA_PATH = "%APPDATA%/handy";
+const MODELS_PATH = "%APPDATA%/handy/models";
+const SETTINGS_PATH = "%APPDATA%/handy/settings_store.json";
+
 export const DebugPaths: React.FC<DebugPathsProps> = ({
   descriptionMode = "inline",
   grouped = false,
@@ -25,26 +29,19 @@ export const DebugPaths: React.FC<DebugPathsProps> = ({
           <span className="font-medium">
             {t("settings.debug.paths.appData")}
           </span>{" "}
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span className="font-mono text-xs select-text">%APPDATA%/handy</span>
+          <span className="font-mono text-xs select-text">{APP_DATA_PATH}</span>
         </div>
         <div>
           <span className="font-medium">
             {t("settings.debug.paths.models")}
           </span>{" "}
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span className="font-mono text-xs select-text">
-            %APPDATA%/handy/models
-          </span>
+          <span className="font-mono text-xs select-text">{MODELS_PATH}</span>
         </div>
         <div>
           <span className="font-medium">
             {t("settings.debug.paths.settings")}
           </span>{" "}
-          {/* eslint-disable-next-line i18next/no-literal-string */}
-          <span className="font-mono text-xs select-text">
-            %APPDATA%/handy/settings_store.json
-          </span>
+          <span className="font-mono text-xs select-text">{SETTINGS_PATH}</span>
         </div>
       </div>
     </SettingContainer>

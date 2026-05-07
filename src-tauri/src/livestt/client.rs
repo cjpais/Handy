@@ -60,6 +60,7 @@ impl LiveSttClient {
                     redact_access_token(&e.to_string(), &config.access_token)
                 )
             })?;
+        log::info!("[LiveSTT] WebSocket connected");
 
         let (mut writer, mut reader) = socket.split();
         let (writer_tx, mut writer_rx) =
@@ -333,64 +334,38 @@ async fn apply_event(state: &Arc<Mutex<LiveSttState>>, notify: &Arc<Notify>, eve
     }
 }
 
-fn append_transcript_chunk(target: &mut String, chunk: &str) {
-    let chunk = chunk.trim();
-    if chunk.is_empty() {
-        return;
-    }
-
-    if target.trim().is_empty() {
-        target.clear();
-        target.push_str(chunk);
-        return;
-    }
-
-    let last_char = target.chars().last();
-    let first_char = chunk.chars().next();
-
-    let should_insert_space = last_char.map(|c| !c.is_whitespace()).unwrap_or(false)
-        && first_char
-            .map(|c| {
-                !c.is_whitespace()
-                    && !matches!(c, '.' | ',' | '!' | '?' | ':' | ';' | ')' | ']' | '}')
-            })
-            .unwrap_or(false);
-
-    if should_insert_space {
-        target.push(' ');
-    }
-
-    target.push_str(chunk);
-}
-
 fn merge_final_text(final_text: &mut String, next_final: &str) {
-    let next_final = next_final.trim();
-    if next_final.is_empty() {
+    if next_final.trim().is_empty() {
         return;
     }
 
     let existing = final_text.trim();
+    let next_without_outer_padding = next_final.trim();
 
-    // Supports both server contracts:
-    // 1. Incremental final chunks: "hello" then "world" => append.
-    // 2. Cumulative final text: "hello" then "hello world" => replace with full value.
-    if existing.is_empty() || next_final.starts_with(existing) {
+    if existing.is_empty() {
         final_text.clear();
-        final_text.push_str(next_final);
+        final_text.push_str(next_final.trim_start());
         return;
     }
 
-    append_transcript_chunk(final_text, next_final);
+    if next_without_outer_padding.starts_with(existing) {
+        final_text.clear();
+        final_text.push_str(next_without_outer_padding);
+        return;
+    }
+
+    final_text.push_str(next_final);
 }
 
 fn compose_current_text(final_text: &str, pending_partial: Option<&str>) -> String {
     let mut current = final_text.trim().to_string();
 
-    if let Some(partial) = pending_partial
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-    {
-        append_transcript_chunk(&mut current, partial);
+    if let Some(partial) = pending_partial.filter(|value| !value.trim().is_empty()) {
+        if current.is_empty() {
+            current.push_str(partial.trim_start());
+        } else {
+            current.push_str(partial);
+        }
     }
 
     current
@@ -408,12 +383,10 @@ fn apply_event_to_state(state: &mut LiveSttState, event: LiveSttEvent) -> bool {
             true
         }
         LiveSttEvent::Partial { text, .. } => {
-            let trimmed = text.trim().to_string();
-
-            state.pending_partial = if trimmed.is_empty() {
+            state.pending_partial = if text.trim().is_empty() {
                 None
             } else {
-                Some(trimmed)
+                Some(text)
             };
             state.current_text =
                 compose_current_text(&state.final_text, state.pending_partial.as_deref());
@@ -471,6 +444,7 @@ async fn handle_close_frame(
 
     let code = close_code_u16(frame.code);
     let reason = frame.reason.to_string();
+    log::debug!("[LiveSTT] ← close: code={} reason={:?}", code, reason);
 
     if is_livestt_auth_close_code(code, &reason) {
         mark_failed(
@@ -620,7 +594,7 @@ mod tests {
     }
 
     #[test]
-    fn livestt_incremental_final_chunks_are_accumulated() {
+    fn livestt_incremental_final_chunks_are_appended_verbatim() {
         let mut state = LiveSttState::default();
 
         apply_event_to_state(
@@ -638,7 +612,7 @@ mod tests {
             &mut state,
             LiveSttEvent::Final {
                 session_id: 1,
-                text: "second".to_string(),
+                text: " second".to_string(),
                 is_final: true,
                 start_time: None,
                 end_time: None,
@@ -650,7 +624,7 @@ mod tests {
     }
 
     #[test]
-    fn livestt_final_chunks_insert_whitespace_when_needed() {
+    fn livestt_final_chunks_do_not_insert_whitespace_when_backend_omits_it() {
         let mut state = LiveSttState::default();
 
         apply_event_to_state(
@@ -675,7 +649,7 @@ mod tests {
             },
         );
 
-        assert_eq!(state.final_text, "hello world");
+        assert_eq!(state.final_text, "helloworld");
     }
 
     #[test]
@@ -756,14 +730,14 @@ mod tests {
             &mut state,
             LiveSttEvent::Partial {
                 session_id: 1,
-                text: "preview".to_string(),
+                text: " preview".to_string(),
                 is_final: false,
             },
         );
 
         assert_eq!(state.final_text, "stable");
         assert_eq!(state.current_text, "stable preview");
-        assert_eq!(state.pending_partial.as_deref(), Some("preview"));
+        assert_eq!(state.pending_partial.as_deref(), Some(" preview"));
     }
 
     #[test]
@@ -834,7 +808,7 @@ mod tests {
             &notify,
             LiveSttEvent::Final {
                 session_id: 1,
-                text: "world".to_string(),
+                text: " world".to_string(),
                 is_final: true,
                 start_time: None,
                 end_time: None,
@@ -1097,5 +1071,224 @@ mod tests {
             })
         );
         assert!(event_rx.try_recv().is_err());
+    }
+
+    #[test]
+    fn livestt_merge_final_appends_subword_chunks_without_space() {
+        let mut state = LiveSttState::default();
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "under".to_string(),
+                is_final: true,
+                start_time: Some(1.20),
+                end_time: Some(1.50),
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "stand".to_string(),
+                is_final: true,
+                start_time: Some(1.52),
+                end_time: Some(1.80),
+            },
+        );
+
+        assert_eq!(state.final_text, "understand");
+        assert_eq!(state.current_text, "understand");
+    }
+
+    #[test]
+    fn livestt_merge_final_uses_backend_leading_space_for_word_boundary() {
+        let mut state = LiveSttState::default();
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "hello".to_string(),
+                is_final: true,
+                start_time: Some(0.0),
+                end_time: Some(1.5),
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: " world".to_string(),
+                is_final: true,
+                start_time: Some(2.0),
+                end_time: Some(2.5),
+            },
+        );
+
+        assert_eq!(state.final_text, "hello world");
+    }
+
+    #[test]
+    fn livestt_merge_final_does_not_infer_space_before_uppercase() {
+        let mut state = LiveSttState::default();
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "test".to_string(),
+                is_final: true,
+                start_time: Some(1.20),
+                end_time: Some(1.50),
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "Hello".to_string(),
+                is_final: true,
+                start_time: Some(1.51),
+                end_time: Some(1.90),
+            },
+        );
+
+        assert_eq!(state.final_text, "testHello");
+    }
+
+    #[test]
+    fn livestt_merge_final_appends_verbatim_when_timestamps_missing() {
+        let mut state = LiveSttState::default();
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "under".to_string(),
+                is_final: true,
+                start_time: None,
+                end_time: None,
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "stand".to_string(),
+                is_final: true,
+                start_time: None,
+                end_time: None,
+            },
+        );
+
+        assert_eq!(state.final_text, "understand");
+    }
+
+    #[test]
+    fn livestt_merge_final_keeps_cumulative_branch() {
+        let mut state = LiveSttState::default();
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "hello".to_string(),
+                is_final: true,
+                start_time: Some(0.0),
+                end_time: Some(0.5),
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "hello world".to_string(),
+                is_final: true,
+                start_time: Some(0.51),
+                end_time: Some(1.0),
+            },
+        );
+
+        assert_eq!(state.final_text, "hello world");
+        assert_eq!(state.current_text, "hello world");
+    }
+
+    #[test]
+    fn livestt_merge_final_appends_subword_chunks_without_timestamp_fallback() {
+        let mut state = LiveSttState::default();
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "stream".to_string(),
+                is_final: true,
+                start_time: Some(22.40),
+                end_time: None,
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "ing".to_string(),
+                is_final: true,
+                start_time: Some(22.50),
+                end_time: None,
+            },
+        );
+
+        assert_eq!(state.final_text, "streaming");
+    }
+
+    #[test]
+    fn livestt_merge_final_preserves_reported_backend_spacing() {
+        let mut state = LiveSttState::default();
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "trans".to_string(),
+                is_final: true,
+                start_time: Some(13.20),
+                end_time: Some(13.80),
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: "cript, and the client should".to_string(),
+                is_final: true,
+                start_time: Some(13.98),
+                end_time: Some(15.78),
+            },
+        );
+
+        apply_event_to_state(
+            &mut state,
+            LiveSttEvent::Final {
+                session_id: 1,
+                text: " preserve backend spacing,".to_string(),
+                is_final: true,
+                start_time: Some(15.96),
+                end_time: Some(17.82),
+            },
+        );
+
+        assert_eq!(
+            state.final_text,
+            "transcript, and the client should preserve backend spacing,"
+        );
     }
 }

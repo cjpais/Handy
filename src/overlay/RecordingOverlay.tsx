@@ -1,5 +1,11 @@
 import { listen } from "@tauri-apps/api/event";
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   MicrophoneIcon,
@@ -25,6 +31,42 @@ type LiveSttErrorPayload = {
   error_message: string;
 };
 
+const LIVESTT_FINAL_DISPLAY_DELAY_MS = 140;
+
+const mergeLiveSttFinalText = (confirmedText: string, nextFinal: string) => {
+  if (!nextFinal.trim()) {
+    return confirmedText;
+  }
+
+  const existing = confirmedText.trim();
+  const nextWithoutOuterPadding = nextFinal.trim();
+
+  if (!existing) {
+    return nextFinal.trimStart();
+  }
+
+  if (nextWithoutOuterPadding.startsWith(existing)) {
+    return nextWithoutOuterPadding;
+  }
+
+  return `${confirmedText}${nextFinal}`;
+};
+
+const composeLiveSttDisplayText = (
+  confirmedText: string,
+  partialText: string,
+) => {
+  if (!partialText.trim()) {
+    return confirmedText;
+  }
+
+  if (!confirmedText.trim()) {
+    return partialText.trimStart();
+  }
+
+  return `${confirmedText}${partialText}`;
+};
+
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
@@ -34,37 +76,55 @@ const RecordingOverlay: React.FC = () => {
   const [liveSttStatus, setLiveSttStatus] =
     useState<LiveSttTranscriptStatus>("ended");
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
+  const liveSttConfirmedTextRef = useRef("");
+  const liveSttTextRef = useRef<HTMLDivElement | null>(null);
+  const liveSttFinalDisplayTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const direction = getLanguageDirection(i18n.language);
+
+  const clearLiveSttFinalDisplayTimer = useCallback(() => {
+    if (liveSttFinalDisplayTimerRef.current) {
+      clearTimeout(liveSttFinalDisplayTimerRef.current);
+      liveSttFinalDisplayTimerRef.current = null;
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    const textElement = liveSttTextRef.current;
+    if (!textElement) {
+      return;
+    }
+
+    textElement.scrollTop = textElement.scrollHeight;
+  }, [liveSttText]);
 
   useEffect(() => {
     let isMounted = true;
     let cleanup: (() => void) | undefined;
 
     const setupEventListeners = async () => {
-      // Listen for show-overlay event from Rust
       const unlistenShow = await listen("show-overlay", async (event) => {
-        // Sync language from settings each time overlay is shown
         await syncLanguageFromSettings();
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
         setIsVisible(true);
       });
 
-      // Listen for hide-overlay event from Rust
       const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
+        clearLiveSttFinalDisplayTimer();
+        liveSttConfirmedTextRef.current = "";
         setLiveSttText("");
         setLiveSttStatus("ended");
       });
 
-      // Listen for mic-level updates
       const unlistenLevel = await listen<number[]>("mic-level", (event) => {
         const newLevels = event.payload as number[];
 
-        // Apply smoothing to reduce jitter
         const smoothed = smoothedLevelsRef.current.map((prev, i) => {
           const target = newLevels[i] || 0;
-          return prev * 0.7 + target * 0.3; // Smooth transition
+          return prev * 0.7 + target * 0.3;
         });
 
         smoothedLevelsRef.current = smoothed;
@@ -74,6 +134,8 @@ const RecordingOverlay: React.FC = () => {
       const unlistenLiveSttStarted = await listen(
         "livestt-session-started",
         () => {
+          clearLiveSttFinalDisplayTimer();
+          liveSttConfirmedTextRef.current = "";
           setLiveSttText("");
           setLiveSttStatus("partial");
         },
@@ -82,7 +144,13 @@ const RecordingOverlay: React.FC = () => {
       const unlistenLiveSttPartial = await listen<LiveSttTranscriptPayload>(
         "livestt-partial",
         (event) => {
-          setLiveSttText(event.payload.text);
+          clearLiveSttFinalDisplayTimer();
+          setLiveSttText(
+            composeLiveSttDisplayText(
+              liveSttConfirmedTextRef.current,
+              event.payload.text,
+            ),
+          );
           setLiveSttStatus("partial");
         },
       );
@@ -90,14 +158,24 @@ const RecordingOverlay: React.FC = () => {
       const unlistenLiveSttFinal = await listen<LiveSttTranscriptPayload>(
         "livestt-final",
         (event) => {
-          setLiveSttText(event.payload.text);
-          setLiveSttStatus("final");
+          const confirmedText = mergeLiveSttFinalText(
+            liveSttConfirmedTextRef.current,
+            event.payload.text,
+          );
+          liveSttConfirmedTextRef.current = confirmedText;
+          clearLiveSttFinalDisplayTimer();
+          liveSttFinalDisplayTimerRef.current = setTimeout(() => {
+            liveSttFinalDisplayTimerRef.current = null;
+            setLiveSttText(confirmedText);
+            setLiveSttStatus("final");
+          }, LIVESTT_FINAL_DISPLAY_DELAY_MS);
         },
       );
 
       const unlistenLiveSttError = await listen<LiveSttErrorPayload>(
         "livestt-error",
         (event) => {
+          clearLiveSttFinalDisplayTimer();
           const message =
             event.payload.error_message?.trim() || event.payload.error_code;
           setLiveSttText(
@@ -111,10 +189,11 @@ const RecordingOverlay: React.FC = () => {
       );
 
       const unlistenLiveSttEnded = await listen("livestt-session-ended", () => {
+        clearLiveSttFinalDisplayTimer();
+        setLiveSttText(liveSttConfirmedTextRef.current);
         setLiveSttStatus("ended");
       });
 
-      // Cleanup function
       cleanup = () => {
         unlistenShow();
         unlistenHide();
@@ -135,9 +214,10 @@ const RecordingOverlay: React.FC = () => {
 
     return () => {
       isMounted = false;
+      clearLiveSttFinalDisplayTimer();
       cleanup?.();
     };
-  }, [t]);
+  }, [clearLiveSttFinalDisplayTimer, t]);
 
   const getIcon = () => {
     if (state === "recording") {
@@ -156,7 +236,10 @@ const RecordingOverlay: React.FC = () => {
 
       <div className="overlay-middle">
         {liveSttText ? (
-          <div className={`livestt-text livestt-text-${liveSttStatus}`}>
+          <div
+            ref={liveSttTextRef}
+            className={`livestt-text livestt-text-${liveSttStatus}`}
+          >
             {liveSttText}
           </div>
         ) : state === "recording" ? (
@@ -166,9 +249,9 @@ const RecordingOverlay: React.FC = () => {
                 key={i}
                 className="bar"
                 style={{
-                  height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
+                  height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`,
                   transition: "height 60ms ease-out, opacity 120ms ease-out",
-                  opacity: Math.max(0.2, v * 1.7), // Minimum opacity for visibility
+                  opacity: Math.max(0.2, v * 1.7),
                 }}
               />
             ))}

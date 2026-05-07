@@ -630,14 +630,6 @@
         "title": "Project",
         "description": "Open the Curano AI Dictate project repository.",
         "button": "Open Curano Repo"
-      },
-      "acknowledgments": {
-        "title": "Acknowledgments",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
-          "details": "Curano AI Dictate uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
-        }
       }
     }
   },

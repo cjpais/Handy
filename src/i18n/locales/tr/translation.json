@@ -574,14 +574,6 @@
         "title": "Geliştirmeyi Destekle",
         "description": "Curano AI Dictate'yi geliştirmeye devam etmemize yardımcı olun",
         "button": "Bağış Yap"
-      },
-      "acknowledgments": {
-        "title": "Teşekkürler",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
-          "details": "Curano AI Dictate, hızlı ve yerel konuşmadan metne dönüştürme için Whisper.cpp kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
-        }
       }
     },
     "transcriptionBackend": {

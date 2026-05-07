@@ -58,7 +58,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
         {entry.source}
       </span>
       <span className="min-w-0 truncate text-slate-400">{entry.target}</span>
-      <span className="min-w-0 truncate text-slate-700">{entry.message}</span>
+      <span className="min-w-0 break-all text-slate-700">{entry.message}</span>
     </div>
   );
 }
@@ -95,7 +95,6 @@ export const LogConsole: React.FC = () => {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-3 p-4">
-      {/* Toolbar row 1: level toggles + text filter */}
       <div className="flex min-w-0 flex-wrap items-center gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1 rounded-xl bg-slate-100 p-1">
           {LEVELS.map((level) => {
@@ -124,7 +123,6 @@ export const LogConsole: React.FC = () => {
         />
       </div>
 
-      {/* Toolbar row 2: action buttons */}
       <div className="flex flex-wrap items-center justify-end gap-2">
         <button
           onClick={() => setPaused((p) => !p)}
@@ -158,7 +156,6 @@ export const LogConsole: React.FC = () => {
         </button>
       </div>
 
-      {/* Log area */}
       <div
         ref={scrollRef}
         className="h-[clamp(240px,42vh,520px)] min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white py-1"

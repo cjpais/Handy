@@ -77,13 +77,14 @@
   overflow-wrap: anywhere;
 }
 
-.livestt-text-partial {
-  opacity: 0.72;
-}
-
+.livestt-text-partial,
 .livestt-text-final,
 .livestt-text-ended {
   opacity: 1;
+}
+
+.livestt-text-partial {
+  opacity: 0.72;
 }
 
 .livestt-text-error {

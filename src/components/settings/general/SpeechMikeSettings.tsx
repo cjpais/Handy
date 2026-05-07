@@ -91,7 +91,6 @@ export const SpeechMikeSettings: React.FC = () => {
 
   return (
     <SettingsGroup title={t("settings.general.speechmike.title")}>
-      {/* Status row */}
       <SettingContainer
         title={t("settings.general.speechmike.status")}
         description={deviceLabel}
@@ -109,7 +108,6 @@ export const SpeechMikeSettings: React.FC = () => {
         </span>
       </SettingContainer>
 
-      {/* Blocked-by-other-app warning */}
       {status.blocked_by_other_app && (
         <div className="px-4 py-3 bg-amber-50 border-t border-amber-200">
           <p className="text-sm font-medium text-amber-800">
@@ -125,7 +123,6 @@ export const SpeechMikeSettings: React.FC = () => {
         </div>
       )}
 
-      {/* Auto-select microphone toggle */}
       <SettingContainer
         title={t("settings.general.speechmike.autoSelect")}
         description={t("settings.general.speechmike.autoSelectDescription")}
@@ -149,7 +146,6 @@ export const SpeechMikeSettings: React.FC = () => {
         </button>
       </SettingContainer>
 
-      {/* Button mapping toggle */}
       <SettingContainer
         title={t("settings.general.speechmike.buttonMapping")}
         description={t("settings.general.speechmike.buttonMappingDescription")}
@@ -173,7 +169,6 @@ export const SpeechMikeSettings: React.FC = () => {
         </button>
       </SettingContainer>
 
-      {/* Button mapping reference table */}
       {status.connected && (
         <div className="px-4 py-3 border-t border-slate-100">
           <p className="text-xs font-medium text-slate-500 mb-2">
@@ -200,7 +195,6 @@ export const SpeechMikeSettings: React.FC = () => {
         </div>
       )}
 
-      {/* SpeechControl SDK link (Windows) */}
       <div className="px-4 py-2 border-t border-slate-100">
         <a
           href="https://www.dictation.philips.com/me/products/workflow-software/speechcontrol-device-and-application-control-software-lfh4000/"

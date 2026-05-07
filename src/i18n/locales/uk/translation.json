@@ -574,14 +574,6 @@
         "title": "Підтримати розробку",
         "description": "Допоможіть нам продовжувати розвивати Curano AI Dictate",
         "button": "Підтримати"
-      },
-      "acknowledgments": {
-        "title": "Подяки",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "Високопродуктивний інференс моделі автоматичного розпізнавання мовлення Whisper від OpenAI",
-          "details": "Curano AI Dictate використовує Whisper.cpp для швидкої локальної обробки мовлення в текст. Дякуємо за чудову роботу Георгію Герганову та контриб'юторам."
-        }
       }
     },
     "transcriptionBackend": {
