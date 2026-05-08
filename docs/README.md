@@ -1,4 +1,7 @@
-Windows 开发环境（推荐启动方式）
+Windows 开发环境（推荐启动方式）  
+
+记录当前版本 mac
+语音打字已经正常了，后续会继续优化和添加功能。
 
 如果在 `npm run tauri dev` 阶段遇到 `whisper-rs-sys` 的 CMake 异常（例如 `0xc0000409`），请先在同一个 PowerShell 会话加载构建环境脚本，再启动 Tauri：
 
