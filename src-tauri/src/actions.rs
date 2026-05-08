@@ -555,8 +555,67 @@ impl ShortcutAction for TranscribeAction {
                 }
             };
 
+            // Pre-allocate the audio pipe so the microphone can capture while
+            // the WebSocket is still connecting. Mic chunks accumulate in the
+            // bounded mpsc channel; the writer task drains them in order once
+            // the socket is live, preserving every word from the hotkey press.
+            let pending_audio = livestt_manager.create_pending_audio();
+            let mic_sink = pending_audio.sink();
+
             change_tray_icon(app, TrayIconState::Recording);
             show_recording_overlay(app);
+
+            let recording_start_time = Instant::now();
+            if let Err(e) = rm.try_start_recording_with_chunk_sender(&binding_id, mic_sink) {
+                debug!("Failed to start recording before LiveSTT connect: {}", e);
+                let _ = livestt_manager.cancel_session();
+                change_tray_icon(app, TrayIconState::Idle);
+                show_livestt_error(
+                    app,
+                    crate::livestt::events::LIVESTT_ERROR_AUDIO_WRITER_FAILED,
+                    &e,
+                );
+                let error_type = if is_microphone_access_denied(&e) {
+                    "microphone_permission_denied"
+                } else if is_no_input_device_error(&e) {
+                    "no_input_device"
+                } else {
+                    "unknown"
+                };
+                let _ = app.emit(
+                    "recording-error",
+                    RecordingErrorEvent {
+                        error_type: error_type.to_string(),
+                        detail: Some(e),
+                    },
+                );
+                notify_livestt_start_aborted(app, &binding_id);
+                return;
+            }
+            debug!(
+                "LiveSTT recording started in {:?} (buffering until socket ready)",
+                recording_start_time.elapsed()
+            );
+
+            // Schedule audio feedback / mute matching the original mode-specific
+            // timing. Always-on plays immediately; on-demand waits 100 ms so the
+            // mic stream is settled before the cue.
+            let app_for_sound = app.clone();
+            let rm_for_mute = Arc::clone(&rm);
+            if is_always_on {
+                debug!("Always-on mode: Playing audio feedback immediately");
+                std::thread::spawn(move || {
+                    play_feedback_sound_blocking(&app_for_sound, SoundType::Start);
+                    rm_for_mute.apply_mute();
+                });
+            } else {
+                debug!("On-demand mode: Delayed audio feedback/mute sequence");
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    play_feedback_sound_blocking(&app_for_sound, SoundType::Start);
+                    rm_for_mute.apply_mute();
+                });
+            }
 
             let app_clone = app.clone();
             let rm_clone = Arc::clone(&rm);
@@ -569,97 +628,20 @@ impl ShortcutAction for TranscribeAction {
                         app_clone.clone(),
                         binding_id_for_start.clone(),
                         reservation,
+                        pending_audio,
                     )
                     .await;
 
-                let sender = match start_result {
-                    Ok(sender) => {
-                        debug!(
-                            "LiveSTT session started for binding {}",
-                            binding_id_for_start
-                        );
-                        sender
-                    }
-                    Err(err) => {
-                        warn!("LiveSTT session start failed: {}", err);
-                        change_tray_icon(&app_clone, TrayIconState::Idle);
-                        let error_code = crate::livestt::session::classify_livestt_error(&err);
-                        if error_code != crate::livestt::events::LIVESTT_ERROR_CANCELED {
-                            show_livestt_error(&app_clone, error_code, &err);
-                        } else {
-                            utils::hide_recording_overlay(&app_clone);
-                        }
-                        notify_livestt_start_aborted(&app_clone, &binding_id_for_start);
-                        debug!(
-                            "TranscribeAction::start completed in {:?}",
-                            start_time.elapsed()
-                        );
-                        return;
-                    }
-                };
-
-                let mut recording_error: Option<String> = None;
-                if is_always_on {
-                    debug!("Always-on mode: Playing audio feedback immediately");
-                    let rm_for_mute = Arc::clone(&rm_clone);
-                    let app_for_sound = app_clone.clone();
-                    std::thread::spawn(move || {
-                        play_feedback_sound_blocking(&app_for_sound, SoundType::Start);
-                        rm_for_mute.apply_mute();
-                    });
-
-                    if let Err(e) = rm_clone
-                        .try_start_recording_with_chunk_sender(&binding_id_for_start, sender)
-                    {
-                        debug!("Recording failed: {}", e);
-                        recording_error = Some(e);
-                    }
-                } else {
-                    debug!("On-demand mode: Starting recording first, then audio feedback");
-                    let recording_start_time = Instant::now();
-                    match rm_clone
-                        .try_start_recording_with_chunk_sender(&binding_id_for_start, sender)
-                    {
-                        Ok(()) => {
-                            debug!("Recording started in {:?}", recording_start_time.elapsed());
-                            let app_for_sound = app_clone.clone();
-                            let rm_for_mute = Arc::clone(&rm_clone);
-                            std::thread::spawn(move || {
-                                std::thread::sleep(std::time::Duration::from_millis(100));
-                                debug!("Handling delayed audio feedback/mute sequence");
-                                play_feedback_sound_blocking(&app_for_sound, SoundType::Start);
-                                rm_for_mute.apply_mute();
-                            });
-                        }
-                        Err(e) => {
-                            debug!("Failed to start recording: {}", e);
-                            recording_error = Some(e);
-                        }
-                    }
-                }
-
-                if let Some(err) = recording_error {
-                    let _ = livestt_manager_for_start.cancel_session();
+                if let Err(err) = start_result {
+                    warn!("LiveSTT session start failed: {}", err);
+                    rm_clone.cancel_recording();
                     change_tray_icon(&app_clone, TrayIconState::Idle);
-                    show_livestt_error(
-                        &app_clone,
-                        crate::livestt::events::LIVESTT_ERROR_AUDIO_WRITER_FAILED,
-                        &err,
-                    );
-                    let error_type = if is_microphone_access_denied(&err) {
-                        "microphone_permission_denied"
-                    } else if is_no_input_device_error(&err) {
-                        "no_input_device"
+                    let error_code = crate::livestt::session::classify_livestt_error(&err);
+                    if error_code != crate::livestt::events::LIVESTT_ERROR_CANCELED {
+                        show_livestt_error(&app_clone, error_code, &err);
                     } else {
-                        "unknown"
-                    };
-                    let _ = app_clone.emit(
-                        "recording-error",
-                        RecordingErrorEvent {
-                            error_type: error_type.to_string(),
-                            detail: Some(err),
-                        },
-                    );
+                        utils::hide_recording_overlay(&app_clone);
+                    }
                     notify_livestt_start_aborted(&app_clone, &binding_id_for_start);
                     debug!(
                         "TranscribeAction::start completed in {:?}",
@@ -668,6 +650,10 @@ impl ShortcutAction for TranscribeAction {
                     return;
                 }
 
+                debug!(
+                    "LiveSTT session started for binding {}",
+                    binding_id_for_start
+                );
                 shortcut::register_cancel_shortcut(&app_clone);
                 notify_livestt_recording_started(&app_clone, &binding_id_for_start);
                 debug!(
@@ -791,6 +777,10 @@ impl ShortcutAction for TranscribeAction {
                     binding_id
                 );
                 let _ = livestt_manager.cancel_session();
+                // Mic is started synchronously at hotkey press now (before the
+                // socket connects), so it can be active even when the session
+                // is still in the Starting state — make sure to stop it.
+                rm.cancel_recording();
                 utils::hide_recording_overlay(app);
                 change_tray_icon(app, TrayIconState::Idle);
                 if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {

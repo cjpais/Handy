@@ -25,7 +25,11 @@ use super::replay::LiveSttReplayBuffer;
 
 pub type LiveSttAudioSender = LiveSttAudioSink;
 
-pub const LIVESTT_AUDIO_QUEUE_CAPACITY: usize = 16;
+// Capacity sized to absorb mic chunks (~250 ms each) buffered while the
+// LiveSTT WebSocket is still establishing. 64 chunks ≈ 16 s headroom, well
+// above the typical 100–700 ms connect+init window, so first words captured
+// at hotkey press are not dropped before the writer task starts draining.
+pub const LIVESTT_AUDIO_QUEUE_CAPACITY: usize = 64;
 const LIVESTT_EVENT_QUEUE_CAPACITY: usize = 32;
 pub const LIVESTT_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const LIVESTT_AUDIO_OVERFLOW_ERROR: &str = "LiveSTT audio stream fell behind; please try again";
@@ -201,10 +205,39 @@ impl LiveSttSessionContext {
     }
 }
 
+/// Audio pipe created synchronously at hotkey press, before the LiveSTT
+/// WebSocket connects. The microphone starts capturing into [`Self::sink`]
+/// immediately; the receiver is consumed by the writer task once the socket
+/// is active, so chunks recorded during connect are forwarded in order.
+pub struct LiveSttPendingAudio {
+    audio_rx: mpsc::Receiver<Vec<f32>>,
+    audio_overflowed: Arc<AtomicBool>,
+    sink: LiveSttAudioSink,
+}
+
+impl LiveSttPendingAudio {
+    pub fn sink(&self) -> LiveSttAudioSink {
+        self.sink.clone()
+    }
+}
+
 impl LiveSttSessionManager {
     pub fn reserve_start(&self) -> Result<LiveSttStartReservation, String> {
         self.reserve_starting()
             .map(|generation| LiveSttStartReservation { generation })
+    }
+
+    /// Allocate the audio channel and sink before `start_reserved_session` is
+    /// awaited, so the mic can begin capturing while the WebSocket connects.
+    pub fn create_pending_audio(&self) -> LiveSttPendingAudio {
+        let (audio_tx, audio_rx) = mpsc::channel::<Vec<f32>>(LIVESTT_AUDIO_QUEUE_CAPACITY);
+        let audio_overflowed = Arc::new(AtomicBool::new(false));
+        let sink = LiveSttAudioSink::new(audio_tx, audio_overflowed.clone());
+        LiveSttPendingAudio {
+            audio_rx,
+            audio_overflowed,
+            sink,
+        }
     }
 
     pub async fn start_reserved_session(
@@ -212,10 +245,11 @@ impl LiveSttSessionManager {
         app_handle: AppHandle,
         binding_id: String,
         reservation: LiveSttStartReservation,
-    ) -> Result<LiveSttAudioSender, String> {
+        pending: LiveSttPendingAudio,
+    ) -> Result<(), String> {
         let generation = reservation.generation;
         let result = self
-            .start_session_inner(app_handle, binding_id, generation)
+            .start_session_inner(app_handle, binding_id, generation, pending)
             .await;
         if result.is_err() {
             self.clear_starting(generation);
@@ -229,7 +263,14 @@ impl LiveSttSessionManager {
         app_handle: AppHandle,
         binding_id: String,
         generation: u64,
-    ) -> Result<LiveSttAudioSender, String> {
+        pending: LiveSttPendingAudio,
+    ) -> Result<(), String> {
+        let LiveSttPendingAudio {
+            audio_rx,
+            audio_overflowed,
+            sink,
+        } = pending;
+
         let app_settings = settings::get_settings(&app_handle);
         let finalize_timeout = Duration::from_millis(app_settings.livestt_finalize_timeout_ms);
         let server_url =
@@ -251,8 +292,6 @@ impl LiveSttSessionManager {
         )
         .await?;
         spawn_livestt_event_bridge(app_handle.clone(), event_rx);
-        let (audio_tx, audio_rx) = mpsc::channel::<Vec<f32>>(LIVESTT_AUDIO_QUEUE_CAPACITY);
-        let audio_overflowed = Arc::new(AtomicBool::new(false));
         let context = Arc::new(LiveSttSessionContext::new(
             app_handle,
             server_url,
@@ -263,19 +302,17 @@ impl LiveSttSessionManager {
             client,
         ));
         let writer_task = spawn_audio_writer(context.clone(), audio_rx);
-        let sender = LiveSttAudioSink::new(audio_tx, audio_overflowed.clone());
 
         let active = ActiveLiveSttSession {
             binding_id,
             context,
-            audio_tx: Some(sender.clone()),
+            audio_tx: Some(sink),
             audio_overflowed,
             writer_task,
             finalize_timeout,
         };
 
-        self.activate(active, generation)?;
-        Ok(sender)
+        self.activate(active, generation)
     }
 
     pub async fn stop_session(&self, binding_id: &str) -> Result<LiveSttResult, String> {
@@ -857,6 +894,41 @@ mod tests {
         let current = result("", None, "");
 
         assert!(resolve_timeout_result(&current).is_err());
+    }
+
+    #[test]
+    fn livestt_pending_audio_buffers_chunks_in_order_for_drainer() {
+        let manager = LiveSttSessionManager::default();
+        let mut pending = manager.create_pending_audio();
+        let sink = pending.sink();
+
+        sink.try_send_chunk(vec![0.1, 0.2]);
+        sink.try_send_chunk(vec![0.3]);
+        sink.try_send_chunk(vec![0.4, 0.5, 0.6]);
+
+        let mut received: Vec<Vec<f32>> = Vec::new();
+        while let Ok(chunk) = pending.audio_rx.try_recv() {
+            received.push(chunk);
+        }
+
+        assert_eq!(
+            received,
+            vec![vec![0.1, 0.2], vec![0.3], vec![0.4, 0.5, 0.6]]
+        );
+        assert!(!pending.audio_overflowed.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn livestt_pending_audio_capacity_absorbs_connect_window() {
+        let manager = LiveSttSessionManager::default();
+        let pending = manager.create_pending_audio();
+        let sink = pending.sink();
+
+        for _ in 0..LIVESTT_AUDIO_QUEUE_CAPACITY {
+            sink.try_send_chunk(vec![0.0]);
+        }
+
+        assert!(!pending.audio_overflowed.load(Ordering::Relaxed));
     }
 
     #[test]
