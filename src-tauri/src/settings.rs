@@ -467,6 +467,8 @@ pub struct AppSettings {
     pub livestt_consultation_id: Option<String>,
     #[serde(default = "default_livestt_finalize_timeout_ms")]
     pub livestt_finalize_timeout_ms: u64,
+    #[serde(default)]
+    pub livestt_prompt: Option<String>,
     #[serde(default = "default_speechmike_auto_select")]
     pub speechmike_auto_select: bool,
     #[serde(default = "default_speechmike_button_mapping_enabled")]
@@ -719,6 +721,8 @@ fn default_livestt_finalize_timeout_ms() -> u64 {
 
 pub const MAX_LIVESTT_FINALIZE_TIMEOUT_MS: u64 = 120_000;
 
+pub const MAX_LIVESTT_PROMPT_CHARS: usize = 10_000;
+
 fn livestt_server_url_scheme_error() -> String {
     "LiveSTT server URL must use https, or http for localhost testing".to_string()
 }
@@ -783,6 +787,21 @@ pub fn validate_livestt_finalize_timeout_ms(timeout_ms: u64) -> Result<(), Strin
     }
 
     Ok(())
+}
+
+pub fn normalize_livestt_prompt(prompt: Option<&str>) -> Result<Option<String>, String> {
+    let Some(value) = prompt.map(str::trim).filter(|value| !value.is_empty()) else {
+        return Ok(None);
+    };
+
+    if value.chars().count() > MAX_LIVESTT_PROMPT_CHARS {
+        return Err(format!(
+            "LiveSTT prompt must be at most {} characters",
+            MAX_LIVESTT_PROMPT_CHARS
+        ));
+    }
+
+    Ok(Some(value.to_string()))
 }
 
 pub fn validate_livestt_consultation_id(consultation_id: Option<&str>) -> Result<(), String> {
@@ -969,6 +988,7 @@ pub fn get_default_settings() -> AppSettings {
         livestt_audio_format: LiveSttAudioFormat::default(),
         livestt_consultation_id: None,
         livestt_finalize_timeout_ms: default_livestt_finalize_timeout_ms(),
+        livestt_prompt: None,
         speechmike_auto_select: default_speechmike_auto_select(),
         speechmike_button_mapping_enabled: default_speechmike_button_mapping_enabled(),
         speechmike_last_seen_name: None,
@@ -1129,6 +1149,7 @@ mod tests {
         assert_eq!(settings.livestt_audio_format, LiveSttAudioFormat::Pcm);
         assert_eq!(settings.livestt_consultation_id, None);
         assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);
+        assert_eq!(settings.livestt_prompt, None);
     }
 
     #[test]
@@ -1140,6 +1161,7 @@ mod tests {
         object.remove("livestt_audio_format");
         object.remove("livestt_consultation_id");
         object.remove("livestt_finalize_timeout_ms");
+        object.remove("livestt_prompt");
 
         let settings = serde_json::from_value::<AppSettings>(value).unwrap();
 
@@ -1151,6 +1173,7 @@ mod tests {
         assert_eq!(settings.livestt_audio_format, LiveSttAudioFormat::Pcm);
         assert_eq!(settings.livestt_consultation_id, None);
         assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);
+        assert_eq!(settings.livestt_prompt, None);
     }
 
     #[test]
@@ -1248,6 +1271,30 @@ mod tests {
         assert!(validate_livestt_finalize_timeout_ms(MAX_LIVESTT_FINALIZE_TIMEOUT_MS).is_ok());
         assert!(validate_livestt_finalize_timeout_ms(0).is_err());
         assert!(validate_livestt_finalize_timeout_ms(MAX_LIVESTT_FINALIZE_TIMEOUT_MS + 1).is_err());
+    }
+
+    #[test]
+    fn livestt_prompt_normalization_trims_and_treats_blank_as_none() {
+        assert_eq!(normalize_livestt_prompt(None).unwrap(), None);
+        assert_eq!(normalize_livestt_prompt(Some("")).unwrap(), None);
+        assert_eq!(normalize_livestt_prompt(Some("   \n\t ")).unwrap(), None);
+        assert_eq!(
+            normalize_livestt_prompt(Some("  hello world  ")).unwrap(),
+            Some("hello world".to_string())
+        );
+    }
+
+    #[test]
+    fn livestt_prompt_validation_rejects_oversized_input() {
+        let oversized = "a".repeat(MAX_LIVESTT_PROMPT_CHARS + 1);
+        assert!(normalize_livestt_prompt(Some(&oversized)).is_err());
+
+        let at_limit = "a".repeat(MAX_LIVESTT_PROMPT_CHARS);
+        let result = normalize_livestt_prompt(Some(&at_limit)).unwrap();
+        assert_eq!(
+            result.as_deref().map(str::len),
+            Some(MAX_LIVESTT_PROMPT_CHARS)
+        );
     }
 
     #[test]

@@ -3,6 +3,7 @@ const LIVESTT_SERVER_URL_ERROR_KEY =
 
 export const MIN_FINALIZE_TIMEOUT_MS = 1;
 export const MAX_FINALIZE_TIMEOUT_MS = 120000;
+export const MAX_LIVESTT_PROMPT_CHARS = 10000;
 
 export interface LiveSttServerUrlValidationResult {
   normalized: string;
@@ -72,6 +73,16 @@ export const parseConsultationIdInput = (value: string): string | null => {
   }
 
   return String(parsed);
+};
+
+export const normalizeLiveSttPromptInput = (
+  value: string,
+): { trimmed: string; isValid: boolean } => {
+  const trimmed = value.trim();
+  if ([...trimmed].length > MAX_LIVESTT_PROMPT_CHARS) {
+    return { trimmed, isValid: false };
+  }
+  return { trimmed, isValid: true };
 };
 
 export const validateFinalizeTimeoutInput = (value: string): number | null => {

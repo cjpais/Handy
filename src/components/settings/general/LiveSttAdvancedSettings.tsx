@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { commands } from "@/bindings";
 import { useSettings } from "../../../hooks/useSettings";
 import { Input } from "../../ui/Input";
 import { SettingContainer } from "../../ui/SettingContainer";
+import { Textarea } from "../../ui/Textarea";
 import {
   MAX_FINALIZE_TIMEOUT_MS,
+  MAX_LIVESTT_PROMPT_CHARS,
   MIN_FINALIZE_TIMEOUT_MS,
+  normalizeLiveSttPromptInput,
   parseConsultationIdInput,
   validateFinalizeTimeoutInput,
 } from "./livesttValidation";
@@ -13,84 +17,191 @@ import {
 interface LiveSttAdvancedSettingsProps {
   consultationId: string;
   finalizeTimeoutMs: number;
+  prompt: string;
+}
+
+type FieldElement = HTMLInputElement | HTMLTextAreaElement;
+
+function useSyncedTextField<TElement extends FieldElement>(
+  externalValue: string,
+) {
+  const [value, setValue] = useState(externalValue);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValue(externalValue);
+  }, [externalValue]);
+
+  const onChange = useCallback((event: React.ChangeEvent<TElement>) => {
+    setValue(event.target.value);
+    setError(null);
+  }, []);
+
+  return {
+    value,
+    setValue,
+    error,
+    setError,
+    onChange,
+  };
 }
 
 export const LiveSttAdvancedSettings: React.FC<
   LiveSttAdvancedSettingsProps
-> = ({ consultationId, finalizeTimeoutMs }) => {
+> = ({ consultationId, finalizeTimeoutMs, prompt }) => {
   const { t } = useTranslation();
-  const { isUpdating, updateSetting } = useSettings();
-  const [consultationIdInput, setConsultationIdInput] =
-    useState(consultationId);
-  const [finalizeTimeoutInput, setFinalizeTimeoutInput] = useState(
+  const { isUpdating, updateSetting, refreshSettings } = useSettings();
+
+  const consultationIdField =
+    useSyncedTextField<HTMLInputElement>(consultationId);
+
+  const finalizeTimeoutField = useSyncedTextField<HTMLInputElement>(
     String(finalizeTimeoutMs),
   );
-  const [consultationIdError, setConsultationIdError] = useState<string | null>(
-    null,
-  );
-  const [finalizeTimeoutError, setFinalizeTimeoutError] = useState<
-    string | null
-  >(null);
 
-  useEffect(() => {
-    setConsultationIdInput(consultationId);
-  }, [consultationId]);
+  const promptField = useSyncedTextField<HTMLTextAreaElement>(prompt);
 
-  useEffect(() => {
-    setFinalizeTimeoutInput(String(finalizeTimeoutMs));
-  }, [finalizeTimeoutMs]);
+  const handleConsultationIdBlur = useCallback(async () => {
+    const parsedValue = parseConsultationIdInput(consultationIdField.value);
 
-  const handleConsultationIdBlur = async () => {
-    const parsedValue = parseConsultationIdInput(consultationIdInput);
     if (parsedValue === null) {
-      setConsultationIdError(
+      consultationIdField.setError(
         t("settings.transcriptionBackend.livestt.consultationId.error"),
       );
       return;
     }
 
-    setConsultationIdError(null);
+    consultationIdField.setError(null);
+
+    if (parsedValue !== consultationIdField.value) {
+      consultationIdField.setValue(parsedValue);
+    }
+
+    if (parsedValue === consultationId) {
+      return;
+    }
+
     await updateSetting(
       "livestt_consultation_id",
       parsedValue === "" ? null : parsedValue,
     );
-  };
+  }, [consultationId, consultationIdField, t, updateSetting]);
 
-  const handleFinalizeTimeoutBlur = async () => {
-    const parsedValue = validateFinalizeTimeoutInput(finalizeTimeoutInput);
+  const handlePromptBlur = useCallback(async () => {
+    const { trimmed, isValid } = normalizeLiveSttPromptInput(promptField.value);
+
+    if (!isValid) {
+      promptField.setError(
+        t("settings.transcriptionBackend.livestt.prompt.error"),
+      );
+      return;
+    }
+
+    promptField.setError(null);
+
+    if (trimmed === prompt) {
+      if (trimmed !== promptField.value) {
+        promptField.setValue(trimmed);
+      }
+
+      return;
+    }
+
+    const result = await commands.changeLivesttPromptSetting(
+      trimmed === "" ? null : trimmed,
+    );
+
+    if (result.status === "error") {
+      promptField.setError(result.error);
+      return;
+    }
+
+    promptField.setValue(trimmed);
+    await refreshSettings();
+  }, [prompt, promptField, refreshSettings, t]);
+
+  const handleFinalizeTimeoutBlur = useCallback(async () => {
+    const parsedValue = validateFinalizeTimeoutInput(
+      finalizeTimeoutField.value,
+    );
+
     if (parsedValue === null) {
-      setFinalizeTimeoutError(
+      finalizeTimeoutField.setError(
         t("settings.transcriptionBackend.livestt.finalizeTimeout.error"),
       );
       return;
     }
 
-    setFinalizeTimeoutError(null);
+    finalizeTimeoutField.setError(null);
+
+    const normalizedValue = String(parsedValue);
+
+    if (normalizedValue !== finalizeTimeoutField.value) {
+      finalizeTimeoutField.setValue(normalizedValue);
+    }
+
+    if (parsedValue === finalizeTimeoutMs) {
+      return;
+    }
+
     await updateSetting("livestt_finalize_timeout_ms", parsedValue);
-  };
+  }, [finalizeTimeoutField, finalizeTimeoutMs, t, updateSetting]);
+
+  const promptCharCount = [...promptField.value].length;
 
   return (
     <>
+      <SettingContainer
+        title={t("settings.transcriptionBackend.livestt.prompt.title")}
+        description={t(
+          "settings.transcriptionBackend.livestt.prompt.description",
+        )}
+        descriptionMode="tooltip"
+        grouped
+        layout="stacked"
+      >
+        <Textarea
+          value={promptField.value}
+          onChange={promptField.onChange}
+          onBlur={() => {
+            void handlePromptBlur();
+          }}
+          placeholder={t(
+            "settings.transcriptionBackend.livestt.prompt.placeholder",
+          )}
+          disabled={isUpdating("livestt_prompt")}
+          maxLength={MAX_LIVESTT_PROMPT_CHARS}
+          className="w-full"
+        />
+
+        <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+          <span>
+            {promptField.error && (
+              <span className="text-red-500">{promptField.error}</span>
+            )}
+          </span>
+
+          <span>
+            {promptCharCount}/{MAX_LIVESTT_PROMPT_CHARS}
+          </span>
+        </div>
+      </SettingContainer>
+
       <SettingContainer
         title={t("settings.transcriptionBackend.livestt.consultationId.title")}
         description={t(
           "settings.transcriptionBackend.livestt.consultationId.description",
         )}
         descriptionMode="tooltip"
-        grouped={true}
+        grouped
         layout="stacked"
       >
         <Input
           type="number"
           min="1"
           step="1"
-          value={consultationIdInput}
-          onChange={(event) => {
-            setConsultationIdInput(event.target.value);
-            if (consultationIdError) {
-              setConsultationIdError(null);
-            }
-          }}
+          value={consultationIdField.value}
+          onChange={consultationIdField.onChange}
           onBlur={() => {
             void handleConsultationIdBlur();
           }}
@@ -100,8 +211,11 @@ export const LiveSttAdvancedSettings: React.FC<
           disabled={isUpdating("livestt_consultation_id")}
           className="w-full"
         />
-        {consultationIdError && (
-          <p className="mt-2 text-xs text-red-500">{consultationIdError}</p>
+
+        {consultationIdField.error && (
+          <p className="mt-2 text-xs text-red-500">
+            {consultationIdField.error}
+          </p>
         )}
       </SettingContainer>
 
@@ -111,7 +225,7 @@ export const LiveSttAdvancedSettings: React.FC<
           "settings.transcriptionBackend.livestt.finalizeTimeout.description",
         )}
         descriptionMode="tooltip"
-        grouped={true}
+        grouped
         layout="stacked"
       >
         <Input
@@ -119,21 +233,19 @@ export const LiveSttAdvancedSettings: React.FC<
           min={MIN_FINALIZE_TIMEOUT_MS}
           max={MAX_FINALIZE_TIMEOUT_MS}
           step="100"
-          value={finalizeTimeoutInput}
-          onChange={(event) => {
-            setFinalizeTimeoutInput(event.target.value);
-            if (finalizeTimeoutError) {
-              setFinalizeTimeoutError(null);
-            }
-          }}
+          value={finalizeTimeoutField.value}
+          onChange={finalizeTimeoutField.onChange}
           onBlur={() => {
             void handleFinalizeTimeoutBlur();
           }}
           disabled={isUpdating("livestt_finalize_timeout_ms")}
           className="w-full"
         />
-        {finalizeTimeoutError && (
-          <p className="mt-2 text-xs text-red-500">{finalizeTimeoutError}</p>
+
+        {finalizeTimeoutField.error && (
+          <p className="mt-2 text-xs text-red-500">
+            {finalizeTimeoutField.error}
+          </p>
         )}
       </SettingContainer>
     </>

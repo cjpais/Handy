@@ -349,6 +349,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_livestt_server_url_setting,
             shortcut::change_livestt_consultation_id_setting,
             shortcut::change_livestt_finalize_timeout_ms_setting,
+            shortcut::change_livestt_prompt_setting,
             shortcut::change_overlay_position_setting,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,

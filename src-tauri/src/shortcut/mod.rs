@@ -629,6 +629,16 @@ pub fn change_livestt_finalize_timeout_ms_setting(
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_livestt_prompt_setting(app: AppHandle, prompt: Option<String>) -> Result<(), String> {
+    let normalized = settings::normalize_livestt_prompt(prompt.as_deref())?;
+    let mut settings = settings::get_settings(&app);
+    settings.livestt_prompt = normalized;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {

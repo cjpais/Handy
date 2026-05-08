@@ -267,6 +267,12 @@
           "placeholder": "Optional",
           "error": "Consultation ID must be a positive integer or empty."
         },
+        "prompt": {
+          "title": "Prompt",
+          "description": "Optional context (domain, names, glossary) that helps Soniox recognize unusual words. Up to 10000 characters. Sent at the start of each session.",
+          "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
+          "error": "Prompt must be at most 10000 characters."
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

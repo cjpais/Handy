@@ -16,6 +16,7 @@ pub struct LiveSttConfig {
     pub server_url: String,
     pub access_token: String,
     pub consultation_id: Option<i64>,
+    pub prompt: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -52,6 +53,11 @@ impl LiveSttClient {
         event_tx: mpsc::Sender<LiveSttEvent>,
     ) -> Result<Self, String> {
         let websocket_url = build_websocket_url(&config)?;
+        let init_payload = config
+            .prompt
+            .as_deref()
+            .map(serialize_init_command)
+            .transpose()?;
         let (socket, _) = tokio_tungstenite::connect_async(websocket_url.as_str())
             .await
             .map_err(|e| {
@@ -63,6 +69,13 @@ impl LiveSttClient {
         log::info!("[LiveSTT] WebSocket connected");
 
         let (mut writer, mut reader) = socket.split();
+        if let Some(payload) = init_payload {
+            log::debug!("[LiveSTT] → init: {}", payload);
+            writer
+                .send(Message::Text(payload.into()))
+                .await
+                .map_err(|e| format!("LiveSTT WebSocket init send failed: {}", e))?;
+        }
         let (writer_tx, mut writer_rx) =
             mpsc::channel::<Message>(LIVESTT_WS_MESSAGE_QUEUE_CAPACITY);
         let state = Arc::new(Mutex::new(LiveSttState::default()));
@@ -261,6 +274,14 @@ pub fn build_websocket_url(config: &LiveSttConfig) -> Result<Url, String> {
 pub fn serialize_stop_record_command() -> Result<String, String> {
     serde_json::to_string(&serde_json::json!({ "type": "stop_record" }))
         .map_err(|e| format!("Failed to serialize LiveSTT stop command: {}", e))
+}
+
+pub fn serialize_init_command(prompt: &str) -> Result<String, String> {
+    serde_json::to_string(&serde_json::json!({
+        "type": "init",
+        "context": { "text": prompt },
+    }))
+    .map_err(|e| format!("Failed to serialize LiveSTT init command: {}", e))
 }
 
 fn redact_access_token(message: &str, access_token: &str) -> String {
@@ -520,6 +541,7 @@ mod tests {
             server_url: "https://grandedoc-server-98243818959.europe-west6.run.app".to_string(),
             access_token: "token value".to_string(),
             consultation_id: None,
+            prompt: None,
         }
     }
 
@@ -834,6 +856,25 @@ mod tests {
         let command = serialize_stop_record_command().unwrap();
 
         assert_eq!(command, r#"{"type":"stop_record"}"#);
+    }
+
+    #[test]
+    fn livestt_init_command_wraps_prompt_in_context_text() {
+        let command = serialize_init_command("Patient John Doe, asthma").unwrap();
+
+        assert_eq!(
+            command,
+            r#"{"context":{"text":"Patient John Doe, asthma"},"type":"init"}"#
+        );
+    }
+
+    #[test]
+    fn livestt_init_command_escapes_special_characters() {
+        let command = serialize_init_command("line1\nline2 \"quoted\"").unwrap();
+
+        let parsed: serde_json::Value = serde_json::from_str(&command).unwrap();
+        assert_eq!(parsed["type"], "init");
+        assert_eq!(parsed["context"]["text"], "line1\nline2 \"quoted\"");
     }
 
     #[test]
