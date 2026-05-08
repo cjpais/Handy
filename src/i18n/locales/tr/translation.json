@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Terimler",
+          "description": "Tanımayı yönlendiren etki alanına özgü sözcükler ve ifadeler (isimler, jargon, kısaltmalar). Terim eklemek için Enter veya virgül tuşuna basın. Her oturumun init olayıyla gönderilir.",
+          "placeholder": "Bir terim yazın ve Enter'a basın",
+          "remove": "Terimi kaldır",
+          "errors": {
+            "duplicate": "Terim zaten eklenmiş.",
+            "tooLong": "Terim en fazla 200 karakter olmalıdır.",
+            "tooMany": "En fazla 1000 terim ekleyebilirsiniz."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

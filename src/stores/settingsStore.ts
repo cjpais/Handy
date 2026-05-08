@@ -166,6 +166,8 @@ const settingUpdaters: {
     commands.changeLivesttFinalizeTimeoutMsSetting(value as number),
   livestt_prompt: (value) =>
     commands.changeLivesttPromptSetting(value as string | null),
+  livestt_terms: (value) =>
+    commands.changeLivesttTermsSetting((value as string[]) ?? []),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

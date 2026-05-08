@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Thuật ngữ",
+          "description": "Các từ và cụm từ thuộc lĩnh vực (tên, biệt ngữ, viết tắt) giúp định hướng nhận dạng. Nhấn Enter hoặc dấu phẩy để thêm thuật ngữ. Được gửi cùng sự kiện init của mỗi phiên.",
+          "placeholder": "Nhập thuật ngữ và nhấn Enter",
+          "remove": "Xóa thuật ngữ",
+          "errors": {
+            "duplicate": "Thuật ngữ đã được thêm.",
+            "tooLong": "Thuật ngữ tối đa 200 ký tự.",
+            "tooMany": "Bạn có thể thêm tối đa 1000 thuật ngữ."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

@@ -118,6 +118,7 @@ struct LiveSttSessionContext {
     server_url: String,
     consultation_id: Option<i64>,
     prompt: Option<String>,
+    terms: Vec<String>,
     event_tx: mpsc::Sender<LiveSttEvent>,
     client: Mutex<Arc<LiveSttClient>>,
     replay_buffer: Mutex<LiveSttReplayBuffer>,
@@ -130,6 +131,7 @@ impl LiveSttSessionContext {
         server_url: String,
         consultation_id: Option<i64>,
         prompt: Option<String>,
+        terms: Vec<String>,
         event_tx: mpsc::Sender<LiveSttEvent>,
         client: Arc<LiveSttClient>,
     ) -> Self {
@@ -138,6 +140,7 @@ impl LiveSttSessionContext {
             server_url,
             consultation_id,
             prompt,
+            terms,
             event_tx,
             client: Mutex::new(client),
             replay_buffer: Mutex::new(LiveSttReplayBuffer::default()),
@@ -234,6 +237,7 @@ impl LiveSttSessionManager {
         let consultation_id =
             parse_consultation_id(app_settings.livestt_consultation_id.as_deref())?;
         let prompt = settings::normalize_livestt_prompt(app_settings.livestt_prompt.as_deref())?;
+        let terms = settings::normalize_livestt_terms(&app_settings.livestt_terms)?;
 
         let (event_tx, event_rx) = mpsc::channel::<LiveSttEvent>(LIVESTT_EVENT_QUEUE_CAPACITY);
 
@@ -242,6 +246,7 @@ impl LiveSttSessionManager {
             server_url.clone(),
             consultation_id,
             prompt.clone(),
+            terms.clone(),
             event_tx.clone(),
         )
         .await?;
@@ -253,6 +258,7 @@ impl LiveSttSessionManager {
             server_url,
             consultation_id,
             prompt,
+            terms,
             event_tx,
             client,
         ));
@@ -439,6 +445,7 @@ async fn connect_initial_livestt_client(
     server_url: String,
     consultation_id: Option<i64>,
     prompt: Option<String>,
+    terms: Vec<String>,
     event_tx: mpsc::Sender<LiveSttEvent>,
 ) -> Result<Arc<LiveSttClient>, String> {
     let token = ensure_fresh_livestt_access_token(app_handle).await?;
@@ -446,6 +453,7 @@ async fn connect_initial_livestt_client(
         server_url.clone(),
         consultation_id,
         prompt.clone(),
+        terms.clone(),
         token,
         event_tx.clone(),
     )
@@ -457,7 +465,8 @@ async fn connect_initial_livestt_client(
         {
             log::warn!("LiveSTT WebSocket auth failed; attempting token refresh once");
             let token = force_refresh_livestt_access_token(app_handle).await?;
-            connect_livestt_client(server_url, consultation_id, prompt, token, event_tx).await
+            connect_livestt_client(server_url, consultation_id, prompt, terms, token, event_tx)
+                .await
         }
         Err(error) => Err(error),
     }
@@ -467,6 +476,7 @@ async fn connect_livestt_client(
     server_url: String,
     consultation_id: Option<i64>,
     prompt: Option<String>,
+    terms: Vec<String>,
     access_token: String,
     event_tx: mpsc::Sender<LiveSttEvent>,
 ) -> Result<Arc<LiveSttClient>, String> {
@@ -475,6 +485,7 @@ async fn connect_livestt_client(
         access_token,
         consultation_id,
         prompt,
+        terms,
     };
 
     tokio::time::timeout(
@@ -626,6 +637,7 @@ async fn reconnect_with_refresh_and_replay(
         context.server_url.clone(),
         context.consultation_id,
         context.prompt.clone(),
+        context.terms.clone(),
         access_token,
         context.event_tx.clone(),
     )

@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "용어",
+          "description": "인식 정확도를 높이는 도메인별 단어 및 구문(이름, 전문 용어, 약어). Enter 또는 쉼표를 눌러 용어를 추가합니다. 각 세션의 init 이벤트와 함께 전송됩니다.",
+          "placeholder": "용어를 입력하고 Enter를 누르세요",
+          "remove": "용어 제거",
+          "errors": {
+            "duplicate": "이미 추가된 용어입니다.",
+            "tooLong": "용어는 최대 200자여야 합니다.",
+            "tooMany": "최대 1000개의 용어를 추가할 수 있습니다."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

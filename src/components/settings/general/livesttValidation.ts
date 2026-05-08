@@ -4,6 +4,8 @@ const LIVESTT_SERVER_URL_ERROR_KEY =
 export const MIN_FINALIZE_TIMEOUT_MS = 1;
 export const MAX_FINALIZE_TIMEOUT_MS = 120000;
 export const MAX_LIVESTT_PROMPT_CHARS = 10000;
+export const MAX_LIVESTT_TERMS = 1000;
+export const MAX_LIVESTT_TERM_CHARS = 200;
 
 export interface LiveSttServerUrlValidationResult {
   normalized: string;
@@ -83,6 +85,33 @@ export const normalizeLiveSttPromptInput = (
     return { trimmed, isValid: false };
   }
   return { trimmed, isValid: true };
+};
+
+export type AddTermResult =
+  | { kind: "added"; term: string }
+  | { kind: "empty" }
+  | { kind: "duplicate" }
+  | { kind: "tooLong" }
+  | { kind: "tooMany" };
+
+export const tryAddLiveSttTerm = (
+  existing: readonly string[],
+  rawValue: string,
+): AddTermResult => {
+  const trimmed = rawValue.trim();
+  if (trimmed === "") {
+    return { kind: "empty" };
+  }
+  if ([...trimmed].length > MAX_LIVESTT_TERM_CHARS) {
+    return { kind: "tooLong" };
+  }
+  if (existing.includes(trimmed)) {
+    return { kind: "duplicate" };
+  }
+  if (existing.length >= MAX_LIVESTT_TERMS) {
+    return { kind: "tooMany" };
+  }
+  return { kind: "added", term: trimmed };
 };
 
 export const validateFinalizeTimeoutInput = (value: string): number | null => {

@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Begriffe",
+          "description": "Domänenspezifische Wörter und Phrasen (Namen, Fachjargon, Abkürzungen), die die Erkennung verbessern. Drücken Sie Enter oder Komma, um einen Begriff hinzuzufügen. Wird mit dem init-Event jeder Sitzung gesendet.",
+          "placeholder": "Begriff eingeben und Enter drücken",
+          "remove": "Begriff entfernen",
+          "errors": {
+            "duplicate": "Begriff wurde bereits hinzugefügt.",
+            "tooLong": "Begriff darf höchstens 200 Zeichen lang sein.",
+            "tooMany": "Sie können bis zu 1000 Begriffe hinzufügen."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

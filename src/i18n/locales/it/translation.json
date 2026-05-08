@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Termini",
+          "description": "Parole e frasi specifiche del dominio (nomi, gergo, abbreviazioni) che orientano il riconoscimento. Premi Invio o virgola per aggiungere un termine. Inviato con l'evento init di ogni sessione.",
+          "placeholder": "Digita un termine e premi Invio",
+          "remove": "Rimuovi termine",
+          "errors": {
+            "duplicate": "Termine già aggiunto.",
+            "tooLong": "Il termine deve avere al massimo 200 caratteri.",
+            "tooMany": "Puoi aggiungere fino a 1000 termini."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "用語",
+          "description": "認識精度を上げるためのドメイン固有の単語・フレーズ（名前、専門用語、略語）。Enter またはカンマで追加します。各セッション開始時の init イベントで送信されます。",
+          "placeholder": "用語を入力して Enter を押してください",
+          "remove": "用語を削除",
+          "errors": {
+            "duplicate": "用語はすでに追加されています。",
+            "tooLong": "用語は 200 文字以内で入力してください。",
+            "tooMany": "用語は最大 1000 件まで追加できます。"
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

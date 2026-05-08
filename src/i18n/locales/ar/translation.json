@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "المصطلحات",
+          "description": "كلمات وعبارات خاصة بالمجال (أسماء، مصطلحات تقنية، اختصارات) توجّه التعرّف. اضغط Enter أو فاصلة لإضافة مصطلح. يُرسل مع حدث init لكل جلسة.",
+          "placeholder": "اكتب مصطلحًا واضغط Enter",
+          "remove": "إزالة المصطلح",
+          "errors": {
+            "duplicate": "تمت إضافة المصطلح بالفعل.",
+            "tooLong": "يجب ألا يتجاوز المصطلح 200 حرفًا.",
+            "tooMany": "يمكنك إضافة ما يصل إلى 1000 مصطلح."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

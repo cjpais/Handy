@@ -469,6 +469,8 @@ pub struct AppSettings {
     pub livestt_finalize_timeout_ms: u64,
     #[serde(default)]
     pub livestt_prompt: Option<String>,
+    #[serde(default)]
+    pub livestt_terms: Vec<String>,
     #[serde(default = "default_speechmike_auto_select")]
     pub speechmike_auto_select: bool,
     #[serde(default = "default_speechmike_button_mapping_enabled")]
@@ -723,6 +725,9 @@ pub const MAX_LIVESTT_FINALIZE_TIMEOUT_MS: u64 = 120_000;
 
 pub const MAX_LIVESTT_PROMPT_CHARS: usize = 10_000;
 
+pub const MAX_LIVESTT_TERMS: usize = 1_000;
+pub const MAX_LIVESTT_TERM_CHARS: usize = 200;
+
 fn livestt_server_url_scheme_error() -> String {
     "LiveSTT server URL must use https, or http for localhost testing".to_string()
 }
@@ -802,6 +807,38 @@ pub fn normalize_livestt_prompt(prompt: Option<&str>) -> Result<Option<String>, 
     }
 
     Ok(Some(value.to_string()))
+}
+
+pub fn normalize_livestt_terms(terms: &[String]) -> Result<Vec<String>, String> {
+    let mut normalized: Vec<String> = Vec::with_capacity(terms.len());
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    for raw in terms {
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        if trimmed.chars().count() > MAX_LIVESTT_TERM_CHARS {
+            return Err(format!(
+                "LiveSTT term must be at most {} characters",
+                MAX_LIVESTT_TERM_CHARS
+            ));
+        }
+
+        if seen.insert(trimmed.to_string()) {
+            normalized.push(trimmed.to_string());
+        }
+    }
+
+    if normalized.len() > MAX_LIVESTT_TERMS {
+        return Err(format!(
+            "LiveSTT terms must contain at most {} entries",
+            MAX_LIVESTT_TERMS
+        ));
+    }
+
+    Ok(normalized)
 }
 
 pub fn validate_livestt_consultation_id(consultation_id: Option<&str>) -> Result<(), String> {
@@ -989,6 +1026,7 @@ pub fn get_default_settings() -> AppSettings {
         livestt_consultation_id: None,
         livestt_finalize_timeout_ms: default_livestt_finalize_timeout_ms(),
         livestt_prompt: None,
+        livestt_terms: Vec::new(),
         speechmike_auto_select: default_speechmike_auto_select(),
         speechmike_button_mapping_enabled: default_speechmike_button_mapping_enabled(),
         speechmike_last_seen_name: None,
@@ -1150,6 +1188,7 @@ mod tests {
         assert_eq!(settings.livestt_consultation_id, None);
         assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);
         assert_eq!(settings.livestt_prompt, None);
+        assert!(settings.livestt_terms.is_empty());
     }
 
     #[test]
@@ -1162,6 +1201,7 @@ mod tests {
         object.remove("livestt_consultation_id");
         object.remove("livestt_finalize_timeout_ms");
         object.remove("livestt_prompt");
+        object.remove("livestt_terms");
 
         let settings = serde_json::from_value::<AppSettings>(value).unwrap();
 
@@ -1174,6 +1214,7 @@ mod tests {
         assert_eq!(settings.livestt_consultation_id, None);
         assert_eq!(settings.livestt_finalize_timeout_ms, 15_000);
         assert_eq!(settings.livestt_prompt, None);
+        assert!(settings.livestt_terms.is_empty());
     }
 
     #[test]
@@ -1295,6 +1336,37 @@ mod tests {
             result.as_deref().map(str::len),
             Some(MAX_LIVESTT_PROMPT_CHARS)
         );
+    }
+
+    #[test]
+    fn livestt_terms_normalization_trims_drops_empty_and_dedupes() {
+        let input = vec![
+            "  hello  ".to_string(),
+            "world".to_string(),
+            "".to_string(),
+            "   ".to_string(),
+            "hello".to_string(),
+        ];
+        let normalized = normalize_livestt_terms(&input).unwrap();
+        assert_eq!(normalized, vec!["hello".to_string(), "world".to_string()]);
+    }
+
+    #[test]
+    fn livestt_terms_validation_rejects_oversized_term() {
+        let oversized = "a".repeat(MAX_LIVESTT_TERM_CHARS + 1);
+        assert!(normalize_livestt_terms(&[oversized]).is_err());
+
+        let at_limit = "a".repeat(MAX_LIVESTT_TERM_CHARS);
+        assert_eq!(
+            normalize_livestt_terms(&[at_limit.clone()]).unwrap(),
+            vec![at_limit]
+        );
+    }
+
+    #[test]
+    fn livestt_terms_validation_rejects_too_many_entries() {
+        let terms: Vec<String> = (0..=MAX_LIVESTT_TERMS).map(|i| format!("t{}", i)).collect();
+        assert!(normalize_livestt_terms(&terms).is_err());
     }
 
     #[test]

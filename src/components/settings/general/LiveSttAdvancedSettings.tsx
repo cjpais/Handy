@@ -4,10 +4,13 @@ import { commands } from "@/bindings";
 import { useSettings } from "../../../hooks/useSettings";
 import { Input } from "../../ui/Input";
 import { SettingContainer } from "../../ui/SettingContainer";
+import { TagInput, type TagInputAddRejection } from "../../ui/TagInput";
 import { Textarea } from "../../ui/Textarea";
 import {
   MAX_FINALIZE_TIMEOUT_MS,
   MAX_LIVESTT_PROMPT_CHARS,
+  MAX_LIVESTT_TERM_CHARS,
+  MAX_LIVESTT_TERMS,
   MIN_FINALIZE_TIMEOUT_MS,
   normalizeLiveSttPromptInput,
   parseConsultationIdInput,
@@ -18,6 +21,7 @@ interface LiveSttAdvancedSettingsProps {
   consultationId: string;
   finalizeTimeoutMs: number;
   prompt: string;
+  terms: string[];
 }
 
 type FieldElement = HTMLInputElement | HTMLTextAreaElement;
@@ -48,9 +52,10 @@ function useSyncedTextField<TElement extends FieldElement>(
 
 export const LiveSttAdvancedSettings: React.FC<
   LiveSttAdvancedSettingsProps
-> = ({ consultationId, finalizeTimeoutMs, prompt }) => {
+> = ({ consultationId, finalizeTimeoutMs, prompt, terms }) => {
   const { t } = useTranslation();
   const { isUpdating, updateSetting, refreshSettings } = useSettings();
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   const consultationIdField =
     useSyncedTextField<HTMLInputElement>(consultationId);
@@ -149,6 +154,26 @@ export const LiveSttAdvancedSettings: React.FC<
 
   const promptCharCount = [...promptField.value].length;
 
+  const handleTermsChange = useCallback(
+    async (next: string[]) => {
+      setTermsError(null);
+      await updateSetting("livestt_terms", next);
+    },
+    [updateSetting],
+  );
+
+  const handleTermsAddRejected = useCallback(
+    (reason: TagInputAddRejection) => {
+      if (reason === "empty") {
+        return;
+      }
+      setTermsError(
+        t(`settings.transcriptionBackend.livestt.terms.errors.${reason}`),
+      );
+    },
+    [t],
+  );
+
   return (
     <>
       <SettingContainer
@@ -183,6 +208,43 @@ export const LiveSttAdvancedSettings: React.FC<
 
           <span>
             {promptCharCount}/{MAX_LIVESTT_PROMPT_CHARS}
+          </span>
+        </div>
+      </SettingContainer>
+
+      <SettingContainer
+        title={t("settings.transcriptionBackend.livestt.terms.title")}
+        description={t(
+          "settings.transcriptionBackend.livestt.terms.description",
+        )}
+        descriptionMode="tooltip"
+        grouped
+        layout="stacked"
+      >
+        <TagInput
+          value={terms}
+          onChange={(next) => {
+            void handleTermsChange(next);
+          }}
+          onAddRejected={handleTermsAddRejected}
+          placeholder={t(
+            "settings.transcriptionBackend.livestt.terms.placeholder",
+          )}
+          disabled={isUpdating("livestt_terms")}
+          maxTermLength={MAX_LIVESTT_TERM_CHARS}
+          maxTerms={MAX_LIVESTT_TERMS}
+          removeAriaLabel={t(
+            "settings.transcriptionBackend.livestt.terms.remove",
+          )}
+        />
+
+        <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+          <span>
+            {termsError && <span className="text-red-500">{termsError}</span>}
+          </span>
+
+          <span>
+            {terms.length}/{MAX_LIVESTT_TERMS}
           </span>
         </div>
       </SettingContainer>

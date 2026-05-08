@@ -17,6 +17,7 @@ pub struct LiveSttConfig {
     pub access_token: String,
     pub consultation_id: Option<i64>,
     pub prompt: Option<String>,
+    pub terms: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -53,11 +54,7 @@ impl LiveSttClient {
         event_tx: mpsc::Sender<LiveSttEvent>,
     ) -> Result<Self, String> {
         let websocket_url = build_websocket_url(&config)?;
-        let init_payload = config
-            .prompt
-            .as_deref()
-            .map(serialize_init_command)
-            .transpose()?;
+        let init_payload = serialize_init_command(config.prompt.as_deref(), &config.terms)?;
         let (socket, _) = tokio_tungstenite::connect_async(websocket_url.as_str())
             .await
             .map_err(|e| {
@@ -276,11 +273,33 @@ pub fn serialize_stop_record_command() -> Result<String, String> {
         .map_err(|e| format!("Failed to serialize LiveSTT stop command: {}", e))
 }
 
-pub fn serialize_init_command(prompt: &str) -> Result<String, String> {
+pub fn serialize_init_command(
+    prompt: Option<&str>,
+    terms: &[String],
+) -> Result<Option<String>, String> {
+    let trimmed_prompt = prompt.map(str::trim).filter(|value| !value.is_empty());
+    let has_terms = !terms.is_empty();
+
+    if trimmed_prompt.is_none() && !has_terms {
+        return Ok(None);
+    }
+
+    let mut context = serde_json::Map::new();
+    if let Some(text) = trimmed_prompt {
+        context.insert(
+            "text".to_string(),
+            serde_json::Value::String(text.to_string()),
+        );
+    }
+    if has_terms {
+        context.insert("terms".to_string(), serde_json::json!(terms));
+    }
+
     serde_json::to_string(&serde_json::json!({
         "type": "init",
-        "context": { "text": prompt },
+        "context": serde_json::Value::Object(context),
     }))
+    .map(Some)
     .map_err(|e| format!("Failed to serialize LiveSTT init command: {}", e))
 }
 
@@ -542,6 +561,7 @@ mod tests {
             access_token: "token value".to_string(),
             consultation_id: None,
             prompt: None,
+            terms: Vec::new(),
         }
     }
 
@@ -860,7 +880,9 @@ mod tests {
 
     #[test]
     fn livestt_init_command_wraps_prompt_in_context_text() {
-        let command = serialize_init_command("Patient John Doe, asthma").unwrap();
+        let command = serialize_init_command(Some("Patient John Doe, asthma"), &[])
+            .unwrap()
+            .unwrap();
 
         assert_eq!(
             command,
@@ -870,11 +892,50 @@ mod tests {
 
     #[test]
     fn livestt_init_command_escapes_special_characters() {
-        let command = serialize_init_command("line1\nline2 \"quoted\"").unwrap();
+        let command = serialize_init_command(Some("line1\nline2 \"quoted\""), &[])
+            .unwrap()
+            .unwrap();
 
         let parsed: serde_json::Value = serde_json::from_str(&command).unwrap();
         assert_eq!(parsed["type"], "init");
         assert_eq!(parsed["context"]["text"], "line1\nline2 \"quoted\"");
+    }
+
+    #[test]
+    fn livestt_init_command_returns_none_when_prompt_and_terms_empty() {
+        assert!(serialize_init_command(None, &[]).unwrap().is_none());
+        assert!(serialize_init_command(Some(""), &[]).unwrap().is_none());
+        assert!(serialize_init_command(Some("   "), &[]).unwrap().is_none());
+    }
+
+    #[test]
+    fn livestt_init_command_includes_terms_array() {
+        let command =
+            serialize_init_command(None, &["Anthropic".to_string(), "Soniox".to_string()])
+                .unwrap()
+                .unwrap();
+
+        let parsed: serde_json::Value = serde_json::from_str(&command).unwrap();
+        assert_eq!(parsed["type"], "init");
+        assert!(parsed["context"].get("text").is_none());
+        assert_eq!(
+            parsed["context"]["terms"],
+            serde_json::json!(["Anthropic", "Soniox"])
+        );
+    }
+
+    #[test]
+    fn livestt_init_command_combines_prompt_and_terms() {
+        let command = serialize_init_command(Some("Cardiology"), &["beta blocker".to_string()])
+            .unwrap()
+            .unwrap();
+
+        let parsed: serde_json::Value = serde_json::from_str(&command).unwrap();
+        assert_eq!(parsed["context"]["text"], "Cardiology");
+        assert_eq!(
+            parsed["context"]["terms"],
+            serde_json::json!(["beta blocker"])
+        );
     }
 
     #[test]

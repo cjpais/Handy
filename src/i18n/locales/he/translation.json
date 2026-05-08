@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "מונחים",
+          "description": "מילים וביטויים ייחודיים לתחום (שמות, ז'רגון, ראשי תיבות) המכווינים את הזיהוי. הקש Enter או פסיק להוספת מונח. נשלח עם אירוע ה-init של כל הפעלה.",
+          "placeholder": "הקלד מונח ולחץ Enter",
+          "remove": "הסר מונח",
+          "errors": {
+            "duplicate": "המונח כבר נוסף.",
+            "tooLong": "המונח חייב להיות באורך של עד 200 תווים.",
+            "tooMany": "ניתן להוסיף עד 1000 מונחים."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

@@ -639,6 +639,16 @@ pub fn change_livestt_prompt_setting(app: AppHandle, prompt: Option<String>) -> 
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_livestt_terms_setting(app: AppHandle, terms: Vec<String>) -> Result<(), String> {
+    let normalized = settings::normalize_livestt_terms(&terms)?;
+    let mut settings = settings::get_settings(&app);
+    settings.livestt_terms = normalized;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {

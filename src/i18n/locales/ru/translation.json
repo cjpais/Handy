@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Термины",
+          "description": "Доменные слова и фразы (имена, жаргон, аббревиатуры), смещающие распознавание. Нажмите Enter или запятую, чтобы добавить термин. Отправляется с init-событием каждой сессии.",
+          "placeholder": "Введите термин и нажмите Enter",
+          "remove": "Удалить термин",
+          "errors": {
+            "duplicate": "Термин уже добавлен.",
+            "tooLong": "Термин должен быть не длиннее 200 символов.",
+            "tooMany": "Можно добавить до 1000 терминов."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

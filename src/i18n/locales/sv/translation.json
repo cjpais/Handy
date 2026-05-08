@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Termer",
+          "description": "Domänspecifika ord och fraser (namn, jargong, förkortningar) som styr igenkänningen. Tryck Enter eller komma för att lägga till en term. Skickas med init-händelsen för varje session.",
+          "placeholder": "Skriv en term och tryck Enter",
+          "remove": "Ta bort term",
+          "errors": {
+            "duplicate": "Termen har redan lagts till.",
+            "tooLong": "Termen får vara högst 200 tecken.",
+            "tooMany": "Du kan lägga till upp till 1000 termer."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

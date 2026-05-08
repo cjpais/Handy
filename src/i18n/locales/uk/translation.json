@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Терміни",
+          "description": "Доменні слова та фрази (імена, жаргон, абревіатури), які спрямовують розпізнавання. Натисніть Enter або кому, щоб додати термін. Надсилається з подією init кожної сесії.",
+          "placeholder": "Введіть термін і натисніть Enter",
+          "remove": "Видалити термін",
+          "errors": {
+            "duplicate": "Термін уже додано.",
+            "tooLong": "Термін має бути не довшим за 200 символів.",
+            "tooMany": "Можна додати до 1000 термінів."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

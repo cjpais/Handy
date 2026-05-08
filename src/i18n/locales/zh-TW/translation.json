@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "詞彙",
+          "description": "用於引導辨識的特定領域詞彙與片語（名稱、行話、縮寫）。按 Enter 或逗號新增詞彙。會在每次工作階段的 init 事件中傳送。",
+          "placeholder": "輸入詞彙並按 Enter",
+          "remove": "移除詞彙",
+          "errors": {
+            "duplicate": "詞彙已新增。",
+            "tooLong": "詞彙最多 200 個字元。",
+            "tooMany": "最多可新增 1000 個詞彙。"
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",

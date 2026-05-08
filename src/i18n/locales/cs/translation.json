@@ -631,6 +631,17 @@
           "placeholder": "e.g. Cardiology consultation. Patient: John Doe.",
           "error": "Prompt must be at most 10000 characters."
         },
+        "terms": {
+          "title": "Termíny",
+          "description": "Doménově specifická slova a fráze (jména, žargon, zkratky), která zpřesňují rozpoznávání. Stisknutím Enter nebo čárky přidáte termín. Odesílá se s init událostí každé relace.",
+          "placeholder": "Zadejte termín a stiskněte Enter",
+          "remove": "Odstranit termín",
+          "errors": {
+            "duplicate": "Termín už byl přidán.",
+            "tooLong": "Termín může mít nejvýše 200 znaků.",
+            "tooMany": "Lze přidat až 1000 termínů."
+          }
+        },
         "finalizeTimeout": {
           "title": "Finalize Timeout",
           "description": "Maximum time to wait for LiveSTT finalization after stopping recording, in milliseconds.",
