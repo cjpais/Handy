@@ -150,9 +150,10 @@ impl MoserHidStartupHandler {
             return Ok(());
         }
 
-        self.state.is_ble_mode = matches!(self.config.mouse_connection_mode, ConnectionMode::Bluetooth)
-            || self.config.mouser_ble_online
-            || self.config.mouser_ble_manufacturer_id == 7;
+        self.state.is_ble_mode =
+            matches!(self.config.mouse_connection_mode, ConnectionMode::Bluetooth)
+                || self.config.mouser_ble_online
+                || self.config.mouser_ble_manufacturer_id == 7;
 
         if self.state.is_ble_mode && data.len() >= 2 && data[0] == 0xCC && data[1] == 0x3C {
             data.remove(0);
@@ -230,7 +231,9 @@ impl MoserHidStartupHandler {
                 }
                 if matches!(
                     self.config.mouse_m_key,
-                    MouseMKey::PhoneticTyping | MouseMKey::TranslationTyping | MouseMKey::VoiceSearch
+                    MouseMKey::PhoneticTyping
+                        | MouseMKey::TranslationTyping
+                        | MouseMKey::VoiceSearch
                 ) {
                     host.send_bytes_mouse_recording_start()?;
                 }
@@ -240,7 +243,9 @@ impl MoserHidStartupHandler {
                 self.state.mouse_m_key_released = true;
                 if matches!(
                     self.config.mouse_m_key,
-                    MouseMKey::PhoneticTyping | MouseMKey::TranslationTyping | MouseMKey::VoiceSearch
+                    MouseMKey::PhoneticTyping
+                        | MouseMKey::TranslationTyping
+                        | MouseMKey::VoiceSearch
                 ) {
                     host.send_bytes_mouse_recording_stop()?;
                     host.mouse_recording_stop()?;

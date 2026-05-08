@@ -4,7 +4,13 @@ use crate::device_initializer::InitDeviceError;
 
 pub fn run_powershell_lines(script: &str) -> Result<Vec<String>, InitDeviceError> {
     let output = Command::new("powershell")
-        .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
+        .args([
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ])
         .output()
         .map_err(|ex| InitDeviceError::Provider(format!("failed to start PowerShell: {ex}")))?;
 

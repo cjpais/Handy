@@ -255,12 +255,12 @@ fn normalize_hid_report(raw: &[u8]) -> &[u8] {
         return raw;
     }
 
-    if looks_like_moser_payload(raw) {
+    if raw_payload_is_aligned(raw) {
         return raw;
     }
 
     let stripped = &raw[1..];
-    if looks_like_moser_payload(stripped) {
+    if payload_is_aligned(stripped) {
         return stripped;
     }
 
@@ -270,7 +270,11 @@ fn normalize_hid_report(raw: &[u8]) -> &[u8] {
     stripped
 }
 
-fn looks_like_moser_payload(data: &[u8]) -> bool {
+fn raw_payload_is_aligned(data: &[u8]) -> bool {
+    payload_is_aligned(data)
+}
+
+fn payload_is_aligned(data: &[u8]) -> bool {
     if data.first() == Some(&0x3C) {
         return true;
     }
@@ -279,7 +283,7 @@ fn looks_like_moser_payload(data: &[u8]) -> bool {
         return true;
     }
 
-    data.len() > 5 && is_known_opcode(data[3], data[4])
+    false
 }
 
 fn is_known_opcode(opcode: u8, subcode: u8) -> bool {
@@ -392,6 +396,18 @@ mod tests {
     fn strips_report_id_when_payload_starts_after_first_byte() {
         let raw = [0x05, 0x3C, 0x11, 0x22, 0x33];
         assert_eq!(normalize_hid_report(&raw), &raw[1..]);
+    }
+
+    #[test]
+    fn strips_report_id_for_numbered_button_reports() {
+        let raw = [0xC0, 0x00, 0x02, 0x20, 0x04, 0x00];
+        assert_eq!(normalize_hid_report(&raw), &raw[1..]);
+    }
+
+    #[test]
+    fn keeps_payload_when_button_opcode_is_already_aligned() {
+        let raw = [0x00, 0x02, 0x20, 0x04, 0x00];
+        assert_eq!(normalize_hid_report(&raw), &raw);
     }
 
     #[test]

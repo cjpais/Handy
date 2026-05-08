@@ -34,10 +34,5 @@ pub trait BluetoothProvider {
 }
 
 pub trait HidStarter {
-    fn hid_startup(
-        &self,
-        vid: u16,
-        pid: u16,
-        manufacturer_id: i32,
-    ) -> Result<(), InitDeviceError>;
+    fn hid_startup(&self, vid: u16, pid: u16, manufacturer_id: i32) -> Result<(), InitDeviceError>;
 }

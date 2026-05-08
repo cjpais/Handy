@@ -123,7 +123,8 @@ where
                 .create_and_init_from_device_id(&device_id, context)?;
         }
 
-        self.logger.debug("Waiting for Bluetooth pairing or scan completion.");
+        self.logger
+            .debug("Waiting for Bluetooth pairing or scan completion.");
         self.wait_until(Duration::from_secs(3), || {
             context.args.bluetooth_pairing_state || context.args.bluetooth_led_status_completed
         });
@@ -138,7 +139,9 @@ where
                 });
             }
             7 => {
-                self.wait_until(Duration::from_secs(5), || !context.mouser_ble.type_name.is_empty());
+                self.wait_until(Duration::from_secs(5), || {
+                    !context.mouser_ble.type_name.is_empty()
+                });
             }
             _ => {
                 context.mouser_ble.serial_number_id = "unknown".to_string();
@@ -148,13 +151,16 @@ where
         if !context.mouser_ble.type_name.is_empty() {
             context.mouser_ble.online_status_ble = true;
             self.logger.info("Bluetooth device connected.");
-            self.logger
-                .debug(&format!("Bluetooth model: {}", context.mouser_ble.type_name));
+            self.logger.debug(&format!(
+                "Bluetooth model: {}",
+                context.mouser_ble.type_name
+            ));
             context.args.mouse_connection_mode = ConnectionMode::Bluetooth;
             context.args.is_the_bluetooth_connection_completed = true;
         } else {
             context.mouser_ble.online_status_ble = false;
-            self.logger.error("Bluetooth connection failed because device type is empty.");
+            self.logger
+                .error("Bluetooth connection failed because device type is empty.");
             context.args.mouse_connection_mode = ConnectionMode::None;
         }
 
@@ -189,13 +195,15 @@ where
 
             if context.args.hid_receiver_online {
                 if context.mouser_usb.type_name.is_empty() {
-                    self.logger.error("Receiver exists but HID model fetch failed.");
+                    self.logger
+                        .error("Receiver exists but HID model fetch failed.");
                     context.mouser_usb.online_status_usb = false;
                 } else {
                     context.mouser_usb.online_status_usb = true;
                     self.logger.info("2.4G receiver device connected.");
                     context.args.mouse_connection_mode = ConnectionMode::Receiver;
-                    context.user_settings.mouse_serial_number = context.mouser_usb.serial_number_id.clone();
+                    context.user_settings.mouse_serial_number =
+                        context.mouser_usb.serial_number_id.clone();
                     context.user_settings.v_id = context.mouser_usb.v_id.to_string();
                     context.user_settings.p_id = context.mouser_usb.p_id.to_string();
                 }
@@ -234,7 +242,9 @@ where
 mod tests {
     use super::*;
     use crate::models::{ArgumentsState, InitDeviceContext, Mouser, UserSettingsState};
-    use crate::ports::{BluetoothProvider, HidStarter, Logger, ManufacturerResolver, UsbHidProvider};
+    use crate::ports::{
+        BluetoothProvider, HidStarter, Logger, ManufacturerResolver, UsbHidProvider,
+    };
     use std::cell::RefCell;
 
     struct TestLogger;
@@ -376,6 +386,9 @@ mod tests {
 
         let report = initializer.init_device(&mut context).unwrap();
         assert!(report.ble_connected);
-        assert_eq!(context.args.mouse_connection_mode, ConnectionMode::Bluetooth);
+        assert_eq!(
+            context.args.mouse_connection_mode,
+            ConnectionMode::Bluetooth
+        );
     }
 }

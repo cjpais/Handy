@@ -67,12 +67,7 @@ impl WindowsHidStarter {
 }
 
 impl HidStarter for WindowsHidStarter {
-    fn hid_startup(
-        &self,
-        vid: u16,
-        pid: u16,
-        manufacturer_id: i32,
-    ) -> Result<(), InitDeviceError> {
+    fn hid_startup(&self, vid: u16, pid: u16, manufacturer_id: i32) -> Result<(), InitDeviceError> {
         let api = HidApi::new()
             .map_err(|e| InitDeviceError::Provider(format!("HidApi::new failed: {e}")))?;
 
@@ -81,7 +76,10 @@ impl HidStarter for WindowsHidStarter {
         // matching path and let the parser filter — opening read-only is cheap and
         // the OS allows multiple readers per HID collection.
         let mut opened = 0usize;
-        for info in api.device_list().filter(|d| d.vendor_id() == vid && d.product_id() == pid) {
+        for info in api
+            .device_list()
+            .filter(|d| d.vendor_id() == vid && d.product_id() == pid)
+        {
             let path = match info.path().to_str() {
                 Ok(p) => p.to_string(),
                 Err(_) => continue,
@@ -215,9 +213,7 @@ fn run_reader_loop(
                     last_error_log = Some(msg);
                 }
                 if consecutive_errors > 50 {
-                    log::warn!(
-                        "HID reader giving up after repeated errors [{label}]: {path}"
-                    );
+                    log::warn!("HID reader giving up after repeated errors [{label}]: {path}");
                     break;
                 }
                 thread::sleep(Duration::from_millis(100));
