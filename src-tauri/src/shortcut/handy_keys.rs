@@ -58,8 +58,10 @@ enum ManagerCommand {
 
 /// State for the handy-keys shortcut manager
 pub struct HandyKeysState {
+    /// App handle used to restart the manager thread after shutdown.
+    app: AppHandle,
     /// Channel to send commands to the manager thread (wrapped in Mutex for Sync)
-    command_sender: Mutex<Sender<ManagerCommand>>,
+    command_sender: Mutex<Option<Sender<ManagerCommand>>>,
     /// Handle to the manager thread (wrapped in Mutex for Sync, allows proper join on drop)
     thread_handle: Mutex<Option<JoinHandle<()>>>,
     /// Recording listener for UI key capture (only active during recording)
@@ -88,22 +90,47 @@ pub struct FrontendKeyEvent {
 impl HandyKeysState {
     /// Create a new HandyKeysState
     pub fn new(app: AppHandle) -> Result<Self, String> {
-        let (cmd_tx, cmd_rx) = mpsc::channel::<ManagerCommand>();
-
-        // Start the manager thread
-        let app_clone = app.clone();
-        let thread_handle = thread::spawn(move || {
-            Self::manager_thread(cmd_rx, app_clone);
-        });
+        let (cmd_tx, thread_handle) = Self::spawn_manager_thread(app.clone());
 
         Ok(Self {
-            command_sender: Mutex::new(cmd_tx),
+            app,
+            command_sender: Mutex::new(Some(cmd_tx)),
             thread_handle: Mutex::new(Some(thread_handle)),
             recording_listener: Mutex::new(None),
             is_recording: AtomicBool::new(false),
             recording_binding_id: Mutex::new(None),
             recording_running: Arc::new(AtomicBool::new(false)),
         })
+    }
+
+    fn spawn_manager_thread(app: AppHandle) -> (Sender<ManagerCommand>, JoinHandle<()>) {
+        let (cmd_tx, cmd_rx) = mpsc::channel::<ManagerCommand>();
+        let thread_handle = thread::spawn(move || {
+            Self::manager_thread(cmd_rx, app);
+        });
+        (cmd_tx, thread_handle)
+    }
+
+    fn ensure_manager_running(&self) -> Result<(), String> {
+        let mut sender = self
+            .command_sender
+            .lock()
+            .map_err(|_| "Failed to lock command_sender")?;
+        let mut handle = self
+            .thread_handle
+            .lock()
+            .map_err(|_| "Failed to lock thread_handle")?;
+
+        if sender.is_some() && handle.is_some() {
+            return Ok(());
+        }
+
+        preflight_handy_keys()?;
+
+        let (new_sender, new_handle) = Self::spawn_manager_thread(self.app.clone());
+        *sender = Some(new_sender);
+        *handle = Some(new_handle);
+        Ok(())
     }
 
     /// The main manager thread - owns the HotkeyManager and processes commands
@@ -228,10 +255,17 @@ impl HandyKeysState {
 
     /// Register a shortcut binding
     pub fn register(&self, binding: &ShortcutBinding) -> Result<(), String> {
+        self.ensure_manager_running()?;
+
         let (tx, rx) = mpsc::channel();
-        self.command_sender
+        let sender = self
+            .command_sender
             .lock()
             .map_err(|_| "Failed to lock command_sender")?
+            .as_ref()
+            .cloned()
+            .ok_or("HandyKeys manager is not running")?;
+        sender
             .send(ManagerCommand::Register {
                 binding_id: binding.id.clone(),
                 hotkey_string: binding.current_binding.clone(),
@@ -246,9 +280,17 @@ impl HandyKeysState {
     /// Unregister a shortcut binding
     pub fn unregister(&self, binding: &ShortcutBinding) -> Result<(), String> {
         let (tx, rx) = mpsc::channel();
-        self.command_sender
+        let sender = match self
+            .command_sender
             .lock()
             .map_err(|_| "Failed to lock command_sender")?
+            .as_ref()
+            .cloned()
+        {
+            Some(sender) => sender,
+            None => return Ok(()),
+        };
+        sender
             .send(ManagerCommand::Unregister {
                 binding_id: binding.id.clone(),
                 response: tx,
@@ -357,25 +399,38 @@ impl HandyKeysState {
         debug!("Stopped handy-keys recording mode");
         Ok(())
     }
+
+    /// Stop the manager and any active recording listener.
+    pub fn shutdown(&self) {
+        self.recording_running.store(false, Ordering::SeqCst);
+        self.is_recording.store(false, Ordering::SeqCst);
+
+        if let Ok(mut recording) = self.recording_listener.lock() {
+            *recording = None;
+        }
+        if let Ok(mut binding) = self.recording_binding_id.lock() {
+            *binding = None;
+        }
+
+        if let Ok(mut sender) = self.command_sender.lock() {
+            if let Some(sender) = sender.take() {
+                let _ = sender.send(ManagerCommand::Shutdown);
+            }
+        }
+
+        if let Ok(mut handle) = self.thread_handle.lock() {
+            if let Some(handle) = handle.take() {
+                if handle.thread().id() != thread::current().id() {
+                    let _ = handle.join();
+                }
+            }
+        }
+    }
 }
 
 impl Drop for HandyKeysState {
     fn drop(&mut self) {
-        // Signal recording to stop
-        self.recording_running.store(false, Ordering::SeqCst);
-        self.is_recording.store(false, Ordering::SeqCst);
-
-        // Send shutdown command
-        if let Ok(sender) = self.command_sender.lock() {
-            let _ = sender.send(ManagerCommand::Shutdown);
-        }
-
-        // Wait for the manager thread to finish
-        if let Ok(mut handle) = self.thread_handle.lock() {
-            if let Some(h) = handle.take() {
-                let _ = h.join();
-            }
-        }
+        self.shutdown();
     }
 }
 
@@ -423,6 +478,8 @@ pub fn validate_shortcut(raw: &str) -> Result<(), String> {
 
 /// Initialize handy-keys shortcuts
 pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
+    preflight_handy_keys()?;
+
     let state = HandyKeysState::new(app.clone())?;
 
     let default_bindings = settings::get_default_settings().bindings;
@@ -454,6 +511,58 @@ pub fn init_shortcuts(app: &AppHandle) -> Result<(), String> {
 
     app.manage(state);
     info!("handy-keys shortcuts initialized");
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn preflight_handy_keys() -> Result<(), String> {
+    use std::fs::{read_dir, File, OpenOptions};
+    use std::path::Path;
+
+    OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/uinput")
+        .map_err(|e| {
+            format!(
+                "HandyKeys requires read/write access to /dev/uinput on Linux: {}",
+                e
+            )
+        })?;
+
+    let input_dir = Path::new("/dev/input");
+    let mut saw_event_device = false;
+    for entry in read_dir(input_dir)
+        .map_err(|e| format!("Failed to read /dev/input for HandyKeys: {}", e))?
+    {
+        let entry = entry.map_err(|e| format!("Failed to inspect /dev/input: {}", e))?;
+        let file_name = entry.file_name();
+        let Some(file_name) = file_name.to_str() else {
+            continue;
+        };
+        if !file_name.starts_with("event") {
+            continue;
+        }
+
+        saw_event_device = true;
+        File::open(entry.path()).map_err(|e| {
+            format!(
+                "HandyKeys requires read access to {}: {}",
+                entry.path().display(),
+                e
+            )
+        })?;
+    }
+
+    if !saw_event_device {
+        return Err("HandyKeys requires at least one /dev/input/event* device".into());
+    }
+
+    Ok(())
+}
+
+#[cfg(not(target_os = "linux"))]
+fn preflight_handy_keys() -> Result<(), String> {
     Ok(())
 }
 
@@ -516,6 +625,21 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
     state.unregister(&binding)
+}
+
+/// Stop the HandyKeys backend if it has been initialized.
+pub fn shutdown(app: &AppHandle) {
+    if let Some(state) = app.try_state::<HandyKeysState>() {
+        state.shutdown();
+    }
+}
+
+/// Ensure the HandyKeys manager is running after a previous shutdown.
+pub fn ensure_running(app: &AppHandle) -> Result<(), String> {
+    let state = app
+        .try_state::<HandyKeysState>()
+        .ok_or("HandyKeysState not initialized")?;
+    state.ensure_manager_running()
 }
 
 /// Start key recording mode
