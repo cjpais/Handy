@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Načítání...",
     "save": "Uložit",
     "cancel": "Zrušit",
@@ -577,6 +578,11 @@
     "yes": "Ano",
     "no": "Ne",
     "noOptionsFound": "Nenalezeny žádné možnosti"
+  },
+  "windowControls": {
+    "minimize": "Minimalizovat okno",
+    "maximize": "Maximalizovat okno",
+    "close": "Zavřít okno"
   },
   "accessibility": {
     "permissionsRequired": "Vyžadována oprávnění usnadnění přístupu",

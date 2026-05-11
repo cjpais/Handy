@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Завантаження...",
     "save": "Зберегти",
     "cancel": "Скасувати",
@@ -577,6 +578,11 @@
     "yes": "Так",
     "no": "Ні",
     "noOptionsFound": "Опцій не знайдено"
+  },
+  "windowControls": {
+    "minimize": "Згорнути вікно",
+    "maximize": "Розгорнути вікно",
+    "close": "Закрити вікно"
   },
   "accessibility": {
     "permissionsRequired": "Потрібні права доступу",

@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "로딩 중...",
     "save": "저장",
     "cancel": "취소",
@@ -577,6 +578,11 @@
     "yes": "예",
     "no": "아니오",
     "noOptionsFound": "옵션을 찾을 수 없습니다"
+  },
+  "windowControls": {
+    "minimize": "창 최소화",
+    "maximize": "창 최대화",
+    "close": "창 닫기"
   },
   "accessibility": {
     "permissionsRequired": "접근성 권한 필요",

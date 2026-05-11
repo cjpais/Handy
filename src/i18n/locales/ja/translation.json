@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "読み込み中...",
     "save": "保存",
     "cancel": "キャンセル",
@@ -577,6 +578,11 @@
     "yes": "はい",
     "no": "いいえ",
     "noOptionsFound": "オプションが見つかりません"
+  },
+  "windowControls": {
+    "minimize": "ウィンドウを最小化",
+    "maximize": "ウィンドウを最大化",
+    "close": "ウィンドウを閉じる"
   },
   "accessibility": {
     "permissionsRequired": "アクセシビリティ権限が必要です",

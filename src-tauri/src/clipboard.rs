@@ -3,7 +3,7 @@ use crate::input::{self, EnigoState};
 use crate::settings::TypingTool;
 use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -241,6 +241,46 @@ fn is_dotool_available() -> bool {
         .unwrap_or(false)
 }
 
+#[cfg(target_os = "linux")]
+fn is_dotoolc_available() -> bool {
+    Command::new("which")
+        .arg("dotoolc")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+#[cfg(target_os = "linux")]
+fn is_dotool_daemon_ready() -> bool {
+    use std::fs::{metadata, OpenOptions};
+    use std::os::unix::fs::{FileTypeExt, OpenOptionsExt};
+    use std::path::PathBuf;
+
+    let pipe = std::env::var_os("DOTOOL_PIPE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("/tmp/dotool-pipe"));
+
+    let Ok(metadata) = metadata(&pipe) else {
+        return false;
+    };
+    if !metadata.file_type().is_fifo() {
+        return false;
+    }
+
+    // Opening a FIFO for writing in non-blocking mode succeeds only when a
+    // reader is already attached. That lets us avoid hanging on a stale pipe.
+    OpenOptions::new()
+        .write(true)
+        .custom_flags(libc::O_NONBLOCK)
+        .open(pipe)
+        .is_ok()
+}
+
+#[cfg(target_os = "linux")]
+fn should_use_dotoolc() -> bool {
+    is_dotoolc_available() && is_dotool_daemon_ready()
+}
+
 /// Check if ydotool is available (uinput-based, works on both Wayland and X11)
 #[cfg(target_os = "linux")]
 fn is_ydotool_available() -> bool {
@@ -316,33 +356,58 @@ fn type_text_via_xdotool(text: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Type text directly via dotool (works on both Wayland and X11 via uinput).
+/// Run one dotool-compatible command by writing it to the selected executable.
 #[cfg(target_os = "linux")]
-fn type_text_via_dotool(text: &str) -> Result<(), String> {
+fn run_dotool_command_with(executable: &str, command: &str) -> Result<(), String> {
     use std::io::Write;
     use std::process::Stdio;
 
-    let mut child = Command::new("dotool")
+    let mut child = Command::new(executable)
         .stdin(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Failed to spawn dotool: {}", e))?;
+        .map_err(|e| format!("Failed to spawn {}: {}", executable, e))?;
 
     if let Some(mut stdin) = child.stdin.take() {
-        // dotool uses "type <text>" command
-        writeln!(stdin, "type {}", text)
-            .map_err(|e| format!("Failed to write to dotool stdin: {}", e))?;
+        writeln!(stdin, "{}", command)
+            .map_err(|e| format!("Failed to write to {} stdin: {}", executable, e))?;
     }
 
     let output = child
         .wait_with_output()
-        .map_err(|e| format!("Failed to wait for dotool: {}", e))?;
+        .map_err(|e| format!("Failed to wait for {}: {}", executable, e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("dotool failed: {}", stderr));
+        return Err(format!("{} failed: {}", executable, stderr));
     }
 
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn run_dotool_command(command: &str) -> Result<(), String> {
+    // dotoold keeps the uinput device warm. Use its lightweight dotoolc client
+    // when available, but keep plain dotool as the compatibility fallback.
+    if should_use_dotoolc() {
+        info!("Using dotoolc client for dotool command");
+        match run_dotool_command_with("dotoolc", command) {
+            Ok(()) => return Ok(()),
+            Err(error) => {
+                warn!(
+                    "dotoolc command failed; falling back to cold dotool invocation: {}",
+                    error
+                );
+            }
+        }
+    }
+
+    run_dotool_command_with("dotool", command)
+}
+
+/// Type text directly via dotool (works on both Wayland and X11 via uinput).
+#[cfg(target_os = "linux")]
+fn type_text_via_dotool(text: &str) -> Result<(), String> {
+    run_dotool_command(&format!("type {}", text))
 }
 
 /// Type text directly via ydotool (uinput-based, requires ydotoold daemon).
@@ -427,26 +492,14 @@ fn send_key_combo_via_wtype(paste_method: &PasteMethod) -> Result<(), String> {
 /// Send a key combination (e.g., Ctrl+V) via dotool.
 #[cfg(target_os = "linux")]
 fn send_key_combo_via_dotool(paste_method: &PasteMethod) -> Result<(), String> {
-    let command;
-    match paste_method {
-        PasteMethod::CtrlV => command = "echo key ctrl+v | dotool",
-        PasteMethod::ShiftInsert => command = "echo key shift+insert | dotool",
-        PasteMethod::CtrlShiftV => command = "echo key ctrl+shift+v | dotool",
+    let command = match paste_method {
+        PasteMethod::CtrlV => "key ctrl+v",
+        PasteMethod::ShiftInsert => "key shift+insert",
+        PasteMethod::CtrlShiftV => "key ctrl+shift+v",
         _ => return Err("Unsupported paste method".into()),
-    }
-    use std::process::Stdio;
-    let status = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map_err(|e| format!("Failed to execute dotool: {}", e))?;
-    if !status.success() {
-        return Err("dotool failed".into());
-    }
+    };
 
-    Ok(())
+    run_dotool_command(command)
 }
 
 /// Send a key combination (e.g., Ctrl+V) via ydotool (requires ydotoold daemon).

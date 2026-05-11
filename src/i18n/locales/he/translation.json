@@ -557,6 +557,7 @@
     "portableUpdateButton": "פתח את GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "טוען...",
     "save": "שמור",
     "cancel": "ביטול",
@@ -577,6 +578,11 @@
     "yes": "כן",
     "no": "לא",
     "noOptionsFound": "לא נמצאו אפשרויות"
+  },
+  "windowControls": {
+    "minimize": "מזער חלון",
+    "maximize": "הגדל חלון",
+    "close": "סגור חלון"
   },
   "accessibility": {
     "permissionsRequired": "נדרשות הרשאות נגישות",

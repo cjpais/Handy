@@ -143,6 +143,7 @@ For reliable text input on Linux, install the appropriate tool for your display 
 - **X11**: Install `xdotool` for both direct typing and clipboard paste shortcuts
 - **Wayland**: Install `wtype` (preferred) or `dotool` for text input to work correctly
 - **dotool setup**: Requires adding your user to the `input` group: `sudo usermod -aG input $USER` (then log out and back in)
+- **dotool performance**: For lower paste latency, run `dotoold` in your user session. Handy will automatically use the fast `dotoolc` client when the daemon's pipe is available, and fall back to `dotool` otherwise.
 
 Without these tools, Handy falls back to enigo which may have limited compatibility, especially on Wayland.
 

@@ -557,6 +557,7 @@
     "portableUpdateButton": "Отвори GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Зареждане...",
     "save": "Запазване",
     "cancel": "Отказ",
@@ -577,6 +578,11 @@
     "yes": "Да",
     "no": "Не",
     "noOptionsFound": "Няма намерени опции"
+  },
+  "windowControls": {
+    "minimize": "Минимизиране на прозореца",
+    "maximize": "Максимизиране на прозореца",
+    "close": "Затваряне на прозореца"
   },
   "accessibility": {
     "permissionsRequired": "Необходими са разрешения за достъпност",
