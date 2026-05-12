@@ -21,6 +21,9 @@ use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 #[cfg(target_os = "linux")]
 use std::env;
 
+#[cfg(target_os = "linux")]
+use std::sync::atomic::{AtomicBool, Ordering};
+
 #[cfg(target_os = "macos")]
 tauri_panel! {
     panel!(RecordingOverlayPanel {
@@ -33,6 +36,9 @@ tauri_panel! {
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
+
+#[cfg(target_os = "linux")]
+static GTK_LAYER_SHELL_INITIALIZED: AtomicBool = AtomicBool::new(false);
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -266,11 +272,17 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         Ok(window) => {
             #[cfg(target_os = "linux")]
             {
-                // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
-                if init_gtk_layer_shell(&window) {
+                // Layer shell keeps the overlay non-focusable. If it is unavailable,
+                // show_overlay_state() suppresses the overlay on Wayland.
+                let layer_shell_initialized = init_gtk_layer_shell(&window);
+                GTK_LAYER_SHELL_INITIALIZED.store(layer_shell_initialized, Ordering::Relaxed);
+
+                if layer_shell_initialized {
                     debug!("GTK layer shell initialized for overlay window");
                 } else {
-                    debug!("GTK layer shell not available, falling back to regular window");
+                    debug!(
+                        "GTK layer shell not available; overlay will be suppressed on this Wayland session"
+                    );
                 }
             }
 
@@ -323,6 +335,14 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
     // Check if overlay should be shown based on position setting
     let settings = settings::get_settings(app_handle);
     if settings.overlay_position == OverlayPosition::None {
+        return;
+    }
+
+    // On Wayland without GTK layer shell, a regular overlay can steal focus and race
+    // synthetic paste injection, dropping the first character.
+    #[cfg(target_os = "linux")]
+    if crate::utils::is_wayland() && !GTK_LAYER_SHELL_INITIALIZED.load(Ordering::Relaxed) {
+        debug!("Skipping recording overlay because GTK layer shell is unavailable on Wayland");
         return;
     }
 
