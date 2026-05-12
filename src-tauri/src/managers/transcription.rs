@@ -25,8 +25,116 @@ use transcribe_rs::{
         Quantization,
     },
     whisper_cpp::{WhisperEngine, WhisperInferenceParams},
-    SpeechModel, TranscribeOptions,
+    SpeechModel, TranscribeError, TranscribeOptions, TranscriptionResult, TranscriptionSegment,
 };
+
+// Parakeet's ONNX encoder caps positional encoding around 4875 subsampled
+// frames (~6.5 min of 16kHz audio at subsampling factor 8). Feeding longer
+// audio in one pass triggers a broadcast error at the first self-attention
+// layer. Chunk long audio and stitch by segment timestamps so it transcribes
+// cleanly.
+const PARAKEET_SAMPLE_RATE: usize = 16_000;
+const PARAKEET_CHUNK_DURATION_S: f32 = 120.0;
+const PARAKEET_OVERLAP_DURATION_S: f32 = 15.0;
+
+fn transcribe_parakeet_chunked(
+    engine: &mut ParakeetModel,
+    audio: &[f32],
+    params: &ParakeetParams,
+) -> Result<TranscriptionResult, TranscribeError> {
+    let chunk_samples = (PARAKEET_CHUNK_DURATION_S * PARAKEET_SAMPLE_RATE as f32) as usize;
+    if audio.len() <= chunk_samples {
+        return engine.transcribe_with(audio, params);
+    }
+
+    let overlap_samples = (PARAKEET_OVERLAP_DURATION_S * PARAKEET_SAMPLE_RATE as f32) as usize;
+    let step = chunk_samples.saturating_sub(overlap_samples).max(1);
+
+    let total_chunks = ((audio.len() - 1) / step) + 1;
+    debug!(
+        "Parakeet: chunking {:.1}s audio into ~{} windows of {:.0}s ({:.0}s overlap)",
+        audio.len() as f32 / PARAKEET_SAMPLE_RATE as f32,
+        total_chunks,
+        PARAKEET_CHUNK_DURATION_S,
+        PARAKEET_OVERLAP_DURATION_S,
+    );
+
+    let mut all_segments: Vec<TranscriptionSegment> = Vec::new();
+    let mut all_text = String::new();
+    let mut start: usize = 0;
+    let mut chunk_idx: usize = 0;
+
+    while start < audio.len() {
+        let end = (start + chunk_samples).min(audio.len());
+        let chunk = &audio[start..end];
+        let offset_s = start as f32 / PARAKEET_SAMPLE_RATE as f32;
+
+        let chunk_start = std::time::Instant::now();
+        let mut result = engine.transcribe_with(chunk, params)?;
+        result.offset_timestamps(offset_s);
+        debug!(
+            "Parakeet: chunk {}/{} ({:.1}s-{:.1}s) in {}ms",
+            chunk_idx + 1,
+            total_chunks,
+            offset_s,
+            end as f32 / PARAKEET_SAMPLE_RATE as f32,
+            chunk_start.elapsed().as_millis()
+        );
+
+        // Drop any segment whose midpoint falls inside the first half of the
+        // overlap region — the previous chunk already covered it.
+        let dedup_cutoff_s = if chunk_idx == 0 {
+            f32::MIN
+        } else {
+            offset_s + PARAKEET_OVERLAP_DURATION_S / 2.0
+        };
+
+        match result.segments {
+            Some(segs) => {
+                for seg in segs {
+                    let mid = (seg.start + seg.end) / 2.0;
+                    if mid < dedup_cutoff_s {
+                        continue;
+                    }
+                    let trimmed = seg.text.trim();
+                    if !trimmed.is_empty() {
+                        if !all_text.is_empty() && !all_text.ends_with(' ') {
+                            all_text.push(' ');
+                        }
+                        all_text.push_str(trimmed);
+                    }
+                    all_segments.push(seg);
+                }
+            }
+            None => {
+                // Without segments we can't dedup the overlap region; append
+                // raw text and accept some duplicated words at boundaries.
+                let trimmed = result.text.trim();
+                if !trimmed.is_empty() {
+                    if !all_text.is_empty() && !all_text.ends_with(' ') {
+                        all_text.push(' ');
+                    }
+                    all_text.push_str(trimmed);
+                }
+            }
+        }
+
+        if end >= audio.len() {
+            break;
+        }
+        start += step;
+        chunk_idx += 1;
+    }
+
+    Ok(TranscriptionResult {
+        text: all_text.trim().to_string(),
+        segments: if all_segments.is_empty() {
+            None
+        } else {
+            Some(all_segments)
+        },
+    })
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ModelStateEvent {
@@ -560,8 +668,7 @@ impl TranscriptionManager {
                                 timestamp_granularity: Some(TimestampGranularity::Segment),
                                 ..Default::default()
                             };
-                            parakeet_engine
-                                .transcribe_with(&audio, &params)
+                            transcribe_parakeet_chunked(parakeet_engine, &audio, &params)
                                 .map_err(|e| {
                                     anyhow::anyhow!("Parakeet transcription failed: {}", e)
                                 })
