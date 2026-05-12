@@ -7,6 +7,7 @@ use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
+use crate::status::{set_status_safe, ActivityStatus};
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
     self, show_processing_overlay, show_recording_overlay, show_transcribing_overlay,
@@ -407,6 +408,7 @@ impl ShortcutAction for TranscribeAction {
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
         show_recording_overlay(app);
+        set_status_safe(app, ActivityStatus::Recording);
 
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
@@ -465,6 +467,7 @@ impl ShortcutAction for TranscribeAction {
             // Revert UI state so we don't stay stuck in the recording overlay.
             utils::hide_recording_overlay(app);
             change_tray_icon(app, TrayIconState::Idle);
+            set_status_safe(app, ActivityStatus::Idle);
             if let Some(err) = recording_error {
                 let error_type = if is_microphone_access_denied(&err) {
                     "microphone_permission_denied"
@@ -503,6 +506,7 @@ impl ShortcutAction for TranscribeAction {
 
         change_tray_icon(app, TrayIconState::Transcribing);
         show_transcribing_overlay(app);
+        set_status_safe(app, ActivityStatus::Transcribing);
 
         // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
@@ -532,6 +536,7 @@ impl ShortcutAction for TranscribeAction {
                     debug!("Recording produced no audio samples; skipping persistence");
                     utils::hide_recording_overlay(&ah);
                     change_tray_icon(&ah, TrayIconState::Idle);
+                    set_status_safe(&ah, ActivityStatus::Idle);
                 } else {
                     // Save WAV concurrently with transcription
                     let sample_count = samples.len();
@@ -581,6 +586,7 @@ impl ShortcutAction for TranscribeAction {
 
                             if post_process {
                                 show_processing_overlay(&ah);
+                                set_status_safe(&ah, ActivityStatus::Processing);
                             }
                             let processed =
                                 process_transcription_output(&ah, &transcription, post_process)
@@ -602,6 +608,7 @@ impl ShortcutAction for TranscribeAction {
                             if processed.final_text.is_empty() {
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
+                                set_status_safe(&ah, ActivityStatus::Idle);
                             } else {
                                 let ah_clone = ah.clone();
                                 let paste_time = Instant::now();
@@ -619,11 +626,13 @@ impl ShortcutAction for TranscribeAction {
                                     }
                                     utils::hide_recording_overlay(&ah_clone);
                                     change_tray_icon(&ah_clone, TrayIconState::Idle);
+                                    set_status_safe(&ah_clone, ActivityStatus::Idle);
                                 })
                                 .unwrap_or_else(|e| {
                                     error!("Failed to run paste on main thread: {:?}", e);
                                     utils::hide_recording_overlay(&ah);
                                     change_tray_icon(&ah, TrayIconState::Idle);
+                                    set_status_safe(&ah, ActivityStatus::Idle);
                                 });
                             }
                         }
@@ -643,6 +652,7 @@ impl ShortcutAction for TranscribeAction {
                             }
                             utils::hide_recording_overlay(&ah);
                             change_tray_icon(&ah, TrayIconState::Idle);
+                            set_status_safe(&ah, ActivityStatus::Idle);
                         }
                     }
                 }
@@ -650,6 +660,7 @@ impl ShortcutAction for TranscribeAction {
                 debug!("No samples retrieved from recording stop");
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
+                set_status_safe(&ah, ActivityStatus::Idle);
             }
         });
 

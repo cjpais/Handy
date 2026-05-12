@@ -1,6 +1,7 @@
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::transcription::TranscriptionManager;
 use crate::shortcut;
+use crate::status::{set_status_safe, ActivityStatus};
 use crate::TranscriptionCoordinator;
 use log::info;
 use std::sync::Arc;
@@ -28,6 +29,7 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
+    set_status_safe(app, ActivityStatus::Idle);
 
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();
