@@ -12,6 +12,24 @@ impl EnigoState {
             .map_err(|e| format!("Failed to initialize Enigo: {}", e))?;
         Ok(Self(Mutex::new(enigo)))
     }
+
+    /// Rebuild the inner Enigo instance.
+    ///
+    /// Why: on Wayland (especially GNOME mutter) Enigo holds a libei session via
+    /// xdg-desktop-portal RemoteDesktop. That session can go dead after compositor
+    /// restarts, suspend/resume, or screen-lock — after which `enigo.text(...)` and
+    /// `enigo.key(...)` either return errors or silently no-op for the rest of the
+    /// app's lifetime. Recreating the instance reopens the portal session.
+    pub fn reconnect(&self) -> Result<(), String> {
+        let new_enigo = Enigo::new(&Settings::default())
+            .map_err(|e| format!("Failed to reinitialize Enigo: {}", e))?;
+        let mut guard = self
+            .0
+            .lock()
+            .map_err(|e| format!("Failed to lock Enigo for reconnect: {}", e))?;
+        *guard = new_enigo;
+        Ok(())
+    }
 }
 
 /// Get the current mouse cursor position using the managed Enigo instance.

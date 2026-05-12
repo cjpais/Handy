@@ -1,9 +1,9 @@
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
-use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+use crate::settings::{get_settings, AppSettings, AutoSubmitKey, ClipboardHandling, PasteMethod};
 use enigo::{Direction, Enigo, Key, Keyboard};
-use log::info;
+use log::{error, info, warn};
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -300,9 +300,13 @@ fn type_text_via_wtype(text: &str) -> Result<(), String> {
 /// Type text directly via xdotool on X11.
 #[cfg(target_os = "linux")]
 fn type_text_via_xdotool(text: &str) -> Result<(), String> {
+    // xdotool defaults to a 12ms inter-key delay, which makes long transcripts
+    // type out visibly slow. Set it to 0 for snappier output.
     let output = Command::new("xdotool")
         .arg("type")
         .arg("--clearmodifiers")
+        .arg("--delay")
+        .arg("0")
         .arg("--")
         .arg(text)
         .output()
@@ -348,8 +352,12 @@ fn type_text_via_dotool(text: &str) -> Result<(), String> {
 /// Type text directly via ydotool (uinput-based, requires ydotoold daemon).
 #[cfg(target_os = "linux")]
 fn type_text_via_ydotool(text: &str) -> Result<(), String> {
+    // ydotool defaults to a 12ms inter-key delay, which makes long transcripts
+    // type out visibly slow. Set it to 0 — the uinput path is fast enough.
     let output = Command::new("ydotool")
         .arg("type")
+        .arg("--key-delay")
+        .arg("0")
         .arg("--")
         .arg(text)
         .output()
@@ -588,6 +596,43 @@ fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool
     auto_submit && paste_method != PasteMethod::None
 }
 
+/// Run one paste attempt. Factored out of `paste()` so we can retry against a
+/// freshly-recreated Enigo on failure (recovers from stale libei sessions on Wayland).
+fn run_paste_action(
+    enigo: &mut Enigo,
+    text: &str,
+    app_handle: &AppHandle,
+    paste_method: PasteMethod,
+    paste_delay_ms: u64,
+    settings: &AppSettings,
+) -> Result<(), String> {
+    match paste_method {
+        PasteMethod::None => {
+            info!("PasteMethod::None selected - skipping paste action");
+        }
+        PasteMethod::Direct => {
+            paste_direct(
+                enigo,
+                text,
+                #[cfg(target_os = "linux")]
+                settings.typing_tool,
+            )?;
+        }
+        PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
+            paste_via_clipboard(enigo, text, app_handle, &paste_method, paste_delay_ms)?
+        }
+        PasteMethod::ExternalScript => {
+            let script_path = settings
+                .external_script_path
+                .as_ref()
+                .filter(|p| !p.is_empty())
+                .ok_or("External script path is not configured")?;
+            paste_via_external_script(text, script_path)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     let settings = get_settings(&app_handle);
     let paste_method = settings.paste_method;
@@ -605,49 +650,64 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
         paste_method, paste_delay_ms
     );
 
-    // Get the managed Enigo instance
     let enigo_state = app_handle
         .try_state::<EnigoState>()
         .ok_or("Enigo state not initialized")?;
-    let mut enigo = enigo_state
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
 
-    // Perform the paste operation
-    match paste_method {
-        PasteMethod::None => {
-            info!("PasteMethod::None selected - skipping paste action");
-        }
-        PasteMethod::Direct => {
-            paste_direct(
-                &mut enigo,
-                &text,
-                #[cfg(target_os = "linux")]
-                settings.typing_tool,
-            )?;
-        }
-        PasteMethod::CtrlV | PasteMethod::CtrlShiftV | PasteMethod::ShiftInsert => {
-            paste_via_clipboard(
-                &mut enigo,
-                &text,
-                &app_handle,
-                &paste_method,
-                paste_delay_ms,
-            )?
-        }
-        PasteMethod::ExternalScript => {
-            let script_path = settings
-                .external_script_path
-                .as_ref()
-                .filter(|p| !p.is_empty())
-                .ok_or("External script path is not configured")?;
-            paste_via_external_script(&text, script_path)?;
+    // Try the paste once. If Enigo returns an error, the libei portal session
+    // may have died (common on Wayland after suspend/resume or compositor restart).
+    // Drop the lock, rebuild the Enigo instance, and retry once before giving up.
+    let first_attempt = {
+        let mut enigo = enigo_state
+            .0
+            .lock()
+            .map_err(|e| format!("Failed to lock Enigo: {}", e))?;
+        run_paste_action(
+            &mut enigo,
+            &text,
+            &app_handle,
+            paste_method,
+            paste_delay_ms,
+            &settings,
+        )
+    };
+
+    if let Err(e) = first_attempt {
+        warn!(
+            "Paste failed: {} — reconnecting Enigo and retrying once",
+            e
+        );
+        match enigo_state.reconnect() {
+            Ok(()) => {
+                let mut enigo = enigo_state
+                    .0
+                    .lock()
+                    .map_err(|le| format!("Failed to lock Enigo after reconnect: {}", le))?;
+                run_paste_action(
+                    &mut enigo,
+                    &text,
+                    &app_handle,
+                    paste_method,
+                    paste_delay_ms,
+                    &settings,
+                )?;
+            }
+            Err(reconnect_err) => {
+                error!(
+                    "Failed to reconnect Enigo: {} (original paste error: {})",
+                    reconnect_err, e
+                );
+                return Err(e);
+            }
         }
     }
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
         std::thread::sleep(Duration::from_millis(50));
+        let mut enigo = enigo_state
+            .0
+            .lock()
+            .map_err(|e| format!("Failed to lock Enigo for auto-submit: {}", e))?;
         send_return_key(&mut enigo, settings.auto_submit_key)?;
     }
 
