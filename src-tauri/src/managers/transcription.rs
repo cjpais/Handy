@@ -21,6 +21,7 @@ use transcribe_rs::{
         gigaam::GigaAMModel,
         moonshine::{MoonshineModel, MoonshineVariant, StreamingModel},
         parakeet::{ParakeetModel, ParakeetParams, TimestampGranularity},
+        qwen3::{Qwen3Model, Qwen3Params},
         sense_voice::{SenseVoiceModel, SenseVoiceParams},
         Quantization,
     },
@@ -45,6 +46,7 @@ enum LoadedEngine {
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
     Cohere(CohereModel),
+    Qwen3Asr(Qwen3Model),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -377,6 +379,15 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::Cohere(engine)
             }
+            EngineType::Qwen3Asr => {
+                let engine = Qwen3Model::load(&model_path, &Quantization::Int4).map_err(|e| {
+                    let error_msg =
+                        format!("Failed to load Qwen3-ASR model {}: {}", model_id, e);
+                    emit_loading_failed(&error_msg);
+                    anyhow::anyhow!(error_msg)
+                })?;
+                LoadedEngine::Qwen3Asr(engine)
+            }
         };
 
         // Update the current engine and model ID
@@ -628,6 +639,26 @@ impl TranscriptionManager {
                             cohere_engine
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
+                        }
+                        LoadedEngine::Qwen3Asr(qwen3_engine) => {
+                            let lang = if validated_language == "auto" {
+                                None
+                            } else if validated_language == "zh-Hans"
+                                || validated_language == "zh-Hant"
+                            {
+                                Some("zh".to_string())
+                            } else {
+                                Some(validated_language.clone())
+                            };
+                            let params = Qwen3Params {
+                                language: lang,
+                                ..Default::default()
+                            };
+                            qwen3_engine
+                                .transcribe_with(&audio, &params)
+                                .map_err(|e| {
+                                    anyhow::anyhow!("Qwen3-ASR transcription failed: {}", e)
+                                })
                         }
                     }
                 },

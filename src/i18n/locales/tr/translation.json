@@ -92,6 +92,14 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "Büyük, daha yavaş, ancak çok doğru çok dilli bir model."
+      },
+      "qwen3-asr-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "Chinese, English, Japanese, Korean, Cantonese. Fast."
+      },
+      "qwen3-asr-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "Best Chinese STT. Higher accuracy."
       }
     },
     "errors": {

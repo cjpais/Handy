@@ -92,6 +92,14 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "大型模型，速度较慢，但多语言识别非常准确。"
+      },
+      "qwen3-asr-0.6b": {
+        "name": "Qwen3 ASR 0.6B",
+        "description": "支持中英日韩粤语. 快速."
+      },
+      "qwen3-asr-1.7b": {
+        "name": "Qwen3 ASR 1.7B",
+        "description": "最佳中文语音识别. 精度更高, 支持系统提示词."
       }
     },
     "errors": {

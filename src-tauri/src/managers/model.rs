@@ -27,6 +27,7 @@ pub enum EngineType {
     GigaAM,
     Canary,
     Cohere,
+    Qwen3Asr,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -610,6 +611,65 @@ impl ModelManager {
             },
         );
 
+        // Qwen3-ASR supported languages
+        let qwen3_asr_languages: Vec<String> = vec![
+            "zh", "zh-Hans", "zh-Hant", "en", "yue", "ja", "ko",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+
+        available_models.insert(
+            "qwen3-asr-0.6b".to_string(),
+            ModelInfo {
+                id: "qwen3-asr-0.6b".to_string(),
+                name: "Qwen3 ASR 0.6B".to_string(),
+                description: "Best Chinese STT. Supports Chinese, English, Japanese, Korean, Cantonese."
+                    .to_string(),
+                filename: "qwen3-asr-0.6b".to_string(),
+                url: Some("https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx/resolve/main/qwen3-asr-0.6b-int4.tar.gz".to_string()),
+                sha256: None,
+                size_mb: 1200,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Qwen3Asr,
+                accuracy_score: 0.95,
+                speed_score: 0.70,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: qwen3_asr_languages.clone(),
+                supports_language_selection: true,
+                                is_custom: false,
+            },
+        );
+
+        available_models.insert(
+            "qwen3-asr-1.7b".to_string(),
+            ModelInfo {
+                id: "qwen3-asr-1.7b".to_string(),
+                name: "Qwen3 ASR 1.7B".to_string(),
+                description: "Best Chinese STT. 1.7B variant, higher accuracy.".to_string(),
+                filename: "qwen3-asr-1.7b".to_string(),
+                url: Some("https://huggingface.co/andrewleech/qwen3-asr-1.7b-onnx/resolve/main/qwen3-asr-1.7b-int4.tar.gz".to_string()),
+                sha256: None,
+                size_mb: 2663,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::Qwen3Asr,
+                accuracy_score: 0.92,
+                speed_score: 0.55,
+                supports_translation: false,
+                is_recommended: false,
+                supported_languages: qwen3_asr_languages,
+                supports_language_selection: true,
+                                is_custom: false,
+            },
+        );
+
         // Auto-discover custom Whisper models (.bin files) in the models directory
         if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
             warn!("Failed to discover custom models: {}", e);
@@ -926,7 +986,7 @@ impl ModelManager {
                     is_recommended: false,
                     supported_languages: vec![],
                     supports_language_selection: true,
-                    is_custom: true,
+                            is_custom: true,
                 },
             );
         }
