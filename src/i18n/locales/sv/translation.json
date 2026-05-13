@@ -291,6 +291,10 @@
           "top": "Överst"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Markera målfönster",
+        "description": "Ritar en ram runt det aktiva fönstret medan Handy spelar in och transkriberar, så att du ser var texten klistras in. Endast Windows."
+      },
       "pasteMethod": {
         "title": "Klistra-in-metod",
         "description": "Välj hur text infogas. Direkt: simulerar skrivande via systeminmatning. Ingen: hoppar över klistra in, uppdaterar endast historik/urklipp.",

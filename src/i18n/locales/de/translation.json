@@ -291,6 +291,10 @@
           "top": "Oben"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Zielfenster hervorheben",
+        "description": "Zeichnet während Aufnahme und Transkription in Handy einen Rahmen um das aktive Fenster, damit du siehst, wo dein Text eingefügt wird. Nur Windows."
+      },
       "pasteMethod": {
         "title": "Einfügemethode",
         "description": "Wähle, wie Text eingefügt wird. Direkt: simuliert Tippen über Systemeingabe. Keine: überspringt Einfügen, aktualisiert nur Verlauf/Zwischenablage.",

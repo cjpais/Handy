@@ -291,6 +291,10 @@
           "top": "顶部"
         }
       },
+      "highlightTargetWindow": {
+        "label": "高亮目标窗口",
+        "description": "在 Handy 录音和转写时，在活动窗口周围绘制边框，让你看到文本将粘贴到哪里。仅限 Windows。"
+      },
       "pasteMethod": {
         "title": "粘贴方式",
         "description": "选择文字插入方式。直接：通过系统输入模拟打字。无：跳过粘贴，仅更新历史记录/剪贴板。",
