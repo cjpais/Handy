@@ -234,7 +234,9 @@ pub struct WinRectProvider;
 impl ForegroundRectProvider for WinRectProvider {
     fn get(&self) -> Option<Rect> {
         use windows::Win32::Foundation::{HWND, RECT};
-        use windows::Win32::Graphics::Dwm::{DwmGetWindowAttribute, DWMWA_CLOAKED};
+        use windows::Win32::Graphics::Dwm::{
+            DwmGetWindowAttribute, DWMWA_CLOAKED, DWMWA_EXTENDED_FRAME_BOUNDS,
+        };
         use windows::Win32::UI::WindowsAndMessaging::{
             GetForegroundWindow, GetWindowRect, IsIconic,
         };
@@ -262,26 +264,39 @@ impl ForegroundRectProvider for WinRectProvider {
                 return None;
             }
 
+            // GetWindowRect includes invisible resize borders on modern Windows.
+            // DWM's extended frame bounds match the visible target window.
             let mut rect = RECT::default();
-            if GetWindowRect(hwnd, &mut rect).is_err() {
+            let result = DwmGetWindowAttribute(
+                hwnd,
+                DWMWA_EXTENDED_FRAME_BOUNDS,
+                &mut rect as *mut _ as *mut _,
+                std::mem::size_of::<RECT>() as u32,
+            );
+
+            if result.is_err() && GetWindowRect(hwnd, &mut rect).is_err() {
                 return None;
             }
 
-            let width = rect.right - rect.left;
-            let height = rect.bottom - rect.top;
-
-            if width < MIN_RECT_DIMENSION || height < MIN_RECT_DIMENSION {
-                return None;
-            }
-
-            Some(Rect {
-                x: rect.left,
-                y: rect.top,
-                width,
-                height,
-            })
+            rect_from_bounds(rect.left, rect.top, rect.right, rect.bottom)
         }
     }
+}
+
+fn rect_from_bounds(left: i32, top: i32, right: i32, bottom: i32) -> Option<Rect> {
+    let width = right - left;
+    let height = bottom - top;
+
+    if width < MIN_RECT_DIMENSION || height < MIN_RECT_DIMENSION {
+        return None;
+    }
+
+    Some(Rect {
+        x: left,
+        y: top,
+        width,
+        height,
+    })
 }
 
 /// Abstracts the webview window operations so the tracker loop can be
@@ -505,6 +520,25 @@ mod tests {
         assert_eq!(rect.y, 200);
         assert_eq!(rect.width, 800);
         assert_eq!(rect.height, 600);
+    }
+
+    #[test]
+    fn rect_from_bounds_uses_visible_bounds() {
+        assert_eq!(
+            rect_from_bounds(0, 0, 1920, 1080),
+            Some(Rect {
+                x: 0,
+                y: 0,
+                width: 1920,
+                height: 1080,
+            })
+        );
+    }
+
+    #[test]
+    fn rect_from_bounds_rejects_tiny_targets() {
+        assert_eq!(rect_from_bounds(10, 20, 30, 80), None);
+        assert_eq!(rect_from_bounds(10, 20, 80, 30), None);
     }
 
     #[test]
