@@ -2,6 +2,9 @@ use log::{debug, info, warn};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager};
 
+#[cfg(target_os = "linux")]
+const STATUS_OBJECT_PATH: &str = "/com/pais/Handy";
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum ActivityStatus {
     Idle,
@@ -32,18 +35,22 @@ impl StatusManager {
         let current = Arc::new(Mutex::new(ActivityStatus::Idle));
 
         #[cfg(target_os = "linux")]
-        let tx = {
+        {
             let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
             let current_for_dbus = current.clone();
             tauri::async_runtime::spawn(async move {
                 run_dbus_service(current_for_dbus, rx).await;
             });
-            Some(tx)
-        };
-        #[cfg(not(target_os = "linux"))]
-        let tx = None;
+            Arc::new(Self {
+                current,
+                tx: Some(tx),
+            })
+        }
 
-        Arc::new(Self { current, tx })
+        #[cfg(not(target_os = "linux"))]
+        {
+            Arc::new(Self { current })
+        }
     }
 
     pub fn set_status(&self, status: ActivityStatus) {
@@ -57,10 +64,6 @@ impl StatusManager {
                 let _ = tx.send(status);
             }
         }
-    }
-
-    pub fn current_status(&self) -> ActivityStatus {
-        self.current.lock().unwrap().clone()
     }
 }
 
@@ -88,6 +91,12 @@ impl StatusInterface {
     fn get_status(&self) -> String {
         self.status()
     }
+
+    #[zbus(signal, name = "StatusChanged")]
+    async fn activity_status_changed(
+        emitter: &zbus::object_server::SignalEmitter<'_>,
+        status: &str,
+    ) -> zbus::Result<()>;
 }
 
 #[cfg(target_os = "linux")]
@@ -109,26 +118,28 @@ async fn run_dbus_service(
     }
 
     let iface = StatusInterface { current };
-    if let Err(e) = conn.object_server().at("/com/pais/Handy", iface).await {
-        warn!("Failed to serve D-Bus interface at /com/pais/Handy: {}", e);
+    if let Err(e) = conn.object_server().at(STATUS_OBJECT_PATH, iface).await {
+        warn!(
+            "Failed to serve D-Bus interface at {}: {}",
+            STATUS_OBJECT_PATH, e
+        );
         return;
     }
+
+    let emitter = match zbus::object_server::SignalEmitter::new(&conn, STATUS_OBJECT_PATH) {
+        Ok(emitter) => emitter,
+        Err(e) => {
+            warn!("Failed to create D-Bus signal emitter: {}", e);
+            return;
+        }
+    };
 
     info!("D-Bus status service registered on com.pais.Handy");
 
     while let Some(status) = rx.recv().await {
         let status_str = status.as_str();
         debug!("Emitting D-Bus StatusChanged signal: {}", status_str);
-        if let Err(e) = conn
-            .emit_signal(
-                None::<&str>,
-                "/com/pais/Handy",
-                "com.pais.Handy.Status",
-                "StatusChanged",
-                &status_str,
-            )
-            .await
-        {
+        if let Err(e) = StatusInterface::activity_status_changed(&emitter, status_str).await {
             warn!("Failed to emit D-Bus StatusChanged signal: {}", e);
         }
     }

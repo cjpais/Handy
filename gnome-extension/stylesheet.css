@@ -1,16 +1,15 @@
 .handy-status-icon {
-    icon-size: 16px;
-    padding: 0 4px;
+  icon-size: 16px;
 }
 
 .handy-recording {
-    color: #ff6b6b;
+  color: #ff6b6b;
 }
 
 .handy-transcribing {
-    color: #ffd93d;
+  color: #ffd93d;
 }
 
 .handy-processing {
-    color: #6bcb77;
+  color: #6bcb77;
 }

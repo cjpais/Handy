@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g fill="#bebebe">
+    <rect x="0.5" y="6.5" width="1.6" height="3" rx="0.8"/>
+    <rect x="2.7" y="3.5" width="1.6" height="9" rx="0.8"/>
+    <rect x="4.9" y="5" width="1.6" height="6" rx="0.8"/>
+    <text x="11.5" y="13" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13">T</text>
+  </g>
+</svg>

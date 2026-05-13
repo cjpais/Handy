@@ -1,13 +1,8 @@
 {
-    "uuid": "handy-status@pais.com",
-    "name": "Handy Status",
-    "description": "Shows Handy's live activity state in the top bar via D-Bus",
-    "version": 1,
-    "shell-version": [
-        "45",
-        "46",
-        "47",
-        "48"
-    ],
-    "url": "https://github.com/cjpais/Handy"
+  "uuid": "handy-status@pais.com",
+  "name": "Handy Status",
+  "description": "Shows Handy's live activity state in the top bar via D-Bus",
+  "version": 1,
+  "shell-version": ["45", "46", "47", "48"],
+  "url": "https://github.com/cjpais/Handy"
 }
