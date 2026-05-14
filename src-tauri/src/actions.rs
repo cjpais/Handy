@@ -673,6 +673,30 @@ impl ShortcutAction for CancelAction {
     }
 }
 
+// Agent Action
+struct AgentAction;
+
+impl ShortcutAction for AgentAction {
+    fn start(&self, app: &AppHandle, _binding_id: &str, shortcut_str: &str) {
+        match crate::agent::toggle_agent_session(app.clone()) {
+            Ok(snapshot) => {
+                log::info!(
+                    "Agent shortcut toggled by {}. New status: {:?}",
+                    shortcut_str,
+                    snapshot.status
+                );
+            }
+            Err(error) => {
+                log::error!("Failed to toggle agent session: {}", error);
+            }
+        }
+    }
+
+    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+        // Toggle on key press only.
+    }
+}
+
 // Test Action
 struct TestAction;
 
@@ -712,6 +736,10 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     map.insert(
         "cancel".to_string(),
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "agent".to_string(),
+        Arc::new(AgentAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

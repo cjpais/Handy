@@ -29,7 +29,7 @@ export const AboutSettings: React.FC = () => {
 
   const handleDonateClick = async () => {
     try {
-      await openUrl("https://handy.computer/donate");
+      await openUrl("https://unburdn.com");
     } catch (error) {
       console.error("Failed to open donate link:", error);
     }
@@ -66,7 +66,7 @@ export const AboutSettings: React.FC = () => {
           <Button
             variant="secondary"
             size="md"
-            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+            onClick={() => openUrl("https://github.com/Unburdn/voice-agent")}
           >
             {t("settings.about.sourceCode.button")}
           </Button>

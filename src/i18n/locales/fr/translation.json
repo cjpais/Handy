@@ -15,7 +15,8 @@
     "postProcessing": "Post-traitement",
     "history": "Historique",
     "debug": "Débogage",
-    "about": "À propos"
+    "about": "À propos",
+    "agent": "Agent"
   },
   "onboarding": {
     "subtitle": "Pour commencer, choisissez un modèle de transcription",
@@ -100,7 +101,7 @@
     },
     "permissions": {
       "title": "Autorisations requises",
-      "description": "Handy a besoin de quelques autorisations pour fonctionner correctement.",
+      "description": "unburdn. a besoin de quelques autorisations pour fonctionner correctement.",
       "microphone": {
         "title": "Accès au microphone",
         "description": "Nécessaire pour entendre votre voix pour la transcription."
@@ -176,7 +177,7 @@
     "general": {
       "title": "Général",
       "shortcut": {
-        "title": "Raccourcis Handy",
+        "title": "Raccourcis unburdn.",
         "description": "Configurer les raccourcis clavier pour déclencher l'enregistrement de la reconnaissance vocale",
         "loading": "Chargement des raccourcis...",
         "none": "Aucun raccourci configuré",
@@ -194,6 +195,10 @@
           "transcribe_with_post_process": {
             "name": "Raccourci de post-traitement",
             "description": "Facultatif : Un raccourci dédié qui applique toujours le post-traitement IA à votre transcription."
+          },
+          "agent": {
+            "name": "Agent Hotkey",
+            "description": "The keyboard shortcut to start or stop the local voice agent."
           }
         },
         "errors": {
@@ -276,11 +281,11 @@
       },
       "autostart": {
         "label": "Lancer au démarrage",
-        "description": "Démarrer automatiquement Handy lorsque vous vous connectez à votre ordinateur."
+        "description": "Démarrer automatiquement unburdn. lorsque vous vous connectez à votre ordinateur."
       },
       "showTrayIcon": {
         "label": "Afficher l'icône de la barre",
-        "description": "Afficher l'icône de Handy dans la barre système."
+        "description": "Afficher l'icône de unburdn. dans la barre système."
       },
       "overlay": {
         "title": "Position de la fenêtre d'enregistrement",
@@ -445,7 +450,7 @@
       },
       "updateChecks": {
         "label": "Vérifier les mises à jour",
-        "description": "Vérifier automatiquement les nouvelles versions de Handy"
+        "description": "Vérifier automatiquement les nouvelles versions de unburdn."
       },
       "soundTheme": {
         "label": "Thème sonore",
@@ -513,11 +518,11 @@
       "title": "À propos",
       "version": {
         "title": "Version",
-        "description": "Version actuelle de Handy"
+        "description": "Version actuelle de unburdn."
       },
       "appDataDirectory": {
         "title": "Emplacement des données de l'application",
-        "description": "Emplacement où Handy stocke ses données"
+        "description": "Emplacement où unburdn. stocke ses données"
       },
       "sourceCode": {
         "title": "Code source",
@@ -526,7 +531,7 @@
       },
       "supportDevelopment": {
         "title": "Soutenir le développement",
-        "description": "Aidez-nous à continuer à construire Handy",
+        "description": "Aidez-nous à continuer à construire unburdn.",
         "button": "Faire un don"
       },
       "acknowledgments": {
@@ -534,8 +539,58 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "Inférence haute performance du modèle de reconnaissance vocale automatique Whisper d'OpenAI",
-          "details": "Handy utilise Whisper.cpp pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
+          "details": "unburdn. utilise Whisper.cpp pour un traitement rapide et local de la parole en texte. Merci au travail incroyable de Georgi Gerganov et des contributeurs."
         }
+      }
+    },
+    "agent": {
+      "title": "Agent Mode",
+      "description": "Start a local-first voice agent session, configure the OS hotkey, and test the local tool broker.",
+      "session": {
+        "title": "Agent Session",
+        "description": "The hotkey starts a local WebRTC voice session. Microphone input stays local until it is sent to the Realtime API.",
+        "start": "Start Agent",
+        "stop": "Stop Agent",
+        "running": "Running",
+        "idle": "Idle"
+      },
+      "realtime": {
+        "errorTitle": "Failed to start voice agent"
+      },
+      "connections": {
+        "title": "Agent Connections",
+        "description": "Connect local OAuth accounts that Samantha can use through the tool broker.",
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "connected": "Connected",
+        "failed": "Connection failed",
+        "missingEnv": "Missing environment variables: {{env}}"
+      },
+      "environment": {
+        "title": "Agent Credentials",
+        "description": "Store local credentials used by the voice agent. Shell environment variables still work as fallback.",
+        "openaiApiKey": "OpenAI API Key",
+        "realtimeModel": "Realtime Model",
+        "googleClientId": "Google OAuth Client ID",
+        "googleClientSecret": "Google OAuth Client Secret",
+        "savedPlaceholder": "Saved locally",
+        "emptyPlaceholder": "Not saved",
+        "failed": "Failed to save credential",
+        "notionLeadsTableTarget": "Allowed Notion table: Leads",
+        "notionDealsTableTarget": "Allowed Notion table: Deals",
+        "notionTableTargetPlaceholder": "Paste an exact Notion database or view URL",
+        "validateTable": "Validate",
+        "tableValidated": "Notion table validated",
+        "tableValidationFailed": "Could not validate Notion table",
+        "notionCompaniesTableTarget": "Allowed Notion table: Companies",
+        "notionContactsTableTarget": "Allowed Notion table: Contacts"
+      },
+      "tools": {
+        "title": "Local Tool Broker",
+        "description": "Runs allowlisted tools on this machine. The first demo tool proves the model-to-local-tool loop without touching external services.",
+        "runTimeTool": "Run get_current_time",
+        "lastResult": "Last Result",
+        "noResult": "No tool has run yet."
       }
     }
   },
@@ -580,7 +635,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Autorisations d'accessibilité requises",
-    "permissionsDescription": "Handy a besoin des autorisations d'accessibilité pour taper le texte transcrit.",
+    "permissionsDescription": "unburdn. a besoin des autorisations d'accessibilité pour taper le texte transcrit.",
     "openSettings": "Ouvrir les Préférences Système",
     "dismiss": "Ignorer"
   },
@@ -603,10 +658,44 @@
   },
   "appLanguage": {
     "title": "Langue de l'application",
-    "description": "Changer la langue de l'interface de Handy"
+    "description": "Changer la langue de l'interface de unburdn."
   },
   "overlay": {
     "transcribing": "Transcription...",
-    "processing": "Traitement..."
+    "processing": "Traitement...",
+    "agentReview": {
+      "kicker": "Approval Required",
+      "title": "Review Action",
+      "approveLead": "Create Lead",
+      "approveDeal": "Create Deal",
+      "cancel": "Cancel",
+      "noFields": "No fields were provided.",
+      "fields": {
+        "dealName": "Deal",
+        "company": "Company",
+        "contactName": "Contact",
+        "role": "Role",
+        "email": "Email",
+        "phone": "Phone",
+        "amount": "Amount",
+        "stage": "Stage",
+        "closeDate": "Close Date",
+        "source": "Source",
+        "status": "Status",
+        "ownerName": "Owner",
+        "nextStep": "Next Step",
+        "notes": "Notes"
+      },
+      "resultKicker": "Tool Result",
+      "dismiss": "Dismiss",
+      "noResults": "No results to display.",
+      "chooseRelation": "Choose {{property}}",
+      "noRelationCandidates": "No matching records were found.",
+      "pasteRelationUrl": "Paste Notion page URL",
+      "useRelationUrl": "Use URL"
+    }
+  },
+  "brand": {
+    "name": "unburdn."
   }
 }

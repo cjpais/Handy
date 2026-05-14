@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Handy",
+  "productName": "unburdn.",
   "version": "0.8.3",
-  "identifier": "com.pais.handy",
+  "identifier": "ai.unburdn.voice-agent",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -58,7 +58,7 @@
       }
     },
     "windows": {
-      "signCommand": "trusted-signing-cli -e https://eus.codesigning.azure.net/ -a CJ-Signing -c cjpais-dev -d Handy %1",
+      "signCommand": "trusted-signing-cli -e https://eus.codesigning.azure.net/ -a CJ-Signing -c cjpais-dev -d unburdn. %1",
       "nsis": {
         "template": "nsis/installer.nsi"
       }
@@ -68,7 +68,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJBQjcyMDk1MjA2NjAxRjkKUldUNUFXWWdsU0MzdXRRZi8zYzhqV2FaNUVDbDd2Rk5VM1IvWWowVXdmRFNKQ1BrMXF5RFFsLy8K",
       "endpoints": [
-        "https://github.com/cjpais/Handy/releases/latest/download/latest.json"
+        "https://github.com/Unburdn/voice-agent/releases/latest/download/latest.json"
       ]
     }
   }

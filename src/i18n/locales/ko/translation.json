@@ -15,7 +15,8 @@
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
-    "about": "정보"
+    "about": "정보",
+    "agent": "Agent"
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
@@ -100,7 +101,7 @@
     },
     "permissions": {
       "title": "권한 필요",
-      "description": "Handy가 제대로 작동하려면 몇 가지 권한이 필요합니다.",
+      "description": "unburdn.가 제대로 작동하려면 몇 가지 권한이 필요합니다.",
       "microphone": {
         "title": "마이크 접근",
         "description": "음성 인식을 위해 마이크 접근 권한이 필요합니다."
@@ -158,7 +159,7 @@
     "general": {
       "title": "일반",
       "shortcut": {
-        "title": "Handy 단축키",
+        "title": "unburdn. 단축키",
         "description": "음성-텍스트 녹음을 시작하는 키보드 단축키를 설정하세요",
         "loading": "단축키 로딩 중...",
         "none": "설정된 단축키 없음",
@@ -176,6 +177,10 @@
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
+          },
+          "agent": {
+            "name": "Agent Hotkey",
+            "description": "The keyboard shortcut to start or stop the local voice agent."
           }
         },
         "errors": {
@@ -276,11 +281,11 @@
       },
       "autostart": {
         "label": "시작 시 실행",
-        "description": "컴퓨터 로그인 시 Handy를 자동으로 시작합니다."
+        "description": "컴퓨터 로그인 시 unburdn.를 자동으로 시작합니다."
       },
       "showTrayIcon": {
         "label": "트레이 아이콘 표시",
-        "description": "시스템 트레이에 Handy 아이콘을 표시합니다."
+        "description": "시스템 트레이에 unburdn. 아이콘을 표시합니다."
       },
       "overlay": {
         "title": "오버레이 위치",
@@ -445,7 +450,7 @@
       },
       "updateChecks": {
         "label": "업데이트 확인",
-        "description": "Handy의 새 버전을 자동으로 확인합니다"
+        "description": "unburdn.의 새 버전을 자동으로 확인합니다"
       },
       "soundTheme": {
         "label": "사운드 테마",
@@ -513,11 +518,11 @@
       "title": "정보",
       "version": {
         "title": "버전",
-        "description": "Handy의 현재 버전"
+        "description": "unburdn.의 현재 버전"
       },
       "appDataDirectory": {
         "title": "앱 데이터 디렉토리",
-        "description": "Handy가 데이터를 저장하는 위치"
+        "description": "unburdn.가 데이터를 저장하는 위치"
       },
       "sourceCode": {
         "title": "소스 코드",
@@ -526,7 +531,7 @@
       },
       "supportDevelopment": {
         "title": "개발 지원",
-        "description": "Handy 개발을 계속할 수 있도록 도와주세요",
+        "description": "unburdn. 개발을 계속할 수 있도록 도와주세요",
         "button": "후원하기"
       },
       "acknowledgments": {
@@ -534,8 +539,58 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
-          "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
+          "details": "unburdn.는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
+      }
+    },
+    "agent": {
+      "title": "Agent Mode",
+      "description": "Start a local-first voice agent session, configure the OS hotkey, and test the local tool broker.",
+      "session": {
+        "title": "Agent Session",
+        "description": "The hotkey starts a local WebRTC voice session. Microphone input stays local until it is sent to the Realtime API.",
+        "start": "Start Agent",
+        "stop": "Stop Agent",
+        "running": "Running",
+        "idle": "Idle"
+      },
+      "realtime": {
+        "errorTitle": "Failed to start voice agent"
+      },
+      "connections": {
+        "title": "Agent Connections",
+        "description": "Connect local OAuth accounts that Samantha can use through the tool broker.",
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "connected": "Connected",
+        "failed": "Connection failed",
+        "missingEnv": "Missing environment variables: {{env}}"
+      },
+      "environment": {
+        "title": "Agent Credentials",
+        "description": "Store local credentials used by the voice agent. Shell environment variables still work as fallback.",
+        "openaiApiKey": "OpenAI API Key",
+        "realtimeModel": "Realtime Model",
+        "googleClientId": "Google OAuth Client ID",
+        "googleClientSecret": "Google OAuth Client Secret",
+        "savedPlaceholder": "Saved locally",
+        "emptyPlaceholder": "Not saved",
+        "failed": "Failed to save credential",
+        "notionLeadsTableTarget": "Allowed Notion table: Leads",
+        "notionDealsTableTarget": "Allowed Notion table: Deals",
+        "notionTableTargetPlaceholder": "Paste an exact Notion database or view URL",
+        "validateTable": "Validate",
+        "tableValidated": "Notion table validated",
+        "tableValidationFailed": "Could not validate Notion table",
+        "notionCompaniesTableTarget": "Allowed Notion table: Companies",
+        "notionContactsTableTarget": "Allowed Notion table: Contacts"
+      },
+      "tools": {
+        "title": "Local Tool Broker",
+        "description": "Runs allowlisted tools on this machine. The first demo tool proves the model-to-local-tool loop without touching external services.",
+        "runTimeTool": "Run get_current_time",
+        "lastResult": "Last Result",
+        "noResult": "No tool has run yet."
       }
     }
   },
@@ -580,7 +635,7 @@
   },
   "accessibility": {
     "permissionsRequired": "접근성 권한 필요",
-    "permissionsDescription": "Handy는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
+    "permissionsDescription": "unburdn.는 녹음된 텍스트를 입력하기 위해 접근성 권한이 필요합니다.",
     "openSettings": "시스템 설정 열기",
     "dismiss": "닫기"
   },
@@ -603,10 +658,44 @@
   },
   "appLanguage": {
     "title": "애플리케이션 언어",
-    "description": "Handy 인터페이스의 언어를 변경하세요"
+    "description": "unburdn. 인터페이스의 언어를 변경하세요"
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
-    "processing": "처리 중..."
+    "processing": "처리 중...",
+    "agentReview": {
+      "kicker": "Approval Required",
+      "title": "Review Action",
+      "approveLead": "Create Lead",
+      "approveDeal": "Create Deal",
+      "cancel": "Cancel",
+      "noFields": "No fields were provided.",
+      "fields": {
+        "dealName": "Deal",
+        "company": "Company",
+        "contactName": "Contact",
+        "role": "Role",
+        "email": "Email",
+        "phone": "Phone",
+        "amount": "Amount",
+        "stage": "Stage",
+        "closeDate": "Close Date",
+        "source": "Source",
+        "status": "Status",
+        "ownerName": "Owner",
+        "nextStep": "Next Step",
+        "notes": "Notes"
+      },
+      "resultKicker": "Tool Result",
+      "dismiss": "Dismiss",
+      "noResults": "No results to display.",
+      "chooseRelation": "Choose {{property}}",
+      "noRelationCandidates": "No matching records were found.",
+      "pasteRelationUrl": "Paste Notion page URL",
+      "useRelationUrl": "Use URL"
+    }
+  },
+  "brand": {
+    "name": "unburdn."
   }
 }

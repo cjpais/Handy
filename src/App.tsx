@@ -10,6 +10,7 @@ import {
 import { ModelStateEvent, RecordingErrorEvent } from "./lib/types/events";
 import "./App.css";
 import AccessibilityPermissions from "./components/AccessibilityPermissions";
+import { AgentRuntime } from "./components/AgentRuntime";
 import Footer from "./components/footer";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
@@ -45,10 +46,13 @@ function App() {
     (state) => state.refreshOutputDevices,
   );
   const hasCompletedPostOnboardingInit = useRef(false);
+  const isAgentRuntimeWindow =
+    new URLSearchParams(window.location.search).get("runtime") === "agent";
 
   useEffect(() => {
+    if (isAgentRuntimeWindow) return;
     checkOnboardingStatus();
-  }, []);
+  }, [isAgentRuntimeWindow]);
 
   // Initialize RTL direction when language changes
   useEffect(() => {
@@ -235,6 +239,26 @@ function App() {
   };
 
   // Still checking onboarding status
+  if (isAgentRuntimeWindow) {
+    return (
+      <>
+        <Toaster
+          theme="system"
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              toast:
+                "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
+              title: "font-medium",
+              description: "text-mid-gray",
+            },
+          }}
+        />
+        <AgentRuntime />
+      </>
+    );
+  }
+
   if (onboardingStep === null) {
     return null;
   }

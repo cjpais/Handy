@@ -1,4 +1,8 @@
 mod actions;
+mod agent;
+mod agent_config;
+mod agent_connections;
+mod agent_review;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod apple_intelligence;
 mod audio_feedback;
@@ -164,6 +168,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(agent::AgentManager::default());
+    app_handle.manage(agent_review::AgentReviewManager::default());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -292,6 +298,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+    utils::create_agent_review_overlay(app_handle);
 }
 
 #[tauri::command]
@@ -376,6 +383,28 @@ pub fn run(cli_args: CliArgs) {
             shortcut::handy_keys::stop_handy_keys_recording,
             trigger_update_check,
             show_main_window_command,
+            agent::get_agent_session,
+            agent::start_agent_session,
+            agent::stop_agent_session,
+            agent::toggle_agent_session,
+            agent::create_agent_realtime_call,
+            agent::log_agent_runtime_event,
+            agent::run_agent_test_tool,
+            agent_connections::get_agent_connections,
+            agent_connections::connect_agent_provider,
+            agent_connections::disconnect_agent_provider,
+            agent_connections::run_agent_connection_tool,
+            agent_connections::validate_agent_notion_table_target,
+            agent_config::get_agent_environment,
+            agent_config::update_agent_environment_value,
+            agent_review::get_agent_review,
+            agent_review::get_agent_tool_overlay,
+            agent_review::clear_agent_tool_overlay,
+            agent_review::propose_notion_lead,
+            agent_review::propose_notion_deal,
+            agent_review::select_agent_review_relation,
+            agent_review::approve_agent_review,
+            agent_review::cancel_agent_review,
             commands::cancel_operation,
             commands::is_portable,
             commands::get_app_dir_path,
@@ -512,7 +541,7 @@ pub fn run(cli_args: CliArgs) {
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                    .title("Handy")
+                    .title("unburdn.")
                     .inner_size(680.0, 570.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)
@@ -524,6 +553,42 @@ pub fn run(cli_args: CliArgs) {
             }
 
             win_builder.build()?;
+
+            let mut agent_runtime_builder = tauri::WebviewWindowBuilder::new(
+                app,
+                "agent_runtime",
+                tauri::WebviewUrl::App("/?runtime=agent".into()),
+            )
+            .title("unburdn. Agent Runtime")
+            .inner_size(1.0, 1.0)
+            .resizable(false)
+            .maximizable(false)
+            .minimizable(false)
+            .closable(false)
+            .decorations(false)
+            .transparent(true)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .focused(false)
+            .visible_on_all_workspaces(true)
+            .background_throttling(tauri::utils::config::BackgroundThrottlingPolicy::Disabled)
+            .visible(true);
+
+            if let Some(data_dir) = portable::data_dir() {
+                agent_runtime_builder =
+                    agent_runtime_builder.data_directory(data_dir.join("agent_runtime_webview"));
+            }
+
+            match agent_runtime_builder.build() {
+                Ok(agent_runtime_window) => {
+                    if let Err(e) = agent_runtime_window.set_ignore_cursor_events(true) {
+                        log::warn!("Failed to ignore cursor events for agent runtime: {}", e);
+                    }
+                }
+                Err(e) => {
+                    log::error!("Failed to create agent runtime window: {}", e);
+                }
+            }
 
             let mut settings = get_settings(&app.handle());
 

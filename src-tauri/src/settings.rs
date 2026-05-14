@@ -742,6 +742,15 @@ pub fn get_default_settings() -> AppSettings {
     #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let default_post_process_shortcut = "alt+shift+space";
 
+    #[cfg(target_os = "windows")]
+    let default_agent_shortcut = "ctrl+shift+a";
+    #[cfg(target_os = "macos")]
+    let default_agent_shortcut = "option+shift+a";
+    #[cfg(target_os = "linux")]
+    let default_agent_shortcut = "ctrl+shift+a";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_agent_shortcut = "alt+shift+a";
+
     bindings.insert(
         "transcribe_with_post_process".to_string(),
         ShortcutBinding {
@@ -751,6 +760,16 @@ pub fn get_default_settings() -> AppSettings {
                 .to_string(),
             default_binding: default_post_process_shortcut.to_string(),
             current_binding: default_post_process_shortcut.to_string(),
+        },
+    );
+    bindings.insert(
+        "agent".to_string(),
+        ShortcutBinding {
+            id: "agent".to_string(),
+            name: "Agent".to_string(),
+            description: "Starts or stops the local voice agent.".to_string(),
+            default_binding: default_agent_shortcut.to_string(),
+            current_binding: default_agent_shortcut.to_string(),
         },
     );
     bindings.insert(

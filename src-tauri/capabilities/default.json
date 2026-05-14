@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capabilities for the app",
-  "windows": ["main", "recording_overlay"],
+  "windows": ["main", "recording_overlay", "agent_runtime", "agent_review"],
   "permissions": [
     "core:default",
     "opener:default",

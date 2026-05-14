@@ -436,6 +436,177 @@ async showMainWindowCommand() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getAgentSession() : Promise<Result<AgentSessionSnapshot, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_agent_session") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async startAgentSession() : Promise<Result<AgentSessionSnapshot, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_agent_session") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopAgentSession() : Promise<Result<AgentSessionSnapshot, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_agent_session") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async toggleAgentSession() : Promise<Result<AgentSessionSnapshot, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("toggle_agent_session") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async createAgentRealtimeCall(sdp: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_agent_realtime_call", { sdp }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async logAgentRuntimeEvent(message: string) : Promise<void> {
+    await TAURI_INVOKE("log_agent_runtime_event", { message });
+},
+async runAgentTestTool() : Promise<Result<AgentSessionSnapshot, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("run_agent_test_tool") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getAgentConnections() : Promise<Result<AgentConnectionStatus[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_agent_connections") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async connectAgentProvider(providerId: string) : Promise<Result<AgentConnectionStatus[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("connect_agent_provider", { providerId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async disconnectAgentProvider(providerId: string) : Promise<Result<AgentConnectionStatus[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("disconnect_agent_provider", { providerId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async runAgentConnectionTool(name: string, argumentsJson: string) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("run_agent_connection_tool", { name, argumentsJson }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async validateAgentNotionTableTarget(target: string) : Promise<Result<NotionTableValidation, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("validate_agent_notion_table_target", { target }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getAgentEnvironment() : Promise<Result<AgentEnvironment, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_agent_environment") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateAgentEnvironmentValue(key: string, value: string) : Promise<Result<AgentEnvironment, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_agent_environment_value", { key, value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getAgentReview() : Promise<Result<AgentReviewRequest | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_agent_review") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getAgentToolOverlay() : Promise<Result<AgentToolOverlay | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_agent_tool_overlay") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearAgentToolOverlay() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_agent_tool_overlay") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async proposeNotionLead(argumentsJson: string) : Promise<Result<AgentReviewRequest, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("propose_notion_lead", { argumentsJson }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async proposeNotionDeal(argumentsJson: string) : Promise<Result<AgentReviewRequest, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("propose_notion_deal", { argumentsJson }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async selectAgentReviewRelation(propertyName: string, url: string) : Promise<Result<AgentReviewRequest, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("select_agent_review_relation", { propertyName, url }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async approveAgentReview() : Promise<Result<AgentReviewRequest, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("approve_agent_review") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async cancelAgentReview() : Promise<Result<AgentReviewRequest, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("cancel_agent_review") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async cancelOperation() : Promise<void> {
     await TAURI_INVOKE("cancel_operation");
 },
@@ -832,6 +1003,15 @@ historyUpdatePayload: "history-update-payload"
 
 /** user-defined types **/
 
+export type AgentConnectionKind = "remote_mcp" | "google_api"
+export type AgentConnectionStatus = { id: string; name: string; description: string; kind: AgentConnectionKind; connected: boolean; requiresEnv: string[]; missingEnv: string[]; scopes: string[] }
+export type AgentEnvironment = { openaiApiKeySaved: boolean; openaiRealtimeModel: string; googleOauthClientId: string; googleOauthClientSecretSaved: boolean; notionLeadsTableTarget: string; notionDealsTableTarget: string; notionCompaniesTableTarget: string; notionContactsTableTarget: string }
+export type AgentReviewRequest = { id: string; title: string; actionName: string; toolName: string; argumentsJson: string; status: AgentReviewStatus; resultJson: string | null; error: string | null; resolutionJson: string | null }
+export type AgentReviewStatus = "pending" | "approved" | "cancelled" | "failed"
+export type AgentSessionSnapshot = { status: AgentSessionStatus; lastToolResult: AgentToolResult | null }
+export type AgentSessionStatus = "idle" | "running"
+export type AgentToolOverlay = { id: string; title: string; toolName: string; resultJson: string }
+export type AgentToolResult = { toolName: string; output: string }
 export type AppSettings = { bindings: Partial<{ [key in string]: ShortcutBinding }>; push_to_talk: boolean; audio_feedback: boolean; audio_feedback_volume?: number; sound_theme?: SoundTheme; start_hidden?: boolean; autostart_enabled?: boolean; update_checks_enabled?: boolean; selected_model?: string; always_on_microphone?: boolean; selected_microphone?: string | null; clamshell_microphone?: string | null; selected_output_device?: string | null; translate_to_english?: boolean; selected_language?: string; overlay_position?: OverlayPosition; debug_mode?: boolean; log_level?: LogLevel; custom_words?: string[]; model_unload_timeout?: ModelUnloadTimeout; word_correction_threshold?: number; history_limit?: number; recording_retention_period?: RecordingRetentionPeriod; paste_method?: PasteMethod; clipboard_handling?: ClipboardHandling; auto_submit?: boolean; auto_submit_key?: AutoSubmitKey; post_process_enabled?: boolean; post_process_provider_id?: string; post_process_providers?: PostProcessProvider[]; post_process_api_keys?: SecretMap; post_process_models?: Partial<{ [key in string]: string }>; post_process_prompts?: LLMPrompt[]; post_process_selected_prompt_id?: string | null; mute_while_recording?: boolean; append_trailing_space?: boolean; app_language?: string; experimental_enabled?: boolean; lazy_stream_close?: boolean; keyboard_implementation?: KeyboardImplementation; show_tray_icon?: boolean; paste_delay_ms?: number; typing_tool?: TypingTool; external_script_path: string | null; custom_filler_words?: string[] | null; whisper_accelerator?: WhisperAcceleratorSetting; ort_accelerator?: OrtAcceleratorSetting; whisper_gpu_device?: number; extra_recording_buffer_ms?: number }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
@@ -857,6 +1037,7 @@ export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
 export type ModelInfo = { id: string; name: string; description: string; filename: string; url: string | null; sha256: string | null; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; is_directory: boolean; engine_type: EngineType; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 export type ModelUnloadTimeout = "never" | "immediately" | "min_2" | "min_5" | "min_10" | "min_15" | "hour_1" | "sec_15"
+export type NotionTableValidation = { dataSourceId: string }
 export type OrtAcceleratorSetting = "auto" | "cpu" | "cuda" | "directml" | "rocm"
 export type OverlayPosition = "none" | "top" | "bottom"
 export type PaginatedHistory = { entries: HistoryEntry[]; has_more: boolean }

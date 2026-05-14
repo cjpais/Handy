@@ -29,10 +29,20 @@ tauri_panel! {
             is_floating_panel: true
         }
     })
+
+    panel!(AgentReviewPanel {
+        config: {
+            can_become_key_window: true,
+            is_floating_panel: true
+        }
+    })
 }
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
+const AGENT_REVIEW_WIDTH: f64 = 360.0;
+const AGENT_REVIEW_HEIGHT: f64 = 420.0;
+const AGENT_REVIEW_MARGIN: f64 = 24.0;
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -221,6 +231,19 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
     Some((x, y))
 }
 
+fn calculate_agent_review_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
+    let monitor = get_monitor_with_cursor(app_handle)?;
+    let scale = monitor.scale_factor();
+    let monitor_x = monitor.position().x as f64 / scale;
+    let monitor_y = monitor.position().y as f64 / scale;
+    let monitor_width = monitor.size().width as f64 / scale;
+
+    Some((
+        monitor_x + monitor_width - AGENT_REVIEW_WIDTH - AGENT_REVIEW_MARGIN,
+        monitor_y + OVERLAY_TOP_OFFSET,
+    ))
+}
+
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
@@ -282,6 +305,46 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
+pub fn create_agent_review_overlay(app_handle: &AppHandle) {
+    let mut builder = WebviewWindowBuilder::new(
+        app_handle,
+        "agent_review",
+        tauri::WebviewUrl::App("src/overlay/index.html?overlay=agent_review".into()),
+    )
+    .title("Agent Review")
+    .resizable(false)
+    .inner_size(AGENT_REVIEW_WIDTH, AGENT_REVIEW_HEIGHT)
+    .shadow(true)
+    .maximizable(false)
+    .minimizable(false)
+    .closable(false)
+    .accept_first_mouse(true)
+    .decorations(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .transparent(true)
+    .focused(false)
+    .visible(false);
+
+    if let Some(data_dir) = crate::portable::data_dir() {
+        builder = builder.data_directory(data_dir.join("agent_review_webview"));
+    }
+
+    match builder.build() {
+        Ok(window) => {
+            if let Some((x, y)) = calculate_agent_review_position(app_handle) {
+                let _ =
+                    window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+            }
+            debug!("Agent review overlay window created successfully (hidden)");
+        }
+        Err(e) => {
+            debug!("Failed to create agent review overlay window: {}", e);
+        }
+    }
+}
+
 /// Creates the recording overlay panel and keeps it hidden by default (macOS)
 #[cfg(target_os = "macos")]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
@@ -314,6 +377,45 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
             }
             Err(e) => {
                 log::error!("Failed to create recording overlay panel: {}", e);
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn create_agent_review_overlay(app_handle: &AppHandle) {
+    if let Some((x, y)) = calculate_agent_review_position(app_handle) {
+        match PanelBuilder::<_, AgentReviewPanel>::new(app_handle, "agent_review")
+            .url(WebviewUrl::App(
+                "src/overlay/index.html?overlay=agent_review".into(),
+            ))
+            .title("Agent Review")
+            .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
+            .level(PanelLevel::Status)
+            .size(tauri::Size::Logical(tauri::LogicalSize {
+                width: AGENT_REVIEW_WIDTH,
+                height: AGENT_REVIEW_HEIGHT,
+            }))
+            .has_shadow(true)
+            .transparent(true)
+            .corner_radius(12.0)
+            .with_window(|w| {
+                w.decorations(false)
+                    .transparent(true)
+                    .accept_first_mouse(true)
+            })
+            .collection_behavior(
+                CollectionBehavior::new()
+                    .can_join_all_spaces()
+                    .full_screen_auxiliary(),
+            )
+            .build()
+        {
+            Ok(panel) => {
+                let _ = panel.hide();
+            }
+            Err(e) => {
+                log::error!("Failed to create agent review overlay panel: {}", e);
             }
         }
     }
@@ -382,6 +484,26 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
             std::thread::sleep(std::time::Duration::from_millis(300));
             let _ = window_clone.hide();
         });
+    }
+}
+
+pub fn show_agent_review_overlay(app_handle: &AppHandle) {
+    if let Some(review_window) = app_handle.get_webview_window("agent_review") {
+        if let Some((x, y)) = calculate_agent_review_position(app_handle) {
+            let _ = review_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+
+        let _ = review_window.show();
+
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&review_window);
+    }
+}
+
+pub fn hide_agent_review_overlay(app_handle: &AppHandle) {
+    if let Some(review_window) = app_handle.get_webview_window("agent_review") {
+        let _ = review_window.hide();
     }
 }
 
