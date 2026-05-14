@@ -11,30 +11,31 @@ interface CustomWordsProps {
   grouped?: boolean;
 }
 
+const normalizeCustomWord = (word: string) =>
+  word
+    .replace(/[<>"']/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
 export const CustomWords: React.FC<CustomWordsProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
     const [newWord, setNewWord] = useState("");
     const customWords = getSetting("custom_words") || [];
+    const normalizedWord = normalizeCustomWord(newWord);
 
     const handleAddWord = () => {
-      const trimmedWord = newWord.trim();
-      const sanitizedWord = trimmedWord.replace(/[<>"']/g, "");
-      if (
-        sanitizedWord &&
-        !sanitizedWord.includes(" ") &&
-        sanitizedWord.length <= 50
-      ) {
-        if (customWords.includes(sanitizedWord)) {
+      if (normalizedWord && normalizedWord.length <= 50) {
+        if (customWords.includes(normalizedWord)) {
           toast.error(
             t("settings.advanced.customWords.duplicate", {
-              word: sanitizedWord,
+              word: normalizedWord,
             }),
           );
           return;
         }
-        updateSetting("custom_words", [...customWords, sanitizedWord]);
+        updateSetting("custom_words", [...customWords, normalizedWord]);
         setNewWord("");
       }
     };
@@ -75,9 +76,8 @@ export const CustomWords: React.FC<CustomWordsProps> = React.memo(
             <Button
               onClick={handleAddWord}
               disabled={
-                !newWord.trim() ||
-                newWord.includes(" ") ||
-                newWord.trim().length > 50 ||
+                !normalizedWord ||
+                normalizedWord.length > 50 ||
                 isUpdating("custom_words")
               }
               variant="primary"
