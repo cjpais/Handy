@@ -44,6 +44,7 @@ interface AgentEnvironment {
   openaiRealtimeModel: string;
   googleOauthClientId: string;
   googleOauthClientSecretSaved: boolean;
+  agentOwnerName: string;
   notionLeadsTableTarget: string;
   notionDealsTableTarget: string;
   notionTasksTableTarget: string;
@@ -65,6 +66,7 @@ const emptyEnvironment: AgentEnvironment = {
   openaiRealtimeModel: "gpt-realtime",
   googleOauthClientId: "",
   googleOauthClientSecretSaved: false,
+  agentOwnerName: "Jason Walkow",
   notionLeadsTableTarget: "",
   notionDealsTableTarget: "",
   notionTasksTableTarget: "",
@@ -171,6 +173,7 @@ export const AgentSettings: React.FC = () => {
         googleOauthClientId: nextEnvironment.googleOauthClientId,
         googleOauthClientSecretSaved:
           nextEnvironment.googleOauthClientSecretSaved,
+        agentOwnerName: nextEnvironment.agentOwnerName,
         notionLeadsTableTarget: nextEnvironment.notionLeadsTableTarget,
         notionDealsTableTarget: nextEnvironment.notionDealsTableTarget,
         notionTasksTableTarget: nextEnvironment.notionTasksTableTarget,
@@ -374,6 +377,25 @@ export const AgentSettings: React.FC = () => {
                     );
                   }
                 }}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-sm font-medium">
+                {t("settings.agent.environment.agentOwnerName")}
+              </span>
+              <Input
+                value={draftEnvironment.agentOwnerName}
+                disabled={isSavingEnvironment}
+                placeholder={t("settings.agent.environment.agentOwnerName")}
+                onChange={(event) =>
+                  setDraftEnvironment((current) => ({
+                    ...current,
+                    agentOwnerName: event.target.value,
+                  }))
+                }
+                onBlur={(event) =>
+                  saveEnvironmentValue("AGENT_OWNER_NAME", event.target.value)
+                }
               />
             </label>
             <label className="grid gap-1">

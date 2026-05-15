@@ -599,6 +599,14 @@ async selectAgentReviewRelation(propertyName: string, url: string) : Promise<Res
     else return { status: "error", error: e  as any };
 }
 },
+async createAgentReviewRelation(propertyName: string) : Promise<Result<AgentReviewRequest, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("create_agent_review_relation", { propertyName }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async approveAgentReview() : Promise<Result<AgentReviewRequest, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("approve_agent_review") };
@@ -1013,7 +1021,7 @@ historyUpdatePayload: "history-update-payload"
 
 export type AgentConnectionKind = "remote_mcp" | "google_api"
 export type AgentConnectionStatus = { id: string; name: string; description: string; kind: AgentConnectionKind; connected: boolean; requiresEnv: string[]; missingEnv: string[]; scopes: string[] }
-export type AgentEnvironment = { openaiApiKeySaved: boolean; openaiRealtimeModel: string; googleOauthClientId: string; googleOauthClientSecretSaved: boolean; notionLeadsTableTarget: string; notionDealsTableTarget: string; notionTasksTableTarget: string; notionCompaniesTableTarget: string; notionContactsTableTarget: string }
+export type AgentEnvironment = { openaiApiKeySaved: boolean; openaiRealtimeModel: string; googleOauthClientId: string; googleOauthClientSecretSaved: boolean; agentOwnerName: string; notionLeadsTableTarget: string; notionDealsTableTarget: string; notionTasksTableTarget: string; notionCompaniesTableTarget: string; notionContactsTableTarget: string }
 export type AgentReviewRequest = { id: string; title: string; actionName: string; toolName: string; argumentsJson: string; status: AgentReviewStatus; resultJson: string | null; error: string | null; resolutionJson: string | null }
 export type AgentReviewStatus = "pending" | "approved" | "cancelled" | "failed"
 export type AgentSessionSnapshot = { status: AgentSessionStatus; lastToolResult: AgentToolResult | null }

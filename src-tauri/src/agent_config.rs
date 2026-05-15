@@ -10,6 +10,7 @@ const OPENAI_API_KEY: &str = "OPENAI_API_KEY";
 const OPENAI_REALTIME_MODEL: &str = "OPENAI_REALTIME_MODEL";
 const GOOGLE_OAUTH_CLIENT_ID: &str = "GOOGLE_OAUTH_CLIENT_ID";
 const GOOGLE_OAUTH_CLIENT_SECRET: &str = "GOOGLE_OAUTH_CLIENT_SECRET";
+pub const AGENT_OWNER_NAME: &str = "AGENT_OWNER_NAME";
 pub const NOTION_LEADS_TABLE_TARGET: &str = "NOTION_LEADS_TABLE_TARGET";
 pub const NOTION_DEALS_TABLE_TARGET: &str = "NOTION_DEALS_TABLE_TARGET";
 pub const NOTION_TASKS_TABLE_TARGET: &str = "NOTION_TASKS_TABLE_TARGET";
@@ -24,6 +25,7 @@ const DEFAULT_NOTION_COMPANIES_TABLE_TARGET: &str =
     "https://www.notion.so/2817d10de3d580938613dc3cf1269dba";
 const DEFAULT_NOTION_CONTACTS_TABLE_TARGET: &str =
     "https://www.notion.so/2ef7d10de3d580f1bb6fc3155f0121ce";
+const DEFAULT_AGENT_OWNER_NAME: &str = "Jason Walkow";
 
 #[derive(Clone, Debug, Serialize, Type)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +34,7 @@ pub struct AgentEnvironment {
     pub openai_realtime_model: String,
     pub google_oauth_client_id: String,
     pub google_oauth_client_secret_saved: bool,
+    pub agent_owner_name: String,
     pub notion_leads_table_target: String,
     pub notion_deals_table_target: String,
     pub notion_tasks_table_target: String,
@@ -87,6 +90,7 @@ pub fn get_config_value(app: &AppHandle, key: &str) -> Option<String> {
                 Some(DEFAULT_NOTION_COMPANIES_TABLE_TARGET.to_string())
             }
             NOTION_CONTACTS_TABLE_TARGET => Some(DEFAULT_NOTION_CONTACTS_TABLE_TARGET.to_string()),
+            AGENT_OWNER_NAME => Some(DEFAULT_AGENT_OWNER_NAME.to_string()),
             _ => None,
         })
 }
@@ -110,6 +114,11 @@ pub fn get_agent_environment(app: AppHandle) -> Result<AgentEnvironment, String>
             .unwrap_or_default(),
         google_oauth_client_secret_saved: get_config_value(&app, GOOGLE_OAUTH_CLIENT_SECRET)
             .is_some(),
+        agent_owner_name: values
+            .get(AGENT_OWNER_NAME)
+            .cloned()
+            .or_else(|| std::env::var(AGENT_OWNER_NAME).ok())
+            .unwrap_or_else(|| DEFAULT_AGENT_OWNER_NAME.to_string()),
         notion_leads_table_target: values
             .get(NOTION_LEADS_TABLE_TARGET)
             .cloned()
@@ -150,6 +159,7 @@ pub fn update_agent_environment_value(
         | OPENAI_REALTIME_MODEL
         | GOOGLE_OAUTH_CLIENT_ID
         | GOOGLE_OAUTH_CLIENT_SECRET
+        | AGENT_OWNER_NAME
         | NOTION_LEADS_TABLE_TARGET
         | NOTION_DEALS_TABLE_TARGET
         | NOTION_TASKS_TABLE_TARGET

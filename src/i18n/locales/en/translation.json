@@ -250,6 +250,7 @@
         "realtimeModel": "Realtime Model",
         "googleClientId": "Google OAuth Client ID",
         "googleClientSecret": "Google OAuth Client Secret",
+        "agentOwnerName": "Local user name",
         "savedPlaceholder": "Saved locally",
         "emptyPlaceholder": "Not saved",
         "failed": "Failed to save credential",

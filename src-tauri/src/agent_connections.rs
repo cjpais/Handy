@@ -1218,6 +1218,25 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .ok_or_else(|| "Task search query is required".to_string())?;
+    let explicit_owner = arguments
+        .get("ownerName")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let owner_name = explicit_owner
+        .map(str::to_string)
+        .or_else(|| {
+            crate::agent_config::get_config_value(app, crate::agent_config::AGENT_OWNER_NAME)
+        })
+        .unwrap_or_else(|| "Jason Walkow".to_string());
+    let skip_owner_filter = explicit_owner
+        .map(|owner| {
+            matches!(
+                owner.to_ascii_lowercase().as_str(),
+                "all" | "all owners" | "anyone" | "any owner"
+            )
+        })
+        .unwrap_or(false);
     let table_target =
         crate::agent_config::get_config_value(app, crate::agent_config::NOTION_TASKS_TABLE_TARGET)
             .ok_or_else(|| "Allowed Notion table is not configured: Tasks".to_string())?;
@@ -1229,7 +1248,7 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
         resolve_notion_data_source_id(&client, &connection, session_id.as_deref(), &table_target)
             .await?;
 
-    call_mcp_tool_on_session(
+    let result = call_mcp_tool_on_session(
         &client,
         &connection,
         session_id.as_deref(),
@@ -1241,7 +1260,89 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
             "data_source_url": notion_collection_url(&data_source_id)
         }),
     )
-    .await
+    .await?;
+    let text = notion_payload_text(&result);
+    let mut candidates = Vec::new();
+    for line in text.lines() {
+        for url in notion_urls_in_text(line) {
+            if candidates
+                .iter()
+                .any(|candidate: &crate::agent_review::AgentRelationCandidate| candidate.url == url)
+            {
+                continue;
+            }
+            candidates.push(crate::agent_review::AgentRelationCandidate {
+                title: title_for_url_line(line, &url)
+                    .chars()
+                    .take(90)
+                    .collect::<String>(),
+                url,
+            });
+        }
+    }
+
+    let owner_url = if skip_owner_filter {
+        None
+    } else {
+        notion_search_user_url_on_session(&client, &connection, session_id.as_deref(), &owner_name)
+            .await
+            .ok()
+            .flatten()
+    };
+
+    let mut tasks = Vec::new();
+    for candidate in candidates.iter().take(16) {
+        if !skip_owner_filter {
+            let Ok(page_result) = call_mcp_tool_on_session(
+                &client,
+                &connection,
+                session_id.as_deref(),
+                11,
+                "notion-fetch",
+                json!({ "id": candidate.url }),
+            )
+            .await
+            else {
+                continue;
+            };
+            let page_text = notion_payload_text(&page_result);
+            if !notion_page_matches_owner(&page_text, &owner_name, owner_url.as_deref()) {
+                continue;
+            }
+        }
+
+        tasks.push(json!({
+            "title": candidate.title,
+            "url": candidate.url,
+            "detail": if skip_owner_filter {
+                "Owner filter: all owners".to_string()
+            } else {
+                format!("Owner: {}", owner_name)
+            }
+        }));
+        if tasks.len() >= 8 {
+            break;
+        }
+    }
+
+    Ok(json!({
+        "source": "notion_tasks",
+        "query": query,
+        "ownerName": if skip_owner_filter { Value::Null } else { Value::String(owner_name.clone()) },
+        "ownerFilter": if skip_owner_filter { "all" } else { "specific" },
+        "searchedTaskCount": candidates.len(),
+        "count": tasks.len(),
+        "tasks": tasks,
+        "message": if tasks.is_empty() {
+            if skip_owner_filter {
+                format!("No task results matched {}.", query)
+            } else {
+                format!("No task results matched {} for {}.", query, owner_name)
+            }
+        } else {
+            String::new()
+        }
+    }))
 }
 
 fn extract_notion_id(input: &str) -> String {
@@ -1559,6 +1660,30 @@ fn page_has_parent_data_source(text: &str, data_source_url: &str) -> bool {
     ]
     .iter()
     .any(|marker| text.contains(marker))
+}
+
+fn notion_page_matches_owner(text: &str, owner_name: &str, owner_url: Option<&str>) -> bool {
+    if owner_url
+        .map(|url| !url.is_empty() && text.contains(url))
+        .unwrap_or(false)
+    {
+        return true;
+    }
+
+    let lower_text = text.to_ascii_lowercase();
+    let lower_owner = owner_name.trim().to_ascii_lowercase();
+    if lower_owner.is_empty() {
+        return false;
+    }
+    if lower_text.contains(&lower_owner) {
+        return true;
+    }
+
+    let terms = lower_owner
+        .split_whitespace()
+        .filter(|term| term.len() >= 2)
+        .collect::<Vec<_>>();
+    !terms.is_empty() && terms.iter().all(|term| lower_text.contains(term))
 }
 
 fn notion_user_url(id: &str) -> String {
