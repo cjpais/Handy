@@ -403,6 +403,7 @@ pub fn run(cli_args: CliArgs) {
             agent_review::propose_notion_lead,
             agent_review::propose_notion_deal,
             agent_review::select_agent_review_relation,
+            agent_review::create_agent_review_relation,
             agent_review::approve_agent_review,
             agent_review::cancel_agent_review,
             commands::cancel_operation,

@@ -691,6 +691,7 @@
       "noResults": "No results to display.",
       "chooseRelation": "Choose {{property}}",
       "noRelationCandidates": "No matching records were found.",
+      "createRelation": "Create new {{type}}: {{name}}",
       "pasteRelationUrl": "Paste Notion page URL",
       "useRelationUrl": "Use URL"
     }

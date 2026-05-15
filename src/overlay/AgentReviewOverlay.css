@@ -225,6 +225,34 @@ body,
   opacity: 0.65;
 }
 
+.agent-relation-create {
+  display: inline-flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  border: 1px solid #0f0f0f;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #0f0f0f;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.agent-relation-create span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.agent-relation-create:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
 .agent-relation-manual {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -259,6 +287,17 @@ body,
 .agent-relation-manual button:disabled {
   cursor: default;
   opacity: 0.55;
+}
+
+.agent-relation-error {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border: 1px solid #f0b8b8;
+  border-radius: 8px;
+  background: #fff0f0;
+  color: #9b1c1c;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .agent-review-error {

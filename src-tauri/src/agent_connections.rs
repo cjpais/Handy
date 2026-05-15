@@ -1707,20 +1707,30 @@ async fn request_relation_selection_if_needed(
         &data_source_url,
     )
     .await?;
+    let record_type = match property_name {
+        "Client" => "company",
+        "Contacts" => "contact",
+        _ => "record",
+    };
 
     Err(crate::agent_review::relation_selection_error(
         crate::agent_review::AgentRelationSelection {
             property_name: property_name.to_string(),
+            record_type: record_type.to_string(),
             query: query.to_string(),
             message: if candidates.is_empty() {
                 format!(
-                    "Choose the {} record for {}. Paste the exact Notion page URL if no candidates appear.",
-                    property_name, query
+                    "No existing {} matched {}. Create a new one, or paste a known Notion page URL.",
+                    record_type, query
                 )
             } else {
-                format!("Choose the {} record for {}.", property_name, query)
+                format!(
+                    "Choose the {} for {}, or create a new one.",
+                    record_type, query
+                )
             },
             candidates,
+            can_create: true,
         },
     ))
 }

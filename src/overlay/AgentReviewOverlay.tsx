@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ExternalLink, Loader2, X } from "lucide-react";
+import { Check, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import "./AgentReviewOverlay.css";
 
 type AgentReviewStatus = "pending" | "approved" | "cancelled" | "failed";
@@ -41,9 +41,11 @@ interface RelationCandidate {
 
 interface RelationSelection {
   propertyName: string;
+  recordType?: string;
   query: string;
   message: string;
   candidates: RelationCandidate[];
+  canCreate?: boolean;
 }
 
 const LEAD_FIELD_ORDER = [
@@ -256,7 +258,11 @@ const AgentReviewOverlay: React.FC = () => {
   const [isApproving, setIsApproving] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isSelectingRelation, setIsSelectingRelation] = useState(false);
+  const [isCreatingRelation, setIsCreatingRelation] = useState(false);
   const [manualRelationUrl, setManualRelationUrl] = useState("");
+  const [relationActionError, setRelationActionError] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     invoke<AgentReviewRequest | null>("get_agent_review")
@@ -310,6 +316,7 @@ const AgentReviewOverlay: React.FC = () => {
 
   useEffect(() => {
     setManualRelationUrl("");
+    setRelationActionError(null);
   }, [review?.resolutionJson]);
 
   const approve = async () => {
@@ -341,6 +348,7 @@ const AgentReviewOverlay: React.FC = () => {
   const selectRelation = async (propertyName: string, url: string) => {
     if (!url.trim()) return;
     setIsSelectingRelation(true);
+    setRelationActionError(null);
     try {
       const nextReview = await invoke<AgentReviewRequest>(
         "select_agent_review_relation",
@@ -348,9 +356,27 @@ const AgentReviewOverlay: React.FC = () => {
       );
       setReview(nextReview);
     } catch (error) {
+      setRelationActionError(String(error));
       console.warn(error);
     } finally {
       setIsSelectingRelation(false);
+    }
+  };
+
+  const createRelation = async (propertyName: string) => {
+    setIsCreatingRelation(true);
+    setRelationActionError(null);
+    try {
+      const nextReview = await invoke<AgentReviewRequest>(
+        "create_agent_review_relation",
+        { propertyName },
+      );
+      setReview(nextReview);
+    } catch (error) {
+      setRelationActionError(String(error));
+      console.warn(error);
+    } finally {
+      setIsCreatingRelation(false);
     }
   };
 
@@ -458,7 +484,7 @@ const AgentReviewOverlay: React.FC = () => {
                     className="agent-relation-option"
                     type="button"
                     key={candidate.url}
-                    disabled={isSelectingRelation}
+                    disabled={isSelectingRelation || isCreatingRelation}
                     onClick={() =>
                       void selectRelation(
                         relationSelection.propertyName,
@@ -476,6 +502,30 @@ const AgentReviewOverlay: React.FC = () => {
                 {t("overlay.agentReview.noRelationCandidates")}
               </p>
             )}
+            {relationSelection.canCreate && (
+              <button
+                className="agent-relation-create"
+                type="button"
+                disabled={isSelectingRelation || isCreatingRelation}
+                onClick={() =>
+                  void createRelation(relationSelection.propertyName)
+                }
+              >
+                {isCreatingRelation ? (
+                  <Loader2 className="agent-review-spin" size={14} />
+                ) : (
+                  <Plus size={14} />
+                )}
+                <span>
+                  {t("overlay.agentReview.createRelation", {
+                    type:
+                      relationSelection.recordType ??
+                      relationSelection.propertyName,
+                    name: relationSelection.query,
+                  })}
+                </span>
+              </button>
+            )}
             <div className="agent-relation-manual">
               <input
                 type="url"
@@ -485,7 +535,11 @@ const AgentReviewOverlay: React.FC = () => {
               />
               <button
                 type="button"
-                disabled={!manualRelationUrl.trim() || isSelectingRelation}
+                disabled={
+                  !manualRelationUrl.trim() ||
+                  isSelectingRelation ||
+                  isCreatingRelation
+                }
                 onClick={() =>
                   void selectRelation(
                     relationSelection.propertyName,
@@ -496,6 +550,9 @@ const AgentReviewOverlay: React.FC = () => {
                 {t("overlay.agentReview.useRelationUrl")}
               </button>
             </div>
+            {relationActionError && (
+              <p className="agent-relation-error">{relationActionError}</p>
+            )}
           </div>
         )}
         <h2>{activeReview.title}</h2>
