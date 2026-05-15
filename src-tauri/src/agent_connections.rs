@@ -1211,6 +1211,39 @@ async fn notion_search(app: &AppHandle, arguments: &Value) -> Result<Value, Stri
     call_mcp_tool(app, "notion", "notion-search", arguments.clone()).await
 }
 
+async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value, String> {
+    let query = arguments
+        .get("query")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| "Task search query is required".to_string())?;
+    let table_target =
+        crate::agent_config::get_config_value(app, crate::agent_config::NOTION_TASKS_TABLE_TARGET)
+            .ok_or_else(|| "Allowed Notion table is not configured: Tasks".to_string())?;
+
+    let connection = stored_connection(app, "notion").await?;
+    let client = reqwest::Client::new();
+    let session_id = initialize_mcp_session(&client, &connection).await?;
+    let data_source_id =
+        resolve_notion_data_source_id(&client, &connection, session_id.as_deref(), &table_target)
+            .await?;
+
+    call_mcp_tool_on_session(
+        &client,
+        &connection,
+        session_id.as_deref(),
+        10,
+        "notion-search",
+        json!({
+            "query": query,
+            "query_type": "internal",
+            "data_source_url": notion_collection_url(&data_source_id)
+        }),
+    )
+    .await
+}
+
 fn extract_notion_id(input: &str) -> String {
     input
         .split(|character: char| !(character.is_ascii_hexdigit() || character == '-'))
@@ -2126,6 +2159,7 @@ pub async fn run_agent_connection_tool(
         "calendar_check_availability" => calendar_check_availability(&app, &arguments).await,
         "calendar_list_events" => calendar_list_events(&app, &arguments).await,
         "notion_search" => notion_search(&app, &arguments).await,
+        "notion_search_tasks" => notion_search_tasks(&app, &arguments).await,
         "notion_create_page" => notion_create_page(&app, &arguments).await,
         "granola_search_notes" => granola_search_notes(&app, &arguments).await,
         other => Err(format!("Unknown agent connection tool: {}", other)),

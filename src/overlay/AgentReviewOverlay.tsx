@@ -74,6 +74,17 @@ const DEAL_FIELD_ORDER = [
   "notes",
 ];
 
+const TASK_FIELD_ORDER = [
+  "taskName",
+  "ownerName",
+  "dueDate",
+  "priority",
+  "status",
+  "relatedCompany",
+  "relatedContact",
+  "notes",
+];
+
 function tryParseJson(value: unknown) {
   if (typeof value !== "string") return value;
 
@@ -293,10 +304,11 @@ const AgentReviewOverlay: React.FC = () => {
 
   const fields = useMemo(() => {
     const reviewFields = fieldsFromReview(review);
-    const fieldOrder =
-      review?.actionName === "notion_deal"
-        ? DEAL_FIELD_ORDER
-        : LEAD_FIELD_ORDER;
+    const fieldOrder = (() => {
+      if (review?.actionName === "notion_deal") return DEAL_FIELD_ORDER;
+      if (review?.actionName === "notion_task") return TASK_FIELD_ORDER;
+      return LEAD_FIELD_ORDER;
+    })();
     const knownEntries = fieldOrder.map(
       (key) => [key, reviewFields[key]] as const,
     );
@@ -609,7 +621,9 @@ const AgentReviewOverlay: React.FC = () => {
             {t(
               activeReview.actionName === "notion_deal"
                 ? "overlay.agentReview.approveDeal"
-                : "overlay.agentReview.approveLead",
+                : activeReview.actionName === "notion_task"
+                  ? "overlay.agentReview.approveTask"
+                  : "overlay.agentReview.approveLead",
             )}
           </span>
         </button>

@@ -115,6 +115,7 @@ fn emit_tool_overlay(app: &AppHandle, overlay: Option<AgentToolOverlay>) {
 fn tool_overlay_title(tool_name: &str) -> String {
     match tool_name {
         "notion_search" => "Notion results",
+        "notion_search_tasks" => "Task results",
         "gmail_search" => "Email results",
         "calendar_list_events" => "Calendar",
         "calendar_check_availability" => "Availability",
@@ -171,6 +172,9 @@ fn build_notion_page_arguments(
     let primary_name = fields
         .get("dealName")
         .and_then(Value::as_str)
+        .or_else(|| fields.get("taskName").and_then(Value::as_str))
+        .or_else(|| fields.get("title").and_then(Value::as_str))
+        .or_else(|| fields.get("name").and_then(Value::as_str))
         .or_else(|| fields.get("company").and_then(Value::as_str))
         .or_else(|| fields.get("accountName").and_then(Value::as_str))
         .or_else(|| fields.get("contactName").and_then(Value::as_str))
@@ -498,6 +502,38 @@ pub fn propose_notion_deal(
         action_name: "notion_deal".to_string(),
         tool_name: "notion_create_page".to_string(),
         arguments_json: build_notion_deal_arguments(&arguments, table_target).to_string(),
+        status: AgentReviewStatus::Pending,
+        result_json: None,
+        error: None,
+        resolution_json: None,
+    };
+
+    app.state::<AgentReviewManager>().set(request.clone());
+    app.state::<AgentReviewManager>().clear_tool_overlay();
+    emit_tool_overlay(&app, None);
+    emit_review(&app, &request);
+    crate::utils::show_agent_review_overlay(&app);
+    Ok(request)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn propose_notion_task(
+    app: AppHandle,
+    arguments_json: String,
+) -> Result<AgentReviewRequest, String> {
+    let arguments: Value = serde_json::from_str(&arguments_json)
+        .map_err(|error| format!("Invalid Notion task JSON: {}", error))?;
+    let table_target =
+        crate::agent_config::get_config_value(&app, crate::agent_config::NOTION_TASKS_TABLE_TARGET)
+            .ok_or_else(|| "Allowed Notion table is not configured: Tasks".to_string())?;
+    let request = AgentReviewRequest {
+        id: format!("review-{}", chrono::Utc::now().timestamp_millis()),
+        title: "Create Notion task".to_string(),
+        action_name: "notion_task".to_string(),
+        tool_name: "notion_create_page".to_string(),
+        arguments_json: build_notion_page_arguments(&arguments, "Task", Some(table_target))
+            .to_string(),
         status: AgentReviewStatus::Pending,
         result_json: None,
         error: None,

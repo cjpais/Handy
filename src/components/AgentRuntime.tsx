@@ -137,6 +137,24 @@ const NOTION_SEARCH_TOOL = {
   },
 };
 
+const NOTION_SEARCH_TASKS_TOOL = {
+  type: "function",
+  name: "notion_search_tasks",
+  description:
+    "Searches the configured Notion Tasks database only. Use this for task, to-do, follow-up, and action item lookup.",
+  parameters: {
+    type: "object",
+    properties: {
+      query: {
+        type: "string",
+        description: "The task search query.",
+      },
+    },
+    required: ["query"],
+    additionalProperties: false,
+  },
+};
+
 const PROPOSE_NOTION_LEAD_TOOL = {
   type: "function",
   name: "propose_notion_lead",
@@ -237,6 +255,52 @@ const PROPOSE_NOTION_DEAL_TOOL = {
   },
 };
 
+const PROPOSE_NOTION_TASK_TOOL = {
+  type: "function",
+  name: "propose_notion_task",
+  description:
+    "Drafts a Notion task for user approval in the floating review overlay. This does not create anything until the user approves it.",
+  parameters: {
+    type: "object",
+    properties: {
+      taskName: {
+        type: "string",
+        description: "Short task title.",
+      },
+      ownerName: {
+        type: "string",
+        description: "Person responsible for the task, if known.",
+      },
+      dueDate: {
+        type: "string",
+        description: "Due date in YYYY-MM-DD format, if known.",
+      },
+      priority: {
+        type: "string",
+        description: "Priority, if stated.",
+      },
+      status: {
+        type: "string",
+        description: "Current task status, if stated.",
+      },
+      relatedCompany: {
+        type: "string",
+        description: "Related company, account, or client, if known.",
+      },
+      relatedContact: {
+        type: "string",
+        description: "Related person or contact, if known.",
+      },
+      notes: {
+        type: "string",
+        description: "Useful details or context for the task.",
+      },
+    },
+    required: ["taskName"],
+    additionalProperties: false,
+  },
+};
+
 const GRANOLA_SEARCH_TOOL = {
   type: "function",
   name: "granola_search_notes",
@@ -273,8 +337,10 @@ const AGENT_TOOL_NAMES = new Set([
   "gmail_search",
   "gmail_create_draft",
   "notion_search",
+  "notion_search_tasks",
   "propose_notion_lead",
   "propose_notion_deal",
+  "propose_notion_task",
   "granola_search_notes",
 ]);
 
@@ -293,7 +359,7 @@ function buildSessionUpdateEvent() {
     type: "session.update",
     session: {
       type: "realtime",
-      instructions: `You are Samantha, a concise local desktop voice agent. Speak naturally and briefly. Today's local date is ${today}, and the local timezone is ${timeZone}. Resolve relative dates like today and tomorrow before calling tools. Use list_calendar_events for agenda questions like "what is on my calendar today"; use check_calendar only for availability questions about a specific time. You can use connected local tools for Notion, Granola, Gmail, and Google Calendar. For Granola, use granola_search_notes to find meetings; set includeTranscript to true when the user asks for exact wording, quotes, detailed reconstruction, or a full transcript. For Gmail, you may search email and create drafts, but you must never claim to send email. If asked to send email, create a draft and tell the user it is ready for review. To add a Notion lead, collect the details the user provides, ask only for clearly missing essentials, then call propose_notion_lead so the user can approve it in the floating overlay. To add a Notion deal or opportunity, collect the deal details the user provides, ask only for clearly missing essentials, then call propose_notion_deal so the user can approve it in the floating overlay. Never claim a Notion lead or deal was created until the user approves it. If a tool is not connected, say which connection is needed.`,
+      instructions: `You are Samantha, a concise local desktop voice agent. Speak naturally and briefly. Today's local date is ${today}, and the local timezone is ${timeZone}. Resolve relative dates like today and tomorrow before calling tools. Use list_calendar_events for agenda questions like "what is on my calendar today"; use check_calendar only for availability questions about a specific time. You can use connected local tools for Notion, Granola, Gmail, and Google Calendar. For Granola, use granola_search_notes to find meetings; set includeTranscript to true when the user asks for exact wording, quotes, detailed reconstruction, or a full transcript. For Gmail, you may search email and create drafts, but you must never claim to send email. If asked to send email, create a draft and tell the user it is ready for review. Use notion_search_tasks for task, to-do, follow-up, and action item lookup. To add a Notion lead, collect the details the user provides, ask only for clearly missing essentials, then call propose_notion_lead so the user can approve it in the floating overlay. To add a Notion deal or opportunity, collect the deal details the user provides, ask only for clearly missing essentials, then call propose_notion_deal so the user can approve it in the floating overlay. To add a Notion task, collect a short task title plus any owner, due date, priority, status, related company/contact, and notes the user provides, then call propose_notion_task so the user can approve it in the floating overlay. Never claim a Notion lead, deal, or task was created until the user approves it. If a tool is not connected, say which connection is needed.`,
       output_modalities: ["audio"],
       audio: {
         output: {
@@ -306,8 +372,10 @@ function buildSessionUpdateEvent() {
         GMAIL_SEARCH_TOOL,
         GMAIL_CREATE_DRAFT_TOOL,
         NOTION_SEARCH_TOOL,
+        NOTION_SEARCH_TASKS_TOOL,
         PROPOSE_NOTION_LEAD_TOOL,
         PROPOSE_NOTION_DEAL_TOOL,
+        PROPOSE_NOTION_TASK_TOOL,
         GRANOLA_SEARCH_TOOL,
       ],
       tool_choice: "auto",
@@ -415,7 +483,8 @@ export const AgentRuntime = () => {
       try {
         if (
           call.name === "propose_notion_lead" ||
-          call.name === "propose_notion_deal"
+          call.name === "propose_notion_deal" ||
+          call.name === "propose_notion_task"
         ) {
           const review = await invoke(call.name, {
             argumentsJson: JSON.stringify(args),

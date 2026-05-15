@@ -402,6 +402,7 @@ pub fn run(cli_args: CliArgs) {
             agent_review::clear_agent_tool_overlay,
             agent_review::propose_notion_lead,
             agent_review::propose_notion_deal,
+            agent_review::propose_notion_task,
             agent_review::select_agent_review_relation,
             agent_review::create_agent_review_relation,
             agent_review::approve_agent_review,

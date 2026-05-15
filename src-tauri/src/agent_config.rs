@@ -12,11 +12,14 @@ const GOOGLE_OAUTH_CLIENT_ID: &str = "GOOGLE_OAUTH_CLIENT_ID";
 const GOOGLE_OAUTH_CLIENT_SECRET: &str = "GOOGLE_OAUTH_CLIENT_SECRET";
 pub const NOTION_LEADS_TABLE_TARGET: &str = "NOTION_LEADS_TABLE_TARGET";
 pub const NOTION_DEALS_TABLE_TARGET: &str = "NOTION_DEALS_TABLE_TARGET";
+pub const NOTION_TASKS_TABLE_TARGET: &str = "NOTION_TASKS_TABLE_TARGET";
 pub const NOTION_COMPANIES_TABLE_TARGET: &str = "NOTION_COMPANIES_TABLE_TARGET";
 pub const NOTION_CONTACTS_TABLE_TARGET: &str = "NOTION_CONTACTS_TABLE_TARGET";
 const DEFAULT_NOTION_LEADS_TABLE_TARGET: &str = "";
 const DEFAULT_NOTION_DEALS_TABLE_TARGET: &str =
     "https://www.notion.so/2ec7d10de3d5806cba69ed65faba75fa?v=2ec7d10de3d580e796fb000c54fe562d";
+const DEFAULT_NOTION_TASKS_TABLE_TARGET: &str =
+    "https://www.notion.so/2077d10de3d580a8a551d13058db209b";
 const DEFAULT_NOTION_COMPANIES_TABLE_TARGET: &str =
     "https://www.notion.so/2817d10de3d580938613dc3cf1269dba";
 const DEFAULT_NOTION_CONTACTS_TABLE_TARGET: &str =
@@ -31,6 +34,7 @@ pub struct AgentEnvironment {
     pub google_oauth_client_secret_saved: bool,
     pub notion_leads_table_target: String,
     pub notion_deals_table_target: String,
+    pub notion_tasks_table_target: String,
     pub notion_companies_table_target: String,
     pub notion_contacts_table_target: String,
 }
@@ -78,6 +82,7 @@ pub fn get_config_value(app: &AppHandle, key: &str) -> Option<String> {
                 }
             }
             NOTION_DEALS_TABLE_TARGET => Some(DEFAULT_NOTION_DEALS_TABLE_TARGET.to_string()),
+            NOTION_TASKS_TABLE_TARGET => Some(DEFAULT_NOTION_TASKS_TABLE_TARGET.to_string()),
             NOTION_COMPANIES_TABLE_TARGET => {
                 Some(DEFAULT_NOTION_COMPANIES_TABLE_TARGET.to_string())
             }
@@ -115,6 +120,11 @@ pub fn get_agent_environment(app: AppHandle) -> Result<AgentEnvironment, String>
             .cloned()
             .or_else(|| std::env::var(NOTION_DEALS_TABLE_TARGET).ok())
             .unwrap_or_else(|| DEFAULT_NOTION_DEALS_TABLE_TARGET.to_string()),
+        notion_tasks_table_target: values
+            .get(NOTION_TASKS_TABLE_TARGET)
+            .cloned()
+            .or_else(|| std::env::var(NOTION_TASKS_TABLE_TARGET).ok())
+            .unwrap_or_else(|| DEFAULT_NOTION_TASKS_TABLE_TARGET.to_string()),
         notion_companies_table_target: values
             .get(NOTION_COMPANIES_TABLE_TARGET)
             .cloned()
@@ -142,6 +152,7 @@ pub fn update_agent_environment_value(
         | GOOGLE_OAUTH_CLIENT_SECRET
         | NOTION_LEADS_TABLE_TARGET
         | NOTION_DEALS_TABLE_TARGET
+        | NOTION_TASKS_TABLE_TARGET
         | NOTION_COMPANIES_TABLE_TARGET
         | NOTION_CONTACTS_TABLE_TARGET => {}
         _ => return Err(format!("Unsupported agent environment key: {}", key)),

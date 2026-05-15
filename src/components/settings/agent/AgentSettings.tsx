@@ -46,6 +46,7 @@ interface AgentEnvironment {
   googleOauthClientSecretSaved: boolean;
   notionLeadsTableTarget: string;
   notionDealsTableTarget: string;
+  notionTasksTableTarget: string;
   notionCompaniesTableTarget: string;
   notionContactsTableTarget: string;
 }
@@ -66,6 +67,7 @@ const emptyEnvironment: AgentEnvironment = {
   googleOauthClientSecretSaved: false,
   notionLeadsTableTarget: "",
   notionDealsTableTarget: "",
+  notionTasksTableTarget: "",
   notionCompaniesTableTarget: "",
   notionContactsTableTarget: "",
 };
@@ -171,6 +173,7 @@ export const AgentSettings: React.FC = () => {
           nextEnvironment.googleOauthClientSecretSaved,
         notionLeadsTableTarget: nextEnvironment.notionLeadsTableTarget,
         notionDealsTableTarget: nextEnvironment.notionDealsTableTarget,
+        notionTasksTableTarget: nextEnvironment.notionTasksTableTarget,
         notionCompaniesTableTarget: nextEnvironment.notionCompaniesTableTarget,
         notionContactsTableTarget: nextEnvironment.notionContactsTableTarget,
       }));
@@ -450,6 +453,48 @@ export const AgentSettings: React.FC = () => {
                     validateTableTarget(
                       "deals",
                       draftEnvironment.notionDealsTableTarget,
+                    )
+                  }
+                >
+                  {t("settings.agent.environment.validateTable")}
+                </Button>
+              </div>
+            </label>
+            <label className="grid gap-1">
+              <span className="text-sm font-medium">
+                {t("settings.agent.environment.notionTasksTableTarget")}
+              </span>
+              <div className="flex gap-2">
+                <Input
+                  value={draftEnvironment.notionTasksTableTarget}
+                  disabled={isSavingEnvironment}
+                  placeholder={t(
+                    "settings.agent.environment.notionTableTargetPlaceholder",
+                  )}
+                  onChange={(event) =>
+                    setDraftEnvironment((current) => ({
+                      ...current,
+                      notionTasksTableTarget: event.target.value,
+                    }))
+                  }
+                  onBlur={(event) =>
+                    saveEnvironmentValue(
+                      "NOTION_TASKS_TABLE_TARGET",
+                      event.target.value,
+                    )
+                  }
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={
+                    !draftEnvironment.notionTasksTableTarget ||
+                    validatingTableTarget === "tasks"
+                  }
+                  onClick={() =>
+                    validateTableTarget(
+                      "tasks",
+                      draftEnvironment.notionTasksTableTarget,
                     )
                   }
                 >
