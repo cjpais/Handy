@@ -251,6 +251,7 @@
         "googleClientId": "Google OAuth Client ID",
         "googleClientSecret": "Google OAuth Client Secret",
         "agentOwnerName": "Local user name",
+        "agentOwnerUserId": "Notion user ID",
         "savedPlaceholder": "Saved locally",
         "emptyPlaceholder": "Not saved",
         "failed": "Failed to save credential",

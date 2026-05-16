@@ -161,12 +161,13 @@ fn build_notion_page_arguments(
     arguments: &Value,
     page_type: &str,
     table_target: Option<String>,
+    owner_name: &str,
 ) -> Value {
     let mut fields = arguments.clone();
     if let Some(field_object) = fields.as_object_mut() {
         field_object
             .entry("ownerName")
-            .or_insert_with(|| Value::String("Jason Walkow".to_string()));
+            .or_insert_with(|| Value::String(owner_name.to_string()));
     }
 
     let primary_name = fields
@@ -222,6 +223,52 @@ fn amount_number(value: &str) -> Option<Value> {
         .ok()
         .filter(|amount| amount.is_finite())
         .map(Value::from)
+}
+
+fn hyphenate_notion_id(id: &str) -> Option<String> {
+    let compact = id.replace('-', "");
+    if compact.len() != 32
+        || !compact
+            .chars()
+            .all(|character| character.is_ascii_hexdigit())
+    {
+        return None;
+    }
+
+    Some(format!(
+        "{}-{}-{}-{}-{}",
+        &compact[0..8],
+        &compact[8..12],
+        &compact[12..16],
+        &compact[16..20],
+        &compact[20..32]
+    ))
+}
+
+fn notion_user_url(id: &str) -> Option<String> {
+    let trimmed = id.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    if trimmed.starts_with("user://") {
+        return Some(trimmed.to_string());
+    }
+    let id = trimmed
+        .rsplit('/')
+        .next()
+        .unwrap_or(trimmed)
+        .trim_start_matches("user:");
+    hyphenate_notion_id(id).map(|hyphenated| format!("user://{}", hyphenated))
+}
+
+fn owner_profile(app: &AppHandle) -> (String, Option<String>) {
+    let owner_name =
+        crate::agent_config::get_config_value(app, crate::agent_config::AGENT_OWNER_NAME)
+            .unwrap_or_else(|| "Jason Walkow".to_string());
+    let owner_user_url =
+        crate::agent_config::get_config_value(app, crate::agent_config::AGENT_OWNER_USER_ID)
+            .and_then(|id| notion_user_url(&id));
+    (owner_name, owner_user_url)
 }
 
 fn relation_table_config(property_name: &str) -> Result<(&'static str, &'static str), String> {
@@ -376,12 +423,18 @@ async fn create_relation_page(
     })
 }
 
-fn build_notion_deal_arguments(arguments: &Value, table_target: String) -> Value {
+fn build_notion_deal_arguments(
+    arguments: &Value,
+    table_target: String,
+    owner_name: &str,
+    owner_user_url: Option<&str>,
+) -> Value {
     let mut fields = arguments.clone();
+    let owner_name_was_provided = string_field(&fields, "ownerName").is_some();
     if let Some(field_object) = fields.as_object_mut() {
         field_object
             .entry("ownerName")
-            .or_insert_with(|| Value::String("Jason Walkow".to_string()));
+            .or_insert_with(|| Value::String(owner_name.to_string()));
     }
 
     let title = string_field(&fields, "dealName")
@@ -399,7 +452,12 @@ fn build_notion_deal_arguments(arguments: &Value, table_target: String) -> Value
             Value::String(contact_name.to_string()),
         );
     }
-    if let Some(owner_name) = string_field(&fields, "ownerName") {
+    if let Some(owner_user_url) = owner_user_url.filter(|_| !owner_name_was_provided) {
+        properties.insert(
+            "Relationship Owner".to_string(),
+            Value::String(owner_user_url.to_string()),
+        );
+    } else if let Some(owner_name) = string_field(&fields, "ownerName") {
         properties.insert(
             "Relationship Owner".to_string(),
             Value::String(owner_name.to_string()),
@@ -461,6 +519,7 @@ pub fn propose_notion_lead(
 ) -> Result<AgentReviewRequest, String> {
     let arguments: Value = serde_json::from_str(&arguments_json)
         .map_err(|error| format!("Invalid Notion lead JSON: {}", error))?;
+    let (owner_name, _) = owner_profile(&app);
     let table_target =
         crate::agent_config::get_config_value(&app, crate::agent_config::NOTION_LEADS_TABLE_TARGET)
             .ok_or_else(|| "Allowed Notion table is not configured: Leads".to_string())?;
@@ -469,8 +528,13 @@ pub fn propose_notion_lead(
         title: "Create Notion lead".to_string(),
         action_name: "notion_lead".to_string(),
         tool_name: "notion_create_page".to_string(),
-        arguments_json: build_notion_page_arguments(&arguments, "Lead", Some(table_target))
-            .to_string(),
+        arguments_json: build_notion_page_arguments(
+            &arguments,
+            "Lead",
+            Some(table_target),
+            &owner_name,
+        )
+        .to_string(),
         status: AgentReviewStatus::Pending,
         result_json: None,
         error: None,
@@ -493,6 +557,7 @@ pub fn propose_notion_deal(
 ) -> Result<AgentReviewRequest, String> {
     let arguments: Value = serde_json::from_str(&arguments_json)
         .map_err(|error| format!("Invalid Notion deal JSON: {}", error))?;
+    let (owner_name, owner_user_url) = owner_profile(&app);
     let table_target =
         crate::agent_config::get_config_value(&app, crate::agent_config::NOTION_DEALS_TABLE_TARGET)
             .ok_or_else(|| "Allowed Notion table is not configured: Deals".to_string())?;
@@ -501,7 +566,13 @@ pub fn propose_notion_deal(
         title: "Create Notion deal".to_string(),
         action_name: "notion_deal".to_string(),
         tool_name: "notion_create_page".to_string(),
-        arguments_json: build_notion_deal_arguments(&arguments, table_target).to_string(),
+        arguments_json: build_notion_deal_arguments(
+            &arguments,
+            table_target,
+            &owner_name,
+            owner_user_url.as_deref(),
+        )
+        .to_string(),
         status: AgentReviewStatus::Pending,
         result_json: None,
         error: None,
@@ -524,6 +595,7 @@ pub fn propose_notion_task(
 ) -> Result<AgentReviewRequest, String> {
     let arguments: Value = serde_json::from_str(&arguments_json)
         .map_err(|error| format!("Invalid Notion task JSON: {}", error))?;
+    let (owner_name, _) = owner_profile(&app);
     let table_target =
         crate::agent_config::get_config_value(&app, crate::agent_config::NOTION_TASKS_TABLE_TARGET)
             .ok_or_else(|| "Allowed Notion table is not configured: Tasks".to_string())?;
@@ -532,8 +604,13 @@ pub fn propose_notion_task(
         title: "Create Notion task".to_string(),
         action_name: "notion_task".to_string(),
         tool_name: "notion_create_page".to_string(),
-        arguments_json: build_notion_page_arguments(&arguments, "Task", Some(table_target))
-            .to_string(),
+        arguments_json: build_notion_page_arguments(
+            &arguments,
+            "Task",
+            Some(table_target),
+            &owner_name,
+        )
+        .to_string(),
         status: AgentReviewStatus::Pending,
         result_json: None,
         error: None,

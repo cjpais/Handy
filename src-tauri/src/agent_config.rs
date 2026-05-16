@@ -11,6 +11,7 @@ const OPENAI_REALTIME_MODEL: &str = "OPENAI_REALTIME_MODEL";
 const GOOGLE_OAUTH_CLIENT_ID: &str = "GOOGLE_OAUTH_CLIENT_ID";
 const GOOGLE_OAUTH_CLIENT_SECRET: &str = "GOOGLE_OAUTH_CLIENT_SECRET";
 pub const AGENT_OWNER_NAME: &str = "AGENT_OWNER_NAME";
+pub const AGENT_OWNER_USER_ID: &str = "AGENT_OWNER_USER_ID";
 pub const NOTION_LEADS_TABLE_TARGET: &str = "NOTION_LEADS_TABLE_TARGET";
 pub const NOTION_DEALS_TABLE_TARGET: &str = "NOTION_DEALS_TABLE_TARGET";
 pub const NOTION_TASKS_TABLE_TARGET: &str = "NOTION_TASKS_TABLE_TARGET";
@@ -35,6 +36,7 @@ pub struct AgentEnvironment {
     pub google_oauth_client_id: String,
     pub google_oauth_client_secret_saved: bool,
     pub agent_owner_name: String,
+    pub agent_owner_user_id: String,
     pub notion_leads_table_target: String,
     pub notion_deals_table_target: String,
     pub notion_tasks_table_target: String,
@@ -119,6 +121,11 @@ pub fn get_agent_environment(app: AppHandle) -> Result<AgentEnvironment, String>
             .cloned()
             .or_else(|| std::env::var(AGENT_OWNER_NAME).ok())
             .unwrap_or_else(|| DEFAULT_AGENT_OWNER_NAME.to_string()),
+        agent_owner_user_id: values
+            .get(AGENT_OWNER_USER_ID)
+            .cloned()
+            .or_else(|| std::env::var(AGENT_OWNER_USER_ID).ok())
+            .unwrap_or_default(),
         notion_leads_table_target: values
             .get(NOTION_LEADS_TABLE_TARGET)
             .cloned()
@@ -160,6 +167,7 @@ pub fn update_agent_environment_value(
         | GOOGLE_OAUTH_CLIENT_ID
         | GOOGLE_OAUTH_CLIENT_SECRET
         | AGENT_OWNER_NAME
+        | AGENT_OWNER_USER_ID
         | NOTION_LEADS_TABLE_TARGET
         | NOTION_DEALS_TABLE_TARGET
         | NOTION_TASKS_TABLE_TARGET

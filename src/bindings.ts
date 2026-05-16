@@ -1021,7 +1021,7 @@ historyUpdatePayload: "history-update-payload"
 
 export type AgentConnectionKind = "remote_mcp" | "google_api"
 export type AgentConnectionStatus = { id: string; name: string; description: string; kind: AgentConnectionKind; connected: boolean; requiresEnv: string[]; missingEnv: string[]; scopes: string[] }
-export type AgentEnvironment = { openaiApiKeySaved: boolean; openaiRealtimeModel: string; googleOauthClientId: string; googleOauthClientSecretSaved: boolean; agentOwnerName: string; notionLeadsTableTarget: string; notionDealsTableTarget: string; notionTasksTableTarget: string; notionCompaniesTableTarget: string; notionContactsTableTarget: string }
+export type AgentEnvironment = { openaiApiKeySaved: boolean; openaiRealtimeModel: string; googleOauthClientId: string; googleOauthClientSecretSaved: boolean; agentOwnerName: string; agentOwnerUserId: string; notionLeadsTableTarget: string; notionDealsTableTarget: string; notionTasksTableTarget: string; notionCompaniesTableTarget: string; notionContactsTableTarget: string }
 export type AgentReviewRequest = { id: string; title: string; actionName: string; toolName: string; argumentsJson: string; status: AgentReviewStatus; resultJson: string | null; error: string | null; resolutionJson: string | null }
 export type AgentReviewStatus = "pending" | "approved" | "cancelled" | "failed"
 export type AgentSessionSnapshot = { status: AgentSessionStatus; lastToolResult: AgentToolResult | null }

@@ -45,6 +45,7 @@ interface AgentEnvironment {
   googleOauthClientId: string;
   googleOauthClientSecretSaved: boolean;
   agentOwnerName: string;
+  agentOwnerUserId: string;
   notionLeadsTableTarget: string;
   notionDealsTableTarget: string;
   notionTasksTableTarget: string;
@@ -67,6 +68,7 @@ const emptyEnvironment: AgentEnvironment = {
   googleOauthClientId: "",
   googleOauthClientSecretSaved: false,
   agentOwnerName: "Jason Walkow",
+  agentOwnerUserId: "",
   notionLeadsTableTarget: "",
   notionDealsTableTarget: "",
   notionTasksTableTarget: "",
@@ -174,6 +176,7 @@ export const AgentSettings: React.FC = () => {
         googleOauthClientSecretSaved:
           nextEnvironment.googleOauthClientSecretSaved,
         agentOwnerName: nextEnvironment.agentOwnerName,
+        agentOwnerUserId: nextEnvironment.agentOwnerUserId,
         notionLeadsTableTarget: nextEnvironment.notionLeadsTableTarget,
         notionDealsTableTarget: nextEnvironment.notionDealsTableTarget,
         notionTasksTableTarget: nextEnvironment.notionTasksTableTarget,
@@ -395,6 +398,28 @@ export const AgentSettings: React.FC = () => {
                 }
                 onBlur={(event) =>
                   saveEnvironmentValue("AGENT_OWNER_NAME", event.target.value)
+                }
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-sm font-medium">
+                {t("settings.agent.environment.agentOwnerUserId")}
+              </span>
+              <Input
+                value={draftEnvironment.agentOwnerUserId}
+                disabled={isSavingEnvironment}
+                placeholder={t("settings.agent.environment.agentOwnerUserId")}
+                onChange={(event) =>
+                  setDraftEnvironment((current) => ({
+                    ...current,
+                    agentOwnerUserId: event.target.value,
+                  }))
+                }
+                onBlur={(event) =>
+                  saveEnvironmentValue(
+                    "AGENT_OWNER_USER_ID",
+                    event.target.value,
+                  )
                 }
               />
             </label>
