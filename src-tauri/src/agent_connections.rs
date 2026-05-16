@@ -1211,13 +1211,101 @@ async fn notion_search(app: &AppHandle, arguments: &Value) -> Result<Value, Stri
     call_mcp_tool(app, "notion", "notion-search", arguments.clone()).await
 }
 
+fn is_broad_task_query(query: &str) -> bool {
+    let normalized = query
+        .trim()
+        .to_ascii_lowercase()
+        .replace('-', " ")
+        .replace('_', " ");
+    let normalized = normalized.split_whitespace().collect::<Vec<_>>().join(" ");
+    normalized.is_empty()
+        || matches!(
+            normalized.as_str(),
+            "all"
+                | "all tasks"
+                | "all task"
+                | "my tasks"
+                | "my task"
+                | "tasks"
+                | "task"
+                | "task list"
+                | "todo"
+                | "todos"
+                | "to dos"
+                | "to do"
+                | "follow ups"
+                | "followups"
+                | "open tasks"
+                | "open task"
+                | "all my tasks"
+                | "all of my tasks"
+        )
+}
+
+fn task_search_queries(query: &str, owner_name: &str, skip_owner_filter: bool) -> Vec<String> {
+    let query = query.trim();
+    if !is_broad_task_query(query) {
+        return vec![query.to_string()];
+    }
+
+    let mut queries = Vec::new();
+    queries.push(String::new());
+
+    if skip_owner_filter {
+        queries.push("task".to_string());
+    } else {
+        queries.push(owner_name.to_string());
+        for term in owner_name
+            .split_whitespace()
+            .map(str::trim)
+            .filter(|term| term.len() >= 3)
+        {
+            queries.push(term.to_string());
+        }
+        queries.push("task".to_string());
+    }
+
+    let mut deduped = Vec::new();
+    for query in queries {
+        if !deduped
+            .iter()
+            .any(|existing: &String| existing.eq_ignore_ascii_case(&query))
+        {
+            deduped.push(query);
+        }
+    }
+    deduped
+}
+
+fn collect_notion_candidates(
+    text: &str,
+    candidates: &mut Vec<crate::agent_review::AgentRelationCandidate>,
+) {
+    for line in text.lines() {
+        for url in notion_urls_in_text(line) {
+            if candidates
+                .iter()
+                .any(|candidate: &crate::agent_review::AgentRelationCandidate| candidate.url == url)
+            {
+                continue;
+            }
+            candidates.push(crate::agent_review::AgentRelationCandidate {
+                title: title_for_url_line(line, &url)
+                    .chars()
+                    .take(90)
+                    .collect::<String>(),
+                url,
+            });
+        }
+    }
+}
+
 async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value, String> {
     let query = arguments
         .get("query")
         .and_then(Value::as_str)
         .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| "Task search query is required".to_string())?;
+        .unwrap_or_default();
     let explicit_owner = arguments
         .get("ownerName")
         .and_then(Value::as_str)
@@ -1248,37 +1336,40 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
         resolve_notion_data_source_id(&client, &connection, session_id.as_deref(), &table_target)
             .await?;
 
-    let result = call_mcp_tool_on_session(
-        &client,
-        &connection,
-        session_id.as_deref(),
-        10,
-        "notion-search",
-        json!({
-            "query": query,
-            "query_type": "internal",
-            "data_source_url": notion_collection_url(&data_source_id)
-        }),
-    )
-    .await?;
-    let text = notion_payload_text(&result);
     let mut candidates = Vec::new();
-    for line in text.lines() {
-        for url in notion_urls_in_text(line) {
-            if candidates
-                .iter()
-                .any(|candidate: &crate::agent_review::AgentRelationCandidate| candidate.url == url)
-            {
-                continue;
+    let mut search_errors = Vec::new();
+    let search_queries = task_search_queries(query, &owner_name, skip_owner_filter);
+    let broad_query = is_broad_task_query(query);
+    for (index, search_query) in search_queries.iter().enumerate() {
+        let result = call_mcp_tool_on_session(
+            &client,
+            &connection,
+            session_id.as_deref(),
+            10 + index as u64,
+            "notion-search",
+            json!({
+                "query": search_query,
+                "query_type": "internal",
+                "data_source_url": notion_collection_url(&data_source_id)
+            }),
+        )
+        .await;
+        match result {
+            Ok(result) => {
+                let text = notion_payload_text(&result);
+                collect_notion_candidates(&text, &mut candidates);
             }
-            candidates.push(crate::agent_review::AgentRelationCandidate {
-                title: title_for_url_line(line, &url)
-                    .chars()
-                    .take(90)
-                    .collect::<String>(),
-                url,
-            });
+            Err(error) => {
+                search_errors.push(format!("{}: {}", search_query, error));
+            }
         }
+    }
+
+    if candidates.is_empty() && !search_errors.is_empty() {
+        log::warn!(
+            "Notion task search returned no candidates. Search errors: {}",
+            search_errors.join(" | ")
+        );
     }
 
     let owner_url = if skip_owner_filter {
@@ -1291,13 +1382,15 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
     };
 
     let mut tasks = Vec::new();
-    for candidate in candidates.iter().take(16) {
+    let fetch_limit = if broad_query { 60 } else { 24 };
+    let result_limit = if broad_query { 12 } else { 8 };
+    for (index, candidate) in candidates.iter().take(fetch_limit).enumerate() {
         if !skip_owner_filter {
             let Ok(page_result) = call_mcp_tool_on_session(
                 &client,
                 &connection,
                 session_id.as_deref(),
-                11,
+                30 + index as u64,
                 "notion-fetch",
                 json!({ "id": candidate.url }),
             )
@@ -1320,14 +1413,15 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
                 format!("Owner: {}", owner_name)
             }
         }));
-        if tasks.len() >= 8 {
+        if tasks.len() >= result_limit {
             break;
         }
     }
 
     Ok(json!({
         "source": "notion_tasks",
-        "query": query,
+        "query": if query.is_empty() { "all tasks" } else { query },
+        "searchQueries": search_queries,
         "ownerName": if skip_owner_filter { Value::Null } else { Value::String(owner_name.clone()) },
         "ownerFilter": if skip_owner_filter { "all" } else { "specific" },
         "searchedTaskCount": candidates.len(),
@@ -1335,9 +1429,16 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
         "tasks": tasks,
         "message": if tasks.is_empty() {
             if skip_owner_filter {
-                format!("No task results matched {}.", query)
+                format!(
+                    "No task results matched {}.",
+                    if query.is_empty() { "all tasks" } else { query }
+                )
             } else {
-                format!("No task results matched {} for {}.", query, owner_name)
+                format!(
+                    "No task results matched {} for {}.",
+                    if query.is_empty() { "all tasks" } else { query },
+                    owner_name
+                )
             }
         } else {
             String::new()
