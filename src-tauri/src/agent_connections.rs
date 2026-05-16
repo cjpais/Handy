@@ -1239,6 +1239,18 @@ fn is_broad_task_query(query: &str) -> bool {
                 | "open task"
                 | "all my tasks"
                 | "all of my tasks"
+                | "done tasks"
+                | "done task"
+                | "completed tasks"
+                | "complete tasks"
+                | "tasks with stage to do"
+                | "tasks with status to do"
+                | "tasks with stage todo"
+                | "tasks with status todo"
+                | "tasks with stage done"
+                | "tasks with status done"
+                | "tasks with stage in progress"
+                | "tasks with status in progress"
         )
 }
 
@@ -1275,6 +1287,167 @@ fn task_search_queries(query: &str, owner_name: &str, skip_owner_filter: bool) -
         }
     }
     deduped
+}
+
+#[derive(Clone, Debug)]
+enum TaskStageFilter {
+    Active,
+    Any,
+    Exact(String),
+}
+
+impl TaskStageFilter {
+    fn label(&self) -> String {
+        match self {
+            TaskStageFilter::Active => "active".to_string(),
+            TaskStageFilter::Any => "all".to_string(),
+            TaskStageFilter::Exact(stage) => stage.clone(),
+        }
+    }
+}
+
+fn normalize_task_stage(value: &str) -> String {
+    let normalized = value
+        .trim()
+        .to_ascii_lowercase()
+        .replace('-', " ")
+        .replace('_', " ");
+    normalized.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn canonical_task_stage(value: &str) -> String {
+    match normalize_task_stage(value).as_str() {
+        "todo" | "to do" => "to do".to_string(),
+        "complete" | "completed" => "done".to_string(),
+        "cancelled" => "canceled".to_string(),
+        stage => stage.to_string(),
+    }
+}
+
+fn task_stage_filter_from_value(value: &str) -> TaskStageFilter {
+    match canonical_task_stage(value).as_str() {
+        "all" | "any" | "all stages" | "all statuses" | "include done" | "including done" => {
+            TaskStageFilter::Any
+        }
+        "active" | "open" | "not done" | "incomplete" => TaskStageFilter::Active,
+        "to do" => TaskStageFilter::Exact("To Do".to_string()),
+        "in progress" => TaskStageFilter::Exact("In Progress".to_string()),
+        "done" => TaskStageFilter::Exact("Done".to_string()),
+        "canceled" => TaskStageFilter::Exact("Canceled".to_string()),
+        stage => TaskStageFilter::Exact(stage.to_string()),
+    }
+}
+
+fn task_stage_filter(arguments: &Value, query: &str) -> TaskStageFilter {
+    if let Some(stage) = arguments
+        .get("stage")
+        .or_else(|| arguments.get("status"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        return task_stage_filter_from_value(stage);
+    }
+
+    let normalized_query = normalize_task_stage(query);
+    if normalized_query.contains("all stages")
+        || normalized_query.contains("all statuses")
+        || normalized_query.contains("include done")
+        || normalized_query.contains("including done")
+    {
+        return TaskStageFilter::Any;
+    }
+    if normalized_query.contains("done")
+        || normalized_query.contains("completed")
+        || normalized_query.contains("complete tasks")
+    {
+        return TaskStageFilter::Exact("Done".to_string());
+    }
+    if normalized_query.contains("stage to do")
+        || normalized_query.contains("status to do")
+        || normalized_query.contains("stage todo")
+        || normalized_query.contains("status todo")
+    {
+        return TaskStageFilter::Exact("To Do".to_string());
+    }
+    if normalized_query.contains("in progress") {
+        return TaskStageFilter::Exact("In Progress".to_string());
+    }
+    if normalized_query.contains("blocked") {
+        return TaskStageFilter::Exact("Blocked".to_string());
+    }
+
+    TaskStageFilter::Active
+}
+
+fn notion_properties_text(text: &str) -> Option<&str> {
+    let start = text.find("<properties>")? + "<properties>".len();
+    let after_start = &text[start..];
+    let end = after_start.find("</properties>")?;
+    Some(after_start[..end].trim())
+}
+
+fn notion_property_string(value: &Value) -> Option<String> {
+    match value {
+        Value::String(text) => {
+            let text = text.trim();
+            if text.is_empty()
+                || text == "<omitted />"
+                || text.starts_with("formulaResult://")
+                || text.starts_with("<mention-user ")
+            {
+                None
+            } else {
+                Some(text.to_string())
+            }
+        }
+        Value::Array(items) => {
+            let values = items
+                .iter()
+                .filter_map(notion_property_string)
+                .collect::<Vec<_>>();
+            if values.is_empty() {
+                None
+            } else {
+                Some(values.join(", "))
+            }
+        }
+        Value::Bool(value) => Some(value.to_string()),
+        Value::Number(value) => Some(value.to_string()),
+        _ => None,
+    }
+}
+
+fn notion_page_property(text: &str, names: &[&str]) -> Option<String> {
+    let properties = notion_properties_text(text)?;
+    let value = serde_json::from_str::<Value>(properties).ok()?;
+    let object = value.as_object()?;
+    names
+        .iter()
+        .find_map(|name| object.get(*name).and_then(notion_property_string))
+}
+
+fn task_stage_from_page(text: &str) -> Option<String> {
+    notion_page_property(text, &["Stage", "Status"])
+}
+
+fn is_terminal_task_stage(stage: &str) -> bool {
+    matches!(
+        canonical_task_stage(stage).as_str(),
+        "done" | "canceled" | "cancelled" | "closed" | "archived" | "abandoned" | "missed"
+    )
+}
+
+fn task_matches_stage_filter(stage: Option<&str>, filter: &TaskStageFilter) -> bool {
+    match filter {
+        TaskStageFilter::Any => true,
+        TaskStageFilter::Active => stage
+            .map(|stage| !is_terminal_task_stage(stage))
+            .unwrap_or(true),
+        TaskStageFilter::Exact(expected) => stage
+            .map(|stage| canonical_task_stage(stage) == canonical_task_stage(expected))
+            .unwrap_or(false),
+    }
 }
 
 fn collect_notion_candidates(
@@ -1335,11 +1508,13 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
     let data_source_id =
         resolve_notion_data_source_id(&client, &connection, session_id.as_deref(), &table_target)
             .await?;
+    let task_data_source_url = notion_collection_url(&data_source_id);
 
     let mut candidates = Vec::new();
     let mut search_errors = Vec::new();
     let search_queries = task_search_queries(query, &owner_name, skip_owner_filter);
     let broad_query = is_broad_task_query(query);
+    let stage_filter = task_stage_filter(arguments, query);
     for (index, search_query) in search_queries.iter().enumerate() {
         let result = call_mcp_tool_on_session(
             &client,
@@ -1350,7 +1525,7 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
             json!({
                 "query": search_query,
                 "query_type": "internal",
-                "data_source_url": notion_collection_url(&data_source_id)
+                "data_source_url": task_data_source_url.clone()
             }),
         )
         .await;
@@ -1385,33 +1560,49 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
     let fetch_limit = if broad_query { 60 } else { 24 };
     let result_limit = if broad_query { 12 } else { 8 };
     for (index, candidate) in candidates.iter().take(fetch_limit).enumerate() {
+        let Ok(page_result) = call_mcp_tool_on_session(
+            &client,
+            &connection,
+            session_id.as_deref(),
+            30 + index as u64,
+            "notion-fetch",
+            json!({ "id": candidate.url }),
+        )
+        .await
+        else {
+            continue;
+        };
+        let page_text = notion_payload_text(&page_result);
+        if !page_has_parent_data_source(&page_text, &task_data_source_url) {
+            continue;
+        }
+
         if !skip_owner_filter {
-            let Ok(page_result) = call_mcp_tool_on_session(
-                &client,
-                &connection,
-                session_id.as_deref(),
-                30 + index as u64,
-                "notion-fetch",
-                json!({ "id": candidate.url }),
-            )
-            .await
-            else {
-                continue;
-            };
-            let page_text = notion_payload_text(&page_result);
             if !notion_page_matches_owner(&page_text, &owner_name, owner_url.as_deref()) {
                 continue;
             }
         }
 
+        let stage = task_stage_from_page(&page_text);
+        if !task_matches_stage_filter(stage.as_deref(), &stage_filter) {
+            continue;
+        }
+
+        let mut detail_parts = Vec::new();
+        if skip_owner_filter {
+            detail_parts.push("Owner filter: all owners".to_string());
+        } else {
+            detail_parts.push(format!("Owner: {}", owner_name));
+        }
+        if let Some(stage) = &stage {
+            detail_parts.push(format!("Stage: {}", stage));
+        }
+
         tasks.push(json!({
             "title": candidate.title,
             "url": candidate.url,
-            "detail": if skip_owner_filter {
-                "Owner filter: all owners".to_string()
-            } else {
-                format!("Owner: {}", owner_name)
-            }
+            "stage": stage,
+            "detail": detail_parts.join(" | ")
         }));
         if tasks.len() >= result_limit {
             break;
@@ -1424,6 +1615,7 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
         "searchQueries": search_queries,
         "ownerName": if skip_owner_filter { Value::Null } else { Value::String(owner_name.clone()) },
         "ownerFilter": if skip_owner_filter { "all" } else { "specific" },
+        "stageFilter": stage_filter.label(),
         "searchedTaskCount": candidates.len(),
         "count": tasks.len(),
         "tasks": tasks,

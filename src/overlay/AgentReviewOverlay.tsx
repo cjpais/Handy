@@ -178,7 +178,7 @@ function collectUrlItems(value: unknown, items: ToolResultItem[] = []) {
           "company",
         ]) ?? url,
       detail:
-        firstString(record, ["snippet", "description", "text", "body"]) ??
+        firstString(record, ["detail", "stage", "snippet", "description", "text", "body"]) ??
         undefined,
       url,
     });
