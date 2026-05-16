@@ -1261,10 +1261,9 @@ fn task_search_queries(query: &str, owner_name: &str, skip_owner_filter: bool) -
     }
 
     let mut queries = Vec::new();
-    queries.push(String::new());
+    queries.push("task".to_string());
 
     if skip_owner_filter {
-        queries.push("task".to_string());
     } else {
         queries.push(owner_name.to_string());
         for term in owner_name
@@ -1274,7 +1273,7 @@ fn task_search_queries(query: &str, owner_name: &str, skip_owner_filter: bool) -
         {
             queries.push(term.to_string());
         }
-        queries.push("task".to_string());
+        queries.push(format!("{} task", owner_name));
     }
 
     let mut deduped = Vec::new();
@@ -1431,6 +1430,43 @@ fn task_stage_from_page(text: &str) -> Option<String> {
     notion_page_property(text, &["Stage", "Status"])
 }
 
+fn notion_property_raw_text(value: &Value) -> String {
+    match value {
+        Value::String(text) => text.to_string(),
+        Value::Array(items) => items
+            .iter()
+            .map(notion_property_raw_text)
+            .filter(|text| !text.trim().is_empty())
+            .collect::<Vec<_>>()
+            .join(" "),
+        Value::Object(object) => object
+            .values()
+            .map(notion_property_raw_text)
+            .filter(|text| !text.trim().is_empty())
+            .collect::<Vec<_>>()
+            .join(" "),
+        Value::Bool(value) => value.to_string(),
+        Value::Number(value) => value.to_string(),
+        _ => String::new(),
+    }
+}
+
+fn notion_page_property_raw_text(text: &str, names: &[&str]) -> Option<String> {
+    let properties = notion_properties_text(text)?;
+    let value = serde_json::from_str::<Value>(properties).ok()?;
+    let object = value.as_object()?;
+    names
+        .iter()
+        .filter_map(|name| object.get(*name))
+        .map(notion_property_raw_text)
+        .map(|text| text.trim().to_string())
+        .find(|text| !text.is_empty())
+}
+
+fn task_owner_from_page(text: &str) -> Option<String> {
+    notion_page_property_raw_text(text, &["Owner", "Assignee", "Assigned To"])
+}
+
 fn is_terminal_task_stage(stage: &str) -> bool {
     matches!(
         canonical_task_stage(stage).as_str(),
@@ -1525,7 +1561,9 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
             json!({
                 "query": search_query,
                 "query_type": "internal",
-                "data_source_url": task_data_source_url.clone()
+                "data_source_url": task_data_source_url.clone(),
+                "page_size": 25,
+                "max_highlight_length": 0
             }),
         )
         .await;
@@ -1547,8 +1585,16 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
         );
     }
 
+    let configured_owner_url = if skip_owner_filter || explicit_owner.is_some() {
+        None
+    } else {
+        crate::agent_config::get_config_value(app, crate::agent_config::AGENT_OWNER_USER_ID)
+            .map(|id| notion_user_url(&id))
+    };
     let owner_url = if skip_owner_filter {
         None
+    } else if configured_owner_url.is_some() {
+        configured_owner_url
     } else {
         notion_search_user_url_on_session(&client, &connection, session_id.as_deref(), &owner_name)
             .await
@@ -1956,14 +2002,15 @@ fn page_has_parent_data_source(text: &str, data_source_url: &str) -> bool {
 }
 
 fn notion_page_matches_owner(text: &str, owner_name: &str, owner_url: Option<&str>) -> bool {
-    if owner_url
-        .map(|url| !url.is_empty() && text.contains(url))
-        .unwrap_or(false)
-    {
-        return true;
+    let Some(owner_text) = task_owner_from_page(text) else {
+        return false;
+    };
+
+    if let Some(owner_url) = owner_url.filter(|url| !url.is_empty()) {
+        return owner_text.contains(owner_url);
     }
 
-    let lower_text = text.to_ascii_lowercase();
+    let lower_text = owner_text.to_ascii_lowercase();
     let lower_owner = owner_name.trim().to_ascii_lowercase();
     if lower_owner.is_empty() {
         return false;
