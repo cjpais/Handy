@@ -4,10 +4,10 @@
   "version": "0.8.3",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "bun --bun vite",
+    "build": "tsc && bun --bun vite build",
     "preview": "vite preview",
-    "tauri": "tauri",
+    "tauri": "bash scripts/tauri.sh",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write . && cd src-tauri && cargo fmt",
