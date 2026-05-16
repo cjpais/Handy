@@ -247,6 +247,7 @@
         "title": "Agent Credentials",
         "description": "Store local credentials used by the voice agent. Shell environment variables still work as fallback.",
         "openaiApiKey": "OpenAI API Key",
+        "notionApiKey": "Notion API Key",
         "realtimeModel": "Realtime Model",
         "googleClientId": "Google OAuth Client ID",
         "googleClientSecret": "Google OAuth Client Secret",

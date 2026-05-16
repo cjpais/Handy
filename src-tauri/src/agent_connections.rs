@@ -18,6 +18,7 @@ use tauri_plugin_store::StoreExt;
 const STORE_PATH: &str = "agent_connections_store.json";
 const USER_AGENT: &str = "unburdn-agent/0.1";
 const TOOL_HTTP_TIMEOUT_SECS: u64 = 20;
+const NOTION_API_VERSION: &str = "2026-03-11";
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -1509,6 +1510,419 @@ fn collect_notion_candidates(
     }
 }
 
+fn notion_api_uuid(id: &str) -> Option<String> {
+    let id = id
+        .strip_prefix("collection://")
+        .or_else(|| id.strip_prefix("user://"))
+        .unwrap_or(id);
+    hyphenate_notion_id(id)
+}
+
+fn notion_api_property<'a>(page: &'a Value, name: &str) -> Option<&'a Value> {
+    page.get("properties")?.get(name)
+}
+
+fn notion_api_plain_text(items: Option<&Value>) -> Option<String> {
+    let text = items?
+        .as_array()?
+        .iter()
+        .filter_map(|item| item.get("plain_text").and_then(Value::as_str))
+        .collect::<Vec<_>>()
+        .join("");
+    if text.trim().is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
+fn notion_api_property_text(property: &Value) -> Option<String> {
+    let property_type = property.get("type").and_then(Value::as_str);
+    let text = match property_type {
+        Some("title") => notion_api_plain_text(property.get("title")),
+        Some("rich_text") => notion_api_plain_text(property.get("rich_text")),
+        Some("select") => property
+            .pointer("/select/name")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        Some("status") => property
+            .pointer("/status/name")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        Some("people") => {
+            let names = property
+                .get("people")
+                .and_then(Value::as_array)?
+                .iter()
+                .filter_map(|person| person.get("name").and_then(Value::as_str))
+                .collect::<Vec<_>>();
+            if names.is_empty() {
+                None
+            } else {
+                Some(names.join(", "))
+            }
+        }
+        Some("date") => property
+            .pointer("/date/start")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        Some("checkbox") => property
+            .get("checkbox")
+            .and_then(Value::as_bool)
+            .map(|value| value.to_string()),
+        Some("number") => property.get("number").map(|value| value.to_string()),
+        Some("url") => property
+            .get("url")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        Some("email") => property
+            .get("email")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        Some("phone_number") => property
+            .get("phone_number")
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        _ => None,
+    }?;
+
+    if text.trim().is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
+fn notion_api_page_title(page: &Value) -> String {
+    if let Some(title) = notion_api_property(page, "Name").and_then(notion_api_property_text) {
+        return title;
+    }
+
+    if let Some(properties) = page.get("properties").and_then(Value::as_object) {
+        for property in properties.values() {
+            if property.get("type").and_then(Value::as_str) == Some("title") {
+                if let Some(title) = notion_api_property_text(property) {
+                    return title;
+                }
+            }
+        }
+    }
+
+    page.get("id")
+        .and_then(Value::as_str)
+        .unwrap_or("(Untitled)")
+        .to_string()
+}
+
+fn notion_api_task_stage(page: &Value) -> Option<String> {
+    notion_api_property(page, "Stage")
+        .or_else(|| notion_api_property(page, "Status"))
+        .and_then(notion_api_property_text)
+}
+
+fn notion_api_task_owner(page: &Value) -> Option<String> {
+    notion_api_property(page, "Owner")
+        .or_else(|| notion_api_property(page, "Assignee"))
+        .or_else(|| notion_api_property(page, "Assigned To"))
+        .and_then(notion_api_property_text)
+}
+
+fn notion_api_task_matches_owner(
+    page: &Value,
+    owner_name: &str,
+    owner_user_id: Option<&str>,
+) -> bool {
+    let Some(owner_property) = notion_api_property(page, "Owner")
+        .or_else(|| notion_api_property(page, "Assignee"))
+        .or_else(|| notion_api_property(page, "Assigned To"))
+    else {
+        return false;
+    };
+
+    if let Some(owner_user_id) = owner_user_id {
+        let owner_user_id = owner_user_id.replace('-', "");
+        if owner_property
+            .get("people")
+            .and_then(Value::as_array)
+            .map(|people| {
+                people.iter().any(|person| {
+                    person
+                        .get("id")
+                        .and_then(Value::as_str)
+                        .map(|id| id.replace('-', "") == owner_user_id)
+                        .unwrap_or(false)
+                })
+            })
+            .unwrap_or(false)
+        {
+            return true;
+        }
+    }
+
+    let Some(owner_text) = notion_api_property_text(owner_property) else {
+        return false;
+    };
+    let lower_text = owner_text.to_ascii_lowercase();
+    let lower_owner = owner_name.trim().to_ascii_lowercase();
+    if lower_owner.is_empty() {
+        return false;
+    }
+    if lower_text.contains(&lower_owner) {
+        return true;
+    }
+    let terms = lower_owner
+        .split_whitespace()
+        .filter(|term| term.len() >= 2)
+        .collect::<Vec<_>>();
+    !terms.is_empty() && terms.iter().all(|term| lower_text.contains(term))
+}
+
+fn notion_api_task_filter(
+    query: &str,
+    owner_user_id: Option<&str>,
+    skip_owner_filter: bool,
+) -> Option<Value> {
+    let mut filters = Vec::new();
+
+    if !skip_owner_filter {
+        if let Some(owner_user_id) = owner_user_id {
+            filters.push(json!({
+                "property": "Owner",
+                "people": { "contains": owner_user_id }
+            }));
+        }
+    }
+
+    if !is_broad_task_query(query) {
+        filters.push(json!({
+            "property": "Name",
+            "title": { "contains": query.trim() }
+        }));
+    }
+
+    match filters.len() {
+        0 => None,
+        1 => filters.into_iter().next(),
+        _ => Some(json!({ "and": filters })),
+    }
+}
+
+async fn notion_api_resolve_data_source_id(
+    app: &AppHandle,
+    target: &str,
+) -> Result<String, String> {
+    let api_key = crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY)
+        .ok_or_else(|| "NOTION_API_KEY is not configured".to_string())?;
+    let target = raw_notion_table_url(target);
+    let id = notion_api_uuid(&extract_notion_id(&target))
+        .ok_or_else(|| format!("Invalid Notion target ID: {}", target))?;
+    let client = tool_http_client()?;
+
+    let data_source_response = client
+        .get(format!("https://api.notion.com/v1/data_sources/{}", id))
+        .bearer_auth(&api_key)
+        .header("Notion-Version", NOTION_API_VERSION)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await
+        .map_err(|error| format!("Notion data source lookup failed: {}", error))?;
+    if data_source_response.status().is_success() {
+        return Ok(id);
+    }
+    let data_source_status = data_source_response.status();
+    let data_source_error = data_source_response.text().await.unwrap_or_default();
+
+    let database_response = client
+        .get(format!("https://api.notion.com/v1/databases/{}", id))
+        .bearer_auth(&api_key)
+        .header("Notion-Version", NOTION_API_VERSION)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await
+        .map_err(|error| format!("Notion database lookup failed: {}", error))?;
+    let status = database_response.status();
+    if !status.is_success() {
+        return Err(format!(
+            "Notion target lookup failed. data source lookup: {} {}; database lookup: {} {}",
+            data_source_status,
+            data_source_error,
+            status,
+            database_response.text().await.unwrap_or_default()
+        ));
+    }
+    let body: Value = database_response
+        .json()
+        .await
+        .map_err(|error| format!("Invalid Notion database lookup response: {}", error))?;
+    body.get("data_sources")
+        .and_then(Value::as_array)
+        .and_then(|items| items.first())
+        .and_then(|item| item.get("id"))
+        .and_then(Value::as_str)
+        .and_then(notion_api_uuid)
+        .ok_or_else(|| "Notion database lookup did not include a data source ID".to_string())
+}
+
+async fn notion_api_search_tasks(
+    app: &AppHandle,
+    data_source_id: &str,
+    query: &str,
+    owner_name: &str,
+    owner_user_url: Option<&str>,
+    skip_owner_filter: bool,
+    stage_filter: &TaskStageFilter,
+) -> Result<Value, String> {
+    let api_key = crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY)
+        .ok_or_else(|| "NOTION_API_KEY is not configured".to_string())?;
+    let data_source_id = notion_api_uuid(data_source_id)
+        .ok_or_else(|| format!("Invalid Notion data source ID: {}", data_source_id))?;
+    let owner_user_id = if skip_owner_filter {
+        None
+    } else {
+        owner_user_url.and_then(notion_api_uuid)
+    };
+    let broad_query = is_broad_task_query(query);
+    let result_limit = if broad_query { 25 } else { 12 };
+    let max_scanned = if broad_query { 500 } else { 150 };
+    let filter = notion_api_task_filter(query, owner_user_id.as_deref(), skip_owner_filter);
+    let client = tool_http_client()?;
+    let mut start_cursor: Option<String> = None;
+    let mut scanned_count = 0usize;
+    let mut tasks = Vec::new();
+    let mut stopped_early = false;
+
+    loop {
+        let mut body = json!({
+            "page_size": 100
+        });
+        if let Some(filter) = filter.clone() {
+            body["filter"] = filter;
+        }
+        if let Some(cursor) = &start_cursor {
+            body["start_cursor"] = Value::String(cursor.clone());
+        }
+
+        let response = client
+            .post(format!(
+                "https://api.notion.com/v1/data_sources/{}/query",
+                data_source_id
+            ))
+            .bearer_auth(&api_key)
+            .header("Notion-Version", NOTION_API_VERSION)
+            .header("Content-Type", "application/json")
+            .header("User-Agent", USER_AGENT)
+            .json(&body)
+            .send()
+            .await
+            .map_err(|error| format!("Notion data source query failed: {}", error))?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(format!(
+                "Notion data source query failed with {}: {}",
+                status,
+                response.text().await.unwrap_or_default()
+            ));
+        }
+        let body: Value = response
+            .json()
+            .await
+            .map_err(|error| format!("Invalid Notion data source query response: {}", error))?;
+        let results = body
+            .get("results")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        scanned_count += results.len();
+
+        for page in results {
+            if !skip_owner_filter
+                && !notion_api_task_matches_owner(&page, owner_name, owner_user_id.as_deref())
+            {
+                continue;
+            }
+
+            let stage = notion_api_task_stage(&page);
+            if !task_matches_stage_filter(stage.as_deref(), stage_filter) {
+                continue;
+            }
+
+            let mut detail_parts = Vec::new();
+            if skip_owner_filter {
+                detail_parts.push("Owner filter: all owners".to_string());
+            } else if let Some(owner) = notion_api_task_owner(&page) {
+                detail_parts.push(format!("Owner: {}", owner));
+            } else {
+                detail_parts.push(format!("Owner: {}", owner_name));
+            }
+            if let Some(stage) = &stage {
+                detail_parts.push(format!("Stage: {}", stage));
+            }
+
+            tasks.push(json!({
+                "title": notion_api_page_title(&page),
+                "url": page.get("url").and_then(Value::as_str).unwrap_or_default(),
+                "stage": stage,
+                "detail": detail_parts.join(" | ")
+            }));
+
+            if tasks.len() >= result_limit {
+                stopped_early = true;
+                break;
+            }
+        }
+
+        if stopped_early || scanned_count >= max_scanned {
+            stopped_early = true;
+            break;
+        }
+
+        if body
+            .get("has_more")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
+            start_cursor = body
+                .get("next_cursor")
+                .and_then(Value::as_str)
+                .map(str::to_string);
+            if start_cursor.is_none() {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    Ok(json!({
+        "source": "notion_tasks_api",
+        "query": if query.is_empty() { "all tasks" } else { query },
+        "ownerName": if skip_owner_filter { Value::Null } else { Value::String(owner_name.to_string()) },
+        "ownerUserId": owner_user_id,
+        "ownerFilter": if skip_owner_filter { "all" } else { "specific" },
+        "stageFilter": stage_filter.label(),
+        "searchedTaskCount": scanned_count,
+        "count": tasks.len(),
+        "moreAvailable": stopped_early,
+        "tasks": tasks,
+        "message": if tasks.is_empty() {
+            if skip_owner_filter {
+                format!(
+                    "No task results matched {}.",
+                    if query.is_empty() { "all tasks" } else { query }
+                )
+            } else {
+                format!(
+                    "No task results matched {} for {}.",
+                    if query.is_empty() { "all tasks" } else { query },
+                    owner_name
+                )
+            }
+        } else {
+            String::new()
+        }
+    }))
+}
+
 async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value, String> {
     let query = arguments
         .get("query")
@@ -1537,6 +1951,27 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
     let table_target =
         crate::agent_config::get_config_value(app, crate::agent_config::NOTION_TASKS_TABLE_TARGET)
             .ok_or_else(|| "Allowed Notion table is not configured: Tasks".to_string())?;
+    let stage_filter = task_stage_filter(arguments, query);
+    let configured_owner_url = if skip_owner_filter || explicit_owner.is_some() {
+        None
+    } else {
+        crate::agent_config::get_config_value(app, crate::agent_config::AGENT_OWNER_USER_ID)
+            .map(|id| notion_user_url(&id))
+    };
+
+    if crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY).is_some() {
+        let data_source_id = notion_api_resolve_data_source_id(app, &table_target).await?;
+        return notion_api_search_tasks(
+            app,
+            &data_source_id,
+            query,
+            &owner_name,
+            configured_owner_url.as_deref(),
+            skip_owner_filter,
+            &stage_filter,
+        )
+        .await;
+    }
 
     let connection = stored_connection(app, "notion").await?;
     let client = reqwest::Client::new();
@@ -1550,7 +1985,6 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
     let mut search_errors = Vec::new();
     let search_queries = task_search_queries(query, &owner_name, skip_owner_filter);
     let broad_query = is_broad_task_query(query);
-    let stage_filter = task_stage_filter(arguments, query);
     for (index, search_query) in search_queries.iter().enumerate() {
         let result = call_mcp_tool_on_session(
             &client,
@@ -1585,12 +2019,6 @@ async fn notion_search_tasks(app: &AppHandle, arguments: &Value) -> Result<Value
         );
     }
 
-    let configured_owner_url = if skip_owner_filter || explicit_owner.is_some() {
-        None
-    } else {
-        crate::agent_config::get_config_value(app, crate::agent_config::AGENT_OWNER_USER_ID)
-            .map(|id| notion_user_url(&id))
-    };
     let owner_url = if skip_owner_filter {
         None
     } else if configured_owner_url.is_some() {
@@ -1868,6 +2296,11 @@ pub async fn validate_agent_notion_table_target(
     app: AppHandle,
     target: String,
 ) -> Result<NotionTableValidation, String> {
+    if crate::agent_config::get_config_value(&app, crate::agent_config::NOTION_API_KEY).is_some() {
+        let data_source_id = notion_api_resolve_data_source_id(&app, &target).await?;
+        return Ok(NotionTableValidation { data_source_id });
+    }
+
     let connection = stored_connection(&app, "notion").await?;
     let client = reqwest::Client::new();
     let session_id = initialize_mcp_session(&client, &connection).await?;
@@ -1886,6 +2319,642 @@ fn property_has_type(schema_text: &str, property_name: &str, property_type: &str
     after_property
         .to_ascii_lowercase()
         .contains(&property_type.to_ascii_lowercase())
+}
+
+fn relation_data_source_from_schema(schema_text: &str, property_name: &str) -> Option<String> {
+    let start = schema_text.find("<data-source-state>")? + "<data-source-state>".len();
+    let after_start = &schema_text[start..];
+    let end = after_start.find("</data-source-state>")?;
+    let state = serde_json::from_str::<Value>(after_start[..end].trim()).ok()?;
+    state
+        .pointer(&format!("/schema/{}/dataSourceUrl", property_name))
+        .and_then(Value::as_str)
+        .map(|value| value.to_string())
+}
+
+fn normalize_checkbox_properties(
+    schema_text: &str,
+    properties: &mut serde_json::Map<String, Value>,
+) {
+    let checkbox_updates = properties
+        .iter()
+        .filter_map(|(property_name, value)| {
+            value
+                .as_bool()
+                .filter(|_| property_has_type(schema_text, property_name, "checkbox"))
+                .map(|checked| {
+                    (
+                        property_name.clone(),
+                        Value::String(if checked { "__YES__" } else { "__NO__" }.to_string()),
+                    )
+                })
+        })
+        .collect::<Vec<_>>();
+
+    for (property_name, value) in checkbox_updates {
+        properties.insert(property_name, value);
+    }
+}
+
+async fn notion_api_get_data_source(
+    app: &AppHandle,
+    data_source_id: &str,
+) -> Result<Value, String> {
+    let api_key = crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY)
+        .ok_or_else(|| "NOTION_API_KEY is not configured".to_string())?;
+    let data_source_id = notion_api_uuid(data_source_id)
+        .ok_or_else(|| format!("Invalid Notion data source ID: {}", data_source_id))?;
+    let response = tool_http_client()?
+        .get(format!(
+            "https://api.notion.com/v1/data_sources/{}",
+            data_source_id
+        ))
+        .bearer_auth(&api_key)
+        .header("Notion-Version", NOTION_API_VERSION)
+        .header("User-Agent", USER_AGENT)
+        .send()
+        .await
+        .map_err(|error| format!("Notion data source lookup failed: {}", error))?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!(
+            "Notion data source lookup failed with {}: {}",
+            status,
+            response.text().await.unwrap_or_default()
+        ));
+    }
+    response
+        .json()
+        .await
+        .map_err(|error| format!("Invalid Notion data source response: {}", error))
+}
+
+fn notion_api_schema_properties(data_source: &Value) -> Option<&serde_json::Map<String, Value>> {
+    data_source.get("properties").and_then(Value::as_object)
+}
+
+fn notion_api_schema_property_type(schema_property: &Value) -> Option<&str> {
+    schema_property.get("type").and_then(Value::as_str)
+}
+
+fn notion_api_title_property_name(data_source: &Value) -> Option<String> {
+    notion_api_schema_properties(data_source)?
+        .iter()
+        .find_map(|(name, property)| {
+            (notion_api_schema_property_type(property) == Some("title")).then(|| name.clone())
+        })
+}
+
+fn notion_api_text_value(value: &Value) -> Option<String> {
+    match value {
+        Value::String(text) => {
+            let text = text.trim();
+            (!text.is_empty()).then(|| text.to_string())
+        }
+        Value::Number(number) => Some(number.to_string()),
+        Value::Bool(value) => Some(value.to_string()),
+        _ => None,
+    }
+}
+
+fn notion_api_checkbox_value(value: &Value) -> Option<bool> {
+    match value {
+        Value::Bool(value) => Some(*value),
+        Value::String(text) => match text.trim().to_ascii_lowercase().as_str() {
+            "__yes__" | "yes" | "true" | "1" | "checked" => Some(true),
+            "__no__" | "no" | "false" | "0" | "unchecked" => Some(false),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+fn notion_api_number_value(value: &Value) -> Option<f64> {
+    if let Some(number) = value.as_f64() {
+        return number.is_finite().then_some(number);
+    }
+    let text = value.as_str()?;
+    let numeric = text
+        .chars()
+        .filter(|character| character.is_ascii_digit() || *character == '.' || *character == '-')
+        .collect::<String>();
+    numeric
+        .parse::<f64>()
+        .ok()
+        .filter(|number| number.is_finite())
+}
+
+fn notion_api_text_object(text: &str) -> Value {
+    let content = text.chars().take(1900).collect::<String>();
+    json!({
+        "type": "text",
+        "text": { "content": content }
+    })
+}
+
+fn notion_api_page_id_from_value(value: &Value) -> Option<String> {
+    let text = notion_api_text_value(value)?;
+    notion_api_uuid(&extract_notion_id(&text))
+}
+
+fn notion_api_user_id_from_literal(value: &Value) -> Option<String> {
+    let text = notion_api_text_value(value)?;
+    notion_api_uuid(&text)
+}
+
+fn notion_api_relation_target_from_schema(schema_property: &Value) -> Option<String> {
+    schema_property
+        .pointer("/relation/data_source_id")
+        .or_else(|| schema_property.pointer("/relation/database_id"))
+        .and_then(Value::as_str)
+        .and_then(notion_api_uuid)
+}
+
+async fn notion_api_find_user_id(app: &AppHandle, query: &str) -> Result<Option<String>, String> {
+    let query = query.trim();
+    if query.is_empty() {
+        return Ok(None);
+    }
+    if let Some(id) = notion_api_uuid(query) {
+        return Ok(Some(id));
+    }
+
+    let api_key = crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY)
+        .ok_or_else(|| "NOTION_API_KEY is not configured".to_string())?;
+    let client = tool_http_client()?;
+    let mut start_cursor: Option<String> = None;
+    let query_lower = query.to_ascii_lowercase();
+    let query_terms = query_lower
+        .split_whitespace()
+        .filter(|term| term.len() >= 2)
+        .collect::<Vec<_>>();
+
+    loop {
+        let mut request = client
+            .get("https://api.notion.com/v1/users")
+            .bearer_auth(&api_key)
+            .header("Notion-Version", NOTION_API_VERSION)
+            .header("User-Agent", USER_AGENT)
+            .query(&[("page_size", "100")]);
+        if let Some(cursor) = &start_cursor {
+            request = request.query(&[("start_cursor", cursor.as_str())]);
+        }
+        let response = request
+            .send()
+            .await
+            .map_err(|error| format!("Notion user lookup failed: {}", error))?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(format!(
+                "Notion user lookup failed with {}: {}",
+                status,
+                response.text().await.unwrap_or_default()
+            ));
+        }
+        let body: Value = response
+            .json()
+            .await
+            .map_err(|error| format!("Invalid Notion user lookup response: {}", error))?;
+        for user in body
+            .get("results")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let name = user
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let email = user
+                .pointer("/person/email")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_ascii_lowercase();
+            let haystack = format!("{} {}", name, email);
+            if haystack.contains(&query_lower)
+                || (!query_terms.is_empty()
+                    && query_terms.iter().all(|term| haystack.contains(term)))
+            {
+                return Ok(user
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .and_then(notion_api_uuid));
+            }
+        }
+
+        if body
+            .get("has_more")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+        {
+            start_cursor = body
+                .get("next_cursor")
+                .and_then(Value::as_str)
+                .map(str::to_string);
+            if start_cursor.is_none() {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    Ok(None)
+}
+
+async fn notion_api_relation_target_id(
+    app: &AppHandle,
+    schema_property: &Value,
+    property_name: &str,
+) -> Result<String, String> {
+    let configured_target = match property_name {
+        "Client" => crate::agent_config::get_config_value(
+            app,
+            crate::agent_config::NOTION_COMPANIES_TABLE_TARGET,
+        ),
+        "Contacts" => crate::agent_config::get_config_value(
+            app,
+            crate::agent_config::NOTION_CONTACTS_TABLE_TARGET,
+        ),
+        _ => None,
+    };
+
+    if let Some(target) = configured_target.filter(|target| !target.trim().is_empty()) {
+        return notion_api_resolve_data_source_id(app, &target).await;
+    }
+
+    notion_api_relation_target_from_schema(schema_property).ok_or_else(|| {
+        format!(
+            "Could not determine the allowed relation target for {}.",
+            property_name
+        )
+    })
+}
+
+async fn notion_api_relation_candidates(
+    app: &AppHandle,
+    data_source_id: &str,
+    query: &str,
+) -> Result<Vec<crate::agent_review::AgentRelationCandidate>, String> {
+    let data_source = notion_api_get_data_source(app, data_source_id).await?;
+    let title_property =
+        notion_api_title_property_name(&data_source).unwrap_or_else(|| "Name".to_string());
+    let api_key = crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY)
+        .ok_or_else(|| "NOTION_API_KEY is not configured".to_string())?;
+    let data_source_id = notion_api_uuid(data_source_id)
+        .ok_or_else(|| format!("Invalid Notion data source ID: {}", data_source_id))?;
+
+    let mut search_queries = vec![query.trim().to_string()];
+    for term in query
+        .split_whitespace()
+        .map(str::trim)
+        .filter(|term| term.len() >= 3)
+    {
+        if !search_queries
+            .iter()
+            .any(|existing| existing.eq_ignore_ascii_case(term))
+        {
+            search_queries.push(term.to_string());
+        }
+    }
+
+    let client = tool_http_client()?;
+    let mut candidates = Vec::new();
+    for search_query in search_queries {
+        let mut body = json!({ "page_size": 5 });
+        if !search_query.trim().is_empty() {
+            body["filter"] = json!({
+                "property": title_property,
+                "title": { "contains": search_query.trim() }
+            });
+        }
+
+        let response = client
+            .post(format!(
+                "https://api.notion.com/v1/data_sources/{}/query",
+                data_source_id
+            ))
+            .bearer_auth(&api_key)
+            .header("Notion-Version", NOTION_API_VERSION)
+            .header("Content-Type", "application/json")
+            .header("User-Agent", USER_AGENT)
+            .json(&body)
+            .send()
+            .await
+            .map_err(|error| format!("Notion relation lookup failed: {}", error))?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(format!(
+                "Notion relation lookup failed with {}: {}",
+                status,
+                response.text().await.unwrap_or_default()
+            ));
+        }
+        let body: Value = response
+            .json()
+            .await
+            .map_err(|error| format!("Invalid Notion relation lookup response: {}", error))?;
+        for page in body
+            .get("results")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let Some(url) = page.get("url").and_then(Value::as_str) else {
+                continue;
+            };
+            if candidates
+                .iter()
+                .any(|candidate: &crate::agent_review::AgentRelationCandidate| candidate.url == url)
+            {
+                continue;
+            }
+            candidates.push(crate::agent_review::AgentRelationCandidate {
+                title: notion_api_page_title(page),
+                url: url.to_string(),
+            });
+            if candidates.len() >= 5 {
+                return Ok(candidates);
+            }
+        }
+    }
+
+    Ok(candidates)
+}
+
+async fn notion_api_request_relation_selection(
+    app: &AppHandle,
+    schema_property: &Value,
+    property_name: &str,
+    query: &str,
+) -> Result<(), String> {
+    let data_source_id = notion_api_relation_target_id(app, schema_property, property_name).await?;
+    let candidates = notion_api_relation_candidates(app, &data_source_id, query).await?;
+    let record_type = match property_name {
+        "Client" => "company",
+        "Contacts" => "contact",
+        "Deal" => "deal",
+        "Engagement" => "engagement",
+        "Projects" => "project",
+        "Thread" => "thread",
+        _ => "record",
+    };
+    let can_create = matches!(property_name, "Client" | "Contacts");
+    Err(crate::agent_review::relation_selection_error(
+        crate::agent_review::AgentRelationSelection {
+            property_name: property_name.to_string(),
+            record_type: record_type.to_string(),
+            query: query.to_string(),
+            message: if candidates.is_empty() {
+                format!(
+                    "No existing {} matched {}. Create a new one, or paste a known Notion page URL.",
+                    record_type, query
+                )
+            } else {
+                format!(
+                    "Choose the {} for {}, or create a new one.",
+                    record_type, query
+                )
+            },
+            candidates,
+            can_create,
+        },
+    ))
+}
+
+async fn notion_api_property_value(
+    app: &AppHandle,
+    data_source: &Value,
+    schema_property: &Value,
+    property_name: &str,
+    raw_value: &Value,
+) -> Result<Option<Value>, String> {
+    let Some(property_type) = notion_api_schema_property_type(schema_property) else {
+        return Ok(None);
+    };
+
+    if property_type == "multi_select" {
+        let names = match raw_value {
+            Value::Array(items) => items
+                .iter()
+                .filter_map(notion_api_text_value)
+                .collect::<Vec<_>>(),
+            _ => notion_api_text_value(raw_value)
+                .map(|text| {
+                    text.split(',')
+                        .map(str::trim)
+                        .filter(|name| !name.is_empty())
+                        .map(str::to_string)
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default(),
+        };
+        if names.is_empty() {
+            return Ok(None);
+        }
+        return Ok(Some(json!({
+            "multi_select": names
+                .into_iter()
+                .map(|name| json!({ "name": name }))
+                .collect::<Vec<_>>()
+        })));
+    }
+
+    let Some(text) = notion_api_text_value(raw_value) else {
+        if property_type == "checkbox" {
+            return Ok(
+                notion_api_checkbox_value(raw_value).map(|value| json!({ "checkbox": value }))
+            );
+        }
+        return Ok(None);
+    };
+
+    let property_value = match property_type {
+        "title" => json!({ "title": [notion_api_text_object(&text)] }),
+        "rich_text" => json!({ "rich_text": [notion_api_text_object(&text)] }),
+        "number" => {
+            let Some(number) = notion_api_number_value(raw_value) else {
+                return Ok(None);
+            };
+            json!({ "number": number })
+        }
+        "select" => json!({ "select": { "name": text } }),
+        "status" => json!({ "status": { "name": text } }),
+        "date" => json!({ "date": { "start": text } }),
+        "checkbox" => {
+            let Some(checked) = notion_api_checkbox_value(raw_value) else {
+                return Ok(None);
+            };
+            json!({ "checkbox": checked })
+        }
+        "people" => {
+            let user_id = notion_api_user_id_from_literal(raw_value).or_else(|| {
+                if text.starts_with("user://") {
+                    notion_api_uuid(&text)
+                } else {
+                    None
+                }
+            });
+            let user_id = match user_id {
+                Some(user_id) => user_id,
+                None => notion_api_find_user_id(app, &text)
+                    .await?
+                    .ok_or_else(|| format!("Could not find Notion user for {}.", text))?,
+            };
+            json!({ "people": [{ "id": user_id }] })
+        }
+        "relation" => {
+            if let Some(page_id) = notion_api_page_id_from_value(raw_value) {
+                json!({ "relation": [{ "id": page_id }] })
+            } else {
+                notion_api_request_relation_selection(app, schema_property, property_name, &text)
+                    .await?;
+                return Ok(None);
+            }
+        }
+        "url" => json!({ "url": text }),
+        "email" => json!({ "email": text }),
+        "phone_number" => json!({ "phone_number": text }),
+        _ => {
+            let _ = data_source;
+            return Ok(None);
+        }
+    };
+
+    Ok(Some(property_value))
+}
+
+async fn notion_api_page_properties(
+    app: &AppHandle,
+    data_source: &Value,
+    raw_properties: &serde_json::Map<String, Value>,
+) -> Result<serde_json::Map<String, Value>, String> {
+    let schema = notion_api_schema_properties(data_source)
+        .ok_or_else(|| "Notion data source response did not include properties".to_string())?;
+    let mut properties = serde_json::Map::new();
+    let title_property_name = notion_api_title_property_name(data_source);
+
+    for (property_name, schema_property) in schema {
+        let raw_value = raw_properties.get(property_name).or_else(|| {
+            if title_property_name.as_deref() == Some(property_name.as_str()) {
+                raw_properties
+                    .get("title")
+                    .or_else(|| raw_properties.get("Name"))
+                    .or_else(|| raw_properties.get("name"))
+            } else {
+                None
+            }
+        });
+        let Some(raw_value) = raw_value else {
+            continue;
+        };
+        if let Some(value) =
+            notion_api_property_value(app, data_source, schema_property, property_name, raw_value)
+                .await?
+        {
+            properties.insert(property_name.clone(), value);
+        }
+    }
+
+    if !properties
+        .values()
+        .any(|value| value.get("title").is_some())
+    {
+        if let Some(title_property_name) = title_property_name {
+            if let Some(title) = raw_properties
+                .get("title")
+                .or_else(|| raw_properties.get("Name"))
+                .or_else(|| raw_properties.get("name"))
+                .and_then(notion_api_text_value)
+            {
+                properties.insert(
+                    title_property_name,
+                    json!({ "title": [notion_api_text_object(&title)] }),
+                );
+            }
+        }
+    }
+
+    Ok(properties)
+}
+
+fn notion_api_children_from_content(content: Option<&str>) -> Option<Vec<Value>> {
+    let content = content?.trim();
+    if content.is_empty() {
+        return None;
+    }
+    Some(vec![json!({
+        "object": "block",
+        "type": "paragraph",
+        "paragraph": {
+            "rich_text": [notion_api_text_object(content)]
+        }
+    })])
+}
+
+async fn notion_create_page_via_api(app: &AppHandle, arguments: &Value) -> Result<Value, String> {
+    let target = arguments
+        .pointer("/parent/data_source_id")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "Notion API create requires parent.data_source_id".to_string())?;
+    let data_source_id = notion_api_resolve_data_source_id(app, target).await?;
+    let data_source = notion_api_get_data_source(app, &data_source_id).await?;
+    let page = arguments
+        .get("pages")
+        .and_then(Value::as_array)
+        .and_then(|pages| pages.first())
+        .ok_or_else(|| "Notion create requires at least one page".to_string())?;
+    let raw_properties = page
+        .get("properties")
+        .and_then(Value::as_object)
+        .ok_or_else(|| "Notion create page requires properties".to_string())?;
+    let properties = notion_api_page_properties(app, &data_source, raw_properties).await?;
+    let api_key = crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY)
+        .ok_or_else(|| "NOTION_API_KEY is not configured".to_string())?;
+    let mut body = json!({
+        "parent": {
+            "type": "data_source_id",
+            "data_source_id": data_source_id
+        },
+        "properties": properties
+    });
+    if let Some(children) =
+        notion_api_children_from_content(page.get("content").and_then(Value::as_str))
+    {
+        body["children"] = Value::Array(children);
+    }
+
+    let response = tool_http_client()?
+        .post("https://api.notion.com/v1/pages")
+        .bearer_auth(&api_key)
+        .header("Notion-Version", NOTION_API_VERSION)
+        .header("Content-Type", "application/json")
+        .header("User-Agent", USER_AGENT)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|error| format!("Notion page create failed: {}", error))?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!(
+            "Notion page create failed with {}: {}",
+            status,
+            response.text().await.unwrap_or_default()
+        ));
+    }
+    let page: Value = response
+        .json()
+        .await
+        .map_err(|error| format!("Invalid Notion page create response: {}", error))?;
+    Ok(json!({
+        "source": "notion_api",
+        "pages": [{
+            "id": page.get("id").cloned().unwrap_or(Value::Null),
+            "url": page.get("url").cloned().unwrap_or(Value::Null),
+            "properties": page.get("properties").cloned().unwrap_or(Value::Null)
+        }]
+    }))
 }
 
 fn notion_urls_in_text(text: &str) -> Vec<String> {
@@ -2167,6 +3236,7 @@ async fn request_relation_selection_if_needed(
     client: &reqwest::Client,
     connection: &StoredConnection,
     session_id: Option<&str>,
+    schema_text: &str,
     properties: &serde_json::Map<String, Value>,
     property_name: &str,
 ) -> Result<(), String> {
@@ -2174,6 +3244,13 @@ async fn request_relation_selection_if_needed(
         return Ok(());
     };
     if query.starts_with("https://www.notion.so/") {
+        return Ok(());
+    }
+
+    let schema_relation_target = relation_data_source_from_schema(schema_text, property_name);
+    if !property_has_type(schema_text, property_name, "relation")
+        && schema_relation_target.is_none()
+    {
         return Ok(());
     }
 
@@ -2187,15 +3264,17 @@ async fn request_relation_selection_if_needed(
             crate::agent_config::NOTION_CONTACTS_TABLE_TARGET,
         ),
         _ => None,
-    }
-    .ok_or_else(|| {
-        format!(
-            "Allowed Notion relation table is not configured: {}",
-            property_name
-        )
-    })?;
+    };
+    let relation_target = configured_target
+        .or(schema_relation_target)
+        .ok_or_else(|| {
+            format!(
+                "Could not determine the allowed relation target for {}.",
+                property_name
+            )
+        })?;
     let data_source_id =
-        resolve_notion_data_source_id(client, connection, session_id, &configured_target).await?;
+        resolve_notion_data_source_id(client, connection, session_id, &relation_target).await?;
     let data_source_url = notion_collection_url(&data_source_id);
     let candidates = notion_relation_candidates_on_session(
         client,
@@ -2208,8 +3287,13 @@ async fn request_relation_selection_if_needed(
     let record_type = match property_name {
         "Client" => "company",
         "Contacts" => "contact",
+        "Deal" => "deal",
+        "Engagement" => "engagement",
+        "Projects" => "project",
+        "Thread" => "thread",
         _ => "record",
     };
+    let can_create = matches!(property_name, "Client" | "Contacts");
 
     Err(crate::agent_review::relation_selection_error(
         crate::agent_review::AgentRelationSelection {
@@ -2228,7 +3312,7 @@ async fn request_relation_selection_if_needed(
                 )
             },
             candidates,
-            can_create: true,
+            can_create,
         },
     ))
 }
@@ -2341,29 +3425,54 @@ async fn normalize_notion_parent(
                 &notion_collection_url(&data_source_id),
             )
             .await?;
-            request_relation_selection_if_needed(
-                app, client, connection, session_id, properties, "Client",
-            )
-            .await?;
-            request_relation_selection_if_needed(
-                app, client, connection, session_id, properties, "Contacts",
-            )
-            .await?;
-            replace_people_with_user_id(
-                client,
-                connection,
-                session_id,
-                properties,
-                &schema_text,
+            normalize_checkbox_properties(&schema_text, properties);
+            for property_name in [
+                "Client",
+                "Contacts",
+                "Deal",
+                "Engagement",
+                "Projects",
+                "Thread",
+            ] {
+                request_relation_selection_if_needed(
+                    app,
+                    client,
+                    connection,
+                    session_id,
+                    &schema_text,
+                    properties,
+                    property_name,
+                )
+                .await?;
+            }
+            for property_name in [
                 "Relationship Owner",
-            )
-            .await?;
+                "Owner",
+                "Contributor(s)",
+                "Reviewer(s)",
+            ] {
+                replace_people_with_user_id(
+                    client,
+                    connection,
+                    session_id,
+                    properties,
+                    &schema_text,
+                    property_name,
+                )
+                .await?;
+            }
         }
     }
     Ok(normalized)
 }
 
 async fn notion_create_page(app: &AppHandle, arguments: &Value) -> Result<Value, String> {
+    if crate::agent_config::get_config_value(app, crate::agent_config::NOTION_API_KEY).is_some()
+        && arguments.pointer("/parent/data_source_id").is_some()
+    {
+        return notion_create_page_via_api(app, arguments).await;
+    }
+
     let connection = stored_connection(app, "notion").await?;
     let client = reqwest::Client::new();
     let session_id = initialize_mcp_session(&client, &connection).await?;

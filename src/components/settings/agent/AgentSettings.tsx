@@ -44,6 +44,7 @@ interface AgentEnvironment {
   openaiRealtimeModel: string;
   googleOauthClientId: string;
   googleOauthClientSecretSaved: boolean;
+  notionApiKeySaved: boolean;
   agentOwnerName: string;
   agentOwnerUserId: string;
   notionLeadsTableTarget: string;
@@ -67,6 +68,7 @@ const emptyEnvironment: AgentEnvironment = {
   openaiRealtimeModel: "gpt-realtime",
   googleOauthClientId: "",
   googleOauthClientSecretSaved: false,
+  notionApiKeySaved: false,
   agentOwnerName: "Jason Walkow",
   agentOwnerUserId: "",
   notionLeadsTableTarget: "",
@@ -95,6 +97,7 @@ export const AgentSettings: React.FC = () => {
     string | null
   >(null);
   const [openaiApiKeyDraft, setOpenaiApiKeyDraft] = useState("");
+  const [notionApiKeyDraft, setNotionApiKeyDraft] = useState("");
   const [googleClientSecretDraft, setGoogleClientSecretDraft] = useState("");
   const isRunning = session.status === "running";
 
@@ -175,6 +178,7 @@ export const AgentSettings: React.FC = () => {
         googleOauthClientId: nextEnvironment.googleOauthClientId,
         googleOauthClientSecretSaved:
           nextEnvironment.googleOauthClientSecretSaved,
+        notionApiKeySaved: nextEnvironment.notionApiKeySaved,
         agentOwnerName: nextEnvironment.agentOwnerName,
         agentOwnerUserId: nextEnvironment.agentOwnerUserId,
         notionLeadsTableTarget: nextEnvironment.notionLeadsTableTarget,
@@ -192,6 +196,9 @@ export const AgentSettings: React.FC = () => {
       }
       if (key === "GOOGLE_OAUTH_CLIENT_SECRET") {
         setGoogleClientSecretDraft("");
+      }
+      if (key === "NOTION_API_KEY") {
+        setNotionApiKeyDraft("");
       }
     } catch (error) {
       toast.error(t("settings.agent.environment.failed"), {
@@ -309,6 +316,28 @@ export const AgentSettings: React.FC = () => {
                 onBlur={(event) => {
                   if (event.target.value) {
                     saveEnvironmentValue("OPENAI_API_KEY", event.target.value);
+                  }
+                }}
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <KeyRound className="h-4 w-4" />
+                {t("settings.agent.environment.notionApiKey")}
+              </span>
+              <Input
+                type="password"
+                value={notionApiKeyDraft}
+                disabled={isSavingEnvironment}
+                placeholder={
+                  environment.notionApiKeySaved
+                    ? t("settings.agent.environment.savedPlaceholder")
+                    : t("settings.agent.environment.emptyPlaceholder")
+                }
+                onChange={(event) => setNotionApiKeyDraft(event.target.value)}
+                onBlur={(event) => {
+                  if (event.target.value) {
+                    saveEnvironmentValue("NOTION_API_KEY", event.target.value);
                   }
                 }}
               />

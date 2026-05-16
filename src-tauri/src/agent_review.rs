@@ -487,6 +487,166 @@ fn build_notion_deal_arguments(
     })
 }
 
+fn normalize_task_stage(value: &str) -> String {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "todo" | "to do" | "open" | "not started" => "To Do".to_string(),
+        "doing" | "in progress" | "started" => "Doing".to_string(),
+        "waiting" | "waiting response" | "waiting for response" => {
+            "Waiting for Response".to_string()
+        }
+        "review" | "ready for review" => "Ready for Review".to_string(),
+        "reviewed" | "reviewed and ready" | "reviewed & ready" => "Reviewed & Ready".to_string(),
+        "done" | "complete" | "completed" => "Done".to_string(),
+        "blocked" => "Blocked".to_string(),
+        "hold" | "on hold" => "On Hold".to_string(),
+        "abandoned" => "Abandoned".to_string(),
+        "missed" => "Missed".to_string(),
+        other => other.to_string(),
+    }
+}
+
+fn normalize_priority(value: &str) -> String {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "high" | "urgent" | "p0" | "p1" => "High".to_string(),
+        "medium" | "med" | "normal" | "p2" => "Medium".to_string(),
+        "low" | "p3" | "p4" => "Low".to_string(),
+        other => other.to_string(),
+    }
+}
+
+fn append_task_description_line(description: &mut String, label: &str, value: &str) {
+    if value.trim().is_empty() {
+        return;
+    }
+    if !description.trim().is_empty() {
+        description.push('\n');
+    }
+    description.push_str(label);
+    description.push_str(": ");
+    description.push_str(value.trim());
+}
+
+fn build_notion_task_arguments(
+    arguments: &Value,
+    table_target: String,
+    owner_name: &str,
+    owner_user_url: Option<&str>,
+) -> Value {
+    let mut fields = arguments.clone();
+    let owner_name_was_provided = string_field(&fields, "ownerName").is_some();
+    if let Some(field_object) = fields.as_object_mut() {
+        field_object
+            .entry("ownerName")
+            .or_insert_with(|| Value::String(owner_name.to_string()));
+    }
+
+    let title = string_field(&fields, "taskName")
+        .or_else(|| string_field(&fields, "title"))
+        .or_else(|| string_field(&fields, "name"))
+        .unwrap_or("Untitled Task");
+    let mut properties = serde_json::Map::new();
+    properties.insert("Name".to_string(), Value::String(title.to_string()));
+
+    if let Some(owner_user_url) = owner_user_url.filter(|_| !owner_name_was_provided) {
+        properties.insert(
+            "Owner".to_string(),
+            Value::String(owner_user_url.to_string()),
+        );
+    } else if let Some(owner_name) = string_field(&fields, "ownerName") {
+        properties.insert("Owner".to_string(), Value::String(owner_name.to_string()));
+    }
+
+    let stage = string_field(&fields, "stage")
+        .or_else(|| string_field(&fields, "status"))
+        .map(normalize_task_stage)
+        .unwrap_or_else(|| "To Do".to_string());
+    properties.insert("Stage".to_string(), Value::String(stage));
+
+    if let Some(due_date) = string_field(&fields, "dueDate") {
+        properties.insert("Due Date".to_string(), Value::String(due_date.to_string()));
+    }
+    if let Some(priority) = string_field(&fields, "priority") {
+        properties.insert(
+            "Priority Level".to_string(),
+            Value::String(normalize_priority(priority)),
+        );
+    }
+    if let Some(client) = string_field(&fields, "relatedCompany")
+        .or_else(|| string_field(&fields, "company"))
+        .or_else(|| string_field(&fields, "client"))
+    {
+        properties.insert("Client".to_string(), Value::String(client.to_string()));
+    }
+    if let Some(deal) = string_field(&fields, "relatedDeal")
+        .or_else(|| string_field(&fields, "deal"))
+        .or_else(|| string_field(&fields, "dealName"))
+    {
+        properties.insert("Deal".to_string(), Value::String(deal.to_string()));
+    }
+    if let Some(engagement) =
+        string_field(&fields, "relatedEngagement").or_else(|| string_field(&fields, "engagement"))
+    {
+        properties.insert(
+            "Engagement".to_string(),
+            Value::String(engagement.to_string()),
+        );
+    }
+    if let Some(client_task_type) =
+        string_field(&fields, "clientTaskType").or_else(|| string_field(&fields, "taskType"))
+    {
+        properties.insert(
+            "Client Task Type".to_string(),
+            Value::String(client_task_type.to_string()),
+        );
+    }
+    if let Some(team) = string_field(&fields, "team") {
+        properties.insert("Team".to_string(), Value::String(team.to_string()));
+    }
+    if let Some(client_task) = fields.get("clientTask").and_then(Value::as_bool) {
+        properties.insert(
+            "Client Task".to_string(),
+            Value::String(if client_task { "__YES__" } else { "__NO__" }.to_string()),
+        );
+    } else if properties.contains_key("Client")
+        || properties.contains_key("Deal")
+        || properties.contains_key("Engagement")
+    {
+        properties.insert(
+            "Client Task".to_string(),
+            Value::String("__YES__".to_string()),
+        );
+    }
+
+    let mut description = string_field(&fields, "notes")
+        .or_else(|| string_field(&fields, "description"))
+        .unwrap_or_default()
+        .to_string();
+    if let Some(contact) =
+        string_field(&fields, "relatedContact").or_else(|| string_field(&fields, "contactName"))
+    {
+        append_task_description_line(&mut description, "Related contact", contact);
+    }
+    if let Some(next_step) = string_field(&fields, "nextStep") {
+        append_task_description_line(&mut description, "Next step", next_step);
+    }
+    if !description.trim().is_empty() {
+        properties.insert("Description".to_string(), Value::String(description));
+    }
+
+    json!({
+        "pages": [
+            {
+                "properties": Value::Object(properties),
+                "content": serde_json::to_string_pretty(&fields).unwrap_or_else(|_| fields.to_string())
+            }
+        ],
+        "parent": {
+            "type": "data_source_id",
+            "data_source_id": table_target.trim()
+        }
+    })
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn get_agent_review(app: AppHandle) -> Result<Option<AgentReviewRequest>, String> {
@@ -595,7 +755,7 @@ pub fn propose_notion_task(
 ) -> Result<AgentReviewRequest, String> {
     let arguments: Value = serde_json::from_str(&arguments_json)
         .map_err(|error| format!("Invalid Notion task JSON: {}", error))?;
-    let (owner_name, _) = owner_profile(&app);
+    let (owner_name, owner_user_url) = owner_profile(&app);
     let table_target =
         crate::agent_config::get_config_value(&app, crate::agent_config::NOTION_TASKS_TABLE_TARGET)
             .ok_or_else(|| "Allowed Notion table is not configured: Tasks".to_string())?;
@@ -604,11 +764,11 @@ pub fn propose_notion_task(
         title: "Create Notion task".to_string(),
         action_name: "notion_task".to_string(),
         tool_name: "notion_create_page".to_string(),
-        arguments_json: build_notion_page_arguments(
+        arguments_json: build_notion_task_arguments(
             &arguments,
-            "Task",
-            Some(table_target),
+            table_target,
             &owner_name,
+            owner_user_url.as_deref(),
         )
         .to_string(),
         status: AgentReviewStatus::Pending,

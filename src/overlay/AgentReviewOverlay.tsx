@@ -81,7 +81,11 @@ const TASK_FIELD_ORDER = [
   "priority",
   "status",
   "relatedCompany",
+  "relatedDeal",
+  "relatedEngagement",
   "relatedContact",
+  "clientTaskType",
+  "team",
   "notes",
 ];
 

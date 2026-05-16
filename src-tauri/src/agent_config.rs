@@ -10,6 +10,7 @@ const OPENAI_API_KEY: &str = "OPENAI_API_KEY";
 const OPENAI_REALTIME_MODEL: &str = "OPENAI_REALTIME_MODEL";
 const GOOGLE_OAUTH_CLIENT_ID: &str = "GOOGLE_OAUTH_CLIENT_ID";
 const GOOGLE_OAUTH_CLIENT_SECRET: &str = "GOOGLE_OAUTH_CLIENT_SECRET";
+pub const NOTION_API_KEY: &str = "NOTION_API_KEY";
 pub const AGENT_OWNER_NAME: &str = "AGENT_OWNER_NAME";
 pub const AGENT_OWNER_USER_ID: &str = "AGENT_OWNER_USER_ID";
 pub const NOTION_LEADS_TABLE_TARGET: &str = "NOTION_LEADS_TABLE_TARGET";
@@ -35,6 +36,7 @@ pub struct AgentEnvironment {
     pub openai_realtime_model: String,
     pub google_oauth_client_id: String,
     pub google_oauth_client_secret_saved: bool,
+    pub notion_api_key_saved: bool,
     pub agent_owner_name: String,
     pub agent_owner_user_id: String,
     pub notion_leads_table_target: String,
@@ -116,6 +118,7 @@ pub fn get_agent_environment(app: AppHandle) -> Result<AgentEnvironment, String>
             .unwrap_or_default(),
         google_oauth_client_secret_saved: get_config_value(&app, GOOGLE_OAUTH_CLIENT_SECRET)
             .is_some(),
+        notion_api_key_saved: get_config_value(&app, NOTION_API_KEY).is_some(),
         agent_owner_name: values
             .get(AGENT_OWNER_NAME)
             .cloned()
@@ -166,6 +169,7 @@ pub fn update_agent_environment_value(
         | OPENAI_REALTIME_MODEL
         | GOOGLE_OAUTH_CLIENT_ID
         | GOOGLE_OAUTH_CLIENT_SECRET
+        | NOTION_API_KEY
         | AGENT_OWNER_NAME
         | AGENT_OWNER_USER_ID
         | NOTION_LEADS_TABLE_TARGET
