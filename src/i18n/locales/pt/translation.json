@@ -482,9 +482,17 @@
         "label": "Pós-Processamento",
         "description": "Habilitar refinamento de texto com IA após a transcrição"
       },
-      "muteWhileRecording": {
-        "label": "Silenciar Durante Gravação",
-        "description": "Silenciar áudio do sistema durante a gravação"
+      "reduceVolumeWhileRecording": {
+        "label": "Reduce Volume While Recording",
+        "description": "Lower system audio during recording, then restore the original volume"
+      },
+      "recordingVolumeReduction": {
+        "label": "Recording Volume Reduction",
+        "description": "How much to lower system audio while recording"
+      },
+      "recordingVolumeFade": {
+        "label": "Recording Volume Fade Time",
+        "description": "How long the volume fade in and out should take, in milliseconds"
       },
       "appendTrailingSpace": {
         "label": "Adicionar Espaço Final",

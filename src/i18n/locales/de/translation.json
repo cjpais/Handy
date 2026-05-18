@@ -482,9 +482,17 @@
         "label": "Nachbearbeitung",
         "description": "KI-gestützte Textverfeinerung nach der Transkription aktivieren"
       },
-      "muteWhileRecording": {
-        "label": "Während Aufnahme stummschalten",
-        "description": "Systemaudio während der Aufnahme stummschalten"
+      "reduceVolumeWhileRecording": {
+        "label": "Reduce Volume While Recording",
+        "description": "Lower system audio during recording, then restore the original volume"
+      },
+      "recordingVolumeReduction": {
+        "label": "Recording Volume Reduction",
+        "description": "How much to lower system audio while recording"
+      },
+      "recordingVolumeFade": {
+        "label": "Recording Volume Fade Time",
+        "description": "How long the volume fade in and out should take, in milliseconds"
       },
       "appendTrailingSpace": {
         "label": "Leerzeichen anhängen",

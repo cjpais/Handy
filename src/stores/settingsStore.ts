@@ -133,8 +133,12 @@ const settingUpdaters: {
     commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
-  mute_while_recording: (value) =>
-    commands.changeMuteWhileRecordingSetting(value as boolean),
+  reduce_volume_while_recording: (value) =>
+    commands.changeReduceVolumeWhileRecordingSetting(value as boolean),
+  recording_volume_reduction_percent: (value) =>
+    commands.changeRecordingVolumeReductionSetting(value as number),
+  recording_volume_fade_ms: (value) =>
+    commands.changeRecordingVolumeFadeSetting(value as number),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
