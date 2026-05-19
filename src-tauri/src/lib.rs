@@ -7,6 +7,7 @@ mod autostart;
 mod catalog;
 pub mod cli;
 mod clipboard;
+mod command_hook;
 mod commands;
 mod helpers;
 mod input;
