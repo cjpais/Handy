@@ -56,6 +56,32 @@ fn build_command(hook_path: &Path) -> Command {
     Command::new(hook_path)
 }
 
+/// Context handed to the command hook as environment variables.
+///
+/// v1 populates `clipboard` only; `active_app` and `selected_text` are kept so
+/// v2 can fill them without changing this interface.
+pub struct CommandContext {
+    pub active_app: Option<String>,
+    pub clipboard: Option<String>,
+    pub selected_text: Option<String>,
+}
+
+/// Builds the `(name, value)` environment pairs for the hook. Only fields that
+/// are `Some` are emitted, so a script can distinguish "absent" from "empty".
+pub fn build_env(ctx: &CommandContext) -> Vec<(String, String)> {
+    let mut env = Vec::new();
+    if let Some(v) = &ctx.active_app {
+        env.push(("HANDY_ACTIVE_APP".to_string(), v.clone()));
+    }
+    if let Some(v) = &ctx.clipboard {
+        env.push(("HANDY_CLIPBOARD".to_string(), v.clone()));
+    }
+    if let Some(v) = &ctx.selected_text {
+        env.push(("HANDY_SELECTED_TEXT".to_string(), v.clone()));
+    }
+    env
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -79,6 +105,29 @@ mod tests {
     fn build_command_runs_unix_script_directly() {
         let cmd = build_command(Path::new("/data/hooks/command"));
         assert_eq!(cmd.get_program(), "/data/hooks/command");
+    }
+
+    #[test]
+    fn build_env_emits_only_present_fields() {
+        let ctx = CommandContext {
+            active_app: None,
+            clipboard: Some("hello".to_string()),
+            selected_text: None,
+        };
+        assert_eq!(
+            build_env(&ctx),
+            vec![("HANDY_CLIPBOARD".to_string(), "hello".to_string())]
+        );
+    }
+
+    #[test]
+    fn build_env_is_empty_when_no_context() {
+        let ctx = CommandContext {
+            active_app: None,
+            clipboard: None,
+            selected_text: None,
+        };
+        assert!(build_env(&ctx).is_empty());
     }
 
     #[cfg(windows)]
