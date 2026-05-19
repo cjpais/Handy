@@ -17,8 +17,10 @@ bun install
 
 # Run in development mode
 bun run tauri dev
-# If cmake error on macOS:
-CMAKE_POLICY_VERSION_MINIMUM=3.5 bun run tauri dev
+# On macOS, `bun run tauri` is wired to scripts/tauri.sh, which handles
+# CMake 4.x policy compatibility, Apple SDK env vars, and resolving an
+# arm64 node binary (sidestepping Bun's x64 node shim). No manual
+# CMAKE_POLICY_VERSION_MINIMUM prefix is needed on this fork.
 
 # Build for production
 bun run tauri build
