@@ -20,6 +20,9 @@ mod tray;
 mod tray_i18n;
 mod utils;
 
+// === Goldfish === non-upstream modules; see docs/fork-strategy.md
+mod goldfish;
+
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};
@@ -292,6 +295,9 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    // === Goldfish === register Goldfish-only state after upstream managers
+    goldfish::register_state(app_handle);
 }
 
 #[tauri::command]
@@ -426,6 +432,8 @@ pub fn run(cli_args: CliArgs) {
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,
+            // === Goldfish === keep Goldfish commands at the end for predictable merges
+            goldfish::commands::goldfish_ping,
         ])
         .events(collect_events![managers::history::HistoryUpdatePayload,]);
 
