@@ -10,7 +10,10 @@ This folder is for **your** tracking: architecture notes, fork strategy, and dec
 |----------|---------|
 | [codebase-overview.md](./codebase-overview.md) | What is in the repo today: stack, layout, runtime flow |
 | [fork-strategy.md](./fork-strategy.md) | How to treat Handy as an engine, extend Goldfish, stay synced with upstream |
+| [scaffold.md](./scaffold.md) | Concrete spec for the initial `goldfish/` scaffold and `lib.rs` edits |
 | [decisions.md](./decisions.md) | Log of product and technical decisions (update as you go) |
+
+The merge workflow and merge log live at the repo root in [UPSTREAM.md](../UPSTREAM.md).
 
 ## Repo context
 
