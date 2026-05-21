@@ -36,6 +36,8 @@ pub fn check_custom_sounds(app: AppHandle) -> CustomSounds {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AudioDevice {
+    /// Opaque device identifier for UI keys. Numeric on cpal-backed platforms;
+    /// CoreAudio UID on macOS.
     pub index: String,
     pub name: String,
     pub is_default: bool,
@@ -179,6 +181,37 @@ pub fn get_microphone_mode(app: AppHandle) -> Result<bool, String> {
 #[tauri::command]
 #[specta::specta]
 pub fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
+    #[cfg(target_os = "macos")]
+    {
+        match crate::macos_audio::list_audio_devices() {
+            Ok(devices) => {
+                let mut result = vec![AudioDevice {
+                    index: "default".to_string(),
+                    name: "Default".to_string(),
+                    is_default: true,
+                }];
+
+                result.extend(
+                    devices
+                        .into_iter()
+                        .filter(|device| device.input_channels > 0)
+                        .map(|device| AudioDevice {
+                            index: device.uid,
+                            name: device.name,
+                            // The synthetic "Default" option owns the default state.
+                            is_default: false,
+                        }),
+                );
+
+                return Ok(result);
+            }
+            Err(error) => warn!(
+                "CoreAudio microphone enumeration failed; falling back to cpal: {}",
+                error
+            ),
+        }
+    }
+
     let devices =
         list_input_devices().map_err(|e| format!("Failed to list audio devices: {}", e))?;
 
@@ -191,7 +224,7 @@ pub fn get_available_microphones() -> Result<Vec<AudioDevice>, String> {
     result.extend(devices.into_iter().map(|d| AudioDevice {
         index: d.index,
         name: d.name,
-        is_default: false, // The explicit default is handled separately
+        is_default: false,
     }));
 
     Ok(result)
@@ -228,6 +261,37 @@ pub fn get_selected_microphone(app: AppHandle) -> Result<String, String> {
 #[tauri::command]
 #[specta::specta]
 pub fn get_available_output_devices() -> Result<Vec<AudioDevice>, String> {
+    #[cfg(target_os = "macos")]
+    {
+        match crate::macos_audio::list_audio_devices() {
+            Ok(devices) => {
+                let mut result = vec![AudioDevice {
+                    index: "default".to_string(),
+                    name: "Default".to_string(),
+                    is_default: true,
+                }];
+
+                result.extend(
+                    devices
+                        .into_iter()
+                        .filter(|device| device.output_channels > 0)
+                        .map(|device| AudioDevice {
+                            index: device.uid,
+                            name: device.name,
+                            // The synthetic "Default" option owns the default state.
+                            is_default: false,
+                        }),
+                );
+
+                return Ok(result);
+            }
+            Err(error) => warn!(
+                "CoreAudio output device enumeration failed; falling back to cpal: {}",
+                error
+            ),
+        }
+    }
+
     let devices =
         list_output_devices().map_err(|e| format!("Failed to list output devices: {}", e))?;
 
@@ -240,7 +304,7 @@ pub fn get_available_output_devices() -> Result<Vec<AudioDevice>, String> {
     result.extend(devices.into_iter().map(|d| AudioDevice {
         index: d.index,
         name: d.name,
-        is_default: false, // The explicit default is handled separately
+        is_default: false,
     }));
 
     Ok(result)

@@ -10,120 +10,12 @@ use tauri::Manager;
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 
-// ---------------------------------------------------------------------------
-// macOS: CoreAudio FFI for fast in-process output muting.
-//
-// Replaces the old osascript approach which spawned a subprocess and could
-// interfere with the active input stream (see issue #1101).
-// ---------------------------------------------------------------------------
-
-#[cfg(target_os = "macos")]
-mod coreaudio_mute {
-    #[repr(C)]
-    struct AudioObjectPropertyAddress {
-        m_selector: u32,
-        m_scope: u32,
-        m_element: u32,
-    }
-
-    // CoreAudio four-char-code constants
-    const K_AUDIO_OBJECT_SYSTEM_OBJECT: u32 = 1;
-    const K_AUDIO_HARDWARE_PROPERTY_DEFAULT_OUTPUT_DEVICE: u32 =
-        (b'd' as u32) << 24 | (b'O' as u32) << 16 | (b'u' as u32) << 8 | (b't' as u32); // 'dOut'
-    const K_AUDIO_DEVICE_PROPERTY_MUTE: u32 =
-        (b'm' as u32) << 24 | (b'u' as u32) << 16 | (b't' as u32) << 8 | (b'e' as u32); // 'mute'
-    const K_AUDIO_OBJECT_PROPERTY_SCOPE_GLOBAL: u32 =
-        (b'g' as u32) << 24 | (b'l' as u32) << 16 | (b'o' as u32) << 8 | (b'b' as u32); // 'glob'
-    const K_AUDIO_OBJECT_PROPERTY_SCOPE_OUTPUT: u32 =
-        (b'o' as u32) << 24 | (b'u' as u32) << 16 | (b't' as u32) << 8 | (b'p' as u32); // 'outp'
-    const K_AUDIO_OBJECT_PROPERTY_ELEMENT_MAIN: u32 = 0;
-
-    #[link(name = "CoreAudio", kind = "framework")]
-    extern "C" {
-        fn AudioObjectGetPropertyData(
-            in_object_id: u32,
-            in_address: *const AudioObjectPropertyAddress,
-            in_qualifier_data_size: u32,
-            in_qualifier_data: *const std::ffi::c_void,
-            io_data_size: *mut u32,
-            out_data: *mut std::ffi::c_void,
-        ) -> i32;
-
-        fn AudioObjectSetPropertyData(
-            in_object_id: u32,
-            in_address: *const AudioObjectPropertyAddress,
-            in_qualifier_data_size: u32,
-            in_qualifier_data: *const std::ffi::c_void,
-            in_data_size: u32,
-            in_data: *const std::ffi::c_void,
-        ) -> i32;
-    }
-
-    /// Mute or unmute the default output device via CoreAudio.
-    /// Returns `Ok(())` on success or `Err(os_status)` on failure.
-    pub fn set_mute_coreaudio(mute: bool) -> Result<(), i32> {
-        unsafe {
-            // 1. Get the default output device ID
-            let addr = AudioObjectPropertyAddress {
-                m_selector: K_AUDIO_HARDWARE_PROPERTY_DEFAULT_OUTPUT_DEVICE,
-                m_scope: K_AUDIO_OBJECT_PROPERTY_SCOPE_GLOBAL,
-                m_element: K_AUDIO_OBJECT_PROPERTY_ELEMENT_MAIN,
-            };
-
-            let mut device_id: u32 = 0;
-            let mut size = std::mem::size_of::<u32>() as u32;
-
-            let status = AudioObjectGetPropertyData(
-                K_AUDIO_OBJECT_SYSTEM_OBJECT,
-                &addr,
-                0,
-                std::ptr::null(),
-                &mut size,
-                &mut device_id as *mut u32 as *mut std::ffi::c_void,
-            );
-            if status != 0 {
-                return Err(status);
-            }
-            if device_id == 0 {
-                return Err(-1);
-            }
-
-            // 2. Set the mute property on the output scope
-            let mute_addr = AudioObjectPropertyAddress {
-                m_selector: K_AUDIO_DEVICE_PROPERTY_MUTE,
-                m_scope: K_AUDIO_OBJECT_PROPERTY_SCOPE_OUTPUT,
-                m_element: K_AUDIO_OBJECT_PROPERTY_ELEMENT_MAIN,
-            };
-
-            let mut mute_val: u32 = if mute { 1 } else { 0 };
-
-            let status = AudioObjectSetPropertyData(
-                device_id,
-                &mute_addr,
-                0,
-                std::ptr::null(),
-                std::mem::size_of::<u32>() as u32,
-                &mut mute_val as *mut u32 as *const std::ffi::c_void,
-            );
-            if status != 0 {
-                return Err(status);
-            }
-
-            Ok(())
-        }
-    }
-}
-
-#[cfg(target_os = "macos")]
-use coreaudio_mute::set_mute_coreaudio;
-
 fn set_mute(mute: bool) {
     // Expected behavior:
     // - Windows: works on most systems using standard audio drivers.
     // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
     //   but some distros may lack the tools used.
-    // - macOS: uses CoreAudio FFI for fast in-process muting, with an
-    //   osascript fallback if the CoreAudio call fails.
+    // - macOS: uses CoreAudio in-process muting/soft-muting with state restore.
     // If unsupported, fails silently.
 
     #[cfg(target_os = "windows")]
@@ -198,18 +90,14 @@ fn set_mute(mute: bool) {
 
     #[cfg(target_os = "macos")]
     {
-        if let Err(code) = set_mute_coreaudio(mute) {
-            debug!(
-                "CoreAudio mute failed (status {}), falling back to osascript",
-                code
-            );
-            // Fallback to AppleScript if CoreAudio call fails
-            use std::process::Command;
-            let script = format!(
-                "set volume output muted {}",
-                if mute { "true" } else { "false" }
-            );
-            let _ = Command::new("osascript").args(["-e", &script]).output();
+        let result = if mute {
+            crate::macos_audio::mute_default_output()
+        } else {
+            crate::macos_audio::restore_default_output()
+        };
+
+        if let Err(error) = result {
+            debug!("CoreAudio output mute operation failed: {}", error);
         }
     }
 }
@@ -317,12 +205,40 @@ impl AudioRecordingManager {
             settings.selected_microphone.as_ref()?
         };
 
-        // Find the device by name
+        // Find the device by name. The settings UI may be CoreAudio-backed on
+        // macOS while recording still opens through cpal, so log both views if
+        // the selected name cannot be resolved.
         match list_input_devices() {
-            Ok(devices) => devices
-                .into_iter()
-                .find(|d| d.name == *device_name)
-                .map(|d| d.device),
+            Ok(devices) => {
+                let cpal_names = devices.iter().map(|d| d.name.clone()).collect::<Vec<_>>();
+                let selected = devices
+                    .into_iter()
+                    .find(|d| d.name == *device_name)
+                    .map(|d| d.device);
+
+                if selected.is_none() {
+                    #[cfg(target_os = "macos")]
+                    let coreaudio_names = crate::macos_audio::list_audio_devices()
+                        .map(|devices| {
+                            devices
+                                .into_iter()
+                                .filter(|device| device.input_channels > 0)
+                                .map(|device| device.name)
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+
+                    #[cfg(not(target_os = "macos"))]
+                    let coreaudio_names: Vec<String> = Vec::new();
+
+                    debug!(
+                        "Selected microphone '{}' not found; cpal devices: {:?}; CoreAudio devices: {:?}",
+                        device_name, cpal_names, coreaudio_names
+                    );
+                }
+
+                selected
+            }
             Err(e) => {
                 debug!("Failed to list devices, using default: {}", e);
                 None
