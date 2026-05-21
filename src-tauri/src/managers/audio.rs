@@ -24,7 +24,7 @@ const VAD_THRESHOLD: f32 = 0.3;
 enum MediaModification {
     None,
     Muted,
-    Paused,
+    Paused { apps: Vec<String> },
     Faded { original_volume: u8 },
 }
 
@@ -104,39 +104,130 @@ fn set_mute(mute: bool) {
     }
 }
 
-fn toggle_media_playback() -> bool {
+/// Pause only apps that are currently playing. Returns list of paused app names.
+fn pause_playing_media() -> Vec<String> {
     #[cfg(target_os = "macos")]
     {
         use std::process::Command;
-        // Use swift to post a media play/pause key event via CGEvent.
-        // AppleScript-ObjC bridge can't pass CGEventRef to CGEventPost, so we
-        // call swift directly. The -e flag compiles and runs inline Swift.
+        // Check each known media app's playback state via AppleScript before
+        // pausing. This avoids the media-key-toggle problem where paused apps
+        // get started.
+        let script = r#"
+set pausedApps to ""
+try
+    tell application "System Events"
+        if (name of processes) contains "Spotify" then
+            tell application "Spotify"
+                if player state is playing then
+                    pause
+                    set pausedApps to pausedApps & "spotify,"
+                end if
+            end tell
+        end if
+    end tell
+end try
+try
+    tell application "System Events"
+        if (name of processes) contains "Music" then
+            tell application "Music"
+                if player state is playing then
+                    pause
+                    set pausedApps to pausedApps & "music,"
+                end if
+            end tell
+        end if
+    end tell
+end try
+return pausedApps
+"#;
+        if let Ok(output) = Command::new("/usr/bin/osascript").args(["-e", script]).output() {
+            if output.status.success() {
+                let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                let apps: Vec<String> = result
+                    .split(',')
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string())
+                    .collect();
+                if !apps.is_empty() {
+                    return apps;
+                }
+            }
+        }
+        // Fallback: send media key for unknown players (best effort for browsers etc.)
         let swift_code = r#"
 import Cocoa
 let k: UInt32 = 16; let s = Int16(8)
 if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xa00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xa<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
 if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xb00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xb<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
 "#;
-        return Command::new("/usr/bin/swift")
-            .args(["-e", swift_code])
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
+        if Command::new("/usr/bin/swift").args(["-e", swift_code]).output()
+            .map(|o| o.status.success()).unwrap_or(false) {
+            return vec!["_mediakey".to_string()];
+        }
+        return Vec::new();
     }
 
     #[cfg(target_os = "linux")]
     {
         use std::process::Command;
-        return Command::new("playerctl")
-            .args(["play-pause"])
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
+        if Command::new("playerctl").args(["pause"]).output()
+            .map(|o| o.status.success()).unwrap_or(false) {
+            return vec!["playerctl".to_string()];
+        }
+        return Vec::new();
     }
 
     #[cfg(target_os = "windows")]
     {
-        return false;
+        return Vec::new();
+    }
+}
+
+/// Resume only the apps that were previously paused.
+fn resume_paused_media(apps: &[String]) {
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        for app in apps {
+            match app.as_str() {
+                "spotify" => {
+                    let _ = Command::new("/usr/bin/osascript")
+                        .args(["-e", "tell application \"Spotify\" to play"])
+                        .output();
+                }
+                "music" => {
+                    let _ = Command::new("/usr/bin/osascript")
+                        .args(["-e", "tell application \"Music\" to play"])
+                        .output();
+                }
+                "_mediakey" => {
+                    // Send play/pause toggle back for unknown players
+                    let swift_code = r#"
+import Cocoa
+let k: UInt32 = 16; let s = Int16(8)
+if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xa00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xa<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
+if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xb00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xb<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
+"#;
+                    let _ = Command::new("/usr/bin/swift").args(["-e", swift_code]).output();
+                }
+                _ => {}
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        for app in apps {
+            if app == "playerctl" {
+                let _ = Command::new("playerctl").args(["play"]).output();
+            }
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let _ = apps;
     }
 }
 
@@ -469,13 +560,12 @@ impl AudioRecordingManager {
                 debug!("Media mode: muted");
             }
             MediaWhileRecordingMode::Pause => {
-                if toggle_media_playback() {
-                    *mod_guard = MediaModification::Paused;
-                    debug!("Media mode: paused");
+                let apps = pause_playing_media();
+                if !apps.is_empty() {
+                    debug!("Media mode: paused {:?}", apps);
+                    *mod_guard = MediaModification::Paused { apps };
                 } else {
-                    set_mute(true);
-                    *mod_guard = MediaModification::Muted;
-                    debug!("Media mode: pause failed, fell back to mute");
+                    debug!("Media mode: nothing was playing");
                 }
             }
             MediaWhileRecordingMode::Fade => {
@@ -496,18 +586,18 @@ impl AudioRecordingManager {
     /// Reverses whatever media modification was applied
     pub fn remove_mute(&self) {
         let mut mod_guard = self.media_mod.lock().unwrap();
-        match *mod_guard {
+        match &*mod_guard {
             MediaModification::None => {}
             MediaModification::Muted => {
                 set_mute(false);
                 debug!("Media restore: unmuted");
             }
-            MediaModification::Paused => {
-                let _ = toggle_media_playback();
-                debug!("Media restore: resumed playback");
+            MediaModification::Paused { apps } => {
+                resume_paused_media(apps);
+                debug!("Media restore: resumed {:?}", apps);
             }
             MediaModification::Faded { original_volume } => {
-                set_system_volume(original_volume);
+                set_system_volume(*original_volume);
                 debug!("Media restore: volume back to {}", original_volume);
             }
         }
@@ -603,10 +693,10 @@ impl AudioRecordingManager {
         }
 
         let mut mod_guard = self.media_mod.lock().unwrap();
-        match *mod_guard {
+        match &*mod_guard {
             MediaModification::Muted => set_mute(false),
-            MediaModification::Paused => { let _ = toggle_media_playback(); },
-            MediaModification::Faded { original_volume } => set_system_volume(original_volume),
+            MediaModification::Paused { apps } => resume_paused_media(apps),
+            MediaModification::Faded { original_volume } => set_system_volume(*original_volume),
             MediaModification::None => {}
         }
         *mod_guard = MediaModification::None;
