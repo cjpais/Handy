@@ -117,7 +117,7 @@ let k: UInt32 = 16; let s = Int16(8)
 if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xa00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xa<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
 if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xb00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xb<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
 "#;
-        return Command::new("swift")
+        return Command::new("/usr/bin/swift")
             .args(["-e", swift_code])
             .output()
             .map(|o| o.status.success())
