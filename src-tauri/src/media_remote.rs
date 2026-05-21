@@ -4,27 +4,20 @@ use log::debug;
 use std::process::Command;
 
 #[cfg(target_os = "macos")]
-const MEDIA_REMOTE_PERL: &str = r#"
-use strict;
-use DynaLoader;
-my $cmd = $ARGV[0] // die "usage: $0 <command_id>\n";
-my $lib = DynaLoader::dl_load_file("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote", 0)
-    or die "dlopen: " . DynaLoader::dl_error();
-my $sym = DynaLoader::dl_find_symbol($lib, "MRMediaRemoteSendCommand")
-    or die "dlsym: " . DynaLoader::dl_error();
-my $fn = DynaLoader::dl_install_xsub("_mr", $sym, __FILE__);
-$fn->(int($cmd), 0);
-"#;
-
-#[cfg(target_os = "macos")]
 fn send_command(command: u32) -> bool {
-    Command::new("/usr/bin/perl")
-        .args(["-e", MEDIA_REMOTE_PERL, "--", &command.to_string()])
+    // Pre-compiled Swift binary that calls MRMediaRemoteSendCommand via dlopen.
+    // Command 0 = Play, 1 = Pause (dedicated, NOT toggle).
+    // Binary location: ~/bin/media-remote-cmd (compiled once from Swift source).
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/Users".to_string());
+    let binary = format!("{}/bin/media-remote-cmd", home);
+
+    Command::new(&binary)
+        .arg(command.to_string())
         .output()
         .map(|o| {
             if !o.status.success() {
                 let err = String::from_utf8_lossy(&o.stderr);
-                debug!("MediaRemote perl adapter failed: {}", err.trim());
+                debug!("media-remote-cmd failed: {}", err.trim());
             }
             o.status.success()
         })
