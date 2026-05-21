@@ -203,7 +203,7 @@ const UpdateChecker: React.FC<UpdateCheckerProps> = ({ className = "" }) => {
               <button
                 className="px-3 py-1.5 text-sm rounded bg-logo-primary text-white hover:bg-logo-primary/80 transition-colors"
                 onClick={() => {
-                  openUrl("https://github.com/cjpais/Handy/releases/latest");
+                  openUrl("https://github.com/felixbaileymurray/goldfish/releases/latest");
                   setShowPortableUpdateDialog(false);
                 }}
               >

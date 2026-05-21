@@ -66,7 +66,7 @@ export const AboutSettings: React.FC = () => {
           <Button
             variant="secondary"
             size="md"
-            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+            onClick={() => openUrl("https://github.com/felixbaileymurray/goldfish")}
           >
             {t("settings.about.sourceCode.button")}
           </Button>
@@ -87,6 +87,21 @@ export const AboutSettings: React.FC = () => {
             {t("settings.about.acknowledgments.whisper.details")}
           </div>
         </SettingContainer>
+        {/* eslint-disable i18next/no-literal-string */}
+        <SettingContainer
+          title="Handy"
+          description="Goldfish is built on Handy, the open-source speech-to-text app by cjpais."
+          grouped={true}
+        >
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => openUrl("https://github.com/cjpais/Handy")}
+          >
+            View upstream
+          </Button>
+        </SettingContainer>
+        {/* eslint-enable i18next/no-literal-string */}
       </SettingsGroup>
     </div>
   );
