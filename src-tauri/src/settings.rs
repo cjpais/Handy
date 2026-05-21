@@ -231,6 +231,58 @@ impl ModelUnloadTimeout {
     }
 }
 
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum MediaWhileRecordingMode {
+    None,
+    Mute,
+    Pause,
+    Fade,
+}
+
+impl Default for MediaWhileRecordingMode {
+    fn default() -> Self {
+        MediaWhileRecordingMode::None
+    }
+}
+
+impl<'de> Deserialize<'de> for MediaWhileRecordingMode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct ModeVisitor;
+
+        impl<'de> Visitor<'de> for ModeVisitor {
+            type Value = MediaWhileRecordingMode;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string mode or boolean for backward compat")
+            }
+
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<MediaWhileRecordingMode, E> {
+                match value {
+                    "none" => Ok(MediaWhileRecordingMode::None),
+                    "mute" => Ok(MediaWhileRecordingMode::Mute),
+                    "pause" => Ok(MediaWhileRecordingMode::Pause),
+                    "fade" => Ok(MediaWhileRecordingMode::Fade),
+                    _ => Err(E::unknown_variant(value, &["none", "mute", "pause", "fade"])),
+                }
+            }
+
+            fn visit_bool<E: de::Error>(self, value: bool) -> Result<MediaWhileRecordingMode, E> {
+                Ok(if value {
+                    MediaWhileRecordingMode::Mute
+                } else {
+                    MediaWhileRecordingMode::None
+                })
+            }
+        }
+
+        deserializer.deserialize_any(ModeVisitor)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum SoundTheme {
@@ -401,8 +453,8 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
-    #[serde(default)]
-    pub mute_while_recording: bool,
+    #[serde(default, alias = "mute_while_recording")]
+    pub media_while_recording_mode: MediaWhileRecordingMode,
     #[serde(default)]
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
@@ -753,6 +805,26 @@ pub fn get_default_settings() -> AppSettings {
             current_binding: default_post_process_shortcut.to_string(),
         },
     );
+    #[cfg(target_os = "windows")]
+    let default_locked_shortcut = "ctrl+alt+space";
+    #[cfg(target_os = "macos")]
+    let default_locked_shortcut = "option+cmd+space";
+    #[cfg(target_os = "linux")]
+    let default_locked_shortcut = "ctrl+alt+space";
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    let default_locked_shortcut = "alt+ctrl+space";
+
+    bindings.insert(
+        "transcribe_locked".to_string(),
+        ShortcutBinding {
+            id: "transcribe_locked".to_string(),
+            name: "Transcribe (Toggle Lock)".to_string(),
+            description: "Press once to start, press again to stop. No need to hold the key."
+                .to_string(),
+            default_binding: default_locked_shortcut.to_string(),
+            current_binding: default_locked_shortcut.to_string(),
+        },
+    );
     bindings.insert(
         "cancel".to_string(),
         ShortcutBinding {
@@ -799,7 +871,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
-        mute_while_recording: false,
+        media_while_recording_mode: MediaWhileRecordingMode::None,
         append_trailing_space: false,
         app_language: default_app_language(),
         experimental_enabled: false,

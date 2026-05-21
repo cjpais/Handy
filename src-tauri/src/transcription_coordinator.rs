@@ -38,7 +38,17 @@ pub struct TranscriptionCoordinator {
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
-    id == "transcribe" || id == "transcribe_with_post_process"
+    matches!(
+        id,
+        "transcribe"
+            | "transcribe_with_post_process"
+            | "transcribe_locked"
+            | "transcribe_with_post_process_locked"
+    )
+}
+
+pub fn is_locked_binding(id: &str) -> bool {
+    id.ends_with("_locked")
 }
 
 impl TranscriptionCoordinator {
