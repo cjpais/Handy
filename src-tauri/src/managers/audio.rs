@@ -141,11 +141,13 @@ return pausedApps
             }
         }
 
-        // Always send MediaRemote PAUSE for browser media (Chrome/Safari/Firefox).
-        // PAUSE on already-paused apps is a no-op, so this is safe to always call.
-        if media_remote::pause() {
-            paused.push("_mediaremote".to_string());
-            debug!("MediaRemote PAUSE sent (browser/system media)");
+        // Only send MediaRemote PAUSE if something is actually playing AND
+        // it wasn't already handled by AppleScript (native apps).
+        if paused.is_empty() && media_remote::is_playing() {
+            if media_remote::pause() {
+                paused.push("_mediaremote".to_string());
+                debug!("MediaRemote PAUSE sent (browser/system media)");
+            }
         }
 
         return paused;
