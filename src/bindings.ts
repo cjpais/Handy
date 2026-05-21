@@ -814,6 +814,9 @@ async isLaptop() : Promise<Result<boolean, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async goldfishPing() : Promise<string> {
+    return await TAURI_INVOKE("goldfish_ping");
 }
 }
 
