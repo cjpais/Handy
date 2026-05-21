@@ -110,20 +110,17 @@ fn toggle_media_playback() {
         use std::process::Command;
         // Simulate the hardware media play/pause key via AppleScript-ObjC bridge.
         // NX_KEYTYPE_PLAY = 16. Works with Spotify, Apple Music, browser media, etc.
-        let _ = Command::new("osascript")
-            .args(["-l", "JavaScript", "-e", concat!(
-                "ObjC.import('Cocoa');",
-                "var k=16,dd=(k<<16)|(0xa<<8),du=(k<<16)|(0xb<<8);",
-                "var e1=$.NSEvent.otherEventWithTypeLocationModifierFlagsTimestamp",
-                "WindowNumberContextSubtypeData1Data2(",
-                "14,{x:0,y:0},0xa00,0,0,null,8,dd,-1);",
-                "$.CGEventPost(0,e1.CGEvent);",
-                "var e2=$.NSEvent.otherEventWithTypeLocationModifierFlagsTimestamp",
-                "WindowNumberContextSubtypeData1Data2(",
-                "14,{x:0,y:0},0xb00,0,0,null,8,du,-1);",
-                "$.CGEventPost(0,e2.CGEvent);"
-            )])
-            .output();
+        let script = r#"
+use framework "Cocoa"
+set keyCode to 16
+set downData to (keyCode * 65536) + (10 * 256)
+set upData to (keyCode * 65536) + (11 * 256)
+set keyDown to current application's NSEvent's otherEventWithType:14 location:{0.0, 0.0} modifierFlags:2560 timestamp:0 windowNumber:0 context:(missing value) subtype:8 data1:downData data2:-1
+current application's CGEventPost(0, keyDown's CGEvent())
+set keyUp to current application's NSEvent's otherEventWithType:14 location:{0.0, 0.0} modifierFlags:2816 timestamp:0 windowNumber:0 context:(missing value) subtype:8 data1:upData data2:-1
+current application's CGEventPost(0, keyUp's CGEvent())
+"#;
+        let _ = Command::new("osascript").args(["-e", script]).output();
     }
 
     #[cfg(target_os = "linux")]
