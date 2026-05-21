@@ -11,6 +11,7 @@ mod helpers;
 mod input;
 mod llm_client;
 mod managers;
+mod media_remote;
 mod overlay;
 pub mod portable;
 mod settings;

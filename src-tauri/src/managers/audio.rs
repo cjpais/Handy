@@ -104,14 +104,16 @@ fn set_mute(mute: bool) {
     }
 }
 
-/// Pause only apps that are currently playing. Returns list of paused app names.
+/// Pause playing media. Uses AppleScript for native apps (state-checked)
+/// plus MediaRemote for browser/system media (Chrome, Safari, Firefox).
 fn pause_playing_media() -> Vec<String> {
     #[cfg(target_os = "macos")]
     {
+        use crate::media_remote;
         use std::process::Command;
-        // Check each known media app's playback state via AppleScript before
-        // pausing. This avoids the media-key-toggle problem where paused apps
-        // get started.
+
+        let mut paused = Vec::new();
+
         let script = r#"
 set pausedApps to ""
 try
@@ -143,21 +145,31 @@ return pausedApps
         if let Ok(output) = Command::new("/usr/bin/osascript").args(["-e", script]).output() {
             if output.status.success() {
                 let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                return result
-                    .split(',')
-                    .filter(|s| !s.is_empty())
-                    .map(|s| s.to_string())
-                    .collect();
+                paused.extend(
+                    result.split(',').filter(|s| !s.is_empty()).map(|s| s.to_string()),
+                );
             }
         }
-        return Vec::new();
+
+        // Always send MediaRemote PAUSE for browser media (Chrome/Safari/Firefox).
+        // PAUSE on already-paused apps is a no-op, so this is safe to always call.
+        if media_remote::pause() {
+            paused.push("_mediaremote".to_string());
+            debug!("MediaRemote PAUSE sent (browser/system media)");
+        }
+
+        return paused;
     }
 
     #[cfg(target_os = "linux")]
     {
         use std::process::Command;
-        if Command::new("playerctl").args(["pause"]).output()
-            .map(|o| o.status.success()).unwrap_or(false) {
+        if Command::new("playerctl")
+            .args(["pause"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        {
             return vec!["playerctl".to_string()];
         }
         return Vec::new();
@@ -173,7 +185,9 @@ return pausedApps
 fn resume_paused_media(apps: &[String]) {
     #[cfg(target_os = "macos")]
     {
+        use crate::media_remote;
         use std::process::Command;
+
         for app in apps {
             match app.as_str() {
                 "spotify" => {
@@ -185,6 +199,10 @@ fn resume_paused_media(apps: &[String]) {
                     let _ = Command::new("/usr/bin/osascript")
                         .args(["-e", "tell application \"Music\" to play"])
                         .output();
+                }
+                "_mediaremote" => {
+                    media_remote::play();
+                    debug!("MediaRemote PLAY sent (browser/system media)");
                 }
                 _ => {}
             }
