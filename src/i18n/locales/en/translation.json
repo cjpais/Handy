@@ -178,6 +178,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "transcribe_locked": {
+            "name": "Transcribe (Toggle Lock)",
+            "description": "Press once to start recording, press again to stop. No need to hold the key."
           }
         },
         "errors": {
@@ -196,6 +200,16 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "mediaWhileRecording": {
+        "label": "Media While Recording",
+        "description": "Control system audio behavior during voice recording",
+        "options": {
+          "none": "Off",
+          "mute": "Mute",
+          "pause": "Pause Media",
+          "fade": "Fade Volume (30%)"
+        }
       }
     },
     "models": {
@@ -504,10 +518,6 @@
       "postProcessingToggle": {
         "label": "Post Processing",
         "description": "Enable AI-powered text refinement after transcription"
-      },
-      "muteWhileRecording": {
-        "label": "Mute While Recording",
-        "description": "Mute system audio during recording"
       },
       "appendTrailingSpace": {
         "label": "Append Trailing Space",
