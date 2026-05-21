@@ -94,12 +94,10 @@ fn set_mute(mute: bool) {
     }
 }
 
-fn toggle_media_playback() {
+fn toggle_media_playback() -> bool {
     #[cfg(target_os = "macos")]
     {
         use std::process::Command;
-        // Simulate the hardware media play/pause key via AppleScript-ObjC bridge.
-        // NX_KEYTYPE_PLAY = 16. Works with Spotify, Apple Music, browser media, etc.
         let script = r#"
 use framework "Cocoa"
 set keyCode to 16
@@ -110,20 +108,26 @@ current application's CGEventPost(0, keyDown's CGEvent())
 set keyUp to current application's NSEvent's otherEventWithType:14 location:{0.0, 0.0} modifierFlags:2816 timestamp:0 windowNumber:0 context:(missing value) subtype:8 data1:upData data2:-1
 current application's CGEventPost(0, keyUp's CGEvent())
 "#;
-        let _ = Command::new("osascript").args(["-e", script]).output();
+        return Command::new("osascript")
+            .args(["-e", script])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
     }
 
     #[cfg(target_os = "linux")]
     {
         use std::process::Command;
-        let _ = Command::new("playerctl").args(["play-pause"]).output();
+        return Command::new("playerctl")
+            .args(["play-pause"])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
     }
 
     #[cfg(target_os = "windows")]
     {
-        // Fallback: mute instead of pause on Windows (media key simulation needs extra deps)
-        debug!("Media pause not yet implemented on Windows, falling back to mute");
-        set_mute(true);
+        return false;
     }
 }
 
@@ -383,9 +387,14 @@ impl AudioRecordingManager {
                 debug!("Media mode: muted");
             }
             MediaWhileRecordingMode::Pause => {
-                toggle_media_playback();
-                *mod_guard = MediaModification::Paused;
-                debug!("Media mode: paused");
+                if toggle_media_playback() {
+                    *mod_guard = MediaModification::Paused;
+                    debug!("Media mode: paused");
+                } else {
+                    set_mute(true);
+                    *mod_guard = MediaModification::Muted;
+                    debug!("Media mode: pause failed, fell back to mute");
+                }
             }
             MediaWhileRecordingMode::Fade => {
                 if let Some(vol) = get_system_volume() {
@@ -412,7 +421,7 @@ impl AudioRecordingManager {
                 debug!("Media restore: unmuted");
             }
             MediaModification::Paused => {
-                toggle_media_playback();
+                let _ = toggle_media_playback();
                 debug!("Media restore: resumed playback");
             }
             MediaModification::Faded { original_volume } => {
@@ -502,7 +511,7 @@ impl AudioRecordingManager {
         let mut mod_guard = self.media_mod.lock().unwrap();
         match *mod_guard {
             MediaModification::Muted => set_mute(false),
-            MediaModification::Paused => toggle_media_playback(),
+            MediaModification::Paused => { let _ = toggle_media_playback(); },
             MediaModification::Faded { original_volume } => set_system_volume(original_volume),
             MediaModification::None => {}
         }
