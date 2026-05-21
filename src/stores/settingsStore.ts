@@ -134,7 +134,9 @@ const settingUpdaters: {
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
   media_while_recording_mode: (value) =>
-    commands.changeMediaWhileRecordingModeSetting(value as string),
+    commands.changeMediaWhileRecordingModeSetting(
+      value as import("@/bindings").MediaWhileRecordingMode,
+    ),
   append_trailing_space: (value) =>
     commands.changeAppendTrailingSpaceSetting(value as boolean),
   log_level: (value) => commands.setLogLevel(value as any),
