@@ -133,26 +133,12 @@ return pausedApps
         if let Ok(output) = Command::new("/usr/bin/osascript").args(["-e", script]).output() {
             if output.status.success() {
                 let result = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                let apps: Vec<String> = result
+                return result
                     .split(',')
                     .filter(|s| !s.is_empty())
                     .map(|s| s.to_string())
                     .collect();
-                if !apps.is_empty() {
-                    return apps;
-                }
             }
-        }
-        // Fallback: send media key for unknown players (best effort for browsers etc.)
-        let swift_code = r#"
-import Cocoa
-let k: UInt32 = 16; let s = Int16(8)
-if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xa00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xa<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
-if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xb00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xb<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
-"#;
-        if Command::new("/usr/bin/swift").args(["-e", swift_code]).output()
-            .map(|o| o.status.success()).unwrap_or(false) {
-            return vec!["_mediakey".to_string()];
         }
         return Vec::new();
     }
@@ -189,16 +175,6 @@ fn resume_paused_media(apps: &[String]) {
                     let _ = Command::new("/usr/bin/osascript")
                         .args(["-e", "tell application \"Music\" to play"])
                         .output();
-                }
-                "_mediakey" => {
-                    // Send play/pause toggle back for unknown players
-                    let swift_code = r#"
-import Cocoa
-let k: UInt32 = 16; let s = Int16(8)
-if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xa00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xa<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
-if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xb00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xb<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
-"#;
-                    let _ = Command::new("/usr/bin/swift").args(["-e", swift_code]).output();
                 }
                 _ => {}
             }
