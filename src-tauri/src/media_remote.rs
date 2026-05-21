@@ -4,20 +4,16 @@ use log::debug;
 use std::process::Command;
 
 #[cfg(target_os = "macos")]
-fn send_command(command: u32) -> bool {
-    // Pre-compiled Swift binary that calls MRMediaRemoteSendCommand via dlopen.
-    // Command 0 = Play, 1 = Pause (dedicated, NOT toggle).
-    // Binary location: ~/bin/media-remote-cmd (compiled once from Swift source).
-    let home = std::env::var("HOME").unwrap_or_else(|_| "/Users".to_string());
-    let binary = format!("{}/bin/media-remote-cmd", home);
-
-    Command::new(&binary)
-        .arg(command.to_string())
+fn send_command(cmd: &str) -> bool {
+    // nowplaying-cli uses MediaRemote via Perl adapter (com.apple.perl5 bundle ID)
+    // to bypass macOS 15.4+ entitlement restrictions. Dedicated pause/play commands.
+    Command::new("/opt/homebrew/bin/nowplaying-cli")
+        .arg(cmd)
         .output()
         .map(|o| {
             if !o.status.success() {
                 let err = String::from_utf8_lossy(&o.stderr);
-                debug!("media-remote-cmd failed: {}", err.trim());
+                debug!("nowplaying-cli {} failed: {}", cmd, err.trim());
             }
             o.status.success()
         })
@@ -26,12 +22,12 @@ fn send_command(command: u32) -> bool {
 
 #[cfg(target_os = "macos")]
 pub fn pause() -> bool {
-    send_command(1)
+    send_command("pause")
 }
 
 #[cfg(target_os = "macos")]
 pub fn play() -> bool {
-    send_command(0)
+    send_command("play")
 }
 
 #[cfg(not(target_os = "macos"))]
