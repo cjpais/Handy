@@ -108,18 +108,17 @@ fn toggle_media_playback() -> bool {
     #[cfg(target_os = "macos")]
     {
         use std::process::Command;
-        let script = r#"
-use framework "Cocoa"
-set keyCode to 16
-set downData to (keyCode * 65536) + (10 * 256)
-set upData to (keyCode * 65536) + (11 * 256)
-set keyDown to current application's NSEvent's otherEventWithType:14 location:{0.0, 0.0} modifierFlags:2560 timestamp:0 windowNumber:0 context:(missing value) subtype:8 data1:downData data2:-1
-current application's CGEventPost(0, keyDown's CGEvent())
-set keyUp to current application's NSEvent's otherEventWithType:14 location:{0.0, 0.0} modifierFlags:2816 timestamp:0 windowNumber:0 context:(missing value) subtype:8 data1:upData data2:-1
-current application's CGEventPost(0, keyUp's CGEvent())
+        // Use swift to post a media play/pause key event via CGEvent.
+        // AppleScript-ObjC bridge can't pass CGEventRef to CGEventPost, so we
+        // call swift directly. The -e flag compiles and runs inline Swift.
+        let swift_code = r#"
+import Cocoa
+let k: UInt32 = 16; let s = Int16(8)
+if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xa00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xa<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
+if let e = NSEvent.otherEvent(with:.systemDefined,location:.zero,modifierFlags:NSEvent.ModifierFlags(rawValue:0xb00),timestamp:0,windowNumber:0,context:nil,subtype:s,data1:Int((k<<16)|(0xb<<8)),data2:-1),let c=e.cgEvent{c.post(tap:.cghidEventTap)}
 "#;
-        return Command::new("osascript")
-            .args(["-e", script])
+        return Command::new("swift")
+            .args(["-e", swift_code])
             .output()
             .map(|o| o.status.success())
             .unwrap_or(false);
