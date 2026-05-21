@@ -21,6 +21,18 @@ fn send_command(cmd: &str) -> bool {
 }
 
 #[cfg(target_os = "macos")]
+pub fn is_playing() -> bool {
+    Command::new("/opt/homebrew/bin/nowplaying-cli")
+        .args(["get", "playbackRate"])
+        .output()
+        .map(|o| {
+            let rate = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            rate == "1" || rate.starts_with("1.")
+        })
+        .unwrap_or(false)
+}
+
+#[cfg(target_os = "macos")]
 pub fn pause() -> bool {
     send_command("pause")
 }
