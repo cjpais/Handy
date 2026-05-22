@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/felixbaileymurray/Documents/goldfish/.claude/scripts/suggest-decisions.sh",
+            "async": true,
+            "timeout": 120,
+            "statusMessage": "Reviewing session for decisions..."
+          }
+        ]
+      }
+    ]
+  }
+}

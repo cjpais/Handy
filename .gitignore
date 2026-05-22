@@ -26,7 +26,10 @@ dist-ssr
 *.sln
 *.sw?
 
-.claude/
+.claude/worktrees/
+.claude/memory/
+.claude/plans/
+.claude/*.local.json
 
 /target/
 recording_*
