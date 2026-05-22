@@ -187,7 +187,6 @@ return pausedApps
 fn resume_paused_media(apps: &[String]) {
     #[cfg(target_os = "macos")]
     {
-        use crate::media_remote;
         use std::process::Command;
 
         for app in apps {
@@ -201,10 +200,6 @@ fn resume_paused_media(apps: &[String]) {
                     let _ = Command::new("/usr/bin/osascript")
                         .args(["-e", "tell application \"Music\" to play"])
                         .output();
-                }
-                "_mediaremote" => {
-                    media_remote::play();
-                    debug!("MediaRemote PLAY sent (browser/system media)");
                 }
                 _ => {}
             }
