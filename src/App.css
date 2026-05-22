@@ -41,7 +41,15 @@
 
   /* Apply colors */
   color: var(--color-text);
-  background-color: var(--color-background);
+  background-color: var(--color-floral-white);
+}
+
+.main-layout {
+  padding-top: 0;
+}
+
+:root[data-platform="macos"] .main-layout {
+  padding-top: 28px;
 }
 
 .container {
@@ -60,6 +68,7 @@
     --color-background: #2c2b29;
     --color-logo-primary: #EA5C1F;
     --color-logo-stroke: #FCF7ED;
+    --color-floral-white: #1a1918;
   }
 }
 
