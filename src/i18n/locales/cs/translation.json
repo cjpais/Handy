@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "Limit historie",
         "description": "Maximální počet záznamů historie k uchování",
-        "entries": "záznamů"
+        "entries": "záznamů",
+        "warningTitle": "Nahrávky mohou být odstraněny",
+        "warningDescription": "Záznamy překračující nový limit budou smazány při dalším nahrávání."
       },
       "recordingRetention": {
         "title": "Automatické mazání nahrávek",
@@ -468,7 +470,9 @@
         "days3": "Po 3 dnech",
         "weeks2": "Po 2 týdnech",
         "months3": "Po 3 měsících",
-        "placeholder": "Vyberte dobu uchování..."
+        "placeholder": "Vyberte dobu uchování...",
+        "warningTitle": "Automatické mazání zapnuto",
+        "warningDescription": "Nahrávky starší než doba uchovávání budou smazány při dalším nahrávání."
       },
       "alwaysOnMicrophone": {
         "label": "Vždy zapnutý mikrofon",

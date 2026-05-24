@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "Giới hạn lịch sử",
         "description": "Số lượng mục lịch sử tối đa cần giữ",
-        "entries": "mục"
+        "entries": "mục",
+        "warningTitle": "Bản ghi có thể bị xóa",
+        "warningDescription": "Các mục vượt quá giới hạn mới sẽ bị xóa khi ghi âm tiếp theo."
       },
       "recordingRetention": {
         "title": "Tự động xóa ghi âm",
@@ -468,7 +470,9 @@
         "days3": "Sau 3 ngày",
         "weeks2": "Sau 2 tuần",
         "months3": "Sau 3 tháng",
-        "placeholder": "Chọn thời gian lưu giữ..."
+        "placeholder": "Chọn thời gian lưu giữ...",
+        "warningTitle": "Đã bật tự động xóa",
+        "warningDescription": "Các bản ghi cũ hơn thời gian lưu giữ sẽ bị xóa khi ghi âm tiếp theo."
       },
       "alwaysOnMicrophone": {
         "label": "Micrô luôn bật",

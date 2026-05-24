@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "History Limit",
         "description": "Maximum number of history entries to keep",
-        "entries": "entries"
+        "entries": "entries",
+        "warningTitle": "Recordings may be removed",
+        "warningDescription": "Entries beyond the new limit will be deleted on your next recording."
       },
       "recordingRetention": {
         "title": "Auto-Delete Recordings",
@@ -468,7 +470,9 @@
         "days3": "After 3 days",
         "weeks2": "After 2 weeks",
         "months3": "After 3 months",
-        "placeholder": "Select retention period..."
+        "placeholder": "Select retention period...",
+        "warningTitle": "Auto-delete enabled",
+        "warningDescription": "Recordings older than the retention period will be deleted on your next recording."
       },
       "alwaysOnMicrophone": {
         "label": "Always-On Microphone",

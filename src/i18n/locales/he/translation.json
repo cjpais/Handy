@@ -458,7 +458,9 @@
       "historyLimit": {
         "title": "מגבלת היסטוריה",
         "description": "המספר המרבי של רשומות היסטוריה לשמירה",
-        "entries": "רשומות"
+        "entries": "רשומות",
+        "warningTitle": "הקלטות עשויות להימחק",
+        "warningDescription": "רשומות מעבר למגבלה החדשה יימחקו בהקלטה הבאה."
       },
       "recordingRetention": {
         "title": "מחיקה אוטומטית של הקלטות",
@@ -468,7 +470,9 @@
         "days3": "אחרי 3 ימים",
         "weeks2": "אחרי שבועיים",
         "months3": "אחרי 3 חודשים",
-        "placeholder": "בחר משך שמירה..."
+        "placeholder": "בחר משך שמירה...",
+        "warningTitle": "מחיקה אוטומטית הופעלה",
+        "warningDescription": "הקלטות ישנות מתקופת השמירה יימחקו בהקלטה הבאה."
       },
       "alwaysOnMicrophone": {
         "label": "מיקרופון תמיד פעיל",
