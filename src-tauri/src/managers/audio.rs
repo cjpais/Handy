@@ -15,7 +15,7 @@ enum MediaModification {
     None,
     Muted,
     Paused { apps: Vec<String> },
-    Faded { original_volume: u8 },
+    Ducked,
 }
 
 fn set_mute(mute: bool) {
@@ -477,15 +477,13 @@ impl AudioRecordingManager {
                 }
             }
             MediaWhileRecordingMode::Fade => {
-                if let Some(vol) = get_system_volume() {
-                    let faded = (vol as f32 * 0.3).round() as u8;
-                    set_system_volume(faded);
-                    *mod_guard = MediaModification::Faded { original_volume: vol };
-                    debug!("Media mode: faded from {} to {}", vol, faded);
+                if crate::audio_duck::start(0.3) {
+                    *mod_guard = MediaModification::Ducked;
+                    debug!("Media mode: ducked via Core Audio Process Taps");
                 } else {
                     set_mute(true);
                     *mod_guard = MediaModification::Muted;
-                    debug!("Media mode: fade failed, fell back to mute");
+                    debug!("Media mode: duck failed, fell back to mute");
                 }
             }
         }
@@ -504,9 +502,9 @@ impl AudioRecordingManager {
                 resume_paused_media(apps);
                 debug!("Media restore: resumed {:?}", apps);
             }
-            MediaModification::Faded { original_volume } => {
-                set_system_volume(*original_volume);
-                debug!("Media restore: volume back to {}", original_volume);
+            MediaModification::Ducked => {
+                crate::audio_duck::stop();
+                debug!("Media restore: duck stopped");
             }
         }
         *mod_guard = MediaModification::None;
@@ -592,7 +590,7 @@ impl AudioRecordingManager {
         match &*mod_guard {
             MediaModification::Muted => set_mute(false),
             MediaModification::Paused { apps } => resume_paused_media(apps),
-            MediaModification::Faded { original_volume } => set_system_volume(*original_volume),
+            MediaModification::Ducked => crate::audio_duck::stop(),
             MediaModification::None => {}
         }
         *mod_guard = MediaModification::None;
