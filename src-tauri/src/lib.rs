@@ -10,6 +10,7 @@ mod commands;
 mod helpers;
 mod input;
 mod llm_client;
+mod audio_duck;
 mod managers;
 mod media_remote;
 mod overlay;
