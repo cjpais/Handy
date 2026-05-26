@@ -24,6 +24,13 @@ once_cell      = { workspace = true }
 rubato         = { workspace = true }
 rustfft        = { workspace = true }
 vad-rs         = { workspace = true }
+hound              = { workspace = true }
+rusqlite           = { workspace = true }
+rusqlite_migration = { workspace = true }
+chrono             = { workspace = true }
+
+[dependencies.handy-platform]
+path = "../handy-platform"
 
 [dev-dependencies]
 tempfile = "3"

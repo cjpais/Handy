@@ -5,9 +5,11 @@
 //! injected through traits defined in the `handy-platform` crate.
 
 pub mod audio;
+pub mod history;
 pub mod text;
 pub mod vad;
 
+pub use history::{HistoryEntry, HistoryManager, RecordingRetentionPeriod, RetentionConfig};
 pub use text::{apply_custom_words, filter_transcription_output};
 pub use vad::{SileroVad, VoiceActivityDetector};
 

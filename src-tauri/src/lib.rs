@@ -345,7 +345,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         }
     };
     append_crash_log_line("INIT_HISTORY_MGR_BEGIN");
-    let history_manager = match HistoryManager::new(app_handle) {
+    let history_manager = match crate::managers::history::open_for_app(app_handle) {
         Ok(m) => {
             append_crash_log_line("INIT_HISTORY_MGR_OK");
             Some(Arc::new(m))
