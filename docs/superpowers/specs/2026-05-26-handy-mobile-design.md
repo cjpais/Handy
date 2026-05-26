@@ -450,3 +450,4 @@ ESLint 规则 (禁止硬编码字符串) 同样应用于 `src-mobile-ui/`。
 | 日期 | 变更 | 作者 |
 |------|------|------|
 | 2026-05-26 | 初稿 | Claude Code + 唐海文 |
+| 2026-05-26 | 阶段 0+1 完成 (本地): workspace 引入,handy-core/handy-platform 创建并迁入 text/audio/vad/history/settings/model-types;Task 11 转录管理器跳过迁移 (rationale 见 docs/mobile/README.md);GHA workflow 就位,等待 push 触发 | Claude Code + 唐海文 |
