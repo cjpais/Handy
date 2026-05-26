@@ -534,14 +534,26 @@ impl ModelManager {
             extracting_models: Arc::new(Mutex::new(HashSet::new())),
         };
 
-        // Migrate any bundled models to user directory
-        manager.migrate_bundled_models()?;
+        // Migrate any bundled models to user directory.
+        // Failures here must NOT abort ModelManager construction — on customer
+        // machines the AppData target may be locked down, the disk may be full,
+        // or the bundled resource path may be missing. Logging and continuing
+        // lets the user reach the UI and pick a downloadable model instead of
+        // crashing on launch.
+        if let Err(e) = manager.migrate_bundled_models() {
+            warn!("Bundled model migration failed (continuing): {:#}", e);
+        }
 
-        // Check which models are already downloaded
-        manager.update_download_status()?;
+        // Check which models are already downloaded. Same rationale — never
+        // hard-fail just because we couldn't stat a file in the models dir.
+        if let Err(e) = manager.update_download_status() {
+            warn!("update_download_status failed (continuing): {:#}", e);
+        }
 
-        // Auto-select a model if none is currently selected
-        manager.auto_select_model_if_needed()?;
+        // Auto-select a model if none is currently selected.
+        if let Err(e) = manager.auto_select_model_if_needed() {
+            warn!("auto_select_model_if_needed failed (continuing): {:#}", e);
+        }
 
         Ok(manager)
     }
@@ -696,27 +708,152 @@ impl ModelManager {
         Ok(new_dir)
     }
 
+    // bundled-models.json is embedded at compile time so the runtime list
+    // always matches what the build script copied into resources/models/.
+    const BUNDLED_MANIFEST: &str = include_str!("../../bundled-models.json");
+
+    pub fn has_bundled_models_declared() -> bool {
+        #[derive(Deserialize)]
+        struct Entry {
+            #[allow(dead_code)]
+            filename: String,
+        }
+        #[derive(Deserialize)]
+        struct Manifest {
+            #[serde(default)]
+            models: Vec<Entry>,
+        }
+        match serde_json::from_str::<Manifest>(Self::BUNDLED_MANIFEST) {
+            Ok(m) => !m.models.is_empty(),
+            Err(_) => false,
+        }
+    }
+
     fn migrate_bundled_models(&self) -> Result<()> {
+        #[derive(Deserialize)]
+        struct BundledEntry {
+            filename: String,
+            #[serde(rename = "type")]
+            kind: String,
+        }
+        #[derive(Deserialize)]
+        struct BundledManifest {
+            #[serde(default)]
+            models: Vec<BundledEntry>,
+        }
+
+        let manifest: BundledManifest = match serde_json::from_str(Self::BUNDLED_MANIFEST) {
+            Ok(m) => m,
+            Err(e) => {
+                warn!("Failed to parse bundled-models.json: {}", e);
+                return Ok(());
+            }
+        };
+
+        if manifest.models.is_empty() {
+            return Ok(());
+        }
+
         let models_dir = self.get_models_dir();
 
-        // Check for bundled models and copy them to user directory
-        let bundled_models = ["ggml-small.bin"]; // Add other bundled models here if any
-
-        for filename in &bundled_models {
+        for entry in &manifest.models {
             let bundled_path = self.app_handle.path().resolve(
-                &format!("resources/models/{}", filename),
+                &format!("resources/models/{}", entry.filename),
                 tauri::path::BaseDirectory::Resource,
             );
 
-            if let Ok(bundled_path) = bundled_path {
-                if bundled_path.exists() {
-                    let user_path = models_dir.join(filename);
+            let bundled_path = match bundled_path {
+                Ok(p) => p,
+                Err(_) => continue,
+            };
 
-                    // Only copy if user doesn't already have the model
-                    if !user_path.exists() {
-                        info!("Migrating bundled model {} to user directory", filename);
-                        fs::copy(&bundled_path, &user_path)?;
-                        info!("Successfully migrated {}", filename);
+            if !bundled_path.exists() {
+                continue;
+            }
+
+            let user_path = models_dir.join(&entry.filename);
+            // Treat as already migrated only when both the model AND the
+            // sibling .migration_done marker exist. A bare user_path without
+            // the marker means a previous migration crashed half-way; clean
+            // up and retry instead of trusting the partial directory/file.
+            let marker_path = models_dir.join(format!("{}.migration_done", entry.filename));
+            if user_path.exists() && marker_path.exists() {
+                continue;
+            }
+            if user_path.exists() && !marker_path.exists() {
+                warn!(
+                    "Found incomplete bundled model {} (missing .migration_done marker), reinstalling",
+                    entry.filename
+                );
+                if user_path.is_dir() {
+                    let _ = fs::remove_dir_all(&user_path);
+                } else {
+                    let _ = fs::remove_file(&user_path);
+                }
+            }
+
+            let migration_result: Result<()> = match entry.kind.as_str() {
+                "directory" => {
+                    if !bundled_path.is_dir() {
+                        warn!(
+                            "Bundled model {} declared as directory but resource is not a directory",
+                            entry.filename
+                        );
+                        continue;
+                    }
+                    info!("Migrating bundled model directory {}", entry.filename);
+                    Self::copy_dir_all(&bundled_path, &user_path)
+                }
+                "file" => {
+                    if !bundled_path.is_file() {
+                        warn!(
+                            "Bundled model {} declared as file but resource is not a file",
+                            entry.filename
+                        );
+                        continue;
+                    }
+                    info!("Migrating bundled model file {}", entry.filename);
+                    fs::copy(&bundled_path, &user_path)
+                        .map(|_| ())
+                        .map_err(Into::into)
+                }
+                other => {
+                    warn!(
+                        "Unknown bundled model type '{}' for {}",
+                        other, entry.filename
+                    );
+                    continue;
+                }
+            };
+
+            // If migration of this one entry failed, clean up any partial copy
+            // (so next launch retries from scratch instead of treating a half-
+            // copied directory as successfully migrated) and keep going.
+            match migration_result {
+                Ok(()) => {
+                    // Drop the .migration_done marker LAST so that a crash
+                    // between copy and marker leaves us in the "retry"
+                    // state on the next launch.
+                    if let Err(e) = File::create(&marker_path) {
+                        warn!(
+                            "Migrated {} but failed to write completion marker: {:#}",
+                            entry.filename, e
+                        );
+                    } else {
+                        info!("Successfully migrated {}", entry.filename);
+                    }
+                }
+                Err(e) => {
+                    warn!(
+                        "Failed to migrate bundled model {} (skipping): {:#}",
+                        entry.filename, e
+                    );
+                    if user_path.exists() {
+                        if user_path.is_dir() {
+                            let _ = fs::remove_dir_all(&user_path);
+                        } else {
+                            let _ = fs::remove_file(&user_path);
+                        }
                     }
                 }
             }

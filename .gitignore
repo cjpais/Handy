@@ -61,3 +61,18 @@ result
 /nix/hm-module.nix
 /nix/module.nix
 /src-tauri/HID-BLE-Rust/target/debug
+
+# WiX (light.exe) CAB temp scratch dir, populated by tauri-wrapper.mjs when
+# building MSI installers with large resources.
+/src-tauri/target/wix-temp/
+
+# Bundled model artifacts copied by scripts/prepare-bundled-models.mjs.
+# Keep the directory tracked (via .gitkeep) but ignore the heavy payloads.
+/src-tauri/resources/models/*
+!/src-tauri/resources/models/.gitkeep
+!/src-tauri/resources/models/silero_vad_v4.onnx
+!/src-tauri/resources/models/gigaam_vocab.txt
+
+# VC++ redistributable staged from /Runtime by tauri-wrapper.mjs on Windows
+# builds. The source of truth lives in /Runtime; this is a build-time copy.
+/src-tauri/resources/Runtime/

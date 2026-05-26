@@ -113,6 +113,104 @@ fn build_console_filter() -> env_filter::Filter {
     builder.build()
 }
 
+/// Mirrors main.rs::crash_log_dir(). Kept in sync so both the early panic hook
+/// and runtime init-failure logs end up in the same crash.log next to the user
+/// data directory.
+fn crash_log_dir_lib() -> Option<std::path::PathBuf> {
+    if let Some(dir) = portable::data_dir() {
+        return Some(dir.clone());
+    }
+
+    #[cfg(target_os = "windows")]
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        let dir = std::path::PathBuf::from(appdata).join("com.pais.handy");
+        if std::fs::create_dir_all(&dir).is_ok() {
+            return Some(dir);
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    if let Some(home) = std::env::var_os("HOME") {
+        let dir = std::path::PathBuf::from(home).join(".handy");
+        if std::fs::create_dir_all(&dir).is_ok() {
+            return Some(dir);
+        }
+    }
+
+    let tmp = std::env::temp_dir().join("com.pais.handy");
+    if std::fs::create_dir_all(&tmp).is_ok() {
+        return Some(tmp);
+    }
+
+    None
+}
+
+pub(crate) fn append_crash_log_line(line: &str) {
+    let Some(dir) = crash_log_dir_lib() else {
+        eprintln!("{line}");
+        return;
+    };
+    let path = dir.join("crash.log");
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
+        let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+        let _ = writeln!(f, "[{ts}] {line}");
+    } else {
+        eprintln!("{line}");
+    }
+}
+
+/// Detect whether the previous launch crashed before completing setup.
+///
+/// Walks crash.log backwards from the end and finds the most recent STARTUP
+/// line written by an earlier process (i.e. the second one we see — the first
+/// is the current run's own STARTUP, written by main.rs::log_startup_marker
+/// before this function is called).
+///
+/// Returns true if that previous STARTUP exists and there is no SETUP_DONE
+/// between it and the next STARTUP after it. In that case, the previous run
+/// died before reaching the end of setup() — likely a GPU/driver crash inside
+/// whisper or ort init — and we should fall back to CPU-only for this run.
+pub(crate) fn detect_previous_crash_before_setup_done() -> bool {
+    let Some(dir) = crash_log_dir_lib() else {
+        return false;
+    };
+    let path = dir.join("crash.log");
+    let Ok(content) = std::fs::read_to_string(&path) else {
+        return false;
+    };
+    let lines: Vec<&str> = content.lines().collect();
+
+    let mut startups: Vec<usize> = Vec::new();
+    let mut setup_done_after: Vec<bool> = Vec::new();
+
+    for (i, line) in lines.iter().enumerate() {
+        if line.contains("] STARTUP ") {
+            startups.push(i);
+            setup_done_after.push(false);
+        } else if line.contains("] SETUP_DONE") {
+            if let Some(last) = setup_done_after.last_mut() {
+                *last = true;
+            }
+        }
+    }
+
+    if startups.len() < 2 {
+        return false;
+    }
+    // The last STARTUP is the current process. The one before is the previous.
+    !setup_done_after[startups.len() - 2]
+}
+
+fn log_init_failure(component: &str, err: &anyhow::Error) {
+    log::error!("Failed to initialize {}: {:#}", component, err);
+    append_crash_log_line(&format!("INIT_FAIL component={component} error={err:#}"));
+}
+
 fn show_main_window_impl(app: &AppHandle) {
     if let Some(main_window) = app.get_webview_window("main") {
         let was_visible = main_window.is_visible().unwrap_or(false);
@@ -200,34 +298,140 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // after onboarding completes. This avoids triggering permission dialogs
     // on macOS before the user is ready.
 
-    // Initialize the managers
-    let recording_manager = Arc::new(
-        AudioRecordingManager::new(app_handle).expect("Failed to initialize recording manager"),
-    );
-    let model_manager =
-        Arc::new(ModelManager::new(app_handle).expect("Failed to initialize model manager"));
-    let transcription_manager = Arc::new(
-        TranscriptionManager::new(app_handle, model_manager.clone())
-            .expect("Failed to initialize transcription manager"),
-    );
-    let history_manager =
-        Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
+    // Initialize the managers. We deliberately AVOID `.expect()` here so that
+    // a single failing manager doesn't take down the whole app on first launch
+    // (e.g. on customer machines where AppData is locked down, bundled models
+    // fail to migrate, or the audio backend is missing). Any failure is logged
+    // and recorded to crash.log so users can send it back for diagnosis.
+    append_crash_log_line("INIT_AUDIO_MGR_BEGIN");
+    let recording_manager = match AudioRecordingManager::new(app_handle) {
+        Ok(m) => {
+            append_crash_log_line("INIT_AUDIO_MGR_OK");
+            Some(Arc::new(m))
+        }
+        Err(e) => {
+            log_init_failure("AudioRecordingManager", &e);
+            None
+        }
+    };
+    append_crash_log_line("INIT_MODEL_MGR_BEGIN");
+    let model_manager = match ModelManager::new(app_handle) {
+        Ok(m) => {
+            append_crash_log_line("INIT_MODEL_MGR_OK");
+            Some(Arc::new(m))
+        }
+        Err(e) => {
+            log_init_failure("ModelManager", &e);
+            None
+        }
+    };
+    append_crash_log_line("INIT_TRANSCRIPTION_MGR_BEGIN");
+    let transcription_manager = match model_manager.as_ref().map(|mm| {
+        TranscriptionManager::new(app_handle, mm.clone())
+    }) {
+        Some(Ok(m)) => {
+            append_crash_log_line("INIT_TRANSCRIPTION_MGR_OK");
+            Some(Arc::new(m))
+        }
+        Some(Err(e)) => {
+            log_init_failure("TranscriptionManager", &e);
+            None
+        }
+        None => {
+            log::error!(
+                "Skipping TranscriptionManager init because ModelManager failed to initialize"
+            );
+            None
+        }
+    };
+    append_crash_log_line("INIT_HISTORY_MGR_BEGIN");
+    let history_manager = match HistoryManager::new(app_handle) {
+        Ok(m) => {
+            append_crash_log_line("INIT_HISTORY_MGR_OK");
+            Some(Arc::new(m))
+        }
+        Err(e) => {
+            log_init_failure("HistoryManager", &e);
+            None
+        }
+    };
 
-    // Apply accelerator preferences before any model loads
-    managers::transcription::apply_accelerator_settings(app_handle);
+    // If anything critical failed, surface it through a non-fatal dialog so the
+    // user knows something is wrong but the UI still comes up.
+    let init_failures = [
+        ("AudioRecordingManager", recording_manager.is_none()),
+        ("ModelManager", model_manager.is_none()),
+        ("TranscriptionManager", transcription_manager.is_none()),
+        ("HistoryManager", history_manager.is_none()),
+    ]
+    .into_iter()
+    .filter_map(|(name, failed)| if failed { Some(name) } else { None })
+    .collect::<Vec<_>>();
+
+    if !init_failures.is_empty() {
+        let names = init_failures.join(", ");
+        log::error!(
+            "Continuing startup with degraded functionality. Failed managers: {}",
+            names
+        );
+        append_crash_log_line(&format!("DEGRADED startup, failed managers: {}", names));
+    }
+
+    // The downstream code below assumes these exist. If a core manager failed
+    // to initialize there's not much useful we can do — bail out of the rest
+    // of initialize_core_logic but keep the window alive so the user can read
+    // the error and reach the log directory.
+    let (recording_manager, model_manager, transcription_manager, history_manager) =
+        match (
+            recording_manager,
+            model_manager,
+            transcription_manager,
+            history_manager,
+        ) {
+            (Some(r), Some(m), Some(t), Some(h)) => (r, m, t, h),
+            _ => {
+                log::error!(
+                    "Aborting initialize_core_logic: one or more core managers failed. \
+                     Window will still be shown so the user can access logs."
+                );
+                return;
+            }
+        };
+
+    append_crash_log_line("INIT_APPLY_ACCEL_BEGIN");
+    // Apply accelerator preferences before any model loads. If the previous
+    // launch did not reach SETUP_DONE we assume a GPU/driver init crashed
+    // C-side and force CPU-only for whisper/ort this run — without touching
+    // the user's persisted preference so a working environment can opt back in.
+    let safe_mode = detect_previous_crash_before_setup_done();
+    if safe_mode {
+        append_crash_log_line(
+            "SAFE_MODE active: previous launch crashed before SETUP_DONE, forcing CPU accelerators",
+        );
+        use transcribe_rs::accel;
+        accel::set_whisper_accelerator(accel::WhisperAccelerator::CpuOnly);
+        accel::set_ort_accelerator(accel::OrtAccelerator::CpuOnly);
+    } else {
+        managers::transcription::apply_accelerator_settings(app_handle);
+    }
+    append_crash_log_line("INIT_APPLY_ACCEL_OK");
 
     // Add managers to Tauri's managed state
     app_handle.manage(recording_manager.clone());
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    append_crash_log_line("INIT_HID_MONITOR_BEGIN");
     app_handle.manage(start_hid_mouse_monitor(app_handle));
+    append_crash_log_line("INIT_HID_MONITOR_OK");
 
     #[cfg(target_os = "macos")]
     start_macos_mouse_button_fallback(app_handle.clone());
 
     // Pre-load the selected model in background so it is ready on first use.
+    append_crash_log_line("INIT_MODEL_PRELOAD_KICKOFF");
     transcription_manager.initiate_model_load();
+    append_crash_log_line("INIT_MODEL_PRELOAD_RETURNED");
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -255,16 +459,39 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     // Choose the appropriate initial icon based on theme
     let initial_icon_path = tray::get_icon_path(initial_theme, tray::TrayIconState::Idle);
 
-    let tray = TrayIconBuilder::new()
-        .icon(
-            Image::from_path(
-                app_handle
-                    .path()
-                    .resolve(initial_icon_path, tauri::path::BaseDirectory::Resource)
-                    .unwrap(),
-            )
-            .unwrap(),
-        )
+    // Resolve + load the tray icon defensively. If the resource is missing
+    // from the installer (or the path resolution fails for any reason), we
+    // log and continue without a tray icon rather than panicking — the main
+    // window is still usable, and tray-less mode is a supported state.
+    let mut tray_builder = TrayIconBuilder::new();
+    match app_handle
+        .path()
+        .resolve(initial_icon_path, tauri::path::BaseDirectory::Resource)
+    {
+        Ok(resolved) => match Image::from_path(&resolved) {
+            Ok(img) => {
+                tray_builder = tray_builder.icon(img);
+            }
+            Err(e) => {
+                log::error!(
+                    "Failed to load tray icon from {:?}: {}. Continuing without an icon.",
+                    resolved,
+                    e
+                );
+                append_crash_log_line(&format!(
+                    "TRAY_ICON_LOAD_FAIL path={resolved:?} error={e}"
+                ));
+            }
+        },
+        Err(e) => {
+            log::error!(
+                "Failed to resolve tray icon resource path: {}. Continuing without an icon.",
+                e
+            );
+            append_crash_log_line(&format!("TRAY_ICON_RESOLVE_FAIL error={e}"));
+        }
+    }
+    let tray_builder = tray_builder
         .show_menu_on_left_click(true)
         .icon_as_template(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
@@ -324,13 +551,22 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                 });
             }
             _ => {}
-        })
-        .build(app_handle)
-        .unwrap();
-    app_handle.manage(tray);
+        });
 
-    // Initialize tray menu with idle state
-    utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
+    match tray_builder.build(app_handle) {
+        Ok(tray) => {
+            app_handle.manage(tray);
+            // Initialize tray menu with idle state
+            utils::update_tray_menu(app_handle, &utils::TrayIconState::Idle, None);
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to build tray icon: {}. App will run without a system tray.",
+                e
+            );
+            append_crash_log_line(&format!("TRAY_BUILD_FAIL error={e}"));
+        }
+    }
 
     // Apply show_tray_icon setting
     let settings = settings::get_settings(app_handle);
@@ -569,6 +805,8 @@ pub fn run(cli_args: CliArgs) {
         ))
         .manage(cli_args.clone())
         .setup(move |app| {
+            append_crash_log_line("SETUP_ENTER");
+
             // Read settings up-front so we can apply persisted webview options
             // (e.g. proxy_url) at window creation.
             let mut settings = get_settings(&app.handle());
@@ -606,7 +844,12 @@ pub fn run(cli_args: CliArgs) {
                 }
             }
 
-            win_builder.build()?;
+            append_crash_log_line("SETUP_WEBVIEW_BUILD_BEGIN");
+            if let Err(e) = win_builder.build() {
+                append_crash_log_line(&format!("SETUP_WEBVIEW_BUILD_FAIL error={e}"));
+                return Err(e.into());
+            }
+            append_crash_log_line("SETUP_WEBVIEW_BUILD_OK");
 
             // CLI --debug flag overrides debug_mode and log level (runtime-only, not persisted)
             if cli_args.debug {
@@ -627,7 +870,9 @@ pub fn run(cli_args: CliArgs) {
                 Option::<streaming_typing::StreamingTypingHandle>::None,
             ));
 
+            append_crash_log_line("SETUP_INIT_CORE_BEGIN");
             initialize_core_logic(&app_handle);
+            append_crash_log_line("SETUP_INIT_CORE_END");
 
             // Hide tray icon if --no-tray was passed
             if cli_args.no_tray {
@@ -647,6 +892,7 @@ pub fn run(cli_args: CliArgs) {
                 show_main_window(&app_handle);
             }
 
+            append_crash_log_line("SETUP_DONE");
             Ok(())
         })
         .on_window_event(|window, event| match event {

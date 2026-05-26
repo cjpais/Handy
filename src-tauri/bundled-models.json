@@ -1,0 +1,8 @@
+{
+  "$comment": "Lists models bundled into the installer. 'filename' must match ModelInfo.filename in src/managers/model.rs. 'type' is either 'file' (single file like .bin/.onnx) or 'directory' (extracted folder). The prepare-bundled-models.mjs build script copies these from sourceDir into src-tauri/resources/models/ before tauri build. At runtime, ModelManager::migrate_bundled_models copies them from the installed resources into the user's models directory on first launch.",
+  "sourceDir": "G:/离线语音模型",
+  "models": [
+    { "filename": "sense-voice-int8", "type": "directory" },
+    { "filename": "ggml-small.bin", "type": "file" }
+  ]
+}

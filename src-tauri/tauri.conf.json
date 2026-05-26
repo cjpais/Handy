@@ -1,10 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "美声智能",
+  "productName": "MSZN",
   "version": "0.7.10",
   "identifier": "com.pais.handy",
   "build": {
-    "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
@@ -59,8 +58,15 @@
     },
     "windows": {
       "signCommand": "trusted-signing-cli -e https://eus.codesigning.azure.net/ -a CJ-Signing -c cjpais-dev -d Handy %1",
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
       "nsis": {
         "template": "nsis/installer.nsi"
+      },
+      "wix": {
+        "language": ["zh-CN", "en-US"]
       }
     }
   },

@@ -16,10 +16,10 @@
 ### 按模型类型划分
 
 **Whisper 模型**（Small / Medium / Turbo / Large）
-- macOS：M 系列芯片 Mac，或 Intel Mac
-- Windows：Intel、AMD 或 NVIDIA GPU（Vulkan 加速）
+- macOS：M 系列芯片 Mac（Metal 加速），或 Intel Mac
+- Windows：CPU 推理（已移除 Vulkan 链接，兼容性优先；旧版 Win10 LTSC / 旧显卡驱动机器也能跑起来）
 - Linux：Intel、AMD 或 NVIDIA GPU（OpenBLAS + Vulkan）
-- ⚠️ 已知问题：Whisper 模型在某些 Windows / Linux 配置上会崩溃，与具体硬件配置相关
+- ⚠️ 已知问题：Whisper 模型在某些 Linux 配置上会崩溃，与具体硬件配置相关
 
 **Parakeet V3 模型**（面向配置较低的电脑）
 - 纯 CPU 运行，硬件兼容性广
@@ -66,14 +66,14 @@
 
 ---
 
-### 🟡 Whisper Small（487 MB）— 入门带 GPU 方案
+### 🟡 Whisper Small（487 MB）— 中等精度方案
 
 | 项 | 配置 |
 |---|---|
-| CPU | i5-8 代 / Ryzen 3000 系列 |
+| CPU | i5-8 代 / Ryzen 3000 系列（Windows 走 CPU 推理） |
 | 内存 | 8 GB |
-| GPU | Intel UHD 620 / Iris Xe（核显）<br>或 NVIDIA GTX 1050（2 GB VRAM）<br>或 AMD RX 550（2 GB VRAM） |
-| VRAM | ≥ 2 GB |
+| GPU | Windows 不依赖；Linux/macOS 可享受 GPU 加速 |
+| VRAM | — |
 
 ---
 
@@ -101,13 +101,12 @@
 
 ## 四、特别提醒（基于 README 已知问题）
 
-1. **Whisper 在部分 Win/Linux 机器上会崩溃**：配置不确定时，默认推荐 **Parakeet V3** 最稳。
+1. **Windows 已移除 Vulkan 链接**：handy.exe 不再依赖 `vulkan-1.dll`，旧 Win10 LTSC / 旧显卡驱动机器不会再因为 Vulkan 1.0 loader 而启动失败（`vkGetPhysicalDeviceFeatures2` 入口缺失）。代价是 Windows 走 CPU 推理。
 2. **Linux 显示服务器依赖**：
    - X11：需安装 `xdotool`
    - Wayland：需安装 `wtype` 或 `dotool`，否则文字粘贴会失败
-3. **Windows 核显 + Vulkan**：能跑 Whisper Small，但性能一般，优先建议用 Parakeet。
-4. **机械硬盘（HDD）不建议**：Turbo / Large 模型启动会非常慢。
-5. **Linux 缺运行时库**：报 `libgtk-layer-shell.so.0` 错误时需按发行版安装 `libgtk-layer-shell0` 等包。
+3. **机械硬盘（HDD）不建议**：Turbo / Large 模型启动会非常慢。
+4. **Linux 缺运行时库**：报 `libgtk-layer-shell.so.0` 错误时需按发行版安装 `libgtk-layer-shell0` 等包。
 
 ---
 

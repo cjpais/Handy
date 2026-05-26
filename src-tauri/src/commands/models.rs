@@ -281,7 +281,13 @@ pub async fn has_any_models_available(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
     let models = model_manager.get_available_models();
-    Ok(models.iter().any(|m| m.is_downloaded))
+    if models.iter().any(|m| m.is_downloaded) {
+        return Ok(true);
+    }
+    // If the installer bundled any models, treat the app as already provisioned
+    // so the onboarding model-picker is skipped. The actual files are migrated
+    // into the user models dir on first ModelManager::new().
+    Ok(ModelManager::has_bundled_models_declared())
 }
 
 #[tauri::command]
@@ -290,8 +296,10 @@ pub async fn has_any_models_or_downloads(
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
     let models = model_manager.get_available_models();
-    // Return true if any models are downloaded OR if any downloads are in progress
-    Ok(models.iter().any(|m| m.is_downloaded))
+    if models.iter().any(|m| m.is_downloaded) {
+        return Ok(true);
+    }
+    Ok(ModelManager::has_bundled_models_declared())
 }
 
 #[tauri::command]

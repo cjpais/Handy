@@ -830,6 +830,70 @@ Section Install
   ${EndIf}
 SectionEnd
 
+; Install Microsoft Visual C++ 2015-2022 x64 Redistributable when missing.
+; whisper.cpp and ONNX Runtime depend on vcruntime140.dll / msvcp140.dll,
+; which are absent on fresh Win10 LTSC and some enterprise SKUs and lead
+; to silent app crash-on-launch (loader error c0000135). The redist binary
+; is shipped as a resource at $INSTDIR\Runtime\VC_redist.x64.exe by the
+; tauri-wrapper.mjs pre-build step; if the staging step didn't run (e.g.
+; the binary was missing from /Runtime), this section becomes a no-op.
+Section VCRedist
+  ; Detection registry key, written by every recent VC++ 2015-2022 x64 redist.
+  ; "Installed" REG_DWORD = 1 means the runtime is present.
+  ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" "Installed"
+  ${If} $0 = 1
+    DetailPrint "VC++ 2015-2022 x64 redistributable already present, skipping."
+    Goto vcredist_done
+  ${EndIf}
+
+  ; Fall back to the 32-bit registry view in case we're running under WOW64
+  ; with redirection on (NSIS x86 build).
+  SetRegView 64
+  ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" "Installed"
+  SetRegView default
+  ${If} $0 = 1
+    DetailPrint "VC++ 2015-2022 x64 redistributable already present (64-bit view), skipping."
+    Goto vcredist_done
+  ${EndIf}
+
+  ; The redist binary lives next to the app post-install. If the staging
+  ; step was skipped, the file won't be there and we silently move on —
+  ; users without VC++ will hit the same crash they hit before, but we
+  ; won't break installation for users who do have it.
+  ${If} ${FileExists} "$INSTDIR\Runtime\VC_redist.x64.exe"
+    DetailPrint "Installing Microsoft Visual C++ 2015-2022 x64 redistributable..."
+    ; /quiet and /norestart are the documented silent flags; /norestart
+    ; prevents an unexpected reboot prompt from our installer.
+    ExecWait '"$INSTDIR\Runtime\VC_redist.x64.exe" /quiet /norestart' $1
+    ; Exit codes:
+    ;   0    = success
+    ;   1638 = newer version already installed (treat as success)
+    ;   3010 = success but reboot required (treat as success, app will run)
+    ${If} $1 = 0
+    ${OrIf} $1 = 1638
+    ${OrIf} $1 = 3010
+      DetailPrint "VC++ redistributable installed (exit=$1)."
+    ${Else}
+      DetailPrint "VC++ redistributable installer returned exit code $1; the app may fail to launch."
+      ; We intentionally do NOT Abort here. A signed redist that returns an
+      ; unexpected exit code on, say, a Server SKU shouldn't make the whole
+      ; product uninstallable; the user can install the redist manually.
+      MessageBox MB_ICONEXCLAMATION|MB_OK \
+        "Microsoft Visual C++ 2015-2022 Redistributable failed to install (code $1).$\r$\n$\r$\nIf ${PRODUCTNAME} fails to launch, please install it manually from Microsoft." \
+        /SD IDOK
+    ${EndIf}
+  ${Else}
+    DetailPrint "Runtime\VC_redist.x64.exe not staged in installer; skipping VC++ bootstrap."
+  ${EndIf}
+
+  vcredist_done:
+    ; Reclaim ~18 MB now that the redist has either installed successfully
+    ; or surfaced its failure to the user. Manual recovery, if needed,
+    ; is done by downloading the redist from Microsoft.
+    Delete "$INSTDIR\Runtime\VC_redist.x64.exe"
+    RMDir "$INSTDIR\Runtime"
+SectionEnd
+
 Function .onInstSuccess
   ; Check for `/R` flag only in silent and passive installers because
   ; GUI installer has a toggle for the user to (re)start the app

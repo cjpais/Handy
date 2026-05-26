@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
+use tauri_plugin_opener::OpenerExt;
 
 #[cfg(target_os = "windows")]
 use winreg::{
@@ -84,6 +85,26 @@ fn get_windows_microphone_permission_status_impl() -> WindowsMicrophonePermissio
     const DESKTOP_APPS_PATH: &str =
         "Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager\\ConsentStore\\microphone\\NonPackaged";
 
+    // On Win10 builds older than 1809 the CapabilityAccessManager keys don't
+    // exist at all. Probe the parent key once; if it isn't there we report
+    // supported=false so callers (e.g. should_force_show_permissions_window)
+    // don't treat the absence as a denial.
+    let parent_exists = RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\CapabilityAccessManager")
+        .is_ok();
+    if !parent_exists {
+        warn!(
+            "CapabilityAccessManager registry key missing — likely Win10 pre-1809 or Win Server SKU; reporting unsupported"
+        );
+        return WindowsMicrophonePermissionStatus {
+            supported: false,
+            overall_access: PermissionAccess::Unknown,
+            device_access: PermissionAccess::Unknown,
+            app_access: PermissionAccess::Unknown,
+            desktop_app_access: PermissionAccess::Unknown,
+        };
+    }
+
     let device_access = read_registry_permission_access(HKEY_LOCAL_MACHINE, MICROPHONE_PATH);
     let app_access = read_registry_permission_access(HKEY_CURRENT_USER, MICROPHONE_PATH);
     let desktop_app_access = read_registry_permission_access(HKEY_CURRENT_USER, DESKTOP_APPS_PATH);
@@ -133,13 +154,11 @@ pub fn get_windows_microphone_permission_status() -> WindowsMicrophonePermission
 
 #[tauri::command]
 #[specta::specta]
-pub fn open_microphone_privacy_settings() -> Result<(), String> {
+pub fn open_microphone_privacy_settings(app: AppHandle) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use std::process::Command;
-        Command::new("cmd")
-            .args(["/C", "start", "", "ms-settings:privacy-microphone"])
-            .spawn()
+        app.opener()
+            .open_url("ms-settings:privacy-microphone", None::<String>)
             .map_err(|e| format!("Failed to open Windows microphone privacy settings: {}", e))?;
         return Ok(());
     }

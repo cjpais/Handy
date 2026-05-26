@@ -37,48 +37,6 @@ function Add-ToPathIfExists {
   }
 }
 
-function Test-VulkanSdkRoot {
-  param([string]$Root)
-  if ([string]::IsNullOrWhiteSpace($Root)) { return $false }
-  $header = Join-Path $Root 'Include\vulkan\vulkan.h'
-  $lib = Join-Path $Root 'Lib\vulkan-1.lib'
-  $glslc = Join-Path $Root 'Bin\glslc.exe'
-  return (Test-Path $header) -and (Test-Path $lib) -and (Test-Path $glslc)
-}
-
-function Resolve-VulkanSdkRoot {
-  param([string]$Current)
-
-  if (Test-VulkanSdkRoot $Current) {
-    return $Current
-  }
-
-  $candidates = @()
-  $roots = @('C:\VulkanSDK', 'D:\VulkanSDK', 'E:\VulkanSDK', 'F:\VulkanSDK')
-  foreach ($root in $roots) {
-    if (Test-Path $root) {
-      $dirs = Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue
-      if ($dirs) {
-        $candidates += $dirs.FullName
-      }
-    }
-  }
-
-  if (-not $candidates -or $candidates.Count -eq 0) {
-    return $null
-  }
-
-  # Prefer the lexicographically latest version folder name.
-  $ordered = $candidates | Sort-Object -Descending
-  foreach ($candidate in $ordered) {
-    if (Test-VulkanSdkRoot $candidate) {
-      return $candidate
-    }
-  }
-
-  return $null
-}
-
 function Get-ShortPath {
   param(
     [Parameter(Mandatory = $true)]
@@ -150,15 +108,6 @@ if ($cmakeCmd) {
   $env:CMAKE = $cmakeCmd
 }
 
-# 2.1) Validate/resolve Vulkan SDK (GGML_VULKAN requires headers, vulkan-1.lib and glslc)
-$resolvedVulkan = Resolve-VulkanSdkRoot $env:VULKAN_SDK
-if ($resolvedVulkan) {
-  $env:VULKAN_SDK = $resolvedVulkan
-  Add-ToPathIfExists (Join-Path $resolvedVulkan 'Bin')
-} else {
-  Write-Warning "VULKAN_SDK is not configured to a valid SDK root (missing Include/Lib/Bin\\glslc.exe). Please install LunarG Vulkan SDK."
-}
-
 # 3) Help bindgen find standard headers reliably
 $llvmBin = 'C:\Program Files\LLVM\bin'
 if (Test-Path (Join-Path $llvmBin 'libclang.dll')) {
@@ -221,7 +170,6 @@ if ($clPath -match '\\2019\\') {
 }
 
 Write-Host "Loaded build env:" -ForegroundColor Cyan
-Write-Host "  VULKAN_SDK=$env:VULKAN_SDK"
 Write-Host "  LIBCLANG_PATH=$env:LIBCLANG_PATH"
 Write-Host "  CLANG_PATH=$env:CLANG_PATH"
 Write-Host "  BINDGEN_EXTRA_CLANG_ARGS=$env:BINDGEN_EXTRA_CLANG_ARGS"

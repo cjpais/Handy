@@ -1,0 +1,7 @@
+# Development configuration
+# This ensures all features are enabled when running cargo commands locally
+
+[alias]
+test-all = "test --all-features"
+check-all = "check --all-features"
+build-all = "build --all-features"

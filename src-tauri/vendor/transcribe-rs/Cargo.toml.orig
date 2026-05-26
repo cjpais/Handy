@@ -1,0 +1,146 @@
+[package]
+name = "transcribe-rs"
+version = "0.3.1"
+edition = "2021"
+description = "A simple library to help you transcribe audio"
+license = "MIT"
+repository = "https://github.com/cjpais/transcribe-rs"
+
+[features]
+default = []
+
+# Shared audio feature extraction (mel spectrogram, CTC decode, etc.)
+audio-features = ["dep:ndarray", "dep:rustfft"]
+
+# ONNX-based models (SenseVoice, GigaAM, Parakeet, Moonshine, Canary)
+onnx = ["audio-features", "dep:ort", "dep:base64", "dep:regex", "dep:once_cell"]
+
+# Whisper via whisper.cpp
+whisper-cpp = ["dep:whisper-rs"]
+whisper = ["whisper-cpp"]  # backward compat alias
+
+# Whisperfile server
+whisperfile = ["dep:ureq"]
+
+# Remote engines
+openai = ["dep:async-openai", "dep:tokio", "dep:async-trait"]
+
+# --- ORT Accelerators ---
+ort-cuda     = ["onnx", "ort/cuda"]
+ort-directml = ["onnx", "ort/directml"]
+ort-rocm     = ["onnx", "ort/rocm"]
+ort-accel    = ["ort-cuda", "ort-directml", "ort-rocm"]
+
+# Convenience
+all = ["onnx", "whisper-cpp", "whisperfile", "openai"]
+
+[dependencies]
+# Always required
+thiserror = "2"
+hound = "3.5.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4.28"
+env_logger = "0.10.0"
+derive_builder = { version = "0.20.2" }
+
+# ONNX runtime
+ort = { version = "=2.0.0-rc.10", optional = true }
+ndarray = { version = "0.16.1", optional = true }
+regex = { version = "1.11.2", optional = true }
+once_cell = { version = "1.21.3", optional = true }
+rustfft = { version = "6", optional = true }
+base64 = { version = "0.22", optional = true }
+
+# Whisperfile
+ureq = { version = "3", optional = true }
+
+# ITN (Inverse Text Normalization)
+# nemo-text-processing = { version = "0.1.0", git = "https://github.com/FluidInference/text-processing-rs", optional = true }  # TODO: re-enable when published to crates.io
+
+# OpenAI
+tokio = { version = "1.47.1", features = ["rt-multi-thread"], optional = true }
+async-openai = { version = "0.29.3", optional = true }
+async-trait = { version = "0.1.89", optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+whisper-rs = { version = "0.13.2", features = ["metal"], optional = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+whisper-rs = { version = "0.13.2", features = ["vulkan"], optional = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+whisper-rs = { version = "0.13.2", features = ["vulkan"], optional = true }
+
+# Examples with required features
+[[example]]
+name = "parakeet"
+required-features = ["onnx"]
+
+[[example]]
+name = "whisper"
+required-features = ["whisper-cpp"]
+
+[[example]]
+name = "moonshine"
+required-features = ["onnx"]
+
+[[example]]
+name = "moonshine_streaming"
+required-features = ["onnx"]
+
+[[example]]
+name = "gigaam"
+required-features = ["onnx"]
+
+[[example]]
+name = "sense_voice"
+required-features = ["onnx"]
+
+[[example]]
+name = "canary"
+required-features = ["onnx"]
+
+[[example]]
+name = "whisperfile"
+required-features = ["whisperfile"]
+
+[[example]]
+name = "openai"
+required-features = ["openai"]
+
+[dev-dependencies]
+once_cell = "1.21.3"
+
+# Tests with required features
+[[test]]
+name = "parakeet"
+required-features = ["onnx"]
+
+[[test]]
+name = "whisper"
+required-features = ["whisper-cpp"]
+
+[[test]]
+name = "moonshine"
+required-features = ["onnx"]
+
+[[test]]
+name = "gigaam"
+required-features = ["onnx"]
+
+[[test]]
+name = "sense_voice"
+required-features = ["onnx"]
+
+[[test]]
+name = "canary"
+required-features = ["onnx"]
+
+[[test]]
+name = "whisperfile"
+required-features = ["whisperfile"]
+
+[[test]]
+name = "openai"
+required-features = ["openai"]

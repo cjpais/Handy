@@ -686,10 +686,9 @@ async getSelectedMicrophone() : Promise<Result<string, string>> {
 }
 },
 /**
- * Returns the friendly name of the AI mouse receiver's microphone endpoint
- * when the receiver is currently plugged in, otherwise `None`. The frontend
- * uses this to relabel the "Default" option in the microphone picker and
- * to disable selection — recording is locked to the AI mouse mic.
+ * Returns the AI mouse audio source label when available. Prefer the system
+ * microphone endpoint name when the receiver exposes one; otherwise fall back
+ * to a synthetic HID label while private-HID audio is active.
  */
 async getAiMouseMicrophoneName() : Promise<string | null> {
     return await TAURI_INVOKE("get_ai_mouse_microphone_name");
