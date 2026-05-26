@@ -1,5 +1,5 @@
 [workspace]
-members  = ["src-tauri"]
+members  = ["src-tauri", "crates/handy-core"]
 resolver = "2"
 
 [workspace.package]

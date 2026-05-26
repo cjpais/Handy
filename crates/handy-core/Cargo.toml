@@ -1,0 +1,21 @@
+[package]
+name        = "handy-core"
+version     = "0.1.0"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Platform-agnostic core for Handy: transcription, VAD, model, history, settings."
+
+[lib]
+name = "handy_core"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow      = { workspace = true }
+log         = { workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+thiserror   = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
