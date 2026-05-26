@@ -356,6 +356,12 @@
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
+      },
+      "customTranscription": {
+        "title": "Vlastní koncový bod",
+        "description": "Použijte místní koncový bod přepisu kompatibilní s OpenAI místo staženého modelu.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

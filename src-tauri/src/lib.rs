@@ -115,13 +115,15 @@ fn show_main_window(app: &AppHandle) {
 fn should_force_show_permissions_window(app: &AppHandle) -> bool {
     #[cfg(target_os = "windows")]
     {
+        let settings = settings::get_settings(app);
+        let has_custom_endpoint = settings::has_custom_transcription_endpoint(&settings);
         let model_manager = app.state::<Arc<ModelManager>>();
         let has_downloaded_models = model_manager
             .get_available_models()
             .iter()
             .any(|model| model.is_downloaded);
 
-        if !has_downloaded_models {
+        if !has_custom_endpoint && !has_downloaded_models {
             return false;
         }
 
@@ -334,6 +336,8 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_autostart_setting,
             shortcut::change_translate_to_english_setting,
             shortcut::change_selected_language_setting,
+            shortcut::change_custom_transcription_endpoint_setting,
+            shortcut::change_custom_transcription_model_setting,
             shortcut::change_overlay_position_setting,
             shortcut::change_debug_mode_setting,
             shortcut::change_word_correction_threshold_setting,

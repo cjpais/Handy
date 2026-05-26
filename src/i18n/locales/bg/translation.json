@@ -356,6 +356,12 @@
         "add": "Добавяне",
         "remove": "Премахване на {{word}}",
         "duplicate": "„{{word}}“ вече съществува"
+      },
+      "customTranscription": {
+        "title": "Персонализирана крайна точка",
+        "description": "Използвайте локална крайна точка за транскрипция, съвместима с OpenAI, вместо изтеглен модел.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

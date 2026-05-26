@@ -356,6 +356,12 @@
         "add": "Добавить",
         "remove": "Удалить {{word}}",
         "duplicate": "\"{{word}}\" уже существует"
+      },
+      "customTranscription": {
+        "title": "Пользовательская конечная точка",
+        "description": "Используйте локальную конечную точку транскрипции, совместимую с OpenAI, вместо загруженной модели.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

@@ -356,6 +356,12 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "customTranscription": {
+        "title": "사용자 지정 엔드포인트",
+        "description": "다운로드한 모델 대신 OpenAI 호환 로컬 전사 엔드포인트를 사용합니다.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

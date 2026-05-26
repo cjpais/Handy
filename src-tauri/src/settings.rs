@@ -363,6 +363,10 @@ pub struct AppSettings {
     pub translate_to_english: bool,
     #[serde(default = "default_selected_language")]
     pub selected_language: String,
+    #[serde(default)]
+    pub custom_transcription_endpoint: Option<String>,
+    #[serde(default = "default_custom_transcription_model")]
+    pub custom_transcription_model: String,
     #[serde(default = "default_overlay_position")]
     pub overlay_position: OverlayPosition,
     #[serde(default = "default_debug_mode")]
@@ -458,6 +462,10 @@ fn default_update_checks_enabled() -> bool {
 
 fn default_selected_language() -> String {
     "auto".to_string()
+}
+
+fn default_custom_transcription_model() -> String {
+    "whisper-1".to_string()
 }
 
 fn default_overlay_position() -> OverlayPosition {
@@ -780,6 +788,8 @@ pub fn get_default_settings() -> AppSettings {
         selected_output_device: None,
         translate_to_english: false,
         selected_language: "auto".to_string(),
+        custom_transcription_endpoint: None,
+        custom_transcription_model: "whisper-1".to_string(),
         overlay_position: default_overlay_position(),
         debug_mode: false,
         log_level: default_log_level(),
@@ -913,6 +923,13 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
     }
 
     settings
+}
+
+pub fn has_custom_transcription_endpoint(settings: &AppSettings) -> bool {
+    settings
+        .custom_transcription_endpoint
+        .as_deref()
+        .is_some_and(|endpoint| !endpoint.trim().is_empty())
 }
 
 pub fn write_settings(app: &AppHandle, settings: AppSettings) {

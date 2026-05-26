@@ -334,6 +334,12 @@
         "add": "إضافة",
         "remove": "إزالة {{word}}",
         "duplicate": "\"{{word}}\" موجود بالفعل"
+      },
+      "customTranscription": {
+        "title": "نقطة نهاية مخصصة",
+        "description": "استخدم نقطة نهاية نسخ محلية متوافقة مع OpenAI بدلاً من نموذج تم تنزيله.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

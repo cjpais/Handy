@@ -356,6 +356,12 @@
         "add": "הוסף",
         "remove": "הסר את {{word}}",
         "duplicate": "\"{{word}}\" כבר קיימת"
+      },
+      "customTranscription": {
+        "title": "נקודת קצה מותאמת אישית",
+        "description": "השתמש בנקודת קצה מקומית לתמלול התואמת ל-OpenAI במקום מודל שהורד.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

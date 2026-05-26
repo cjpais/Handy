@@ -1,8 +1,9 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{apply_custom_words, filter_transcription_output, save_wav_file};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
-    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
+    get_settings, has_custom_transcription_endpoint, AppSettings, ModelUnloadTimeout,
+    OrtAcceleratorSetting, WhisperAcceleratorSetting,
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
@@ -423,6 +424,13 @@ impl TranscriptionManager {
         let self_clone = self.clone();
         thread::spawn(move || {
             let settings = get_settings(&self_clone.app_handle);
+            if has_custom_transcription_endpoint(&settings) {
+                let mut is_loading = self_clone.is_loading.lock().unwrap();
+                *is_loading = false;
+                self_clone.loading_condvar.notify_all();
+                return;
+            }
+
             if let Err(e) = self_clone.load_model(&settings.selected_model) {
                 error!("Failed to load model: {}", e);
             }
@@ -435,6 +443,87 @@ impl TranscriptionManager {
     pub fn get_current_model(&self) -> Option<String> {
         let current_model = self.current_model_id.lock().unwrap();
         current_model.clone()
+    }
+
+    fn transcribe_with_custom_endpoint(
+        &self,
+        audio: &[f32],
+        settings: &AppSettings,
+    ) -> Result<String> {
+        let endpoint = settings
+            .custom_transcription_endpoint
+            .as_deref()
+            .unwrap_or_default()
+            .trim();
+        if endpoint.is_empty() {
+            return Err(anyhow::anyhow!("Custom transcription endpoint is empty"));
+        }
+
+        let mut path = std::env::temp_dir();
+        path.push(format!(
+            "handy-custom-transcription-{}-{}.wav",
+            std::process::id(),
+            Self::now_ms()
+        ));
+
+        save_wav_file(&path, audio)?;
+
+        let path_for_request = path.clone();
+        let endpoint = endpoint.to_string();
+        let model = if settings.custom_transcription_model.trim().is_empty() {
+            "whisper-1".to_string()
+        } else {
+            settings.custom_transcription_model.trim().to_string()
+        };
+        let language = if settings.selected_language == "auto" {
+            None
+        } else {
+            Some(settings.selected_language.clone())
+        };
+
+        let result = thread::spawn(move || -> Result<String> {
+            let mut form = reqwest::blocking::multipart::Form::new()
+                .file("file", &path_for_request)?
+                .text("model", model)
+                .text("response_format", "json");
+
+            if let Some(language) = language {
+                form = form.text("language", language);
+            }
+
+            let client = reqwest::blocking::Client::builder()
+                .timeout(Duration::from_secs(300))
+                .build()?;
+            let response = client.post(endpoint).multipart(form).send()?;
+            let status = response.status();
+            let body = response.text()?;
+
+            if !status.is_success() {
+                return Err(anyhow::anyhow!(
+                    "Custom transcription endpoint returned {}: {}",
+                    status,
+                    body
+                ));
+            }
+
+            if body.trim().is_empty() {
+                return Ok(String::new());
+            }
+
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                return Ok(json
+                    .get("text")
+                    .and_then(|value| value.as_str())
+                    .unwrap_or_default()
+                    .to_string());
+            }
+
+            Ok(body.trim().to_string())
+        })
+        .join();
+
+        let _ = std::fs::remove_file(path);
+        result.map_err(|_| anyhow::anyhow!("Custom transcription request thread panicked"))?
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
@@ -458,6 +547,39 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
+        let settings = get_settings(&self.app_handle);
+        if has_custom_transcription_endpoint(&settings) {
+            let result = self.transcribe_with_custom_endpoint(&audio, &settings)?;
+            let corrected_result = if settings.custom_words.is_empty() {
+                result
+            } else {
+                apply_custom_words(
+                    &result,
+                    &settings.custom_words,
+                    settings.word_correction_threshold,
+                )
+            };
+            let final_result = filter_transcription_output(
+                &corrected_result,
+                &settings.app_language,
+                &settings.custom_filler_words,
+            );
+            let et = std::time::Instant::now();
+            info!(
+                "Custom transcription completed in {}ms",
+                (et - st).as_millis()
+            );
+
+            if final_result.is_empty() {
+                info!("Transcription result is empty");
+            } else {
+                info!("Transcription result: {}", final_result);
+            }
+
+            self.maybe_unload_immediately("custom transcription");
+            return Ok(final_result);
+        }
+
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
@@ -471,9 +593,6 @@ impl TranscriptionManager {
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
         }
-
-        // Get current settings for configuration
-        let settings = get_settings(&self.app_handle);
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.

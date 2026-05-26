@@ -356,6 +356,12 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "customTranscription": {
+        "title": "カスタムエンドポイント",
+        "description": "ダウンロード済みモデルの代わりに、OpenAI互換のローカル文字起こしエンドポイントを使用します。",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

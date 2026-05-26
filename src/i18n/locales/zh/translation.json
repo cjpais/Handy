@@ -356,6 +356,12 @@
         "add": "添加",
         "remove": "删除 {{word}}",
         "duplicate": "\"{{word}}\" 已存在"
+      },
+      "customTranscription": {
+        "title": "自定义端点",
+        "description": "使用本地 OpenAI 兼容转录端点，而不是已下载的模型。",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

@@ -356,6 +356,12 @@
         "add": "Ekle",
         "remove": "{{word}} Kaldır",
         "duplicate": "\"{{word}}\" zaten mevcut"
+      },
+      "customTranscription": {
+        "title": "Özel uç nokta",
+        "description": "İndirilen bir model yerine OpenAI uyumlu yerel bir transkripsiyon uç noktası kullan.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

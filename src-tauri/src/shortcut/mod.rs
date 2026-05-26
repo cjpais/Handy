@@ -536,6 +536,35 @@ pub fn change_selected_language_setting(app: AppHandle, language: String) -> Res
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_custom_transcription_endpoint_setting(
+    app: AppHandle,
+    endpoint: Option<String>,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let endpoint = endpoint.unwrap_or_default().trim().to_string();
+    settings.custom_transcription_endpoint = if endpoint.is_empty() {
+        None
+    } else {
+        Some(endpoint)
+    };
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_custom_transcription_model_setting(
+    app: AppHandle,
+    model: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.custom_transcription_model = model.trim().to_string();
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     let parsed = match position.as_str() {

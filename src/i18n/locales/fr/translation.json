@@ -356,6 +356,12 @@
         "add": "Ajouter",
         "remove": "Supprimer {{word}}",
         "duplicate": "\"{{word}}\" existe déjà"
+      },
+      "customTranscription": {
+        "title": "Point de terminaison personnalisé",
+        "description": "Utilisez un point de terminaison de transcription local compatible avec OpenAI au lieu d'un modèle téléchargé.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

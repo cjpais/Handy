@@ -356,6 +356,12 @@
         "add": "Lägg till",
         "remove": "Ta bort {{word}}",
         "duplicate": "\"{{word}}\" finns redan"
+      },
+      "customTranscription": {
+        "title": "Anpassad slutpunkt",
+        "description": "Använd en lokal OpenAI-kompatibel transkriptionsslutpunkt istället för en nedladdad modell.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {

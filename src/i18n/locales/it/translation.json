@@ -356,6 +356,12 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "customTranscription": {
+        "title": "Endpoint personalizzato",
+        "description": "Usa un endpoint di trascrizione locale compatibile con OpenAI invece di un modello scaricato.",
+        "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelPlaceholder": "whisper-1"
       }
     },
     "postProcessing": {
