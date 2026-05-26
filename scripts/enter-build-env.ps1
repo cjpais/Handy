@@ -84,8 +84,30 @@ Add-ToPathIfExists $winDir
 Add-ToPathIfExists (Join-Path $winDir 'System32')
 
 # 1.1) Use a short Cargo target directory on Windows to avoid deep-path cmake crashes.
+#
+# IMPORTANT: do NOT put this under $env:TEMP. MSBuild's MSB8029 warning
+# ("中间目录或输出目录无法驻留在临时目录下") is actually fatal in some
+# whisper-rs-sys build invocations — MSBuild treats temp-resident inputs as
+# clean-able and wipes out generated whisper.cpp/CMakeLists.txt mid-build,
+# producing "The source directory ... does not appear to contain CMakeLists.txt".
+# Use a stable short path on a real drive instead.
 if ([string]::IsNullOrWhiteSpace($env:CARGO_TARGET_DIR)) {
-  $env:CARGO_TARGET_DIR = Join-Path $env:TEMP 'handy-cargo-target'
+  $candidates = @('C:\handy-build', 'D:\handy-build', 'F:\handy-build')
+  foreach ($c in $candidates) {
+    $root = Split-Path $c -Qualifier
+    if (Test-Path $root) {
+      if (-not (Test-Path $c)) {
+        try { New-Item -ItemType Directory -Path $c -Force | Out-Null } catch { continue }
+      }
+      $env:CARGO_TARGET_DIR = $c
+      break
+    }
+  }
+  if ([string]::IsNullOrWhiteSpace($env:CARGO_TARGET_DIR)) {
+    # Fallback: keep prior behaviour if no fixed drive root is writable.
+    $env:CARGO_TARGET_DIR = Join-Path $env:TEMP 'handy-cargo-target'
+    Write-Warning "Could not allocate a non-temp CARGO_TARGET_DIR; falling back to $env:CARGO_TARGET_DIR. whisper-rs-sys MSBuild may fail."
+  }
 }
 
 # 2) Ensure CMake is callable (whisper-rs-sys build script shells out to `cmake`)
