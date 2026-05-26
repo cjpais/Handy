@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "נקודת קצה מותאמת אישית",
         "description": "השתמש בנקודת קצה מקומית לתמלול התואמת ל-OpenAI במקום מודל שהורד.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

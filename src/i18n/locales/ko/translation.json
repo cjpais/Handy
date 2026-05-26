@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "사용자 지정 엔드포인트",
         "description": "다운로드한 모델 대신 OpenAI 호환 로컬 전사 엔드포인트를 사용합니다.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

@@ -21,7 +21,6 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
   const downloadedModels = models.filter((m) => m.is_downloaded);
 
   const handleModelClick = (modelId: string) => {
-    if (modelId === currentModelId) return;
     onModelSelect(modelId);
   };
 
@@ -57,11 +56,9 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({
                       </span>
                     )}
                   </div>
-                  {getTranslatedModelDescription(model, t) && (
-                    <div className="text-xs text-text/40 italic pe-4">
-                      {getTranslatedModelDescription(model, t)}
-                    </div>
-                  )}
+                  <div className="text-xs text-text/40 italic pe-4">
+                    {getTranslatedModelDescription(model, t)}
+                  </div>
                 </div>
                 {currentModelId === model.id && (
                   <div className="text-xs text-logo-primary">

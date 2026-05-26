@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "Custom Endpoint",
         "description": "Use a local OpenAI-compatible transcription endpoint instead of a downloaded model.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

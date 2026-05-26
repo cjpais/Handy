@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "Özel uç nokta",
         "description": "İndirilen bir model yerine OpenAI uyumlu yerel bir transkripsiyon uç noktası kullan.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

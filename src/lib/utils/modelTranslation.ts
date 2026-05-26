@@ -23,10 +23,6 @@ export function getTranslatedModelDescription(
   model: ModelInfo,
   t: TFunction,
 ): string {
-  if (model.id === "custom-transcription-endpoint") {
-    return model.description;
-  }
-
   // Custom models use a generic translation key
   if (model.is_custom) {
     return t("onboarding.customModelDescription");

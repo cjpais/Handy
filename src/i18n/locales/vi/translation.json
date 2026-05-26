@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "Điểm cuối tùy chỉnh",
         "description": "Sử dụng điểm cuối phiên âm cục bộ tương thích với OpenAI thay vì mô hình đã tải xuống.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

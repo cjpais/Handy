@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "自訂端點",
         "description": "使用本機 OpenAI 相容轉錄端點，而不是已下載的模型。",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

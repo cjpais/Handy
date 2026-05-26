@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "カスタムエンドポイント",
         "description": "ダウンロード済みモデルの代わりに、OpenAI互換のローカル文字起こしエンドポイントを使用します。",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

@@ -56,24 +56,36 @@ export const CustomTranscriptionEndpoint: React.FC<CustomTranscriptionEndpointPr
         layout="stacked"
       >
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_10rem] gap-2">
-          <Input
-            type="url"
-            value={endpointValue}
-            onChange={(event) => setEndpointValue(event.target.value)}
-            placeholder={t(
-              "settings.advanced.customTranscription.endpointPlaceholder",
-            )}
-            aria-busy={isUpdating("custom_transcription_endpoint")}
-          />
-          <Input
-            type="text"
-            value={modelValue}
-            onChange={(event) => setModelValue(event.target.value)}
-            placeholder={t(
-              "settings.advanced.customTranscription.modelPlaceholder",
-            )}
-            aria-busy={isUpdating("custom_transcription_model")}
-          />
+          <label className="space-y-1">
+            <span className="text-sm font-medium">
+              {t("settings.advanced.customTranscription.endpointLabel")}
+            </span>
+            <Input
+              type="url"
+              value={endpointValue}
+              onChange={(event) => setEndpointValue(event.target.value)}
+              placeholder={t(
+                "settings.advanced.customTranscription.endpointPlaceholder",
+              )}
+              aria-busy={isUpdating("custom_transcription_endpoint")}
+              className="w-full"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium">
+              {t("settings.advanced.customTranscription.modelLabel")}
+            </span>
+            <Input
+              type="text"
+              value={modelValue}
+              onChange={(event) => setModelValue(event.target.value)}
+              placeholder={t(
+                "settings.advanced.customTranscription.modelPlaceholder",
+              )}
+              aria-busy={isUpdating("custom_transcription_model")}
+              className="w-full"
+            />
+          </label>
         </div>
       </SettingContainer>
     );

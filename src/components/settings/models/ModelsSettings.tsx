@@ -7,10 +7,6 @@ import { ModelCard } from "@/components/onboarding";
 import { useModelStore } from "@/stores/modelStore";
 import { LANGUAGES } from "@/lib/constants/languages.ts";
 import type { ModelInfo } from "@/bindings";
-import { SettingsGroup } from "@/components/ui/SettingsGroup";
-import { CustomTranscriptionEndpoint } from "../CustomTranscriptionEndpoint";
-
-const CUSTOM_ENDPOINT_MODEL_ID = "custom-transcription-endpoint";
 
 // check if model supports a language based on its supported_languages list
 const modelSupportsLanguage = (model: ModelInfo, langCode: string): boolean => {
@@ -167,14 +163,12 @@ export const ModelsSettings: React.FC = () => {
     });
   }, [models, languageFilter]);
 
-  // Split filtered models into downloaded and available sections
+  // Split filtered models into downloaded (including custom) and available sections
   const { downloadedModels, availableModels } = useMemo(() => {
     const downloaded: ModelInfo[] = [];
     const available: ModelInfo[] = [];
 
     for (const model of filteredModels) {
-      if (model.id === CUSTOM_ENDPOINT_MODEL_ID) continue;
-
       if (
         model.is_custom ||
         model.is_downloaded ||
@@ -221,12 +215,7 @@ export const ModelsSettings: React.FC = () => {
           {t("settings.models.description")}
         </p>
       </div>
-
-      <SettingsGroup>
-        <CustomTranscriptionEndpoint descriptionMode="tooltip" grouped />
-      </SettingsGroup>
-
-      {downloadedModels.length > 0 || availableModels.length > 0 ? (
+      {filteredModels.length > 0 ? (
         <div className="space-y-6">
           {/* Downloaded Models Section — header always visible so filter stays accessible */}
           <div className="space-y-3">

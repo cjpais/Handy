@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "Пользовательская конечная точка",
         "description": "Используйте локальную конечную точку транскрипции, совместимую с OpenAI, вместо загруженной модели.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

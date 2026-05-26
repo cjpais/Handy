@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "Vlastní koncový bod",
         "description": "Použijte místní koncový bod přepisu kompatibilní s OpenAI místo staženého modelu.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },

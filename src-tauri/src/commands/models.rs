@@ -1,71 +1,23 @@
-use crate::managers::model::{EngineType, ModelInfo, ModelManager};
+use crate::managers::model::{ModelInfo, ModelManager};
 use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
-use crate::settings::{
-    get_settings, has_custom_transcription_endpoint, write_settings, AppSettings,
-    ModelUnloadTimeout,
-};
+use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
-
-const CUSTOM_TRANSCRIPTION_MODEL_ID: &str = "custom-transcription-endpoint";
-const CUSTOM_TRANSCRIPTION_MODEL_NAME: &str = "Custom Endpoint";
-
-fn custom_transcription_model_info(settings: &AppSettings) -> ModelInfo {
-    let model = settings.custom_transcription_model.trim();
-    let name = if model.is_empty() {
-        CUSTOM_TRANSCRIPTION_MODEL_NAME.to_string()
-    } else {
-        model.to_string()
-    };
-    ModelInfo {
-        id: CUSTOM_TRANSCRIPTION_MODEL_ID.to_string(),
-        name,
-        description: String::new(),
-        filename: String::new(),
-        url: None,
-        sha256: None,
-        size_mb: 0,
-        is_downloaded: true,
-        is_downloading: false,
-        partial_size: 0,
-        is_directory: false,
-        engine_type: EngineType::Whisper,
-        accuracy_score: 0.0,
-        speed_score: 0.0,
-        supports_translation: false,
-        is_recommended: false,
-        supported_languages: Vec::new(),
-        supports_language_selection: true,
-        is_custom: true,
-    }
-}
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_available_models(
-    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<Vec<ModelInfo>, String> {
-    let settings = get_settings(&app_handle);
-    let mut models = model_manager.get_available_models();
-    if has_custom_transcription_endpoint(&settings) {
-        models.push(custom_transcription_model_info(&settings));
-    }
-    Ok(models)
+    Ok(model_manager.get_available_models())
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_model_info(
-    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
     model_id: String,
 ) -> Result<Option<ModelInfo>, String> {
-    let settings = get_settings(&app_handle);
-    if model_id == CUSTOM_TRANSCRIPTION_MODEL_ID && has_custom_transcription_endpoint(&settings) {
-        return Ok(Some(custom_transcription_model_info(&settings)));
-    }
-
     Ok(model_manager.get_model_info(&model_id))
 }
 
@@ -99,17 +51,6 @@ pub async fn delete_model(
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
     model_id: String,
 ) -> Result<(), String> {
-    if model_id == CUSTOM_TRANSCRIPTION_MODEL_ID {
-        let mut settings = get_settings(&app_handle);
-        settings.custom_transcription_endpoint = None;
-        if settings.selected_model == CUSTOM_TRANSCRIPTION_MODEL_ID {
-            settings.selected_model = String::new();
-        }
-        write_settings(&app_handle, settings);
-        let _ = app_handle.emit("model-deleted", model_id);
-        return Ok(());
-    }
-
     // If deleting the active model, unload it and clear the setting
     let settings = get_settings(&app_handle);
     if settings.selected_model == model_id {
@@ -143,26 +84,6 @@ pub fn switch_active_model(app: &AppHandle, model_id: &str) -> Result<(), String
     let _loading_guard = transcription_manager
         .try_start_loading()
         .ok_or_else(|| "Model load already in progress".to_string())?;
-
-    if model_id == CUSTOM_TRANSCRIPTION_MODEL_ID {
-        let mut settings = get_settings(app);
-        if !has_custom_transcription_endpoint(&settings) {
-            return Err("Custom transcription endpoint is not configured".to_string());
-        }
-
-        settings.selected_model = model_id.to_string();
-        write_settings(app, settings);
-        let _ = app.emit(
-            "model-state-changed",
-            ModelStateEvent {
-                event_type: "loading_completed".to_string(),
-                model_id: Some(model_id.to_string()),
-                model_name: Some(CUSTOM_TRANSCRIPTION_MODEL_NAME.to_string()),
-                error: None,
-            },
-        );
-        return Ok(());
-    }
 
     // Check if model exists and is available
     let model_info = model_manager
@@ -248,24 +169,14 @@ pub async fn set_active_model(
 #[specta::specta]
 pub async fn get_current_model(app_handle: AppHandle) -> Result<String, String> {
     let settings = get_settings(&app_handle);
-    if has_custom_transcription_endpoint(&settings) {
-        return Ok(CUSTOM_TRANSCRIPTION_MODEL_ID.to_string());
-    }
-
     Ok(settings.selected_model)
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_transcription_model_status(
-    app_handle: AppHandle,
     transcription_manager: State<'_, Arc<TranscriptionManager>>,
 ) -> Result<Option<String>, String> {
-    let settings = get_settings(&app_handle);
-    if has_custom_transcription_endpoint(&settings) {
-        return Ok(Some(CUSTOM_TRANSCRIPTION_MODEL_ID.to_string()));
-    }
-
     Ok(transcription_manager.get_current_model())
 }
 
@@ -282,14 +193,8 @@ pub async fn is_model_loading(
 #[tauri::command]
 #[specta::specta]
 pub async fn has_any_models_available(
-    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
-    let settings = get_settings(&app_handle);
-    if has_custom_transcription_endpoint(&settings) {
-        return Ok(true);
-    }
-
     let models = model_manager.get_available_models();
     Ok(models.iter().any(|m| m.is_downloaded))
 }
@@ -297,14 +202,8 @@ pub async fn has_any_models_available(
 #[tauri::command]
 #[specta::specta]
 pub async fn has_any_models_or_downloads(
-    app_handle: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,
 ) -> Result<bool, String> {
-    let settings = get_settings(&app_handle);
-    if has_custom_transcription_endpoint(&settings) {
-        return Ok(true);
-    }
-
     let models = model_manager.get_available_models();
     // Return true if any models are downloaded OR if any downloads are in progress
     Ok(models.iter().any(|m| m.is_downloaded))

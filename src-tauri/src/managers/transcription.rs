@@ -468,8 +468,6 @@ impl TranscriptionManager {
 
         save_wav_file(&path, audio)?;
 
-        let path_for_request = path.clone();
-        let endpoint = endpoint.to_string();
         let model = if settings.custom_transcription_model.trim().is_empty() {
             "whisper-1".to_string()
         } else {
@@ -481,9 +479,9 @@ impl TranscriptionManager {
             Some(settings.selected_language.clone())
         };
 
-        let result = thread::spawn(move || -> Result<String> {
+        let result = (|| -> Result<String> {
             let mut form = reqwest::blocking::multipart::Form::new()
-                .file("file", &path_for_request)?
+                .file("file", &path)?
                 .text("model", model)
                 .text("response_format", "json");
 
@@ -519,11 +517,10 @@ impl TranscriptionManager {
             }
 
             Ok(body.trim().to_string())
-        })
-        .join();
+        })();
 
         let _ = std::fs::remove_file(path);
-        result.map_err(|_| anyhow::anyhow!("Custom transcription request thread panicked"))?
+        result
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {

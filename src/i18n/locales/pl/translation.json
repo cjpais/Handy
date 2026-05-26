@@ -360,7 +360,9 @@
       "customTranscription": {
         "title": "Niestandardowy punkt końcowy",
         "description": "Użyj lokalnego punktu końcowego transkrypcji zgodnego z OpenAI zamiast pobranego modelu.",
+        "endpointLabel": "Endpoint URL",
         "endpointPlaceholder": "http://127.0.0.1:8000/v1/audio/transcriptions",
+        "modelLabel": "Model",
         "modelPlaceholder": "whisper-1"
       }
     },
