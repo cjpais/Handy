@@ -16,6 +16,11 @@ log         = { workspace = true }
 serde       = { workspace = true }
 serde_json  = { workspace = true }
 thiserror   = { workspace = true }
+regex          = { workspace = true }
+strsim         = { workspace = true }
+natural        = { workspace = true }
+ferrous-opencc = { workspace = true }
+once_cell      = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

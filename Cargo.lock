@@ -2439,6 +2439,7 @@ dependencies = [
  "futures-util",
  "gtk",
  "gtk-layer-shell",
+ "handy-core",
  "handy-keys",
  "hound",
  "log",
@@ -2489,9 +2490,14 @@ name = "handy-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ferrous-opencc",
  "log",
+ "natural",
+ "once_cell",
+ "regex",
  "serde",
  "serde_json",
+ "strsim",
  "tempfile",
  "thiserror 2.0.18",
 ]
