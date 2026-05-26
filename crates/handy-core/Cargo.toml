@@ -23,6 +23,7 @@ ferrous-opencc = { workspace = true }
 once_cell      = { workspace = true }
 rubato         = { workspace = true }
 rustfft        = { workspace = true }
+vad-rs         = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

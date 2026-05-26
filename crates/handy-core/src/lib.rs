@@ -6,7 +6,10 @@
 
 pub mod audio;
 pub mod text;
+pub mod vad;
+
 pub use text::{apply_custom_words, filter_transcription_output};
+pub use vad::{SileroVad, VoiceActivityDetector};
 
 #[cfg(test)]
 mod sanity_check {
