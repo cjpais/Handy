@@ -218,6 +218,19 @@
       "volume": {
         "title": "볼륨",
         "description": "오디오 피드백 사운드의 볼륨 조절"
+      },
+      "soundTheme": {
+        "label": "Sound theme",
+        "description": "Choose the start and stop sound for recording feedback.",
+        "preview": "Preview start and stop sounds",
+        "options": {
+          "marimba": "Marimba",
+          "pop": "Pop",
+          "bell": "Bell",
+          "chime": "Chime",
+          "pluck": "Pluck",
+          "custom": "Custom"
+        }
       }
     },
     "models": {

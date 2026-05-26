@@ -586,7 +586,10 @@ fn run_consumer(
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
             let is_speech = handle_frame(frame, recording, &vad, &mut processed_samples);
-            let stop_seconds = silence_stop_seconds.lock().map(|guard| *guard).unwrap_or(None);
+            let stop_seconds = silence_stop_seconds
+                .lock()
+                .map(|guard| *guard)
+                .unwrap_or(None);
 
             if recording && silence_stop.update(is_speech, stop_seconds) {
                 if let Some(cb) = &silence_stop_cb {

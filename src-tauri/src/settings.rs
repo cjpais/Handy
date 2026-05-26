@@ -250,6 +250,9 @@ impl ModelUnloadTimeout {
 pub enum SoundTheme {
     Marimba,
     Pop,
+    Bell,
+    Chime,
+    Pluck,
     Custom,
 }
 
@@ -258,6 +261,9 @@ impl SoundTheme {
         match self {
             SoundTheme::Marimba => "marimba",
             SoundTheme::Pop => "pop",
+            SoundTheme::Bell => "bell",
+            SoundTheme::Chime => "chime",
+            SoundTheme::Pluck => "pluck",
             SoundTheme::Custom => "custom",
         }
     }
@@ -990,6 +996,25 @@ mod tests {
         let settings = get_default_settings();
         assert!(!settings.auto_stop_silence_enabled);
         assert_eq!(settings.auto_stop_silence_seconds, 5);
+    }
+
+    #[test]
+    fn built_in_sound_themes_have_start_and_stop_paths() {
+        let themes = [
+            (SoundTheme::Marimba, "marimba"),
+            (SoundTheme::Pop, "pop"),
+            (SoundTheme::Bell, "bell"),
+            (SoundTheme::Chime, "chime"),
+            (SoundTheme::Pluck, "pluck"),
+        ];
+
+        for (theme, name) in themes {
+            assert_eq!(
+                theme.to_start_path(),
+                format!("resources/{}_start.wav", name)
+            );
+            assert_eq!(theme.to_stop_path(), format!("resources/{}_stop.wav", name));
+        }
     }
 
     #[test]

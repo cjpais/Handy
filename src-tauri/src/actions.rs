@@ -41,13 +41,7 @@ impl Drop for FinishGuard {
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
     fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
-    fn stop(
-        &self,
-        app: &AppHandle,
-        binding_id: &str,
-        shortcut_str: &str,
-        allow_auto_submit: bool,
-    );
+    fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str, allow_auto_submit: bool);
 }
 
 // Transcribe Action

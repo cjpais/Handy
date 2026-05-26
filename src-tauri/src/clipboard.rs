@@ -699,11 +699,11 @@ mod tests {
     fn auto_submit_runs_for_active_paste_methods() {
         assert!(should_send_auto_submit(true, PasteMethod::CtrlV, true));
         assert!(should_send_auto_submit(true, PasteMethod::Direct, true));
+        assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV, true));
         assert!(should_send_auto_submit(
             true,
-            PasteMethod::CtrlShiftV,
+            PasteMethod::ShiftInsert,
             true
         ));
-        assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert, true));
     }
 }

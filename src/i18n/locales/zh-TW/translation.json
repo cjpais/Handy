@@ -236,6 +236,19 @@
       "volume": {
         "title": "音量",
         "description": "調整聲音回饋的音量"
+      },
+      "soundTheme": {
+        "label": "Sound theme",
+        "description": "Choose the start and stop sound for recording feedback.",
+        "preview": "Preview start and stop sounds",
+        "options": {
+          "marimba": "Marimba",
+          "pop": "Pop",
+          "bell": "Bell",
+          "chime": "Chime",
+          "pluck": "Pluck",
+          "custom": "Custom"
+        }
       }
     },
     "advanced": {

@@ -236,6 +236,19 @@
       "volume": {
         "title": "Гучність",
         "description": "Налаштуйте гучність звукових сповіщень"
+      },
+      "soundTheme": {
+        "label": "Sound theme",
+        "description": "Choose the start and stop sound for recording feedback.",
+        "preview": "Preview start and stop sounds",
+        "options": {
+          "marimba": "Marimba",
+          "pop": "Pop",
+          "bell": "Bell",
+          "chime": "Chime",
+          "pluck": "Pluck",
+          "custom": "Custom"
+        }
       }
     },
     "advanced": {
