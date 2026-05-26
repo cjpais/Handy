@@ -7,9 +7,6 @@ edition = "2021"
 license = "MIT"
 default-run = "handy"
 
-[profile.dev]
-incremental = true # Compile your binary in smaller steps.
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
@@ -110,24 +107,5 @@ tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 
-[patch.crates-io]
-tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
-tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
-tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
-# Vendored copy of transcribe-rs with the Windows-target `features = ["vulkan"]`
-# dependency on whisper-rs stripped. Upstream hard-codes Vulkan on Windows, which
-# makes handy.exe statically import vulkan-1.dll at load time — on machines with
-# a Vulkan 1.0-only loader (old Win10 LTSC, dated GPU drivers) the loader fails
-# with "无法定位程序输入点 vkGetPhysicalDeviceFeatures2" before Rust ever runs.
-# Reason: documented in the Windows crash-on-launch RCA. Re-sync this vendor
-# directory if transcribe-rs is bumped.
-transcribe-rs = { path = "vendor/transcribe-rs" }
-
 [dev-dependencies]
 tempfile = "3"
-
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
-panic = "unwind"
