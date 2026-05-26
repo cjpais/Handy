@@ -21,6 +21,8 @@ strsim         = { workspace = true }
 natural        = { workspace = true }
 ferrous-opencc = { workspace = true }
 once_cell      = { workspace = true }
+rubato         = { workspace = true }
+rustfft        = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

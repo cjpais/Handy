@@ -2495,6 +2495,8 @@ dependencies = [
  "natural",
  "once_cell",
  "regex",
+ "rubato",
+ "rustfft",
  "serde",
  "serde_json",
  "strsim",
