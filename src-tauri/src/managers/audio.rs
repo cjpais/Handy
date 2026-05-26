@@ -135,9 +135,23 @@ fn create_audio_recorder(
             move |levels| {
                 utils::emit_levels(&app_handle, &levels);
             }
+        })
+        .with_silence_stop_callback({
+            let app_handle = app_handle.clone();
+            move || {
+                utils::trigger_silence_stop(&app_handle);
+            }
         });
 
     Ok(recorder)
+}
+
+fn silence_stop_seconds(settings: &AppSettings) -> Option<u64> {
+    if settings.auto_stop_silence_enabled {
+        Some(settings.auto_stop_silence_seconds.clamp(1, 30))
+    } else {
+        None
+    }
 }
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -399,6 +413,9 @@ impl AudioRecordingManager {
             }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                let settings = get_settings(&self.app_handle);
+                rec.set_silence_stop_seconds(silence_stop_seconds(&settings));
+
                 if rec.start().is_ok() {
                     *self.is_recording.lock().unwrap() = true;
                     *state = RecordingState::Recording {
@@ -487,6 +504,13 @@ impl AudioRecordingManager {
             *self.state.lock().unwrap(),
             RecordingState::Recording { .. }
         )
+    }
+
+    pub fn active_binding_id(&self) -> Option<String> {
+        match &*self.state.lock().unwrap() {
+            RecordingState::Recording { binding_id } => Some(binding_id.clone()),
+            RecordingState::Idle => None,
+        }
     }
 
     /// Cancel any ongoing recording without returning audio samples

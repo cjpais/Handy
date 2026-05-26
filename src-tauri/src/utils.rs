@@ -41,6 +41,32 @@ pub fn cancel_current_operation(app: &AppHandle) {
     info!("Operation cancellation completed - returned to idle state");
 }
 
+/// Stop recording after enough quiet frames.
+pub fn trigger_silence_stop(app: &AppHandle) {
+    let audio_manager = app.state::<Arc<AudioRecordingManager>>();
+    let Some(binding_id) = audio_manager.active_binding_id() else {
+        return;
+    };
+
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        coordinator.request_stop(&binding_id, "auto-stop-silence");
+        info!("Auto-stop: recording stopped after silence");
+    }
+}
+
+/// Stop recording and paste without sending the submit key.
+pub fn finish_without_submit(app: &AppHandle) {
+    let audio_manager = app.state::<Arc<AudioRecordingManager>>();
+    let Some(binding_id) = audio_manager.active_binding_id() else {
+        return;
+    };
+
+    if let Some(coordinator) = app.try_state::<TranscriptionCoordinator>() {
+        coordinator.request_stop_without_submit(&binding_id, "overlay-finish-without-submit");
+        info!("Overlay: recording stopped without auto-submit");
+    }
+}
+
 /// Check if using the Wayland display server protocol
 #[cfg(target_os = "linux")]
 pub fn is_wayland() -> bool {

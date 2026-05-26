@@ -17,6 +17,11 @@ enum Command {
         is_pressed: bool,
         push_to_talk: bool,
     },
+    Stop {
+        binding_id: String,
+        hotkey_string: String,
+        allow_auto_submit: bool,
+    },
     Cancel {
         recording_was_active: bool,
     },
@@ -75,7 +80,7 @@ impl TranscriptionCoordinator {
                                 } else if !is_pressed
                                     && matches!(&stage, Stage::Recording(id) if id == &binding_id)
                                 {
-                                    stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                    stop(&app, &mut stage, &binding_id, &hotkey_string, true);
                                 }
                             } else if is_pressed {
                                 match &stage {
@@ -83,12 +88,29 @@ impl TranscriptionCoordinator {
                                         start(&app, &mut stage, &binding_id, &hotkey_string);
                                     }
                                     Stage::Recording(id) if id == &binding_id => {
-                                        stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                        stop(&app, &mut stage, &binding_id, &hotkey_string, true);
                                     }
                                     _ => {
                                         debug!("Ignoring press for '{binding_id}': pipeline busy")
                                     }
                                 }
+                            }
+                        }
+                        Command::Stop {
+                            binding_id,
+                            hotkey_string,
+                            allow_auto_submit,
+                        } => {
+                            if matches!(&stage, Stage::Recording(id) if id == &binding_id) {
+                                stop(
+                                    &app,
+                                    &mut stage,
+                                    &binding_id,
+                                    &hotkey_string,
+                                    allow_auto_submit,
+                                );
+                            } else {
+                                debug!("Ignoring stop for '{binding_id}': no matching recording")
                             }
                         }
                         Command::Cancel {
@@ -151,6 +173,34 @@ impl TranscriptionCoordinator {
         }
     }
 
+    pub fn request_stop(&self, binding_id: &str, hotkey_string: &str) {
+        if self
+            .tx
+            .send(Command::Stop {
+                binding_id: binding_id.to_string(),
+                hotkey_string: hotkey_string.to_string(),
+                allow_auto_submit: true,
+            })
+            .is_err()
+        {
+            warn!("Transcription coordinator channel closed");
+        }
+    }
+
+    pub fn request_stop_without_submit(&self, binding_id: &str, hotkey_string: &str) {
+        if self
+            .tx
+            .send(Command::Stop {
+                binding_id: binding_id.to_string(),
+                hotkey_string: hotkey_string.to_string(),
+                allow_auto_submit: false,
+            })
+            .is_err()
+        {
+            warn!("Transcription coordinator channel closed");
+        }
+    }
+
     pub fn notify_processing_finished(&self) {
         if self.tx.send(Command::ProcessingFinished).is_err() {
             warn!("Transcription coordinator channel closed");
@@ -174,11 +224,17 @@ fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &s
     }
 }
 
-fn stop(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {
+fn stop(
+    app: &AppHandle,
+    stage: &mut Stage,
+    binding_id: &str,
+    hotkey_string: &str,
+    allow_auto_submit: bool,
+) {
     let Some(action) = ACTION_MAP.get(binding_id) else {
         warn!("No action in ACTION_MAP for '{binding_id}'");
         return;
     };
-    action.stop(app, binding_id, hotkey_string);
+    action.stop(app, binding_id, hotkey_string, allow_auto_submit);
     *stage = Stage::Processing;
 }

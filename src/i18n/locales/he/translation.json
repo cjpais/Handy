@@ -242,6 +242,7 @@
       "title": "מתקדם",
       "groups": {
         "app": "אפליקציה",
+        "interface": "Interface",
         "output": "פלט",
         "transcription": "תמלול",
         "history": "היסטוריה",
@@ -356,6 +357,20 @@
         "add": "הוסף",
         "remove": "הסר את {{word}}",
         "duplicate": "\"{{word}}\" כבר קיימת"
+      },
+      "autoStopSilence": {
+        "title": "Stop after silence",
+        "description": "Automatically stop recording after speech is followed by the selected number of silent seconds.",
+        "after": "after",
+        "seconds": "sec."
+      },
+      "overlayTheme": {
+        "title": "Overlay style",
+        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "options": {
+          "calm": "Calm",
+          "classic": "Classic"
+        }
       }
     },
     "postProcessing": {
@@ -607,6 +622,8 @@
   },
   "overlay": {
     "transcribing": "מתמלל...",
-    "processing": "מעבד..."
+    "processing": "מעבד...",
+    "insertWithoutSubmit": "Insert without submit",
+    "cancel": "Cancel"
   }
 }

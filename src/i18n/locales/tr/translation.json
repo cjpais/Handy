@@ -242,6 +242,7 @@
       "title": "Gelişmiş",
       "groups": {
         "app": "Uygulama",
+        "interface": "Interface",
         "output": "Çıktı",
         "transcription": "Transkripsiyon",
         "history": "Geçmiş",
@@ -356,6 +357,20 @@
         "add": "Ekle",
         "remove": "{{word}} Kaldır",
         "duplicate": "\"{{word}}\" zaten mevcut"
+      },
+      "autoStopSilence": {
+        "title": "Stop after silence",
+        "description": "Automatically stop recording after speech is followed by the selected number of silent seconds.",
+        "after": "after",
+        "seconds": "sec."
+      },
+      "overlayTheme": {
+        "title": "Overlay style",
+        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "options": {
+          "calm": "Calm",
+          "classic": "Classic"
+        }
       }
     },
     "postProcessing": {
@@ -607,6 +622,8 @@
   },
   "overlay": {
     "transcribing": "Transkribe ediliyor...",
-    "processing": "İşleniyor..."
+    "processing": "İşleniyor...",
+    "insertWithoutSubmit": "Insert without submit",
+    "cancel": "Cancel"
   }
 }

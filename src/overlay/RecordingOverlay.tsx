@@ -1,32 +1,42 @@
 import { listen } from "@tauri-apps/api/event";
+import { Check, FileText, Mic, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  MicrophoneIcon,
-  TranscriptionIcon,
-  CancelIcon,
-} from "../components/icons";
 import "./RecordingOverlay.css";
-import { commands } from "@/bindings";
+import { commands, type OverlayTheme } from "@/bindings";
 import i18n, { syncLanguageFromSettings } from "@/i18n";
 import { getLanguageDirection } from "@/lib/utils/rtl";
 
 type OverlayState = "recording" | "transcribing" | "processing";
 
+const themeIconColor: Record<OverlayTheme, string> = {
+  calm: "#2f5f73",
+  classic: "#faa2ca",
+};
+
 const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
+  const [theme, setTheme] = useState<OverlayTheme>("calm");
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   const direction = getLanguageDirection(i18n.language);
 
   useEffect(() => {
+    const loadTheme = async () => {
+      const result = await commands.getAppSettings();
+      if (result.status === "ok") {
+        setTheme(result.data.overlay_theme ?? "calm");
+      }
+    };
+
     const setupEventListeners = async () => {
       // Listen for show-overlay event from Rust
       const unlistenShow = await listen("show-overlay", async (event) => {
         // Sync language from settings each time overlay is shown
         await syncLanguageFromSettings();
+        await loadTheme();
         const overlayState = event.payload as OverlayState;
         setState(overlayState);
         setIsVisible(true);
@@ -63,17 +73,21 @@ const RecordingOverlay: React.FC = () => {
   }, []);
 
   const getIcon = () => {
+    const iconColor = themeIconColor[theme];
+
     if (state === "recording") {
-      return <MicrophoneIcon />;
-    } else {
-      return <TranscriptionIcon />;
+      return <Mic size={18} strokeWidth={2.2} color={iconColor} />;
     }
+
+    return <FileText size={18} strokeWidth={2.2} color={iconColor} />;
   };
 
   return (
     <div
       dir={direction}
-      className={`recording-overlay ${isVisible ? "fade-in" : ""}`}
+      className={`recording-overlay recording-overlay-${theme} ${
+        isVisible ? "fade-in" : ""
+      }`}
     >
       <div className="overlay-left">{getIcon()}</div>
 
@@ -103,13 +117,29 @@ const RecordingOverlay: React.FC = () => {
 
       <div className="overlay-right">
         {state === "recording" && (
-          <div
-            className="cancel-button"
-            onClick={() => {
-              commands.cancelOperation();
-            }}
-          >
-            <CancelIcon />
+          <div className="overlay-actions">
+            <button
+              type="button"
+              className="overlay-action finish-button"
+              aria-label={t("overlay.insertWithoutSubmit")}
+              title={t("overlay.insertWithoutSubmit")}
+              onClick={() => {
+                commands.finishWithoutSubmit();
+              }}
+            >
+              <Check size={16} strokeWidth={2.4} />
+            </button>
+            <button
+              type="button"
+              className="overlay-action cancel-button"
+              aria-label={t("overlay.cancel")}
+              title={t("overlay.cancel")}
+              onClick={() => {
+                commands.cancelOperation();
+              }}
+            >
+              <X size={16} strokeWidth={2.4} />
+            </button>
           </div>
         )}
       </div>

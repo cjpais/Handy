@@ -242,6 +242,7 @@
       "title": "고급",
       "groups": {
         "app": "앱",
+        "interface": "Interface",
         "output": "출력",
         "transcription": "전사",
         "history": "히스토리",
@@ -356,6 +357,20 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "autoStopSilence": {
+        "title": "Stop after silence",
+        "description": "Automatically stop recording after speech is followed by the selected number of silent seconds.",
+        "after": "after",
+        "seconds": "sec."
+      },
+      "overlayTheme": {
+        "title": "Overlay style",
+        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "options": {
+          "calm": "Calm",
+          "classic": "Classic"
+        }
       }
     },
     "postProcessing": {
@@ -607,6 +622,8 @@
   },
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
-    "processing": "처리 중..."
+    "processing": "처리 중...",
+    "insertWithoutSubmit": "Insert without submit",
+    "cancel": "Cancel"
   }
 }

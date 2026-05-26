@@ -242,6 +242,7 @@
       "title": "詳細設定",
       "groups": {
         "app": "アプリ",
+        "interface": "Interface",
         "output": "出力",
         "transcription": "文字起こし",
         "history": "履歴",
@@ -356,6 +357,20 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "autoStopSilence": {
+        "title": "Stop after silence",
+        "description": "Automatically stop recording after speech is followed by the selected number of silent seconds.",
+        "after": "after",
+        "seconds": "sec."
+      },
+      "overlayTheme": {
+        "title": "Overlay style",
+        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "options": {
+          "calm": "Calm",
+          "classic": "Classic"
+        }
       }
     },
     "postProcessing": {
@@ -607,6 +622,8 @@
   },
   "overlay": {
     "transcribing": "文字起こし中...",
-    "processing": "処理中..."
+    "processing": "処理中...",
+    "insertWithoutSubmit": "Insert without submit",
+    "cancel": "Cancel"
   }
 }

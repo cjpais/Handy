@@ -242,6 +242,7 @@
       "title": "Avançado",
       "groups": {
         "app": "Aplicativo",
+        "interface": "Interface",
         "output": "Saída",
         "transcription": "Transcrição",
         "history": "Histórico",
@@ -356,6 +357,20 @@
         "add": "Adicionar",
         "remove": "Remover {{word}}",
         "duplicate": "\"{{word}}\" já existe"
+      },
+      "autoStopSilence": {
+        "title": "Stop after silence",
+        "description": "Automatically stop recording after speech is followed by the selected number of silent seconds.",
+        "after": "after",
+        "seconds": "sec."
+      },
+      "overlayTheme": {
+        "title": "Overlay style",
+        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "options": {
+          "calm": "Calm",
+          "classic": "Classic"
+        }
       }
     },
     "postProcessing": {
@@ -607,6 +622,8 @@
   },
   "overlay": {
     "transcribing": "Transcrevendo...",
-    "processing": "Processando..."
+    "processing": "Processando...",
+    "insertWithoutSubmit": "Insert without submit",
+    "cancel": "Cancel"
   }
 }

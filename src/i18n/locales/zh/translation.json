@@ -242,6 +242,7 @@
       "title": "高级",
       "groups": {
         "app": "应用",
+        "interface": "Interface",
         "output": "输出",
         "transcription": "转录",
         "history": "历史",
@@ -356,6 +357,20 @@
         "add": "添加",
         "remove": "删除 {{word}}",
         "duplicate": "\"{{word}}\" 已存在"
+      },
+      "autoStopSilence": {
+        "title": "Stop after silence",
+        "description": "Automatically stop recording after speech is followed by the selected number of silent seconds.",
+        "after": "after",
+        "seconds": "sec."
+      },
+      "overlayTheme": {
+        "title": "Overlay style",
+        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "options": {
+          "calm": "Calm",
+          "classic": "Classic"
+        }
       }
     },
     "postProcessing": {
@@ -607,6 +622,8 @@
   },
   "overlay": {
     "transcribing": "正在转录...",
-    "processing": "处理中..."
+    "processing": "处理中...",
+    "insertWithoutSubmit": "Insert without submit",
+    "cancel": "Cancel"
   }
 }

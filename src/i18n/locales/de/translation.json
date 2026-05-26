@@ -242,6 +242,7 @@
       "title": "Erweitert",
       "groups": {
         "app": "App",
+        "interface": "Interface",
         "output": "Ausgabe",
         "transcription": "Transkription",
         "history": "Verlauf",
@@ -356,6 +357,20 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "autoStopSilence": {
+        "title": "Stop after silence",
+        "description": "Automatically stop recording after speech is followed by the selected number of silent seconds.",
+        "after": "after",
+        "seconds": "sec."
+      },
+      "overlayTheme": {
+        "title": "Overlay style",
+        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "options": {
+          "calm": "Calm",
+          "classic": "Classic"
+        }
       }
     },
     "postProcessing": {
@@ -607,6 +622,8 @@
   },
   "overlay": {
     "transcribing": "Transkribiere...",
-    "processing": "Verarbeite..."
+    "processing": "Verarbeite...",
+    "insertWithoutSubmit": "Insert without submit",
+    "cancel": "Cancel"
   }
 }

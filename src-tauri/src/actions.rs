@@ -41,7 +41,13 @@ impl Drop for FinishGuard {
 // Shortcut Action Trait
 pub trait ShortcutAction: Send + Sync {
     fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
-    fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str);
+    fn stop(
+        &self,
+        app: &AppHandle,
+        binding_id: &str,
+        shortcut_str: &str,
+        allow_auto_submit: bool,
+    );
 }
 
 // Transcribe Action
@@ -489,7 +495,13 @@ impl ShortcutAction for TranscribeAction {
         );
     }
 
-    fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+    fn stop(
+        &self,
+        app: &AppHandle,
+        binding_id: &str,
+        _shortcut_str: &str,
+        allow_auto_submit: bool,
+    ) {
         // Unregister the cancel shortcut when transcription stops
         shortcut::unregister_cancel_shortcut(app);
 
@@ -607,7 +619,11 @@ impl ShortcutAction for TranscribeAction {
                                 let paste_time = Instant::now();
                                 let final_text = processed.final_text;
                                 ah.run_on_main_thread(move || {
-                                    match utils::paste(final_text, ah_clone.clone()) {
+                                    match utils::paste_with_auto_submit(
+                                        final_text,
+                                        ah_clone.clone(),
+                                        allow_auto_submit,
+                                    ) {
                                         Ok(()) => debug!(
                                             "Text pasted successfully in {:?}",
                                             paste_time.elapsed()
@@ -668,7 +684,13 @@ impl ShortcutAction for CancelAction {
         utils::cancel_current_operation(app);
     }
 
-    fn stop(&self, _app: &AppHandle, _binding_id: &str, _shortcut_str: &str) {
+    fn stop(
+        &self,
+        _app: &AppHandle,
+        _binding_id: &str,
+        _shortcut_str: &str,
+        _allow_auto_submit: bool,
+    ) {
         // Nothing to do on stop for cancel
     }
 }
@@ -686,7 +708,13 @@ impl ShortcutAction for TestAction {
         );
     }
 
-    fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
+    fn stop(
+        &self,
+        app: &AppHandle,
+        binding_id: &str,
+        shortcut_str: &str,
+        _allow_auto_submit: bool,
+    ) {
         log::info!(
             "Shortcut ID '{}': Stopped - {} (App: {})", // Changed "Released" to "Stopped" for consistency
             binding_id,

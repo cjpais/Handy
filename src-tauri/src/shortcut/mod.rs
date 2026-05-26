@@ -23,7 +23,7 @@ use tauri_plugin_autostart::ManagerExt;
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
     self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    OverlayPosition, OverlayTheme, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
     APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
@@ -558,6 +558,23 @@ pub fn change_overlay_position_setting(app: AppHandle, position: String) -> Resu
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_overlay_theme_setting(app: AppHandle, theme: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let parsed = match theme.as_str() {
+        "calm" => OverlayTheme::Calm,
+        "classic" => OverlayTheme::Classic,
+        other => {
+            warn!("Invalid overlay theme '{}', defaulting to calm", other);
+            OverlayTheme::Calm
+        }
+    };
+    settings.overlay_theme = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_debug_mode_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.debug_mode = enabled;
@@ -788,6 +805,30 @@ pub fn change_auto_submit_key_setting(app: AppHandle, key: String) -> Result<(),
         }
     };
     settings.auto_submit_key = parsed;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_auto_stop_silence_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.auto_stop_silence_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_auto_stop_silence_seconds_setting(
+    app: AppHandle,
+    seconds: u64,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.auto_stop_silence_seconds = seconds.clamp(1, 30);
     settings::write_settings(&app, settings);
     Ok(())
 }

@@ -4,7 +4,7 @@ pub mod models;
 pub mod transcription;
 
 use crate::settings::{get_settings, write_settings, AppSettings, LogLevel};
-use crate::utils::cancel_current_operation;
+use crate::utils::{cancel_current_operation, finish_without_submit as finish_without_submit_flow};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
@@ -12,6 +12,12 @@ use tauri_plugin_opener::OpenerExt;
 #[specta::specta]
 pub fn cancel_operation(app: AppHandle) {
     cancel_current_operation(&app);
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn finish_without_submit(app: AppHandle) {
+    finish_without_submit_flow(&app);
 }
 
 #[tauri::command]

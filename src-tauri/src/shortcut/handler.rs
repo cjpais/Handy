@@ -65,6 +65,6 @@ pub fn handle_shortcut_event(
     if is_pressed {
         action.start(app, binding_id, hotkey_string);
     } else {
-        action.stop(app, binding_id, hotkey_string);
+        action.stop(app, binding_id, hotkey_string, true);
     }
 }

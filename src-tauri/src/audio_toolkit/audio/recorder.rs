@@ -36,6 +36,8 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    silence_stop_cb: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
+    silence_stop_seconds: Arc<Mutex<Option<u64>>>,
 }
 
 impl AudioRecorder {
@@ -46,6 +48,8 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            silence_stop_cb: None,
+            silence_stop_seconds: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -60,6 +64,20 @@ impl AudioRecorder {
     {
         self.level_cb = Some(Arc::new(cb));
         self
+    }
+
+    pub fn with_silence_stop_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
+        self.silence_stop_cb = Some(Arc::new(cb));
+        self
+    }
+
+    pub fn set_silence_stop_seconds(&self, seconds: Option<u64>) {
+        if let Ok(mut guard) = self.silence_stop_seconds.lock() {
+            *guard = seconds;
+        }
     }
 
     pub fn open(&mut self, device: Option<Device>) -> Result<(), Box<dyn std::error::Error>> {
@@ -83,6 +101,8 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let silence_stop_cb = self.silence_stop_cb.clone();
+        let silence_stop_seconds = self.silence_stop_seconds.clone();
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -159,7 +179,16 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     // Keep the stream alive while we process samples.
-                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag);
+                    run_consumer(
+                        sample_rate,
+                        vad,
+                        sample_rx,
+                        cmd_rx,
+                        level_cb,
+                        stop_flag,
+                        silence_stop_cb,
+                        silence_stop_seconds,
+                    );
                     drop(stream);
                 }
                 Err(error_message) => {
@@ -349,9 +378,61 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
             && normalized.contains("coreaudio"))
 }
 
+const FRAME_DURATION_MS: u64 = 30;
+
+struct SilenceStopState {
+    saw_speech: bool,
+    quiet_frames: u64,
+    did_stop: bool,
+}
+
+impl SilenceStopState {
+    fn new() -> Self {
+        Self {
+            saw_speech: false,
+            quiet_frames: 0,
+            did_stop: false,
+        }
+    }
+
+    fn reset(&mut self) {
+        self.saw_speech = false;
+        self.quiet_frames = 0;
+        self.did_stop = false;
+    }
+
+    fn update(&mut self, is_speech: bool, seconds: Option<u64>) -> bool {
+        let Some(seconds) = seconds else {
+            return false;
+        };
+
+        if self.did_stop {
+            return false;
+        }
+
+        if is_speech {
+            self.saw_speech = true;
+            self.quiet_frames = 0;
+            return false;
+        }
+
+        if !self.saw_speech {
+            return false;
+        }
+
+        self.quiet_frames += 1;
+        if self.quiet_frames * FRAME_DURATION_MS >= seconds * 1000 {
+            self.did_stop = true;
+            return true;
+        }
+
+        false
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
+    use super::{is_microphone_access_denied, is_no_input_device_error, SilenceStopState};
 
     #[test]
     fn detects_access_is_denied() {
@@ -390,6 +471,42 @@ mod tests {
         assert!(!is_no_input_device_error("permission denied"));
         assert!(!is_no_input_device_error("device not found"));
     }
+
+    #[test]
+    fn silence_stop_waits_for_speech_then_triggers_after_timeout() {
+        let mut stop = SilenceStopState::new();
+
+        assert!(!stop.update(false, Some(2)));
+        assert!(!stop.update(false, Some(2)));
+
+        assert!(!stop.update(true, Some(2)));
+
+        for _ in 0..66 {
+            assert!(!stop.update(false, Some(2)));
+        }
+
+        assert!(stop.update(false, Some(2)));
+        assert!(!stop.update(false, Some(2)));
+    }
+
+    #[test]
+    fn silence_stop_resets_when_speech_returns() {
+        let mut stop = SilenceStopState::new();
+
+        assert!(!stop.update(true, Some(1)));
+
+        for _ in 0..20 {
+            assert!(!stop.update(false, Some(1)));
+        }
+
+        assert!(!stop.update(true, Some(1)));
+
+        for _ in 0..33 {
+            assert!(!stop.update(false, Some(1)));
+        }
+
+        assert!(stop.update(false, Some(1)));
+    }
 }
 
 fn run_consumer(
@@ -399,6 +516,8 @@ fn run_consumer(
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
     stop_flag: Arc<AtomicBool>,
+    silence_stop_cb: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
+    silence_stop_seconds: Arc<Mutex<Option<u64>>>,
 ) {
     let mut frame_resampler = FrameResampler::new(
         in_sample_rate as usize,
@@ -408,6 +527,7 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+    let mut silence_stop = SilenceStopState::new();
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -425,19 +545,23 @@ fn run_consumer(
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
-    ) {
+    ) -> bool {
         if !recording {
-            return;
+            return false;
         }
 
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    out_buf.extend_from_slice(buf);
+                    true
+                }
+                VadFrame::Noise => false,
             }
         } else {
             out_buf.extend_from_slice(samples);
+            true
         }
     }
 
@@ -461,7 +585,14 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            let is_speech = handle_frame(frame, recording, &vad, &mut processed_samples);
+            let stop_seconds = silence_stop_seconds.lock().map(|guard| *guard).unwrap_or(None);
+
+            if recording && silence_stop.update(is_speech, stop_seconds) {
+                if let Some(cb) = &silence_stop_cb {
+                    cb();
+                }
+            }
         });
 
         // non-blocking check for a command
@@ -471,6 +602,7 @@ fn run_consumer(
                     stop_flag.store(false, Ordering::Relaxed);
                     processed_samples.clear();
                     recording = true;
+                    silence_stop.reset();
                     visualizer.reset();
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
@@ -478,6 +610,7 @@ fn run_consumer(
                 }
                 Cmd::Stop(reply_tx) => {
                     recording = false;
+                    silence_stop.reset();
                     stop_flag.store(true, Ordering::Relaxed);
 
                     // Drain all remaining audio until the producer confirms end-of-stream.
@@ -488,7 +621,7 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    let _ = handle_frame(frame, true, &vad, &mut processed_samples);
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -500,7 +633,7 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        let _ = handle_frame(frame, true, &vad, &mut processed_samples);
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
