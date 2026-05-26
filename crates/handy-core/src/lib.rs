@@ -6,11 +6,13 @@
 
 pub mod audio;
 pub mod history;
+pub mod model;
 pub mod settings;
 pub mod text;
 pub mod vad;
 
 pub use history::{HistoryEntry, HistoryManager, RecordingRetentionPeriod, RetentionConfig};
+pub use model::{DownloadProgress, EngineType, ModelInfo};
 pub use settings::CoreSettings;
 pub use text::{apply_custom_words, filter_transcription_output};
 pub use vad::{SileroVad, VoiceActivityDetector};

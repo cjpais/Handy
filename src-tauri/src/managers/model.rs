@@ -27,6 +27,34 @@ pub enum EngineType {
     Canary,
 }
 
+impl From<EngineType> for handy_core::model::EngineType {
+    fn from(d: EngineType) -> Self {
+        match d {
+            EngineType::Whisper => Self::Whisper,
+            EngineType::Parakeet => Self::Parakeet,
+            EngineType::Moonshine => Self::Moonshine,
+            EngineType::MoonshineStreaming => Self::MoonshineStreaming,
+            EngineType::SenseVoice => Self::SenseVoice,
+            EngineType::GigaAM => Self::GigaAM,
+            EngineType::Canary => Self::Canary,
+        }
+    }
+}
+
+impl From<handy_core::model::EngineType> for EngineType {
+    fn from(c: handy_core::model::EngineType) -> Self {
+        match c {
+            handy_core::model::EngineType::Whisper => Self::Whisper,
+            handy_core::model::EngineType::Parakeet => Self::Parakeet,
+            handy_core::model::EngineType::Moonshine => Self::Moonshine,
+            handy_core::model::EngineType::MoonshineStreaming => Self::MoonshineStreaming,
+            handy_core::model::EngineType::SenseVoice => Self::SenseVoice,
+            handy_core::model::EngineType::GigaAM => Self::GigaAM,
+            handy_core::model::EngineType::Canary => Self::Canary,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct ModelInfo {
     pub id: String,
