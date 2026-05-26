@@ -9,7 +9,7 @@ use serde_json::Value;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter};
 
-pub use handy_core::history::{HistoryEntry, HistoryManager, RecordingRetentionPeriod};
+pub use handy_core::history::{HistoryEntry, HistoryManager};
 
 struct TauriEventSink(AppHandle);
 

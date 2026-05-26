@@ -30,7 +30,6 @@ use tauri_specta::{collect_commands, Builder};
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::hid_mouse::start_hid_mouse_monitor;
-use managers::history::HistoryManager;
 #[cfg(target_os = "macos")]
 use managers::macos_mouse_fallback::start_macos_mouse_button_fallback;
 use managers::model::ModelManager;

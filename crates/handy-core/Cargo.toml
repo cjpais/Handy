@@ -10,6 +10,13 @@ description = "Platform-agnostic core for Handy: transcription, VAD, model, hist
 name = "handy_core"
 path = "src/lib.rs"
 
+[features]
+default = []
+# Opt-in: derive `specta::Type` on public data types so they can cross the
+# Tauri command boundary. Desktop host enables this; mobile host leaves it off
+# to keep handy-core free of UI binding-generation deps.
+specta = ["dep:specta"]
+
 [dependencies]
 anyhow      = { workspace = true }
 log         = { workspace = true }
@@ -28,6 +35,7 @@ hound              = { workspace = true }
 rusqlite           = { workspace = true }
 rusqlite_migration = { workspace = true }
 chrono             = { workspace = true }
+specta             = { workspace = true, optional = true }
 
 [dependencies.handy-platform]
 path = "../handy-platform"

@@ -2505,6 +2505,7 @@ dependencies = [
  "rustfft",
  "serde",
  "serde_json",
+ "specta",
  "strsim",
  "tempfile",
  "thiserror 2.0.18",

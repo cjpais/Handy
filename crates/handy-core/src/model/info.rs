@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 /// User-facing model description plus runtime download state.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct ModelInfo {
     pub id: String,
     pub name: String,

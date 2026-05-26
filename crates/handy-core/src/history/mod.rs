@@ -37,6 +37,7 @@ static MIGRATIONS: &[M] = &[
 ];
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct HistoryEntry {
     pub id: i64,
     pub file_name: String,
