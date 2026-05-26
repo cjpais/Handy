@@ -28,6 +28,14 @@
     0 1px 2px #00000040;
 }
 
+.recording-overlay-dark {
+  background: #1f2933f2;
+  border: 1px solid #3a4a55;
+  box-shadow:
+    0 8px 22px #10182033,
+    0 1px 2px #10182040;
+}
+
 .overlay-left {
   display: flex;
   align-items: center;
@@ -72,6 +80,10 @@
   background: #ffe5ee;
 }
 
+.recording-overlay-dark .bar {
+  background: #8bb9c9;
+}
+
 .recording-overlay.fade-in {
   opacity: 1;
 }
@@ -90,6 +102,10 @@
 
 .recording-overlay-classic .transcribing-text {
   color: #ffffff;
+}
+
+.recording-overlay-dark .transcribing-text {
+  color: #edf4f7;
 }
 
 @keyframes transcribing-pulse {
@@ -139,12 +155,24 @@
   color: #faa2ca;
 }
 
+.recording-overlay-dark .finish-button {
+  color: #95d1bb;
+}
+
+.recording-overlay-dark .cancel-button {
+  color: #b8c7d0;
+}
+
 .recording-overlay-calm .overlay-action:hover {
   background: #d9e2e8;
 }
 
 .recording-overlay-classic .overlay-action:hover {
   background: #faa2ca33;
+}
+
+.recording-overlay-dark .overlay-action:hover {
+  background: #d7e6ed24;
 }
 
 .overlay-action:hover {

@@ -12,6 +12,7 @@ type OverlayState = "recording" | "transcribing" | "processing";
 const themeIconColor: Record<OverlayTheme, string> = {
   calm: "#2f5f73",
   classic: "#faa2ca",
+  dark: "#8bb9c9",
 };
 
 const RecordingOverlay: React.FC = () => {

@@ -344,10 +344,15 @@
       },
       "overlayTheme": {
         "title": "Overlay style",
-        "description": "Choose the calm new style or the classic black and pink recording overlay.",
+        "description": "Choose the original, light, or dark recording overlay style.",
         "options": {
-          "calm": "Calm",
-          "classic": "Classic"
+          "classic": "Original",
+          "calm": "Light",
+          "dark": "Dark"
+        },
+        "states": {
+          "recording": "Recording",
+          "transcribing": "Transcribing"
         }
       }
     },

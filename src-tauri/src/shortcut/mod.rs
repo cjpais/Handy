@@ -563,6 +563,7 @@ pub fn change_overlay_theme_setting(app: AppHandle, theme: String) -> Result<(),
     let parsed = match theme.as_str() {
         "calm" => OverlayTheme::Calm,
         "classic" => OverlayTheme::Classic,
+        "dark" => OverlayTheme::Dark,
         other => {
             warn!("Invalid overlay theme '{}', defaulting to calm", other);
             OverlayTheme::Calm

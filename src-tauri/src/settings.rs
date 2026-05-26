@@ -119,6 +119,7 @@ pub enum OverlayPosition {
 pub enum OverlayTheme {
     Calm,
     Classic,
+    Dark,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
