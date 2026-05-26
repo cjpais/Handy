@@ -31,8 +31,8 @@ tauri_panel! {
     })
 }
 
-const OVERLAY_WIDTH: f64 = 172.0;
-const OVERLAY_HEIGHT: f64 = 36.0;
+const OVERLAY_WIDTH: f64 = 216.0;
+const OVERLAY_HEIGHT: f64 = 44.0;
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -392,5 +392,16 @@ pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
     // also emit to the recording overlay if it's open
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
         let _ = overlay_window.emit("mic-level", levels);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn overlay_window_fits_two_buttons() {
+        assert!(OVERLAY_WIDTH >= 216.0);
+        assert!(OVERLAY_HEIGHT >= 44.0);
     }
 }
