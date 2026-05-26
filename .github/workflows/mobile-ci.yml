@@ -64,6 +64,16 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: cargo check -p handy-platform --target aarch64-linux-android
 
+      - name: cargo check handy-core for armv7-linux-androideabi
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: cargo check -p handy-core --target armv7-linux-androideabi
+
+      - name: cargo check handy-platform for armv7-linux-androideabi
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: cargo check -p handy-platform --target armv7-linux-androideabi
+
   desktop-no-regression:
     name: Desktop build still works
     runs-on: ${{ matrix.os }}

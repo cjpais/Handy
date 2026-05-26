@@ -28,6 +28,8 @@
 | 10 | 抽取共享 model 类型 (`EngineType`/`ModelInfo`/`DownloadProgress`) | `cc25d15` | `ModelManager` 留在 src-tauri (见下方"范围调整") |
 | 12 | 清理 `audio_toolkit/mod.rs` re-export 路径 | `635780d` | text/vad 直接从 `handy_core::` re-export |
 | 13 | GHA mobile-ci 完整 workflow (core-tests / android-cross-compile / desktop-no-regression) | `3d3b913` | 等网络恢复后 push 触发 |
+| 14 | docs/mobile/README.md (本文件) 与设计文档变更记录 | `f09756d` | |
+| post-review | 加 core→desktop RetentionPeriod From,GHA 加 armv7 check | (next commit) | 来自 final review 反馈 |
 
 ### 范围调整 (scope changes)
 

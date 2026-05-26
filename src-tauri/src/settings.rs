@@ -175,6 +175,19 @@ impl From<RecordingRetentionPeriod> for handy_core::history::RecordingRetentionP
     }
 }
 
+impl From<handy_core::history::RecordingRetentionPeriod> for RecordingRetentionPeriod {
+    fn from(c: handy_core::history::RecordingRetentionPeriod) -> Self {
+        use handy_core::history::RecordingRetentionPeriod as Core;
+        match c {
+            Core::Never => RecordingRetentionPeriod::Never,
+            Core::PreserveLimit => RecordingRetentionPeriod::PreserveLimit,
+            Core::Days3 => RecordingRetentionPeriod::Days3,
+            Core::Weeks2 => RecordingRetentionPeriod::Weeks2,
+            Core::Months3 => RecordingRetentionPeriod::Months3,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum KeyboardImplementation {
