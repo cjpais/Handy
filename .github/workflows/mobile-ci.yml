@@ -1,0 +1,87 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [main, mobile/**]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  core-tests:
+    name: handy-core unit tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: handy-core-${{ matrix.os }}
+      - name: cargo test handy-core
+        run: cargo test -p handy-core --lib --all-features
+      - name: cargo test handy-platform
+        run: cargo test -p handy-platform --lib --all-features
+
+  android-cross-compile:
+    name: Cross-compile handy-core to Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26d
+          local-cache: true
+      - name: Configure cargo for NDK
+        run: |
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml <<EOF
+          [target.aarch64-linux-android]
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+          ar     = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+
+          [target.armv7-linux-androideabi]
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang"
+          ar     = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+          EOF
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android-cross
+      - name: cargo check handy-core for aarch64-linux-android
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: cargo check -p handy-core --target aarch64-linux-android
+
+      - name: cargo check handy-platform for aarch64-linux-android
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: cargo check -p handy-platform --target aarch64-linux-android
+
+  desktop-no-regression:
+    name: Desktop build still works
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: desktop-${{ matrix.os }}
+      - name: Install Linux deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libgtk-layer-shell-dev
+      - name: cargo check src-tauri
+        working-directory: src-tauri
+        run: cargo check --lib
