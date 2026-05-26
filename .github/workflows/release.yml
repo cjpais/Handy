@@ -67,6 +67,10 @@ jobs:
           - platform: "windows-11-arm" # for ARM64 Windows runner
             args: "--target aarch64-pc-windows-msvc"
             target: "aarch64-pc-windows-msvc"
+          - platform: "windows-latest" # Windows Store x64 build
+            args: "--config src-tauri/tauri.store.conf.json"
+            target: "x86_64-pc-windows-msvc"
+            asset_prefix: "handy-store"
 
     uses: ./.github/workflows/build.yml
     with:
@@ -74,7 +78,7 @@ jobs:
       target: ${{ matrix.target }}
       build-args: ${{ matrix.args }}
       sign-binaries: true
-      asset-prefix: "handy"
+      asset-prefix: ${{ matrix.asset_prefix || 'handy' }}
       upload-artifacts: false
       release-id: ${{ needs.create-release.outputs.release-id }}
     secrets: inherit
