@@ -366,6 +366,14 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
             let _ = overlay_window
                 .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
+
+        // Force WebView to update rendering bounds with current monitor DPI.
+        // This fixes rendering corruption (cropping) after monitor reconfiguration
+        // (display off/on, monitor disconnect/reconnect, DPI changes while hidden).
+        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: OVERLAY_WIDTH,
+            height: OVERLAY_HEIGHT,
+        }));
     }
 }
 
