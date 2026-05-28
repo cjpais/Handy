@@ -47,10 +47,20 @@ const RecordingOverlay: React.FC = () => {
   const capRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
   const direction = getLanguageDirection(i18n.language);
+  const isVisibleRef = useRef(isVisible);
+  useEffect(() => {
+    isVisibleRef.current = isVisible;
+  }, [isVisible]);
 
   useEffect(() => {
-    const setupEventListeners = async () => {
-      const unlistenShow = await listen("show-overlay", async (event) => {
+    let unlistenShow: (() => void) | null = null;
+    let unlistenHide: (() => void) | null = null;
+    let unlistenLevel: (() => void) | null = null;
+    let unlistenStream: (() => void) | null = null;
+    let unlistenPhase: (() => void) | null = null;
+
+    const setup = async () => {
+      unlistenShow = await listen("show-overlay", async (event) => {
         await syncLanguageFromSettings();
         // The Live panel flows downward from a top overlay and upward from a
         // bottom one; read the placement so the layout can flip to match.
@@ -78,14 +88,15 @@ const RecordingOverlay: React.FC = () => {
         setIsVisible(true);
       });
 
-      const unlistenHide = await listen("hide-overlay", () => {
+      unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
+        setLevels(Array(16).fill(0));
+        setState("recording");
       });
 
-      const unlistenLevel = await listen<number[]>("mic-level", (event) => {
+      unlistenLevel = await listen<number[]>("mic-level", (event) => {
+        if (!isVisibleRef.current) return;
         const newLevels = event.payload as number[];
-        // Exponential smoothing across the 16 buckets, then take the first N
-        // bars for the shared waveform.
         const smoothed = smoothedLevelsRef.current.map((prev, i) => {
           const target = newLevels[i] || 0;
           return prev * 0.7 + target * 0.3;
@@ -94,26 +105,26 @@ const RecordingOverlay: React.FC = () => {
         setLevels(smoothed.slice(0, WAVE_BARS));
       });
 
-      const unlistenStream = await events.streamTextEvent.listen((event) => {
+      unlistenStream = await events.streamTextEvent.listen((event) => {
         setStreamText(event.payload);
       });
 
-      const unlistenPhase = await events.streamPhaseEvent.listen((event) => {
+      unlistenPhase = await events.streamPhaseEvent.listen((event) => {
         const payload: StreamPhaseEvent = event.payload;
         setPhase(payload.phase);
         if (payload.kind) setWorkKind(payload.kind);
       });
-
-      return () => {
-        unlistenShow();
-        unlistenHide();
-        unlistenLevel();
-        unlistenStream();
-        unlistenPhase();
-      };
     };
 
-    setupEventListeners();
+    setup();
+
+    return () => {
+      unlistenShow?.();
+      unlistenHide?.();
+      unlistenLevel?.();
+      unlistenStream?.();
+      unlistenPhase?.();
+    };
   }, []);
 
   // Elapsed timer while the Live overlay is visible.
