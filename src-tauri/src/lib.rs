@@ -35,9 +35,9 @@ use tauri_specta::{collect_commands, collect_events, Builder};
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
 use managers::history::HistoryManager;
-use media_control::MediaControlManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
+use media_control::MediaControlManager;
 #[cfg(unix)]
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
@@ -163,7 +163,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     );
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
-    let media_control_manager = Arc::new(MediaControlManager::new(app_handle.clone()));
+    let media_control_manager = Arc::new(MediaControlManager::new());
 
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
