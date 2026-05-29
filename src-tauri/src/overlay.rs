@@ -1,6 +1,7 @@
 use crate::input;
 use crate::settings;
 use crate::settings::OverlayPosition;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 #[cfg(not(target_os = "macos"))]
@@ -385,12 +386,41 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
-pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
-    // emit levels to main app
-    let _ = app_handle.emit("mic-level", levels);
+// Cached "overlay is enabled" flag, kept in sync with the
+// overlay_position setting. Avoids reading the Tauri store on every
+// audio callback (~24 Hz during recording). Defaults to false so the
+// audio path doesn't emit until lib.rs::setup populates the cache from
+// initial settings.
+static OVERLAY_ENABLED: AtomicBool = AtomicBool::new(false);
 
-    // also emit to the recording overlay if it's open
-    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        let _ = overlay_window.emit("mic-level", levels);
+/// Update the cached overlay-enabled flag. Called from `lib.rs` at
+/// startup after settings load, and from `change_overlay_position_setting`
+/// whenever the user changes the overlay position.
+pub fn update_overlay_enabled_cache(enabled: bool) {
+    OVERLAY_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+pub fn emit_levels(app_handle: &AppHandle, levels: &[f32]) {
+    // Skip emission when the overlay is disabled. The recording_overlay
+    // window is created at boot regardless of overlay_position, so
+    // without this guard a hidden overlay's WebKit subprocess still
+    // processes every event. Each event drives some kind of WebKit
+    // C++ allocation that accumulates without bound (mechanism not
+    // directly characterized; see issue #1279 for the investigation).
+    // For users with `overlay_position: none` (the Linux default) this
+    // skip eliminates the upstream driver of that accumulation.
+    if !OVERLAY_ENABLED.load(Ordering::Relaxed) {
+        return;
     }
+
+    // Target only the overlay window. In Tauri 2 both `AppHandle::emit`
+    // and `WebviewWindow::emit` broadcast to all webviews; Tauri's
+    // listener filter then skips webviews with no registered listener
+    // for the event, so the settings webview never received `mic-level`.
+    // But the previous dual-call pattern still produced two `eval_script`
+    // calls to the overlay per audio callback (one from each .emit()).
+    // `emit_to` with the overlay's window label produces a single
+    // eval_script call per callback, cutting the per-callback WebKit
+    // dispatch work in half.
+    let _ = app_handle.emit_to("recording_overlay", "mic-level", levels);
 }
