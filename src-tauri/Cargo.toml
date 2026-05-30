@@ -88,6 +88,7 @@ hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downl
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-global-shortcut = "2.3.1"
@@ -145,6 +146,7 @@ transcribe-cpp = { version = "0.1.0", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
+zbus = "4.0"
 
 [patch.crates-io]
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
