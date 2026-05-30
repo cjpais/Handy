@@ -9,6 +9,8 @@
     "cancel": "Cancel"
   },
   "sidebar": {
+    "capture": "Capture",
+    "settings": "Settings",
     "general": "General",
     "models": "Models",
     "advanced": "Advanced",
@@ -151,6 +153,7 @@
     }
   },
   "settings": {
+    "back": "Back",
     "modelSettings": {
       "title": "{{model}} Settings",
       "noSettingsNeeded": "This model works automatically with no configuration needed."
