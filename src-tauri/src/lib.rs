@@ -15,6 +15,7 @@ mod media_control;
 mod media_control_linux;
 #[cfg(target_os = "windows")]
 mod media_control_windows;
+mod media_pause_exp;
 #[cfg(target_os = "macos")]
 mod media_remote;
 mod overlay;
