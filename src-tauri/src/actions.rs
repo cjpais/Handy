@@ -5,7 +5,9 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID, PROMPT_ONLY_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -78,7 +80,8 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .cloned()
         .unwrap_or_default();
 
-    if model.trim().is_empty() {
+    // Prompt-only provider has no model — it just emits the substituted prompt.
+    if provider.id != PROMPT_ONLY_PROVIDER_ID && model.trim().is_empty() {
         debug!(
             "Post-processing skipped because provider '{}' has no model configured",
             provider.id
@@ -112,6 +115,15 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     if prompt.trim().is_empty() {
         debug!("Post-processing skipped because the selected prompt is empty");
         return None;
+    }
+
+    if provider.id == PROMPT_ONLY_PROVIDER_ID {
+        let result = strip_invisible_chars(&prompt.replace("${output}", transcription));
+        debug!(
+            "Prompt-only post-processing produced {} chars (no provider call)",
+            result.len()
+        );
+        return Some(result);
     }
 
     debug!(

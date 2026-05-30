@@ -44,7 +44,11 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         </div>
       </SettingContainer>
 
-      {state.isAppleProvider ? (
+      {state.isPromptOnlyProvider ? (
+        <Alert variant="info" contained>
+          {t("settings.postProcessing.api.promptOnly.description")}
+        </Alert>
+      ) : state.isAppleProvider ? (
         state.appleIntelligenceUnavailable ? (
           <Alert variant="error" contained>
             {t("settings.postProcessing.api.appleIntelligence.unavailable")}
@@ -96,7 +100,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         </>
       )}
 
-      {!state.isAppleProvider && (
+      {!state.isAppleProvider && !state.isPromptOnlyProvider && (
         <SettingContainer
           title={t("settings.postProcessing.api.model.title")}
           description={
