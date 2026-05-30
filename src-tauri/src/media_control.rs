@@ -1,5 +1,4 @@
 use crate::managers::audio::AudioRecordingManager;
-use crate::media_pause_exp;
 use crate::settings::get_settings;
 use log::{debug, error, info, warn};
 use std::sync::{Arc, Mutex};
@@ -61,41 +60,26 @@ impl MediaControlManager {
     }
 
     pub fn pause_for_recording(&self, app: &AppHandle) {
-        let run = media_pause_exp::current_run();
-        media_pause_exp::mark(run, "pause_for_recording_entry", "");
         let settings = get_settings(app);
         let recording_active = app
             .try_state::<Arc<AudioRecordingManager>>()
             .map(|audio_manager| audio_manager.is_recording())
             .unwrap_or(true);
-        media_pause_exp::mark(
-            run,
-            "pause_for_recording_settings",
-            format!(
-                "pause_enabled={} recording_active={}",
-                settings.pause_while_recording, recording_active
-            ),
-        );
 
         self.pause_for_recording_inner(settings.pause_while_recording, recording_active);
     }
 
     pub fn resume_after_recording(&self, app: &AppHandle) {
-        let run = media_pause_exp::current_run();
-        media_pause_exp::mark(run, "resume_after_recording_entry", "");
         self.resume_after_recording_inner(get_settings(app).play_after_recording);
     }
 
     fn pause_for_recording_inner(&self, pause_enabled: bool, recording_active: bool) {
-        let run = media_pause_exp::current_run();
         if !pause_enabled {
-            media_pause_exp::mark(run, "pause_for_recording_skip", "reason=pause_disabled");
             debug!("Skipping media pause because Pause While Recording is disabled");
             return;
         }
 
         if !recording_active {
-            media_pause_exp::mark(run, "pause_for_recording_skip", "reason=not_recording");
             debug!("Skipping media pause because recording is no longer active");
             return;
         }
@@ -103,15 +87,6 @@ impl MediaControlManager {
         let generation = {
             let mut state = self.state.lock().unwrap();
             if state.pause_in_flight || state.paused_playback.is_some() {
-                media_pause_exp::mark(
-                    run,
-                    "pause_for_recording_skip",
-                    format!(
-                        "reason=already_active pause_in_flight={} paused_playback={}",
-                        state.pause_in_flight,
-                        state.paused_playback.is_some()
-                    ),
-                );
                 debug!("Pause While Recording is already active for the current recording session");
                 return;
             }
@@ -121,14 +96,10 @@ impl MediaControlManager {
             state.generation
         };
 
-        media_pause_exp::mark(run, "pause_backend_start", "");
-        let pause_result = media_pause_exp::timed(run, "pause_backend_completed", "", || {
-            self.backend.pause_playback()
-        });
+        let pause_result = self.backend.pause_playback();
         let mut state = self.state.lock().unwrap();
 
         if state.generation != generation {
-            media_pause_exp::mark(run, "pause_backend_stale", "result=discard");
             debug!("Discarding stale media pause result after recording session changed");
             let should_resume = state.stale_resume_play;
             state.stale_resume_play = false;
@@ -152,30 +123,18 @@ impl MediaControlManager {
         match pause_result {
             Ok(Some(paused_playback)) => {
                 state.paused_playback = Some(paused_playback);
-                media_pause_exp::mark(run, "pause_for_recording_result", "result=paused");
                 info!("Paused media playback for recording");
             }
             Ok(None) => {
-                media_pause_exp::mark(
-                    run,
-                    "pause_for_recording_result",
-                    "result=no_active_playback",
-                );
                 debug!("Skipping media pause because there was no active playback to pause");
             }
             Err(err) => {
-                media_pause_exp::mark(
-                    run,
-                    "pause_for_recording_result",
-                    format!("result=error error={err:?}"),
-                );
                 warn!("Failed to pause media playback for recording: {err}");
             }
         }
     }
 
     fn resume_after_recording_inner(&self, play_after_recording: bool) {
-        let run = media_pause_exp::current_run();
         let paused_playback = {
             let mut state = self.state.lock().unwrap();
             state.generation = state.generation.wrapping_add(1);
@@ -187,30 +146,18 @@ impl MediaControlManager {
         };
 
         let Some(paused_playback) = paused_playback else {
-            media_pause_exp::mark(run, "resume_after_recording_skip", "reason=nothing_paused");
             debug!("Skipping media resume because Handy did not pause anything");
             return;
         };
 
         if !play_after_recording {
-            media_pause_exp::mark(run, "resume_after_recording_skip", "reason=play_disabled");
             info!("Skipping media resume because Play After Recording is disabled");
             return;
         }
 
-        match media_pause_exp::timed(run, "resume_backend_completed", "", || {
-            self.backend.resume_playback(paused_playback)
-        }) {
-            Ok(()) => {
-                media_pause_exp::mark(run, "resume_after_recording_result", "result=resumed");
-                info!("Resumed media playback after recording");
-            }
+        match self.backend.resume_playback(paused_playback) {
+            Ok(()) => info!("Resumed media playback after recording"),
             Err(err) => {
-                media_pause_exp::mark(
-                    run,
-                    "resume_after_recording_result",
-                    format!("result=error error={err:?}"),
-                );
                 error!("Failed to resume media playback after recording: {err}");
             }
         }
@@ -235,150 +182,26 @@ impl MediaControlBackend for PlatformMediaControlBackend {
 
 #[cfg(target_os = "macos")]
 fn platform_pause_playback() -> Result<Option<PausedPlaybackState>, String> {
-    use std::thread::sleep;
-    use std::time::Duration;
-    let run = media_pause_exp::current_run();
-
-    const PRECHECK_DELAY: Duration = Duration::from_millis(0);
-    const PRECHECK_PASSES: usize = 1;
-    let precheck_delay = Duration::from_millis(media_pause_exp::env_u64(
-        "HANDY_MEDIA_PRECHECK_DELAY_MS",
-        PRECHECK_DELAY.as_millis() as u64,
-    ));
-    let precheck_passes =
-        media_pause_exp::env_usize("HANDY_MEDIA_PRECHECK_PASSES", PRECHECK_PASSES);
-    let skip_precheck = media_pause_exp::env_bool("HANDY_MEDIA_SKIP_PRECHECK");
-    let use_media_remote = media_pause_exp::env_bool("HANDY_MEDIA_USE_MEDIA_REMOTE");
-
-    media_pause_exp::mark(
-        run,
-        "platform_pause_entry",
-        format!(
-            "precheck_passes={precheck_passes} precheck_delay_ms={} skip_precheck={skip_precheck} command={}",
-            precheck_delay.as_millis(),
-            if use_media_remote {
-                "media_remote"
-            } else {
-                "media_key"
-            }
-        ),
-    );
-
     // Direct MediaRemote state calls from Handy are entitlement-gated on newer macOS releases.
     // Host the tiny state adapter inside Apple's Perl process so this remains a native private
     // MediaRemote query without going through osascript/JXA.
-    if !skip_precheck {
-        for attempt in 0..precheck_passes {
-            let local_is_playing_result = media_pause_exp::timed_attempt(
-                run,
-                "macos_local_is_playing",
-                attempt + 1,
-                "result=pending",
-                crate::media_remote::private_is_playing,
-            );
-            let local_is_playing = match local_is_playing_result {
-                Ok(local_is_playing) => {
-                    media_pause_exp::mark(
-                        run,
-                        "macos_precheck_result",
-                        format!("attempt={} result={local_is_playing}", attempt + 1),
-                    );
-                    local_is_playing
-                }
-                Err(err) => {
-                    media_pause_exp::mark(
-                        run,
-                        "macos_precheck_result",
-                        format!("attempt={} result=error error={err:?}", attempt + 1),
-                    );
-                    return Err(err);
-                }
-            };
-            if !local_is_playing {
-                if attempt > 0 {
-                    debug!("Skipping macOS media pause because playback was not stably active");
-                }
-                media_pause_exp::mark(
-                    run,
-                    "platform_pause_result",
-                    format!("result=no_active_playback attempt={}", attempt + 1),
-                );
-                return Ok(None);
-            }
-
-            if attempt + 1 < precheck_passes {
-                media_pause_exp::timed_attempt(
-                    run,
-                    "macos_precheck_sleep",
-                    attempt + 1,
-                    format!("ms={}", precheck_delay.as_millis()),
-                    || sleep(precheck_delay),
-                );
-            }
-        }
+    if !crate::media_remote::private_is_playing()? {
+        return Ok(None);
     }
 
-    let pause_result = if use_media_remote {
-        media_pause_exp::timed(run, "media_remote_pause", "", crate::media_remote::pause)
-    } else {
-        media_pause_exp::timed(
-            run,
-            "media_key_pause",
-            "",
-            crate::media_remote::play_pause_key,
-        )
-    };
-    match pause_result {
-        Ok(()) => {
-            media_pause_exp::mark(run, "platform_pause_command_result", "result=ok");
-        }
-        Err(err) => {
-            media_pause_exp::mark(
-                run,
-                "platform_pause_command_result",
-                format!("result=error error={err:?}"),
-            );
-            return Err(err);
-        }
-    }
-    media_pause_exp::mark(run, "platform_pause_result", "result=paused");
+    crate::media_remote::play_pause_key()?;
     Ok(Some(PausedPlaybackState::Global))
 }
 
 #[cfg(target_os = "macos")]
 fn platform_resume_playback(paused_playback: PausedPlaybackState) -> Result<(), String> {
-    let run = media_pause_exp::current_run();
     match paused_playback {
         PausedPlaybackState::Global => {}
         #[cfg(test)]
         PausedPlaybackState::Session(_) => return Ok(()),
     }
 
-    let use_media_remote = media_pause_exp::env_bool("HANDY_MEDIA_USE_MEDIA_REMOTE");
-    let play_result = if use_media_remote {
-        media_pause_exp::timed(run, "media_remote_play", "", crate::media_remote::play)
-    } else {
-        media_pause_exp::timed(
-            run,
-            "media_key_play",
-            "",
-            crate::media_remote::play_pause_key,
-        )
-    };
-    match play_result {
-        Ok(()) => {
-            media_pause_exp::mark(run, "platform_resume_command_result", "result=ok");
-            Ok(())
-        }
-        Err(err) => {
-            media_pause_exp::mark(
-                run,
-                "platform_resume_command_result",
-                format!("result=error error={err:?}"),
-            );
-            Err(err)
-        }
-    }
+    crate::media_remote::play_pause_key()
 }
 
 #[cfg(target_os = "windows")]

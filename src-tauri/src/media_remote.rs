@@ -3,11 +3,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::sync::OnceLock;
 
-const MEDIA_REMOTE_COMMAND_PLAY: c_int = 0;
-const MEDIA_REMOTE_COMMAND_PAUSE: c_int = 1;
-
 unsafe extern "C" {
-    fn media_remote_send_command(command: c_int) -> c_int;
     fn media_remote_send_play_pause_key() -> c_int;
 }
 
@@ -16,22 +12,6 @@ const MEDIA_STATE_ADAPTER: &[u8] = include_bytes!(concat!(
     env!("OUT_DIR"),
     "/libhandy_media_state_adapter.dylib"
 ));
-
-/// Resume media playback via Apple's global MediaRemote API.
-///
-/// This is intentionally global rather than app- or session-specific: macOS does not expose a
-/// stable public API here for resuming the exact player Handy previously paused.
-pub fn play() -> Result<(), String> {
-    send_command(MEDIA_REMOTE_COMMAND_PLAY)
-}
-
-/// Pause media playback via Apple's global MediaRemote API.
-///
-/// On macOS this behaves more like a system-wide play/pause transport command than a targeted
-/// pause for one specific application.
-pub fn pause() -> Result<(), String> {
-    send_command(MEDIA_REMOTE_COMMAND_PAUSE)
-}
 
 /// Toggle media playback by posting the same system-defined HID event as the play/pause media key.
 ///
@@ -114,17 +94,4 @@ fn write_media_state_adapter() -> Result<PathBuf, String> {
     }
 
     Ok(path)
-}
-
-fn send_command(command: c_int) -> Result<(), String> {
-    let status = unsafe { media_remote_send_command(command) };
-
-    match status {
-        0 => Ok(()),
-        -1 => Err("Failed to load MediaRemote framework".to_string()),
-        -2 => Err("MediaRemote command symbol was not found".to_string()),
-        status => Err(format!(
-            "MediaRemote command returned unexpected status {status}"
-        )),
-    }
 }
