@@ -93,6 +93,7 @@ hf-hub = { git = "https://github.com/cjpais/hf-hub", branch = "cancellable-downl
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-global-shortcut = "2.3.1"
@@ -163,6 +164,7 @@ transcribe-cpp = { version = "0.2.0", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
+zbus = "4.0"
 
 # TEMPORARY: tao pinned past 0.35.3 for the Wayland client-side-decorations fix
 # (tao #1218, fixes tauri #11856 — dead titlebar buttons after visible(false) →
