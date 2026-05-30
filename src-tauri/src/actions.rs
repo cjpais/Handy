@@ -8,6 +8,7 @@ use crate::managers::model::ModelManager;
 use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
 use crate::media_control::MediaControlManager;
+use crate::media_pause_exp;
 use crate::settings::{get_settings, AppSettings, OverlayStyle, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
@@ -464,6 +465,12 @@ pub(crate) async fn process_transcription_output(
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
+        let media_pause_run = media_pause_exp::begin_run();
+        media_pause_exp::mark(
+            media_pause_run,
+            "shortcut_action_start",
+            format!("binding_id={binding_id}"),
+        );
         debug!("TranscribeAction::start called for binding: {}", binding_id);
 
         // Load model in the background
@@ -539,17 +546,39 @@ impl ShortcutAction for TranscribeAction {
         let mut recording_error: Option<String> = None;
         if is_always_on {
             debug!("Always-on mode: Starting recording before audio feedback");
-            match rm.try_start_recording(&binding_id, vad_policy) {
+            media_pause_exp::mark(
+                media_pause_run,
+                "recording_start_requested",
+                "mode=always_on",
+            );
+            let recording_result = media_pause_exp::timed(
+                media_pause_run,
+                "recording_start_completed",
+                "mode=always_on",
+                || rm.try_start_recording(&binding_id, vad_policy),
+            );
+            match recording_result {
                 Ok(()) => {
                     let rm_clone = Arc::clone(&rm);
                     let media_control_clone = Arc::clone(&media_control);
                     let app_clone = app.clone();
+                    let run = media_pause_run;
                     std::thread::spawn(move || {
+                        media_pause_exp::mark(run, "feedback_media_thread_start", "mode=always_on");
                         // Pause external playback before Handy's start sound so quick recordings
                         // do not capture extra audio from a media app that is about to be paused.
                         media_control_clone.pause_for_recording(&app_clone);
-                        play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                        rm_clone.apply_mute();
+                        media_pause_exp::timed(
+                            run,
+                            "start_feedback_sound",
+                            "result=completed",
+                            || {
+                                play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                            },
+                        );
+                        media_pause_exp::timed(run, "apply_mute", "result=completed", || {
+                            rm_clone.apply_mute();
+                        });
                     });
                 }
                 Err(e) => {
@@ -560,21 +589,54 @@ impl ShortcutAction for TranscribeAction {
         } else {
             // In on-demand mode, start recording before playing Handy's start sound.
             debug!("On-demand mode: Starting recording first, then audio feedback");
+            media_pause_exp::mark(
+                media_pause_run,
+                "recording_start_requested",
+                "mode=on_demand",
+            );
             let recording_start_time = Instant::now();
-            match rm.try_start_recording(&binding_id, vad_policy) {
+            let recording_result = media_pause_exp::timed(
+                media_pause_run,
+                "recording_start_completed",
+                "mode=on_demand",
+                || rm.try_start_recording(&binding_id, vad_policy),
+            );
+            match recording_result {
                 Ok(()) => {
                     debug!("Recording started in {:?}", recording_start_time.elapsed());
                     let app_clone = app.clone();
                     let rm_clone = Arc::clone(&rm);
                     let media_control_clone = Arc::clone(&media_control);
+                    let run = media_pause_run;
                     std::thread::spawn(move || {
-                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        media_pause_exp::mark(run, "feedback_media_thread_start", "mode=on_demand");
+                        let action_delay_ms =
+                            media_pause_exp::env_u64("HANDY_MEDIA_ACTION_DELAY_MS", 0);
+                        media_pause_exp::timed(
+                            run,
+                            "action_delay",
+                            format!("ms={action_delay_ms}"),
+                            || {
+                                std::thread::sleep(std::time::Duration::from_millis(
+                                    action_delay_ms,
+                                ));
+                            },
+                        );
                         debug!("Handling delayed audio feedback sequence");
                         // Re-check recording state inside pause_for_recording so rapid start/stop
                         // and cancellation paths cannot leave playback paused after recording ended.
                         media_control_clone.pause_for_recording(&app_clone);
-                        play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                        rm_clone.apply_mute();
+                        media_pause_exp::timed(
+                            run,
+                            "start_feedback_sound",
+                            "result=completed",
+                            || {
+                                play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                            },
+                        );
+                        media_pause_exp::timed(run, "apply_mute", "result=completed", || {
+                            rm_clone.apply_mute();
+                        });
                     });
                 }
                 Err(e) => {
@@ -584,7 +646,8 @@ impl ShortcutAction for TranscribeAction {
             }
         }
 
-        if recording_error.is_none() {
+        let recording_started = recording_error.is_none();
+        if recording_started {
             // Dynamically register the cancel shortcut in a separate task to avoid deadlock
             shortcut::register_cancel_shortcut(app);
         } else {
@@ -615,6 +678,11 @@ impl ShortcutAction for TranscribeAction {
             "TranscribeAction::start completed in {:?}",
             start_time.elapsed()
         );
+        media_pause_exp::mark(
+            media_pause_run,
+            "shortcut_action_start_completed",
+            format!("result={}", if recording_started { "ok" } else { "error" }),
+        );
     }
 
     fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
@@ -622,6 +690,12 @@ impl ShortcutAction for TranscribeAction {
         shortcut::unregister_cancel_shortcut(app);
 
         let stop_time = Instant::now();
+        let media_pause_run = media_pause_exp::current_run();
+        media_pause_exp::mark(
+            media_pause_run,
+            "shortcut_action_stop",
+            format!("binding_id={binding_id}"),
+        );
         debug!("TranscribeAction::stop called for binding: {}", binding_id);
 
         let ah = app.clone();
@@ -646,11 +720,16 @@ impl ShortcutAction for TranscribeAction {
         }
 
         // Resume media after Handy's stop sound so the sound remains audible.
-        rm.remove_mute();
+        media_pause_exp::timed(media_pause_run, "remove_mute", "result=completed", || {
+            rm.remove_mute();
+        });
         {
             let app_clone = app.clone();
+            let run = media_pause_run;
             std::thread::spawn(move || {
-                play_feedback_sound_blocking(&app_clone, SoundType::Stop);
+                media_pause_exp::timed(run, "stop_feedback_sound", "result=completed", || {
+                    play_feedback_sound_blocking(&app_clone, SoundType::Stop);
+                });
                 media_control.resume_after_recording(&app_clone);
             });
         }
