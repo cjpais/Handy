@@ -723,6 +723,7 @@ pub fn change_typing_tool_setting(app: AppHandle, tool: String) -> Result<(), St
         "dotool" => TypingTool::Dotool,
         "ydotool" => TypingTool::Ydotool,
         "xdotool" => TypingTool::Xdotool,
+        "ibus" => TypingTool::Ibus,
         other => {
             warn!("Invalid typing tool '{}', defaulting to auto", other);
             TypingTool::Auto

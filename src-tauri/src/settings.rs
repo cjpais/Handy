@@ -266,6 +266,7 @@ pub enum TypingTool {
     Dotool,
     Ydotool,
     Xdotool,
+    Ibus,
 }
 
 impl Default for TypingTool {

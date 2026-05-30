@@ -124,6 +124,11 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
     // If user specified a tool, try only that one
     if preferred_tool != TypingTool::Auto {
         return match preferred_tool {
+            TypingTool::Ibus if is_ibus_available() => {
+                info!("Using user-specified IBus");
+                type_text_via_ibus_engine(text)?;
+                Ok(true)
+            }
             TypingTool::Wtype if is_wtype_available() => {
                 info!("Using user-specified wtype");
                 type_text_via_wtype(text)?;
@@ -154,6 +159,15 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
                 preferred_tool
             )),
         };
+    }
+
+    // Auto mode - prefer IBus on both Wayland and X11 if available
+    if is_ibus_available() {
+        if type_text_via_ibus_engine(text).is_ok() {
+            info!("Using IBus for direct text input in Auto mode");
+            return Ok(true);
+        }
+        info!("IBus typing failed, falling back to other tools");
     }
 
     // Auto mode - existing fallback chain
@@ -203,6 +217,9 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
 #[cfg(target_os = "linux")]
 pub fn get_available_typing_tools() -> Vec<String> {
     let mut tools = vec!["auto".to_string()];
+    if is_ibus_available() {
+        tools.push("ibus".to_string());
+    }
     if is_wtype_available() {
         tools.push("wtype".to_string());
     }
@@ -662,6 +679,148 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
+fn get_ibus_address_from_config() -> Option<String> {
+    // Locate configuration directory
+    // Get XDG_CONFIG_HOME or fallback to $HOME/.config
+    let config_dir = std::env::var("XDG_CONFIG_HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            let home = std::env::var("HOME").unwrap_or_default();
+            std::path::Path::new(&home).join(".config")
+        });
+
+    let ibus_bus_dir = config_dir.join("ibus/bus");
+    if !ibus_bus_dir.is_dir() {
+        return None;
+    }
+
+    let wayland_display = std::env::var("WAYLAND_DISPLAY").ok();
+    let display = std::env::var("DISPLAY").ok();
+
+    // Determine the exact suffix we are looking for based on current session type
+    let target_suffix = if let Some(ref wl) = wayland_display {
+        format!("unix-{}", wl)
+    } else if let Some(ref disp) = display {
+        let disp_num = disp.trim_start_matches(':').split('.').next().unwrap_or("0");
+        format!("unix-{}", disp_num)
+    } else {
+        return None;
+    };
+
+    // Read the directory to find the appropriate config file
+    let mut files = std::fs::read_dir(ibus_bus_dir).ok()?;
+    let mut best_file = None;
+    let mut best_time = std::time::SystemTime::UNIX_EPOCH;
+
+    while let Some(Ok(entry)) = files.next() {
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+                let matches = if wayland_display.is_some() {
+                    filename.contains(&target_suffix)
+                } else {
+                    filename.contains(&target_suffix) && !filename.contains("-wayland-")
+                };
+
+                if matches {
+                    let modified = entry.metadata().ok()
+                        .and_then(|m| m.modified().ok())
+                        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+
+                    // If multiple files match (unlikely, but possible with stale entries),
+                    // pick the most recently modified one.
+                    if modified > best_time {
+                        best_time = modified;
+                        best_file = Some(path.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    let target_file = best_file?;
+    let content = std::fs::read_to_string(target_file).ok()?;
+    
+    // Parse IBUS_ADDRESS=...
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with("IBUS_ADDRESS=") {
+            let addr = line.trim_start_matches("IBUS_ADDRESS=");
+            // Strip quotes if present
+            let addr = addr.trim_matches(|c| c == '\'' || c == '"');
+            if !addr.is_empty() {
+                let clean_addr = addr.split(',').next().unwrap_or(addr);
+                return Some(clean_addr.to_string());
+            }
+        }
+    }
+
+    None
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn get_ibus_address() -> Option<String> {
+    // 1. Try to read from display-aware config file first (most reliable and immune to stale environment variables)
+    if let Some(addr) = get_ibus_address_from_config() {
+        return Some(addr);
+    }
+
+    // 2. Fallback to env var `IBUS_ADDRESS`
+    if let Ok(addr) = std::env::var("IBUS_ADDRESS") {
+        if !addr.is_empty() {
+            let clean_addr = addr.split(',').next().unwrap_or(&addr);
+            return Some(clean_addr.to_string());
+        }
+    }
+
+    None
+}
+
+#[cfg(target_os = "linux")]
+fn is_ibus_available() -> bool {
+    use zbus::blocking::Connection;
+    Connection::session()
+        .and_then(|conn| {
+            conn.call_method(
+                Some("org.freedesktop.DBus"),
+                "/org/freedesktop/DBus",
+                Some("org.freedesktop.DBus"),
+                "NameHasOwner",
+                &("org.freedesktop.IBus",),
+            )
+        })
+        .map(|reply| {
+            let has_owner: bool = reply.body().deserialize().unwrap_or(false);
+            has_owner
+        })
+        .unwrap_or(false)
+}
+
+#[cfg(target_os = "linux")]
+pub fn will_use_ibus(app_handle: &AppHandle) -> bool {
+    let settings = get_settings(app_handle);
+    if settings.paste_method != PasteMethod::Direct {
+        return false;
+    }
+    match settings.typing_tool {
+        TypingTool::Ibus => is_ibus_available(),
+        TypingTool::Auto => is_ibus_available(),
+        _ => false,
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn type_text_via_ibus_engine(text: &str) -> Result<(), String> {
+    if !crate::ibus_engine::is_engine_active() {
+        info!("Handy IBus engine service is not active. Starting it on demand...");
+        if let Err(e) = crate::ibus_engine::start_ibus_engine_service() {
+            return Err(format!("Failed to start Handy IBus engine service: {}", e));
+        }
+    }
+    crate::ibus_engine::commit_text_via_engine(text)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -683,5 +842,46 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_ibus_detection_and_typing_if_available() {
+        // This test runs conditionally if IBus is running on the host system.
+        // It provides a perfect way to test the D-Bus interface locally.
+        if is_ibus_available() {
+            println!("IBus is available, testing text injection...");
+            let res = type_text_via_ibus_engine("Handy IBus integration test");
+            // Note: If no input field is focused, this might return an Err,
+            // but the D-Bus connection and context lookup itself should not panic.
+            match res {
+                Ok(_) => println!("IBus injection succeeded!"),
+                Err(e) => println!("IBus injection returned error (normal if no focused field): {}", e),
+            }
+        } else {
+            println!("IBus is not running on this host, skipping integration test.");
+        }
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_get_available_typing_tools_includes_ibus_if_running() {
+        let tools = get_available_typing_tools();
+        assert!(tools.contains(&"auto".to_string()));
+        if is_ibus_available() {
+            assert!(tools.contains(&"ibus".to_string()));
+        }
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_get_ibus_address_resolution() {
+        let addr = get_ibus_address();
+        println!("Resolved IBus address: {:?}", addr);
+        if is_ibus_available() {
+            assert!(addr.is_some(), "IBus is running, but get_ibus_address() failed to resolve its D-Bus address");
+            let address = addr.unwrap();
+            assert!(address.starts_with("unix:"), "IBus address should start with 'unix:', got: {}", address);
+        }
     }
 }

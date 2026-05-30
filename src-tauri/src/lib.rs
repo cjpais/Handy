@@ -1,4 +1,6 @@
 mod actions;
+#[cfg(target_os = "linux")]
+pub mod ibus_engine;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod apple_intelligence;
 mod audio_feedback;
@@ -487,6 +489,14 @@ pub fn run(cli_args: CliArgs) {
                 signal_handle::send_transcription_input(app, "transcribe_with_post_process", "CLI");
             } else if args.iter().any(|a| a == "--cancel") {
                 crate::utils::cancel_current_operation(app);
+            } else if args.iter().any(|a| a == "--ibus-engine") {
+                #[cfg(target_os = "linux")]
+                {
+                    log::info!("Received --ibus-engine via single instance");
+                    if let Err(e) = crate::ibus_engine::start_ibus_engine_service() {
+                        log::error!("Failed to start IBus engine service: {}", e);
+                    }
+                }
             } else {
                 show_main_window(app);
             }
@@ -542,6 +552,14 @@ pub fn run(cli_args: CliArgs) {
 
             initialize_core_logic(&app_handle);
 
+            #[cfg(target_os = "linux")]
+            {
+                log::info!("Automatically starting IBus engine service on Linux startup...");
+                if let Err(e) = crate::ibus_engine::start_ibus_engine_service() {
+                    log::warn!("IBus engine service could not be started on startup: {}. (This is expected if not running under IBus).", e);
+                }
+            }
+
             // Pre-warm GPU/accelerator enumeration on a background thread.
             // The first call into transcribe_rs::whisper_cpp::gpu::list_gpu_devices
             // loads the Metal/Vulkan backend and probes devices, which can take
@@ -561,7 +579,7 @@ pub fn run(cli_args: CliArgs) {
             // Show main window only if not starting hidden.
             // CLI --start-hidden flag overrides the setting.
             // But if permission onboarding is required, always show the window.
-            let should_hide = settings.start_hidden || cli_args.start_hidden;
+            let should_hide = settings.start_hidden || cli_args.start_hidden || cli_args.ibus_engine;
             let should_force_show = should_force_show_permissions_window(&app_handle);
 
             // If start_hidden but tray is disabled, we must show the window
