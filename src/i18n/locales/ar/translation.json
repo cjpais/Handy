@@ -358,6 +358,11 @@
           "description": "URL الأساسي لـ API للمزود المختار. يمكن تعديل المزود المخصص فقط.",
           "placeholder": "https://api.openai.com/v1"
         },
+        "additionalUrl": {
+          "title": "Additional URL",
+          "description": "Fallback API base URL used if the primary Base URL is unreachable.",
+          "placeholder": "https://fallback.example.com/v1"
+        },
         "apiKey": {
           "title": "مفتاح API",
           "description": "مفتاح API للمزود المختار.",
@@ -374,6 +379,13 @@
           "refreshModels": "تحديث النماذج"
         }
       },
+        "additionalModel": {
+          "title": "Model (Fallback)",
+          "description": "Discover models available on the Additional URL endpoint.",
+          "placeholderWithOptions": "Search or select a model",
+          "placeholderNoOptions": "Type a model name",
+          "refreshModels": "Refresh models"
+        },
       "prompts": {
         "title": "المطالبة",
         "selectedPrompt": {

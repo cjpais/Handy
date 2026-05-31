@@ -14,6 +14,9 @@ type PostProcessProviderState = {
   baseUrl: string;
   handleBaseUrlChange: (value: string) => void;
   isBaseUrlUpdating: boolean;
+  additionalUrl: string;
+  handleAdditionalUrlChange: (value: string) => void;
+  isAdditionalUrlUpdating: boolean;
   apiKey: string;
   handleApiKeyChange: (value: string) => void;
   isApiKeyUpdating: boolean;
@@ -26,6 +29,14 @@ type PostProcessProviderState = {
   handleModelSelect: (value: string) => void;
   handleModelCreate: (value: string) => void;
   handleRefreshModels: () => void;
+  hasAdditionalUrl: boolean;
+  additionalModel: string;
+  handleAdditionalModelSelect: (value: string) => void;
+  handleAdditionalModelCreate: (value: string) => void;
+  additionalModelOptions: ModelOption[];
+  isAdditionalModelUpdating: boolean;
+  isFetchingAdditionalModels: boolean;
+  handleRefreshAdditionalModels: () => void;
 };
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
@@ -36,10 +47,14 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     isUpdating,
     setPostProcessProvider,
     updatePostProcessBaseUrl,
+    updatePostProcessAdditionalUrl,
     updatePostProcessApiKey,
     updatePostProcessModel,
+    updatePostProcessAdditionalModel,
     fetchPostProcessModels,
+    fetchPostProcessModelsFromUrl,
     postProcessModelOptions,
+    postProcessAdditionalModelOptions,
   } = useSettings();
 
   // Settings are guaranteed to have providers after migration
@@ -62,8 +77,11 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   // Use settings directly as single source of truth
   const baseUrl = selectedProvider?.base_url ?? "";
+  const additionalUrl = selectedProvider?.additional_url ?? "";
   const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
   const model = settings?.post_process_models?.[selectedProviderId] ?? "";
+  const additionalModel =
+    settings?.post_process_additional_models?.[selectedProviderId] ?? "";
 
   const providerOptions = useMemo<DropdownOption[]>(() => {
     return providers.map((provider) => ({
@@ -129,6 +147,19 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     [selectedProvider, baseUrl, updatePostProcessBaseUrl],
   );
 
+  const handleAdditionalUrlChange = useCallback(
+    (value: string) => {
+      if (!selectedProvider || selectedProvider.id !== "custom") {
+        return;
+      }
+      const trimmed = value.trim();
+      if (trimmed !== additionalUrl) {
+        void updatePostProcessAdditionalUrl(selectedProvider.id, trimmed);
+      }
+    },
+    [selectedProvider, additionalUrl, updatePostProcessAdditionalUrl],
+  );
+
   const handleApiKeyChange = useCallback(
     (value: string) => {
       const trimmed = value.trim();
@@ -163,6 +194,20 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     [selectedProviderId, updatePostProcessModel],
   );
 
+  const handleAdditionalModelSelect = useCallback(
+    (value: string) => {
+      void updatePostProcessAdditionalModel(selectedProviderId, value.trim());
+    },
+    [selectedProviderId, updatePostProcessAdditionalModel],
+  );
+
+  const handleAdditionalModelCreate = useCallback(
+    (value: string) => {
+      void updatePostProcessAdditionalModel(selectedProviderId, value);
+    },
+    [selectedProviderId, updatePostProcessAdditionalModel],
+  );
+
   const handleRefreshModels = useCallback(() => {
     if (isAppleProvider) return;
     void fetchPostProcessModels(selectedProviderId);
@@ -195,17 +240,63 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const isBaseUrlUpdating = isUpdating(
     `post_process_base_url:${selectedProviderId}`,
   );
+  const isAdditionalUrlUpdating = isUpdating(
+    `post_process_additional_url:${selectedProviderId}`,
+  );
   const isApiKeyUpdating = isUpdating(
     `post_process_api_key:${selectedProviderId}`,
   );
   const isModelUpdating = isUpdating(
     `post_process_model:${selectedProviderId}`,
   );
+  const isAdditionalModelUpdating = isUpdating(
+    `post_process_additional_model:${selectedProviderId}`,
+  );
   const isFetchingModels = isUpdating(
     `post_process_models_fetch:${selectedProviderId}`,
   );
 
   const isCustomProvider = selectedProvider?.id === "custom";
+  const hasAdditionalUrl =
+    isCustomProvider && additionalUrl.trim().length > 0;
+
+  const availableAdditionalModelsRaw =
+    postProcessAdditionalModelOptions[selectedProviderId] || [];
+
+  const additionalModelOptions = useMemo<ModelOption[]>(() => {
+    const seen = new Set<string>();
+    const options: ModelOption[] = [];
+
+    const upsert = (value: string | null | undefined) => {
+      const trimmed = value?.trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      options.push({ value: trimmed, label: trimmed });
+    };
+
+    for (const candidate of availableAdditionalModelsRaw) {
+      upsert(candidate);
+    }
+
+    upsert(model);
+
+    return options;
+  }, [availableAdditionalModelsRaw, model]);
+
+  const handleRefreshAdditionalModels = useCallback(() => {
+    if (!hasAdditionalUrl || !selectedProvider) return;
+    void fetchPostProcessModelsFromUrl(selectedProviderId, additionalUrl);
+  }, [
+    hasAdditionalUrl,
+    selectedProvider,
+    selectedProviderId,
+    additionalUrl,
+    fetchPostProcessModelsFromUrl,
+  ]);
+
+  const isFetchingAdditionalModels = isUpdating(
+    `post_process_models_fetch:${selectedProviderId}:additional`,
+  );
 
   // No automatic fetching - user must click refresh button
 
@@ -219,6 +310,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     baseUrl,
     handleBaseUrlChange,
     isBaseUrlUpdating,
+    additionalUrl,
+    handleAdditionalUrlChange,
+    isAdditionalUrlUpdating,
     apiKey,
     handleApiKeyChange,
     isApiKeyUpdating,
@@ -231,5 +325,13 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     handleModelSelect,
     handleModelCreate,
     handleRefreshModels,
+    hasAdditionalUrl,
+    additionalModel,
+    handleAdditionalModelSelect,
+    handleAdditionalModelCreate,
+    additionalModelOptions,
+    isAdditionalModelUpdating,
+    isFetchingAdditionalModels,
+    handleRefreshAdditionalModels,
   };
 };

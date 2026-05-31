@@ -853,6 +853,35 @@ pub fn change_post_process_base_url_setting(
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_post_process_additional_url_setting(
+    app: AppHandle,
+    provider_id: String,
+    additional_url: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    let label = settings
+        .post_process_provider(&provider_id)
+        .map(|provider| provider.label.clone())
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    let provider = settings
+        .post_process_provider_mut(&provider_id)
+        .expect("Provider looked up above must exist");
+
+    if provider.id != "custom" {
+        return Err(format!(
+            "Provider '{}' does not allow editing the additional URL",
+            label
+        ));
+    }
+
+    provider.additional_url = Some(additional_url);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Generic helper to validate provider exists
 fn validate_provider_exists(
     settings: &settings::AppSettings,
@@ -892,6 +921,22 @@ pub fn change_post_process_model_setting(
     let mut settings = settings::get_settings(&app);
     validate_provider_exists(&settings, &provider_id)?;
     settings.post_process_models.insert(provider_id, model);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_post_process_additional_model_setting(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_provider_exists(&settings, &provider_id)?;
+    settings
+        .post_process_additional_models
+        .insert(provider_id, model);
     settings::write_settings(&app, settings);
     Ok(())
 }
@@ -1025,6 +1070,30 @@ pub async fn fetch_post_process_models(
     }
 
     crate::llm_client::fetch_models(provider, api_key).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn fetch_post_process_models_from_url(
+    app: AppHandle,
+    provider_id: String,
+    url: String,
+) -> Result<Vec<String>, String> {
+    let settings = settings::get_settings(&app);
+
+    let provider = settings
+        .post_process_providers
+        .iter()
+        .find(|p| p.id == provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider_id)
+        .cloned()
+        .unwrap_or_default();
+
+    crate::llm_client::fetch_models_from_url(provider, api_key, &url).await
 }
 
 #[tauri::command]

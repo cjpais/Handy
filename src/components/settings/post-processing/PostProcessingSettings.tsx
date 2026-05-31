@@ -16,6 +16,7 @@ import { Input } from "../../ui/Input";
 
 import { ProviderSelect } from "../PostProcessingSettingsApi/ProviderSelect";
 import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
+import { AdditionalUrlField } from "../PostProcessingSettingsApi/AdditionalUrlField";
 import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
@@ -68,6 +69,28 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
                     "settings.postProcessing.api.baseUrl.placeholder",
                   )}
                   disabled={state.isBaseUrlUpdating}
+                  className="min-w-[380px]"
+                />
+              </div>
+            </SettingContainer>
+          )}
+
+          {state.selectedProvider?.id === "custom" && (
+            <SettingContainer
+              title={t("settings.postProcessing.api.additionalUrl.title")}
+              description={t("settings.postProcessing.api.additionalUrl.description")}
+              descriptionMode="tooltip"
+              layout="horizontal"
+              grouped={true}
+            >
+              <div className="flex items-center gap-2">
+                <AdditionalUrlField
+                  value={state.additionalUrl}
+                  onBlur={state.handleAdditionalUrlChange}
+                  placeholder={t(
+                    "settings.postProcessing.api.additionalUrl.placeholder",
+                  )}
+                  disabled={state.isAdditionalUrlUpdating}
                   className="min-w-[380px]"
                 />
               </div>
@@ -134,6 +157,46 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             >
               <RefreshCcw
                 className={`h-4 w-4 ${state.isFetchingModels ? "animate-spin" : ""}`}
+              />
+            </ResetButton>
+          </div>
+        </SettingContainer>
+      )}
+
+      {!state.isAppleProvider && state.hasAdditionalUrl && (
+        <SettingContainer
+          title={t("settings.postProcessing.api.additionalModel.title")}
+          description={t("settings.postProcessing.api.additionalModel.description")}
+          descriptionMode="tooltip"
+          layout="stacked"
+          grouped={true}
+        >
+          <div className="flex items-center gap-2">
+            <ModelSelect
+              value={state.additionalModel}
+              options={state.additionalModelOptions}
+              disabled={state.isAdditionalModelUpdating}
+              isLoading={state.isFetchingAdditionalModels}
+              placeholder={
+                state.additionalModelOptions.length > 0
+                  ? t(
+                      "settings.postProcessing.api.model.placeholderWithOptions",
+                    )
+                  : t("settings.postProcessing.api.model.placeholderNoOptions")
+              }
+              onSelect={state.handleAdditionalModelSelect}
+              onCreate={state.handleAdditionalModelCreate}
+              onBlur={() => {}}
+              className="flex-1 min-w-[380px]"
+            />
+            <ResetButton
+              onClick={state.handleRefreshAdditionalModels}
+              disabled={state.isFetchingAdditionalModels}
+              ariaLabel={t("settings.postProcessing.api.model.refreshModels")}
+              className="flex h-10 w-10 items-center justify-center"
+            >
+              <RefreshCcw
+                className={`h-4 w-4 ${state.isFetchingAdditionalModels ? "animate-spin" : ""}`}
               />
             </ResetButton>
           </div>
