@@ -104,8 +104,6 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
     #[serde(default)]
     pub supports_structured_output: bool,
-    #[serde(default)]
-    pub additional_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -399,8 +397,6 @@ pub struct AppSettings {
     pub post_process_api_keys: SecretMap,
     #[serde(default = "default_post_process_models")]
     pub post_process_models: HashMap<String, String>,
-    #[serde(default)]
-    pub post_process_additional_models: HashMap<String, String>,
     #[serde(default = "default_post_process_prompts")]
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
@@ -534,7 +530,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
-            additional_url: None,
         },
         PostProcessProvider {
             id: "zai".to_string(),
@@ -543,7 +538,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
-            additional_url: None,
         },
         PostProcessProvider {
             id: "openrouter".to_string(),
@@ -552,7 +546,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
-            additional_url: None,
         },
         PostProcessProvider {
             id: "anthropic".to_string(),
@@ -561,7 +554,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
-            additional_url: None,
         },
         PostProcessProvider {
             id: "groq".to_string(),
@@ -570,7 +562,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: false,
-            additional_url: None,
         },
         PostProcessProvider {
             id: "cerebras".to_string(),
@@ -579,7 +570,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: Some("/models".to_string()),
             supports_structured_output: true,
-            additional_url: None,
         },
     ];
 
@@ -596,7 +586,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
             allow_base_url_edit: false,
             models_endpoint: None,
             supports_structured_output: true,
-            additional_url: None,
         });
     }
 
@@ -608,7 +597,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         allow_base_url_edit: false,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: true,
-        additional_url: None,
     });
 
     // Custom provider always comes last
@@ -619,7 +607,6 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         allow_base_url_edit: true,
         models_endpoint: Some("/models".to_string()),
         supports_structured_output: false,
-        additional_url: None,
     });
 
     providers
@@ -686,15 +673,6 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
                         provider.supports_structured_output
                     );
                     existing.supports_structured_output = provider.supports_structured_output;
-                    changed = true;
-                }
-                // Initialize additional_url for existing providers that don't have it yet
-                if existing.additional_url.is_none() {
-                    debug!(
-                        "Initializing additional_url for provider '{}'",
-                        provider.id
-                    );
-                    existing.additional_url = Some(String::new());
                     changed = true;
                 }
             }
@@ -819,7 +797,6 @@ pub fn get_default_settings() -> AppSettings {
         post_process_providers: default_post_process_providers(),
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
-        post_process_additional_models: HashMap::new(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
