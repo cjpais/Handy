@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-typedef void (*MRGetIsPlayingFn)(dispatch_queue_t queue, void (^completion)(bool isPlaying));
+typedef void (*MRGetNowPlayingInfoFn)(dispatch_queue_t queue, void (^completion)(CFDictionaryRef info));
 
 static const char *MEDIA_REMOTE_PATH = "/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote";
 
@@ -15,10 +15,10 @@ void handy_media_is_playing(void) {
         exit(2);
     }
 
-    MRGetIsPlayingFn get_is_playing =
-        (MRGetIsPlayingFn)dlsym(handle, "MRMediaRemoteGetNowPlayingApplicationIsPlaying");
-    if (get_is_playing == NULL) {
-        fprintf(stderr, "MediaRemote is-playing symbol was not found\n");
+    MRGetNowPlayingInfoFn get_now_playing_info =
+        (MRGetNowPlayingInfoFn)dlsym(handle, "MRMediaRemoteGetNowPlayingInfo");
+    if (get_now_playing_info == NULL) {
+        fprintf(stderr, "MediaRemote now-playing info symbol was not found\n");
         exit(3);
     }
 
@@ -26,8 +26,18 @@ void handy_media_is_playing(void) {
     __block bool is_playing = false;
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-    get_is_playing(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^(bool result) {
-        is_playing = result;
+    get_now_playing_info(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^(CFDictionaryRef info) {
+        is_playing = false;
+        if (info != NULL) {
+            CFTypeRef playback_rate_ref =
+                CFDictionaryGetValue(info, CFSTR("kMRMediaRemoteNowPlayingInfoPlaybackRate"));
+            if (playback_rate_ref != NULL && CFGetTypeID(playback_rate_ref) == CFNumberGetTypeID()) {
+                double playback_rate = 0.0;
+                if (CFNumberGetValue((CFNumberRef)playback_rate_ref, kCFNumberDoubleType, &playback_rate)) {
+                    is_playing = playback_rate > 0.01;
+                }
+            }
+        }
         callback_called = true;
         dispatch_semaphore_signal(semaphore);
     });
@@ -38,7 +48,7 @@ void handy_media_is_playing(void) {
     );
 
     if (wait_result != 0 || !callback_called) {
-        fprintf(stderr, "Timed out waiting for MediaRemote is-playing state\n");
+        fprintf(stderr, "Timed out waiting for MediaRemote now-playing info\n");
         exit(4);
     }
 

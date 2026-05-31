@@ -421,4 +421,44 @@ mod tests {
         assert_eq!(backend.pause_calls(), 1);
         assert_eq!(backend.resume_calls(), 0);
     }
+
+    #[cfg(target_os = "macos")]
+    fn music_player_state() -> Option<String> {
+        let output = std::process::Command::new("osascript")
+            .args(["-e", "tell application \"Music\" to player state as string"])
+            .output()
+            .ok()?;
+
+        if !output.status.success() {
+            return None;
+        }
+
+        Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    }
+
+    #[cfg(target_os = "macos")]
+    fn pause_music_for_live_test() {
+        let _ = std::process::Command::new("osascript")
+            .args(["-e", "tell application \"Music\" to pause"])
+            .status();
+        std::thread::sleep(Duration::from_millis(750));
+    }
+
+    #[test]
+    #[ignore = "requires macOS Music and live system media controls"]
+    #[cfg(target_os = "macos")]
+    fn macos_live_pause_does_not_start_media_when_nothing_is_playing() {
+        pause_music_for_live_test();
+
+        let before = music_player_state();
+        assert_ne!(before.as_deref(), Some("playing"));
+
+        let paused = platform_pause_playback().expect("macOS media pause precheck failed");
+
+        std::thread::sleep(Duration::from_millis(750));
+        let after = music_player_state();
+
+        assert_eq!(paused, None);
+        assert_ne!(after.as_deref(), Some("playing"));
+    }
 }
