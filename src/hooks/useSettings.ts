@@ -11,6 +11,7 @@ interface UseSettingsReturn {
   outputDevices: AudioDevice[];
   audioFeedbackEnabled: boolean;
   postProcessModelOptions: Record<string, string[]>;
+  postProcessAdditionalModelOptions: Record<string, string[]>;
 
   // Actions
   updateSetting: <K extends keyof Settings>(
@@ -35,12 +36,18 @@ interface UseSettingsReturn {
     providerId: string,
     baseUrl: string,
   ) => Promise<void>;
+  updatePostProcessAdditionalUrl: (
+    providerId: string,
+    additionalUrl: string,
+  ) => Promise<void>;
   updatePostProcessApiKey: (
     providerId: string,
     apiKey: string,
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  updatePostProcessAdditionalModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  fetchPostProcessModelsFromUrl: (providerId: string, url: string) => Promise<string[]>;
 }
 
 export const useSettings = (): UseSettingsReturn => {
@@ -61,6 +68,7 @@ export const useSettings = (): UseSettingsReturn => {
     outputDevices: store.outputDevices,
     audioFeedbackEnabled: store.settings?.audio_feedback || false,
     postProcessModelOptions: store.postProcessModelOptions,
+    postProcessAdditionalModelOptions: store.postProcessAdditionalModelOptions,
     updateSetting: store.updateSetting,
     resetSetting: store.resetSetting,
     refreshSettings: store.refreshSettings,
@@ -71,8 +79,11 @@ export const useSettings = (): UseSettingsReturn => {
     getSetting: store.getSetting,
     setPostProcessProvider: store.setPostProcessProvider,
     updatePostProcessBaseUrl: store.updatePostProcessBaseUrl,
+    updatePostProcessAdditionalUrl: store.updatePostProcessAdditionalUrl,
     updatePostProcessApiKey: store.updatePostProcessApiKey,
     updatePostProcessModel: store.updatePostProcessModel,
+    updatePostProcessAdditionalModel: store.updatePostProcessAdditionalModel,
     fetchPostProcessModels: store.fetchPostProcessModels,
+    fetchPostProcessModelsFromUrl: store.fetchPostProcessModelsFromUrl,
   };
 };

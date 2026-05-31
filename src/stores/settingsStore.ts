@@ -18,6 +18,7 @@ interface SettingsStore {
   outputDevices: AudioDevice[];
   customSounds: { start: boolean; stop: boolean };
   postProcessModelOptions: Record<string, string[]>;
+  postProcessAdditionalModelOptions: Record<string, string[]>;
 
   // Actions
   initialize: () => Promise<void>;
@@ -38,7 +39,7 @@ interface SettingsStore {
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
   updatePostProcessSetting: (
-    settingType: "base_url" | "api_key" | "model",
+    settingType: "base_url" | "api_key" | "model" | "additional_url" | "additional_model",
     providerId: string,
     value: string,
   ) => Promise<void>;
@@ -46,13 +47,20 @@ interface SettingsStore {
     providerId: string,
     baseUrl: string,
   ) => Promise<void>;
+  updatePostProcessAdditionalUrl: (
+    providerId: string,
+    additionalUrl: string,
+  ) => Promise<void>;
   updatePostProcessApiKey: (
     providerId: string,
     apiKey: string,
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  updatePostProcessAdditionalModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
+  fetchPostProcessModelsFromUrl: (providerId: string, url: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
+  setPostProcessAdditionalModelOptions: (providerId: string, models: string[]) => void;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -167,6 +175,7 @@ export const useSettingsStore = create<SettingsStore>()(
     outputDevices: [],
     customSounds: { start: false, stop: false },
     postProcessModelOptions: {},
+    postProcessAdditionalModelOptions: {},
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
@@ -436,7 +445,7 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Generic updater for post-processing provider settings
     updatePostProcessSetting: async (
-      settingType: "base_url" | "api_key" | "model",
+      settingType: "base_url" | "api_key" | "model" | "additional_url" | "additional_model",
       providerId: string,
       value: string,
     ) => {
@@ -448,10 +457,14 @@ export const useSettingsStore = create<SettingsStore>()(
       try {
         if (settingType === "base_url") {
           await commands.changePostProcessBaseUrlSetting(providerId, value);
+        } else if (settingType === "additional_url") {
+          await commands.changePostProcessAdditionalUrlSetting(providerId, value);
         } else if (settingType === "api_key") {
           await commands.changePostProcessApiKeySetting(providerId, value);
         } else if (settingType === "model") {
           await commands.changePostProcessModelSetting(providerId, value);
+        } else if (settingType === "additional_model") {
+          await commands.changePostProcessAdditionalModelSetting(providerId, value);
         }
         await refreshSettings();
       } catch (error) {
@@ -510,6 +523,10 @@ export const useSettingsStore = create<SettingsStore>()(
       }
     },
 
+    updatePostProcessAdditionalUrl: async (providerId, additionalUrl) => {
+      return get().updatePostProcessSetting("additional_url", providerId, additionalUrl);
+    },
+
     updatePostProcessApiKey: async (providerId, apiKey) => {
       // Clear cached models when API key changes - user should click refresh after
       set((state) => ({
@@ -523,6 +540,10 @@ export const useSettingsStore = create<SettingsStore>()(
 
     updatePostProcessModel: async (providerId, model) => {
       return get().updatePostProcessSetting("model", providerId, model);
+    },
+
+    updatePostProcessAdditionalModel: async (providerId, model) => {
+      return get().updatePostProcessSetting("additional_model", providerId, model);
     },
 
     fetchPostProcessModels: async (providerId) => {
@@ -557,6 +578,39 @@ export const useSettingsStore = create<SettingsStore>()(
           [providerId]: models,
         },
       })),
+    setPostProcessAdditionalModelOptions: (providerId, models) =>
+      set((state) => ({
+        postProcessAdditionalModelOptions: {
+          ...state.postProcessAdditionalModelOptions,
+          [providerId]: models,
+        },
+      })),
+
+    fetchPostProcessModelsFromUrl: async (providerId, url) => {
+      const updateKey = `post_process_models_fetch:${providerId}:additional`;
+      const { setUpdating, setPostProcessAdditionalModelOptions } = get();
+
+      setUpdating(updateKey, true);
+
+      try {
+        const result = await commands.fetchPostProcessModelsFromUrl(
+          providerId,
+          url,
+        );
+        if (result.status === "ok") {
+          setPostProcessAdditionalModelOptions(providerId, result.data);
+          return result.data;
+        } else {
+          console.error("Failed to fetch models from URL:", result.error);
+          return [];
+        }
+      } catch (error) {
+        console.error("Failed to fetch models from URL:", error);
+        return [];
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
 
     // Load default settings from Rust
     loadDefaultSettings: async () => {

@@ -3,6 +3,7 @@ use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::time::Duration;
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -63,7 +64,6 @@ struct ChatMessageResponse {
 fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<HeaderMap, String> {
     let mut headers = HeaderMap::new();
 
-    // Common headers
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert(
         REFERER,
@@ -75,7 +75,6 @@ fn build_headers(provider: &PostProcessProvider, api_key: &str) -> Result<Header
     );
     headers.insert("X-Title", HeaderValue::from_static("Handy"));
 
-    // Provider-specific auth headers
     if !api_key.is_empty() {
         if provider.id == "anthropic" {
             headers.insert(
@@ -105,6 +104,33 @@ fn create_client(provider: &PostProcessProvider, api_key: &str) -> Result<reqwes
         .map_err(|e| format!("Failed to build HTTP client: {}", e))
 }
 
+/// Create an HTTP client with a custom connection timeout.
+/// Used for fallback requests so the user doesn't wait 30+ seconds
+/// before trying the additional URL.
+fn create_client_with_timeout(
+    provider: &PostProcessProvider,
+    api_key: &str,
+    timeout_secs: u64,
+) -> Result<reqwest::Client, String> {
+    let headers = build_headers(provider, api_key)?;
+    reqwest::Client::builder()
+        .default_headers(headers)
+        .connect_timeout(Duration::from_secs(timeout_secs))
+        .timeout(Duration::from_secs(timeout_secs.saturating_mul(2)))
+        .build()
+        .map_err(|e| format!("Failed to build HTTP client: {}", e))
+}
+
+/// Returns true when the provider has a non-empty additional_url configured,
+/// meaning fallback and short timeout behaviour should be used.
+fn has_fallback(provider: &PostProcessProvider) -> bool {
+    provider
+        .additional_url
+        .as_ref()
+        .map(|url| !url.trim().is_empty())
+        .unwrap_or(false)
+}
+
 /// Send a chat completion request to an OpenAI-compatible API
 /// Returns Ok(Some(content)) on success, Ok(None) if response has no content,
 /// or Err on actual errors (HTTP, parsing, etc.)
@@ -129,66 +155,17 @@ pub async fn send_chat_completion(
     .await
 }
 
-/// Send a chat completion request with structured output support
-/// When json_schema is provided, uses structured outputs mode
-/// system_prompt is used as the system message when provided
-/// reasoning_effort sets the OpenAI-style top-level field (e.g., "none", "low", "medium", "high")
-/// reasoning sets the OpenRouter-style nested object (effort + exclude)
-pub async fn send_chat_completion_with_schema(
-    provider: &PostProcessProvider,
-    api_key: String,
-    model: &str,
-    user_content: String,
-    system_prompt: Option<String>,
-    json_schema: Option<Value>,
-    reasoning_effort: Option<String>,
-    reasoning: Option<ReasoningConfig>,
+/// Try sending a chat completion request to a single URL.
+/// Returns Ok(Some(content)) on success, Ok(None) on empty response,
+/// or Err on connection/timeout errors that may be retried.
+async fn try_chat_completion(
+    client: &reqwest::Client,
+    url: &str,
+    request_body: &ChatCompletionRequest,
 ) -> Result<Option<String>, String> {
-    let base_url = provider.base_url.trim_end_matches('/');
-    let url = format!("{}/chat/completions", base_url);
-
-    debug!("Sending chat completion request to: {}", url);
-
-    let client = create_client(provider, &api_key)?;
-
-    // Build messages vector
-    let mut messages = Vec::new();
-
-    // Add system prompt if provided
-    if let Some(system) = system_prompt {
-        messages.push(ChatMessage {
-            role: "system".to_string(),
-            content: system,
-        });
-    }
-
-    // Add user message
-    messages.push(ChatMessage {
-        role: "user".to_string(),
-        content: user_content,
-    });
-
-    // Build response_format if schema is provided
-    let response_format = json_schema.map(|schema| ResponseFormat {
-        format_type: "json_schema".to_string(),
-        json_schema: JsonSchema {
-            name: "transcription_output".to_string(),
-            strict: true,
-            schema,
-        },
-    });
-
-    let request_body = ChatCompletionRequest {
-        model: model.to_string(),
-        messages,
-        response_format,
-        reasoning_effort,
-        reasoning,
-    };
-
     let response = client
-        .post(&url)
-        .json(&request_body)
+        .post(url)
+        .json(request_body)
         .send()
         .await
         .map_err(|e| format!("HTTP request failed: {}", e))?;
@@ -216,21 +193,110 @@ pub async fn send_chat_completion_with_schema(
         .and_then(|choice| choice.message.content.clone()))
 }
 
-/// Fetch available models from an OpenAI-compatible API
-/// Returns a list of model IDs
-pub async fn fetch_models(
+/// Send a chat completion request with structured output support
+/// When json_schema is provided, uses structured outputs mode
+/// system_prompt is used as the system message when provided
+/// reasoning_effort sets the OpenAI-style top-level field (e.g., "none", "low", "medium", "high")
+/// reasoning sets the OpenRouter-style nested object (effort + exclude)
+pub async fn send_chat_completion_with_schema(
     provider: &PostProcessProvider,
     api_key: String,
-) -> Result<Vec<String>, String> {
+    model: &str,
+    user_content: String,
+    system_prompt: Option<String>,
+    json_schema: Option<Value>,
+    reasoning_effort: Option<String>,
+    reasoning: Option<ReasoningConfig>,
+) -> Result<Option<String>, String> {
     let base_url = provider.base_url.trim_end_matches('/');
-    let url = format!("{}/models", base_url);
+    let primary_url = format!("{}/chat/completions", base_url);
 
-    debug!("Fetching models from: {}", url);
+    debug!("Sending chat completion request to: {}", primary_url);
 
-    let client = create_client(provider, &api_key)?;
+    let fallback_url = if has_fallback(provider) {
+        let trimmed = provider
+            .additional_url
+            .as_ref()
+            .unwrap()
+            .trim_end_matches('/');
+        Some(format!("{}/chat/completions", trimmed))
+    } else {
+        None
+    };
 
+    let client = if fallback_url.is_some() {
+        create_client_with_timeout(provider, &api_key, 5)?
+    } else {
+        create_client(provider, &api_key)?
+    };
+
+    let mut messages = Vec::new();
+    if let Some(system) = system_prompt {
+        messages.push(ChatMessage {
+            role: "system".to_string(),
+            content: system,
+        });
+    }
+    messages.push(ChatMessage {
+        role: "user".to_string(),
+        content: user_content,
+    });
+
+    let response_format = json_schema.map(|schema| ResponseFormat {
+        format_type: "json_schema".to_string(),
+        json_schema: JsonSchema {
+            name: "transcription_output".to_string(),
+            strict: true,
+            schema,
+        },
+    });
+
+    let request_body = ChatCompletionRequest {
+        model: model.to_string(),
+        messages,
+        response_format,
+        reasoning_effort,
+        reasoning,
+    };
+
+    match try_chat_completion(&client, &primary_url, &request_body).await {
+        Ok(result) => return Ok(result),
+        Err(err) => {
+            let is_connection_error = err.starts_with("HTTP request failed:");
+            if is_connection_error {
+                if let Some(ref url) = fallback_url {
+                    let fallback_client =
+                        create_client_with_timeout(provider, &api_key, 5)?;
+                    debug!("Primary URL unreachable, falling back to: {}", url);
+                    return try_chat_completion(&fallback_client, url, &request_body).await;
+                }
+            }
+            Err(err)
+        }
+    }
+}
+
+/// Fetch models from a given URL using the provider's auth headers.
+/// Unlike fetch_models(), this does NOT do fallback logic — it hits the given URL directly.
+pub async fn fetch_models_from_url(
+    provider: &PostProcessProvider,
+    api_key: String,
+    url: &str,
+) -> Result<Vec<String>, String> {
+    let trimmed = url.trim_end_matches('/');
+    let full_url = format!("{}/models", trimmed);
+    debug!("Fetching models from explicit URL: {}", full_url);
+    let client = create_client_with_timeout(provider, &api_key, 10)?;
+    try_fetch_models(&client, &full_url).await
+}
+
+/// Try fetching models from a single URL.
+async fn try_fetch_models(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<Vec<String>, String> {
     let response = client
-        .get(&url)
+        .get(url)
         .send()
         .await
         .map_err(|e| format!("Failed to fetch models: {}", e))?;
@@ -253,8 +319,6 @@ pub async fn fetch_models(
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
     let mut models = Vec::new();
-
-    // Handle OpenAI format: { data: [ { id: "..." }, ... ] }
     if let Some(data) = parsed.get("data").and_then(|d| d.as_array()) {
         for entry in data {
             if let Some(id) = entry.get("id").and_then(|i| i.as_str()) {
@@ -263,9 +327,7 @@ pub async fn fetch_models(
                 models.push(name.to_string());
             }
         }
-    }
-    // Handle array format: [ "model1", "model2", ... ]
-    else if let Some(array) = parsed.as_array() {
+    } else if let Some(array) = parsed.as_array() {
         for entry in array {
             if let Some(model) = entry.as_str() {
                 models.push(model.to_string());
@@ -274,4 +336,49 @@ pub async fn fetch_models(
     }
 
     Ok(models)
+}
+
+/// Fetch available models from an OpenAI-compatible API
+/// Returns a list of model IDs
+pub async fn fetch_models(
+    provider: &PostProcessProvider,
+    api_key: String,
+) -> Result<Vec<String>, String> {
+    let base_url = provider.base_url.trim_end_matches('/');
+    let primary_url = format!("{}/models", base_url);
+
+    debug!("Fetching models from: {}", primary_url);
+
+    let fallback_url = if has_fallback(provider) {
+        let trimmed = provider
+            .additional_url
+            .as_ref()
+            .unwrap()
+            .trim_end_matches('/');
+        Some(format!("{}/models", trimmed))
+    } else {
+        None
+    };
+
+    let client = if fallback_url.is_some() {
+        create_client_with_timeout(provider, &api_key, 5)?
+    } else {
+        create_client(provider, &api_key)?
+    };
+
+    match try_fetch_models(&client, &primary_url).await {
+        Ok(models) => Ok(models),
+        Err(err) => {
+            let is_connection_error = err.starts_with("Failed to fetch models:");
+            if is_connection_error {
+                if let Some(ref url) = fallback_url {
+                    let fallback_client =
+                        create_client_with_timeout(provider, &api_key, 5)?;
+                    debug!("Primary models URL unreachable, falling back to: {}", url);
+                    return try_fetch_models(&fallback_client, url).await;
+                }
+            }
+            Err(err)
+        }
+    }
 }

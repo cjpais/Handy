@@ -380,6 +380,11 @@
           "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
           "placeholder": "https://api.openai.com/v1"
         },
+        "additionalUrl": {
+          "title": "Additional URL",
+          "description": "Fallback API base URL used if the primary Base URL is unreachable.",
+          "placeholder": "https://fallback.example.com/v1"
+        },
         "apiKey": {
           "title": "API 密钥",
           "description": "所选提供商的 API 密钥。",
@@ -396,6 +401,13 @@
           "refreshModels": "刷新模型"
         }
       },
+        "additionalModel": {
+          "title": "Model (Fallback)",
+          "description": "Discover models available on the Additional URL endpoint.",
+          "placeholderWithOptions": "Search or select a model",
+          "placeholderNoOptions": "Type a model name",
+          "refreshModels": "Refresh models"
+        },
       "prompts": {
         "title": "提示词",
         "selectedPrompt": {
