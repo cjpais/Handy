@@ -5,6 +5,7 @@
   "windows": ["main", "recording_overlay"],
   "permissions": [
     "core:default",
+    "core:window:allow-start-dragging",
     "opener:default",
     "store:default",
     "updater:default",
