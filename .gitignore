@@ -29,6 +29,7 @@ dist-ssr
 .claude/worktrees/
 .claude/memory/
 .claude/plans/
+.claude/commands/
 .claude/*.local.json
 
 /target/

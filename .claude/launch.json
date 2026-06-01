@@ -1,0 +1,20 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Vite Frontend",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "port": 1420
+    },
+    {
+      "name": "Tauri Dev (Full App)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "/Users/felixbaileymurray/Documents/goldfish/scripts/tauri.sh",
+        "dev"
+      ],
+      "port": 1420
+    }
+  ]
+}

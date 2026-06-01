@@ -3,9 +3,12 @@
 # Reads the session transcript, asks claude -p to identify any decisions worth
 # logging, and appends suggestions to docs/decisions_pending.md for review.
 
-GOLDFISH_DIR="/Users/felixbaileymurray/Documents/goldfish"
+# Derive the project root: prefer $CLAUDE_PROJECT_DIR (set by Claude Code),
+# fall back to git rev-parse so the script works when run manually.
+GOLDFISH_DIR="${CLAUDE_PROJECT_DIR:-$(git -C "$(dirname "$0")" rev-parse --show-toplevel 2>/dev/null)}"
 
-# Guard: only run when inside this project
+# Guard: only run when we resolved a project dir and are inside it
+[[ -n "$GOLDFISH_DIR" ]] || exit 0
 case "${PWD:-}" in
     "$GOLDFISH_DIR"|"$GOLDFISH_DIR"/*) ;;
     *) exit 0 ;;
@@ -24,7 +27,9 @@ except:
 
 [[ -n "$SESSION_ID" ]] || exit 0
 
-TRANSCRIPT_FILE="$HOME/.claude/projects/-Users-felixbaileymurray-Documents-goldfish/${SESSION_ID}.jsonl"
+# Derive the Claude project slug from the resolved path (replaces / with -).
+PROJECT_SLUG=$(echo "$GOLDFISH_DIR" | tr '/' '-')
+TRANSCRIPT_FILE="$HOME/.claude/projects/${PROJECT_SLUG}/${SESSION_ID}.jsonl"
 [[ -f "$TRANSCRIPT_FILE" ]] || exit 0
 
 DECISIONS_FILE="${GOLDFISH_DIR}/docs/decisions.md"
