@@ -15,7 +15,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const [activeSection, setActiveSection] =
-    useState<SettingsSection>("general");
+    useState<SettingsSection>("shortcuts");
 
   const availableSections = Object.entries(SETTINGS_SECTIONS)
     .filter(([_, config]) => config.enabled(settings))
@@ -25,7 +25,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
   // back to general so we never render an empty panel.
   const resolvedSection = availableSections.some((s) => s.id === activeSection)
     ? activeSection
-    : "general";
+    : "shortcuts";
   const ActiveComponent = SETTINGS_SECTIONS[resolvedSection].component;
 
   return (

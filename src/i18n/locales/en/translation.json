@@ -11,14 +11,19 @@
   "sidebar": {
     "entries": "Entries",
     "settings": "Settings",
+    "shortcuts": "Shortcuts",
+    "capture": "Capture",
+    "transcription": "Transcription",
+    "postProcessing": "Post Process",
+    "output": "Output",
+    "summarisation": "Summary",
+    "app": "App",
+    "debug": "Debug",
+    "about": "About",
     "general": "General",
     "models": "Models",
     "advanced": "Advanced",
-    "postProcessing": "Post Process",
-    "history": "History",
-    "debug": "Debug",
-    "about": "About",
-    "summarisation": "Summary"
+    "history": "History"
   },
   "onboarding": {
     "subtitle": "To get started, choose a transcription model",
@@ -159,10 +164,61 @@
     "transcript": "Transcript",
     "audio": "Audio",
     "openFolder": "Open Recordings Folder",
-    "cleanedText": "Cleaned text"
+    "cleanedText": "Cleaned text",
+    "loading": "Loading history...",
+    "empty": "No transcriptions yet. Start recording to build your history!",
+    "copyToClipboard": "Copy transcription to clipboard",
+    "save": "Save transcription",
+    "unsave": "Remove from saved",
+    "delete": "Delete entry",
+    "deleteError": "Failed to delete entry. Please try again.",
+    "retranscribe": "Re-transcribe",
+    "retranscribeError": "Failed to re-transcribe. Please try again.",
+    "transcribing": "Transcribing...",
+    "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
+    "summarizing": "Summarising...",
+    "summarizeError": "Failed to summarise. Please try again.",
+    "summarizeFailed": "Summary failed — retry",
+    "summarizeRetry": "Retry summarisation"
   },
   "settings": {
     "back": "Back",
+    "shortcuts": {
+      "title": "Shortcuts"
+    },
+    "capture": {
+      "microphone": {
+        "title": "Microphone"
+      },
+      "audioFeedback": {
+        "title": "Audio Feedback"
+      },
+      "history": {
+        "title": "History"
+      }
+    },
+    "transcription": {
+      "quality": {
+        "title": "Quality"
+      }
+    },
+    "output": {
+      "title": "Output"
+    },
+    "app": {
+      "startup": {
+        "title": "Startup"
+      },
+      "display": {
+        "title": "Display"
+      },
+      "performance": {
+        "title": "Performance"
+      },
+      "experimental": {
+        "title": "Experimental"
+      }
+    },
     "modelSettings": {
       "title": "{{model}} Settings",
       "noSettingsNeeded": "This model works automatically with no configuration needed."
@@ -432,23 +488,7 @@
       }
     },
     "history": {
-      "title": "History",
-      "openFolder": "Open Recordings Folder",
-      "loading": "Loading history...",
-      "empty": "No transcriptions yet. Start recording to build your history!",
-      "copyToClipboard": "Copy transcription to clipboard",
-      "save": "Save transcription",
-      "unsave": "Remove from saved",
-      "delete": "Delete entry",
-      "deleteError": "Failed to delete entry. Please try again.",
-      "retranscribe": "Re-transcribe",
-      "retranscribeError": "Failed to re-transcribe. Please try again.",
-      "transcribing": "Transcribing...",
-      "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon.",
-      "summarizing": "Summarising...",
-      "summarizeError": "Failed to summarise. Please try again.",
-      "summarizeFailed": "Summary failed — retry",
-      "summarizeRetry": "Retry summarisation"
+      "title": "History"
     },
     "debug": {
       "title": "Debug",

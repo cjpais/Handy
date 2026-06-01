@@ -1,14 +1,25 @@
 import React from "react";
-import { Cog, FlaskConical, Info, Sparkles, FileText, Cpu } from "lucide-react";
-import GoldfishIcon from "../icons/HandyHand";
 import {
-  GeneralSettings,
-  AdvancedSettings,
+  Cog,
+  FlaskConical,
+  Info,
+  Sparkles,
+  FileText,
+  Mic,
+  ArrowRight,
+  Keyboard,
+  AudioLines,
+} from "lucide-react";
+import {
+  ShortcutsSettings,
+  CaptureSettings,
+  TranscriptionSettings,
+  PostProcessingSettings,
+  OutputSettings,
+  SummarisationSettings,
+  AppSettings,
   DebugSettings,
   AboutSettings,
-  PostProcessingSettings,
-  SummarisationSettings,
-  ModelsSettings,
 } from "./index";
 
 interface IconProps {
@@ -27,35 +38,47 @@ interface SectionConfig {
 }
 
 export const SETTINGS_SECTIONS = {
-  general: {
-    labelKey: "sidebar.general",
-    icon: GoldfishIcon,
-    component: GeneralSettings,
+  shortcuts: {
+    labelKey: "sidebar.shortcuts",
+    icon: Keyboard,
+    component: ShortcutsSettings,
     enabled: () => true,
   },
-  models: {
-    labelKey: "sidebar.models",
-    icon: Cpu,
-    component: ModelsSettings,
+  capture: {
+    labelKey: "sidebar.capture",
+    icon: Mic,
+    component: CaptureSettings,
     enabled: () => true,
   },
-  advanced: {
-    labelKey: "sidebar.advanced",
-    icon: Cog,
-    component: AdvancedSettings,
+  transcription: {
+    labelKey: "sidebar.transcription",
+    icon: AudioLines,
+    component: TranscriptionSettings,
     enabled: () => true,
   },
   postprocessing: {
     labelKey: "sidebar.postProcessing",
     icon: Sparkles,
     component: PostProcessingSettings,
-    enabled: (settings) => settings?.post_process_enabled ?? false,
+    enabled: () => true,
+  },
+  output: {
+    labelKey: "sidebar.output",
+    icon: ArrowRight,
+    component: OutputSettings,
+    enabled: () => true,
   },
   summarisation: {
     labelKey: "sidebar.summarisation",
     icon: FileText,
     component: SummarisationSettings,
-    enabled: (settings) => settings?.summarize_enabled ?? false,
+    enabled: () => true,
+  },
+  app: {
+    labelKey: "sidebar.app",
+    icon: Cog,
+    component: AppSettings,
+    enabled: () => true,
   },
   debug: {
     labelKey: "sidebar.debug",

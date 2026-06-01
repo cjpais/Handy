@@ -1,12 +1,14 @@
 // Settings section components
-export { GeneralSettings } from "./general/GeneralSettings";
-export { AdvancedSettings } from "./advanced/AdvancedSettings";
+export { ShortcutsSettings } from "./shortcuts/ShortcutsSettings";
+export { CaptureSettings } from "./capture/CaptureSettings";
+export { TranscriptionSettings } from "./transcription/TranscriptionSettings";
+export { OutputSettings } from "./output/OutputSettings";
+export { AppSettings } from "./app/AppSettings";
 export { DebugSettings } from "./debug/DebugSettings";
 export { HistorySettings } from "./history/HistorySettings";
 export { AboutSettings } from "./about/AboutSettings";
 export { PostProcessingSettings } from "./post-processing/PostProcessingSettings";
 export { SummarisationSettings } from "./summarisation/SummarisationSettings";
-export { ModelsSettings } from "./models/ModelsSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";

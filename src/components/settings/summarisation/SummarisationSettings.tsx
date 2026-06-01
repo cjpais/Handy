@@ -15,6 +15,7 @@ import { Input } from "../../ui/Input";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import type { ModelOption } from "../PostProcessingSettingsApi/types";
 import { useSettings } from "../../../hooks/useSettings";
+import { SummarisationToggle } from "../SummarisationToggle";
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
 
@@ -367,6 +368,10 @@ export const SummarisationSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <SettingsGroup title={t("settings.summarisation.title")}>
+        <SummarisationToggle descriptionMode="tooltip" grouped={true} />
+      </SettingsGroup>
+
       <SettingsGroup title={t("settings.summarisation.api.title")}>
         <SummarisationModelComponent />
       </SettingsGroup>
