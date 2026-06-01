@@ -34,6 +34,7 @@ dist-ssr
 /target/
 recording_*
 .crush/
+settings_store.json
 
 # Playwright
 playwright-report/
