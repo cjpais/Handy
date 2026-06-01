@@ -286,6 +286,11 @@ mod tests {
             post_processed_text: post_processed.map(|text| text.to_string()),
             post_process_prompt: None,
             post_process_requested: false,
+            summary: None,
+            summary_title: None,
+            actions: Vec::new(),
+            summary_prompt: None,
+            summary_status: None,
         }
     }
 

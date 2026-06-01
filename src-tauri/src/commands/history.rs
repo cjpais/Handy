@@ -106,6 +106,54 @@ pub async fn retry_history_entry_transcription(
         .map_err(|e| e.to_string())
 }
 
+/// Re-run summarisation for a single entry. Used for failure recovery and for
+/// back-filling entries created before summarisation was enabled.
+#[tauri::command]
+#[specta::specta]
+pub async fn summarize_history_entry(
+    app: AppHandle,
+    history_manager: State<'_, Arc<HistoryManager>>,
+    id: i64,
+) -> Result<(), String> {
+    let entry = history_manager
+        .get_entry_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("History entry {} not found", id))?;
+
+    let summary_input = entry
+        .post_processed_text
+        .clone()
+        .unwrap_or(entry.transcription_text);
+
+    if summary_input.trim().is_empty() {
+        return Err("Entry has no text to summarise".to_string());
+    }
+
+    history_manager
+        .set_summary_status(id, "pending")
+        .map_err(|e| e.to_string())?;
+
+    let settings = crate::settings::get_settings(&app);
+    match crate::summarize::summarize_text(&settings, &summary_input).await {
+        Ok(result) => history_manager
+            .update_summary(
+                id,
+                result.title,
+                Some(result.summary),
+                result.actions,
+                Some(result.prompt),
+                "completed",
+            )
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        Err(e) => {
+            let _ = history_manager.set_summary_status(id, "failed");
+            Err(e)
+        }
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn update_history_limit(

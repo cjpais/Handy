@@ -15,6 +15,7 @@ pub mod portable;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod summarize;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
@@ -363,6 +364,12 @@ pub fn run(cli_args: CliArgs) {
             shortcut::update_post_process_prompt,
             shortcut::delete_post_process_prompt,
             shortcut::set_post_process_selected_prompt,
+            shortcut::set_summarize_enabled,
+            shortcut::change_summarize_model_setting,
+            shortcut::add_summarize_prompt,
+            shortcut::update_summarize_prompt,
+            shortcut::delete_summarize_prompt,
+            shortcut::set_summarize_selected_prompt,
             shortcut::update_custom_words,
             shortcut::suspend_binding,
             shortcut::resume_binding,
@@ -429,6 +436,7 @@ pub fn run(cli_args: CliArgs) {
             commands::history::get_audio_file_path,
             commands::history::delete_history_entry,
             commands::history::retry_history_entry_transcription,
+            commands::history::summarize_history_entry,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
             helpers::clamshell::is_laptop,

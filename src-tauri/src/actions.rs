@@ -346,6 +346,48 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
+/// If summarisation is enabled, mark the entry pending and run summarisation in
+/// a detached background task so it never blocks the paste path. Updates the
+/// entry with the result (or a "failed" status) when done.
+fn maybe_spawn_summarization(
+    app: &AppHandle,
+    hm: Arc<HistoryManager>,
+    entry_id: i64,
+    summary_input: String,
+) {
+    let settings = get_settings(app);
+    if !settings.summarize_enabled || summary_input.trim().is_empty() {
+        return;
+    }
+
+    if let Err(e) = hm.set_summary_status(entry_id, "pending") {
+        warn!("Failed to mark entry {} summary pending: {}", entry_id, e);
+    }
+
+    tauri::async_runtime::spawn(async move {
+        match crate::summarize::summarize_text(&settings, &summary_input).await {
+            Ok(result) => {
+                if let Err(e) = hm.update_summary(
+                    entry_id,
+                    result.title,
+                    Some(result.summary),
+                    result.actions,
+                    Some(result.prompt),
+                    "completed",
+                ) {
+                    error!("Failed to store summary for entry {}: {}", entry_id, e);
+                }
+            }
+            Err(e) => {
+                warn!("Summarisation failed for entry {}: {}", entry_id, e);
+                if let Err(e2) = hm.set_summary_status(entry_id, "failed") {
+                    error!("Failed to mark entry {} summary failed: {}", entry_id, e2);
+                }
+            }
+        }
+    });
+}
+
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
@@ -588,14 +630,26 @@ impl ShortcutAction for TranscribeAction {
 
                             // Save to history if WAV was saved
                             if wav_saved {
-                                if let Err(err) = hm.save_entry(
+                                let summary_input = processed
+                                    .post_processed_text
+                                    .clone()
+                                    .unwrap_or_else(|| transcription.clone());
+                                match hm.save_entry(
                                     file_name,
                                     transcription,
                                     post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
-                                    error!("Failed to save history entry: {}", err);
+                                    Ok(entry) => maybe_spawn_summarization(
+                                        &ah,
+                                        Arc::clone(&hm),
+                                        entry.id,
+                                        summary_input,
+                                    ),
+                                    Err(err) => {
+                                        error!("Failed to save history entry: {}", err)
+                                    }
                                 }
                             }
 

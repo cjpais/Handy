@@ -31,7 +31,24 @@ static MIGRATIONS: &[M] = &[
     M::up("ALTER TABLE transcription_history ADD COLUMN post_processed_text TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_prompt TEXT;"),
     M::up("ALTER TABLE transcription_history ADD COLUMN post_process_requested BOOLEAN NOT NULL DEFAULT 0;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN summary TEXT;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN summary_title TEXT;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN actions TEXT;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN summary_prompt TEXT;"),
+    M::up("ALTER TABLE transcription_history ADD COLUMN summary_status TEXT;"),
 ];
+
+/// A single extracted action item. Stored as part of a JSON array in the
+/// `actions` column. `assignee` and `due` are populated only when explicitly
+/// stated in the recording.
+#[derive(Clone, Debug, Serialize, Deserialize, Type)]
+pub struct ActionItem {
+    pub description: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub assignee: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub due: Option<String>,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct PaginatedHistory {
@@ -63,6 +80,11 @@ pub struct HistoryEntry {
     pub post_processed_text: Option<String>,
     pub post_process_prompt: Option<String>,
     pub post_process_requested: bool,
+    pub summary: Option<String>,
+    pub summary_title: Option<String>,
+    pub actions: Vec<ActionItem>,
+    pub summary_prompt: Option<String>,
+    pub summary_status: Option<String>,
 }
 
 pub struct HistoryManager {
@@ -197,6 +219,12 @@ impl HistoryManager {
     }
 
     fn map_history_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<HistoryEntry> {
+        let actions_json: Option<String> = row.get("actions")?;
+        let actions = actions_json
+            .as_deref()
+            .and_then(|json| serde_json::from_str::<Vec<ActionItem>>(json).ok())
+            .unwrap_or_default();
+
         Ok(HistoryEntry {
             id: row.get("id")?,
             file_name: row.get("file_name")?,
@@ -207,8 +235,19 @@ impl HistoryManager {
             post_processed_text: row.get("post_processed_text")?,
             post_process_prompt: row.get("post_process_prompt")?,
             post_process_requested: row.get("post_process_requested")?,
+            summary: row.get("summary")?,
+            summary_title: row.get("summary_title")?,
+            actions,
+            summary_prompt: row.get("summary_prompt")?,
+            summary_status: row.get("summary_status")?,
         })
     }
+
+    /// Column list shared by every SELECT that maps into a [`HistoryEntry`].
+    const ENTRY_COLUMNS: &'static str =
+        "id, file_name, timestamp, saved, title, transcription_text, \
+         post_processed_text, post_process_prompt, post_process_requested, \
+         summary, summary_title, actions, summary_prompt, summary_status";
 
     pub fn recordings_dir(&self) -> &std::path::Path {
         &self.recordings_dir
@@ -261,6 +300,11 @@ impl HistoryManager {
             post_processed_text,
             post_process_prompt,
             post_process_requested,
+            summary: None,
+            summary_title: None,
+            actions: Vec::new(),
+            summary_prompt: None,
+            summary_status: None,
         };
 
         debug!("Saved history entry with id {}", entry.id);
@@ -306,13 +350,14 @@ impl HistoryManager {
             return Err(anyhow!("History entry {} not found", id));
         }
 
-        let entry = conn
-            .query_row(
-                "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
-                 FROM transcription_history WHERE id = ?1",
-                params![id],
-                Self::map_history_entry,
-            )?;
+        let entry = conn.query_row(
+            &format!(
+                "SELECT {} FROM transcription_history WHERE id = ?1",
+                Self::ENTRY_COLUMNS
+            ),
+            params![id],
+            Self::map_history_entry,
+        )?;
 
         debug!("Updated transcription for history entry {}", id);
 
@@ -325,6 +370,86 @@ impl HistoryManager {
         }
 
         Ok(entry)
+    }
+
+    /// Fetch a single entry within an existing connection, emitting nothing.
+    fn fetch_entry(conn: &Connection, id: i64) -> Result<HistoryEntry> {
+        let entry = conn.query_row(
+            &format!(
+                "SELECT {} FROM transcription_history WHERE id = ?1",
+                Self::ENTRY_COLUMNS
+            ),
+            params![id],
+            Self::map_history_entry,
+        )?;
+        Ok(entry)
+    }
+
+    /// Store summarisation results for an entry and emit an `Updated` event.
+    /// `status` is one of "completed" | "failed".
+    pub fn update_summary(
+        &self,
+        id: i64,
+        title: Option<String>,
+        summary: Option<String>,
+        actions: Vec<ActionItem>,
+        prompt: Option<String>,
+        status: &str,
+    ) -> Result<HistoryEntry> {
+        let actions_json = serde_json::to_string(&actions)?;
+
+        let conn = self.get_connection()?;
+        let updated = conn.execute(
+            "UPDATE transcription_history
+             SET summary = ?1,
+                 summary_title = ?2,
+                 actions = ?3,
+                 summary_prompt = ?4,
+                 summary_status = ?5
+             WHERE id = ?6",
+            params![summary, title, actions_json, prompt, status, id],
+        )?;
+
+        if updated == 0 {
+            return Err(anyhow!("History entry {} not found", id));
+        }
+
+        let entry = Self::fetch_entry(&conn, id)?;
+        debug!(
+            "Updated summary for history entry {} (status: {})",
+            id, status
+        );
+
+        if let Err(e) = (HistoryUpdatePayload::Updated {
+            entry: entry.clone(),
+        })
+        .emit(&self.app_handle)
+        {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(entry)
+    }
+
+    /// Set just the summary status (e.g. "pending" when enqueuing, "failed" on
+    /// error) and emit an `Updated` event.
+    pub fn set_summary_status(&self, id: i64, status: &str) -> Result<()> {
+        let conn = self.get_connection()?;
+        let updated = conn.execute(
+            "UPDATE transcription_history SET summary_status = ?1 WHERE id = ?2",
+            params![status, id],
+        )?;
+
+        if updated == 0 {
+            return Err(anyhow!("History entry {} not found", id));
+        }
+
+        let entry = Self::fetch_entry(&conn, id)?;
+        if let Err(e) = (HistoryUpdatePayload::Updated { entry }).emit(&self.app_handle) {
+            error!("Failed to emit history-updated event: {}", e);
+        }
+
+        Ok(())
     }
 
     pub fn cleanup_old_entries(&self) -> Result<()> {
@@ -458,13 +583,13 @@ impl HistoryManager {
         let mut entries: Vec<HistoryEntry> = match (cursor, limit) {
             (Some(cursor_id), Some(lim)) => {
                 let fetch_count = (lim + 1) as i64;
-                let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
-                     FROM transcription_history
+                let mut stmt = conn.prepare(&format!(
+                    "SELECT {} FROM transcription_history
                      WHERE id < ?1
                      ORDER BY id DESC
                      LIMIT ?2",
-                )?;
+                    Self::ENTRY_COLUMNS
+                ))?;
                 let result = stmt
                     .query_map(params![cursor_id, fetch_count], Self::map_history_entry)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -472,23 +597,23 @@ impl HistoryManager {
             }
             (None, Some(lim)) => {
                 let fetch_count = (lim + 1) as i64;
-                let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
-                     FROM transcription_history
+                let mut stmt = conn.prepare(&format!(
+                    "SELECT {} FROM transcription_history
                      ORDER BY id DESC
                      LIMIT ?1",
-                )?;
+                    Self::ENTRY_COLUMNS
+                ))?;
                 let result = stmt
                     .query_map(params![fetch_count], Self::map_history_entry)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
                 result
             }
             (_, None) => {
-                let mut stmt = conn.prepare(
-                    "SELECT id, file_name, timestamp, saved, title, transcription_text, post_processed_text, post_process_prompt, post_process_requested
-                     FROM transcription_history
+                let mut stmt = conn.prepare(&format!(
+                    "SELECT {} FROM transcription_history
                      ORDER BY id DESC",
-                )?;
+                    Self::ENTRY_COLUMNS
+                ))?;
                 let result = stmt
                     .query_map([], Self::map_history_entry)?
                     .collect::<std::result::Result<Vec<_>, _>>()?;
@@ -506,21 +631,12 @@ impl HistoryManager {
 
     #[cfg(test)]
     fn get_latest_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
-        let mut stmt = conn.prepare(
-            "SELECT
-                id,
-                file_name,
-                timestamp,
-                saved,
-                title,
-                transcription_text,
-                post_processed_text,
-                post_process_prompt,
-                post_process_requested
-             FROM transcription_history
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {} FROM transcription_history
              ORDER BY timestamp DESC
              LIMIT 1",
-        )?;
+            Self::ENTRY_COLUMNS
+        ))?;
 
         let entry = stmt.query_row([], Self::map_history_entry).optional()?;
         Ok(entry)
@@ -533,22 +649,13 @@ impl HistoryManager {
     }
 
     fn get_latest_completed_entry_with_conn(conn: &Connection) -> Result<Option<HistoryEntry>> {
-        let mut stmt = conn.prepare(
-            "SELECT
-                id,
-                file_name,
-                timestamp,
-                saved,
-                title,
-                transcription_text,
-                post_processed_text,
-                post_process_prompt,
-                post_process_requested
-             FROM transcription_history
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {} FROM transcription_history
              WHERE transcription_text != ''
              ORDER BY timestamp DESC
              LIMIT 1",
-        )?;
+            Self::ENTRY_COLUMNS
+        ))?;
 
         let entry = stmt.query_row([], Self::map_history_entry).optional()?;
         Ok(entry)
@@ -587,20 +694,10 @@ impl HistoryManager {
 
     pub async fn get_entry_by_id(&self, id: i64) -> Result<Option<HistoryEntry>> {
         let conn = self.get_connection()?;
-        let mut stmt = conn.prepare(
-            "SELECT
-                id,
-                file_name,
-                timestamp,
-                saved,
-                title,
-                transcription_text,
-                post_processed_text,
-                post_process_prompt,
-                post_process_requested
-             FROM transcription_history
-             WHERE id = ?1",
-        )?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {} FROM transcription_history WHERE id = ?1",
+            Self::ENTRY_COLUMNS
+        ))?;
 
         let entry = stmt.query_row([id], Self::map_history_entry).optional()?;
 
@@ -666,7 +763,12 @@ mod tests {
                 transcription_text TEXT NOT NULL,
                 post_processed_text TEXT,
                 post_process_prompt TEXT,
-                post_process_requested BOOLEAN NOT NULL DEFAULT 0
+                post_process_requested BOOLEAN NOT NULL DEFAULT 0,
+                summary TEXT,
+                summary_title TEXT,
+                actions TEXT,
+                summary_prompt TEXT,
+                summary_status TEXT
             );",
         )
         .expect("create transcription_history table");
@@ -733,5 +835,69 @@ mod tests {
 
         assert_eq!(entry.timestamp, 100);
         assert_eq!(entry.transcription_text, "completed");
+    }
+
+    #[test]
+    fn map_entry_defaults_summary_fields_when_null() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "hello", None);
+
+        let entry = HistoryManager::fetch_entry(&conn, 1).expect("fetch entry");
+
+        assert!(entry.summary.is_none());
+        assert!(entry.summary_title.is_none());
+        assert!(entry.summary_status.is_none());
+        assert!(entry.actions.is_empty());
+    }
+
+    #[test]
+    fn actions_json_round_trips_through_storage() {
+        let conn = setup_conn();
+        insert_entry(&conn, 100, "hello", None);
+
+        let actions = vec![
+            ActionItem {
+                description: "Set up a problem refinement meeting with [name]".to_string(),
+                assignee: Some("[name]".to_string()),
+                due: None,
+            },
+            ActionItem {
+                description: "Write tickets".to_string(),
+                assignee: None,
+                due: None,
+            },
+        ];
+        let actions_json = serde_json::to_string(&actions).expect("serialize actions");
+
+        conn.execute(
+            "UPDATE transcription_history
+             SET summary = ?1, summary_title = ?2, actions = ?3, summary_status = ?4
+             WHERE id = 1",
+            params![
+                "You need to discuss the problem.",
+                "Problem refinement",
+                actions_json,
+                "completed",
+            ],
+        )
+        .expect("update summary");
+
+        let entry = HistoryManager::fetch_entry(&conn, 1).expect("fetch entry");
+
+        assert_eq!(
+            entry.summary.as_deref(),
+            Some("You need to discuss the problem.")
+        );
+        assert_eq!(entry.summary_title.as_deref(), Some("Problem refinement"));
+        assert_eq!(entry.summary_status.as_deref(), Some("completed"));
+        assert_eq!(entry.actions.len(), 2);
+        assert_eq!(
+            entry.actions[0].description,
+            "Set up a problem refinement meeting with [name]"
+        );
+        assert_eq!(entry.actions[0].assignee.as_deref(), Some("[name]"));
+        assert!(entry.actions[0].due.is_none());
+        assert_eq!(entry.actions[1].description, "Write tickets");
+        assert!(entry.actions[1].assignee.is_none());
     }
 }

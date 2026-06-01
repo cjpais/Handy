@@ -1042,6 +1042,115 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
     Ok(())
 }
 
+// === Summarisation settings ===
+// Summarisation shares the provider and API key with post-processing; only the
+// model and prompt are independent. Model lists are fetched via
+// `fetch_post_process_models` (same shared provider + key).
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_summarize_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.summarize_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_summarize_model_setting(
+    app: AppHandle,
+    provider_id: String,
+    model: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_provider_exists(&settings, &provider_id)?;
+    settings.summarize_models.insert(provider_id, model);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn add_summarize_prompt(
+    app: AppHandle,
+    name: String,
+    prompt: String,
+) -> Result<LLMPrompt, String> {
+    let mut settings = settings::get_settings(&app);
+
+    let id = format!("summarize_prompt_{}", chrono::Utc::now().timestamp_millis());
+    let new_prompt = LLMPrompt {
+        id: id.clone(),
+        name,
+        prompt,
+    };
+
+    settings.summarize_prompts.push(new_prompt.clone());
+    settings::write_settings(&app, settings);
+
+    Ok(new_prompt)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn update_summarize_prompt(
+    app: AppHandle,
+    id: String,
+    name: String,
+    prompt: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if let Some(existing) = settings.summarize_prompts.iter_mut().find(|p| p.id == id) {
+        existing.name = name;
+        existing.prompt = prompt;
+        settings::write_settings(&app, settings);
+        Ok(())
+    } else {
+        Err(format!("Prompt with id '{}' not found", id))
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_summarize_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if settings.summarize_prompts.len() <= 1 {
+        return Err("Cannot delete the last prompt".to_string());
+    }
+
+    let original_len = settings.summarize_prompts.len();
+    settings.summarize_prompts.retain(|p| p.id != id);
+
+    if settings.summarize_prompts.len() == original_len {
+        return Err(format!("Prompt with id '{}' not found", id));
+    }
+
+    if settings.summarize_selected_prompt_id.as_ref() == Some(&id) {
+        settings.summarize_selected_prompt_id =
+            settings.summarize_prompts.first().map(|p| p.id.clone());
+    }
+
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_summarize_selected_prompt(app: AppHandle, id: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+
+    if !settings.summarize_prompts.iter().any(|p| p.id == id) {
+        return Err(format!("Prompt with id '{}' not found", id));
+    }
+
+    settings.summarize_selected_prompt_id = Some(id);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Result<(), String> {

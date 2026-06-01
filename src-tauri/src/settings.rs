@@ -401,6 +401,14 @@ pub struct AppSettings {
     pub post_process_prompts: Vec<LLMPrompt>,
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
+    #[serde(default = "default_summarize_enabled")]
+    pub summarize_enabled: bool,
+    #[serde(default)]
+    pub summarize_models: HashMap<String, String>,
+    #[serde(default = "default_summarize_prompts")]
+    pub summarize_prompts: Vec<LLMPrompt>,
+    #[serde(default)]
+    pub summarize_selected_prompt_id: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
     #[serde(default)]
@@ -505,6 +513,20 @@ fn default_sound_theme() -> SoundTheme {
 
 fn default_post_process_enabled() -> bool {
     false
+}
+
+fn default_summarize_enabled() -> bool {
+    false
+}
+
+pub(crate) const DEFAULT_SUMMARIZE_PROMPT_ID: &str = "default_summarize";
+
+fn default_summarize_prompts() -> Vec<LLMPrompt> {
+    vec![LLMPrompt {
+        id: DEFAULT_SUMMARIZE_PROMPT_ID.to_string(),
+        name: "Summary & Actions".to_string(),
+        prompt: "You summarise a spoken note for the person who recorded it.\n\nProduce:\n1. A short title (a few words, no trailing punctuation).\n2. A concise summary written in the second person (\"You need to…\"), capturing the intent and decisions. Do not add information that was not said.\n3. A list of concrete action items. Each action has a short imperative description, and — only when explicitly stated — an assignee and a due date. Omit assignee/due when not mentioned. If there are no actions, return an empty list.\n\nPreserve any [bracketed] placeholders exactly as written. Keep the original language of the note.".to_string(),
+    }]
 }
 
 fn default_app_language() -> String {
@@ -710,6 +732,28 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+fn ensure_summarize_defaults(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+
+    if settings.summarize_prompts.is_empty() {
+        settings.summarize_prompts = default_summarize_prompts();
+        changed = true;
+    }
+
+    let selected_is_valid = settings
+        .summarize_selected_prompt_id
+        .as_ref()
+        .is_some_and(|id| settings.summarize_prompts.iter().any(|p| &p.id == id));
+
+    if !selected_is_valid {
+        settings.summarize_selected_prompt_id =
+            settings.summarize_prompts.first().map(|p| p.id.clone());
+        changed = true;
+    }
+
+    changed
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -799,6 +843,10 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
+        summarize_enabled: default_summarize_enabled(),
+        summarize_models: HashMap::new(),
+        summarize_prompts: default_summarize_prompts(),
+        summarize_selected_prompt_id: Some(DEFAULT_SUMMARIZE_PROMPT_ID.to_string()),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -822,6 +870,25 @@ impl AppSettings {
         self.post_process_providers
             .iter()
             .find(|provider| provider.id == self.post_process_provider_id)
+    }
+
+    /// Provider used for summarisation. In the MVP this is shared with
+    /// post-processing; the later "independent provider" split changes only this body.
+    pub fn summarize_provider(&self) -> Option<&PostProcessProvider> {
+        self.active_post_process_provider()
+    }
+
+    /// API key used for summarisation. Shared with post-processing in the MVP
+    /// (keys are stored per provider); the later split adds an override here.
+    pub fn summarize_api_key(&self, provider_id: &str) -> String {
+        self.post_process_api_keys
+            .get(provider_id)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    pub fn summarize_model(&self, provider_id: &str) -> Option<&String> {
+        self.summarize_models.get(provider_id)
     }
 
     pub fn post_process_provider(&self, provider_id: &str) -> Option<&PostProcessProvider> {
@@ -884,7 +951,9 @@ pub fn load_or_create_app_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut needs_persist = ensure_post_process_defaults(&mut settings);
+    needs_persist |= ensure_summarize_defaults(&mut settings);
+    if needs_persist {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
@@ -908,7 +977,9 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
         default_settings
     };
 
-    if ensure_post_process_defaults(&mut settings) {
+    let mut needs_persist = ensure_post_process_defaults(&mut settings);
+    needs_persist |= ensure_summarize_defaults(&mut settings);
+    if needs_persist {
         store.set("settings", serde_json::to_value(&settings).unwrap());
     }
 
