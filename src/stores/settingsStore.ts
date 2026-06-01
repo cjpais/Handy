@@ -53,6 +53,7 @@ interface SettingsStore {
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
+  updateSummarizeModel: (providerId: string, model: string) => Promise<void>;
 
   // Internal state setters
   setSettings: (settings: Settings | null) => void;
@@ -133,6 +134,9 @@ const settingUpdaters: {
     commands.changePostProcessEnabledSetting(value as boolean),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
+  summarize_enabled: (value) => commands.setSummarizeEnabled(value as boolean),
+  summarize_selected_prompt_id: (value) =>
+    commands.setSummarizeSelectedPrompt(value as string),
   mute_while_recording: (value) =>
     commands.changeMuteWhileRecordingSetting(value as boolean),
   append_trailing_space: (value) =>
@@ -557,6 +561,22 @@ export const useSettingsStore = create<SettingsStore>()(
           [providerId]: models,
         },
       })),
+
+    updateSummarizeModel: async (providerId, model) => {
+      const { setUpdating, refreshSettings } = get();
+      const updateKey = `summarize_model:${providerId}`;
+
+      setUpdating(updateKey, true);
+
+      try {
+        await commands.changeSummarizeModelSetting(providerId, model);
+        await refreshSettings();
+      } catch (error) {
+        console.error("Failed to update summarisation model:", error);
+      } finally {
+        setUpdating(updateKey, false);
+      }
+    },
 
     // Load default settings from Rust
     loadDefaultSettings: async () => {

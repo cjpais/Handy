@@ -58,6 +58,26 @@ Files that almost always merge cleanly:
 - `src-tauri/src/managers/**`
 - `src-tauri/src/transcription_coordinator.rs`
 
+## Goldfish divergences to watch
+
+Step-changes from upstream that raise merge-conflict or behavioural-drift risk.
+Review these when pulling from `upstream/main`.
+
+- **Post-processing promoted out of experimental (2026-05-30).** Upstream Handy
+  keeps LLM post-processing behind the Experimental toggle. Goldfish now treats
+  it as a first-class feature: the enable toggle lives in Advanced → Processing
+  (not Experimental) and is available to all users, though still **off by
+  default**. If upstream changes the post-process settings/UI, expect conflicts
+  in `src/components/settings/advanced/AdvancedSettings.tsx` and the
+  post-process settings components.
+- **Summarisation & actions pipeline (2026-05-30, Goldfish-only).** A new
+  stage-3 step (cleaned transcript → structured summary + action items) that
+  does not exist upstream. Shares the post-process provider + API key; only the
+  model and prompt are independent. Touches `settings.rs`, `managers/history.rs`
+  (new columns + `ActionItem`), `summarize.rs` (new), `actions.rs` (background
+  spawn), `shortcut/mod.rs`, `commands/history.rs`, and the bindings. Off by
+  default. Purely additive, so upstream merges should rarely conflict here.
+
 ## Merge log
 
 | Date       | Upstream SHA | Notes                                          |

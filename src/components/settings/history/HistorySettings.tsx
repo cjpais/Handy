@@ -1,7 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
-import { Check, Copy, FolderOpen, RotateCcw, Star, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  ChevronRight,
+  Copy,
+  FolderOpen,
+  RotateCcw,
+  Sparkles,
+  Square,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -223,6 +234,13 @@ export const HistorySettings: React.FC = () => {
     }
   };
 
+  const summarizeEntry = async (id: number) => {
+    const result = await commands.summarizeHistoryEntry(id);
+    if (result.status !== "ok") {
+      throw new Error(String(result.error));
+    }
+  };
+
   const openRecordingsFolder = async () => {
     try {
       const result = await commands.openRecordingsFolder();
@@ -257,10 +275,11 @@ export const HistorySettings: React.FC = () => {
               key={entry.id}
               entry={entry}
               onToggleSaved={() => toggleSaved(entry.id)}
-              onCopyText={() => copyToClipboard(entry.transcription_text)}
+              copyText={copyToClipboard}
               getAudioUrl={getAudioUrl}
               deleteAudio={deleteAudioEntry}
               retryTranscription={retryHistoryEntry}
+              summarizeEntry={summarizeEntry}
             />
           ))}
         </div>
@@ -273,15 +292,10 @@ export const HistorySettings: React.FC = () => {
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <div className="space-y-2">
-        <div className="px-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
-              {t("settings.history.title")}
-            </h2>
-          </div>
+        <div className="px-4 flex items-center justify-end">
           <OpenRecordingsButton
             onClick={openRecordingsFolder}
-            label={t("settings.history.openFolder")}
+            label={t("entries.openFolder")}
           />
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
@@ -295,39 +309,72 @@ export const HistorySettings: React.FC = () => {
 interface HistoryEntryProps {
   entry: HistoryEntry;
   onToggleSaved: () => void;
-  onCopyText: () => void;
+  copyText: (text: string) => Promise<void>;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteAudio: (id: number) => Promise<void>;
   retryTranscription: (id: number) => Promise<void>;
+  summarizeEntry: (id: number) => Promise<void>;
 }
 
 const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   entry,
   onToggleSaved,
-  onCopyText,
+  copyText,
   getAudioUrl,
   deleteAudio,
   retryTranscription,
+  summarizeEntry,
 }) => {
   const { t, i18n } = useTranslation();
   const [showCopied, setShowCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const hasTranscription = entry.transcription_text.trim().length > 0;
+  const hasPostProcessed = Boolean(entry.post_processed_text?.trim());
+  const hasSummary = Boolean(entry.summary?.trim());
+  const summaryPending = entry.summary_status === "pending" || summarizing;
+  const summaryFailed = entry.summary_status === "failed" && !summarizing;
+  const hasActions = entry.actions.length > 0;
+
+  // The best-available cleaned text, used as the evidence/fallback body.
+  const bodyText = entry.post_processed_text || entry.transcription_text;
+  const hasBody = Boolean(bodyText?.trim());
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
     [getAudioUrl, entry.file_name],
   );
 
-  const handleCopyText = () => {
-    if (!hasTranscription) {
-      return;
-    }
+  const derivedTitle = (() => {
+    if (entry.summary_title?.trim()) return entry.summary_title.trim();
+    const source = entry.summary || bodyText;
+    if (!source?.trim()) return entry.title;
+    const firstSentence = source.match(/^[^.!?\n]+[.!?]?/)?.[0] ?? source;
+    return firstSentence.length > 72
+      ? firstSentence.slice(0, 69).trimEnd() + "…"
+      : firstSentence.trim();
+  })();
 
-    onCopyText();
+  const handleCopyText = async () => {
+    const textToCopy = hasSummary ? entry.summary! : bodyText;
+    if (!textToCopy.trim() || retrying) return;
+    await copyText(textToCopy);
     setShowCopied(true);
     setTimeout(() => setShowCopied(false), 2000);
+  };
+
+  const handleSummarize = async () => {
+    try {
+      setSummarizing(true);
+      await summarizeEntry(entry.id);
+    } catch (error) {
+      console.error("Failed to summarise:", error);
+      toast.error(t("settings.history.summarizeError"));
+    } finally {
+      setSummarizing(false);
+    }
   };
 
   const handleDeleteEntry = async () => {
@@ -352,15 +399,19 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
   };
 
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
+  const canCopy = (hasSummary || hasBody || hasTranscription) && !retrying;
 
   return (
-    <div className="px-4 py-2 pb-5 flex flex-col gap-3">
-      <div className="flex justify-between items-center">
-        <p className="text-sm font-medium">{formattedDate}</p>
-        <div className="flex items-center">
+    <div className="px-4 py-4 flex flex-col gap-2">
+      {/* Title + tools */}
+      <div className="flex justify-between items-start gap-2">
+        <p className="text-sm font-semibold text-text leading-snug">
+          {derivedTitle || t("entries.untitled")}
+        </p>
+        <div className="flex items-center shrink-0 -mt-1 -mr-1.5">
           <IconButton
             onClick={handleCopyText}
-            disabled={!hasTranscription || retrying}
+            disabled={!canCopy}
             title={t("settings.history.copyToClipboard")}
           >
             {showCopied ? (
@@ -410,36 +461,138 @@ const HistoryEntryComponent: React.FC<HistoryEntryProps> = ({
         </div>
       </div>
 
-      <p
-        className={`italic text-sm pb-2 ${
-          retrying
-            ? ""
-            : hasTranscription
-              ? "text-text/90 select-text cursor-text whitespace-pre-wrap break-words"
-              : "text-text/40"
-        }`}
-        style={
-          retrying
-            ? { animation: "transcribe-pulse 3s ease-in-out infinite" }
-            : undefined
-        }
-      >
-        {retrying && (
-          <style>{`
-            @keyframes transcribe-pulse {
-              0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
-              50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
-            }
-          `}</style>
-        )}
-        {retrying
-          ? t("settings.history.transcribing")
-          : hasTranscription
-            ? entry.transcription_text
-            : t("settings.history.transcriptionFailed")}
-      </p>
+      {/* Metadata */}
+      <p className="text-xs text-text/50">{formattedDate}</p>
 
-      <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
+      {/* Main output */}
+      <div className="mt-1">
+        {retrying ? (
+          <>
+            <style>{`
+              @keyframes transcribe-pulse {
+                0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+                50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+              }
+            `}</style>
+            <p
+              className="text-sm italic"
+              style={{ animation: "transcribe-pulse 3s ease-in-out infinite" }}
+            >
+              {t("settings.history.transcribing")}
+            </p>
+          </>
+        ) : hasSummary ? (
+          <p className="text-sm text-text/90 select-text cursor-text whitespace-pre-wrap break-words">
+            {entry.summary}
+          </p>
+        ) : summaryPending ? (
+          <>
+            <style>{`
+              @keyframes summarize-pulse {
+                0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+                50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+              }
+            `}</style>
+            <p
+              className="text-sm italic flex items-center gap-1.5"
+              style={{ animation: "summarize-pulse 3s ease-in-out infinite" }}
+            >
+              <Sparkles width={14} height={14} />
+              {t("settings.history.summarizing")}
+            </p>
+          </>
+        ) : hasBody ? (
+          <p
+            className={`text-sm select-text cursor-text whitespace-pre-wrap break-words ${
+              hasPostProcessed ? "text-text/90" : "italic text-text/90"
+            }`}
+          >
+            {bodyText}
+          </p>
+        ) : (
+          <p className="text-sm italic text-text/40">
+            {t("settings.history.transcriptionFailed")}
+          </p>
+        )}
+      </div>
+
+      {/* Actions checklist */}
+      {hasActions && (
+        <ul className="mt-1 flex flex-col gap-1.5">
+          {entry.actions.map((action, index) => (
+            <li key={index} className="flex items-start gap-2 text-sm">
+              <Square
+                width={14}
+                height={14}
+                className="mt-0.5 shrink-0 text-text/40"
+              />
+              <span className="select-text cursor-text">
+                <span className="text-text/90">{action.description}</span>
+                {action.assignee && (
+                  <span className="ml-2 inline-block rounded bg-mid-gray/15 px-1.5 py-0.5 text-xs text-text/60">
+                    {action.assignee}
+                  </span>
+                )}
+                {action.due && (
+                  <span className="ml-1.5 inline-block rounded bg-mid-gray/15 px-1.5 py-0.5 text-xs text-text/60">
+                    {action.due}
+                  </span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Summary failure / retry affordance */}
+      {summaryFailed && (
+        <button
+          onClick={handleSummarize}
+          className="mt-1 flex w-fit items-center gap-1.5 text-xs text-text/50 hover:text-logo-primary transition-colors cursor-pointer"
+          title={t("settings.history.summarizeRetry")}
+        >
+          <AlertCircle width={13} height={13} />
+          {t("settings.history.summarizeFailed")}
+        </button>
+      )}
+
+      {/* Details accordion */}
+      <details
+        className="mt-2"
+        onToggle={(e) => setDetailsOpen(e.currentTarget.open)}
+      >
+        <summary className="list-none flex items-center gap-1 text-xs text-text/40 hover:text-text/60 cursor-pointer select-none w-fit transition-colors">
+          <ChevronRight
+            width={12}
+            height={12}
+            className={`transition-transform ${detailsOpen ? "rotate-90" : ""}`}
+          />
+          {t("entries.viewDetails")}
+        </summary>
+        <div className="mt-3 flex flex-col gap-3 pt-3 border-t border-mid-gray/10">
+          {hasSummary && hasPostProcessed && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-text/40 uppercase tracking-wide">
+                {t("entries.cleanedText")}
+              </p>
+              <p className="text-xs text-text/70 select-text cursor-text whitespace-pre-wrap break-words">
+                {entry.post_processed_text}
+              </p>
+            </div>
+          )}
+          {(hasSummary || hasPostProcessed) && hasTranscription && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-xs font-medium text-text/40 uppercase tracking-wide">
+                {t("entries.transcript")}
+              </p>
+              <p className="text-xs italic text-text/70 select-text cursor-text whitespace-pre-wrap break-words">
+                {entry.transcription_text}
+              </p>
+            </div>
+          )}
+          <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full" />
+        </div>
+      </details>
     </div>
   );
 };

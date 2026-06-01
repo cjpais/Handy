@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Cog, AudioLines } from "lucide-react";
+import { Cog, List } from "lucide-react";
 import GoldfishTextLogo from "./icons/GoldfishTextLogo";
 
 export type AppView = "main" | "settings";
@@ -18,7 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const isCaptureActive = view === "main";
+  const isEntriesActive = view === "main";
   const isSettingsActive = view === "settings";
 
   return (
@@ -29,14 +29,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col w-full items-center gap-1 pt-2 flex-1">
         <div
           className={`flex gap-2 items-center p-2 w-full rounded-lg cursor-pointer transition-colors ${
-            isCaptureActive
+            isEntriesActive
               ? "bg-logo-primary/80"
               : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
           }`}
           onClick={onSelectCapture}
         >
-          <AudioLines width={24} height={24} className="shrink-0" />
-          <p className="text-sm font-medium truncate">{t("sidebar.capture")}</p>
+          <List width={24} height={24} className="shrink-0" />
+          <p className="text-sm font-medium truncate">{t("sidebar.entries")}</p>
         </div>
       </div>
 

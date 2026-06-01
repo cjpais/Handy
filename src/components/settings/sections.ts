@@ -1,5 +1,5 @@
 import React from "react";
-import { Cog, FlaskConical, Info, Sparkles, Cpu } from "lucide-react";
+import { Cog, FlaskConical, Info, Sparkles, FileText, Cpu } from "lucide-react";
 import GoldfishIcon from "../icons/HandyHand";
 import {
   GeneralSettings,
@@ -7,6 +7,7 @@ import {
   DebugSettings,
   AboutSettings,
   PostProcessingSettings,
+  SummarisationSettings,
   ModelsSettings,
 } from "./index";
 
@@ -49,6 +50,12 @@ export const SETTINGS_SECTIONS = {
     icon: Sparkles,
     component: PostProcessingSettings,
     enabled: (settings) => settings?.post_process_enabled ?? false,
+  },
+  summarisation: {
+    labelKey: "sidebar.summarisation",
+    icon: FileText,
+    component: SummarisationSettings,
+    enabled: (settings) => settings?.summarize_enabled ?? false,
   },
   debug: {
     labelKey: "sidebar.debug",
