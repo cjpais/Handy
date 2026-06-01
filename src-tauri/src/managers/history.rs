@@ -219,14 +219,25 @@ impl HistoryManager {
     }
 
     fn map_history_entry(row: &rusqlite::Row<'_>) -> rusqlite::Result<HistoryEntry> {
+        let id: i64 = row.get("id")?;
         let actions_json: Option<String> = row.get("actions")?;
-        let actions = actions_json
-            .as_deref()
-            .and_then(|json| serde_json::from_str::<Vec<ActionItem>>(json).ok())
-            .unwrap_or_default();
+        let actions = match actions_json.as_deref() {
+            Some(json) => match serde_json::from_str::<Vec<ActionItem>>(json) {
+                Ok(items) => items,
+                Err(e) => {
+                    log::warn!(
+                        "Entry {}: corrupt actions JSON, defaulting to empty: {}",
+                        id,
+                        e
+                    );
+                    Vec::new()
+                }
+            },
+            None => Vec::new(),
+        };
 
         Ok(HistoryEntry {
-            id: row.get("id")?,
+            id,
             file_name: row.get("file_name")?,
             timestamp: row.get("timestamp")?,
             saved: row.get("saved")?,
