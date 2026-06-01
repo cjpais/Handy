@@ -7,13 +7,13 @@ export type AppView = "main" | "settings";
 
 interface SidebarProps {
   view: AppView;
-  onSelectCapture: () => void;
+  onSelectEntries: () => void;
   onOpenSettings: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   view,
-  onSelectCapture,
+  onSelectEntries,
   onOpenSettings,
 }) => {
   const { t } = useTranslation();
@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ? "bg-logo-primary/80"
               : "hover:bg-mid-gray/20 hover:opacity-100 opacity-85"
           }`}
-          onClick={onSelectCapture}
+          onClick={onSelectEntries}
         >
           <List width={24} height={24} className="shrink-0" />
           <p className="text-sm font-medium truncate">{t("sidebar.entries")}</p>

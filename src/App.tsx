@@ -222,8 +222,8 @@ function App() {
     <div
       dir={direction}
       className="h-screen flex flex-col bg-floral-white select-none cursor-default"
-      data-tauri-drag-region
     >
+      <div className="titlebar-drag-region" data-tauri-drag-region />
       <Toaster
         theme="system"
         toastOptions={{
@@ -239,7 +239,7 @@ function App() {
       <div className="main-layout flex flex-1 gap-2 pt-2 px-2 overflow-hidden min-h-0">
         <Sidebar
           view={view}
-          onSelectCapture={() => setView("main")}
+          onSelectEntries={() => setView("main")}
           onOpenSettings={() => setView("settings")}
         />
         <div className="flex-1 flex flex-col bg-background rounded-xl overflow-hidden border border-mid-gray/20">

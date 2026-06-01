@@ -44,12 +44,14 @@
   background-color: var(--color-floral-white);
 }
 
-.main-layout {
-  padding-top: 0;
+.titlebar-drag-region {
+  height: 0;
+  -webkit-app-region: drag;
+  app-region: drag;
 }
 
-:root[data-platform="macos"] .main-layout {
-  padding-top: 28px;
+:root[data-platform="macos"] .titlebar-drag-region {
+  height: 28px;
 }
 
 .container {
@@ -101,9 +103,31 @@
   background-color: var(--scrollbar-thumb-hover);
 }
 
+@keyframes transcribe-pulse {
+  0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+  50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+}
+
+@keyframes summarize-pulse {
+  0%, 100% { color: color-mix(in srgb, var(--color-text) 40%, transparent); }
+  50% { color: color-mix(in srgb, var(--color-text) 90%, transparent); }
+}
+
 @layer utilities {
   .text-stroke {
     -webkit-text-stroke: 2px var(--color-text-stroke);
+  }
+
+  .animate-transcribe-pulse {
+    animation: transcribe-pulse 3s ease-in-out infinite;
+  }
+
+  .animate-summarize-pulse {
+    animation: summarize-pulse 3s ease-in-out infinite;
+  }
+
+  .animate-spin-reverse {
+    animation: spin 1s linear infinite reverse;
   }
 }
 
