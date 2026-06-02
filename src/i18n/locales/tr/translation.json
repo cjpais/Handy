@@ -68,6 +68,16 @@
         "name": "Erişilebilirlik",
         "why": "Kısayolunuz her uygulamada çalışsın ve Handy metni imlecinizin bulunduğu yere yazabilsin diye."
       },
+      "remoteDesktop": {
+        "title": "Yazma izni",
+        "description": "Handy’nin dikte edilen metni etkin uygulamaya otomatik olarak eklemesine izin verin.",
+        "note": "Bu izni ayarlardan istediğiniz zaman devre dışı bırakabilir veya etkinleştirebilirsiniz.",
+        "button": "Otomatik yazmaya izin ver",
+        "skipButton": "Şimdi değil",
+        "warningTooltip": "Yazma izni yapılandırılmadı",
+        "configured": "Yapılandırıldı",
+        "notConfigured": "Yapılandırılmalı"
+      },
       "errors": {
         "checkFailed": "İzinler kontrol edilemedi. Lütfen tekrar deneyin.",
         "requestFailed": "İzin isteği başarısız oldu. Lütfen tekrar deneyin."
@@ -538,12 +548,7 @@
         },
         "externalScriptPlaceholder": "/dosya/yolu/betik.sh",
         "portal": {
-          "description": "Wayland’da Doğrudan mod için “Uzak Masaüstü” izni gerekir. Bu izin, Handy’nin yalnızca dikte edilen metni etkin pencereye eklemesine izin verir. Herhangi bir uzak bağlantı oluşturulmaz.",
-          "authorized": "İzin etkin: Handy, dikte edilen metni “Uzak Masaüstü” üzerinden etkin pencereye ekleyebilir.",
-          "authorizedRappel": "Hatırlatma: Bu izin uzak bağlantı oluşturmaz.",
-          "button": "İzin iste",
           "buttonRequesting": "İsteniyor…",
-          "buttonRevoke": "İzni kaldır",
           "errors": {
             "requestFailed": "İzin isteği başarısız.",
             "revokeFailed": "İzin kaldırma başarısız."

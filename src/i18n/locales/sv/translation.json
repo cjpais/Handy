@@ -68,6 +68,16 @@
         "name": "Hjälpmedel",
         "why": "Så att din genväg fungerar i alla appar och Handy kan skriva texten där markören står."
       },
+      "remoteDesktop": {
+        "title": "Skrivbehörighet",
+        "description": "Tillåt Handy att automatiskt infoga dikterad text i den aktiva appen.",
+        "note": "Du kan inaktivera eller aktivera den här behörigheten när som helst i inställningarna.",
+        "button": "Tillåt automatisk skrivning",
+        "skipButton": "Inte nu",
+        "warningTooltip": "Skrivbehörighet är inte konfigurerad",
+        "configured": "Konfigurerad",
+        "notConfigured": "Behöver konfigureras"
+      },
       "errors": {
         "checkFailed": "Misslyckades med att kontrollera behörigheter. Försök igen.",
         "requestFailed": "Misslyckades med att begära behörighet. Försök igen."
@@ -538,12 +548,7 @@
         },
         "externalScriptPlaceholder": "/sökväg/till/ditt/skript.sh",
         "portal": {
-          "description": "På Wayland kräver läget Direct behörigheten ”Fjärrskrivbord”. Den låter bara Handy infoga dikterad text i det aktiva fönstret. Ingen fjärranslutning skapas.",
-          "authorized": "Behörighet aktiv: Handy kan infoga dikterad text i det aktiva fönstret via ”Fjärrskrivbord”.",
-          "authorizedRappel": "Påminnelse: den här behörigheten skapar ingen fjärranslutning.",
-          "button": "Begär behörighet",
           "buttonRequesting": "Begär…",
-          "buttonRevoke": "Ta bort behörighet",
           "errors": {
             "requestFailed": "Behörighetsbegäran misslyckades.",
             "revokeFailed": "Det gick inte att ta bort behörigheten."

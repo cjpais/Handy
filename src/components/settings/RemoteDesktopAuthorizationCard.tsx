@@ -1,119 +1,154 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notify } from "@/stores/noticeStore";
-import { listen } from "@tauri-apps/api/event";
-import { Alert } from "../ui/Alert";
-import { Button } from "../ui/Button";
-import { useWayland } from "../../hooks/useWayland";
+import { CheckCircle } from "lucide-react";
+import { SettingContainer } from "../ui/SettingContainer";
+import { useRemoteDesktopAuthorization } from "../../hooks/useRemoteDesktopAuthorization";
 import { commands } from "@/bindings";
-import type { TypingTool } from "@/bindings";
+import type { PasteMethod, TypingTool } from "@/bindings";
 
 interface RemoteDesktopAuthorizationCardProps {
+  pasteMethod: PasteMethod;
   typingTool: TypingTool;
+  descriptionMode?: "inline" | "tooltip";
+  grouped?: boolean;
 }
 
-const isRemoteDesktopRelevantTool = (typingTool: TypingTool): boolean =>
-  typingTool === "auto" || typingTool === "remote_desktop";
-
+/**
+ * Displays the Remote Desktop portal authorization control when direct Wayland
+ * typing depends on it.
+ *
+ * Inputs: current paste method, typing tool, and settings row display options.
+ * Outputs: a settings row with authorization status and an enable/disable toggle.
+ * Side effects: requests or revokes the portal token through Tauri commands.
+ */
 export const RemoteDesktopAuthorizationCard: React.FC<RemoteDesktopAuthorizationCardProps> =
-  React.memo(({ typingTool }) => {
-    const { t } = useTranslation();
-    const isWayland = useWayland();
-    const isToolRelevant = isRemoteDesktopRelevantTool(typingTool);
-    const isCardVisible = isWayland && isToolRelevant;
-    const [isRDRequesting, setIsRDRequesting] = useState(false);
-    const [isRDAuthorized, setIsRDAuthorized] = useState(false);
-    // Keep authorization state synced only while the card is visible.
-    useEffect(() => {
-      if (!isCardVisible) return;
+  React.memo(
+    ({
+      pasteMethod,
+      typingTool,
+      descriptionMode = "tooltip",
+      grouped = false,
+    }) => {
+      const { t } = useTranslation();
+      const { isRelevant, isAuthorized, setIsAuthorized } =
+        useRemoteDesktopAuthorization(pasteMethod, typingTool);
+      const [pendingAction, setPendingAction] = useState<
+        "request" | "revoke" | null
+      >(null);
 
-      const fetchRDAuthorization = async () => {
+      const handleRequestAuthorization = async () => {
+        if (pendingAction) return;
+
+        setPendingAction("request");
         try {
-          const authorized = await commands.getRemoteDesktopAuthorization();
-          setIsRDAuthorized(authorized);
+          const result = await commands.requestRemoteDesktopAuthorization();
+          if (result.status === "error") {
+            notify({
+              title: t(
+                "settings.advanced.pasteMethod.portal.errors.requestFailed",
+              ),
+            });
+          } else if (result.data) {
+            setIsAuthorized(true);
+          }
         } catch {
-          setIsRDAuthorized(false);
+          notify({
+            title: t(
+              "settings.advanced.pasteMethod.portal.errors.requestFailed",
+            ),
+          });
+        } finally {
+          setPendingAction(null);
         }
       };
 
-      fetchRDAuthorization();
+      const handleRevokeAuthorization = async () => {
+        if (pendingAction) return;
 
-      let unlisten: (() => void) | null = null;
-      listen<boolean>("remote-desktop-auth-changed", (event) => {
-        setIsRDAuthorized(Boolean(event.payload));
-      }).then((stop) => {
-        unlisten = stop;
-      });
+        setPendingAction("revoke");
+        try {
+          const result = await commands.deleteRemoteDesktopAuthorization();
+          if (result.status === "error") {
+            notify({
+              title: t(
+                "settings.advanced.pasteMethod.portal.errors.revokeFailed",
+              ),
+            });
+            return;
+          }
 
-      return () => {
-        if (unlisten) unlisten();
+          setIsAuthorized(false);
+        } catch {
+          notify({
+            title: t(
+              "settings.advanced.pasteMethod.portal.errors.revokeFailed",
+            ),
+          });
+        } finally {
+          setPendingAction(null);
+        }
       };
-    }, [isCardVisible]);
 
-    const handleRDRequest = async () => {
-      if (isRDRequesting) return;
-      setIsRDRequesting(true);
-      const result = await commands.requestRemoteDesktopAuthorization();
-      if (result.status === "error") {
-        notify({
-          title: t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
-        });
+      const handleAuthorizationToggle = (enabled: boolean) => {
+        if (enabled) {
+          void handleRequestAuthorization();
+          return;
+        }
+
+        void handleRevokeAuthorization();
+      };
+
+      if (!isRelevant) {
+        return null;
       }
-      setIsRDRequesting(false);
-    };
 
-    const handleRDRevoke = async () => {
-      const result = await commands.deleteRemoteDesktopAuthorization();
-      if (result.status === "error") {
-        notify({
-          title: t("settings.advanced.pasteMethod.portal.errors.revokeFailed"),
-        });
-      }
-    };
-
-    if (!isCardVisible) {
-      return null;
-    }
-
-    return (
-      <>
-        {isRDRequesting && (
-          <div className="fixed inset-0 z-[1000] bg-black/30 backdrop-blur-sm cursor-wait flex items-center justify-center pointer-events-auto">
-            <div className="rounded-md bg-neutral-900/85 px-4 py-3 text-sm text-white shadow-lg">
-              {t("settings.advanced.pasteMethod.portal.buttonRequesting")}
+      return (
+        <SettingContainer
+          title={t("onboarding.permissions.remoteDesktop.title")}
+          description={`${t("onboarding.permissions.remoteDesktop.description")} ${t(
+            "onboarding.permissions.remoteDesktop.note",
+          )}`}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
+          tooltipPosition="bottom"
+        >
+          <div className="grid min-w-[200px] grid-cols-[1fr_auto] items-center gap-3">
+            <div className="justify-self-start">
+              {pendingAction === "request" ? (
+                <span className="text-xs font-medium text-yellow-500">
+                  {t("settings.advanced.pasteMethod.portal.buttonRequesting")}
+                </span>
+              ) : isAuthorized ? (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-logo-primary">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  {t("onboarding.permissions.remoteDesktop.configured")}
+                </span>
+              ) : (
+                <span className="text-xs font-medium text-yellow-500">
+                  {t("onboarding.permissions.remoteDesktop.notConfigured")}
+                </span>
+              )}
             </div>
+            <label
+              className={`inline-flex items-center justify-self-end ${
+                pendingAction ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+            >
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={isAuthorized}
+                disabled={pendingAction !== null}
+                aria-label={t("onboarding.permissions.remoteDesktop.title")}
+                onChange={(event) =>
+                  handleAuthorizationToggle(event.target.checked)
+                }
+              />
+              <div className="relative w-11 h-6 bg-mid-gray/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-logo-primary rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-background-ui peer-disabled:opacity-50"></div>
+            </label>
           </div>
-        )}
-        <div className="mr-4 ml-4 mb-4 mt-4">
-          <Alert variant={isRDAuthorized ? "info" : "warning"} contained={true}>
-            {isRDAuthorized ? (
-              <div>
-                <div>
-                  {t("settings.advanced.pasteMethod.portal.authorized")}
-                </div>
-                <div className="italic">
-                  {t("settings.advanced.pasteMethod.portal.authorizedRappel")}
-                </div>
-              </div>
-            ) : (
-              t("settings.advanced.pasteMethod.portal.description")
-            )}
-            <div className="justify-center mt-4">
-              <Button
-                variant={isRDAuthorized ? "secondary" : "primary"}
-                size="sm"
-                onClick={isRDAuthorized ? handleRDRevoke : handleRDRequest}
-                disabled={isRDRequesting}
-              >
-                {isRDAuthorized
-                  ? t("settings.advanced.pasteMethod.portal.buttonRevoke")
-                  : isRDRequesting
-                    ? t("settings.advanced.pasteMethod.portal.buttonRequesting")
-                    : t("settings.advanced.pasteMethod.portal.button")}
-              </Button>
-            </div>
-          </Alert>
-        </div>
-      </>
-    );
-  });
+        </SettingContainer>
+      );
+    },
+  );

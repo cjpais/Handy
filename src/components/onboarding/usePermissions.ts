@@ -10,15 +10,17 @@ import {
 } from "tauri-plugin-macos-permissions-api";
 import { notify } from "@/stores/noticeStore";
 import { commands } from "@/bindings";
+import { getRemoteDesktopPermissionState } from "@/lib/remoteDesktopPermission";
 import { useSettingsStore } from "@/stores/settingsStore";
 
 type PermissionStatus = "checking" | "needed" | "waiting" | "granted";
-type PermissionPlatform = "macos" | "windows" | "other";
+type PermissionPlatform = "macos" | "windows" | "linux-wayland" | "other";
 
 export interface Permissions {
   platform: PermissionPlatform;
   microphone: PermissionStatus;
   accessibility: PermissionStatus;
+  remoteDesktop: PermissionStatus;
   /** The first check is done. */
   checked: boolean;
   /** Something still needs allowing (decided by the first check). */
@@ -28,6 +30,7 @@ export interface Permissions {
   microphoneAsked: boolean;
   requestMicrophone: () => Promise<void>;
   requestAccessibility: () => Promise<void>;
+  requestRemoteDesktop: () => Promise<void>;
 }
 
 const MAX_POLLING_ERRORS = 3;
@@ -44,7 +47,7 @@ const currentPlatform = (): PermissionPlatform => {
 };
 
 /**
- * Microphone (macOS, Windows) and Accessibility (macOS) permissions: check,
+ * Microphone, Accessibility and Wayland typing permissions: check,
  * request, then poll until granted. Granting Accessibility initializes input
  * so no relaunch is needed.
  */
@@ -52,10 +55,13 @@ export const usePermissions = (preview: boolean): Permissions => {
   const { t } = useTranslation();
   const refreshAudioDevices = useSettingsStore((s) => s.refreshAudioDevices);
   const refreshOutputDevices = useSettingsStore((s) => s.refreshOutputDevices);
-  const [os] = useState(currentPlatform);
+  const [os, setOs] = useState(currentPlatform);
   const [microphone, setMicrophone] = useState<PermissionStatus>("checking");
   const [accessibility, setAccessibility] =
     useState<PermissionStatus>("checking");
+  const [remoteDesktop, setRemoteDesktop] = useState<PermissionStatus>(
+    os === "other" ? "checking" : "granted",
+  );
   const [needed, setNeeded] = useState(false);
   const [microphoneAsked, setMicrophoneAsked] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -67,7 +73,9 @@ export const usePermissions = (preview: boolean): Permissions => {
     ? accessibility === "granted" && microphone === "granted"
     : isWindows
       ? microphone === "granted"
-      : true;
+      : os === "linux-wayland"
+        ? remoteDesktop === "granted"
+        : true;
 
   const hasWindowsMicrophoneAccess = useCallback(async () => {
     const status = await commands.getWindowsMicrophonePermissionStatus();
@@ -96,6 +104,7 @@ export const usePermissions = (preview: boolean): Permissions => {
   // The first check: decides whether the Permissions screen is part of the flow.
   useEffect(() => {
     if (preview) {
+      setRemoteDesktop("granted");
       setAccessibility(isMacOS ? "needed" : "granted");
       setMicrophone(os === "other" ? "granted" : "needed");
       setNeeded(os !== "other");
@@ -104,6 +113,21 @@ export const usePermissions = (preview: boolean): Permissions => {
     if (os === "other") {
       setAccessibility("granted");
       setMicrophone("granted");
+      // Wayland is detected by the backend; X11 needs no portal permission.
+      getRemoteDesktopPermissionState()
+        .then((permission) => {
+          if (permission.isRelevant) {
+            setOs("linux-wayland");
+            setRemoteDesktop(permission.isAuthorized ? "granted" : "needed");
+            setNeeded(!permission.isAuthorized);
+          } else {
+            setRemoteDesktop("granted");
+          }
+        })
+        .catch((error) => {
+          console.warn("Failed to check Remote Desktop permissions:", error);
+          setRemoteDesktop("granted");
+        });
       return;
     }
     const check = async () => {
@@ -229,6 +253,33 @@ export const usePermissions = (preview: boolean): Permissions => {
     }
   };
 
+  const requestRemoteDesktop = async () => {
+    if (preview || remoteDesktop === "waiting") return;
+    setRemoteDesktop("waiting");
+    try {
+      const result = await commands.requestRemoteDesktopAuthorization();
+      if (
+        result.status === "error" ||
+        !result.data ||
+        !(await commands.getRemoteDesktopAuthorization())
+      ) {
+        setRemoteDesktop("needed");
+        notify({
+          title: t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
+        });
+        return;
+      }
+      setRemoteDesktop("granted");
+      await onAllGranted();
+    } catch (error) {
+      console.error("Failed to request Remote Desktop permission:", error);
+      setRemoteDesktop("needed");
+      notify({
+        title: t("settings.advanced.pasteMethod.portal.errors.requestFailed"),
+      });
+    }
+  };
+
   const requestMicrophone = async () => {
     if (preview) return;
     try {
@@ -257,11 +308,16 @@ export const usePermissions = (preview: boolean): Permissions => {
     platform: os,
     microphone,
     accessibility,
-    checked: microphone !== "checking" && accessibility !== "checking",
+    remoteDesktop,
+    checked:
+      microphone !== "checking" &&
+      accessibility !== "checking" &&
+      remoteDesktop !== "checking",
     needed,
     allGranted,
     microphoneAsked,
     requestMicrophone,
     requestAccessibility,
+    requestRemoteDesktop,
   };
 };
