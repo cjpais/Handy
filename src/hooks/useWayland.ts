@@ -4,6 +4,10 @@ import { useOsType } from "./useOsType";
 
 /**
  * Detect if the app is running under Wayland (Linux only).
+ *
+ * Inputs: none.
+ * Outputs: true when the current OS is Linux and the backend detects Wayland.
+ * Side effects: queries the Tauri backend whenever the OS type changes.
  */
 export function useWayland(): boolean {
   const osType = useOsType();

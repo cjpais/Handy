@@ -68,6 +68,16 @@
         "name": "辅助功能",
         "why": "这样快捷键在每个应用中都能使用，Handy 也能把文字输入到光标所在的位置。"
       },
+      "remoteDesktop": {
+        "title": "输入授权",
+        "description": "允许 Handy 将听写文本自动插入当前活动的应用程序。",
+        "note": "你可以随时在设置中停用或启用此权限。",
+        "button": "允许自动输入",
+        "skipButton": "暂时不要",
+        "warningTooltip": "输入授权尚未配置",
+        "configured": "已配置",
+        "notConfigured": "需要配置"
+      },
       "errors": {
         "checkFailed": "检查权限失败。请重试。",
         "requestFailed": "请求权限失败。请重试。"
@@ -538,12 +548,7 @@
         },
         "externalScriptPlaceholder": "/path/to/your/script.sh",
         "portal": {
-          "description": "在 Wayland 上，直接模式需要“远程桌面”权限。它仅允许 Handy 将口述文本插入到活动窗口，不会创建任何远程连接。",
-          "authorized": "权限已启用：Handy 可通过“远程桌面”将口述文本插入活动窗口。",
-          "authorizedRappel": "提醒：此权限不会创建任何远程连接。",
-          "button": "请求权限",
           "buttonRequesting": "正在请求…",
-          "buttonRevoke": "移除权限",
           "errors": {
             "requestFailed": "权限请求失败。",
             "revokeFailed": "移除权限失败。"

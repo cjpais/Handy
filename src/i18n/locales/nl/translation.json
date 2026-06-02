@@ -72,6 +72,16 @@
         "checkFailed": "Machtigingen controleren mislukt. Probeer het opnieuw.",
         "requestFailed": "Machtiging aanvragen mislukt. Probeer het opnieuw."
       },
+      "remoteDesktop": {
+        "title": "Typemachtiging",
+        "description": "Sta Handy toe om gedicteerde tekst automatisch in de actieve app in te voegen.",
+        "note": "Je kunt deze toestemming op elk moment in de instellingen in- of uitschakelen.",
+        "button": "Automatisch typen toestaan",
+        "skipButton": "Niet nu",
+        "warningTooltip": "Typemachtiging niet ingesteld",
+        "configured": "Ingesteld",
+        "notConfigured": "Configuratie vereist"
+      },
       "titleMac": "Twee machtigingen, en klaar",
       "titleWindows": "Eén machtiging, en klaar",
       "subtitleMac": "macOS vraagt eerst toestemming voordat een app kan luisteren of typen.",
@@ -538,12 +548,7 @@
         },
         "externalScriptPlaceholder": "/pad/naar/je/script.sh",
         "portal": {
-          "description": "Op Wayland vereist de modus Direct toestemming voor ‘Extern bureaublad’. Hiermee kan Handy alleen gedicteerde tekst in het actieve venster invoegen. Er wordt geen externe verbinding gemaakt.",
-          "authorized": "Toestemming actief: Handy kan gedicteerde tekst via ‘Extern bureaublad’ in het actieve venster invoegen.",
-          "authorizedRappel": "Ter herinnering: deze toestemming maakt geen externe verbinding.",
-          "button": "Toestemming aanvragen",
           "buttonRequesting": "Aanvragen…",
-          "buttonRevoke": "Toestemming intrekken",
           "errors": {
             "requestFailed": "Toestemming aanvragen mislukt.",
             "revokeFailed": "Toestemming intrekken mislukt."

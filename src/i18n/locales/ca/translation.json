@@ -72,6 +72,16 @@
         "checkFailed": "No s'han pogut comprovar els permisos. Torneu-ho a provar.",
         "requestFailed": "No s'ha pogut sol·licitar el permís. Torneu-ho a provar."
       },
+      "remoteDesktop": {
+        "title": "Autorització d’escriptura",
+        "description": "Permeteu que Handy insereixi automàticament el text dictat a l’aplicació activa.",
+        "note": "Podeu activar o desactivar aquest permís en qualsevol moment a la configuració.",
+        "button": "Permet l’escriptura automàtica",
+        "skipButton": "Ara no",
+        "warningTooltip": "L’autorització d’escriptura no està configurada",
+        "configured": "Configurada",
+        "notConfigured": "Cal configurar-la"
+      },
       "titleMac": "Dos permisos i ja està",
       "titleWindows": "Un permís i ja està",
       "subtitleMac": "El macOS pregunta abans que qualsevol aplicació pugui escoltar o escriure.",
@@ -538,12 +548,7 @@
         },
         "externalScriptPlaceholder": "/camí/al/vostre/script.sh",
         "portal": {
-          "description": "Al Wayland, el mode Direct requereix un permís d’«Escriptori remot». Només permet que Handy insereixi el text dictat a la finestra activa. No es crea cap connexió remota.",
-          "authorized": "Permís actiu: Handy pot inserir el text dictat a la finestra activa mitjançant «Escriptori remot».",
-          "authorizedRappel": "Recordatori: aquest permís no crea cap connexió remota.",
-          "button": "Sol·licita el permís",
           "buttonRequesting": "S’està sol·licitant…",
-          "buttonRevoke": "Revoca el permís",
           "errors": {
             "requestFailed": "No s’ha pogut sol·licitar el permís.",
             "revokeFailed": "No s’ha pogut revocar el permís."

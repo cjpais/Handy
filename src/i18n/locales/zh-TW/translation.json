@@ -68,6 +68,16 @@
         "name": "輔助使用",
         "why": "讓快捷鍵在每個應用程式中都能使用，也讓 Handy 能把文字打在游標所在的位置。"
       },
+      "remoteDesktop": {
+        "title": "輸入授權",
+        "description": "允許 Handy 將聽寫文字自動插入目前作用中的應用程式。",
+        "note": "你可以隨時在設定中停用或啟用此權限。",
+        "button": "允許自動輸入",
+        "skipButton": "暫時不要",
+        "warningTooltip": "輸入授權尚未設定",
+        "configured": "已設定",
+        "notConfigured": "需要設定"
+      },
       "errors": {
         "checkFailed": "檢查權限失敗，請重試",
         "requestFailed": "請求權限失敗，請重試"
@@ -538,12 +548,7 @@
         },
         "externalScriptPlaceholder": "/path/to/your/script.sh",
         "portal": {
-          "description": "在 Wayland 上，Direct 模式需要「遠端桌面」權限。此權限僅允許 Handy 將聽寫文字插入目前使用的視窗，不會建立任何遠端連線。",
-          "authorized": "權限已啟用：Handy 可以透過「遠端桌面」將聽寫文字插入目前使用的視窗。",
-          "authorizedRappel": "提醒：此權限不會建立任何遠端連線。",
-          "button": "請求權限",
           "buttonRequesting": "正在請求…",
-          "buttonRevoke": "移除權限",
           "errors": {
             "requestFailed": "權限請求失敗。",
             "revokeFailed": "權限移除失敗。"

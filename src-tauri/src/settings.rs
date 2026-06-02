@@ -1084,10 +1084,12 @@ impl Default for AppSettings {
 /// scores the first 30 s of what it's given.
 pub const LANGUAGE_DETECTION_WINDOW_SECS: std::ops::RangeInclusive<u32> = 2..=30;
 
+/// Returns the persisted Remote Desktop portal token, if one is stored.
 pub fn get_remote_desktop_token(app: &AppHandle) -> Option<String> {
     get_settings(app).remote_desktop_token
 }
 
+/// Persists or clears the Remote Desktop portal token in application settings.
 pub fn set_remote_desktop_token(app: &AppHandle, token: Option<String>) {
     let mut settings = get_settings(app);
     settings.remote_desktop_token = token;
