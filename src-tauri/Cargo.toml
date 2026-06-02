@@ -147,6 +147,8 @@ transcribe-cpp = { version = "0.1.1", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
+wayland-client = "0.31.12"
+xkbcommon = { version = "0.9.0", features = ["wayland"] }
 
 [patch.crates-io]
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }

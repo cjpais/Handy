@@ -109,6 +109,16 @@
         "title": "Acesso à Acessibilidade",
         "description": "Necessário para digitar o texto transcrito em seus aplicativos."
       },
+      "remoteDesktop": {
+        "title": "Autorização de digitação",
+        "description": "Permita que o Handy insira automaticamente o texto ditado no aplicativo ativo.",
+        "note": "Você pode desativar ou ativar esta permissão a qualquer momento nas configurações.",
+        "button": "Permitir digitação automática",
+        "skipButton": "Agora não",
+        "warningTooltip": "Autorização de digitação não configurada",
+        "configured": "Configurada",
+        "notConfigured": "A configurar"
+      },
       "grant": "Conceder Permissão",
       "granted": "Concedido",
       "waiting": "Aguardando...",
@@ -312,12 +322,7 @@
         },
         "externalScriptPlaceholder": "/caminho/para/seu/script.sh",
         "portal": {
-          "description": "No Wayland, o modo Direto precisa de uma autorização de «Área de trabalho remota». Ela permite apenas que o Handy insira o texto ditado na janela ativa. Nenhuma conexão remota é criada.",
-          "authorized": "Autorização ativa: o Handy pode inserir o texto ditado na janela ativa via «Área de trabalho remota».",
-          "authorizedRappel": "Lembrete: essa autorização não cria nenhuma conexão remota.",
-          "button": "Solicitar autorização",
           "buttonRequesting": "Solicitando…",
-          "buttonRevoke": "Remover autorização",
           "errors": {
             "requestFailed": "Falha ao solicitar autorização.",
             "revokeFailed": "Falha ao remover autorização."

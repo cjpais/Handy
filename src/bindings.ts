@@ -538,9 +538,15 @@ async initializeShortcuts() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Returns whether the current Linux desktop session uses Wayland.
+ */
 async isWaylandActive() : Promise<boolean> {
     return await TAURI_INVOKE("is_wayland_active");
 },
+/**
+ * Requests Remote Desktop portal authorization for direct typing on Wayland.
+ */
 async requestRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("request_remote_desktop_authorization") };
@@ -549,6 +555,9 @@ async requestRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Deletes the stored Remote Desktop portal authorization token.
+ */
 async deleteRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("delete_remote_desktop_authorization") };
@@ -557,6 +566,9 @@ async deleteRemoteDesktopAuthorization() : Promise<Result<boolean, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+/**
+ * Returns the cached Remote Desktop portal authorization state.
+ */
 async getRemoteDesktopAuthorization() : Promise<boolean> {
     return await TAURI_INVOKE("get_remote_desktop_authorization");
 },

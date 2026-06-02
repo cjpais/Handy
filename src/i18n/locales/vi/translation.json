@@ -109,6 +109,16 @@
         "title": "Quyền truy cập Trợ năng",
         "description": "Cần thiết để nhập văn bản đã chuyển đổi vào các ứng dụng của bạn."
       },
+      "remoteDesktop": {
+        "title": "Quyền nhập",
+        "description": "Cho phép Handy tự động chèn văn bản đã đọc vào ứng dụng đang hoạt động.",
+        "note": "Bạn có thể tắt hoặc bật quyền này bất cứ lúc nào trong phần cài đặt.",
+        "button": "Cho phép nhập tự động",
+        "skipButton": "Để sau",
+        "warningTooltip": "Quyền nhập chưa được cấu hình",
+        "configured": "Đã cấu hình",
+        "notConfigured": "Cần cấu hình"
+      },
       "grant": "Cấp quyền",
       "granted": "Đã cấp",
       "waiting": "Đang chờ...",
@@ -312,12 +322,7 @@
         },
         "externalScriptPlaceholder": "/duong-dan/toi/script.sh",
         "portal": {
-          "description": "Trên Wayland, chế độ Trực tiếp cần quyền “Máy tính từ xa”. Quyền này chỉ cho phép Handy chèn văn bản đã đọc vào cửa sổ đang hoạt động. Không tạo kết nối từ xa nào.",
-          "authorized": "Quyền đang hoạt động: Handy có thể chèn văn bản đã đọc vào cửa sổ đang hoạt động qua “Máy tính từ xa”.",
-          "authorizedRappel": "Lưu ý: quyền này không tạo kết nối từ xa.",
-          "button": "Yêu cầu quyền",
           "buttonRequesting": "Đang yêu cầu…",
-          "buttonRevoke": "Xóa quyền",
           "errors": {
             "requestFailed": "Yêu cầu quyền thất bại.",
             "revokeFailed": "Xóa quyền thất bại."

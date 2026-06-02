@@ -109,6 +109,16 @@
         "title": "Přístup k usnadnění",
         "description": "Potřebný pro psaní přepsaného textu do vašich aplikací."
       },
+      "remoteDesktop": {
+        "title": "Oprávnění pro psaní",
+        "description": "Povolte Handy automaticky vkládat diktovaný text do aktivní aplikace.",
+        "note": "Toto oprávnění můžete kdykoli vypnout nebo zapnout v nastavení.",
+        "button": "Povolit automatické psaní",
+        "skipButton": "Teď ne",
+        "warningTooltip": "Oprávnění pro psaní není nastavené",
+        "configured": "Nastavené",
+        "notConfigured": "K nastavení"
+      },
       "grant": "Udělit oprávnění",
       "granted": "Uděleno",
       "waiting": "Čekání...",
@@ -312,12 +322,7 @@
         },
         "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh",
         "portal": {
-          "description": "V Wayland vyžaduje režim Přímý vstup oprávnění „Vzdálená plocha“. Dovoluje aplikaci Handy pouze vložit diktovaný text do aktivního okna. Nevytváří žádné vzdálené připojení.",
-          "authorized": "Aktivní oprávnění: Handy může vložit diktovaný text do aktivního okna přes „Vzdálenou plochu“.",
-          "authorizedRappel": "Připomenutí: toto oprávnění nevytváří žádné vzdálené připojení.",
-          "button": "Požádat o oprávnění",
           "buttonRequesting": "Probíhá žádost…",
-          "buttonRevoke": "Odebrat oprávnění",
           "errors": {
             "requestFailed": "Žádost o oprávnění se nezdařila.",
             "revokeFailed": "Odebrání oprávnění se nezdařilo."

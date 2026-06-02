@@ -186,6 +186,7 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Returns whether the current Linux desktop session uses Wayland.
 #[specta::specta]
 #[tauri::command]
 pub fn is_wayland_active() -> bool {
@@ -199,6 +200,7 @@ pub fn is_wayland_active() -> bool {
     }
 }
 
+/// Requests Remote Desktop portal authorization for direct typing on Wayland.
 #[specta::specta]
 #[tauri::command]
 pub async fn request_remote_desktop_authorization() -> Result<bool, String> {
@@ -225,6 +227,7 @@ pub async fn request_remote_desktop_authorization() -> Result<bool, String> {
     }
 }
 
+/// Deletes the stored Remote Desktop portal authorization token.
 #[specta::specta]
 #[tauri::command]
 pub fn delete_remote_desktop_authorization() -> Result<bool, String> {
@@ -242,6 +245,7 @@ pub fn delete_remote_desktop_authorization() -> Result<bool, String> {
     }
 }
 
+/// Returns the cached Remote Desktop portal authorization state.
 #[specta::specta]
 #[tauri::command]
 pub fn get_remote_desktop_authorization() -> bool {

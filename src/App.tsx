@@ -18,6 +18,7 @@ import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
 import { getLanguageDirection, initializeRTL } from "@/lib/utils/rtl";
+import { getRemoteDesktopPermissionState } from "@/lib/remoteDesktopPermission";
 
 type OnboardingStep = "accessibility" | "model" | "done";
 
@@ -223,6 +224,28 @@ function App() {
           } catch (e) {
             console.warn("Failed to check Windows microphone permissions:", e);
             // If we can't check, proceed to main app and let them fix it there
+          }
+        }
+
+        if (currentPlatform === "linux") {
+          try {
+            const remoteDesktopPermission =
+              await getRemoteDesktopPermissionState();
+
+            if (
+              remoteDesktopPermission.isRelevant &&
+              !remoteDesktopPermission.isAuthorized
+            ) {
+              await revealMainWindowForPermissions();
+              setOnboardingStep("accessibility");
+              return;
+            }
+          } catch (e) {
+            console.warn(
+              "Failed to check Remote Desktop permissions for Linux:",
+              e,
+            );
+            // If we can't check, proceed to main app and let settings surface it.
           }
         }
 

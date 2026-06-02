@@ -109,6 +109,16 @@
         "title": "Dostęp do dostępności",
         "description": "Wymagany do wpisywania transkrybowanego tekstu w Twoich aplikacjach."
       },
+      "remoteDesktop": {
+        "title": "Uprawnienie do pisania",
+        "description": "Pozwól Handy automatycznie wstawiać podyktowany tekst do aktywnej aplikacji.",
+        "note": "Możesz w każdej chwili wyłączyć lub włączyć to uprawnienie w ustawieniach.",
+        "button": "Zezwól na automatyczne pisanie",
+        "skipButton": "Nie teraz",
+        "warningTooltip": "Uprawnienie do pisania nie jest skonfigurowane",
+        "configured": "Skonfigurowane",
+        "notConfigured": "Do skonfigurowania"
+      },
       "grant": "Przyznaj uprawnienie",
       "granted": "Przyznano",
       "waiting": "Oczekiwanie...",
@@ -312,12 +322,7 @@
         },
         "externalScriptPlaceholder": "/sciezka/do/twojego/skryptu.sh",
         "portal": {
-          "description": "W Wayland tryb Bezpośredni wymaga uprawnienia „Pulpit zdalny”. Pozwala ono tylko na wstawienie dyktowanego tekstu do aktywnego okna. Nie tworzy się żadne zdalne połączenie.",
-          "authorized": "Aktywne uprawnienie: Handy może wstawiać dyktowany tekst do aktywnego okna przez „Pulpit zdalny”.",
-          "authorizedRappel": "Przypomnienie: to uprawnienie nie tworzy zdalnego połączenia.",
-          "button": "Poprosić o uprawnienie",
           "buttonRequesting": "Żądanie…",
-          "buttonRevoke": "Usunąć uprawnienie",
           "errors": {
             "requestFailed": "Żądanie uprawnienia nie powiodło się.",
             "revokeFailed": "Usunięcie uprawnienia nie powiodło się."
