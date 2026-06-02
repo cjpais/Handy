@@ -109,6 +109,16 @@
         "title": "גישת נגישות",
         "description": "נדרש כדי להקליד את הטקסט המתומלל לתוך האפליקציות שלך."
       },
+      "remoteDesktop": {
+        "title": "הרשאת הקלדה",
+        "description": "אפשר ל-Handy להזין באופן אוטומטי את הטקסט שהוכתב באפליקציה הפעילה.",
+        "note": "אפשר לכבות או להפעיל את ההרשאה הזו בכל עת בהגדרות.",
+        "button": "אפשר הקלדה אוטומטית",
+        "skipButton": "לא עכשיו",
+        "warningTooltip": "הרשאת ההקלדה לא הוגדרה",
+        "configured": "מוגדרת",
+        "notConfigured": "נדרש להגדיר"
+      },
       "grant": "תן הרשאה",
       "granted": "ניתנה",
       "waiting": "ממתין...",
@@ -302,7 +312,14 @@
           "none": "ללא",
           "externalScript": "סקריפט חיצוני"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "מבקש…",
+          "errors": {
+            "requestFailed": "בקשת ההרשאה נכשלה.",
+            "revokeFailed": "הסרת ההרשאה נכשלה."
+          }
+        }
       },
       "typingTool": {
         "title": "כלי הקלדה",

@@ -109,6 +109,16 @@
         "title": "Accessibility Access",
         "description": "Required to type transcribed text into your applications."
       },
+      "remoteDesktop": {
+        "title": "Typing authorization",
+        "description": "Allow Handy to insert dictated text automatically into the active app.",
+        "note": "You can disable or enable this permission at any time in settings.",
+        "button": "Allow automatic typing",
+        "skipButton": "Not now",
+        "warningTooltip": "Typing authorization not configured",
+        "configured": "Configured",
+        "notConfigured": "Configuration is required"
+      },
       "grant": "Grant Permission",
       "granted": "Granted",
       "waiting": "Waiting...",
@@ -304,12 +314,7 @@
         },
         "externalScriptPlaceholder": "/path/to/your/script.sh",
         "portal": {
-          "description": "On Wayland, Direct mode needs a “Remote Desktop” permission. It only lets Handy insert the dictated text into the active window. No remote connection is created.",
-          "authorized": "Permission active: Handy can insert dictated text in the active window via “Remote Desktop”.",
-          "authorizedRappel": "Reminder: this permission does not create any remote connection.",
-          "button": "Request permission",
           "buttonRequesting": "Requesting…",
-          "buttonRevoke": "Remove permission",
           "errors": {
             "requestFailed": "Permission request failed.",
             "revokeFailed": "Permission removal failed."

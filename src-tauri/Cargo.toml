@@ -108,6 +108,8 @@ ashpd = "0.12.1"
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan"] }
+wayland-client = "0.31.12"
+xkbcommon = { version = "0.9.0", features = ["wayland"] }
 
 [patch.crates-io]
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }

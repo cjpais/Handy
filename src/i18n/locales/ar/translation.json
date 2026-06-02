@@ -109,6 +109,16 @@
         "title": "إمكانية الوصول",
         "description": ".مطلوب لكتابة النص المفرغ في تطبيقاتك"
       },
+      "remoteDesktop": {
+        "title": "إذن الكتابة",
+        "description": "اسمح لـ Handy بإدراج النص المملى تلقائياً في التطبيق النشط.",
+        "note": "يمكنك تعطيل هذا الإذن أو تفعيله في أي وقت من الإعدادات.",
+        "button": "السماح بالكتابة التلقائية",
+        "skipButton": "ليس الآن",
+        "warningTooltip": "إذن الكتابة غير مهيأ",
+        "configured": "مهيأ",
+        "notConfigured": "يتطلب الإعداد"
+      },
       "grant": "منح الإذن",
       "granted": "تم المنح",
       "waiting": "...في الانتظار",
@@ -280,7 +290,14 @@
           "none": "بلا",
           "externalScript": "نص برمجي خارجي"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "جارٍ الطلب…",
+          "errors": {
+            "requestFailed": "فشل طلب الإذن.",
+            "revokeFailed": "فشلت إزالة الإذن."
+          }
+        }
       },
       "typingTool": {
         "title": "أداة الكتابة",

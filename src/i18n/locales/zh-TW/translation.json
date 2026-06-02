@@ -109,6 +109,16 @@
         "title": "輔助使用存取",
         "description": "需要將轉錄文字輸入到您的應用程式中"
       },
+      "remoteDesktop": {
+        "title": "輸入授權",
+        "description": "允許 Handy 將聽寫文字自動插入目前作用中的應用程式。",
+        "note": "你可以隨時在設定中停用或啟用此權限。",
+        "button": "允許自動輸入",
+        "skipButton": "暫時不要",
+        "warningTooltip": "輸入授權尚未設定",
+        "configured": "已設定",
+        "notConfigured": "需要設定"
+      },
       "grant": "授予權限",
       "granted": "已授予",
       "waiting": "等待中...",
@@ -302,7 +312,14 @@
           "none": "無",
           "externalScript": "外部腳本"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "正在請求…",
+          "errors": {
+            "requestFailed": "權限請求失敗。",
+            "revokeFailed": "權限移除失敗。"
+          }
+        }
       },
       "typingTool": {
         "title": "輸入工具",

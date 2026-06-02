@@ -109,6 +109,16 @@
         "title": "Acceso de Accesibilidad",
         "description": "Necesario para escribir el texto transcrito en tus aplicaciones."
       },
+      "remoteDesktop": {
+        "title": "Autorización de escritura",
+        "description": "Permite que Handy inserte automáticamente el texto dictado en la aplicación activa.",
+        "note": "Puedes desactivar o activar este permiso en cualquier momento desde los ajustes.",
+        "button": "Permitir escritura automática",
+        "skipButton": "Ahora no",
+        "warningTooltip": "Autorización de escritura no configurada",
+        "configured": "Configurada",
+        "notConfigured": "Por configurar"
+      },
       "grant": "Conceder Permiso",
       "granted": "Concedido",
       "waiting": "Esperando...",
@@ -304,12 +314,7 @@
         },
         "externalScriptPlaceholder": "/ruta/a/su/script.sh",
         "portal": {
-          "description": "En Wayland, el modo Directo necesita un permiso de «Escritorio remoto». Solo permite que Handy inserte el texto dictado en la ventana activa. No se crea ninguna conexión remota.",
-          "authorized": "Permiso activo: Handy puede insertar el texto dictado en la ventana activa a través de «Escritorio remoto».",
-          "authorizedRappel": "Recordatorio: este permiso no crea ninguna conexión remota.",
-          "button": "Solicitar permiso",
           "buttonRequesting": "Solicitando…",
-          "buttonRevoke": "Eliminar permiso",
           "errors": {
             "requestFailed": "La solicitud de permiso falló.",
             "revokeFailed": "La eliminación del permiso falló."

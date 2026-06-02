@@ -24,16 +24,24 @@ use tokio::runtime::RuntimeFlavor;
 use unicode_normalization::UnicodeNormalization;
 
 #[cfg(target_os = "linux")]
+mod keymap;
+
+#[cfg(target_os = "linux")]
+const UNICODE_TRIGGER_DELAY_MS: u64 = 20;
+#[cfg(target_os = "linux")]
+const UNICODE_COMMIT_DELAY_MS: u64 = 30;
+
+#[cfg(target_os = "linux")]
 static REMOTE_DESKTOP_TOKEN: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 #[cfg(target_os = "linux")]
-static PORTAL_RT: OnceCell<tokio::runtime::Runtime> = OnceCell::new();
+static PORTAL_RUNTIME: OnceCell<tokio::runtime::Runtime> = OnceCell::new();
 #[cfg(target_os = "linux")]
 static PORTAL_APP_HANDLE: OnceCell<AppHandle> = OnceCell::new();
 #[cfg(target_os = "linux")]
 static AUTHORIZED: AtomicBool = AtomicBool::new(false);
 #[cfg(target_os = "linux")]
 fn portal_runtime() -> Result<&'static tokio::runtime::Runtime, String> {
-    PORTAL_RT
+    PORTAL_RUNTIME
         .get_or_try_init(|| {
             tokio::runtime::Runtime::new()
                 .map_err(|e| format!("Failed to initialize portal runtime: {}", e))
@@ -110,7 +118,7 @@ fn delete_token_setting() {
 fn get_token_setting() -> Option<String> {
     PORTAL_APP_HANDLE
         .get()
-        .and_then(|app| crate::settings::get_remote_desktop_token(app))
+        .and_then(crate::settings::get_remote_desktop_token)
 }
 
 // ============================================================================
@@ -215,7 +223,7 @@ fn validate_token_store() {
     let token = get_token_memory().or_else(get_token_setting);
     let Some(token) = token else {
         debug!("remote_desktop: no token found, AUTHORIZED set false");
-        delete_token_everywhere();
+        clear_authorization_state();
         return;
     };
 
@@ -228,13 +236,13 @@ fn validate_token_store() {
     };
 
     if !exists {
-        debug!("remote_desktop: token missing, deleting via delete_token_everywhere()");
-        delete_token_everywhere();
+        debug!("remote_desktop: token missing, clearing authorization state");
+        clear_authorization_state();
     }
 }
 
 #[cfg(target_os = "linux")]
-fn delete_token_everywhere() {
+fn clear_authorization_state() {
     let token_memory = get_token_memory();
     let token_setting = get_token_setting();
     let token = token_memory.as_deref().or(token_setting.as_deref());
@@ -254,103 +262,155 @@ fn delete_token_everywhere() {
 // Keyboard Input via Portal
 // ============================================================================
 #[cfg(target_os = "linux")]
-fn keysym_for_char(ch: char) -> Option<u32> {
-    match ch {
-        '\n' | '\r' => Some(0xFF0D), // XK_Return
-        '\t' => Some(0xFF09),        // XK_Tab
-        '\u{8}' => Some(0xFF08),     // XK_BackSpace
-        // Characters in the ISO‑8859‑1 range (including most accented Latin letters)
-        // are represented directly as keysyms. Only higher code points should use
-        // the "Unicode keysym" prefix (0x0100_0000).
-        _ if (ch as u32) <= 0xFF => Some(ch as u32),
-        _ => Some(0x0100_0000 | (ch as u32)), // Unicode keysym
-    }
-}
-
-#[cfg(target_os = "linux")]
 async fn type_text_async(text: &str) -> Result<(), String> {
+    let keyboard_map = keymap::KeyboardMap::load_current()?;
     let (proxy, session) = open_session_async(false).await?;
 
-    // Helper to send a press/release pair for a keysym.
-    async fn send_keysym(
+    async fn send_keycode(
         proxy: &RemoteDesktop<'static>,
         session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
-        keysym: u32,
+        keycode: i32,
     ) -> Result<(), String> {
         proxy
-            .notify_keyboard_keysym(session, keysym as i32, KeyState::Pressed)
+            .notify_keyboard_keycode(session, keycode, KeyState::Pressed)
             .await
-            .map_err(|e| format!("Failed to send keysym press: {}", e))?;
+            .map_err(|e| format!("Failed to send keycode press: {}", e))?;
         proxy
-            .notify_keyboard_keysym(session, keysym as i32, KeyState::Released)
+            .notify_keyboard_keycode(session, keycode, KeyState::Released)
             .await
-            .map_err(|e| format!("Failed to send keysym release: {}", e))
+            .map_err(|e| format!("Failed to send keycode release: {}", e))
     }
 
-    // Send a non-ASCII character through the Ctrl+Shift+U unicode input sequence to
-    // stay independent of the current keyboard layout.
+    async fn send_stroke(
+        proxy: &RemoteDesktop<'static>,
+        session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
+        stroke: &keymap::KeyStroke,
+    ) -> Result<(), String> {
+        let mut pressed_modifiers: Vec<keymap::ModifierKey> = Vec::new();
+        for modifier in &stroke.modifiers {
+            if let Err(err) = proxy
+                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Pressed)
+                .await
+            {
+                for pressed_modifier in pressed_modifiers.iter().rev() {
+                    if let Err(release_err) = proxy
+                        .notify_keyboard_keycode(
+                            session,
+                            pressed_modifier.keycode(),
+                            KeyState::Released,
+                        )
+                        .await
+                    {
+                        debug!(
+                            "remote_desktop: failed to release modifier: {}",
+                            release_err
+                        );
+                    }
+                }
+
+                return Err(format!("Failed to press modifier: {}", err));
+            }
+            pressed_modifiers.push(*modifier);
+        }
+
+        let mut result = send_keycode(proxy, session, stroke.keycode).await;
+
+        for modifier in pressed_modifiers.iter().rev() {
+            if let Err(err) = proxy
+                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Released)
+                .await
+            {
+                if result.is_ok() {
+                    result = Err(format!("Failed to release modifier: {}", err));
+                } else {
+                    debug!("remote_desktop: failed to release modifier: {}", err);
+                }
+            }
+        }
+
+        result
+    }
+
     async fn send_unicode_via_ctrl_shift_u(
         proxy: &RemoteDesktop<'static>,
         session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
+        keyboard_map: &keymap::KeyboardMap,
         ch: char,
     ) -> Result<(), String> {
-        // Keysyms for modifiers and validation.
-        const XK_CONTROL_L: u32 = 0xFFE3;
-        const XK_SHIFT_L: u32 = 0xFFE1;
-        const XK_RETURN: u32 = 0xFF0D;
-        // 1) Press Control_L then Shift_L
-        proxy
-            .notify_keyboard_keysym(session, XK_CONTROL_L as i32, KeyState::Pressed)
-            .await
-            .map_err(|e| format!("unicode-input failed pressing Control: {e}"))?;
-        proxy
-            .notify_keyboard_keysym(session, XK_SHIFT_L as i32, KeyState::Pressed)
-            .await
-            .map_err(|e| format!("unicode-input failed pressing Shift: {e}"))?;
-        // 2) Press/Release 'u'
-        send_keysym(proxy, session, 'u' as u32).await?;
-        // 3) Release Shift_L then Control_L
-        proxy
-            .notify_keyboard_keysym(session, XK_SHIFT_L as i32, KeyState::Released)
-            .await
-            .map_err(|e| format!("unicode-input failed releasing Shift: {e}"))?;
-        proxy
-            .notify_keyboard_keysym(session, XK_CONTROL_L as i32, KeyState::Released)
-            .await
-            .map_err(|e| format!("unicode-input failed releasing Control: {e}"))?;
+        // Use the GTK/IBus Unicode input sequence for characters that are not
+        // directly present in the active compositor keymap.
+        let trigger_stroke = keyboard_map
+            .find_character('u')
+            .ok_or_else(|| "unicode-input: cannot find keycode for 'u'".to_string())?;
+        let trigger_modifiers = [keymap::ModifierKey::Control, keymap::ModifierKey::Shift];
+        let mut pressed_modifiers: Vec<keymap::ModifierKey> = Vec::new();
+        let mut trigger_result = Ok(());
 
-        // 4) Send hex digits of the codepoint (lowercase).
+        for modifier in &trigger_modifiers {
+            if let Err(err) = proxy
+                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Pressed)
+                .await
+            {
+                trigger_result = Err(format!("unicode-input failed pressing modifier: {err}"));
+                break;
+            }
+            pressed_modifiers.push(*modifier);
+        }
+
+        if trigger_result.is_ok() {
+            trigger_result = send_keycode(proxy, session, trigger_stroke.keycode).await;
+        }
+
+        for modifier in pressed_modifiers.iter().rev() {
+            if let Err(err) = proxy
+                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Released)
+                .await
+            {
+                if trigger_result.is_ok() {
+                    trigger_result = Err(format!("unicode-input failed releasing modifier: {err}"));
+                } else {
+                    debug!(
+                        "remote_desktop: failed to release unicode modifier: {}",
+                        err
+                    );
+                }
+            }
+        }
+
+        trigger_result?;
+
+        tokio::time::sleep(Duration::from_millis(UNICODE_TRIGGER_DELAY_MS)).await;
+
         let hex = format!("{:x}", ch as u32);
         for (idx, digit) in hex.chars().enumerate() {
-            let keysym = keysym_for_char(digit)
-                .ok_or_else(|| format!("unicode-input: unsupported hex digit '{digit}'"))?;
-            send_keysym(proxy, session, keysym)
+            let stroke = keyboard_map
+                .find_character(digit)
+                .ok_or_else(|| format!("unicode-input: cannot find keycode for '{digit}'"))?;
+            send_stroke(proxy, session, &stroke)
                 .await
                 .map_err(|e| format!("unicode-input failed at hex digit #{idx} '{digit}': {e}"))?;
         }
 
-        // 5) Validate with Return.
-        send_keysym(proxy, session, XK_RETURN).await?;
-        // Give the portal a brief moment to exit the Ctrl+Shift+U compose state
-        // before the next character, to avoid the following key being swallowed.
-        tokio::time::sleep(Duration::from_millis(8)).await;
+        let enter_stroke = keyboard_map
+            .find_character('\n')
+            .ok_or_else(|| "unicode-input: cannot find keycode for Enter".to_string())?;
+        send_stroke(proxy, session, &enter_stroke).await?;
+        tokio::time::sleep(Duration::from_millis(UNICODE_COMMIT_DELAY_MS)).await;
         Ok(())
     }
 
-    let result = (|| async {
-        // Normalize to NFC so we send precomposed characters (é, ô, …) as single keysyms.
+    let result = async {
+        // Normalize to NFC so precomposed characters (é, ô, …) are handled as one character.
         let normalized = text.nfc().collect::<String>();
         for ch in normalized.chars() {
-            if (ch as u32) > 0x7F {
-                send_unicode_via_ctrl_shift_u(&proxy, &session, ch).await?;
+            if let Some(stroke) = keyboard_map.find_character(ch) {
+                send_stroke(&proxy, &session, &stroke).await?;
             } else {
-                let keysym =
-                    keysym_for_char(ch).ok_or_else(|| "Unsupported character".to_string())?;
-                send_keysym(&proxy, &session, keysym).await?;
+                send_unicode_via_ctrl_shift_u(&proxy, &session, &keyboard_map, ch).await?;
             }
         }
         Ok(())
-    })()
+    }
     .await;
 
     if let Err(err) = close_session_async(&session).await {
@@ -398,12 +458,12 @@ async fn open_session_async(
     let remote_desktop_token = get_token_memory();
     if !allow_prompt {
         let Some(token) = remote_desktop_token.as_deref() else {
-            delete_token_everywhere();
+            clear_authorization_state();
             return Err("portal-permission-not-granted".into());
         };
         let exists = exists_token_store_async(token).await?;
         if !exists {
-            delete_token_everywhere();
+            clear_authorization_state();
             return Err("portal-permission-not-granted".into());
         }
     }
@@ -442,6 +502,7 @@ async fn open_session_async(
 // ============================================================================
 // Public Functions - Keyboard Input via Portal
 // ============================================================================
+/// Sends text through the Remote Desktop portal when Wayland authorization exists.
 #[cfg(target_os = "linux")]
 pub fn send_type_text(text: &str) -> Result<(), String> {
     if !crate::utils::is_wayland() {
@@ -453,16 +514,19 @@ pub fn send_type_text(text: &str) -> Result<(), String> {
     block_on_portal(|| type_text_async(text))
 }
 
+/// Returns whether Remote Desktop direct typing can be used right now.
 #[cfg(target_os = "linux")]
 pub fn is_available() -> bool {
     crate::utils::is_wayland() && get_authorized()
 }
 
+/// Returns the cached Remote Desktop authorization state.
 #[cfg(target_os = "linux")]
 pub fn get_authorization() -> bool {
     get_authorized()
 }
 
+/// Requests persistent Remote Desktop keyboard authorization from the portal.
 #[cfg(target_os = "linux")]
 pub fn request_authorization() -> Result<(), String> {
     if !crate::utils::is_wayland() {
@@ -476,11 +540,13 @@ pub fn request_authorization() -> Result<(), String> {
     result
 }
 
+/// Revokes the stored Remote Desktop authorization token everywhere Handy tracks it.
 #[cfg(target_os = "linux")]
 pub fn delete_authorization() {
-    delete_token_everywhere();
+    clear_authorization_state();
 }
 
+/// Initializes cached authorization from persisted settings and validates it.
 #[cfg(target_os = "linux")]
 pub fn init_authorization(app: &AppHandle) {
     if !crate::utils::is_wayland() {

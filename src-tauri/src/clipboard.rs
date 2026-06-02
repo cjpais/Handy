@@ -129,7 +129,7 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
     if preferred_tool != TypingTool::Auto {
         return match preferred_tool {
             TypingTool::RemoteDesktop if is_remote_desktop_supported() => {
-                info!("Using user-specified remote_desktop");
+                info!("Using user-specified Remote Desktop portal");
                 type_text_via_remote_desktop(text)?;
                 Ok(true)
             }
@@ -167,7 +167,7 @@ fn try_direct_typing_linux(text: &str, preferred_tool: TypingTool) -> Result<boo
 
     // Auto mode - existing fallback chain
     if is_wayland() {
-        // Wayland: prefer remote_desktop, then wtype, then dotool, then ydotool
+        // Wayland: prefer the authorized Remote Desktop portal, then existing tools.
         if is_remote_desktop_available() {
             info!("Using Remote Desktop portal for direct text input");
             type_text_via_remote_desktop(text)?;
@@ -314,7 +314,7 @@ fn type_text_via_remote_desktop(text: &str) -> Result<(), String> {
         Ok(()) => Ok(()),
         Err(err) => {
             warn!("Remote Desktop direct input failed: {}", err);
-            Err(format!("remote_desktop failed: {}", err))
+            Err(format!("Remote Desktop portal failed: {}", err))
         }
     }
 }

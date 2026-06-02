@@ -821,10 +821,12 @@ pub fn get_default_settings() -> AppSettings {
     }
 }
 
+/// Returns the persisted Remote Desktop portal token, if one is stored.
 pub fn get_remote_desktop_token(app: &AppHandle) -> Option<String> {
     get_settings(app).remote_desktop_token
 }
 
+/// Persists or clears the Remote Desktop portal token in application settings.
 pub fn set_remote_desktop_token(app: &AppHandle, token: Option<String>) {
     let mut settings = get_settings(app);
     settings.remote_desktop_token = token;
