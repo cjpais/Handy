@@ -45,6 +45,10 @@
         "name": "Whisper Large",
         "description": "Хорошая точность, но медленная."
       },
+      "large-v3-full": {
+        "name": "Whisper Large v3 (полная)",
+        "description": "Лучшая точность, но очень медленная. Без квантизации."
+      },
       "parakeet-tdt-0.6b-v2": {
         "name": "Parakeet V2",
         "description": "Только английский. Лучшая модель для англоговорящих."

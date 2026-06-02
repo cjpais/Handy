@@ -232,6 +232,36 @@ impl ModelManager {
             },
         );
 
+        // Whisper large-v3 full precision (no quantization) — highest accuracy
+        available_models.insert(
+            "large-v3-full".to_string(),
+            ModelInfo {
+                id: "large-v3-full".to_string(),
+                name: "Whisper Large v3 (Full)".to_string(),
+                description: "Best accuracy, but very slow. Full precision, no quantization."
+                    .to_string(),
+                filename: "ggml-large-v3.bin".to_string(),
+                url: Some(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3.bin"
+                        .to_string(),
+                ),
+                sha256: None, // Full-precision model from HuggingFace — verify after download
+                size_mb: 2965,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: false,
+                engine_type: EngineType::Whisper,
+                accuracy_score: 0.95,
+                speed_score: 0.15,
+                supports_translation: true,
+                is_recommended: false,
+                supported_languages: whisper_languages.clone(),
+                supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
         available_models.insert(
             "breeze-asr".to_string(),
             ModelInfo {
