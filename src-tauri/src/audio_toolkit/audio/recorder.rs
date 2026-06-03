@@ -36,6 +36,11 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    // Hands-free speech-frame tap: invoked for every VAD-classified 30ms frame
+    // (independent of the manual recording gate) so a continuous capture loop can
+    // segment utterances. `Some(frame)` is a 30ms speech frame; `None` signals a
+    // silence/noise frame (used to detect the end of an utterance).
+    speech_frame_cb: Option<Arc<dyn Fn(Option<&[f32]>) + Send + Sync + 'static>>,
 }
 
 impl AudioRecorder {
@@ -46,7 +51,19 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            speech_frame_cb: None,
         })
+    }
+
+    /// Attach a hands-free speech-frame callback. It receives `Some(frame)` for each
+    /// VAD-classified 30ms speech frame and `None` for silence/noise frames, even when
+    /// the manual recording gate is off. Used by the continuous hands-free capture loop.
+    pub fn with_speech_frame_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(Option<&[f32]>) + Send + Sync + 'static,
+    {
+        self.speech_frame_cb = Some(Arc::new(cb));
+        self
     }
 
     pub fn with_vad(mut self, vad: Box<dyn VoiceActivityDetector>) -> Self {
@@ -83,6 +100,7 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let speech_cb = self.speech_frame_cb.clone();
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -159,7 +177,15 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     // Keep the stream alive while we process samples.
-                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag);
+                    run_consumer(
+                        sample_rate,
+                        vad,
+                        sample_rx,
+                        cmd_rx,
+                        level_cb,
+                        speech_cb,
+                        stop_flag,
+                    );
                     drop(stream);
                 }
                 Err(error_message) => {
@@ -398,6 +424,7 @@ fn run_consumer(
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    speech_cb: Option<Arc<dyn Fn(Option<&[f32]>) + Send + Sync + 'static>>,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -425,19 +452,41 @@ fn run_consumer(
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
         out_buf: &mut Vec<f32>,
+        speech_cb: &Option<Arc<dyn Fn(Option<&[f32]>) + Send + Sync + 'static>>,
     ) {
-        if !recording {
+        // When neither the manual recording gate is active nor a hands-free tap is
+        // attached, there is nothing to do for this frame.
+        if !recording && speech_cb.is_none() {
             return;
         }
 
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
+                VadFrame::Speech(buf) => {
+                    if recording {
+                        out_buf.extend_from_slice(buf);
+                    }
+                    // Forward each speech frame to the hands-free tap regardless of
+                    // the manual recording gate so the capture loop can segment.
+                    if let Some(cb) = speech_cb {
+                        cb(Some(buf));
+                    }
+                }
+                VadFrame::Noise => {
+                    // Signal silence to the hands-free tap so it can detect the end
+                    // of an utterance.
+                    if let Some(cb) = speech_cb {
+                        cb(None);
+                    }
+                }
             }
         } else {
-            out_buf.extend_from_slice(samples);
+            // No VAD available: only the manual recording path consumes raw samples.
+            // Do NOT forward to the hands-free tap (no segmentation possible).
+            if recording {
+                out_buf.extend_from_slice(samples);
+            }
         }
     }
 
@@ -461,7 +510,7 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            handle_frame(frame, recording, &vad, &mut processed_samples, &speech_cb)
         });
 
         // non-blocking check for a command
@@ -488,7 +537,13 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    handle_frame(
+                                        frame,
+                                        true,
+                                        &vad,
+                                        &mut processed_samples,
+                                        &None,
+                                    )
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -500,7 +555,7 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        handle_frame(frame, true, &vad, &mut processed_samples, &None)
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));

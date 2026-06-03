@@ -386,6 +386,127 @@ pub(crate) async fn process_transcription_output(
     }
 }
 
+/// Strip a leading wake word (and any immediately following punctuation/whitespace)
+/// from `text` if `normalized` (a trimmed, lowercased copy of `text`) starts with the
+/// wake word as a whole word. Returns `Some(remainder)` when the wake word matched,
+/// otherwise `None`. The remainder preserves the original casing of the spoken text.
+pub(crate) fn strip_wake_word(text: &str, wake_word: &str) -> Option<String> {
+    let wake_word = wake_word.trim();
+    if wake_word.is_empty() {
+        return None;
+    }
+    let normalized = text.trim().to_lowercase();
+    let wake_lower = wake_word.to_lowercase();
+
+    if !normalized.starts_with(&wake_lower) {
+        return None;
+    }
+
+    // Ensure the wake word is a whole word: the next char (if any) must not be
+    // alphanumeric. This avoids matching "dude" inside "dudette".
+    let after = &normalized[wake_lower.len()..];
+    if let Some(c) = after.chars().next() {
+        if c.is_alphanumeric() {
+            return None;
+        }
+    }
+
+    // Map the normalized match length back onto the original (trimmed) text. Because
+    // `to_lowercase()` can change byte length for some scripts, we instead re-walk the
+    // original trimmed string counting characters consumed by the wake word + the
+    // trailing separator run.
+    let trimmed = text.trim();
+    let wake_char_len = wake_lower.chars().count();
+    let mut chars = trimmed.char_indices();
+    // Advance past the wake-word characters.
+    for _ in 0..wake_char_len {
+        chars.next();
+    }
+    // Advance past leading punctuation / separators after the wake word.
+    let mut split_byte = trimmed.len();
+    for (idx, c) in chars {
+        if c.is_alphanumeric() {
+            split_byte = idx;
+            break;
+        }
+    }
+    let remainder = trimmed[split_byte..].trim().to_string();
+    Some(remainder)
+}
+
+/// Route a single hands-free utterance: always (optionally) persist it to history,
+/// and paste it at the cursor only when the wake word gate is satisfied.
+///
+/// `transcription` is the raw transcript for one auto-segmented utterance.
+/// `file_name` is the already-saved WAV file name (empty string if none).
+/// `wav_saved` indicates whether the WAV was persisted (history rows reference it).
+pub(crate) async fn route_hands_free_utterance(
+    app: &AppHandle,
+    transcription: String,
+    file_name: String,
+    wav_saved: bool,
+) {
+    let settings = get_settings(app);
+
+    let processed = process_transcription_output(app, &transcription, false).await;
+
+    // Determine whether this utterance is a wake-word command.
+    let command_remainder = strip_wake_word(&processed.final_text, &settings.wake_word);
+    let is_command = command_remainder.is_some();
+
+    // 1) Capture-all sink: persist EVERY utterance to history when enabled.
+    if settings.capture_all_to_history && wav_saved && !file_name.is_empty() {
+        let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+        if let Err(err) = hm.save_entry(
+            file_name.clone(),
+            transcription.clone(),
+            false,
+            processed.post_processed_text.clone(),
+            processed.post_process_prompt.clone(),
+        ) {
+            error!("Hands-free: failed to save history entry: {}", err);
+        } else {
+            debug!(
+                "Hands-free: saved utterance to history (source={})",
+                if is_command { "command" } else { "ambient" }
+            );
+        }
+    }
+
+    // 2) Paste gate. Decide the text to paste (if any).
+    let paste_text: Option<String> = if settings.wake_word_required_for_paste {
+        // Only paste when the wake word matched; paste the stripped remainder.
+        command_remainder.filter(|r| !r.is_empty())
+    } else {
+        // Pure always-on dictation mode: paste every utterance verbatim.
+        let t = processed.final_text.trim().to_string();
+        if t.is_empty() {
+            None
+        } else {
+            Some(t)
+        }
+    };
+
+    let Some(final_text) = paste_text else {
+        debug!("Hands-free: utterance not pasted (no wake-word match or empty)");
+        return;
+    };
+
+    let app_clone = app.clone();
+    let paste_time = Instant::now();
+    if let Err(e) = app.run_on_main_thread(move || {
+        match utils::paste(final_text, app_clone.clone()) {
+            Ok(()) => debug!("Hands-free: text pasted in {:?}", paste_time.elapsed()),
+            Err(e) => {
+                error!("Hands-free: failed to paste: {}", e);
+                let _ = app_clone.emit("paste-error", ());
+            }
+        }
+    }) {
+        error!("Hands-free: failed to run paste on main thread: {:?}", e);
+    }
+}
+
 impl ShortcutAction for TranscribeAction {
     fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
         let start_time = Instant::now();
@@ -693,6 +814,68 @@ impl ShortcutAction for TestAction {
             shortcut_str,
             app.package_info().name
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_wake_word;
+
+    #[test]
+    fn matches_wake_word_and_strips_prefix() {
+        assert_eq!(
+            strip_wake_word("dude hello world", "dude").as_deref(),
+            Some("hello world")
+        );
+    }
+
+    #[test]
+    fn matches_case_insensitively_and_preserves_remainder_case() {
+        assert_eq!(
+            strip_wake_word("Dude Open The Door", "dude").as_deref(),
+            Some("Open The Door")
+        );
+    }
+
+    #[test]
+    fn strips_punctuation_after_wake_word() {
+        assert_eq!(
+            strip_wake_word("dude, send it", "dude").as_deref(),
+            Some("send it")
+        );
+        assert_eq!(
+            strip_wake_word("dude... go", "dude").as_deref(),
+            Some("go")
+        );
+    }
+
+    #[test]
+    fn does_not_match_when_wake_word_is_a_substring() {
+        // "dudette" must not match "dude" (whole-word gate).
+        assert!(strip_wake_word("dudette hello", "dude").is_none());
+    }
+
+    #[test]
+    fn does_not_match_unrelated_utterance() {
+        assert!(strip_wake_word("just testing", "dude").is_none());
+    }
+
+    #[test]
+    fn wake_word_alone_yields_empty_remainder() {
+        assert_eq!(strip_wake_word("dude", "dude").as_deref(), Some(""));
+    }
+
+    #[test]
+    fn leading_whitespace_is_tolerated() {
+        assert_eq!(
+            strip_wake_word("  dude  hi there ", "dude").as_deref(),
+            Some("hi there")
+        );
+    }
+
+    #[test]
+    fn empty_wake_word_never_matches() {
+        assert!(strip_wake_word("anything", "").is_none());
     }
 }
 
