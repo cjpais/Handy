@@ -61,7 +61,7 @@ fn paste_via_clipboard(
         }
     }
 
-    std::thread::sleep(std::time::Duration::from_millis(50));
+    std::thread::sleep(std::time::Duration::from_millis(paste_delay_ms));
 
     // Restore original clipboard content
     // On Wayland, prefer wl-copy for better compatibility
