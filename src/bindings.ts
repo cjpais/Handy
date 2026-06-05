@@ -447,6 +447,17 @@ async showMainWindowCommand() : Promise<Result<null, string>> {
 async cancelOperation() : Promise<void> {
     await TAURI_INVOKE("cancel_operation");
 },
+/**
+ * Test a post-processing API key by attempting to fetch models
+ */
+async testPostProcessApiKey(providerId: string, apiKey: string) : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("test_post_process_api_key", { providerId, apiKey }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async isPortable() : Promise<boolean> {
     return await TAURI_INVOKE("is_portable");
 },
@@ -748,6 +759,14 @@ async getModelLoadStatus() : Promise<Result<ModelLoadStatus, string>> {
 async unloadModelManually() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("unload_model_manually") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async processLocalFile(path: string, action: string) : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("process_local_file", { path, action }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

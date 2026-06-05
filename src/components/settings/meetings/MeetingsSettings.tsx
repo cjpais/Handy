@@ -8,9 +8,11 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  Upload,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { open } from "@tauri-apps/plugin-dialog";
 import {
   commands,
   events,
@@ -20,6 +22,7 @@ import {
 import { useOsType } from "@/hooks/useOsType";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
+import { LocalFileTranscriber } from "../../LocalFileTranscriber";
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -47,6 +50,27 @@ export const MeetingsSettings: React.FC = () => {
   const osType = useOsType();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [transcriberFiles, setTranscriberFiles] = useState<string[]>([]);
+
+  const handleUploadClick = async () => {
+    try {
+      const selected = await open({
+        multiple: true,
+        filters: [
+          {
+            name: "Audio",
+            extensions: ["wav", "mp3", "m4a", "flac", "ogg"],
+          },
+        ],
+      });
+      if (selected) {
+        const newFiles = Array.isArray(selected) ? selected : [selected];
+        setTranscriberFiles(newFiles);
+      }
+    } catch (error) {
+      console.error("Failed to open file dialog:", error);
+    }
+  };
 
   const loadMeetings = useCallback(async () => {
     setLoading(true);
@@ -84,6 +108,8 @@ export const MeetingsSettings: React.FC = () => {
             prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
           );
         }
+      } else if (payload.action === "deleted") {
+        setEntries((prev) => prev.filter((e) => e.id !== payload.id));
       }
     });
 
@@ -162,11 +188,28 @@ export const MeetingsSettings: React.FC = () => {
           <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
             {t("settings.meetings.title")}
           </h2>
+          <button
+            onClick={handleUploadClick}
+            className="flex items-center gap-1.5 text-xs font-medium text-logo-primary hover:text-logo-primary/80 transition-colors bg-logo-primary/10 px-2 py-1 rounded-md"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Upload Audio
+          </button>
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           {content}
         </div>
       </div>
+      
+      {transcriberFiles.length > 0 && (
+        <LocalFileTranscriber
+          initialFiles={transcriberFiles}
+          onClose={() => setTranscriberFiles([])}
+          onSuccess={() => {
+            loadMeetings();
+          }}
+        />
+      )}
     </div>
   );
 };

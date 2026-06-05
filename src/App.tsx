@@ -14,6 +14,7 @@ import AccessibilityPermissions from "./components/AccessibilityPermissions";
 import Footer from "./components/footer";
 import Onboarding, { AccessibilityOnboarding } from "./components/onboarding";
 import { Sidebar, SidebarSection, SECTIONS_CONFIG } from "./components/Sidebar";
+import { LocalFileTranscriber } from "./components/LocalFileTranscriber";
 import { useSettings } from "./hooks/useSettings";
 import { useSettingsStore } from "./stores/settingsStore";
 import { commands } from "@/bindings";
@@ -38,6 +39,7 @@ function App() {
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
   const [recordingMode, setRecordingMode] = useState<"meeting" | "transcribe" | "idle">("idle");
+  const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -186,6 +188,34 @@ function App() {
     };
   }, []);
 
+  // Listen for file drop events
+  useEffect(() => {
+    const unlisten = listen<{ paths: string[] }>(
+      "tauri://file-drop",
+      (event) => {
+        if (event.payload.paths && event.payload.paths.length > 0) {
+          // Filter for common audio extensions if needed, but we can also just pass them
+          const audioFiles = event.payload.paths.filter((p) => 
+            p.match(/\.(wav|mp3|m4a|flac|ogg)$/i)
+          );
+          if (audioFiles.length > 0) {
+            setDroppedFiles((prev) => {
+              const newFiles = audioFiles.filter((f) => !prev.includes(f));
+              return [...prev, ...newFiles];
+            });
+          } else {
+            toast.error("Unsupported file format", {
+              description: "Please drop WAV, MP3, M4A, FLAC, or OGG audio files.",
+            });
+          }
+        }
+      },
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
   const revealMainWindowForPermissions = async () => {
     try {
       await commands.showMainWindowCommand();
@@ -314,6 +344,19 @@ function App() {
           <Mic className="w-4 h-4" />
           {t("settings.meetings.activeIndicator") || "Meeting Recording..."}
         </div>
+      )}
+      {droppedFiles.length > 0 && (
+        <LocalFileTranscriber
+          initialFiles={droppedFiles}
+          onClose={() => setDroppedFiles([])}
+          onSuccess={(action) => {
+            if (action === "meeting") {
+              setCurrentSection("meetings");
+            } else {
+              setCurrentSection("history");
+            }
+          }}
+        />
       )}
       {/* Fixed footer at bottom */}
       <Footer />
