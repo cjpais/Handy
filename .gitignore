@@ -42,3 +42,7 @@ blob-report/
 
 # Nix build output
 result
+
+# Large model archives
+malayalam-indicconformer-ctc.tar.gz
+malayalam-indicconformer-ctc/

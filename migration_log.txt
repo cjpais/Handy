@@ -1,0 +1,21 @@
+# MASR Migration Progress Log
+
+## 2026-06-05: Phase 1 - Model Staging & Rust Backend Implementation
+- Staged Malayalam IndicConformer model files, packaged into `malayalam-indicconformer-ctc.tar.gz` in MASR root.
+- SHA256: `976753F720CC2CCB68155F150B74ED0BA200F364D0346590A2D9A01868611C4D`
+- Added `ort` and `ndarray` dependencies in `src-tauri/Cargo.toml` for Windows targets.
+- Created `src-tauri/src/malayalam_asr.rs` with native Rust Mel-spectrogram extraction + CTC decoding logic.
+- Declared `malayalam_asr` in `src-tauri/src/lib.rs`.
+- Added `EngineType::MalayalamIndicConformerCTC` and model info entry to `src-tauri/src/managers/model.rs`.
+- Added `LoadedEngine` variant and loading/transcription wiring to `src-tauri/src/managers/transcription.rs`.
+
+## 2026-06-05: Phase 2 - Frontend UI Streamlining
+- Added i18n translation key to `src/i18n/locales/en/translation.json`.
+- Streamlined `Onboarding.tsx` and `ModelsSettings.tsx` to filter model lists, prioritizing Malayalam.
+- Updated `AccelerationSelector.tsx` to conditionally hide Whisper accelerator dropdown when the active model is not Whisper.
+
+## 2026-06-05: Phase 3 - Verification & Cleanup
+- Ran `npm install --ignore-scripts` to bypass `bun` dependency.
+- Successfully verified the frontend TypeScript/Vite build.
+- Updated `.gitignore` to omit the model tarball and extracted model directory.
+- Staged all migration files for git commit.

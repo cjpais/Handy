@@ -27,6 +27,7 @@ pub enum EngineType {
     GigaAM,
     Canary,
     Cohere,
+    MalayalamIndicConformerCTC,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -318,7 +319,7 @@ impl ModelManager {
                 accuracy_score: 0.80,
                 speed_score: 0.85,
                 supports_translation: false,
-                is_recommended: true,
+                is_recommended: false,
                 supported_languages: parakeet_v3_languages,
                 supports_language_selection: false,
                 is_custom: false,
@@ -606,6 +607,34 @@ impl ModelManager {
                 is_recommended: false,
                 supported_languages: cohere_languages,
                 supports_language_selection: true,
+                is_custom: false,
+            },
+        );
+
+        const MALAYALAM_MODEL_URL: Option<&str> = None;
+        available_models.insert(
+            "malayalam-indicconformer-ctc".to_string(),
+            ModelInfo {
+                id: "malayalam-indicconformer-ctc".to_string(),
+                name: "Malayalam IndicConformer CTC".to_string(),
+                description: "Malayalam speech recognition. High accuracy.".to_string(),
+                filename: "malayalam-indicconformer-ctc".to_string(),
+                url: MALAYALAM_MODEL_URL.map(String::from),
+                sha256: Some(
+                    "976753F720CC2CCB68155F150B74ED0BA200F364D0346590A2D9A01868611C4D".to_string(),
+                ),
+                size_mb: 859,
+                is_downloaded: false,
+                is_downloading: false,
+                partial_size: 0,
+                is_directory: true,
+                engine_type: EngineType::MalayalamIndicConformerCTC,
+                accuracy_score: 0.85,
+                speed_score: 0.60,
+                supports_translation: false,
+                is_recommended: true,
+                supported_languages: vec!["ml".to_string()],
+                supports_language_selection: false,
                 is_custom: false,
             },
         );

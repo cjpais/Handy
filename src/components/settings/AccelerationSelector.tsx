@@ -8,6 +8,7 @@ import type {
   WhisperAcceleratorSetting,
   OrtAcceleratorSetting,
 } from "@/bindings";
+import { useModelStore } from "@/stores/modelStore";
 
 const ORT_LABELS: Record<OrtAcceleratorSetting, string> = {
   auto: "Auto",
@@ -56,6 +57,7 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
 }) => {
   const { t } = useTranslation();
   const { getSetting, updateSetting, isUpdating } = useSettings();
+  const { models, currentModel } = useModelStore();
 
   const [whisperOptions, setWhisperOptions] = useState<DropdownOption[]>([]);
   const [ortOptions, setOrtOptions] = useState<DropdownOption[]>([]);
@@ -105,6 +107,9 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   );
   const currentOrt = getSetting("ort_accelerator") ?? "auto";
 
+  const activeModelInfo = models.find((m) => m.id === currentModel);
+  const showWhisperAcceleration = activeModelInfo ? activeModelInfo.engine_type === "Whisper" : true;
+
   const handleWhisperChange = async (value: string) => {
     const { accelerator, gpuDevice } = decodeWhisperValue(value);
     await updateSetting("whisper_accelerator", accelerator);
@@ -113,23 +118,25 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
 
   return (
     <>
-      <SettingContainer
-        title={t("settings.advanced.acceleration.whisper.title")}
-        description={t("settings.advanced.acceleration.whisper.description")}
-        descriptionMode={descriptionMode}
-        grouped={grouped}
-        layout="horizontal"
-      >
-        <Dropdown
-          options={whisperOptions}
-          selectedValue={currentWhisper}
-          onSelect={handleWhisperChange}
-          disabled={
-            isUpdating("whisper_accelerator") ||
-            isUpdating("whisper_gpu_device")
-          }
-        />
-      </SettingContainer>
+      {showWhisperAcceleration && (
+        <SettingContainer
+          title={t("settings.advanced.acceleration.whisper.title")}
+          description={t("settings.advanced.acceleration.whisper.description")}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
+          layout="horizontal"
+        >
+          <Dropdown
+            options={whisperOptions}
+            selectedValue={currentWhisper}
+            onSelect={handleWhisperChange}
+            disabled={
+              isUpdating("whisper_accelerator") ||
+              isUpdating("whisper_gpu_device")
+            }
+          />
+        </SettingContainer>
+      )}
       {ortOptions.length > 2 && (
         <SettingContainer
           title={t("settings.advanced.acceleration.ort.title")}

@@ -27,6 +27,10 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
   const isDownloading = selectedModelId !== null;
 
+  const visibleModels = models.filter(
+    (m: ModelInfo) => m.supported_languages.includes("ml") || m.is_recommended
+  );
+
   // Watch for the selected model to finish downloading + verifying + extracting
   useEffect(() => {
     if (!selectedModelId) return;
@@ -99,7 +103,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
       <div className="max-w-[600px] w-full mx-auto text-center flex-1 flex flex-col min-h-0">
         <div className="flex flex-col gap-4 pb-6">
-          {models
+          {visibleModels
             .filter((m: ModelInfo) => !m.is_downloaded)
             .filter((model: ModelInfo) => model.is_recommended)
             .map((model: ModelInfo) => (
@@ -116,7 +120,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
               />
             ))}
 
-          {models
+          {visibleModels
             .filter((m: ModelInfo) => !m.is_downloaded)
             .filter((model: ModelInfo) => !model.is_recommended)
             .sort(

@@ -97,6 +97,8 @@ windows = { version = "0.61.3", features = [
   "Win32_UI_WindowsAndMessaging",
 ] }
 winreg = "0.55"
+ort = { version = "2.0.0-rc.9", features = ["directml", "ndarray"] }
+ndarray = "0.17"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

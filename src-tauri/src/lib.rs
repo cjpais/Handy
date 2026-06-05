@@ -20,6 +20,9 @@ mod tray;
 mod tray_i18n;
 mod utils;
 
+#[cfg(windows)]
+mod malayalam_asr;
+
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
 use specta_typescript::{BigIntExportBehavior, Typescript};

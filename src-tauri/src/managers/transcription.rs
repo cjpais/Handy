@@ -1,6 +1,8 @@
 use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
+#[cfg(windows)]
+use crate::malayalam_asr::MalayalamAsr;
 use crate::settings::{
     get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
 };
@@ -45,6 +47,8 @@ enum LoadedEngine {
     GigaAM(GigaAMModel),
     Canary(CanaryModel),
     Cohere(CohereModel),
+    #[cfg(windows)]
+    MalayalamIndicConformerCTC(MalayalamAsr),
 }
 
 /// RAII guard that clears the `is_loading` flag and notifies waiters on drop.
@@ -377,6 +381,21 @@ impl TranscriptionManager {
                 })?;
                 LoadedEngine::Cohere(engine)
             }
+            EngineType::MalayalamIndicConformerCTC => {
+                #[cfg(windows)]
+                {
+                    let engine = MalayalamAsr::load(&model_path).map_err(|e| {
+                        let error_msg = format!("Failed to load Malayalam ASR model {}: {}", model_id, e);
+                        emit_loading_failed(&error_msg);
+                        anyhow::anyhow!(error_msg)
+                    })?;
+                    LoadedEngine::MalayalamIndicConformerCTC(engine)
+                }
+                #[cfg(not(windows))]
+                {
+                    return Err(anyhow::anyhow!("Malayalam ASR is only supported on Windows"));
+                }
+            }
         };
 
         // Update the current engine and model ID
@@ -628,6 +647,15 @@ impl TranscriptionManager {
                             cohere_engine
                                 .transcribe(&audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
+                        }
+                        #[cfg(windows)]
+                        LoadedEngine::MalayalamIndicConformerCTC(asr) => {
+                            asr.transcribe(&audio)
+                                .map(|text| transcribe_rs::TranscriptionResult {
+                                    text,
+                                    segments: Some(Vec::new()),
+                                })
+                                .map_err(|e| anyhow::anyhow!("Malayalam ASR transcription failed: {}", e))
                         }
                     }
                 },
