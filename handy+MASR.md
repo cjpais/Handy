@@ -16,7 +16,7 @@ no Python sidecar is used.
 - [x] Resampled test WAV file `audio_16k.wav` for compatibility with Rust `hound`.
 - [x] Verified all 66 backend unit and integration tests successfully pass.
 - [x] Run `npm install --ignore-scripts` and verify the TypeScript/Vite frontend builds successfully.
-- [ ] Build the production package (`npm run tauri build`).
+- [x] Build the production package (`npm run tauri build`).
 
 ## Critical Environment Context (For New Chat)
 

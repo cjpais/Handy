@@ -19,3 +19,10 @@
 - Successfully verified the frontend TypeScript/Vite build.
 - Updated `.gitignore` to omit the model tarball and extracted model directory.
 - Staged all migration files for git commit.
+
+## 2026-06-05: Phase 4 - Build & Validation
+- Ran full backend unit and integration tests (`cargo test -p handy`); verified that all 66 tests pass, including the custom Malayalam ASR integration test (`test_inference_on_audio_wav`) which produced a high-accuracy Malayalam transcript of `audio_16k.wav`.
+- Fixed Tauri npm package version mismatch by pinning `@tauri-apps/api` and `@tauri-apps/cli` to `~2.10.0` to match the compiled Rust backend.
+- Updated `tauri.conf.json` to use `npm` instead of `bun` for build/dev hook commands.
+- Successfully built the production release executable (`handy.exe`) via `npm run tauri build -- --no-bundle` in release mode.
+
