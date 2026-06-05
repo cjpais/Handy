@@ -102,50 +102,71 @@ impl AudioRecorder {
                     config.sample_format()
                 );
 
-                let stream = match config.sample_format() {
+                // Pre-clone for I16 fallback — both are cheap (ref-count bumps).
+                // Some devices (e.g. Bluetooth HFP on macOS) report one format
+                // in default_input_config() but only accept I16 when the stream
+                // is actually opened. We retry with I16 before giving up.
+                let sample_tx_i16 = sample_tx.clone();
+                let stop_i16 = stop_flag_for_stream.clone();
+
+                let stream_result = match config.sample_format() {
                     cpal::SampleFormat::U8 => AudioRecorder::build_stream::<u8>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::I8 => AudioRecorder::build_stream::<i8>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::I16 => AudioRecorder::build_stream::<i16>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::I32 => AudioRecorder::build_stream::<i32>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     cpal::SampleFormat::F32 => AudioRecorder::build_stream::<f32>(
                         &thread_device,
                         &config,
                         sample_tx,
                         channels,
                         stop_flag_for_stream,
-                    )
-                    .map_err(|e| format!("Failed to build input stream: {e}"))?,
+                    ),
                     sample_format => {
                         return Err(format!("Unsupported sample format: {sample_format:?}"));
                     }
+                };
+
+                let stream = match stream_result {
+                    Ok(s) => s,
+                    Err(e) if config.sample_format() != cpal::SampleFormat::I16 => {
+                        log::warn!(
+                            "Failed with {:?} format, retrying with I16: {e}",
+                            config.sample_format()
+                        );
+                        AudioRecorder::build_stream::<i16>(
+                            &thread_device,
+                            &config,
+                            sample_tx_i16,
+                            channels,
+                            stop_i16,
+                        )
+                        .map_err(|e| format!("Failed to build input stream: {e}"))?
+                    }
+                    Err(e) => return Err(format!("Failed to build input stream: {e}")),
                 };
 
                 stream
@@ -282,56 +303,16 @@ impl AudioRecorder {
     fn get_preferred_config(
         device: &cpal::Device,
     ) -> Result<cpal::SupportedStreamConfig, Box<dyn std::error::Error>> {
-        // Use the device's native/default sample rate and let the FrameResampler
-        // in run_consumer() downsample to 16kHz. This avoids forcing hardware into
-        // a non-native rate which can cause issues on some devices (Bluetooth
-        // codecs, certain ALSA drivers, etc.).
-        let default_config = device.default_input_config()?;
-        let target_rate = default_config.sample_rate();
-
-        // Try to find the best sample format at the device's default rate
-        let supported_configs = match device.supported_input_configs() {
-            Ok(configs) => configs,
-            Err(e) => {
-                log::warn!("Could not enumerate input configs ({e}), using device default");
-                return Ok(default_config);
-            }
-        };
-        let mut best_config: Option<cpal::SupportedStreamConfigRange> = None;
-
-        for config_range in supported_configs {
-            if config_range.min_sample_rate() <= target_rate
-                && config_range.max_sample_rate() >= target_rate
-            {
-                match best_config {
-                    None => best_config = Some(config_range),
-                    Some(ref current) => {
-                        // Prioritize F32 > I16 > I32 > others
-                        let score = |fmt: cpal::SampleFormat| match fmt {
-                            cpal::SampleFormat::F32 => 4,
-                            cpal::SampleFormat::I16 => 3,
-                            cpal::SampleFormat::I32 => 2,
-                            _ => 1,
-                        };
-
-                        if score(config_range.sample_format()) > score(current.sample_format()) {
-                            best_config = Some(config_range);
-                        }
-                    }
-                }
-            }
-        }
-
-        if let Some(config) = best_config {
-            return Ok(config.with_sample_rate(target_rate));
-        }
-
-        // Fall back to device default if no config matched (exotic/virtual devices)
-        log::warn!(
-            "No supported config matched device default rate {:?}, using default config",
-            target_rate
-        );
-        Ok(default_config)
+        // Always use the device's default config. This returns the OS mixer's
+        // shared-mode native format (sample rate, channels, and sample format),
+        // which is the only format that CoreAudio and WASAPI will accept when
+        // opening a stream in shared mode. Trying to override the sample format
+        // (e.g. preferring F32 over I16) causes "stream configuration not
+        // supported" errors on macOS and Windows even when enumeration claims
+        // the format is available — those formats are exclusive-mode only.
+        // The FrameResampler in run_consumer() handles any necessary downsampling
+        // to the 16 kHz rate required by Whisper/Parakeet.
+        Ok(device.default_input_config()?)
     }
 }
 
