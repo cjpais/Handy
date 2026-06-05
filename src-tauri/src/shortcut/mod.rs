@@ -394,11 +394,6 @@ fn register_all_shortcuts_for_implementation(
             continue;
         }
 
-        // Skip post-processing shortcut when the feature is disabled
-        if id == "transcribe_with_post_process" && !current_settings.post_process_enabled {
-            continue;
-        }
-
         let mut binding = current_settings
             .bindings
             .get(id)
@@ -797,20 +792,25 @@ pub fn change_auto_submit_key_setting(app: AppHandle, key: String) -> Result<(),
 pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.post_process_enabled = enabled;
+    settings::write_settings(&app, settings);
+
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_manglish_output_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.manglish_output = enabled;
     settings::write_settings(&app, settings.clone());
 
-    // Register or unregister the post-processing shortcut
-    if let Some(binding) = settings
-        .bindings
-        .get("transcribe_with_post_process")
-        .cloned()
-    {
-        if enabled {
-            let _ = register_shortcut(&app, binding);
-        } else {
-            let _ = unregister_shortcut(&app, binding);
-        }
-    }
+    let _ = app.emit(
+        "settings-changed",
+        serde_json::json!({
+            "setting": "manglish_output",
+            "value": enabled
+        }),
+    );
 
     Ok(())
 }
@@ -1018,13 +1018,47 @@ pub async fn fetch_post_process_models(
 
     // Skip fetching if no API key for providers that typically need one
     if api_key.trim().is_empty() && provider.id != "custom" {
+        if provider_id == "google" {
+            return Ok(vec![
+                "gemma-4-26b-a4b-it".to_string(),
+                "gemini-1.5-flash".to_string(),
+                "gemini-1.5-pro".to_string(),
+            ]);
+        }
         return Err(format!(
             "API key is required for {}. Please add an API key to list available models.",
             provider.label
         ));
     }
 
-    crate::llm_client::fetch_models(provider, api_key).await
+    match crate::llm_client::fetch_models(provider, api_key).await {
+        Ok(models) => {
+            if provider_id == "google" {
+                let mut list = models;
+                if !list.contains(&"gemma-4-26b-a4b-it".to_string()) {
+                    list.insert(0, "gemma-4-26b-a4b-it".to_string());
+                }
+                Ok(list)
+            } else {
+                Ok(models)
+            }
+        }
+        Err(e) => {
+            if provider_id == "google" {
+                log::warn!(
+                    "Failed to fetch Google models, using pre-populated list: {}",
+                    e
+                );
+                Ok(vec![
+                    "gemma-4-26b-a4b-it".to_string(),
+                    "gemini-1.5-flash".to_string(),
+                    "gemini-1.5-pro".to_string(),
+                ])
+            } else {
+                Err(e)
+            }
+        }
+    }
 }
 
 #[tauri::command]

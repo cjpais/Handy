@@ -107,6 +107,7 @@ const WHISPER_SAMPLE_RATE: usize = 16000;
 pub enum RecordingState {
     Idle,
     Recording { binding_id: String },
+    MeetingRecording,
 }
 
 #[derive(Clone, Debug)]
@@ -401,9 +402,13 @@ impl AudioRecordingManager {
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
                 if rec.start().is_ok() {
                     *self.is_recording.lock().unwrap() = true;
-                    *state = RecordingState::Recording {
-                        binding_id: binding_id.to_string(),
-                    };
+                    if binding_id == "meeting" {
+                        *state = RecordingState::MeetingRecording;
+                    } else {
+                        *state = RecordingState::Recording {
+                            binding_id: binding_id.to_string(),
+                        };
+                    }
                     debug!("Recording started for binding {binding_id}");
                     return Ok(());
                 }
@@ -427,65 +432,71 @@ impl AudioRecordingManager {
     pub fn stop_recording(&self, binding_id: &str) -> Option<Vec<f32>> {
         let mut state = self.state.lock().unwrap();
 
-        match *state {
+        let should_stop = match *state {
             RecordingState::Recording {
                 binding_id: ref active,
-            } if active == binding_id => {
-                *state = RecordingState::Idle;
-                drop(state);
+            } if active == binding_id => true,
+            RecordingState::MeetingRecording if binding_id == "meeting" => true,
+            _ => false,
+        };
 
-                // Optionally keep recording for a bit longer to capture trailing audio
-                let settings = get_settings(&self.app_handle);
-                if settings.extra_recording_buffer_ms > 0 {
-                    debug!(
-                        "Extra recording buffer: sleeping {}ms before stopping",
-                        settings.extra_recording_buffer_ms
-                    );
-                    std::thread::sleep(Duration::from_millis(settings.extra_recording_buffer_ms));
-                }
+        if should_stop {
+            *state = RecordingState::Idle;
+            drop(state);
 
-                let samples = if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
-                    match rec.stop() {
-                        Ok(buf) => buf,
-                        Err(e) => {
-                            error!("stop() failed: {e}");
-                            Vec::new()
-                        }
-                    }
-                } else {
-                    error!("Recorder not available");
-                    Vec::new()
-                };
+            // Optionally keep recording for a bit longer to capture trailing audio
+            let settings = get_settings(&self.app_handle);
+            if settings.extra_recording_buffer_ms > 0 {
+                debug!(
+                    "Extra recording buffer: sleeping {}ms before stopping",
+                    settings.extra_recording_buffer_ms
+                );
+                std::thread::sleep(Duration::from_millis(settings.extra_recording_buffer_ms));
+            }
 
-                *self.is_recording.lock().unwrap() = false;
-
-                // In on-demand mode, close the mic (lazily if the setting is enabled)
-                if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
-                    if get_settings(&self.app_handle).lazy_stream_close {
-                        self.schedule_lazy_close();
-                    } else {
-                        self.stop_microphone_stream();
+            let samples = if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
+                match rec.stop() {
+                    Ok(buf) => buf,
+                    Err(e) => {
+                        error!("stop() failed: {e}");
+                        Vec::new()
                     }
                 }
+            } else {
+                error!("Recorder not available");
+                Vec::new()
+            };
 
-                // Pad if very short
-                let s_len = samples.len();
-                // debug!("Got {} samples", s_len);
-                if s_len < WHISPER_SAMPLE_RATE && s_len > 0 {
-                    let mut padded = samples;
-                    padded.resize(WHISPER_SAMPLE_RATE * 5 / 4, 0.0);
-                    Some(padded)
+            *self.is_recording.lock().unwrap() = false;
+
+            // In on-demand mode, close the mic (lazily if the setting is enabled)
+            if matches!(*self.mode.lock().unwrap(), MicrophoneMode::OnDemand) {
+                if get_settings(&self.app_handle).lazy_stream_close {
+                    self.schedule_lazy_close();
                 } else {
-                    Some(samples)
+                    self.stop_microphone_stream();
                 }
             }
-            _ => None,
+
+            // Pad if very short
+            let s_len = samples.len();
+            // debug!("Got {} samples", s_len);
+            if s_len < WHISPER_SAMPLE_RATE && s_len > 0 {
+                let mut padded = samples;
+                padded.resize(WHISPER_SAMPLE_RATE * 5 / 4, 0.0);
+                Some(padded)
+            } else {
+                Some(samples)
+            }
+        } else {
+            None
         }
     }
+
     pub fn is_recording(&self) -> bool {
         matches!(
             *self.state.lock().unwrap(),
-            RecordingState::Recording { .. }
+            RecordingState::Recording { .. } | RecordingState::MeetingRecording
         )
     }
 
@@ -493,7 +504,10 @@ impl AudioRecordingManager {
     pub fn cancel_recording(&self) {
         let mut state = self.state.lock().unwrap();
 
-        if let RecordingState::Recording { .. } = *state {
+        if matches!(
+            *state,
+            RecordingState::Recording { .. } | RecordingState::MeetingRecording
+        ) {
             *state = RecordingState::Idle;
             drop(state);
 

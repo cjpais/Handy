@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
+import { Mic } from "lucide-react";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
@@ -36,6 +37,7 @@ function App() {
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
+  const [recordingMode, setRecordingMode] = useState<"meeting" | "transcribe" | "idle">("idle");
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
   const refreshAudioDevices = useSettingsStore(
@@ -156,6 +158,33 @@ function App() {
       unlisten.then((fn) => fn());
     };
   }, [t]);
+
+  // Listen for meeting-summary events to navigate to the Meetings tab
+  useEffect(() => {
+    const unlisten = listen<{ summary: string; transcript: string }>(
+      "meeting-summary",
+      (event) => {
+        toast.success(t("settings.meetings.toastSuccess"));
+        setCurrentSection("meetings");
+      },
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
+  // Listen for recording state changes to display meeting recording indicator
+  useEffect(() => {
+    const unlisten = listen<{ mode: "meeting" | "transcribe" | "idle" }>(
+      "recording-state-changed",
+      (event) => {
+        setRecordingMode(event.payload.mode);
+      },
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   const revealMainWindowForPermissions = async () => {
     try {
@@ -280,6 +309,12 @@ function App() {
           </div>
         </div>
       </div>
+      {recordingMode === "meeting" && (
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-600/90 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-pulse z-50">
+          <Mic className="w-4 h-4" />
+          {t("settings.meetings.activeIndicator") || "Meeting Recording..."}
+        </div>
+      )}
       {/* Fixed footer at bottom */}
       <Footer />
     </div>

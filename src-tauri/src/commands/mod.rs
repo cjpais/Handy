@@ -185,3 +185,29 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }
+
+/// Test a post-processing API key by attempting to fetch models
+#[specta::specta]
+#[tauri::command]
+pub async fn test_post_process_api_key(
+    app: AppHandle,
+    provider_id: String,
+    api_key: String,
+) -> Result<bool, String> {
+    let settings = get_settings(&app);
+    let provider = settings
+        .post_process_providers
+        .iter()
+        .find(|p| p.id == provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+
+    // Apple Intelligence is always valid (local, no API key)
+    if provider_id == "apple_intelligence" {
+        return Ok(true);
+    }
+
+    match crate::llm_client::fetch_models(provider, api_key).await {
+        Ok(_) => Ok(true),
+        Err(e) => Err(e),
+    }
+}

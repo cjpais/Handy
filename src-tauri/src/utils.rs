@@ -4,7 +4,7 @@ use crate::shortcut;
 use crate::TranscriptionCoordinator;
 use log::info;
 use std::sync::Arc;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 // Re-export all utility modules for easy access
 // pub use crate::audio_feedback::*;
@@ -28,6 +28,11 @@ pub fn cancel_current_operation(app: &AppHandle) {
     // Update tray icon and hide overlay
     change_tray_icon(app, crate::tray::TrayIconState::Idle);
     hide_recording_overlay(app);
+
+    let _ = app.emit(
+        "recording-state-changed",
+        serde_json::json!({ "mode": "idle" }),
+    );
 
     // Unload model if immediate unload is enabled
     let tm = app.state::<Arc<TranscriptionManager>>();

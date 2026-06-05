@@ -32,6 +32,12 @@ struct RecordingErrorEvent {
 struct FinishGuard(AppHandle);
 impl Drop for FinishGuard {
     fn drop(&mut self) {
+        let _ = self.0.emit(
+            "recording-state-changed",
+            RecordingStatePayload {
+                mode: "idle".to_string(),
+            },
+        );
         if let Some(c) = self.0.try_state::<TranscriptionCoordinator>() {
             c.notify_processing_finished();
         }
@@ -45,9 +51,7 @@ pub trait ShortcutAction: Send + Sync {
 }
 
 // Transcribe Action
-struct TranscribeAction {
-    post_process: bool,
-}
+struct TranscribeAction;
 
 /// Field name for structured output JSON schema
 const TRANSCRIPTION_FIELD: &str = "transcription";
@@ -55,6 +59,17 @@ const TRANSCRIPTION_FIELD: &str = "transcription";
 /// Strip invisible Unicode characters that some LLMs may insert
 fn strip_invisible_chars(s: &str) -> String {
     s.replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
+}
+
+#[derive(Clone, serde::Serialize)]
+struct MeetingSummaryPayload {
+    summary: String,
+    transcript: String,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct RecordingStatePayload {
+    mode: String, // "transcribe" | "meeting" | "idle"
 }
 
 /// Build a system prompt from the user's prompt template.
@@ -296,6 +311,164 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 }
 
+async fn run_specific_llm_prompt(
+    settings: &AppSettings,
+    prompt_id: &str,
+    text: &str,
+) -> Option<String> {
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => {
+            debug!("run_specific_llm_prompt: no provider is selected");
+            return None;
+        }
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        debug!(
+            "run_specific_llm_prompt: provider '{}' has no model configured",
+            provider.id
+        );
+        return None;
+    }
+
+    let prompt = match settings
+        .post_process_prompts
+        .iter()
+        .find(|prompt| prompt.id == prompt_id)
+    {
+        Some(prompt) => prompt.prompt.clone(),
+        None => {
+            debug!(
+                "run_specific_llm_prompt: prompt '{}' was not found",
+                prompt_id
+            );
+            return None;
+        }
+    };
+
+    if prompt.trim().is_empty() {
+        debug!("run_specific_llm_prompt: the prompt is empty");
+        return None;
+    }
+
+    debug!(
+        "Running specific LLM prompt '{}' with provider '{}' (model: {})",
+        prompt_id, provider.id, model
+    );
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    let (reasoning_effort, reasoning) = match provider.id.as_str() {
+        "custom" => (Some("none".to_string()), None),
+        "openrouter" => (
+            None,
+            Some(crate::llm_client::ReasoningConfig {
+                effort: Some("none".to_string()),
+                exclude: Some(true),
+            }),
+        ),
+        _ => (None, None),
+    };
+
+    if provider.supports_structured_output {
+        let system_prompt = build_system_prompt(&prompt);
+        let user_content = text.to_string();
+
+        if provider.id == APPLE_INTELLIGENCE_PROVIDER_ID {
+            #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+            {
+                if !apple_intelligence::check_apple_intelligence_availability() {
+                    return None;
+                }
+                let token_limit = model.trim().parse::<i32>().unwrap_or(0);
+                return match apple_intelligence::process_text_with_system_prompt(
+                    &system_prompt,
+                    &user_content,
+                    token_limit,
+                ) {
+                    Ok(result) => {
+                        if result.trim().is_empty() {
+                            None
+                        } else {
+                            Some(strip_invisible_chars(&result))
+                        }
+                    }
+                    Err(_) => None,
+                };
+            }
+            #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+            return None;
+        }
+
+        let json_schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                (TRANSCRIPTION_FIELD): {
+                    "type": "string",
+                    "description": "The cleaned and processed transcription text"
+                }
+            },
+            "required": [TRANSCRIPTION_FIELD],
+            "additionalProperties": false
+        });
+
+        match crate::llm_client::send_chat_completion_with_schema(
+            &provider,
+            api_key.clone(),
+            &model,
+            user_content,
+            Some(system_prompt),
+            Some(json_schema),
+            reasoning_effort.clone(),
+            reasoning.clone(),
+        )
+        .await
+        {
+            Ok(Some(content)) => match serde_json::from_str::<serde_json::Value>(&content) {
+                Ok(json) => {
+                    if let Some(transcription_value) =
+                        json.get(TRANSCRIPTION_FIELD).and_then(|t| t.as_str())
+                    {
+                        return Some(strip_invisible_chars(transcription_value));
+                    } else {
+                        return Some(strip_invisible_chars(&content));
+                    }
+                }
+                Err(_) => {
+                    return Some(strip_invisible_chars(&content));
+                }
+            },
+            _ => {}
+        }
+    }
+
+    let processed_prompt = prompt.replace("${output}", text);
+    match crate::llm_client::send_chat_completion(
+        &provider,
+        api_key,
+        &model,
+        processed_prompt,
+        reasoning_effort,
+        reasoning,
+    )
+    .await
+    {
+        Ok(Some(content)) => Some(strip_invisible_chars(&content)),
+        _ => None,
+    }
+}
+
 async fn maybe_convert_chinese_variant(
     settings: &AppSettings,
     transcription: &str,
@@ -379,11 +552,65 @@ pub(crate) async fn process_transcription_output(
         post_processed_text = Some(final_text.clone());
     }
 
+    if settings.manglish_output {
+        if let Some(transliterated) = run_manglish_transliteration(&settings, &final_text).await {
+            post_processed_text = Some(transliterated.clone());
+            final_text = transliterated;
+        }
+    }
+
     ProcessedTranscription {
         final_text,
         post_processed_text,
         post_process_prompt,
     }
+}
+
+/// Run Manglish transliteration using the Google/Gemini provider with gemma-4-26b-a4b-it.
+/// Falls back to the active post-processing provider if Google API key is not set.
+async fn run_manglish_transliteration(settings: &AppSettings, text: &str) -> Option<String> {
+    let google_provider = settings.post_process_provider("google").cloned();
+    let google_key = settings
+        .post_process_api_keys
+        .get("google")
+        .cloned()
+        .unwrap_or_default();
+
+    if let Some(provider) = google_provider {
+        if !google_key.trim().is_empty() {
+            let prompt_text = settings
+                .post_process_prompts
+                .iter()
+                .find(|p| p.id == "default_manglish_transliteration")
+                .map(|p| p.prompt.clone())
+                .unwrap_or_else(|| {
+                    "Transliterate the following Malayalam text into Manglish:\n\n${output}"
+                        .to_string()
+                });
+
+            let processed_prompt = prompt_text.replace("${output}", text);
+            debug!("Running Manglish transliteration with Google/gemma-4-26b-a4b-it");
+            match crate::llm_client::send_chat_completion(
+                &provider,
+                google_key,
+                "gemma-4-26b-a4b-it",
+                processed_prompt,
+                None,
+                None,
+            )
+            .await
+            {
+                Ok(Some(result)) => return Some(strip_invisible_chars(&result)),
+                Ok(None) => debug!("Manglish: Google returned empty response"),
+                Err(e) => debug!(
+                    "Manglish: Google failed: {}; falling back to active provider",
+                    e
+                ),
+            }
+        }
+    }
+    // Fallback: use active post-process provider
+    run_specific_llm_prompt(settings, "default_manglish_transliteration", text).await
 }
 
 impl ShortcutAction for TranscribeAction {
@@ -412,6 +639,14 @@ impl ShortcutAction for TranscribeAction {
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
+
+        // Emit recording state
+        let _ = app.emit(
+            "recording-state-changed",
+            RecordingStatePayload {
+                mode: "transcribe".to_string(),
+            },
+        );
 
         let mut recording_error: Option<String> = None;
         if is_always_on {
@@ -463,6 +698,12 @@ impl ShortcutAction for TranscribeAction {
         } else {
             // Starting failed (for example due to blocked microphone permissions).
             // Revert UI state so we don't stay stuck in the recording overlay.
+            let _ = app.emit(
+                "recording-state-changed",
+                RecordingStatePayload {
+                    mode: "idle".to_string(),
+                },
+            );
             utils::hide_recording_overlay(app);
             change_tray_icon(app, TrayIconState::Idle);
             if let Some(err) = recording_error {
@@ -510,9 +751,9 @@ impl ShortcutAction for TranscribeAction {
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
 
-        let binding_id = binding_id.to_string(); // Clone binding_id for the async task
-        let post_process = self.post_process;
+        let post_process = get_settings(app).post_process_enabled || binding_id == "transcribe_with_post_process";
 
+        let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         tauri::async_runtime::spawn(async move {
             let _guard = FinishGuard(ah.clone());
             debug!(
@@ -673,13 +914,267 @@ impl ShortcutAction for CancelAction {
     }
 }
 
+// Meeting Action
+struct MeetingAction;
+
+impl ShortcutAction for MeetingAction {
+    fn start(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        let start_time = Instant::now();
+        debug!("MeetingAction::start called for binding: {}", binding_id);
+
+        let tm = app.state::<Arc<TranscriptionManager>>();
+        let rm = app.state::<Arc<AudioRecordingManager>>();
+
+        tm.initiate_model_load();
+        let rm_clone = Arc::clone(&rm);
+        std::thread::spawn(move || {
+            if let Err(e) = rm_clone.preload_vad() {
+                debug!("VAD pre-load failed: {}", e);
+            }
+        });
+
+        change_tray_icon(app, TrayIconState::Recording);
+        show_recording_overlay(app);
+
+        // Emit recording state
+        let _ = app.emit(
+            "recording-state-changed",
+            RecordingStatePayload {
+                mode: "meeting".to_string(),
+            },
+        );
+
+        let settings = get_settings(app);
+        let is_always_on = settings.always_on_microphone;
+
+        let mut recording_error: Option<String> = None;
+        if is_always_on {
+            let rm_clone = Arc::clone(&rm);
+            let app_clone = app.clone();
+            std::thread::spawn(move || {
+                play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                rm_clone.apply_mute();
+            });
+
+            if let Err(e) = rm.try_start_recording("meeting") {
+                debug!("Recording failed: {}", e);
+                recording_error = Some(e);
+            }
+        } else {
+            let recording_start_time = Instant::now();
+            match rm.try_start_recording("meeting") {
+                Ok(()) => {
+                    debug!("Recording started in {:?}", recording_start_time.elapsed());
+                    let app_clone = app.clone();
+                    let rm_clone = Arc::clone(&rm);
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        play_feedback_sound_blocking(&app_clone, SoundType::Start);
+                        rm_clone.apply_mute();
+                    });
+                }
+                Err(e) => {
+                    debug!("Failed to start recording: {}", e);
+                    recording_error = Some(e);
+                }
+            }
+        }
+
+        if recording_error.is_none() {
+            shortcut::register_cancel_shortcut(app);
+        } else {
+            let _ = app.emit(
+                "recording-state-changed",
+                RecordingStatePayload {
+                    mode: "idle".to_string(),
+                },
+            );
+            utils::hide_recording_overlay(app);
+            change_tray_icon(app, TrayIconState::Idle);
+            if let Some(err) = recording_error {
+                let error_type = if is_microphone_access_denied(&err) {
+                    "microphone_permission_denied"
+                } else if is_no_input_device_error(&err) {
+                    "no_input_device"
+                } else {
+                    "unknown"
+                };
+                let _ = app.emit(
+                    "recording-error",
+                    RecordingErrorEvent {
+                        error_type: error_type.to_string(),
+                        detail: Some(err),
+                    },
+                );
+            }
+        }
+
+        debug!(
+            "MeetingAction::start completed in {:?}",
+            start_time.elapsed()
+        );
+    }
+
+    fn stop(&self, app: &AppHandle, binding_id: &str, _shortcut_str: &str) {
+        shortcut::unregister_cancel_shortcut(app);
+
+        let stop_time = Instant::now();
+        debug!("MeetingAction::stop called for binding: {}", binding_id);
+
+        let ah = app.clone();
+        let rm = Arc::clone(&app.state::<Arc<AudioRecordingManager>>());
+        let tm = Arc::clone(&app.state::<Arc<TranscriptionManager>>());
+        let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
+
+        change_tray_icon(app, TrayIconState::Transcribing);
+        show_transcribing_overlay(app);
+
+        rm.remove_mute();
+        play_feedback_sound(app, SoundType::Stop);
+
+        let binding_id_str = binding_id.to_string();
+        tauri::async_runtime::spawn(async move {
+            let _guard = FinishGuard(ah.clone());
+            debug!(
+                "Starting async meeting transcription task for binding: {}",
+                binding_id_str
+            );
+
+            let stop_recording_time = Instant::now();
+            if let Some(samples) = rm.stop_recording("meeting") {
+                debug!(
+                    "Recording stopped and samples retrieved in {:?}, sample count: {}",
+                    stop_recording_time.elapsed(),
+                    samples.len()
+                );
+
+                if samples.is_empty() {
+                    debug!("Recording produced no audio samples; skipping persistence");
+                    utils::hide_recording_overlay(&ah);
+                    change_tray_icon(&ah, TrayIconState::Idle);
+                } else {
+                    // Save WAV concurrently with transcription
+                    let sample_count = samples.len();
+                    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+                    let wav_path = hm.recordings_dir().join(&file_name);
+                    let wav_path_for_verify = wav_path.clone();
+                    let samples_for_wav = samples.clone();
+                    let wav_handle = tauri::async_runtime::spawn_blocking(move || {
+                        crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
+                    });
+
+                    // Transcribe concurrently with WAV save
+                    let transcription_time = Instant::now();
+                    let transcription_result = tm.transcribe(samples);
+
+                    // Await WAV save and verify
+                    let wav_saved = match wav_handle.await {
+                        Ok(Ok(())) => {
+                            match crate::audio_toolkit::verify_wav_file(
+                                &wav_path_for_verify,
+                                sample_count,
+                            ) {
+                                Ok(()) => true,
+                                Err(e) => {
+                                    error!("WAV verification failed: {}", e);
+                                    false
+                                }
+                            }
+                        }
+                        Ok(Err(e)) => {
+                            error!("Failed to save WAV file: {}", e);
+                            false
+                        }
+                        Err(e) => {
+                            error!("WAV save task panicked: {}", e);
+                            false
+                        }
+                    };
+
+                    match transcription_result {
+                        Ok(transcription) => {
+                            debug!(
+                                "Transcription completed in {:?}: '{}'",
+                                transcription_time.elapsed(),
+                                transcription
+                            );
+
+                            show_processing_overlay(&ah);
+
+                            let settings = get_settings(&ah);
+                            let summary_opt = run_specific_llm_prompt(
+                                &settings,
+                                "default_meeting_summary",
+                                &transcription,
+                            )
+                            .await;
+
+                            let final_text = summary_opt.clone().unwrap_or_else(|| {
+                                warn!("Meeting summarization failed; using raw transcription.");
+                                transcription.clone()
+                            });
+
+                            // Save to history if WAV was saved
+                            if wav_saved {
+                                if let Err(err) = hm.save_entry(
+                                    file_name,
+                                    transcription.clone(),
+                                    true,
+                                    summary_opt.clone(),
+                                    Some("default_meeting_summary".to_string()),
+                                ) {
+                                    error!("Failed to save history entry: {}", err);
+                                }
+                            }
+
+                            if final_text.is_empty() {
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                            } else {
+                                let _ = ah.emit(
+                                    "meeting-summary",
+                                    MeetingSummaryPayload {
+                                        summary: final_text,
+                                        transcript: transcription,
+                                    },
+                                );
+                                utils::hide_recording_overlay(&ah);
+                                change_tray_icon(&ah, TrayIconState::Idle);
+                            }
+                        }
+                        Err(err) => {
+                            debug!("Global Shortcut Transcription error: {}", err);
+                            // Save entry with empty text so user can retry
+                            if wav_saved {
+                                if let Err(save_err) =
+                                    hm.save_entry(file_name, String::new(), true, None, None)
+                                {
+                                    error!("Failed to save failed history entry: {}", save_err);
+                                }
+                            }
+                            utils::hide_recording_overlay(&ah);
+                            change_tray_icon(&ah, TrayIconState::Idle);
+                        }
+                    }
+                }
+            } else {
+                debug!("No samples retrieved from recording stop");
+                utils::hide_recording_overlay(&ah);
+                change_tray_icon(&ah, TrayIconState::Idle);
+            }
+        });
+
+        debug!("MeetingAction::stop completed in {:?}", stop_time.elapsed());
+    }
+}
+
 // Test Action
 struct TestAction;
 
 impl ShortcutAction for TestAction {
     fn start(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
         log::info!(
-            "Shortcut ID '{}': Started - {} (App: {})", // Changed "Pressed" to "Started" for consistency
+            "Shortcut ID '{}': Started - {} (App: {})",
             binding_id,
             shortcut_str,
             app.package_info().name
@@ -688,7 +1183,7 @@ impl ShortcutAction for TestAction {
 
     fn stop(&self, app: &AppHandle, binding_id: &str, shortcut_str: &str) {
         log::info!(
-            "Shortcut ID '{}': Stopped - {} (App: {})", // Changed "Released" to "Stopped" for consistency
+            "Shortcut ID '{}': Stopped - {} (App: {})",
             binding_id,
             shortcut_str,
             app.package_info().name
@@ -701,17 +1196,19 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     let mut map = HashMap::new();
     map.insert(
         "transcribe".to_string(),
-        Arc::new(TranscribeAction {
-            post_process: false,
-        }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
         Arc::new(CancelAction) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "meeting".to_string(),
+        Arc::new(MeetingAction) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "test".to_string(),

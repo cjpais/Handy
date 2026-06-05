@@ -14,6 +14,7 @@
     "advanced": "Advanced",
     "postProcessing": "Post Process",
     "history": "History",
+    "meetings": "Meetings",
     "debug": "Debug",
     "about": "About"
   },
@@ -180,6 +181,10 @@
           "transcribe_with_post_process": {
             "name": "Post-Processing Hotkey",
             "description": "Optional: A dedicated hotkey that always applies AI post-processing to your transcription."
+          },
+          "meeting": {
+            "name": "Meeting Mode",
+            "description": "Continuous recording mode that pastes an English summary."
           }
         },
         "errors": {
@@ -199,6 +204,10 @@
       "pushToTalk": {
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
+      },
+      "manglishToggle": {
+        "label": "Manglish Transliteration",
+        "description": "Automatically transliterates Malayalam speech transcriptions into Manglish (Latin script)."
       }
     },
     "models": {
@@ -369,6 +378,10 @@
       },
       "api": {
         "title": "API (OpenAI Compatible)",
+        "testButton": "Test Connection",
+        "testing": "Testing...",
+        "testSuccess": "Connection successful!",
+        "testFailed": "Connection failed",
         "provider": {
           "title": "Provider",
           "description": "Select an OpenAI-compatible provider."
@@ -436,6 +449,16 @@
       "retranscribeError": "Failed to re-transcribe. Please try again.",
       "transcribing": "Transcribing...",
       "transcriptionFailed": "Transcription failed. You can re-transcribe using the retry icon."
+    },
+    "meetings": {
+      "title": "Meetings",
+      "loading": "Loading meetings...",
+      "empty": "No meetings recorded yet. Start a meeting to generate summaries!",
+      "summary": "Meeting Summary",
+      "summaryFailed": "Failed to generate meeting summary.",
+      "fullTranscript": "Full Transcript",
+      "toastSuccess": "Meeting summary generated!",
+      "activeIndicator": "Meeting Recording..."
     },
     "debug": {
       "title": "Debug",

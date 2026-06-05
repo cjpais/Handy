@@ -19,12 +19,49 @@ import { BaseUrlField } from "../PostProcessingSettingsApi/BaseUrlField";
 import { ApiKeyField } from "../PostProcessingSettingsApi/ApiKeyField";
 import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
-import { ShortcutInput } from "../ShortcutInput";
+import { PostProcessingToggle } from "../PostProcessingToggle";
 import { useSettings } from "../../../hooks/useSettings";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
   const state = usePostProcessProviderState();
+  const [testResult, setTestResult] = useState<{
+    status: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+
+  const handleTestApiKey = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const result = await commands.testPostProcessApiKey(
+        state.selectedProviderId,
+        state.apiKey,
+      );
+      if (result.status === "ok") {
+        setTestResult({
+          status: "success",
+          message: t("settings.postProcessing.api.testSuccess"),
+        });
+      } else {
+        setTestResult({
+          status: "error",
+          message: result.error || t("settings.postProcessing.api.testFailed"),
+        });
+      }
+    } catch (e: any) {
+      setTestResult({
+        status: "error",
+        message:
+          e?.message ||
+          String(e) ||
+          t("settings.postProcessing.api.testFailed"),
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   return (
     <>
@@ -81,16 +118,35 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             layout="horizontal"
             grouped={true}
           >
-            <div className="flex items-center gap-2">
-              <ApiKeyField
-                value={state.apiKey}
-                onBlur={state.handleApiKeyChange}
-                placeholder={t(
-                  "settings.postProcessing.api.apiKey.placeholder",
-                )}
-                disabled={state.isApiKeyUpdating}
-                className="min-w-[320px]"
-              />
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex items-center gap-2">
+                <ApiKeyField
+                  value={state.apiKey}
+                  onBlur={state.handleApiKeyChange}
+                  placeholder={t(
+                    "settings.postProcessing.api.apiKey.placeholder",
+                  )}
+                  disabled={state.isApiKeyUpdating}
+                  className="min-w-[320px]"
+                />
+                <Button
+                  onClick={handleTestApiKey}
+                  disabled={isTesting || !state.apiKey}
+                  variant="secondary"
+                  size="md"
+                >
+                  {isTesting
+                    ? t("settings.postProcessing.api.testing") || "Testing..."
+                    : t("settings.postProcessing.api.testButton")}
+                </Button>
+              </div>
+              {testResult && (
+                <div className="mt-1">
+                  <Alert variant={testResult.status} contained>
+                    {testResult.message}
+                  </Alert>
+                </div>
+              )}
             </div>
           </SettingContainer>
         </>
@@ -428,13 +484,7 @@ export const PostProcessingSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.postProcessing.hotkey.title")}>
-        <ShortcutInput
-          shortcutId="transcribe_with_post_process"
-          descriptionMode="tooltip"
-          grouped={true}
-        />
-      </SettingsGroup>
+      <PostProcessingToggle descriptionMode="tooltip" />
 
       <SettingsGroup title={t("settings.postProcessing.api.title")}>
         <PostProcessingSettingsApi />

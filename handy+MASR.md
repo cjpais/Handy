@@ -22,6 +22,7 @@ no Python sidecar is used.
 
 > [!IMPORTANT]
 > **Compilation Environment**:
+>
 > 1. **Cargo Target Directory**: The C: drive is nearly full (< 1GB). To prevent disk-full errors and bypass Windows path length limits (MAX_PATH), you **must** set `CARGO_TARGET_DIR` to a short path on the D: drive:
 >    ```powershell
 >    $env:CARGO_TARGET_DIR="D:\t"
@@ -45,20 +46,20 @@ no Python sidecar is used.
 
 ## Decision Log (from interview)
 
-| # | Decision | Choice |
-|---|----------|--------|
-| 1 | ORT dependency | Standalone `ort` crate directly in Cargo.toml, independent of `transcribe-rs` internals |
-| 2 | Mel preprocessing | Pure Rust using `rustfft` (already a dep) + `ndarray` — exact librosa parity |
-| 3 | Model catalog | Keep all existing Handy models in backend; **filter in frontend only** |
-| 4 | Engine wiring | Add `EngineType::MalayalamIndicConformerCTC` to enum; extend match arms |
-| 5 | Archive format | Convert local `.zip` → `.tar.gz` before hosting; reuse Handy's existing tar.gz extractor |
-| 6 | GPU provider | DirectML on Windows (already provided by `ort-directml` feature) |
-| 7 | Parity test | Run Rust inference on `audio.wav`, log transcript, visual inspection — no automated string comparison |
-| 8 | Local model zip | Keep zip; create a helper script to convert to `.tar.gz` and compute SHA256 |
-| 9 | Test strategy | Leave existing Handy tests intact; add new tests only for Malayalam-specific code |
-| 10 | Test model files | Copy model files into MASR's Handy app-data `models/` directory to exercise full path flow |
-| 11 | Onboarding UX | Show Malayalam model card; user presses Download explicitly |
-| 12 | Settings hiding | Frontend filter on `supports_translation`, `supported_languages`, etc. — no Rust changes |
+| #   | Decision          | Choice                                                                                                |
+| --- | ----------------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | ORT dependency    | Standalone `ort` crate directly in Cargo.toml, independent of `transcribe-rs` internals               |
+| 2   | Mel preprocessing | Pure Rust using `rustfft` (already a dep) + `ndarray` — exact librosa parity                          |
+| 3   | Model catalog     | Keep all existing Handy models in backend; **filter in frontend only**                                |
+| 4   | Engine wiring     | Add `EngineType::MalayalamIndicConformerCTC` to enum; extend match arms                               |
+| 5   | Archive format    | Convert local `.zip` → `.tar.gz` before hosting; reuse Handy's existing tar.gz extractor              |
+| 6   | GPU provider      | DirectML on Windows (already provided by `ort-directml` feature)                                      |
+| 7   | Parity test       | Run Rust inference on `audio.wav`, log transcript, visual inspection — no automated string comparison |
+| 8   | Local model zip   | Keep zip; create a helper script to convert to `.tar.gz` and compute SHA256                           |
+| 9   | Test strategy     | Leave existing Handy tests intact; add new tests only for Malayalam-specific code                     |
+| 10  | Test model files  | Copy model files into MASR's Handy app-data `models/` directory to exercise full path flow            |
+| 11  | Onboarding UX     | Show Malayalam model card; user presses Download explicitly                                           |
+| 12  | Settings hiding   | Frontend filter on `supports_translation`, `supported_languages`, etc. — no Rust changes              |
 
 ---
 
@@ -143,6 +144,7 @@ hound = "3.5.1"   # re-export or add if not already accessible in test scope
 Add one new `EngineType` variant and one new model entry.
 
 **In `EngineType` enum:**
+
 ```rust
 pub enum EngineType {
     // ... existing variants unchanged ...
@@ -194,12 +196,14 @@ No existing model entries are removed. The `is_recommended: true` field on this 
 #### [MODIFY] `src-tauri/src/managers/transcription.rs`
 
 **Imports** — add:
+
 ```rust
 #[cfg(windows)]
 use crate::malayalam_asr::MalayalamAsr;
 ```
 
 **`LoadedEngine` enum** — add variant:
+
 ```rust
 enum LoadedEngine {
     // ... existing ...
@@ -209,6 +213,7 @@ enum LoadedEngine {
 ```
 
 **`load_model()` match arm** — add:
+
 ```rust
 EngineType::MalayalamIndicConformerCTC => {
     #[cfg(windows)]
@@ -228,6 +233,7 @@ EngineType::MalayalamIndicConformerCTC => {
 ```
 
 **`transcribe()` match arm** — add:
+
 ```rust
 LoadedEngine::MalayalamIndicConformerCTC(asr) => {
     asr.transcribe(audio)
@@ -249,6 +255,7 @@ LoadedEngine::MalayalamIndicConformerCTC(asr) => {
 #### [MODIFY] `src-tauri/src/lib.rs`
 
 Add after the existing `mod` declarations:
+
 ```rust
 #[cfg(windows)]
 mod malayalam_asr;
@@ -261,6 +268,7 @@ mod malayalam_asr;
 #### [NEW] `scripts/make_malayalam_tarball.ps1`
 
 A PowerShell script that:
+
 1. Extracts `indicconformer_ml_ctc_onnx.zip` (located in `D:\Downloads\Projects\Asr malayalam\`).
 2. Normalizes the extracted content to contain only `model.onnx`, `model.onnx.data`, `vocab.txt`, `config.json` inside a root directory named `malayalam-indicconformer-ctc/`.
 3. Creates `malayalam-indicconformer-ctc.tar.gz` in the MASR project root.
@@ -281,6 +289,7 @@ Add `i18n` translation key for the new model. No other frontend file changes req
 - Existing models remain in catalog (backend) but the frontend should filter the model list to show only `supported_languages.includes("ml")` models OR all models where `is_recommended`.
 
 #### Frontend filter strategy (decision #12)
+
 - **Translation toggle**: hide if `!model.supports_translation` (already false for new model).
 - **Language selector**: hide if `!model.supports_language_selection` (already false).
 - **Whisper accelerator setting**: hide if `model.engine_type !== 'Whisper'` — this requires a `model.engine_type` field to be exposed to the frontend via specta. Check if it already is; if not, add it to the TS bindings.
@@ -294,21 +303,25 @@ Add `i18n` translation key for the new model. No other frontend file changes req
 ## Test Plan
 
 ### Rust unit tests (in `malayalam_asr.rs`)
+
 - `test_load_vocab_two_column_format` — vocab parsing
 - `test_ctc_decode_dedup_and_blank_removal` — CTC decode logic
 - `test_mel_tensor_shape` — 1-sec silence → `[1, 80, 101]` shape
 - `test_inference_on_audio_wav` — visual log output on `audio.wav`
 
 ### Rust integration test (in `model.rs` or separate integration test)
+
 - `test_malayalam_model_path` — confirms `get_model_path("malayalam-indicconformer-ctc")` works once files are in models dir
 
 ### Build verification
+
 ```powershell
 cargo test -p handy             # Run from src-tauri/
 bun run build                   # Full Tauri build
 ```
 
 ### Manual acceptance
+
 1. Fresh install → onboarding shows Malayalam model card.
 2. User clicks Download → progress events visible in tray / overlay.
 3. SHA256 verified → model auto-selected.
@@ -318,12 +331,12 @@ bun run build                   # Full Tauri build
 
 ## Files Summary
 
-| Action | File |
-|--------|------|
-| **NEW** | `src-tauri/src/malayalam_asr.rs` |
-| **NEW** | `scripts/make_malayalam_tarball.ps1` |
-| **MODIFY** | `src-tauri/Cargo.toml` — add `ort`, `ndarray` |
-| **MODIFY** | `src-tauri/src/lib.rs` — add `mod malayalam_asr` |
+| Action     | File                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| **NEW**    | `src-tauri/src/malayalam_asr.rs`                                                                  |
+| **NEW**    | `scripts/make_malayalam_tarball.ps1`                                                              |
+| **MODIFY** | `src-tauri/Cargo.toml` — add `ort`, `ndarray`                                                     |
+| **MODIFY** | `src-tauri/src/lib.rs` — add `mod malayalam_asr`                                                  |
 | **MODIFY** | `src-tauri/src/managers/model.rs` — add `EngineType::MalayalamIndicConformerCTC`, new model entry |
-| **MODIFY** | `src-tauri/src/managers/transcription.rs` — add `LoadedEngine` variant + match arms |
-| **MODIFY** | `src/` — i18n key + frontend model filter logic |
+| **MODIFY** | `src-tauri/src/managers/transcription.rs` — add `LoadedEngine` variant + match arms               |
+| **MODIFY** | `src/` — i18n key + frontend model filter logic                                                   |

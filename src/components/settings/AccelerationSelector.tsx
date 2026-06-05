@@ -108,7 +108,9 @@ export const AccelerationSelector: FC<AccelerationSelectorProps> = ({
   const currentOrt = getSetting("ort_accelerator") ?? "auto";
 
   const activeModelInfo = models.find((m) => m.id === currentModel);
-  const showWhisperAcceleration = activeModelInfo ? activeModelInfo.engine_type === "Whisper" : true;
+  const showWhisperAcceleration = activeModelInfo
+    ? activeModelInfo.engine_type === "Whisper"
+    : true;
 
   const handleWhisperChange = async (value: string) => {
     const { accelerator, gpuDevice } = decodeWhisperValue(value);
