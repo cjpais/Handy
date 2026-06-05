@@ -15,6 +15,7 @@ pub mod portable;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod target_highlight;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
@@ -290,8 +291,14 @@ fn initialize_core_logic(app_handle: &AppHandle) {
         let _ = autostart_manager.disable();
     }
 
+    // Highlight tracker state (cancel flag for the polling thread).
+    app_handle.manage(target_highlight::TargetHighlightState::new());
+
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    // Create the target highlight window (hidden by default)
+    utils::create_target_highlight_window(app_handle);
 }
 
 #[tauri::command]
@@ -362,6 +369,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::resume_binding,
             shortcut::change_mute_while_recording_setting,
             shortcut::change_append_trailing_space_setting,
+            shortcut::change_highlight_target_window_setting,
             shortcut::change_lazy_stream_close_setting,
             shortcut::change_app_language_setting,
             shortcut::change_update_checks_setting,

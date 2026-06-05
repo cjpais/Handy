@@ -1062,6 +1062,18 @@ pub fn change_append_trailing_space_setting(app: AppHandle, enabled: bool) -> Re
 
 #[tauri::command]
 #[specta::specta]
+pub fn change_highlight_target_window_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.highlight_target_window = enabled;
+    settings::write_settings(&app, settings);
+    if !enabled {
+        crate::utils::hide_target_highlight(&app, false);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn change_lazy_stream_close_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.lazy_stream_close = enabled;

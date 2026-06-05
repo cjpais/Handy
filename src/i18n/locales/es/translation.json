@@ -291,6 +291,10 @@
           "top": "Arriba"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Resaltar ventana de destino",
+        "description": "Dibuja un marco alrededor de la ventana activa mientras Handy graba y transcribe, para que veas dónde se pegará el texto. Solo Windows."
+      },
       "pasteMethod": {
         "title": "Método de Pegado",
         "description": "Elige cómo se inserta el texto. Directo: simula escritura mediante entrada del sistema. Ninguno: omite el pegado, solo actualiza historial/portapapeles.",

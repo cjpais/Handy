@@ -291,6 +291,10 @@
           "top": "Superior"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Destacar janela de destino",
+        "description": "Desenha uma moldura ao redor da janela ativa enquanto o Handy grava e transcreve, para que você veja onde o texto será colado. Somente Windows."
+      },
       "pasteMethod": {
         "title": "Método de Colar",
         "description": "Escolha como o texto é inserido. Direto: simula digitação via entrada do sistema. Nenhum: ignora colar, apenas atualiza histórico/área de transferência.",

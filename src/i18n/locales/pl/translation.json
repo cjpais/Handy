@@ -291,6 +291,10 @@
           "top": "Góra"
         }
       },
+      "highlightTargetWindow": {
+        "label": "Podświetl okno docelowe",
+        "description": "Rysuje ramkę wokół aktywnego okna podczas nagrywania i transkrypcji w Handy, aby było widać, gdzie zostanie wklejony tekst. Tylko Windows."
+      },
       "pasteMethod": {
         "title": "Metoda wklejania",
         "description": "Wybierz sposób wstawiania tekstu. Direct: symuluje wpisywanie. None: pomija wklejanie, tylko aktualizuje historię/clipboard.",
