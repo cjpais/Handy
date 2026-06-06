@@ -12,6 +12,7 @@ mod llm_client;
 mod managers;
 mod overlay;
 pub mod portable;
+mod session;
 mod settings;
 mod shortcut;
 mod signal_handle;
@@ -292,6 +293,8 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+
+    session::setup_session_notifications(app_handle.clone());
 }
 
 #[tauri::command]
@@ -609,6 +612,14 @@ pub fn run(cli_args: CliArgs) {
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen { .. } = &event {
                 show_main_window(app);
+            }
+            if let tauri::RunEvent::Resumed = &event {
+                log::info!("Application resumed; refreshing shortcuts");
+                if app.try_state::<commands::ShortcutsInitialized>().is_some() {
+                    shortcut::refresh_shortcuts_after_resume(app);
+                } else {
+                    log::debug!("Skipping resume shortcut refresh; shortcuts are not initialized");
+                }
             }
             let _ = (app, event); // suppress unused warnings on non-macOS
         });
