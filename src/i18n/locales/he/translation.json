@@ -195,6 +195,11 @@
       "pushToTalk": {
         "label": "לחץ כדי לדבר",
         "description": "החזק כדי להקליט, שחרר כדי לעצור"
+      },
+      "keyboardImplementation": {
+        "title": "מימוש מקלדת",
+        "description": "בחר את מנגנון קיצורי המקלדת.",
+        "bindingsReset": "קיצורי המקלדת לא היו תואמים ואופסו לברירות המחדל"
       }
     },
     "models": {
@@ -489,11 +494,6 @@
       "appendTrailingSpace": {
         "label": "הוסף רווח בסוף",
         "description": "הוסף רווח אחרי התמלול המודבק"
-      },
-      "keyboardImplementation": {
-        "title": "מימוש מקלדת",
-        "description": "בחר את מנגנון קיצורי המקלדת.",
-        "bindingsReset": "קיצורי המקלדת לא היו תואמים ואופסו לברירות המחדל"
       },
       "paths": {
         "appData": "נתוני אפליקציה:",

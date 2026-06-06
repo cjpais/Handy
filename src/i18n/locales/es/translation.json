@@ -213,6 +213,11 @@
       "pushToTalk": {
         "label": "Presionar para Hablar",
         "description": "Mantén presionado para grabar, suelta para detener"
+      },
+      "keyboardImplementation": {
+        "title": "Implementación del teclado",
+        "description": "Elige el sistema que gestiona los atajos de teclado.",
+        "bindingsReset": "Los atajos de teclado eran incompatibles y se restablecieron a los valores predeterminados"
       }
     },
     "sound": {
@@ -489,11 +494,6 @@
       "appendTrailingSpace": {
         "label": "Agregar Espacio Final",
         "description": "Agregar un espacio después de la transcripción pegada"
-      },
-      "keyboardImplementation": {
-        "title": "Implementación del teclado",
-        "description": "Elige el sistema que gestiona los atajos de teclado.",
-        "bindingsReset": "Los atajos de teclado eran incompatibles y se restablecieron a los valores predeterminados"
       },
       "paths": {
         "appData": "Datos de la Aplicación:",
