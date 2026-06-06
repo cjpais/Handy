@@ -2,10 +2,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 import { useSettings } from "../../hooks/useSettings";
-import {
-  SETTINGS_SECTIONS,
-  type SettingsSection,
-} from "./sections";
+import { SETTINGS_SECTIONS, type SettingsSection } from "./sections";
 
 interface SettingsPanelProps {
   onBack: () => void;

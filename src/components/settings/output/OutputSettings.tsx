@@ -11,7 +11,15 @@ export const OutputSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      <SettingsGroup title={t("settings.output.title")}>
+      <div>
+        <h1 className="text-xl font-semibold mb-2">
+          {t("settings.output.title")}
+        </h1>
+        <p className="text-sm text-text/60">
+          {t("settings.output.description")}
+        </p>
+      </div>
+      <SettingsGroup>
         <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
         <TypingToolSetting descriptionMode="tooltip" grouped={true} />
         <ClipboardHandlingSetting descriptionMode="tooltip" grouped={true} />

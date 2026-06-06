@@ -19,6 +19,14 @@ export const CaptureSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold mb-2">
+          {t("settings.capture.title")}
+        </h1>
+        <p className="text-sm text-text/60">
+          {t("settings.capture.description")}
+        </p>
+      </div>
       <SettingsGroup title={t("settings.capture.microphone.title")}>
         <MicrophoneSelector descriptionMode="tooltip" grouped={true} />
         <MuteWhileRecording descriptionMode="tooltip" grouped={true} />

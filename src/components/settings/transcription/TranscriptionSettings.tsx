@@ -84,8 +84,7 @@ export const TranscriptionSettings: React.FC = () => {
   const getDownloadProgress = (modelId: string) =>
     downloadProgress[modelId]?.percentage;
 
-  const getDownloadSpeed = (modelId: string) =>
-    downloadStats[modelId]?.speed;
+  const getDownloadSpeed = (modelId: string) => downloadStats[modelId]?.speed;
 
   const handleModelSelect = async (modelId: string) => {
     setSwitchingModelId(modelId);
@@ -169,12 +168,13 @@ export const TranscriptionSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      {/* Model library */}
-      <div className="mb-4">
+      <div>
         <h1 className="text-xl font-semibold mb-2">
-          {t("settings.models.title")}
+          {t("settings.transcription.title")}
         </h1>
-        <p className="text-sm text-text/60">{t("settings.models.description")}</p>
+        <p className="text-sm text-text/60">
+          {t("settings.transcription.description")}
+        </p>
       </div>
 
       {filteredModels.length > 0 ? (
@@ -213,7 +213,10 @@ export const TranscriptionSettings: React.FC = () => {
                         value={languageSearch}
                         onChange={(e) => setLanguageSearch(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && filteredLanguages.length > 0) {
+                          if (
+                            e.key === "Enter" &&
+                            filteredLanguages.length > 0
+                          ) {
                             setLanguageFilter(filteredLanguages[0].value);
                             setLanguageDropdownOpen(false);
                             setLanguageSearch("");
@@ -222,7 +225,9 @@ export const TranscriptionSettings: React.FC = () => {
                             setLanguageSearch("");
                           }
                         }}
-                        placeholder={t("settings.general.language.searchPlaceholder")}
+                        placeholder={t(
+                          "settings.general.language.searchPlaceholder",
+                        )}
                         className="w-full px-2 py-1 text-sm bg-mid-gray/10 border border-mid-gray/40 rounded-md focus:outline-none focus:ring-1 focus:ring-logo-primary"
                       />
                     </div>

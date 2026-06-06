@@ -20,6 +20,12 @@ export const AppSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold mb-2">
+          {t("settings.app.title")}
+        </h1>
+        <p className="text-sm text-text/60">{t("settings.app.description")}</p>
+      </div>
       <SettingsGroup title={t("settings.app.startup.title")}>
         <StartHidden descriptionMode="tooltip" grouped={true} />
         <AutostartToggle descriptionMode="tooltip" grouped={true} />

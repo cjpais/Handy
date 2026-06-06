@@ -184,9 +184,12 @@
   "settings": {
     "back": "Back",
     "shortcuts": {
-      "title": "Shortcuts"
+      "title": "Shortcuts",
+      "description": "Configure the keyboard shortcuts used to start, stop, and cancel recordings."
     },
     "capture": {
+      "title": "Capture",
+      "description": "Choose your input microphone, set up audio feedback, and manage recording history.",
       "microphone": {
         "title": "Microphone"
       },
@@ -198,14 +201,19 @@
       }
     },
     "transcription": {
+      "title": "Transcription",
+      "description": "Choose and manage speech recognition models, and adjust transcription quality.",
       "quality": {
         "title": "Quality"
       }
     },
     "output": {
-      "title": "Output"
+      "title": "Output",
+      "description": "Configure how transcribed text is pasted into your active application."
     },
     "app": {
+      "title": "App",
+      "description": "Configure startup behaviour, display preferences, and performance settings.",
       "startup": {
         "title": "Startup"
       },
@@ -428,7 +436,8 @@
       }
     },
     "postProcessing": {
-      "title": "Post Process",
+      "title": "Post-Processing",
+      "description": "Apply AI text refinement to clean up and transform transcriptions using custom prompts.",
       "hotkey": {
         "title": "Hotkey"
       },
@@ -596,7 +605,8 @@
       }
     },
     "summarisation": {
-      "title": "Summary",
+      "title": "Summarisation",
+      "description": "Automatically generate summaries and extract action items from your transcriptions.",
       "toggle": {
         "label": "Summarisation",
         "description": "Generate a concise summary and extract action items after transcription. Shares the provider and API key configured for post-processing."
