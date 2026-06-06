@@ -106,3 +106,38 @@
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
 }
+
+/* Markdown Summary Styling */
+.markdown-summary h1,
+.markdown-summary h2,
+.markdown-summary h3,
+.markdown-summary h4 {
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+.markdown-summary h1 {
+  font-size: 1.25rem;
+}
+.markdown-summary h2 {
+  font-size: 1.1rem;
+}
+.markdown-summary h3 {
+  font-size: 1rem;
+}
+.markdown-summary ul,
+.markdown-summary ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+  list-style-type: disc;
+}
+.markdown-summary li {
+  margin-bottom: 0.25rem;
+}
+.markdown-summary p {
+  margin-bottom: 0.75rem;
+}
+.markdown-summary p:last-child {
+  margin-bottom: 0;
+}

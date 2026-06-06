@@ -213,7 +213,8 @@ pub async fn send_chat_completion_with_schema(
     Ok(completion
         .choices
         .first()
-        .and_then(|choice| choice.message.content.clone()))
+        .and_then(|choice| choice.message.content.clone())
+        .map(|content| strip_thought_tags(&content)))
 }
 
 /// Fetch available models from an OpenAI-compatible API
@@ -274,4 +275,22 @@ pub async fn fetch_models(
     }
 
     Ok(models)
+}
+
+use once_cell::sync::Lazy;
+
+static RE_THOUGHT: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"(?is)<thought\b[^>]*>.*?</thought>").unwrap());
+static RE_THINK: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"(?is)<think\b[^>]*>.*?</think>").unwrap());
+static RE_TRUNCATED: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"(?is)<(thought|think)\b[^>]*>.*$").unwrap());
+
+/// Strip any <thought>...</thought> or <think>...</think> tags (and their contents)
+/// from the given string, even if the closing tag is missing due to truncation.
+pub fn strip_thought_tags(content: &str) -> String {
+    let intermediate = RE_THOUGHT.replace_all(content, "");
+    let intermediate2 = RE_THINK.replace_all(&intermediate, "");
+    let result = RE_TRUNCATED.replace_all(&intermediate2, "");
+    result.trim().to_string()
 }

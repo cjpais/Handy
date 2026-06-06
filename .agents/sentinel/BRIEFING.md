@@ -1,14 +1,15 @@
-# BRIEFING — 2026-06-05T12:40:07Z
+# BRIEFING — 2026-06-06T16:05:28Z
 
 ## Mission
 
-Orchestrate implementation of MASR Feature Improvements: shortcut cleanup, meeting mode fix, meetings sidebar, indicator pill, Gemini defaults, Manglish fix, and API key testing button.
+Add Gmail and Google Tasks integrations to the Handy application to send meeting summaries and create action items automatically.
 
 ## 🔒 My Identity
 
 - Archetype: sentinel
 - Working directory: d:/Downloads/Projects/MASR/.agents/sentinel
 - Orchestrator: 2cd05a58-db85-4e56-9c98-0ad88acc8eb6
+- Orchestrator (Gmail/Tasks): 12a2fbf9-42f4-493e-a536-8c04160d0dca
 - Victory Auditor: to be spawned on victory claim
 
 ## 🔒 Key Constraints
@@ -20,7 +21,7 @@ Orchestrate implementation of MASR Feature Improvements: shortcut cleanup, meeti
 
 ## User Context
 
-- **Last user request**: MASR Feature Improvements (shortcut cleanup, meeting mode fix, sidebar, indicator pill, Gemini defaults, Manglish fix, API key testing).
+- **Last user request**: Add Gmail and Google Tasks integrations (OAuth 2.0 loopback flow, structured LLM prompt, Gmail/Tasks client, settings and meeting summary UI).
 - **Pending clarifications**: none
 - **Delivered results**: none
 

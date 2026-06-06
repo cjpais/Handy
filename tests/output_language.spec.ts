@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { setupMocks } from "./helpers";
 
 test.describe("Output Language Settings", () => {
+  test.beforeEach(async ({ page }) => {
+    await setupMocks(page);
+  });
+
   test("allows selecting different output languages", async ({ page }) => {
     // Go to home page (which defaults to General Settings)
     await page.goto("/");

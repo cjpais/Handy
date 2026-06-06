@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Check,
   Copy,
@@ -9,6 +11,7 @@ import {
   ChevronUp,
   FileText,
   Upload,
+  Mail,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -51,6 +54,95 @@ export const MeetingsSettings: React.FC = () => {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [transcriberFiles, setTranscriberFiles] = useState<string[]>([]);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const checkGoogleAuth = useCallback(async () => {
+    try {
+      const result = (await invoke("get_google_auth_status")) as any;
+      if (result && typeof result === "object" && "status" in result) {
+        if (result.status === "ok") {
+          setIsGoogleConnected(!!result.data);
+        }
+      } else {
+        setIsGoogleConnected(!!result);
+      }
+    } catch (error) {
+      console.error("Failed to check Google auth status:", error);
+    }
+  }, []);
+
+  const handleConnectGoogle = async () => {
+    setIsConnecting(true);
+    try {
+      const result = (await invoke("start_google_oauth")) as any;
+      let success = false;
+      if (result && typeof result === "object" && "status" in result) {
+        if (result.status === "ok") {
+          success = result.data === "success";
+        } else {
+          toast.error(
+            t("settings.meetings.googleConnectError") ||
+              "OAuth connection failed: " + result.error,
+          );
+        }
+      } else {
+        success = result === "success";
+      }
+      if (success) {
+        toast.success(
+          t("settings.meetings.googleConnectSuccess") ||
+            "Google Services connected successfully!",
+        );
+        setIsGoogleConnected(true);
+      } else {
+        toast.error(
+          t("settings.meetings.googleConnectError") ||
+            "Failed to connect Google Services.",
+        );
+      }
+    } catch (error: any) {
+      console.error("Failed to connect Google services:", error);
+      toast.error(
+        t("settings.meetings.googleConnectError") ||
+          "Failed to start Google OAuth flow",
+      );
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    try {
+      const result = (await invoke("disconnect_google_auth")) as any;
+      let success = true;
+      if (
+        result &&
+        typeof result === "object" &&
+        "status" in result &&
+        result.status !== "ok"
+      ) {
+        success = false;
+        toast.error(
+          t("settings.meetings.googleDisconnectError") ||
+            "Failed to disconnect: " + result.error,
+        );
+      }
+      if (success) {
+        toast.success(
+          t("settings.meetings.googleDisconnectSuccess") ||
+            "Google Services disconnected",
+        );
+        setIsGoogleConnected(false);
+      }
+    } catch (error) {
+      console.error("Failed to disconnect Google services:", error);
+      toast.error(
+        t("settings.meetings.googleDisconnectError") ||
+          "Failed to disconnect Google Services",
+      );
+    }
+  };
 
   const handleUploadClick = async () => {
     try {
@@ -75,11 +167,14 @@ export const MeetingsSettings: React.FC = () => {
   const loadMeetings = useCallback(async () => {
     setLoading(true);
     try {
+      await checkGoogleAuth();
       // Fetch a larger page size to ensure we grab recent meetings
       const result = await commands.getHistoryEntries(null, 100);
       if (result.status === "ok") {
         const meetingEntries = result.data.entries.filter(
-          (e) => e.post_process_prompt === "default_meeting_summary",
+          (e) =>
+            e.post_process_prompt === "default_meeting_summary" ||
+            e.post_process_prompt === "default_meeting_notes_with_actions",
         );
         setEntries(meetingEntries);
       }
@@ -88,7 +183,7 @@ export const MeetingsSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [checkGoogleAuth]);
 
   useEffect(() => {
     loadMeetings();
@@ -99,11 +194,19 @@ export const MeetingsSettings: React.FC = () => {
     const unlisten = events.historyUpdatePayload.listen((event) => {
       const payload: HistoryUpdatePayload = event.payload;
       if (payload.action === "added") {
-        if (payload.entry.post_process_prompt === "default_meeting_summary") {
+        if (
+          payload.entry.post_process_prompt === "default_meeting_summary" ||
+          payload.entry.post_process_prompt ===
+            "default_meeting_notes_with_actions"
+        ) {
           setEntries((prev) => [payload.entry, ...prev]);
         }
       } else if (payload.action === "updated") {
-        if (payload.entry.post_process_prompt === "default_meeting_summary") {
+        if (
+          payload.entry.post_process_prompt === "default_meeting_summary" ||
+          payload.entry.post_process_prompt ===
+            "default_meeting_notes_with_actions"
+        ) {
           setEntries((prev) =>
             prev.map((e) => (e.id === payload.entry.id ? payload.entry : e)),
           );
@@ -175,6 +278,7 @@ export const MeetingsSettings: React.FC = () => {
             entry={entry}
             getAudioUrl={getAudioUrl}
             deleteMeeting={deleteMeetingEntry}
+            isGoogleConnected={isGoogleConnected}
           />
         ))}
       </div>
@@ -183,6 +287,40 @@ export const MeetingsSettings: React.FC = () => {
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
+      {/* Google Services Connection Section */}
+      <div className="bg-background border border-mid-gray/20 rounded-lg p-4 flex items-center justify-between">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-text">
+            {t("settings.meetings.googleServices")}
+          </h3>
+          <p className="text-xs text-mid-gray">
+            {isGoogleConnected
+              ? t("settings.meetings.googleConnected")
+              : t("settings.meetings.googleDisconnected")}
+          </p>
+        </div>
+        <div>
+          {isGoogleConnected ? (
+            <button
+              onClick={handleDisconnectGoogle}
+              className="px-3 py-1.5 text-xs font-medium bg-red-600/10 text-red-500 hover:bg-red-600/20 rounded-md transition-colors cursor-pointer google-disconnect-btn"
+            >
+              {t("settings.meetings.googleDisconnect")}
+            </button>
+          ) : (
+            <button
+              onClick={handleConnectGoogle}
+              disabled={isConnecting}
+              className="px-3 py-1.5 text-xs font-medium bg-logo-primary text-white hover:bg-logo-primary/95 disabled:opacity-55 rounded-md transition-colors cursor-pointer google-connect-btn"
+            >
+              {isConnecting
+                ? t("settings.meetings.googleConnecting")
+                : t("settings.meetings.googleConnect")}
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="space-y-2">
         <div className="px-4 flex items-center justify-between">
           <h2 className="text-xs font-medium text-mid-gray uppercase tracking-wide">
@@ -218,17 +356,104 @@ interface MeetingEntryProps {
   entry: HistoryEntry;
   getAudioUrl: (fileName: string) => Promise<string | null>;
   deleteMeeting: (id: number) => Promise<void>;
+  isGoogleConnected: boolean;
 }
 
 const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
   entry,
   getAudioUrl,
   deleteMeeting,
+  isGoogleConnected,
 }) => {
   const { t, i18n } = useTranslation();
   const [showSummaryCopied, setShowSummaryCopied] = useState(false);
   const [showTranscriptCopied, setShowTranscriptCopied] = useState(false);
   const [expandTranscript, setExpandTranscript] = useState(false);
+
+  const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
+  const [recipientsInput, setRecipientsInput] = useState("");
+  const [emailsError, setEmailsError] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const validateEmails = (input: string): string[] | null => {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      setEmailsError(
+        t("settings.meetings.recipientsRequired") ||
+          "Recipient email is required.",
+      );
+      return null;
+    }
+    const emails = trimmed.split(/[\s,]+/).filter(Boolean);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const email of emails) {
+      if (!emailRegex.test(email)) {
+        setEmailsError(
+          t("settings.meetings.invalidEmail", { email }) ||
+            `Invalid email address: ${email}`,
+        );
+        return null;
+      }
+    }
+    setEmailsError("");
+    return emails;
+  };
+
+  const handleSendFollowUp = async () => {
+    const emails = validateEmails(recipientsInput);
+    if (!emails) {
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      let summary = "";
+      let actionItems: string[] = [];
+      try {
+        const parsed = JSON.parse(entry.post_processed_text || "");
+        summary = parsed.summary || "";
+        actionItems = parsed.action_items || [];
+      } catch (e) {
+        summary = entry.post_processed_text || entry.transcription_text;
+        actionItems = [];
+      }
+
+      const result = (await invoke("send_meeting_follow_up", {
+        recipients: emails,
+        summary,
+        action_items: actionItems,
+        actionItems,
+      })) as any;
+
+      let success = true;
+      if (result && typeof result === "object" && "status" in result) {
+        if (result.status !== "ok") {
+          success = false;
+          toast.error(
+            t("settings.meetings.sendFollowUpError") ||
+              "Failed to send follow-up: " + result.error,
+          );
+        }
+      }
+
+      if (success) {
+        toast.success(
+          t("settings.meetings.sendFollowUpSuccess") ||
+            "Follow-up email and tasks sent successfully!",
+        );
+        setShowFollowUpDialog(false);
+        setRecipientsInput("");
+      }
+    } catch (error: any) {
+      console.error("Failed to send meeting follow-up:", error);
+      toast.error(
+        t("settings.meetings.sendFollowUpError") ||
+          "Failed to send follow-up email/tasks",
+      );
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const handleLoadAudio = useCallback(
     () => getAudioUrl(entry.file_name),
@@ -267,13 +492,42 @@ const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
 
   const formattedDate = formatDateTime(String(entry.timestamp), i18n.language);
 
+  const displaySummary = React.useMemo(() => {
+    if (
+      entry.post_process_prompt === "default_meeting_notes_with_actions" &&
+      entry.post_processed_text
+    ) {
+      try {
+        const parsed = JSON.parse(entry.post_processed_text);
+        return parsed.summary || entry.post_processed_text;
+      } catch (e) {
+        return entry.post_processed_text;
+      }
+    }
+    return entry.post_processed_text || entry.transcription_text;
+  }, [
+    entry.post_process_prompt,
+    entry.post_processed_text,
+    entry.transcription_text,
+  ]);
+
   return (
     <div className="px-4 py-4 flex flex-col gap-4">
       <div className="flex justify-between items-center border-b border-mid-gray/10 pb-2">
         <div>
           <p className="text-sm font-semibold text-text">{formattedDate}</p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          {isGoogleConnected && (
+            <button
+              onClick={() => setShowFollowUpDialog(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-logo-primary hover:text-logo-primary/80 transition-colors bg-logo-primary/10 px-2 py-1 rounded-md cursor-pointer send-via-google-btn"
+              title={t("settings.meetings.sendViaGoogle")}
+            >
+              <Mail width={14} height={14} />
+              {t("settings.meetings.sendViaGoogle")}
+            </button>
+          )}
           <IconButton
             onClick={handleDelete}
             title={t("settings.history.delete")}
@@ -299,8 +553,19 @@ const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
             )}
           </IconButton>
         </div>
-        <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/10 text-sm text-text/90 whitespace-pre-wrap select-text">
-          {entry.post_processed_text || t("settings.meetings.summaryFailed")}
+        <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/10 text-sm text-text/90 select-text markdown-summary">
+          {entry.post_processed_text ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {entry.post_processed_text}
+            </ReactMarkdown>
+          ) : entry.transcription_text === "" ? (
+            <div className="flex items-center gap-2 text-mid-gray py-1">
+              <span className="w-3.5 h-3.5 border-2 border-logo-primary border-t-transparent rounded-full animate-spin"></span>
+              <span>{t("settings.meetings.processing")}</span>
+            </div>
+          ) : (
+            t("settings.meetings.summaryFailed")
+          )}
         </div>
       </div>
 
@@ -344,6 +609,65 @@ const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
       </div>
 
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full mt-1" />
+
+      {showFollowUpDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 follow-up-dialog">
+          <div className="bg-background border border-mid-gray/20 rounded-lg max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 className="text-base font-semibold text-text">
+              {t("settings.meetings.sendFollowUpTitle")}
+            </h3>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-mid-gray">
+                {t("settings.meetings.recipientsLabel")}
+              </label>
+              <textarea
+                value={recipientsInput}
+                onChange={(e) => {
+                  setRecipientsInput(e.target.value);
+                  setEmailsError("");
+                }}
+                disabled={isSending}
+                placeholder={t("settings.meetings.recipientsPlaceholder")}
+                className="w-full h-20 px-3 py-2 bg-mid-gray/5 border border-mid-gray/20 rounded-md text-sm text-text focus:outline-none focus:border-logo-primary resize-none recipients-input"
+              />
+              {emailsError && (
+                <p className="text-xs font-medium text-red-500 error-message">
+                  {emailsError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-mid-gray/10">
+              <button
+                onClick={() => {
+                  setShowFollowUpDialog(false);
+                  setRecipientsInput("");
+                  setEmailsError("");
+                }}
+                disabled={isSending}
+                className="px-4 py-2 text-xs font-medium text-text hover:bg-mid-gray/10 rounded-md transition-colors cursor-pointer cancel-btn"
+              >
+                {t("settings.meetings.cancel")}
+              </button>
+              <button
+                onClick={handleSendFollowUp}
+                disabled={isSending}
+                className="px-4 py-2 text-xs font-medium bg-logo-primary text-white hover:bg-logo-primary/95 disabled:opacity-55 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 send-btn"
+              >
+                {isSending ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    {t("settings.meetings.sending")}
+                  </>
+                ) : (
+                  t("settings.meetings.send")
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

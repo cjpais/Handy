@@ -1024,8 +1024,8 @@ pub async fn fetch_post_process_models(
         if provider_id == "google" {
             return Ok(vec![
                 "gemma-4-26b-a4b-it".to_string(),
-                "gemini-1.5-flash".to_string(),
-                "gemini-1.5-pro".to_string(),
+                "gemini-2.5-flash".to_string(),
+                "gemini-2.5-pro".to_string(),
             ]);
         }
         return Err(format!(
@@ -1054,8 +1054,8 @@ pub async fn fetch_post_process_models(
                 );
                 Ok(vec![
                     "gemma-4-26b-a4b-it".to_string(),
-                    "gemini-1.5-flash".to_string(),
-                    "gemini-1.5-pro".to_string(),
+                    "gemini-2.5-flash".to_string(),
+                    "gemini-2.5-pro".to_string(),
                 ])
             } else {
                 Err(e)

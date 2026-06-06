@@ -145,7 +145,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     // - openrouter: nested reasoning object; exclude:true also keeps reasoning text
     //   out of the response so it can't pollute structured-output JSON parsing
     let (reasoning_effort, reasoning) = match provider.id.as_str() {
-        "custom" => (Some("none".to_string()), None),
+        "custom" | "google" => (Some("none".to_string()), None),
         "openrouter" => (
             None,
             Some(crate::llm_client::ReasoningConfig {
@@ -207,12 +207,22 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         }
 
         // Define JSON schema for transcription output
+        let description = if selected_prompt_id == "default_meeting_summary" {
+            "The meeting summary and action items in English"
+        } else if selected_prompt_id == "default_translate_to_english" {
+            "The translated text in English"
+        } else if selected_prompt_id == "default_manglish_transliteration" {
+            "The transliterated text in Manglish"
+        } else {
+            "The cleaned and processed transcription text"
+        };
+
         let json_schema = serde_json::json!({
             "type": "object",
             "properties": {
                 (TRANSCRIPTION_FIELD): {
                     "type": "string",
-                    "description": "The cleaned and processed transcription text"
+                    "description": description
                 }
             },
             "required": [TRANSCRIPTION_FIELD],
@@ -311,7 +321,7 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
     }
 }
 
-async fn run_specific_llm_prompt(
+pub async fn run_specific_llm_prompt(
     settings: &AppSettings,
     prompt_id: &str,
     text: &str,
@@ -370,7 +380,7 @@ async fn run_specific_llm_prompt(
         .unwrap_or_default();
 
     let (reasoning_effort, reasoning) = match provider.id.as_str() {
-        "custom" => (Some("none".to_string()), None),
+        "custom" | "google" => (Some("none".to_string()), None),
         "openrouter" => (
             None,
             Some(crate::llm_client::ReasoningConfig {
@@ -410,13 +420,22 @@ async fn run_specific_llm_prompt(
             #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
             return None;
         }
+        let description = if prompt_id == "default_meeting_summary" {
+            "The meeting summary and action items in English"
+        } else if prompt_id == "default_translate_to_english" {
+            "The translated text in English"
+        } else if prompt_id == "default_manglish_transliteration" {
+            "The transliterated text in Manglish"
+        } else {
+            "The cleaned and processed transcription text"
+        };
 
         let json_schema = serde_json::json!({
             "type": "object",
             "properties": {
                 (TRANSCRIPTION_FIELD): {
                     "type": "string",
-                    "description": "The cleaned and processed transcription text"
+                    "description": description
                 }
             },
             "required": [TRANSCRIPTION_FIELD],
@@ -619,7 +638,7 @@ async fn run_manglish_transliteration(settings: &AppSettings, text: &str) -> Opt
                 google_key,
                 "gemma-4-26b-a4b-it",
                 processed_prompt,
-                None,
+                Some("none".to_string()),
                 None,
             )
             .await
@@ -665,7 +684,7 @@ async fn run_english_translation(settings: &AppSettings, text: &str) -> Option<S
                 google_key,
                 "gemma-4-26b-a4b-it",
                 processed_prompt,
-                None,
+                Some("none".to_string()),
                 None,
             )
             .await
@@ -821,8 +840,11 @@ impl ShortcutAction for TranscribeAction {
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
 
-        let post_process =
-            get_settings(app).post_process_enabled || binding_id == "transcribe_with_post_process";
+        let settings = get_settings(app);
+        let post_process = binding_id == "transcribe_with_post_process";
+        let has_llm_post_process = post_process
+            || settings.output_language == OutputLanguage::Manglish
+            || settings.output_language == OutputLanguage::English;
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         tauri::async_runtime::spawn(async move {
@@ -891,7 +913,7 @@ impl ShortcutAction for TranscribeAction {
                                 transcription
                             );
 
-                            if post_process {
+                            if has_llm_post_process {
                                 show_processing_overlay(&ah);
                             }
                             let processed =
@@ -903,7 +925,7 @@ impl ShortcutAction for TranscribeAction {
                                 if let Err(err) = hm.save_entry(
                                     file_name,
                                     transcription,
-                                    post_process,
+                                    has_llm_post_process,
                                     processed.post_processed_text.clone(),
                                     processed.post_process_prompt.clone(),
                                 ) {
@@ -1173,17 +1195,26 @@ impl ShortcutAction for MeetingAction {
                             show_processing_overlay(&ah);
 
                             let settings = get_settings(&ah);
-                            let summary_opt = run_specific_llm_prompt(
-                                &settings,
-                                "default_meeting_summary",
-                                &transcription,
-                            )
-                            .await;
+                            let prompt_id = if settings.google_oauth_token.is_some() {
+                                "default_meeting_notes_with_actions"
+                            } else {
+                                "default_meeting_summary"
+                            };
 
-                            let final_text = summary_opt.clone().unwrap_or_else(|| {
-                                warn!("Meeting summarization failed; using raw transcription.");
-                                transcription.clone()
-                            });
+                            let summary_opt =
+                                run_specific_llm_prompt(&settings, prompt_id, &transcription).await;
+
+                            let display_summary = if prompt_id == "default_meeting_notes_with_actions" {
+                                summary_opt.as_ref().and_then(|json_str| {
+                                    serde_json::from_str::<serde_json::Value>(json_str).ok().and_then(|v| {
+                                        v.get("summary").and_then(|s| s.as_str()).map(|s| s.to_string())
+                                    })
+                                }).unwrap_or_else(|| {
+                                    summary_opt.clone().unwrap_or_else(|| transcription.clone())
+                                })
+                            } else {
+                                summary_opt.clone().unwrap_or_else(|| transcription.clone())
+                            };
 
                             // Save to history if WAV was saved
                             if wav_saved {
@@ -1192,20 +1223,20 @@ impl ShortcutAction for MeetingAction {
                                     transcription.clone(),
                                     true,
                                     summary_opt.clone(),
-                                    Some("default_meeting_summary".to_string()),
+                                    Some(prompt_id.to_string()),
                                 ) {
                                     error!("Failed to save history entry: {}", err);
                                 }
                             }
 
-                            if final_text.is_empty() {
+                            if display_summary.is_empty() {
                                 utils::hide_recording_overlay(&ah);
                                 change_tray_icon(&ah, TrayIconState::Idle);
                             } else {
                                 let _ = ah.emit(
                                     "meeting-summary",
                                     MeetingSummaryPayload {
-                                        summary: final_text,
+                                        summary: display_summary,
                                         transcript: transcription,
                                     },
                                 );

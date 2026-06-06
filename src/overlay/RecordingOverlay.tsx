@@ -77,11 +77,7 @@ const RecordingOverlay: React.FC = () => {
     if (state === "recording") {
       if (isMeeting) {
         return (
-          <Video
-            size={18}
-            strokeWidth={1.8}
-            className="overlay-meeting-icon"
-          />
+          <Video size={18} strokeWidth={1.8} className="overlay-meeting-icon" />
         );
       }
       return <MicrophoneIcon />;

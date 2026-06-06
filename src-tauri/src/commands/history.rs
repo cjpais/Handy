@@ -67,21 +67,20 @@ pub async fn process_local_file(
         .map_err(|e| e.to_string())?;
 
     let (post_processed_text, post_process_prompt) = if is_meeting {
-        crate::utils::show_processing_overlay(&app);
         // For meetings, we want to force post-processing with the summary prompt.
-        let processed = process_transcription_output(&app, &transcription, true).await;
-        (
-            processed.post_processed_text,
-            Some("default_meeting_summary".to_string()),
-        )
-    } else {
         let settings = crate::settings::get_settings(&app);
-        let processed =
-            process_transcription_output(&app, &transcription, settings.post_process_enabled).await;
+        let prompt_id = if settings.google_oauth_token.is_some() {
+            "default_meeting_notes_with_actions"
+        } else {
+            "default_meeting_summary"
+        };
+        let summary_opt =
+            crate::actions::run_specific_llm_prompt(&settings, prompt_id, &transcription).await;
+        (summary_opt, Some(prompt_id.to_string()))
+    } else {
+        let processed = process_transcription_output(&app, &transcription, false).await;
         (processed.post_processed_text, processed.post_process_prompt)
     };
-
-    crate::utils::hide_recording_overlay(&app);
 
     // Update the entry in the DB. Since we don't have the ID easily, we can find it by file_name.
     // We query the latest entries to find the one we just created.

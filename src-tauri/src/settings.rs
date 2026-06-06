@@ -321,7 +321,7 @@ impl Default for OutputLanguage {
 
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
-pub(crate) struct SecretMap(HashMap<String, String>);
+pub struct SecretMap(pub HashMap<String, String>);
 
 impl fmt::Debug for SecretMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -446,6 +446,8 @@ pub struct AppSettings {
     pub extra_recording_buffer_ms: u64,
     #[serde(default)]
     pub output_language: OutputLanguage,
+    #[serde(default)]
+    pub google_oauth_token: Option<String>,
 }
 
 fn default_model() -> String {
@@ -684,7 +686,7 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
         LLMPrompt {
             id: "default_meeting_summary".to_string(),
             name: "Meeting Summary".to_string(),
-            prompt: "Summarize the following meeting transcript in English. At the end, add an \"Action Items\" section with bullet points prefixed with ✅ for any tasks, decisions, or follow-ups mentioned.\n\nFormat:\n## Summary\n[concise meeting summary]\n\n## Action Items\n✅ [action item 1]\n✅ [action item 2]\n...\n\nTranscript:\n${output}".to_string(),
+            prompt: "You are a helpful assistant. Write a high-level, concise summary of the meeting transcript in English. Focus on the main topics discussed, key arguments, and decisions made. Do NOT translate the transcript sentence-by-sentence. Keep the summary under 200 words. At the end, add an \"Action Items\" section with bullet points prefixed with ✅ for any tasks, decisions, or follow-ups mentioned.\n\nFormat:\n## Summary\n[Write a concise meeting summary here]\n\n## Action Items\n✅ [action item 1]\n✅ [action item 2]\n...\n\nTranscript:\n${output}".to_string(),
         },
     ]
 }
@@ -751,13 +753,23 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     }
 
     for prompt in default_post_process_prompts() {
-        if !settings
+        match settings
             .post_process_prompts
-            .iter()
-            .any(|p| p.id == prompt.id)
+            .iter_mut()
+            .find(|p| p.id == prompt.id)
         {
-            settings.post_process_prompts.push(prompt);
-            changed = true;
+            Some(existing) => {
+                if existing.id == "default_meeting_summary"
+                    && !existing.prompt.contains("Do NOT translate")
+                {
+                    existing.prompt = prompt.prompt.clone();
+                    changed = true;
+                }
+            }
+            None => {
+                settings.post_process_prompts.push(prompt);
+                changed = true;
+            }
         }
     }
 
@@ -870,6 +882,7 @@ pub fn get_default_settings() -> AppSettings {
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
         output_language: OutputLanguage::default(),
+        google_oauth_token: None,
     }
 }
 

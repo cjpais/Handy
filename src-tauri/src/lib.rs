@@ -1,4 +1,4 @@
-mod actions;
+pub mod actions;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod apple_intelligence;
 mod audio_feedback;
@@ -8,11 +8,11 @@ mod clipboard;
 mod commands;
 mod helpers;
 mod input;
-mod llm_client;
+pub mod llm_client;
 mod managers;
 mod overlay;
 pub mod portable;
-mod settings;
+pub mod settings;
 mod shortcut;
 mod signal_handle;
 mod transcription_coordinator;
@@ -21,7 +21,7 @@ mod tray_i18n;
 mod utils;
 
 #[cfg(windows)]
-mod malayalam_asr;
+pub mod malayalam_asr;
 
 pub use cli::CliArgs;
 #[cfg(debug_assertions)]
@@ -760,6 +760,10 @@ mod test_bindings {
                 commands::history::retry_history_entry_transcription,
                 commands::history::update_history_limit,
                 commands::history::update_recording_retention_period,
+                commands::google::start_google_oauth,
+                commands::google::get_google_auth_status,
+                commands::google::disconnect_google_auth,
+                commands::google::send_meeting_follow_up,
                 helpers::clamshell::is_laptop,
             ])
             .events(tauri_specta::collect_events![
