@@ -5,7 +5,7 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{get_settings, AppSettings, OutputLanguage, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -552,10 +552,34 @@ pub(crate) async fn process_transcription_output(
         post_processed_text = Some(final_text.clone());
     }
 
-    if settings.manglish_output {
-        if let Some(transliterated) = run_manglish_transliteration(&settings, &final_text).await {
-            post_processed_text = Some(transliterated.clone());
-            final_text = transliterated;
+    match settings.output_language {
+        OutputLanguage::Malayalam => {}
+        OutputLanguage::Manglish => {
+            if let Some(transliterated) = run_manglish_transliteration(&settings, &final_text).await
+            {
+                post_processed_text = Some(transliterated.clone());
+                final_text = transliterated;
+                if post_process_prompt.is_none() {
+                    post_process_prompt = settings
+                        .post_process_prompts
+                        .iter()
+                        .find(|p| p.id == "default_manglish_transliteration")
+                        .map(|p| p.prompt.clone());
+                }
+            }
+        }
+        OutputLanguage::English => {
+            if let Some(translated) = run_english_translation(&settings, &final_text).await {
+                post_processed_text = Some(translated.clone());
+                final_text = translated;
+                if post_process_prompt.is_none() {
+                    post_process_prompt = settings
+                        .post_process_prompts
+                        .iter()
+                        .find(|p| p.id == "default_translate_to_english")
+                        .map(|p| p.prompt.clone());
+                }
+            }
         }
     }
 
@@ -611,6 +635,52 @@ async fn run_manglish_transliteration(settings: &AppSettings, text: &str) -> Opt
     }
     // Fallback: use active post-process provider
     run_specific_llm_prompt(settings, "default_manglish_transliteration", text).await
+}
+
+/// Run English translation using the Google/Gemini provider with gemma-4-26b-a4b-it.
+/// Falls back to the active post-processing provider if Google API key is not set.
+async fn run_english_translation(settings: &AppSettings, text: &str) -> Option<String> {
+    let google_provider = settings.post_process_provider("google").cloned();
+    let google_key = settings
+        .post_process_api_keys
+        .get("google")
+        .cloned()
+        .unwrap_or_default();
+
+    if let Some(provider) = google_provider {
+        if !google_key.trim().is_empty() {
+            let prompt_text = settings
+                .post_process_prompts
+                .iter()
+                .find(|p| p.id == "default_translate_to_english")
+                .map(|p| p.prompt.clone())
+                .unwrap_or_else(|| {
+                    "Translate the following Malayalam text into English:\n\n${output}".to_string()
+                });
+
+            let processed_prompt = prompt_text.replace("${output}", text);
+            debug!("Running English translation with Google/gemma-4-26b-a4b-it");
+            match crate::llm_client::send_chat_completion(
+                &provider,
+                google_key,
+                "gemma-4-26b-a4b-it",
+                processed_prompt,
+                None,
+                None,
+            )
+            .await
+            {
+                Ok(Some(result)) => return Some(strip_invisible_chars(&result)),
+                Ok(None) => debug!("English: Google returned empty response"),
+                Err(e) => debug!(
+                    "English: Google failed: {}; falling back to active provider",
+                    e
+                ),
+            }
+        }
+    }
+    // Fallback: use active post-process provider
+    run_specific_llm_prompt(settings, "default_translate_to_english", text).await
 }
 
 impl ShortcutAction for TranscribeAction {
@@ -751,7 +821,8 @@ impl ShortcutAction for TranscribeAction {
         // Play audio feedback for recording stop
         play_feedback_sound(app, SoundType::Stop);
 
-        let post_process = get_settings(app).post_process_enabled || binding_id == "transcribe_with_post_process";
+        let post_process =
+            get_settings(app).post_process_enabled || binding_id == "transcribe_with_post_process";
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         tauri::async_runtime::spawn(async move {

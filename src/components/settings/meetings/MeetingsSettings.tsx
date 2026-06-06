@@ -193,14 +193,14 @@ export const MeetingsSettings: React.FC = () => {
             className="flex items-center gap-1.5 text-xs font-medium text-logo-primary hover:text-logo-primary/80 transition-colors bg-logo-primary/10 px-2 py-1 rounded-md"
           >
             <Upload className="w-3.5 h-3.5" />
-            Upload Audio
+            {t("settings.meetings.uploadAudio")}
           </button>
         </div>
         <div className="bg-background border border-mid-gray/20 rounded-lg overflow-visible">
           {content}
         </div>
       </div>
-      
+
       {transcriberFiles.length > 0 && (
         <LocalFileTranscriber
           initialFiles={transcriberFiles}

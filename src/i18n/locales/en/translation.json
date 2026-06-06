@@ -205,9 +205,23 @@
         "label": "Push To Talk",
         "description": "Hold to record, release to stop"
       },
-      "manglishToggle": {
-        "label": "Manglish Transliteration",
-        "description": "Automatically transliterates Malayalam speech transcriptions into Manglish (Latin script)."
+      "outputLanguage": {
+        "title": "Output Language",
+        "description": "Choose the format for transcriptions: raw Malayalam, transliterated Manglish, or translated English.",
+        "options": {
+          "malayalam": {
+            "label": "Malayalam",
+            "description": "Output raw Malayalam transcriptions"
+          },
+          "manglish": {
+            "label": "Manglish",
+            "description": "Transliterate Malayalam text into Manglish via Gemini"
+          },
+          "english": {
+            "label": "English",
+            "description": "Translate Malayalam text into English via Gemini"
+          }
+        }
       }
     },
     "models": {
@@ -458,7 +472,8 @@
       "summaryFailed": "Failed to generate meeting summary.",
       "fullTranscript": "Full Transcript",
       "toastSuccess": "Meeting summary generated!",
-      "activeIndicator": "Meeting Recording..."
+      "activeIndicator": "Meeting Recording...",
+      "uploadAudio": "Upload Audio"
     },
     "debug": {
       "title": "Debug",
@@ -635,5 +650,17 @@
   "overlay": {
     "transcribing": "Transcribing...",
     "processing": "Processing..."
+  },
+  "localFileTranscriber": {
+    "title": "Transcribe Local Files",
+    "empty": "No files selected. Add some audio files to transcribe.",
+    "selectedFiles": "Selected Files:",
+    "addMoreFiles": "Add more files",
+    "action": "Action:",
+    "summarizeAsMeeting": "Summarize as Meeting",
+    "summarizeAsMeetingDesc": "Transcribes and summarizes to English (Meetings tab)",
+    "plainTranscribe": "Plain Transcribe",
+    "plainTranscribeDesc": "Basic Malayalam transcription (History tab)",
+    "startTranscription": "Start Transcription"
   }
 }

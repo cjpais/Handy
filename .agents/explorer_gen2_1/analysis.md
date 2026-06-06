@@ -3,6 +3,7 @@
 This report outlines the code analysis and implementation details for the requested features: Shortcut Cleanup, Meeting Mode, Gemini Model Defaults, and Transliteration.
 
 ## 1. Shortcut Cleanup
+
 - **Findings**:
   - The `transcribe_with_post_process` command had been partially cleaned up in the backend but was still present in default settings and some front-end files.
   - Fixes were completed to eliminate `transcribe_with_post_process` from all registration points and settings schemas.
@@ -10,6 +11,7 @@ This report outlines the code analysis and implementation details for the reques
   - Cleaned up frontend settings by removing obsolete hotkey input blocks and layout options while keeping `is_transcribe_binding` and `ACTION_MAP` matching.
 
 ## 2. Meeting Mode
+
 - **Findings**:
   - Backend integration emits `"meeting-summary"` event containing `{ summary: String, transcript: String }` and stores entries into SQLite database using the `"default_meeting_summary"` `post_process_prompt` tag.
 - **Implemented Frontend Components**:
@@ -19,6 +21,7 @@ This report outlines the code analysis and implementation details for the reques
   - **Translations**: Added necessary strings for `meetings` titles, empty states, loading, and connection success/failure toasts in `translation.json`.
 
 ## 3. Gemini Model Defaults and Transliteration
+
 - **Findings**:
   - `run_manglish_transliteration` in `src-tauri/src/actions.rs` was verified to invoke `gemma-4-26b-a4b-it` when the Google API key is configured.
 - **Implemented Changes**:
@@ -26,5 +29,6 @@ This report outlines the code analysis and implementation details for the reques
   - **Default Model Setting**: Configured `default_model_for_provider("google")` in `src-tauri/src/settings.rs` to return `"gemma-4-26b-a4b-it"`.
 
 ## 4. Verification
+
 - **Rust Backend**: `cargo check` verified correct syntax and semantic compilation of `handy` with our new changes.
 - **Frontend Code**: `npm run lint` and `npm run format` passed successfully with no errors, confirming compliance with layout, syntax, i18n, and style rules.

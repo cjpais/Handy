@@ -24,10 +24,14 @@ pub async fn process_local_file(
     let dest_path = history_manager.recordings_dir().join(&file_name);
 
     // For now, we only support WAV or we attempt to read samples and save as WAV.
-    // Use read_wav_samples for simple implementation. 
+    // Use read_wav_samples for simple implementation.
     // In the future, this should decode mp3/flac using rodio.
-    let samples = crate::audio_toolkit::read_wav_samples(&source_path)
-        .map_err(|e| format!("Failed to read audio file (only WAV is supported currently): {}", e))?;
+    let samples = crate::audio_toolkit::read_wav_samples(&source_path).map_err(|e| {
+        format!(
+            "Failed to read audio file (only WAV is supported currently): {}",
+            e
+        )
+    })?;
 
     if samples.is_empty() {
         return Err("Audio file contains no samples".to_string());
@@ -38,7 +42,7 @@ pub async fn process_local_file(
         .map_err(|e| format!("Failed to save audio to recordings: {}", e))?;
 
     let is_meeting = action == "meeting";
-    
+
     // Create the history entry initially with empty text
     history_manager
         .save_entry(
@@ -46,7 +50,11 @@ pub async fn process_local_file(
             String::new(),
             is_meeting,
             None,
-            if is_meeting { Some("default_meeting_summary".to_string()) } else { None },
+            if is_meeting {
+                Some("default_meeting_summary".to_string())
+            } else {
+                None
+            },
         )
         .map_err(|e| format!("Failed to create history entry: {}", e))?;
 
@@ -62,10 +70,14 @@ pub async fn process_local_file(
         crate::utils::show_processing_overlay(&app);
         // For meetings, we want to force post-processing with the summary prompt.
         let processed = process_transcription_output(&app, &transcription, true).await;
-        (processed.post_processed_text, Some("default_meeting_summary".to_string()))
+        (
+            processed.post_processed_text,
+            Some("default_meeting_summary".to_string()),
+        )
     } else {
         let settings = crate::settings::get_settings(&app);
-        let processed = process_transcription_output(&app, &transcription, settings.post_process_enabled).await;
+        let processed =
+            process_transcription_output(&app, &transcription, settings.post_process_enabled).await;
         (processed.post_processed_text, processed.post_process_prompt)
     };
 
@@ -74,7 +86,11 @@ pub async fn process_local_file(
     // Update the entry in the DB. Since we don't have the ID easily, we can find it by file_name.
     // We query the latest entries to find the one we just created.
     if let Ok(paginated) = history_manager.get_history_entries(None, Some(20)).await {
-        if let Some(entry) = paginated.entries.into_iter().find(|e| e.file_name == file_name) {
+        if let Some(entry) = paginated
+            .entries
+            .into_iter()
+            .find(|e| e.file_name == file_name)
+        {
             history_manager
                 .update_transcription(
                     entry.id,

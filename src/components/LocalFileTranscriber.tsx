@@ -4,7 +4,7 @@ import { X, FileAudio, FilePlus2, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Button } from "./ui/Button";
-import { commands, events } from "@/bindings";
+import { commands } from "@/bindings";
 
 interface LocalFileTranscriberProps {
   initialFiles: string[];
@@ -19,8 +19,6 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
 }) => {
   const { t } = useTranslation();
   const [files, setFiles] = useState<string[]>(initialFiles);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [action, setAction] = useState<"meeting" | "transcribe">("meeting");
 
   const handleAddMore = async () => {
@@ -36,7 +34,10 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
       });
       if (selected) {
         const newFiles = Array.isArray(selected) ? selected : [selected];
-        setFiles((prev) => [...prev, ...newFiles.filter((f) => !prev.includes(f))]);
+        setFiles((prev) => [
+          ...prev,
+          ...newFiles.filter((f) => !prev.includes(f)),
+        ]);
       }
     } catch (error) {
       console.error("Failed to open file dialog:", error);
@@ -47,32 +48,46 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
     setFiles((prev) => prev.filter((f) => f !== fileToRemove));
   };
 
-  const handleTranscribe = async () => {
+  const handleTranscribe = () => {
     if (files.length === 0) return;
-    setIsProcessing(true);
-    setProgress({ current: 0, total: files.length });
 
-    let successCount = 0;
-    for (let i = 0; i < files.length; i++) {
-      setProgress({ current: i + 1, total: files.length });
-      try {
-        const result = await commands.processLocalFile(files[i], action);
-        if (result.status === "ok") {
-          successCount++;
-        } else {
-          toast.error(`Failed to process ${files[i].split(/[/\\]/).pop()}: ${result.error}`);
-        }
-      } catch (error: any) {
-        toast.error(`Error processing ${files[i].split(/[/\\]/).pop()}: ${error.message || error}`);
-      }
-    }
+    const filesToProcess = [...files];
+    const targetAction = action;
 
-    setIsProcessing(false);
-    if (successCount > 0) {
-      toast.success(`Successfully processed ${successCount} file(s)`);
-      onSuccess(action);
-    }
+    // Close dialog immediately
     onClose();
+
+    // Detach and process in background
+    (async () => {
+      let successCount = 0;
+      toast.info(
+        `Started transcription for ${filesToProcess.length} file(s) in background.`,
+      );
+      for (let i = 0; i < filesToProcess.length; i++) {
+        try {
+          const result = await commands.processLocalFile(
+            filesToProcess[i],
+            targetAction,
+          );
+          if (result.status === "ok") {
+            successCount++;
+          } else {
+            toast.error(
+              `Failed to process ${filesToProcess[i].split(/[/\\]/).pop()}: ${result.error}`,
+            );
+          }
+        } catch (error: any) {
+          toast.error(
+            `Error processing ${filesToProcess[i].split(/[/\\]/).pop()}: ${error.message || error}`,
+          );
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully processed ${successCount} file(s)`);
+        onSuccess(targetAction);
+      }
+    })();
   };
 
   return (
@@ -81,12 +96,11 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-mid-gray/20">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <FileAudio className="w-5 h-5 text-logo-primary" />
-            Transcribe Local Files
+            {t("localFileTranscriber.title")}
           </h2>
           <button
             onClick={onClose}
-            disabled={isProcessing}
-            className="p-1 rounded-md hover:bg-mid-gray/10 text-mid-gray transition-colors disabled:opacity-50"
+            className="p-1 rounded-md hover:bg-mid-gray/10 text-mid-gray transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -95,11 +109,13 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
         <div className="p-4 flex-1 overflow-y-auto space-y-4">
           {files.length === 0 ? (
             <div className="text-center text-mid-gray py-8">
-              No files selected. Add some audio files to transcribe.
+              {t("localFileTranscriber.empty")}
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="text-sm font-medium text-text/80 mb-2">Selected Files:</div>
+              <div className="text-sm font-medium text-text/80 mb-2">
+                {t("localFileTranscriber.selectedFiles")}
+              </div>
               {files.map((file, idx) => {
                 const fileName = file.split(/[/\\]/).pop() || file;
                 return (
@@ -112,8 +128,7 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
                     </span>
                     <button
                       onClick={() => removeFile(file)}
-                      disabled={isProcessing}
-                      className="text-mid-gray hover:text-red-500 transition-colors disabled:opacity-50"
+                      className="text-mid-gray hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -126,16 +141,17 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
           <div className="pt-2 border-t border-mid-gray/10">
             <button
               onClick={handleAddMore}
-              disabled={isProcessing}
-              className="flex items-center gap-2 text-sm text-logo-primary hover:text-logo-primary/80 font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 text-sm text-logo-primary hover:text-logo-primary/80 font-medium transition-colors"
             >
               <FilePlus2 className="w-4 h-4" />
-              Add more files
+              {t("localFileTranscriber.addMoreFiles")}
             </button>
           </div>
 
           <div className="space-y-3 pt-4 border-t border-mid-gray/10">
-            <div className="text-sm font-medium text-text/80">Action:</div>
+            <div className="text-sm font-medium text-text/80">
+              {t("localFileTranscriber.action")}
+            </div>
             <div className="flex flex-col gap-2">
               <label className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors bg-mid-gray/5 border-mid-gray/20 hover:border-logo-primary/50">
                 <input
@@ -144,12 +160,15 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
                   value="meeting"
                   checked={action === "meeting"}
                   onChange={() => setAction("meeting")}
-                  disabled={isProcessing}
                   className="w-4 h-4 text-logo-primary focus:ring-logo-primary bg-background border-mid-gray/30"
                 />
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">Summarize as Meeting</span>
-                  <span className="text-xs text-mid-gray">Transcribes and summarizes to English (Meetings tab)</span>
+                  <span className="text-sm font-medium">
+                    {t("localFileTranscriber.summarizeAsMeeting")}
+                  </span>
+                  <span className="text-xs text-mid-gray">
+                    {t("localFileTranscriber.summarizeAsMeetingDesc")}
+                  </span>
                 </div>
               </label>
 
@@ -160,12 +179,15 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
                   value="transcribe"
                   checked={action === "transcribe"}
                   onChange={() => setAction("transcribe")}
-                  disabled={isProcessing}
                   className="w-4 h-4 text-logo-primary focus:ring-logo-primary bg-background border-mid-gray/30"
                 />
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">Plain Transcribe</span>
-                  <span className="text-xs text-mid-gray">Basic Malayalam transcription (History tab)</span>
+                  <span className="text-sm font-medium">
+                    {t("localFileTranscriber.plainTranscribe")}
+                  </span>
+                  <span className="text-xs text-mid-gray">
+                    {t("localFileTranscriber.plainTranscribeDesc")}
+                  </span>
                 </div>
               </label>
             </div>
@@ -173,27 +195,18 @@ export const LocalFileTranscriber: React.FC<LocalFileTranscriberProps> = ({
         </div>
 
         <div className="p-4 border-t border-mid-gray/20 bg-mid-gray/5 flex flex-col gap-3">
-          {isProcessing && (
-            <div className="text-sm text-center text-logo-primary font-medium animate-pulse">
-              Processing {progress.current} of {progress.total}...
-            </div>
-          )}
           <div className="flex justify-end gap-3">
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              disabled={isProcessing}
-            >
-              Cancel
+            <Button variant="ghost" onClick={onClose}>
+              {t("common.cancel")}
             </Button>
             <Button
               variant="primary"
               onClick={handleTranscribe}
-              disabled={isProcessing || files.length === 0}
+              disabled={files.length === 0}
               className="flex items-center gap-2"
             >
               <Play className="w-4 h-4" />
-              Start Transcription
+              {t("localFileTranscriber.startTranscription")}
             </Button>
           </div>
         </div>

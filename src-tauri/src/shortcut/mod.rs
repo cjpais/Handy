@@ -799,16 +799,19 @@ pub fn change_post_process_enabled_setting(app: AppHandle, enabled: bool) -> Res
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_manglish_output_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn change_output_language_setting(
+    app: AppHandle,
+    language: settings::OutputLanguage,
+) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.manglish_output = enabled;
+    settings.output_language = language;
     settings::write_settings(&app, settings.clone());
 
     let _ = app.emit(
         "settings-changed",
         serde_json::json!({
-            "setting": "manglish_output",
-            "value": enabled
+            "setting": "output_language",
+            "value": language
         }),
     );
 

@@ -1,6 +1,7 @@
 import { listen } from "@tauri-apps/api/event";
 import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Video } from "lucide-react";
 import {
   MicrophoneIcon,
   TranscriptionIcon,
@@ -17,6 +18,7 @@ const RecordingOverlay: React.FC = () => {
   const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [state, setState] = useState<OverlayState>("recording");
+  const [isMeeting, setIsMeeting] = useState(false);
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0));
   const smoothedLevelsRef = useRef<number[]>(Array(16).fill(0));
   const direction = getLanguageDirection(i18n.language);
@@ -35,6 +37,14 @@ const RecordingOverlay: React.FC = () => {
       // Listen for hide-overlay event from Rust
       const unlistenHide = await listen("hide-overlay", () => {
         setIsVisible(false);
+        setIsMeeting(false);
+      });
+
+      // Listen for recording mode changes to know if we're in meeting mode
+      const unlistenMode = await listen<{
+        mode: "meeting" | "transcribe" | "idle";
+      }>("recording-state-changed", (event) => {
+        setIsMeeting(event.payload.mode === "meeting");
       });
 
       // Listen for mic-level updates
@@ -55,6 +65,7 @@ const RecordingOverlay: React.FC = () => {
       return () => {
         unlistenShow();
         unlistenHide();
+        unlistenMode();
         unlistenLevel();
       };
     };
@@ -64,6 +75,15 @@ const RecordingOverlay: React.FC = () => {
 
   const getIcon = () => {
     if (state === "recording") {
+      if (isMeeting) {
+        return (
+          <Video
+            size={18}
+            strokeWidth={1.8}
+            className="overlay-meeting-icon"
+          />
+        );
+      }
       return <MicrophoneIcon />;
     } else {
       return <TranscriptionIcon />;
@@ -73,7 +93,9 @@ const RecordingOverlay: React.FC = () => {
   return (
     <div
       dir={direction}
-      className={`recording-overlay ${isVisible ? "fade-in" : ""}`}
+      className={`recording-overlay ${isVisible ? "fade-in" : ""} ${
+        isMeeting ? "meeting" : ""
+      }`}
     >
       <div className="overlay-left">{getIcon()}</div>
 
@@ -83,7 +105,7 @@ const RecordingOverlay: React.FC = () => {
             {levels.map((v, i) => (
               <div
                 key={i}
-                className="bar"
+                className={`bar ${isMeeting ? "bar-meeting" : ""}`}
                 style={{
                   height: `${Math.min(20, 4 + Math.pow(v, 0.7) * 16)}px`, // Cap at 20px max height
                   transition: "height 60ms ease-out, opacity 120ms ease-out",

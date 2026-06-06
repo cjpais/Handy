@@ -353,7 +353,7 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_auto_submit_setting,
             shortcut::change_auto_submit_key_setting,
             shortcut::change_post_process_enabled_setting,
-            shortcut::change_manglish_output_setting,
+            shortcut::change_output_language_setting,
             shortcut::change_experimental_enabled_setting,
             shortcut::change_post_process_base_url_setting,
             shortcut::change_post_process_api_key_setting,
@@ -649,8 +649,8 @@ pub fn run(cli_args: CliArgs) {
 #[cfg(test)]
 mod test_bindings {
     use super::*;
-    use tauri_specta::Builder;
     use specta_typescript::{BigIntExportBehavior, Typescript};
+    use tauri_specta::Builder;
 
     #[test]
     fn export_bindings() {
@@ -679,7 +679,7 @@ mod test_bindings {
                 shortcut::change_auto_submit_setting,
                 shortcut::change_auto_submit_key_setting,
                 shortcut::change_post_process_enabled_setting,
-                shortcut::change_manglish_output_setting,
+                shortcut::change_output_language_setting,
                 shortcut::change_experimental_enabled_setting,
                 shortcut::change_post_process_base_url_setting,
                 shortcut::change_post_process_api_key_setting,
@@ -762,7 +762,9 @@ mod test_bindings {
                 commands::history::update_recording_retention_period,
                 helpers::clamshell::is_laptop,
             ])
-            .events(tauri_specta::collect_events![managers::history::HistoryUpdatePayload,]);
+            .events(tauri_specta::collect_events![
+                managers::history::HistoryUpdatePayload,
+            ]);
 
         specta_builder
             .export(
@@ -772,4 +774,3 @@ mod test_bindings {
             .expect("Failed to export typescript bindings");
     }
 }
-

@@ -6,6 +6,7 @@ import type {
   AudioDevice,
   WhisperAcceleratorSetting,
   OrtAcceleratorSetting,
+  OutputLanguage,
 } from "@/bindings";
 import { commands } from "@/bindings";
 
@@ -131,8 +132,8 @@ const settingUpdaters: {
   history_limit: (value) => commands.updateHistoryLimit(value as number),
   post_process_enabled: (value) =>
     commands.changePostProcessEnabledSetting(value as boolean),
-  manglish_output: (value) =>
-    commands.changeManglishOutputSetting(value as boolean),
+  output_language: (value) =>
+    commands.changeOutputLanguageSetting(value as OutputLanguage),
   post_process_selected_prompt_id: (value) =>
     commands.setPostProcessSelectedPrompt(value as string),
   mute_while_recording: (value) =>

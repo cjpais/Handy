@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { toast, Toaster } from "sonner";
 import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
-import { Mic } from "lucide-react";
 import { platform } from "@tauri-apps/plugin-os";
 import {
   checkAccessibilityPermission,
@@ -38,7 +37,9 @@ function App() {
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [currentSection, setCurrentSection] =
     useState<SidebarSection>("general");
-  const [recordingMode, setRecordingMode] = useState<"meeting" | "transcribe" | "idle">("idle");
+  const [recordingMode, setRecordingMode] = useState<
+    "meeting" | "transcribe" | "idle"
+  >("idle");
   const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
   const { settings, updateSetting } = useSettings();
   const direction = getLanguageDirection(i18n.language);
@@ -195,8 +196,8 @@ function App() {
       (event) => {
         if (event.payload.paths && event.payload.paths.length > 0) {
           // Filter for common audio extensions if needed, but we can also just pass them
-          const audioFiles = event.payload.paths.filter((p) => 
-            p.match(/\.(wav|mp3|m4a|flac|ogg)$/i)
+          const audioFiles = event.payload.paths.filter((p) =>
+            p.match(/\.(wav|mp3|m4a|flac|ogg)$/i),
           );
           if (audioFiles.length > 0) {
             setDroppedFiles((prev) => {
@@ -205,7 +206,8 @@ function App() {
             });
           } else {
             toast.error("Unsupported file format", {
-              description: "Please drop WAV, MP3, M4A, FLAC, or OGG audio files.",
+              description:
+                "Please drop WAV, MP3, M4A, FLAC, or OGG audio files.",
             });
           }
         }
@@ -339,12 +341,6 @@ function App() {
           </div>
         </div>
       </div>
-      {recordingMode === "meeting" && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-600/90 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg animate-pulse z-50">
-          <Mic className="w-4 h-4" />
-          {t("settings.meetings.activeIndicator") || "Meeting Recording..."}
-        </div>
-      )}
       {droppedFiles.length > 0 && (
         <LocalFileTranscriber
           initialFiles={droppedFiles}

@@ -48,8 +48,26 @@
   min-height: 4px;
 }
 
+.bar.bar-meeting {
+  background: #ddd6fe;
+}
+
 .recording-overlay.fade-in {
   opacity: 1;
+}
+
+/* Meeting mode: purple pill */
+.recording-overlay.meeting {
+  background: #7c3aed;
+}
+
+.recording-overlay.meeting .cancel-button:hover {
+  background: #ffffff33;
+}
+
+.overlay-meeting-icon {
+  color: #ffffff;
+  flex-shrink: 0;
 }
 
 .transcribing-text {

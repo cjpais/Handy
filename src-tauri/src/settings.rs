@@ -305,6 +305,20 @@ impl Default for OrtAcceleratorSetting {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum OutputLanguage {
+    Malayalam,
+    Manglish,
+    English,
+}
+
+impl Default for OutputLanguage {
+    fn default() -> Self {
+        OutputLanguage::Malayalam
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize, Type)]
 #[serde(transparent)]
 pub(crate) struct SecretMap(HashMap<String, String>);
@@ -431,7 +445,7 @@ pub struct AppSettings {
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
     #[serde(default)]
-    pub manglish_output: bool,
+    pub output_language: OutputLanguage,
 }
 
 fn default_model() -> String {
@@ -663,9 +677,14 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
             prompt: "Transliterate the following Malayalam text into Manglish:\n\n${output}".to_string(),
         },
         LLMPrompt {
+            id: "default_translate_to_english".to_string(),
+            name: "Translate to English".to_string(),
+            prompt: "Translate the following Malayalam text into English:\n\n${output}".to_string(),
+        },
+        LLMPrompt {
             id: "default_meeting_summary".to_string(),
             name: "Meeting Summary".to_string(),
-            prompt: "Summarize the following meeting transcript in English:\n\n${output}".to_string(),
+            prompt: "Summarize the following meeting transcript in English. At the end, add an \"Action Items\" section with bullet points prefixed with ✅ for any tasks, decisions, or follow-ups mentioned.\n\nFormat:\n## Summary\n[concise meeting summary]\n\n## Action Items\n✅ [action item 1]\n✅ [action item 2]\n...\n\nTranscript:\n${output}".to_string(),
         },
     ]
 }
@@ -850,7 +869,7 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
-        manglish_output: false,
+        output_language: OutputLanguage::default(),
     }
 }
 
@@ -991,7 +1010,9 @@ mod tests {
     #[test]
     fn default_bindings_has_no_transcribe_with_post_process() {
         let settings = get_default_settings();
-        assert!(!settings.bindings.contains_key("transcribe_with_post_process"));
+        assert!(!settings
+            .bindings
+            .contains_key("transcribe_with_post_process"));
     }
 
     #[test]

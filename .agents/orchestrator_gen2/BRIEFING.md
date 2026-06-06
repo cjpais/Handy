@@ -87,4 +87,3 @@ Decompose and coordinate MASR feature improvements, including shortcut, settings
 - d:/Downloads/Projects/MASR/.agents/orchestrator_gen2/progress.md — progress tracking
 - d:/Downloads/Projects/MASR/.agents/orchestrator_gen2/original_prompt.md — original user prompt copy
 - d:/Downloads/Projects/MASR/.agents/orchestrator_gen2/PROJECT.md — scope/project plan
-
