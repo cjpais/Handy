@@ -73,7 +73,13 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
         );
       if (e.shiftKey) flagModifiers.push("shift");
 
-      const keysToAdd = [...flagModifiers, key];
+      const allModifierNames = [
+        "ctrl", "control", "shift", "alt", "option",
+        "meta", "command", "cmd", "super", "win", "windows",
+      ];
+      const keysToAdd = allModifierNames.includes(key.toLowerCase())
+        ? flagModifiers
+        : [...flagModifiers, key];
 
       const mergeUnique = (prev: string[]) => {
         const next = [...prev];
@@ -127,7 +133,7 @@ export const GlobalShortcutInput: React.FC<GlobalShortcutInputProps> = ({
       if (shouldCommit) {
         // Create the shortcut string from all recorded keys
         // Sort keys so modifiers come first, then the main key
-        const sortedKeys = recordedKeys.sort((a, b) => {
+        const sortedKeys = [...recordedKeys].sort((a, b) => {
           const aIsModifier = modifiers.includes(a.toLowerCase());
           const bIsModifier = modifiers.includes(b.toLowerCase());
           if (aIsModifier && !bIsModifier) return -1;
