@@ -61,7 +61,7 @@ pub async fn send_meeting_follow_up(
     // Send Email
     let date = chrono::Local::now().format("%Y-%m-%d").to_string();
     let subject = format!("Meeting Notes: {}", date);
-    
+
     let mut body = format!("## Summary\n{}\n\n", summary);
     if !action_items.is_empty() {
         body.push_str("## Action Items\n");
@@ -76,9 +76,13 @@ pub async fn send_meeting_follow_up(
 
     // Create Tasks
     for item in action_items {
-        GoogleApi::create_task(access_token, &item, Some(&format!("From meeting on {}", date)))
-            .await
-            .map_err(|e| format!("Failed to create task: {}", e))?;
+        GoogleApi::create_task(
+            access_token,
+            &item,
+            Some(&format!("From meeting on {}", date)),
+        )
+        .await
+        .map_err(|e| format!("Failed to create task: {}", e))?;
     }
 
     Ok(())

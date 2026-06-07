@@ -51,11 +51,15 @@ impl GoogleOAuth {
         let redirect_uri = format!("http://127.0.0.1:{}", port);
 
         let mut auth_url = Url::parse(AUTH_URL)?;
-        auth_url.query_pairs_mut()
+        auth_url
+            .query_pairs_mut()
             .append_pair("client_id", CLIENT_ID)
             .append_pair("redirect_uri", &redirect_uri)
             .append_pair("response_type", "code")
-            .append_pair("scope", "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/tasks")
+            .append_pair(
+                "scope",
+                "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/tasks",
+            )
             .append_pair("code_challenge", &challenge)
             .append_pair("code_challenge_method", "S256")
             .append_pair("access_type", "offline")
@@ -75,7 +79,11 @@ impl GoogleOAuth {
         let code = if let Some(code_idx) = request.find("code=") {
             let start = code_idx + 5;
             let end = request[start..].find(' ').unwrap_or(request[start..].len());
-            request[start..start + end].split('&').next().unwrap_or("").to_string()
+            request[start..start + end]
+                .split('&')
+                .next()
+                .unwrap_or("")
+                .to_string()
         } else {
             return Err(anyhow!("Failed to find code in redirect request"));
         };
@@ -88,7 +96,11 @@ impl GoogleOAuth {
         Self::exchange_code_for_token(&code, &verifier, &redirect_uri).await
     }
 
-    pub async fn exchange_code_for_token(code: &str, verifier: &str, redirect_uri: &str) -> Result<TokenResponse> {
+    pub async fn exchange_code_for_token(
+        code: &str,
+        verifier: &str,
+        redirect_uri: &str,
+    ) -> Result<TokenResponse> {
         let client = reqwest::Client::new();
         let params = [
             ("client_id", CLIENT_ID),
@@ -98,10 +110,7 @@ impl GoogleOAuth {
             ("grant_type", "authorization_code"),
         ];
 
-        let response = client.post(TOKEN_URL)
-            .form(&params)
-            .send()
-            .await?;
+        let response = client.post(TOKEN_URL).form(&params).send().await?;
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
@@ -120,10 +129,7 @@ impl GoogleOAuth {
             ("grant_type", "refresh_token"),
         ];
 
-        let response = client.post(TOKEN_URL)
-            .form(&params)
-            .send()
-            .await?;
+        let response = client.post(TOKEN_URL).form(&params).send().await?;
 
         if !response.status().is_success() {
             let error_text = response.text().await?;

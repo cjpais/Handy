@@ -1204,14 +1204,23 @@ impl ShortcutAction for MeetingAction {
                             let summary_opt =
                                 run_specific_llm_prompt(&settings, prompt_id, &transcription).await;
 
-                            let display_summary = if prompt_id == "default_meeting_notes_with_actions" {
-                                summary_opt.as_ref().and_then(|json_str| {
-                                    serde_json::from_str::<serde_json::Value>(json_str).ok().and_then(|v| {
-                                        v.get("summary").and_then(|s| s.as_str()).map(|s| s.to_string())
+                            let display_summary = if prompt_id
+                                == "default_meeting_notes_with_actions"
+                            {
+                                summary_opt
+                                    .as_ref()
+                                    .and_then(|json_str| {
+                                        serde_json::from_str::<serde_json::Value>(json_str)
+                                            .ok()
+                                            .and_then(|v| {
+                                                v.get("summary")
+                                                    .and_then(|s| s.as_str())
+                                                    .map(|s| s.to_string())
+                                            })
                                     })
-                                }).unwrap_or_else(|| {
-                                    summary_opt.clone().unwrap_or_else(|| transcription.clone())
-                                })
+                                    .unwrap_or_else(|| {
+                                        summary_opt.clone().unwrap_or_else(|| transcription.clone())
+                                    })
                             } else {
                                 summary_opt.clone().unwrap_or_else(|| transcription.clone())
                             };
