@@ -417,10 +417,10 @@ fn run_consumer(
     // buckets onto a single bin at 48 kHz (e.g. built-in laptop mics), and
     // would stutter at ~4-8 updates/sec on an 8-16 kHz Bluetooth headset.
     // Targets: 48 kHz -> 2048, 16 kHz -> 512, 8 kHz -> 256.
-    let target_window = (in_sample_rate as f32 / 30.0) as usize;
+    let target_window = (f64::from(in_sample_rate) / 30.0).round() as usize;
     let window_size = [256usize, 512, 1024, 2048]
         .into_iter()
-        .min_by_key(|w| (*w as i64 - target_window as i64).abs())
+        .min_by_key(|w| w.abs_diff(target_window))
         .unwrap();
     let mut visualizer = AudioVisualiser::new(
         in_sample_rate,
