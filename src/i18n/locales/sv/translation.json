@@ -274,6 +274,10 @@
         "label": "Starta dold",
         "description": "Starta i systemfältet utan att öppna fönstret."
       },
+      "menuBarMode": {
+        "label": "Behåll i menyraden",
+        "description": "Behåller Handy i menyraden och utanför Dock och appväxlaren så att globala genvägar inte flyttar fokus till Handy. Börjar gälla efter att Handy har startats om."
+      },
       "autostart": {
         "label": "Starta vid uppstart",
         "description": "Starta Handy automatiskt när du loggar in på din dator."

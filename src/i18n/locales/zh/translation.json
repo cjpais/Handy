@@ -274,6 +274,10 @@
         "label": "隐藏启动",
         "description": "启动到系统托盘而不打开窗口。"
       },
+      "menuBarMode": {
+        "label": "保留在菜单栏",
+        "description": "将 Handy 保留在菜单栏，并从 Dock 和应用切换器中隐藏，避免全局快捷键将焦点拉回 Handy。重启 Handy 后生效。"
+      },
       "autostart": {
         "label": "开机启动",
         "description": "登录计算机时自动启动 Handy。"

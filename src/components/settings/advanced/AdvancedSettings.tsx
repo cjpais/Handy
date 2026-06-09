@@ -5,6 +5,7 @@ import { ModelUnloadTimeoutSetting } from "../ModelUnloadTimeout";
 import { CustomWords } from "../CustomWords";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { StartHidden } from "../StartHidden";
+import { MenuBarMode } from "../MenuBarMode";
 import { AutostartToggle } from "../AutostartToggle";
 import { ShowTrayIcon } from "../ShowTrayIcon";
 import { PasteMethodSetting } from "../PasteMethod";
@@ -20,16 +21,21 @@ import { useSettings } from "../../../hooks/useSettings";
 import { KeyboardImplementationSelector } from "../debug/KeyboardImplementationSelector";
 import { AccelerationSelector } from "../AccelerationSelector";
 import { LazyStreamClose } from "../LazyStreamClose";
+import { useOsType } from "../../../hooks/useOsType";
 
 export const AdvancedSettings: React.FC = () => {
   const { t } = useTranslation();
   const { getSetting } = useSettings();
+  const osType = useOsType();
   const experimentalEnabled = getSetting("experimental_enabled") || false;
 
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
       <SettingsGroup title={t("settings.advanced.groups.app")}>
         <StartHidden descriptionMode="tooltip" grouped={true} />
+        {osType === "macos" && (
+          <MenuBarMode descriptionMode="tooltip" grouped={true} />
+        )}
         <AutostartToggle descriptionMode="tooltip" grouped={true} />
         <ShowTrayIcon descriptionMode="tooltip" grouped={true} />
         <ShowOverlay descriptionMode="tooltip" grouped={true} />
