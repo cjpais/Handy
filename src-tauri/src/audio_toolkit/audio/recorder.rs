@@ -411,10 +411,20 @@ fn run_consumer(
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
-    const WINDOW_SIZE: usize = 512;
+    // Scale the FFT window to the device sample rate so the analysis window
+    // (~33 ms) and frequency resolution (~30 Hz/bin) stay roughly constant
+    // across devices. A fixed 512-sample window collapses the low vocal
+    // buckets onto a single bin at 48 kHz (e.g. built-in laptop mics), and
+    // would stutter at ~4-8 updates/sec on an 8-16 kHz Bluetooth headset.
+    // Targets: 48 kHz -> 2048, 16 kHz -> 512, 8 kHz -> 256.
+    let target_window = (in_sample_rate as f32 / 30.0) as usize;
+    let window_size = [256usize, 512, 1024, 2048]
+        .into_iter()
+        .min_by_key(|w| (*w as i64 - target_window as i64).abs())
+        .unwrap();
     let mut visualizer = AudioVisualiser::new(
         in_sample_rate,
-        WINDOW_SIZE,
+        window_size,
         BUCKETS,
         400.0,  // vocal_min_hz
         4000.0, // vocal_max_hz
