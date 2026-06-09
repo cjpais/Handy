@@ -9,7 +9,7 @@ export { ModelsSettings } from "./models/ModelsSettings";
 
 // Individual setting components
 export { MicrophoneSelector } from "./MicrophoneSelector";
-export { ClamshellMicrophoneSelector } from "./ClamshellMicrophoneSelector";
+export { ClamshellModeSection } from "./ClamshellModeSection";
 export { OutputDeviceSelector } from "./OutputDeviceSelector";
 export { AlwaysOnMicrophone } from "./AlwaysOnMicrophone";
 export { PushToTalk } from "./PushToTalk";

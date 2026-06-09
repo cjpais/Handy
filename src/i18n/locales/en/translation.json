@@ -223,6 +223,18 @@
         "placeholder": "Select microphone...",
         "loading": "Loading..."
       },
+      "clamshell": {
+        "title": "Clamshell mode",
+        "enable": {
+          "label": "Fall back to another microphone",
+          "description": "In clamshell mode (lid closed with an external display connected) the built-in microphone is muffled. Handy will record from a different microphone instead."
+        },
+        "device": {
+          "title": "Fallback microphone",
+          "description": "The microphone to use while in clamshell mode."
+        },
+        "noFallback": "No other microphone is available to fall back to."
+      },
       "audioFeedback": {
         "label": "Audio Feedback",
         "description": "Play sound when recording starts and stops"
