@@ -170,6 +170,14 @@
         "allLanguages": "Tất cả ngôn ngữ"
       },
       "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này.",
+      "sort": {
+        "default": "Mặc định",
+        "accuracy": "Độ chính xác",
+        "speed": "Tốc độ",
+        "size": "Kích thước",
+        "ascending": "Tăng dần",
+        "descending": "Giảm dần"
+      },
       "yourModels": "Mô hình đã tải",
       "availableModels": "Có sẵn để tải xuống"
     },
