@@ -642,6 +642,11 @@
           "traditionalTw": "Traditionell (Taiwan)",
           "traditionalHk": "Traditionell (Hongkong)"
         }
+      },
+      "typingDelay": {
+        "title": "Tippverzögerung",
+        "description": "Steuert die Geschwindigkeit, mit der Tippereignisse gesendet werden. Erhöhen Sie diesen Wert, wenn Zeichen in falscher Reihenfolge eingegeben werden.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

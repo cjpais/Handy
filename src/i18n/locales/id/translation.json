@@ -607,6 +607,11 @@
         "remove": "Hapus {{word}}",
         "duplicate": "\"{{word}}\" sudah ada"
       },
+      "typingDelay": {
+        "title": "Jeda pengetikan",
+        "description": "Kontrol kecepatan pengiriman peristiwa pengetikan. Tingkatkan nilai ini jika karakter diketik tidak berurutan.",
+        "unit": "ms"
+      },
       "voiceActivityDetection": {
         "title": "Deteksi Aktivitas Suara",
         "description": "Saring keheningan dari rekaman. Model yang mendukung streaming menggunakan ekor VAD yang lebih panjang; menonaktifkan VAD akan merekam audio mentah."
