@@ -236,6 +236,10 @@
       "volume": {
         "title": "Hlasitost",
         "description": "Upravte hlasitost zvukové odezvy"
+      },
+      "recordSystemAudio": {
+        "title": "Nahrávat systémový zvuk",
+        "description": "Zachytávat také zvuk přehrávaný na počítači, smíchaný s mikrofonem (pouze Windows)"
       }
     },
     "advanced": {

@@ -155,6 +155,8 @@ const settingUpdaters: {
     commands.changeWhisperGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  record_system_audio: (value) =>
+    commands.setRecordSystemAudio(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -197,6 +199,7 @@ export const useSettingsStore = create<SettingsStore>()(
             clamshell_microphone: settings.clamshell_microphone ?? "Default",
             selected_output_device:
               settings.selected_output_device ?? "Default",
+            record_system_audio: settings.record_system_audio ?? false,
           };
           set({ settings: normalizedSettings, isLoading: false });
         } else {

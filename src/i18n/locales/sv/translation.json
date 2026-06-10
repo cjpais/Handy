@@ -236,6 +236,10 @@
       "volume": {
         "title": "Volym",
         "description": "Justera volymen för ljudåterkopplingsljud"
+      },
+      "recordSystemAudio": {
+        "title": "Spela in systemljud",
+        "description": "Fånga även ljud som spelas på datorn, blandat med mikrofonen (endast Windows)"
       }
     },
     "advanced": {

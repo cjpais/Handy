@@ -6,10 +6,11 @@ import { useSettings } from "../../hooks/useSettings";
 interface MuteWhileRecordingToggleProps {
   descriptionMode?: "inline" | "tooltip";
   grouped?: boolean;
+  disabled?: boolean;
 }
 
 export const MuteWhileRecording: React.FC<MuteWhileRecordingToggleProps> =
-  React.memo(({ descriptionMode = "tooltip", grouped = false }) => {
+  React.memo(({ descriptionMode = "tooltip", grouped = false, disabled = false }) => {
     const { t } = useTranslation();
     const { getSetting, updateSetting, isUpdating } = useSettings();
 
@@ -20,6 +21,7 @@ export const MuteWhileRecording: React.FC<MuteWhileRecordingToggleProps> =
         checked={muteEnabled}
         onChange={(enabled) => updateSetting("mute_while_recording", enabled)}
         isUpdating={isUpdating("mute_while_recording")}
+        disabled={disabled}
         label={t("settings.debug.muteWhileRecording.label")}
         description={t("settings.debug.muteWhileRecording.description")}
         descriptionMode={descriptionMode}

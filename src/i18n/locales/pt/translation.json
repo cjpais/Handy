@@ -236,6 +236,10 @@
       "volume": {
         "title": "Volume",
         "description": "Ajustar o volume dos sons de feedback de áudio"
+      },
+      "recordSystemAudio": {
+        "title": "Gravar áudio do sistema",
+        "description": "Capturar também o áudio do computador, misturado com o microfone (apenas Windows)"
       }
     },
     "advanced": {
