@@ -642,6 +642,11 @@
           "traditionalTw": "Tradycyjne (Tajwan)",
           "traditionalHk": "Tradycyjne (Hongkong)"
         }
+      },
+      "typingDelay": {
+        "title": "Opóźnienie pisania",
+        "description": "Kontroluje szybkość wysyłania zdarzeń pisania. Zwiększ tę wartość, jeśli znaki są wpisywane w złej kolejności.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

@@ -607,6 +607,11 @@
         "remove": "{{word}} verwijderen",
         "duplicate": "\"{{word}}\" bestaat al"
       },
+      "typingDelay": {
+        "title": "Typevertraging",
+        "description": "Bepaal de snelheid waarmee toetsaanslagen worden verstuurd. Verhoog deze waarde als tekens in de verkeerde volgorde verschijnen.",
+        "unit": "ms"
+      },
       "voiceActivityDetection": {
         "title": "Spraakactiviteitsdetectie (VAD)",
         "description": "Filter stilte uit opnames. Streaming-modellen gebruiken een langere VAD-uitloop; het uitschakelen van VAD neemt de ruwe audio op."

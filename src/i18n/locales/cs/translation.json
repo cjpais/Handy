@@ -642,6 +642,11 @@
           "traditionalTw": "Tradiční (Tchaj-wan)",
           "traditionalHk": "Tradiční (Hongkong)"
         }
+      },
+      "typingDelay": {
+        "title": "Zpoždění psaní",
+        "description": "Řídí rychlost odesílání událostí psaní. Zvyšte tuto hodnotu, pokud se znaky zapisují ve špatném pořadí.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

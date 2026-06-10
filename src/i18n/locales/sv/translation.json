@@ -642,6 +642,11 @@
           "traditionalTw": "Traditionell (Taiwan)",
           "traditionalHk": "Traditionell (Hongkong)"
         }
+      },
+      "typingDelay": {
+        "title": "Skrivfördröjning",
+        "description": "Styr hastigheten som används för att skicka skrivhändelser. Öka värdet om tecken skrivs i fel ordning.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

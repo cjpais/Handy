@@ -642,6 +642,11 @@
           "traditionalTw": "Geleneksel (Tayvan)",
           "traditionalHk": "Geleneksel (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Yazma gecikmesi",
+        "description": "Yazma olaylarının gönderilme hızını kontrol eder. Karakterler yanlış sırayla yazılıyorsa bu değeri artırın.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

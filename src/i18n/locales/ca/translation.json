@@ -607,6 +607,11 @@
         "remove": "Suprimiu {{word}}",
         "duplicate": "«{{word}}» ja existeix"
       },
+      "typingDelay": {
+        "title": "Retard entre pulsacions",
+        "description": "Controleu la velocitat d’enviament de les pulsacions. Augmenteu aquest valor si els caràcters s’escriuen fora d’ordre.",
+        "unit": "ms"
+      },
       "voiceActivityDetection": {
         "title": "Detecció d'activitat de veu",
         "description": "Filtra els silencis dels enregistraments. Els models compatibles amb la transcripció en temps real utilitzen un marge final de detecció de veu més llarg; si desactiveu la detecció, s'enregistra l'àudio sense filtrar."

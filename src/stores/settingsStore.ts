@@ -152,6 +152,8 @@ const settingUpdaters: {
     commands.changePasteDelayAfterMsSetting(value as number),
   reliable_paste: (value) =>
     commands.changeReliablePasteSetting(value as boolean),
+  remote_desktop_key_event_delay_ms: (value) =>
+    commands.changeRemoteDesktopKeyEventDelayMsSetting(value as number),
   paste_method: (value) => commands.changePasteMethodSetting(value as string),
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>

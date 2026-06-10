@@ -642,6 +642,11 @@
           "traditionalTw": "Tradicional (Taiwan)",
           "traditionalHk": "Tradicional (Hong Kong)"
         }
+      },
+      "typingDelay": {
+        "title": "Atraso de digitação",
+        "description": "Controla a velocidade usada para enviar eventos de digitação. Aumente este valor se os caracteres forem digitados fora de ordem.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

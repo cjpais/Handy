@@ -10,6 +10,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS: u64 = 1;
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -527,6 +528,8 @@ pub struct AppSettings {
     pub reliable_paste: bool,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default = "default_remote_desktop_key_event_delay_ms")]
+    pub remote_desktop_key_event_delay_ms: u64,
     #[serde(default)]
     pub external_script_path: Option<String>,
     #[serde(default = "default_filler_word_removal_enabled")]
@@ -678,6 +681,10 @@ fn default_paste_delay_ms() -> u64 {
 
 fn default_paste_delay_after_ms() -> u64 {
     60
+}
+
+fn default_remote_desktop_key_event_delay_ms() -> u64 {
+    DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS
 }
 
 fn default_auto_submit() -> bool {
@@ -1057,6 +1064,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_after_ms: default_paste_delay_after_ms(),
         reliable_paste: false,
         typing_tool: default_typing_tool(),
+        remote_desktop_key_event_delay_ms: default_remote_desktop_key_event_delay_ms(),
         external_script_path: None,
         filler_word_removal_enabled: default_filler_word_removal_enabled(),
         custom_filler_words: None,

@@ -607,6 +607,11 @@
         "remove": "Fjern {{word}}",
         "duplicate": "\"{{word}}\" findes allerede"
       },
+      "typingDelay": {
+        "title": "Tasteforsinkelse",
+        "description": "Styr hastigheden for afsendelse af tastetryk. Øg værdien, hvis tegnene skrives i forkert rækkefølge.",
+        "unit": "ms"
+      },
       "voiceActivityDetection": {
         "title": "Stemmeaktivitetsdetektion",
         "description": "Filtrer stilhed fra optagelser. Streaming-modeller bruger en længere VAD-hale; deaktivering af VAD optager rå lyd."
