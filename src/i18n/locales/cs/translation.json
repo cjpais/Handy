@@ -170,6 +170,16 @@
         "allLanguages": "Všechny jazyky"
       },
       "noModelsMatch": "Tomuto filtru neodpovídají žádné modely.",
+      "storage": {
+        "title": "Models Storage Location",
+        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
+        "browse": "Choose Folder",
+        "browseTitle": "Select models folder",
+        "useInstallDir": "Use Installation Folder",
+        "resetDefault": "Use App Data Folder",
+        "migrateTitle": "Move Existing Models",
+        "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
+      },
       "yourModels": "Stažené modely",
       "availableModels": "Dostupné ke stažení"
     },

@@ -236,7 +236,17 @@
         "translation": "번역",
         "allLanguages": "모든 언어"
       },
-      "noModelsMatch": "이 필터에 맞는 모델이 없습니다."
+      "noModelsMatch": "이 필터에 맞는 모델이 없습니다.",
+      "storage": {
+        "title": "Models Storage Location",
+        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
+        "browse": "Choose Folder",
+        "browseTitle": "Select models folder",
+        "useInstallDir": "Use Installation Folder",
+        "resetDefault": "Use App Data Folder",
+        "migrateTitle": "Move Existing Models",
+        "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
+      }
     },
     "advanced": {
       "title": "고급",

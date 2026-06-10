@@ -213,7 +213,17 @@
         "translation": "翻譯",
         "allLanguages": "所有語言"
       },
-      "noModelsMatch": "沒有符合此篩選條件的模型"
+      "noModelsMatch": "沒有符合此篩選條件的模型",
+      "storage": {
+        "title": "Models Storage Location",
+        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
+        "browse": "Choose Folder",
+        "browseTitle": "Select models folder",
+        "useInstallDir": "Use Installation Folder",
+        "resetDefault": "Use App Data Folder",
+        "migrateTitle": "Move Existing Models",
+        "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
+      }
     },
     "sound": {
       "title": "聲音",

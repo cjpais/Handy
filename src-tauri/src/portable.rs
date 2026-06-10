@@ -80,6 +80,46 @@ pub fn resolve_app_data(app: &tauri::AppHandle, relative: &str) -> Result<PathBu
     Ok(app_data_dir(app)?.join(relative))
 }
 
+/// Directory where the Handy executable is installed.
+pub fn install_dir() -> Result<PathBuf, String> {
+    std::env::current_exe()
+        .map_err(|e| format!("Failed to get executable path: {}", e))?
+        .parent()
+        .map(|path| path.to_path_buf())
+        .ok_or_else(|| "Failed to resolve install directory".to_string())
+}
+
+/// Default models directory under app data (portable-aware).
+pub fn default_app_data_models_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    app_data_dir(app)
+        .map_err(|e| format!("Failed to get app data directory: {}", e))
+        .map(|dir| dir.join("models"))
+}
+
+/// Models directory next to the executable.
+/// Portable installs use `{install_dir}/Data/models`, normal installs use `{install_dir}/models`.
+pub fn install_models_dir() -> Result<PathBuf, String> {
+    let install_dir = install_dir()?;
+    if is_portable() {
+        Ok(install_dir.join("Data").join("models"))
+    } else {
+        Ok(install_dir.join("models"))
+    }
+}
+
+/// Resolve the active models directory from settings, falling back to app data.
+pub fn resolve_models_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let settings = crate::settings::get_settings(app);
+    if let Some(custom_path) = settings.models_storage_directory {
+        let trimmed = custom_path.trim();
+        if !trimmed.is_empty() {
+            return Ok(PathBuf::from(trimmed));
+        }
+    }
+
+    default_app_data_models_dir(app)
+}
+
 /// Get the path to use with `tauri-plugin-store`.
 /// Returns an absolute path in portable mode (so the store plugin writes to
 /// the portable Data dir) or the original relative path otherwise.

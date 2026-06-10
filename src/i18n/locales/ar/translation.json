@@ -536,7 +536,17 @@
         "translation": "ترجمة",
         "allLanguages": "جميع اللغات"
       },
-      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر."
+      "noModelsMatch": "لا توجد نماذج مطابقة لهذا الفلتر.",
+      "storage": {
+        "title": "Models Storage Location",
+        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
+        "browse": "Choose Folder",
+        "browseTitle": "Select models folder",
+        "useInstallDir": "Use Installation Folder",
+        "resetDefault": "Use App Data Folder",
+        "migrateTitle": "Move Existing Models",
+        "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
+      }
     }
   },
   "footer": {

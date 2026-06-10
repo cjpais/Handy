@@ -3,6 +3,7 @@ use crate::managers::transcription::{ModelStateEvent, TranscriptionManager};
 use crate::settings::{get_settings, write_settings, ModelUnloadTimeout};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 
 #[tauri::command]
 #[specta::specta]
@@ -217,5 +218,55 @@ pub async fn cancel_download(
 ) -> Result<(), String> {
     model_manager
         .cancel_download(&model_id)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_models_dir_path(model_manager: State<'_, Arc<ModelManager>>) -> Result<String, String> {
+    Ok(model_manager
+        .get_models_dir_path()
+        .to_string_lossy()
+        .to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_install_models_dir_path() -> Result<String, String> {
+    crate::portable::install_models_dir()
+        .map(|path| path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn open_models_dir(
+    app: AppHandle,
+    model_manager: State<'_, Arc<ModelManager>>,
+) -> Result<(), String> {
+    let path = model_manager
+        .get_models_dir_path()
+        .to_string_lossy()
+        .to_string();
+
+    app.opener()
+        .open_path(path, None::<String>)
+        .map_err(|e| format!("Failed to open models directory: {}", e))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_models_storage_directory(
+    _app_handle: AppHandle,
+    model_manager: State<'_, Arc<ModelManager>>,
+    transcription_manager: State<'_, Arc<TranscriptionManager>>,
+    path: Option<String>,
+    migrate: bool,
+) -> Result<(), String> {
+    transcription_manager
+        .unload_model()
+        .map_err(|e| format!("Failed to unload active model: {}", e))?;
+
+    model_manager
+        .set_models_storage_directory(path, migrate)
         .map_err(|e| e.to_string())
 }

@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 use tar::Archive;
 use tauri::{AppHandle, Emitter, Manager};
@@ -87,7 +87,7 @@ impl<'a> Drop for DownloadCleanup<'a> {
 
 pub struct ModelManager {
     app_handle: AppHandle,
-    models_dir: PathBuf,
+    models_dir: RwLock<PathBuf>,
     available_models: Mutex<HashMap<String, ModelInfo>>,
     cancel_flags: Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>,
     extracting_models: Arc<Mutex<HashSet<String>>>,
@@ -95,10 +95,9 @@ pub struct ModelManager {
 
 impl ModelManager {
     pub fn new(app_handle: &AppHandle) -> Result<Self> {
-        // Create models directory in app data
-        let models_dir = crate::portable::app_data_dir(app_handle)
-            .map_err(|e| anyhow::anyhow!("Failed to get app data dir: {}", e))?
-            .join("models");
+        // Create models directory from settings (defaults to app data)
+        let models_dir = crate::portable::resolve_models_dir(app_handle)
+            .map_err(|e| anyhow::anyhow!("Failed to resolve models directory: {}", e))?;
 
         if !models_dir.exists() {
             fs::create_dir_all(&models_dir)?;
@@ -617,7 +616,7 @@ impl ModelManager {
 
         let manager = Self {
             app_handle: app_handle.clone(),
-            models_dir,
+            models_dir: RwLock::new(models_dir),
             available_models: Mutex::new(available_models),
             cancel_flags: Arc::new(Mutex::new(HashMap::new())),
             extracting_models: Arc::new(Mutex::new(HashSet::new())),
@@ -648,6 +647,136 @@ impl ModelManager {
         models.get(model_id).cloned()
     }
 
+    fn models_dir_path(&self) -> PathBuf {
+        self.models_dir.read().unwrap().clone()
+    }
+
+    pub fn get_models_dir_path(&self) -> PathBuf {
+        self.models_dir_path()
+    }
+
+    pub fn has_active_downloads(&self) -> bool {
+        let models = self.available_models.lock().unwrap();
+        models.values().any(|model| model.is_downloading)
+    }
+
+    pub fn reload_storage_location(&self) -> Result<()> {
+        let new_dir = crate::portable::resolve_models_dir(&self.app_handle)
+            .map_err(|e| anyhow::anyhow!("Failed to resolve models directory: {}", e))?;
+
+        if !new_dir.exists() {
+            fs::create_dir_all(&new_dir)?;
+        }
+
+        {
+            let mut models_dir = self.models_dir.write().unwrap();
+            *models_dir = new_dir.clone();
+        }
+
+        {
+            let mut models = self.available_models.lock().unwrap();
+            models.retain(|_, model| !model.is_custom);
+        }
+
+        {
+            let mut models = self.available_models.lock().unwrap();
+            if let Err(e) = Self::discover_custom_whisper_models(&new_dir, &mut models) {
+                warn!("Failed to rediscover custom models: {}", e);
+            }
+        }
+
+        self.update_download_status()?;
+        self.auto_select_model_if_needed()?;
+
+        let _ = self.app_handle.emit("models-storage-changed", ());
+        Ok(())
+    }
+
+    fn migrate_models_between_dirs(from: &Path, to: &Path) -> Result<()> {
+        if from == to || !from.exists() {
+            return Ok(());
+        }
+
+        fs::create_dir_all(to)?;
+
+        for entry in fs::read_dir(from)? {
+            let entry = entry?;
+            let file_name = entry.file_name();
+            let destination = to.join(&file_name);
+
+            if destination.exists() {
+                continue;
+            }
+
+            let file_type = entry.file_type()?;
+            if file_type.is_dir() {
+                Self::copy_dir_recursive(&entry.path(), &destination)?;
+            } else if file_type.is_file() {
+                fs::copy(entry.path(), &destination)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn copy_dir_recursive(from: &Path, to: &Path) -> Result<()> {
+        fs::create_dir_all(to)?;
+
+        for entry in fs::read_dir(from)? {
+            let entry = entry?;
+            let destination = to.join(entry.file_name());
+            let file_type = entry.file_type()?;
+
+            if file_type.is_dir() {
+                Self::copy_dir_recursive(&entry.path(), &destination)?;
+            } else if file_type.is_file() {
+                fs::copy(entry.path(), &destination)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn set_models_storage_directory(
+        &self,
+        path: Option<String>,
+        migrate: bool,
+    ) -> Result<()> {
+        if self.has_active_downloads() {
+            return Err(anyhow::anyhow!(
+                "Cannot change models storage while a download is in progress"
+            ));
+        }
+
+        let current_dir = self.models_dir_path();
+        let normalized_path = path.map(|value| value.trim().to_string()).and_then(|value| {
+            if value.is_empty() {
+                None
+            } else {
+                Some(value)
+            }
+        });
+
+        let target_dir = if let Some(custom_path) = normalized_path.clone() {
+            PathBuf::from(&custom_path)
+        } else {
+            crate::portable::default_app_data_models_dir(&self.app_handle)
+                .map_err(|e| anyhow::anyhow!(e))?
+        };
+
+        fs::create_dir_all(&target_dir)?;
+
+        if migrate {
+            Self::migrate_models_between_dirs(&current_dir, &target_dir)?;
+        }
+
+        let mut settings = get_settings(&self.app_handle);
+        settings.models_storage_directory = normalized_path;
+        write_settings(&self.app_handle, settings);
+
+        self.reload_storage_location()
+    }
+
     fn migrate_bundled_models(&self) -> Result<()> {
         // Check for bundled models and copy them to user directory
         let bundled_models = ["ggml-small.bin"]; // Add other bundled models here if any
@@ -660,7 +789,7 @@ impl ModelManager {
 
             if let Ok(bundled_path) = bundled_path {
                 if bundled_path.exists() {
-                    let user_path = self.models_dir.join(filename);
+                    let user_path = self.models_dir_path().join(filename);
 
                     // Only copy if user doesn't already have the model
                     if !user_path.exists() {
@@ -679,8 +808,8 @@ impl ModelManager {
     /// to the new directory format (giga-am-v3-int8/model.int8.onnx + vocab.txt).
     /// This was required by the transcribe-rs 0.3.x upgrade.
     fn migrate_gigaam_to_directory(&self) -> Result<()> {
-        let old_file = self.models_dir.join("giga-am-v3.int8.onnx");
-        let new_dir = self.models_dir.join("giga-am-v3-int8");
+        let old_file = self.models_dir_path().join("giga-am-v3.int8.onnx");
+        let new_dir = self.models_dir_path().join("giga-am-v3-int8");
 
         if !old_file.exists() || new_dir.exists() {
             return Ok(());
@@ -710,7 +839,7 @@ impl ModelManager {
         fs::copy(&vocab_path, new_dir.join("vocab.txt"))?;
 
         // Clean up old partial file if it exists
-        let old_partial = self.models_dir.join("giga-am-v3.int8.onnx.partial");
+        let old_partial = self.models_dir_path().join("giga-am-v3.int8.onnx.partial");
         if old_partial.exists() {
             let _ = fs::remove_file(&old_partial);
         }
@@ -725,10 +854,10 @@ impl ModelManager {
         for model in models.values_mut() {
             if model.is_directory {
                 // For directory-based models, check if the directory exists
-                let model_path = self.models_dir.join(&model.filename);
-                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                let model_path = self.models_dir_path().join(&model.filename);
+                let partial_path = self.models_dir_path().join(format!("{}.partial", &model.filename));
                 let extracting_path = self
-                    .models_dir
+                    .models_dir_path()
                     .join(format!("{}.extracting", &model.filename));
 
                 // Clean up any leftover .extracting directories from interrupted extractions
@@ -753,8 +882,8 @@ impl ModelManager {
                 }
             } else {
                 // For file-based models (existing logic)
-                let model_path = self.models_dir.join(&model.filename);
-                let partial_path = self.models_dir.join(format!("{}.partial", &model.filename));
+                let model_path = self.models_dir_path().join(&model.filename);
+                let partial_path = self.models_dir_path().join(format!("{}.partial", &model.filename));
 
                 model.is_downloaded = model_path.exists();
                 model.is_downloading = false;
@@ -996,9 +1125,9 @@ impl ModelManager {
         let url = model_info
             .url
             .ok_or_else(|| anyhow::anyhow!("No download URL for model"))?;
-        let model_path = self.models_dir.join(&model_info.filename);
+        let model_path = self.models_dir_path().join(&model_info.filename);
         let partial_path = self
-            .models_dir
+            .models_dir_path()
             .join(format!("{}.partial", &model_info.filename));
 
         // Don't download if complete version already exists
@@ -1221,9 +1350,9 @@ impl ModelManager {
 
             // Use a temporary extraction directory to ensure atomic operations
             let temp_extract_dir = self
-                .models_dir
+                .models_dir_path()
                 .join(format!("{}.extracting", &model_info.filename));
-            let final_model_dir = self.models_dir.join(&model_info.filename);
+            let final_model_dir = self.models_dir_path().join(&model_info.filename);
 
             // Clean up any previous incomplete extraction
             if temp_extract_dir.exists() {
@@ -1337,9 +1466,9 @@ impl ModelManager {
 
         debug!("ModelManager: Found model info: {:?}", model_info);
 
-        let model_path = self.models_dir.join(&model_info.filename);
+        let model_path = self.models_dir_path().join(&model_info.filename);
         let partial_path = self
-            .models_dir
+            .models_dir_path()
             .join(format!("{}.partial", &model_info.filename));
         debug!("ModelManager: Model path: {:?}", model_path);
         debug!("ModelManager: Partial path: {:?}", partial_path);
@@ -1411,9 +1540,9 @@ impl ModelManager {
             ));
         }
 
-        let model_path = self.models_dir.join(&model_info.filename);
+        let model_path = self.models_dir_path().join(&model_info.filename);
         let partial_path = self
-            .models_dir
+            .models_dir_path()
             .join(format!("{}.partial", &model_info.filename));
 
         if model_info.is_directory {
