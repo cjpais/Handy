@@ -373,6 +373,11 @@
         "add": "Ajouter",
         "remove": "Supprimer {{word}}",
         "duplicate": "\"{{word}}\" existe déjà"
+      },
+      "typingDelay": {
+        "title": "Délai de frappe",
+        "description": "Contrôle la vitesse d'envoi des événements de frappe. Augmentez cette valeur si les caractères sont saisis dans le désordre.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

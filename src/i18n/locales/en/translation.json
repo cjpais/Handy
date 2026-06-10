@@ -373,6 +373,11 @@
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
+      },
+      "typingDelay": {
+        "title": "Typing delay",
+        "description": "Control the speed used to send typing events. Increase this value if characters are typed out of order.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

@@ -373,6 +373,11 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "typingDelay": {
+        "title": "入力遅延",
+        "description": "入力イベントを送信する速度を制御します。文字が順序どおりに入力されない場合は、この値を増やしてください。",
+        "unit": "ミリ秒"
       }
     },
     "postProcessing": {

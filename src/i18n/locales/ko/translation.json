@@ -373,6 +373,11 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "typingDelay": {
+        "title": "입력 지연",
+        "description": "입력 이벤트를 보내는 속도를 조절합니다. 문자가 잘못된 순서로 입력되면 이 값을 늘리세요.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

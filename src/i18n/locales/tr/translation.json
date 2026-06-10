@@ -373,6 +373,11 @@
         "add": "Ekle",
         "remove": "{{word}} Kaldır",
         "duplicate": "\"{{word}}\" zaten mevcut"
+      },
+      "typingDelay": {
+        "title": "Yazma gecikmesi",
+        "description": "Yazma olaylarının gönderilme hızını kontrol eder. Karakterler yanlış sırayla yazılıyorsa bu değeri artırın.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

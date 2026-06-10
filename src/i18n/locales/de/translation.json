@@ -373,6 +373,11 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "typingDelay": {
+        "title": "Tippverzögerung",
+        "description": "Steuert die Geschwindigkeit, mit der Tippereignisse gesendet werden. Erhöhen Sie diesen Wert, wenn Zeichen in falscher Reihenfolge eingegeben werden.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

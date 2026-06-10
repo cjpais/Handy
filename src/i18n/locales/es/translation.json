@@ -373,6 +373,11 @@
         "add": "Agregar",
         "remove": "Eliminar {{word}}",
         "duplicate": "\"{{word}}\" ya existe"
+      },
+      "typingDelay": {
+        "title": "Retraso de escritura",
+        "description": "Controla la velocidad con la que se envían los eventos de escritura. Aumenta este valor si los caracteres se escriben en un orden incorrecto.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

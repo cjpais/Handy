@@ -373,6 +373,11 @@
         "add": "Lägg till",
         "remove": "Ta bort {{word}}",
         "duplicate": "\"{{word}}\" finns redan"
+      },
+      "typingDelay": {
+        "title": "Skrivfördröjning",
+        "description": "Styr hastigheten som används för att skicka skrivhändelser. Öka värdet om tecken skrivs i fel ordning.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

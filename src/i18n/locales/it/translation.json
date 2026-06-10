@@ -373,6 +373,11 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "typingDelay": {
+        "title": "Ritardo di digitazione",
+        "description": "Controlla la velocità con cui vengono inviati gli eventi di digitazione. Aumenta questo valore se i caratteri vengono digitati nell'ordine sbagliato.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

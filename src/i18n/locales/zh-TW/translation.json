@@ -373,6 +373,11 @@
         "add": "新增",
         "remove": "刪除 {{word}}",
         "duplicate": "「{{word}}」已存在"
+      },
+      "typingDelay": {
+        "title": "輸入延遲",
+        "description": "控制傳送輸入事件的速度。如果字元輸入順序錯誤，請增加此值。",
+        "unit": "毫秒"
       }
     },
     "postProcessing": {

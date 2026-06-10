@@ -373,6 +373,11 @@
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
+      },
+      "typingDelay": {
+        "title": "Zpoždění psaní",
+        "description": "Řídí rychlost odesílání událostí psaní. Zvyšte tuto hodnotu, pokud se znaky zapisují ve špatném pořadí.",
+        "unit": "ms"
       }
     },
     "postProcessing": {
