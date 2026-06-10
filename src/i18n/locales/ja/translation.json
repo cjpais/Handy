@@ -384,6 +384,10 @@
       "voiceActivityDetection": {
         "title": "音声区間検出 (VAD)",
         "description": "録音から無音部分を除去します。ストリーミング対応モデルはより長い音声検出区間を使用します。VAD を無効にすると音声をそのまま録音します。"
+      "typingDelay": {
+        "title": "入力遅延",
+        "description": "入力イベントを送信する速度を制御します。文字が順序どおりに入力されない場合は、この値を増やしてください。",
+        "unit": "ミリ秒"
       }
     },
     "postProcessing": {

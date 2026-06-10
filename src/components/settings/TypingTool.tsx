@@ -4,6 +4,7 @@ import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { RemoteDesktopAuthorizationCard } from "./RemoteDesktopAuthorizationCard";
 import { RemoteDesktopAuthorizationWarning } from "./RemoteDesktopAuthorizationWarning";
+import { RemoteDesktopTypingDelay } from "./RemoteDesktopTypingDelay";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import { useRemoteDesktopAuthorization } from "../../hooks/useRemoteDesktopAuthorization";
@@ -93,6 +94,12 @@ export const TypingToolSetting: React.FC<TypingToolProps> = React.memo(
           </div>
         </SettingContainer>
         <RemoteDesktopAuthorizationCard
+          pasteMethod={pasteMethod}
+          typingTool={selectedTool}
+          descriptionMode={descriptionMode}
+          grouped={grouped}
+        />
+        <RemoteDesktopTypingDelay
           pasteMethod={pasteMethod}
           typingTool={selectedTool}
           descriptionMode={descriptionMode}

@@ -5,7 +5,7 @@ use ashpd::desktop::PersistMode;
 #[cfg(target_os = "linux")]
 use ashpd::zbus::{self, zvariant::OwnedValue};
 #[cfg(target_os = "linux")]
-use log::{debug, warn};
+use log::{debug, info, warn};
 #[cfg(target_os = "linux")]
 use once_cell::sync::{Lazy, OnceCell};
 #[cfg(target_os = "linux")]
@@ -25,11 +25,6 @@ use unicode_normalization::UnicodeNormalization;
 
 #[cfg(target_os = "linux")]
 mod keymap;
-
-#[cfg(target_os = "linux")]
-const UNICODE_TRIGGER_DELAY_MS: u64 = 20;
-#[cfg(target_os = "linux")]
-const UNICODE_COMMIT_DELAY_MS: u64 = 30;
 
 #[cfg(target_os = "linux")]
 static REMOTE_DESKTOP_TOKEN: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
@@ -264,42 +259,89 @@ fn clear_authorization_state() {
 #[cfg(target_os = "linux")]
 async fn type_text_async(text: &str) -> Result<(), String> {
     let keyboard_map = keymap::KeyboardMap::load_current()?;
+    let settings = PORTAL_APP_HANDLE.get().map(crate::settings::get_settings);
+    let key_event_delay_ms = settings
+        .as_ref()
+        .map(|settings| settings.remote_desktop_key_event_delay_ms)
+        .unwrap_or(crate::settings::DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS);
+    info!(
+        "remote_desktop: using key event delay: {}ms",
+        key_event_delay_ms
+    );
     let (proxy, session) = open_session_async(false).await?;
 
     async fn send_keycode(
         proxy: &RemoteDesktop<'static>,
         session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
         keycode: i32,
+        key_event_delay_ms: u64,
+    ) -> Result<(), String> {
+        send_key_event(
+            proxy,
+            session,
+            keycode,
+            KeyState::Pressed,
+            "Failed to send keycode press",
+            key_event_delay_ms,
+        )
+        .await?;
+        send_key_event(
+            proxy,
+            session,
+            keycode,
+            KeyState::Released,
+            "Failed to send keycode release",
+            key_event_delay_ms,
+        )
+        .await
+    }
+
+    async fn send_key_event(
+        proxy: &RemoteDesktop<'static>,
+        session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
+        keycode: i32,
+        state: KeyState,
+        error_context: &str,
+        key_event_delay_ms: u64,
     ) -> Result<(), String> {
         proxy
-            .notify_keyboard_keycode(session, keycode, KeyState::Pressed)
+            .notify_keyboard_keycode(session, keycode, state)
             .await
-            .map_err(|e| format!("Failed to send keycode press: {}", e))?;
-        proxy
-            .notify_keyboard_keycode(session, keycode, KeyState::Released)
-            .await
-            .map_err(|e| format!("Failed to send keycode release: {}", e))
+            .map_err(|e| format!("{}: {}", error_context, e))?;
+        if key_event_delay_ms > 0 {
+            tokio::time::sleep(Duration::from_millis(key_event_delay_ms)).await;
+        }
+        Ok(())
     }
 
     async fn send_stroke(
         proxy: &RemoteDesktop<'static>,
         session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
         stroke: &keymap::KeyStroke,
+        key_event_delay_ms: u64,
     ) -> Result<(), String> {
         let mut pressed_modifiers: Vec<keymap::ModifierKey> = Vec::new();
         for modifier in &stroke.modifiers {
-            if let Err(err) = proxy
-                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Pressed)
-                .await
+            if let Err(err) = send_key_event(
+                proxy,
+                session,
+                modifier.keycode(),
+                KeyState::Pressed,
+                "Failed to press modifier",
+                key_event_delay_ms,
+            )
+            .await
             {
                 for pressed_modifier in pressed_modifiers.iter().rev() {
-                    if let Err(release_err) = proxy
-                        .notify_keyboard_keycode(
-                            session,
-                            pressed_modifier.keycode(),
-                            KeyState::Released,
-                        )
-                        .await
+                    if let Err(release_err) = send_key_event(
+                        proxy,
+                        session,
+                        pressed_modifier.keycode(),
+                        KeyState::Released,
+                        "Failed to release modifier",
+                        key_event_delay_ms,
+                    )
+                    .await
                     {
                         debug!(
                             "remote_desktop: failed to release modifier: {}",
@@ -308,17 +350,23 @@ async fn type_text_async(text: &str) -> Result<(), String> {
                     }
                 }
 
-                return Err(format!("Failed to press modifier: {}", err));
+                return Err(err);
             }
             pressed_modifiers.push(*modifier);
         }
 
-        let mut result = send_keycode(proxy, session, stroke.keycode).await;
+        let mut result = send_keycode(proxy, session, stroke.keycode, key_event_delay_ms).await;
 
         for modifier in pressed_modifiers.iter().rev() {
-            if let Err(err) = proxy
-                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Released)
-                .await
+            if let Err(err) = send_key_event(
+                proxy,
+                session,
+                modifier.keycode(),
+                KeyState::Released,
+                "Failed to release modifier",
+                key_event_delay_ms,
+            )
+            .await
             {
                 if result.is_ok() {
                     result = Err(format!("Failed to release modifier: {}", err));
@@ -336,6 +384,7 @@ async fn type_text_async(text: &str) -> Result<(), String> {
         session: &ashpd::desktop::Session<'static, RemoteDesktop<'static>>,
         keyboard_map: &keymap::KeyboardMap,
         ch: char,
+        key_event_delay_ms: u64,
     ) -> Result<(), String> {
         // Use the GTK/IBus Unicode input sequence for characters that are not
         // directly present in the active compositor keymap.
@@ -347,27 +396,40 @@ async fn type_text_async(text: &str) -> Result<(), String> {
         let mut trigger_result = Ok(());
 
         for modifier in &trigger_modifiers {
-            if let Err(err) = proxy
-                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Pressed)
-                .await
+            if let Err(err) = send_key_event(
+                proxy,
+                session,
+                modifier.keycode(),
+                KeyState::Pressed,
+                "unicode-input failed pressing modifier",
+                key_event_delay_ms,
+            )
+            .await
             {
-                trigger_result = Err(format!("unicode-input failed pressing modifier: {err}"));
+                trigger_result = Err(err);
                 break;
             }
             pressed_modifiers.push(*modifier);
         }
 
         if trigger_result.is_ok() {
-            trigger_result = send_keycode(proxy, session, trigger_stroke.keycode).await;
+            trigger_result =
+                send_keycode(proxy, session, trigger_stroke.keycode, key_event_delay_ms).await;
         }
 
         for modifier in pressed_modifiers.iter().rev() {
-            if let Err(err) = proxy
-                .notify_keyboard_keycode(session, modifier.keycode(), KeyState::Released)
-                .await
+            if let Err(err) = send_key_event(
+                proxy,
+                session,
+                modifier.keycode(),
+                KeyState::Released,
+                "unicode-input failed releasing modifier",
+                key_event_delay_ms,
+            )
+            .await
             {
                 if trigger_result.is_ok() {
-                    trigger_result = Err(format!("unicode-input failed releasing modifier: {err}"));
+                    trigger_result = Err(err);
                 } else {
                     debug!(
                         "remote_desktop: failed to release unicode modifier: {}",
@@ -379,14 +441,12 @@ async fn type_text_async(text: &str) -> Result<(), String> {
 
         trigger_result?;
 
-        tokio::time::sleep(Duration::from_millis(UNICODE_TRIGGER_DELAY_MS)).await;
-
         let hex = format!("{:x}", ch as u32);
         for (idx, digit) in hex.chars().enumerate() {
             let stroke = keyboard_map
                 .find_character(digit)
                 .ok_or_else(|| format!("unicode-input: cannot find keycode for '{digit}'"))?;
-            send_stroke(proxy, session, &stroke)
+            send_stroke(proxy, session, &stroke, key_event_delay_ms)
                 .await
                 .map_err(|e| format!("unicode-input failed at hex digit #{idx} '{digit}': {e}"))?;
         }
@@ -394,8 +454,7 @@ async fn type_text_async(text: &str) -> Result<(), String> {
         let enter_stroke = keyboard_map
             .find_character('\n')
             .ok_or_else(|| "unicode-input: cannot find keycode for Enter".to_string())?;
-        send_stroke(proxy, session, &enter_stroke).await?;
-        tokio::time::sleep(Duration::from_millis(UNICODE_COMMIT_DELAY_MS)).await;
+        send_stroke(proxy, session, &enter_stroke, key_event_delay_ms).await?;
         Ok(())
     }
 
@@ -404,9 +463,16 @@ async fn type_text_async(text: &str) -> Result<(), String> {
         let normalized = text.nfc().collect::<String>();
         for ch in normalized.chars() {
             if let Some(stroke) = keyboard_map.find_character(ch) {
-                send_stroke(&proxy, &session, &stroke).await?;
+                send_stroke(&proxy, &session, &stroke, key_event_delay_ms).await?;
             } else {
-                send_unicode_via_ctrl_shift_u(&proxy, &session, &keyboard_map, ch).await?;
+                send_unicode_via_ctrl_shift_u(
+                    &proxy,
+                    &session,
+                    &keyboard_map,
+                    ch,
+                    key_event_delay_ms,
+                )
+                .await?;
             }
         }
         Ok(())
