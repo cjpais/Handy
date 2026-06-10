@@ -95,13 +95,15 @@ pub struct ModelManager {
 
 impl ModelManager {
     pub fn new(app_handle: &AppHandle) -> Result<Self> {
-        // Create models directory from settings (defaults to app data)
+        // Create models directory from settings (defaults to install folder)
         let models_dir = crate::portable::resolve_models_dir(app_handle)
             .map_err(|e| anyhow::anyhow!("Failed to resolve models directory: {}", e))?;
 
         if !models_dir.exists() {
             fs::create_dir_all(&models_dir)?;
         }
+
+        Self::maybe_migrate_legacy_app_data_models(app_handle, &models_dir)?;
 
         let mut available_models = HashMap::new();
 
@@ -692,6 +694,54 @@ impl ModelManager {
         Ok(())
     }
 
+    fn maybe_migrate_legacy_app_data_models(app: &AppHandle, install_dir: &Path) -> Result<()> {
+        let settings = get_settings(app);
+        if settings.models_storage_directory.is_some() {
+            return Ok(());
+        }
+
+        let legacy_dir = crate::portable::default_app_data_models_dir(app)
+            .map_err(|e| anyhow::anyhow!(e))?;
+        if legacy_dir == install_dir || !Self::dir_has_user_models(&legacy_dir) {
+            return Ok(());
+        }
+
+        if Self::dir_has_user_models(install_dir) {
+            return Ok(());
+        }
+
+        info!(
+            "Migrating models from legacy AppData folder to install folder: {} -> {}",
+            legacy_dir.display(),
+            install_dir.display()
+        );
+        Self::migrate_models_between_dirs(&legacy_dir, install_dir)
+    }
+
+    fn dir_has_user_models(path: &Path) -> bool {
+        let Ok(entries) = fs::read_dir(path) else {
+            return false;
+        };
+
+        entries.filter_map(Result::ok).any(|entry| {
+            let Ok(file_type) = entry.file_type() else {
+                return false;
+            };
+
+            if file_type.is_file() {
+                return true;
+            }
+
+            if file_type.is_dir() {
+                return fs::read_dir(entry.path())
+                    .map(|mut children| children.next().is_some())
+                    .unwrap_or(false);
+            }
+
+            false
+        })
+    }
+
     fn migrate_models_between_dirs(from: &Path, to: &Path) -> Result<()> {
         if from == to || !from.exists() {
             return Ok(());
@@ -701,39 +751,55 @@ impl ModelManager {
 
         for entry in fs::read_dir(from)? {
             let entry = entry?;
-            let file_name = entry.file_name();
-            let destination = to.join(&file_name);
+            Self::migrate_entry(&entry.path(), &to.join(entry.file_name()))?;
+        }
 
+        Self::remove_dir_if_empty(from)?;
+
+        Ok(())
+    }
+
+    fn migrate_entry(source: &Path, destination: &Path) -> Result<()> {
+        if !source.exists() {
+            return Ok(());
+        }
+
+        let metadata = fs::symlink_metadata(source)?;
+        if metadata.is_file() {
             if destination.exists() {
-                continue;
+                fs::remove_file(source)?;
+                info!(
+                    "Removed duplicate model file from old storage: {}",
+                    source.display()
+                );
+            } else {
+                if let Some(parent) = destination.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                fs::copy(source, destination)?;
+                fs::remove_file(source)?;
+                info!(
+                    "Moved model file to new storage: {} -> {}",
+                    source.display(),
+                    destination.display()
+                );
             }
-
-            let file_type = entry.file_type()?;
-            if file_type.is_dir() {
-                Self::copy_dir_recursive(&entry.path(), &destination)?;
-            } else if file_type.is_file() {
-                fs::copy(entry.path(), &destination)?;
+        } else if metadata.is_dir() {
+            fs::create_dir_all(destination)?;
+            for entry in fs::read_dir(source)? {
+                let entry = entry?;
+                Self::migrate_entry(&entry.path(), &destination.join(entry.file_name()))?;
             }
+            Self::remove_dir_if_empty(source)?;
         }
 
         Ok(())
     }
 
-    fn copy_dir_recursive(from: &Path, to: &Path) -> Result<()> {
-        fs::create_dir_all(to)?;
-
-        for entry in fs::read_dir(from)? {
-            let entry = entry?;
-            let destination = to.join(entry.file_name());
-            let file_type = entry.file_type()?;
-
-            if file_type.is_dir() {
-                Self::copy_dir_recursive(&entry.path(), &destination)?;
-            } else if file_type.is_file() {
-                fs::copy(entry.path(), &destination)?;
-            }
+    fn remove_dir_if_empty(path: &Path) -> Result<()> {
+        if path.exists() && fs::read_dir(path)?.next().is_none() {
+            fs::remove_dir(path)?;
         }
-
         Ok(())
     }
 
@@ -760,8 +826,7 @@ impl ModelManager {
         let target_dir = if let Some(custom_path) = normalized_path.clone() {
             PathBuf::from(&custom_path)
         } else {
-            crate::portable::default_app_data_models_dir(&self.app_handle)
-                .map_err(|e| anyhow::anyhow!(e))?
+            crate::portable::install_models_dir().map_err(|e| anyhow::anyhow!(e))?
         };
 
         fs::create_dir_all(&target_dir)?;

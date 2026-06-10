@@ -543,7 +543,7 @@
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
         "useInstallDir": "Use Installation Folder",
-        "resetDefault": "Use App Data Folder",
+        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       }

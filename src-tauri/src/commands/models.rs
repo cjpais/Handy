@@ -239,6 +239,13 @@ pub fn get_install_models_dir_path() -> Result<String, String> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn get_app_data_models_dir_path(app: AppHandle) -> Result<String, String> {
+    crate::portable::default_app_data_models_dir(&app)
+        .map(|path| path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn open_models_dir(
     app: AppHandle,
     model_manager: State<'_, Arc<ModelManager>>,

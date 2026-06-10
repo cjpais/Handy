@@ -216,11 +216,11 @@
       "noModelsMatch": "No models match this filter.",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
+        "description": "By default, models are stored in the application installation folder. You can choose another folder or switch to App Data.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "resetDefault": "Use App Data Folder",
+        "useInstallDir": "Installation Folder (Default)",
+        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       }

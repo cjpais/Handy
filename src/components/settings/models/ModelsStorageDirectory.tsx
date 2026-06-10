@@ -7,21 +7,39 @@ import { SettingContainer } from "../../ui/SettingContainer";
 import { PathDisplay } from "../../ui/PathDisplay";
 import { Button } from "../../ui/Button";
 
+const normalizePath = (path: string): string =>
+  path.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+
 export const ModelsStorageDirectory: React.FC = () => {
   const { t } = useTranslation();
   const { loadModels } = useModelStore();
   const [modelsDirPath, setModelsDirPath] = useState("");
+  const [installDirPath, setInstallDirPath] = useState("");
+  const [appDataDirPath, setAppDataDirPath] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshPath = useCallback(async () => {
-    const result = await commands.getModelsDirPath();
-    if (result.status === "ok") {
-      setModelsDirPath(result.data);
+    const [current, install, appData] = await Promise.all([
+      commands.getModelsDirPath(),
+      commands.getInstallModelsDirPath(),
+      commands.getAppDataModelsDirPath(),
+    ]);
+
+    if (current.status === "ok") {
+      setModelsDirPath(current.data);
       setError(null);
     } else {
-      setError(result.error);
+      setError(current.error);
+    }
+
+    if (install.status === "ok") {
+      setInstallDirPath(install.data);
+    }
+
+    if (appData.status === "ok") {
+      setAppDataDirPath(appData.data);
     }
   }, []);
 
@@ -98,9 +116,18 @@ export const ModelsStorageDirectory: React.FC = () => {
   };
 
   const handleUseInstallDir = async () => {
-    const installDirResult = await commands.getInstallModelsDirPath();
-    if (installDirResult.status === "error") {
-      setError(installDirResult.error);
+    const migrate = await ask(t("settings.models.storage.migratePrompt"), {
+      title: t("settings.models.storage.migrateTitle"),
+      kind: "info",
+    });
+
+    await applyStoragePath(null, migrate);
+  };
+
+  const handleUseAppData = async () => {
+    const appDataResult = await commands.getAppDataModelsDirPath();
+    if (appDataResult.status === "error") {
+      setError(appDataResult.error);
       return;
     }
 
@@ -109,17 +136,18 @@ export const ModelsStorageDirectory: React.FC = () => {
       kind: "info",
     });
 
-    await applyStoragePath(installDirResult.data, migrate);
+    await applyStoragePath(appDataResult.data, migrate);
   };
 
-  const handleResetToDefault = async () => {
-    const migrate = await ask(t("settings.models.storage.migratePrompt"), {
-      title: t("settings.models.storage.migrateTitle"),
-      kind: "info",
-    });
+  const isUsingInstallDir =
+    !!modelsDirPath &&
+    !!installDirPath &&
+    normalizePath(modelsDirPath) === normalizePath(installDirPath);
 
-    await applyStoragePath(null, migrate);
-  };
+  const isUsingAppDataDir =
+    !!modelsDirPath &&
+    !!appDataDirPath &&
+    normalizePath(modelsDirPath) === normalizePath(appDataDirPath);
 
   if (loading) {
     return (
@@ -160,17 +188,17 @@ export const ModelsStorageDirectory: React.FC = () => {
             variant="secondary"
             size="sm"
             onClick={handleUseInstallDir}
-            disabled={saving}
+            disabled={saving || isUsingInstallDir}
           >
             {t("settings.models.storage.useInstallDir")}
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            onClick={handleResetToDefault}
-            disabled={saving}
+            onClick={handleUseAppData}
+            disabled={saving || isUsingAppDataDir}
           >
-            {t("settings.models.storage.resetDefault")}
+            {t("settings.models.storage.useAppData")}
           </Button>
         </div>
       </div>

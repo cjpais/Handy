@@ -107,7 +107,7 @@ pub fn install_models_dir() -> Result<PathBuf, String> {
     }
 }
 
-/// Resolve the active models directory from settings, falling back to app data.
+/// Resolve the active models directory from settings, falling back to the install folder.
 pub fn resolve_models_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let settings = crate::settings::get_settings(app);
     if let Some(custom_path) = settings.models_storage_directory {
@@ -117,7 +117,7 @@ pub fn resolve_models_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         }
     }
 
-    default_app_data_models_dir(app)
+    install_models_dir()
 }
 
 /// Get the path to use with `tauri-plugin-store`.
