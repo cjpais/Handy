@@ -394,6 +394,10 @@
           "placeholderWithOptions": "חפש או בחר מודל",
           "placeholderNoOptions": "הקלד שם מודל",
           "refreshModels": "רענן מודלים"
+        },
+        "disableReasoning": {
+          "label": "השבתת חשיבה",
+          "description": "דילוג על מצב חשיבה לתגובות מהירות יותר. מומלץ לעיבוד לאחר מכן, אשר לעיתים רחוקות נהנה מחשיבה."
         }
       },
       "prompts": {

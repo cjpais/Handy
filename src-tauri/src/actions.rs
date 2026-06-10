@@ -125,12 +125,21 @@ async fn post_process_transcription(settings: &AppSettings, transcription: &str)
         .cloned()
         .unwrap_or_default();
 
-    // Disable reasoning for providers where post-processing rarely benefits from it.
-    // - custom: top-level reasoning_effort (works for local OpenAI-compat servers)
-    // - openrouter: nested reasoning object; exclude:true also keeps reasoning text
-    //   out of the response so it can't pollute structured-output JSON parsing
+    // The disable_reasoning toggle only gates the Custom path. Custom sends the
+    // top-level OpenAI-spec field `reasoning_effort: "none"` — but `"none"` is
+    // an Ollama extension, so strict OpenAI-compatible endpoints (e.g. an
+    // OpenRouter proxy that forwards to OpenAI) reject it with HTTP 400. The
+    // toggle lets affected users opt out. OpenRouter uses its own nested
+    // object where `effort: "none"` is documented as valid, so we keep sending
+    // it unconditionally there.
     let (reasoning_effort, reasoning) = match provider.id.as_str() {
-        "custom" => (Some("none".to_string()), None),
+        "custom" => {
+            if settings.post_process_disable_reasoning {
+                (Some("none".to_string()), None)
+            } else {
+                (None, None)
+            }
+        }
         "openrouter" => (
             None,
             Some(crate::llm_client::ReasoningConfig {

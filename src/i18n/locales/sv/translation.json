@@ -394,6 +394,10 @@
           "placeholderWithOptions": "Sök eller välj en modell",
           "placeholderNoOptions": "Ange ett modellnamn",
           "refreshModels": "Uppdatera modeller"
+        },
+        "disableReasoning": {
+          "label": "Inaktivera resonemang",
+          "description": "Hoppar över tänkandeläget för snabbare svar. Rekommenderas för efterbearbetning, som sällan drar nytta av resonemang."
         }
       },
       "prompts": {
