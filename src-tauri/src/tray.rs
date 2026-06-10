@@ -25,22 +25,68 @@ pub enum AppTheme {
     Colored, // Pink/colored theme for Linux
 }
 
-/// Gets the current app theme, with Linux defaulting to Colored theme
-pub fn get_current_theme(app: &AppHandle) -> AppTheme {
-    if cfg!(target_os = "linux") {
-        // On Linux, always use the colored theme
-        AppTheme::Colored
+fn app_theme_from_window_theme(theme: Theme) -> AppTheme {
+    match theme {
+        Theme::Light => AppTheme::Light,
+        Theme::Dark => AppTheme::Dark,
+        _ => AppTheme::Dark,
+    }
+}
+
+fn get_current_window_theme(app: &AppHandle) -> AppTheme {
+    if let Some(main_window) = app.get_webview_window("main") {
+        app_theme_from_window_theme(main_window.theme().unwrap_or(Theme::Dark))
     } else {
-        // On other platforms, map system theme to our app theme
-        if let Some(main_window) = app.get_webview_window("main") {
-            match main_window.theme().unwrap_or(Theme::Dark) {
-                Theme::Light => AppTheme::Light,
-                Theme::Dark => AppTheme::Dark,
-                _ => AppTheme::Dark, // Default fallback
-            }
-        } else {
-            AppTheme::Dark
-        }
+        AppTheme::Dark
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn get_windows_system_uses_light_theme() -> Option<u32> {
+    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::RegKey;
+
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let personalize = hkcu
+        .open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize")
+        .ok()?;
+
+    personalize.get_value("SystemUsesLightTheme").ok()
+}
+
+fn app_theme_for_windows_system_uses_light_theme(
+    system_uses_light_theme: Option<u32>,
+    fallback: AppTheme,
+) -> AppTheme {
+    match system_uses_light_theme {
+        Some(0) => AppTheme::Dark,
+        Some(1) => AppTheme::Light,
+        _ => fallback,
+    }
+}
+
+/// Gets the current app theme, with Linux defaulting to Colored theme.
+pub fn get_current_theme(app: &AppHandle) -> AppTheme {
+    #[cfg(target_os = "linux")]
+    {
+        // On Linux, always use the colored theme.
+        AppTheme::Colored
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows can use a light app theme with a dark taskbar. Tray icon
+        // contrast must follow the system/taskbar theme, not the app theme.
+        app_theme_for_windows_system_uses_light_theme(
+            get_windows_system_uses_light_theme(),
+            get_current_window_theme(app),
+        )
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        // On other platforms, map system theme to our app theme.
+        get_current_window_theme(app)
     }
 }
 
@@ -272,7 +318,7 @@ pub fn copy_last_transcript(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::last_transcript_text;
+    use super::{app_theme_for_windows_system_uses_light_theme, last_transcript_text, AppTheme};
     use crate::managers::history::HistoryEntry;
 
     fn build_entry(transcription: &str, post_processed: Option<&str>) -> HistoryEntry {
@@ -299,5 +345,13 @@ mod tests {
     fn falls_back_to_raw_transcription() {
         let entry = build_entry("raw", None);
         assert_eq!(last_transcript_text(&entry), "raw");
+    }
+
+    #[test]
+    fn windows_taskbar_dark_mode_uses_dark_app_theme_even_when_app_windows_are_light() {
+        assert_eq!(
+            app_theme_for_windows_system_uses_light_theme(Some(0), AppTheme::Light),
+            AppTheme::Dark
+        );
     }
 }

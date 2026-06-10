@@ -20,7 +20,7 @@ use crate::audio_toolkit::{
 };
 
 enum Cmd {
-    Start,
+    Start(mpsc::Sender<()>),
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -197,7 +197,9 @@ impl AudioRecorder {
 
     pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(tx) = &self.cmd_tx {
-            tx.send(Cmd::Start)?;
+            let (ack_tx, ack_rx) = mpsc::channel();
+            tx.send(Cmd::Start(ack_tx))?;
+            ack_rx.recv()?;
         }
         Ok(())
     }
@@ -351,7 +353,12 @@ pub fn is_no_input_device_error(error_message: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_microphone_access_denied, is_no_input_device_error};
+    use super::{
+        is_microphone_access_denied, is_no_input_device_error, run_consumer, AudioChunk, Cmd,
+    };
+    use std::sync::atomic::AtomicBool;
+    use std::sync::{mpsc, Arc};
+    use std::time::Duration;
 
     #[test]
     fn detects_access_is_denied() {
@@ -390,6 +397,38 @@ mod tests {
         assert!(!is_no_input_device_error("permission denied"));
         assert!(!is_no_input_device_error("device not found"));
     }
+
+    #[test]
+    fn start_command_applies_before_first_audio_chunk_after_start_request() {
+        let (sample_tx, sample_rx) = mpsc::channel();
+        let (cmd_tx, cmd_rx) = mpsc::channel();
+        let stop_flag = Arc::new(AtomicBool::new(false));
+
+        let consumer = std::thread::spawn(move || {
+            run_consumer(16_000, None, sample_rx, cmd_rx, None, stop_flag);
+        });
+
+        let (ack_tx, ack_rx) = mpsc::channel();
+        cmd_tx.send(Cmd::Start(ack_tx)).unwrap();
+        ack_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+        std::thread::sleep(Duration::from_millis(20));
+
+        sample_tx.send(AudioChunk::Samples(vec![1.0; 480])).unwrap();
+        sample_tx.send(AudioChunk::Samples(vec![2.0; 480])).unwrap();
+        std::thread::sleep(Duration::from_millis(20));
+
+        let (reply_tx, reply_rx) = mpsc::channel();
+        cmd_tx.send(Cmd::Stop(reply_tx)).unwrap();
+        sample_tx.send(AudioChunk::EndOfStream).unwrap();
+
+        let samples = reply_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+        drop(sample_tx);
+        drop(cmd_tx);
+        consumer.join().unwrap();
+
+        assert_eq!(samples.len(), 960);
+        assert_eq!(samples.iter().sum::<f32>(), 1440.0);
+    }
 }
 
 fn run_consumer(
@@ -420,6 +459,68 @@ fn run_consumer(
         4000.0, // vocal_max_hz
     );
 
+    macro_rules! handle_stop {
+        ($reply_tx:expr, $drain_remaining:expr) => {{
+            recording = false;
+            stop_flag.store(true, Ordering::Relaxed);
+
+            if $drain_remaining {
+                // Drain all remaining audio until the producer confirms end-of-stream.
+                // The cpal callback sees the stop flag, sends EndOfStream, and goes
+                // silent — guaranteeing every captured sample is in the channel
+                // ahead of the sentinel.
+                loop {
+                    match sample_rx.recv_timeout(Duration::from_secs(2)) {
+                        Ok(AudioChunk::Samples(remaining)) => {
+                            frame_resampler.push(&remaining, &mut |frame: &[f32]| {
+                                handle_frame(frame, true, &vad, &mut processed_samples)
+                            });
+                        }
+                        Ok(AudioChunk::EndOfStream) => break,
+                        Err(_) => {
+                            log::warn!("Timed out waiting for EndOfStream from audio callback");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            frame_resampler.finish(&mut |frame: &[f32]| {
+                handle_frame(frame, true, &vad, &mut processed_samples)
+            });
+
+            let _ = $reply_tx.send(std::mem::take(&mut processed_samples));
+
+            // Resume the audio callback so the consumer loop can continue
+            // receiving chunks (important for always-on microphone mode).
+            stop_flag.store(false, Ordering::Relaxed);
+        }};
+    }
+
+    macro_rules! handle_cmd {
+        ($cmd:expr) => {
+            match $cmd {
+                Cmd::Start(ack_tx) => {
+                    stop_flag.store(false, Ordering::Relaxed);
+                    processed_samples.clear();
+                    recording = true;
+                    visualizer.reset();
+                    if let Some(v) = &vad {
+                        v.lock().unwrap().reset();
+                    }
+                    let _ = ack_tx.send(());
+                }
+                Cmd::Stop(reply_tx) => {
+                    handle_stop!(reply_tx, true);
+                }
+                Cmd::Shutdown => {
+                    stop_flag.store(true, Ordering::Relaxed);
+                    return;
+                }
+            }
+        };
+    }
+
     fn handle_frame(
         samples: &[f32],
         recording: bool,
@@ -442,14 +543,35 @@ fn run_consumer(
     }
 
     loop {
-        let chunk = match sample_rx.recv() {
+        while let Ok(cmd) = cmd_rx.try_recv() {
+            handle_cmd!(cmd);
+        }
+
+        let chunk = match sample_rx.recv_timeout(Duration::from_millis(10)) {
             Ok(c) => c,
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(_) => break, // stream closed
         };
 
+        let mut deferred_commands = Vec::new();
+        while let Ok(cmd) = cmd_rx.try_recv() {
+            match cmd {
+                Cmd::Start(ack_tx) => handle_cmd!(Cmd::Start(ack_tx)),
+                Cmd::Shutdown => handle_cmd!(Cmd::Shutdown),
+                stop @ Cmd::Stop(_) => deferred_commands.push(stop),
+            }
+        }
+
         let raw = match chunk {
             AudioChunk::Samples(s) => s,
-            AudioChunk::EndOfStream => continue,
+            AudioChunk::EndOfStream => {
+                for cmd in deferred_commands {
+                    if let Cmd::Stop(reply_tx) = cmd {
+                        handle_stop!(reply_tx, false);
+                    }
+                }
+                continue;
+            }
         };
 
         // ---------- spectrum processing ---------------------------------- //
@@ -464,56 +586,8 @@ fn run_consumer(
             handle_frame(frame, recording, &vad, &mut processed_samples)
         });
 
-        // non-blocking check for a command
-        while let Ok(cmd) = cmd_rx.try_recv() {
-            match cmd {
-                Cmd::Start => {
-                    stop_flag.store(false, Ordering::Relaxed);
-                    processed_samples.clear();
-                    recording = true;
-                    visualizer.reset();
-                    if let Some(v) = &vad {
-                        v.lock().unwrap().reset();
-                    }
-                }
-                Cmd::Stop(reply_tx) => {
-                    recording = false;
-                    stop_flag.store(true, Ordering::Relaxed);
-
-                    // Drain all remaining audio until the producer confirms end-of-stream.
-                    // The cpal callback sees the stop flag, sends EndOfStream, and goes
-                    // silent — guaranteeing every captured sample is in the channel
-                    // ahead of the sentinel.
-                    loop {
-                        match sample_rx.recv_timeout(Duration::from_secs(2)) {
-                            Ok(AudioChunk::Samples(remaining)) => {
-                                frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
-                                });
-                            }
-                            Ok(AudioChunk::EndOfStream) => break,
-                            Err(_) => {
-                                log::warn!("Timed out waiting for EndOfStream from audio callback");
-                                break;
-                            }
-                        }
-                    }
-
-                    frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
-                    });
-
-                    let _ = reply_tx.send(std::mem::take(&mut processed_samples));
-
-                    // Resume the audio callback so the consumer loop can continue
-                    // receiving chunks (important for always-on microphone mode).
-                    stop_flag.store(false, Ordering::Relaxed);
-                }
-                Cmd::Shutdown => {
-                    stop_flag.store(true, Ordering::Relaxed);
-                    return;
-                }
-            }
+        for cmd in deferred_commands {
+            handle_cmd!(cmd);
         }
     }
 }
