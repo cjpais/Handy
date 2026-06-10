@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "需要權限",
-      "description": "Handy 需要一些權限才能正常運作",
       "microphone": {
         "title": "麥克風存取",
         "description": "需要聽取您的語音進行轉錄"
@@ -159,7 +158,6 @@
       "title": "一般",
       "shortcut": {
         "title": "Handy 快捷鍵",
-        "description": "設定啟動語音轉文字錄製的鍵盤快捷鍵",
         "loading": "載入快捷鍵中...",
         "none": "未設定快捷鍵",
         "notFound": "未找到快捷鍵",
@@ -186,7 +184,6 @@
       },
       "language": {
         "title": "語言",
-        "description": "選擇語音識別的語言。選擇自動將自動判定語言，選擇特定語言可以提高該語言的準確度",
         "descriptionUnsupported": "Parakeet 模型會自動偵測語言，無需手動選擇",
         "searchPlaceholder": "搜尋語言...",
         "noResults": "未找到語言",
@@ -199,7 +196,6 @@
     },
     "models": {
       "title": "轉錄模型",
-      "description": "選擇轉錄模型或下載其他模型。不同模型提供不同的準確度和速度",
       "yourModels": "已下載的模型",
       "availableModels": "可供下載",
       "downloaded": "已下載",
@@ -216,11 +212,8 @@
       "noModelsMatch": "沒有符合此篩選條件的模型",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       }
@@ -229,7 +222,6 @@
       "title": "聲音",
       "microphone": {
         "title": "麥克風",
-        "description": "選擇您偏好的麥克風裝置",
         "placeholder": "選擇麥克風...",
         "loading": "載入中..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "輸出裝置",
-        "description": "選擇用於聲音回饋的音訊輸出裝置",
         "placeholder": "選擇輸出裝置...",
         "loading": "載入中..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "GPU 裝置",
-          "description": "選擇用於 Whisper 推理的 GPU。自動選擇獨立 GPU。",
           "auto": "自動"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "懸浮窗位置",
-        "description": "在錄製和轉錄期間顯示視覺回饋懸浮窗。在 Linux 上建議選擇「無」",
         "options": {
           "none": "無",
           "bottom": "底部",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "貼上方式",
-        "description": "選擇文字插入方式。直接：透過系統輸入模擬打字。無：跳過貼上，僅更新歷史紀錄/剪貼簿",
         "options": {
           "clipboard": "剪貼簿 ({{modifier}}+V)",
           "clipboardCtrlShiftV": "剪貼簿 (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "輸入工具",
-        "description": "選擇在直接貼上方式下使用的 Linux 輸入工具。選擇自動會自動偵測並使用系統中可用的最佳工具",
         "options": {
           "auto": "自動（推薦）"
         }
       },
       "clipboardHandling": {
         "title": "剪貼簿處理",
-        "description": "不修改剪貼簿將在轉錄後保留目前剪貼簿內容。複製到剪貼簿會在貼上後將轉錄結果留在剪貼簿中",
         "options": {
           "dontModify": "不修改剪貼簿",
           "copyToClipboard": "複製到剪貼簿"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "自動送出",
-        "description": "插入文字後自動發送指定的按鍵組合。macOS 為 Cmd+Enter，Windows/Linux 為 Super+Enter",
         "options": {
           "off": "關閉",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "翻譯為英語",
-        "description": "在轉錄過程中自動將其他語言的語音翻譯為英語",
         "descriptionUnsupported": "{{model}} 模型不支援翻譯功能"
       },
       "modelUnload": {
         "title": "卸載模型",
-        "description": "當模型在指定時間內未使用時自動釋放 GPU/CPU 記憶體",
         "options": {
           "never": "從不",
           "immediately": "立即",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "自訂詞彙",
-        "description": "新增經常被誤聽或拼寫錯誤的詞彙。系統會自動將發音相似的詞彙修正為您列表中的詞彙",
         "placeholder": "新增詞彙",
         "add": "新增",
         "remove": "刪除 {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "完全在裝置上運行，無需 API 金鑰或網路存取",
           "requirements": "需要執行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac。必須在系統設定中啟用 Apple Intelligence",
           "unavailable": "Apple Intelligence 在此裝置上不可用。需要執行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，並在系統設定中啟用 Apple Intelligence"
         },
         "baseUrl": {
           "title": "基礎網址",
-          "description": "所選供應商的 API 基礎網址，僅自訂供應商可編輯",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "API 金鑰",
-          "description": "所選供應商的 API 金鑰",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "歷史紀錄上限",
-        "description": "歷史紀錄的最大保留筆數",
         "entries": "筆"
       },
       "recordingRetention": {
         "title": "自動刪除錄音",
-        "description": "自動刪除舊錄音以節省空間",
         "never": "從不",
         "preserveLimit": "保留最新 {{count}} 筆",
         "days3": "3 天後",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "鍵盤實作",
-        "description": "選擇鍵盤快捷鍵的後端",
         "bindingsReset": "鍵盤快捷鍵不相容，已重設為預設值"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "原始碼",
-        "description": "檢視原始碼並參與貢獻",
         "button": "在 GitHub 上檢視"
       },
       "supportDevelopment": {
         "title": "支持開發",
-        "description": "幫助我們繼續開發 Handy",
         "button": "捐贈"
       },
       "acknowledgments": {
         "title": "致謝",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "針對 OpenAI Whisper 自動語音識別模型的高效能推理引擎",
           "details": "Handy 使用 Whisper.cpp 進行快速的本機語音轉文字處理。感謝 Georgi Gerganov 和貢獻者們的傑出工作"
         }
       }

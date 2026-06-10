@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "Permissões Necessárias",
-      "description": "O Handy precisa de algumas permissões para funcionar corretamente.",
       "microphone": {
         "title": "Acesso ao Microfone",
         "description": "Necessário para ouvir sua voz para transcrição."
@@ -159,7 +158,6 @@
       "title": "Geral",
       "shortcut": {
         "title": "Atalhos do Handy",
-        "description": "Configure atalhos de teclado para iniciar a gravação de voz para texto",
         "loading": "Carregando atalhos...",
         "none": "Nenhum atalho configurado",
         "notFound": "Atalho não encontrado",
@@ -186,7 +184,6 @@
       },
       "language": {
         "title": "Idioma",
-        "description": "Selecione o idioma para reconhecimento de fala. Auto detectará automaticamente o idioma, enquanto selecionar um idioma específico pode melhorar a precisão para esse idioma.",
         "descriptionUnsupported": "O modelo Parakeet detecta automaticamente o idioma. Não é necessária seleção manual.",
         "searchPlaceholder": "Buscar idiomas...",
         "noResults": "Nenhum idioma encontrado",
@@ -199,7 +196,6 @@
     },
     "models": {
       "title": "Modelos de Transcrição",
-      "description": "Selecione um modelo de transcrição ou baixe modelos adicionais. Diferentes modelos oferecem diferentes níveis de precisão e velocidade.",
       "downloaded": "Baixados",
       "available": "Disponíveis para Download",
       "deleteConfirm": "Tem certeza de que deseja excluir {{modelName}}? Você precisará baixá-lo novamente para usá-lo.",
@@ -214,11 +210,8 @@
       "noModelsMatch": "Nenhum modelo corresponde a este filtro.",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       },
@@ -229,7 +222,6 @@
       "title": "Som",
       "microphone": {
         "title": "Microfone",
-        "description": "Selecione seu dispositivo de microfone preferido",
         "placeholder": "Selecionar microfone...",
         "loading": "Carregando..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "Dispositivo de Saída",
-        "description": "Selecione seu dispositivo de saída de áudio preferido para sons de feedback",
         "placeholder": "Selecionar dispositivo de saída...",
         "loading": "Carregando..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "Dispositivo GPU",
-          "description": "Selecione qual GPU usar para inferência do Whisper. Auto escolhe a GPU dedicada.",
           "auto": "Auto"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "Posição da Sobreposição",
-        "description": "Exibir sobreposição de feedback visual durante gravação e transcrição. No Linux, 'Nenhum' é recomendado.",
         "options": {
           "none": "Nenhum",
           "bottom": "Inferior",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "Método de Colar",
-        "description": "Escolha como o texto é inserido. Direto: simula digitação via entrada do sistema. Nenhum: ignora colar, apenas atualiza histórico/área de transferência.",
         "options": {
           "clipboard": "Área de Transferência ({{modifier}}+V)",
           "clipboardCtrlShiftV": "Área de Transferência (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "Ferramenta de digitação",
-        "description": "Escolha qual ferramenta de digitação do Linux usar para o método de colagem direta. Auto detectará e usará automaticamente a melhor ferramenta disponível para o seu sistema.",
         "options": {
           "auto": "Auto (Recomendado)"
         }
       },
       "clipboardHandling": {
         "title": "Manipulação da Área de Transferência",
-        "description": "Não Modificar Área de Transferência preserva o conteúdo atual da área de transferência após a transcrição. Copiar para Área de Transferência deixa o resultado da transcrição na área de transferência após colar.",
         "options": {
           "dontModify": "Não Modificar Área de Transferência",
           "copyToClipboard": "Copiar para Área de Transferência"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "Envio automático",
-        "description": "Envia automaticamente a combinação de teclas selecionada após a inserção do texto. Cmd+Enter aplica-se no macOS, enquanto Windows/Linux usam Super+Enter.",
         "options": {
           "off": "Desativado",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "Traduzir para Inglês",
-        "description": "Traduzir automaticamente fala de outros idiomas para inglês durante a transcrição.",
         "descriptionUnsupported": "Tradução não é suportada pelo modelo {{model}}."
       },
       "modelUnload": {
         "title": "Descarregar Modelo",
-        "description": "Liberar automaticamente memória GPU/CPU quando o modelo não for usado pelo tempo especificado",
         "options": {
           "never": "Nunca",
           "immediately": "Imediatamente",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "Palavras Personalizadas",
-        "description": "Adicione palavras que são frequentemente mal ouvidas ou mal escritas durante a transcrição. O sistema irá automaticamente corrigir palavras semelhantes para corresponder à sua lista.",
         "placeholder": "Adicionar uma palavra",
         "add": "Adicionar",
         "remove": "Remover {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "Executa totalmente no dispositivo. Nenhuma chave de API ou acesso à rede é necessário.",
           "requirements": "Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior. Apple Intelligence deve estar habilitado nas Configurações do Sistema.",
           "unavailable": "Apple Intelligence não está disponível neste dispositivo. Requer um Mac Apple Silicon executando macOS Tahoe (26.0) ou posterior com Apple Intelligence habilitado nas Configurações do Sistema."
         },
         "baseUrl": {
           "title": "URL Base",
-          "description": "URL base da API para o provedor selecionado. Apenas o provedor personalizado pode ser editado.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "Chave da API",
-          "description": "Chave da API para o provedor selecionado.",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "Limite de Histórico",
-        "description": "Número máximo de entradas de histórico a manter",
         "entries": "entradas"
       },
       "recordingRetention": {
         "title": "Excluir Gravações Automaticamente",
-        "description": "Excluir automaticamente gravações antigas para economizar espaço",
         "never": "Nunca",
         "preserveLimit": "Manter as últimas {{count}}",
         "days3": "Após 3 dias",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "Implementação do Teclado",
-        "description": "Escolha o sistema responsável pelos atalhos de teclado.",
         "bindingsReset": "Os atalhos de teclado eram incompatíveis e foram redefinidos para os padrões"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "Código Fonte",
-        "description": "Visualizar código fonte e contribuir",
         "button": "Ver no GitHub"
       },
       "supportDevelopment": {
         "title": "Apoiar o Desenvolvimento",
-        "description": "Ajude-nos a continuar construindo o Handy",
         "button": "Doar"
       },
       "acknowledgments": {
         "title": "Agradecimentos",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "Inferência de alto desempenho do modelo de reconhecimento automático de fala Whisper da OpenAI",
           "details": "O Handy usa Whisper.cpp para processamento rápido e local de fala para texto. Agradecemos ao incrível trabalho de Georgi Gerganov e colaboradores."
         }
       }

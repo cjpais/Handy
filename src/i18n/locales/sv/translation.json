@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "Behörigheter krävs",
-      "description": "Handy behöver ett par behörigheter för att fungera korrekt.",
       "microphone": {
         "title": "Mikrofonåtkomst",
         "description": "Krävs för att höra din röst för transkription."
@@ -159,7 +158,6 @@
       "title": "Allmänt",
       "shortcut": {
         "title": "Handy-kortkommandon",
-        "description": "Konfigurera kortkommandon för att starta tal-till-text-inspelning",
         "loading": "Laddar kortkommandon...",
         "none": "Inga kortkommandon konfigurerade",
         "notFound": "Kortkommando hittades inte",
@@ -186,7 +184,6 @@
       },
       "language": {
         "title": "Språk",
-        "description": "Välj språk för taligenkänning. Auto kommer automatiskt att bestämma språket, medan val av ett specifikt språk kan förbättra noggrannheten för det språket.",
         "descriptionUnsupported": "Parakeet-modellen upptäcker automatiskt språket. Inget manuellt val behövs.",
         "searchPlaceholder": "Sök språk...",
         "noResults": "Inga språk hittades",
@@ -199,7 +196,6 @@
     },
     "models": {
       "title": "Transkriptionsmodeller",
-      "description": "Välj en transkriptionsmodell eller ladda ner ytterligare modeller. Olika modeller erbjuder varierande nivåer av noggrannhet och hastighet.",
       "yourModels": "Nedladdade modeller",
       "availableModels": "Tillgängliga att ladda ner",
       "downloaded": "Nedladdad",
@@ -216,11 +212,8 @@
       "noModelsMatch": "Inga modeller matchar detta filter.",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       }
@@ -229,7 +222,6 @@
       "title": "Ljud",
       "microphone": {
         "title": "Mikrofon",
-        "description": "Välj din föredragna mikrofonenhet",
         "placeholder": "Välj mikrofon...",
         "loading": "Laddar..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "Utmatningsenhet",
-        "description": "Välj din föredragna ljudutmatningsenhet för återkopplingsljud",
         "placeholder": "Välj utmatningsenhet...",
         "loading": "Laddar..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "GPU-enhet",
-          "description": "Välj vilken GPU som ska användas för Whisper-inferens. Auto väljer den dedikerade GPU:n.",
           "auto": "Auto"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "Överlagringsposition",
-        "description": "Visa visuell återkoppling under inspelning och transkription. På Linux rekommenderas 'Ingen'.",
         "options": {
           "none": "Ingen",
           "bottom": "Nederst",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "Klistra-in-metod",
-        "description": "Välj hur text infogas. Direkt: simulerar skrivande via systeminmatning. Ingen: hoppar över klistra in, uppdaterar endast historik/urklipp.",
         "options": {
           "clipboard": "Urklipp ({{modifier}}+V)",
           "clipboardCtrlShiftV": "Urklipp (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "Skrivverktyg",
-        "description": "Välj vilket Linux-skrivverktyg som ska användas för metoden Direkt klistra in. Auto kommer automatiskt att upptäcka och använda det bästa tillgängliga verktyget för ditt system.",
         "options": {
           "auto": "Auto (Rekommenderas)"
         }
       },
       "clipboardHandling": {
         "title": "Hantering av urklipp",
-        "description": "Ändra inte urklipp bevarar ditt nuvarande urklippsinnehåll efter transkription. Kopiera till urklipp lämnar transkriptionsresultatet i ditt urklipp efter att ha klistrat in.",
         "options": {
           "dontModify": "Ändra inte urklipp",
           "copyToClipboard": "Kopiera till urklipp"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "Skicka automatiskt",
-        "description": "Skicka automatiskt den valda tangentkombinationen efter textinsättning. Cmd+Enter gäller på macOS, medan Windows/Linux använder Super+Enter.",
         "options": {
           "off": "Av",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "Översätt till engelska",
-        "description": "Översätt automatiskt tal från andra språk till engelska under transkription.",
         "descriptionUnsupported": "Översättning stöds inte av {{model}}-modellen."
       },
       "modelUnload": {
         "title": "Avlasta modell",
-        "description": "Frigör automatiskt GPU/CPU-minne när modellen inte har använts under den angivna tiden",
         "options": {
           "never": "Aldrig",
           "immediately": "Omedelbart",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "Anpassade ord",
-        "description": "Lägg till ord som ofta hörs fel eller stavas fel under transkription. Systemet kommer automatiskt att korrigera liknande ord för att matcha din lista.",
         "placeholder": "Lägg till ett ord",
         "add": "Lägg till",
         "remove": "Ta bort {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "Körs helt lokalt på enheten. Ingen API-nyckel eller nätverksåtkomst krävs.",
           "requirements": "Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare. Apple Intelligence måste vara aktiverat i systeminställningarna.",
           "unavailable": "Apple Intelligence är inte tillgängligt på den här enheten. Kräver en Apple Silicon Mac som kör macOS Tahoe (26.0) eller senare med Apple Intelligence aktiverat i systeminställningarna."
         },
         "baseUrl": {
           "title": "Bas-URL",
-          "description": "API-bas-URL för den valda leverantören. Endast den anpassade leverantören kan redigeras.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "API-nyckel",
-          "description": "API-nyckel för den valda leverantören.",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "Historikgräns",
-        "description": "Maximalt antal historikposter som ska sparas",
         "entries": "poster"
       },
       "recordingRetention": {
         "title": "Radera inspelningar automatiskt",
-        "description": "Radera gamla inspelningar automatiskt för att spara utrymme",
         "never": "Aldrig",
         "preserveLimit": "Behåll de senaste {{count}}",
         "days3": "Efter 3 dagar",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "Tangentbordsimplementering",
-        "description": "Välj tangentbordsgenvägens implementation.",
         "bindingsReset": "Kortkommandona var inkompatibla och återställdes till standardvärden"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "Källkod",
-        "description": "Visa källkod och bidra",
         "button": "Visa på GitHub"
       },
       "supportDevelopment": {
         "title": "Stöd utvecklingen",
-        "description": "Hjälp oss att fortsätta bygga Handy",
         "button": "Donera"
       },
       "acknowledgments": {
         "title": "Tack till",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "Högpresterande inferens av OpenAI:s Whisper-modell för automatisk taligenkänning",
           "details": "Handy använder Whisper.cpp för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
         }
       }

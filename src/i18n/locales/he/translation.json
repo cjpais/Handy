@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "נדרשות הרשאות",
-      "description": "Handy צריך כמה הרשאות כדי לעבוד כמו שצריך.",
       "microphone": {
         "title": "גישה למיקרופון",
         "description": "נדרש כדי לשמוע את הקול שלך לצורך תמלול."
@@ -159,7 +158,6 @@
       "title": "כללי",
       "shortcut": {
         "title": "קיצורי מקשים של Handy",
-        "description": "הגדר קיצורי מקשים כדי להפעיל הקלטה ותמלול דיבור",
         "loading": "טוען קיצורי מקשים...",
         "none": "לא הוגדרו קיצורי מקשים",
         "notFound": "קיצור הדרך לא נמצא",
@@ -186,7 +184,6 @@
       },
       "language": {
         "title": "שפה",
-        "description": "בחר את שפת זיהוי הדיבור. מצב אוטומטי יזהה את השפה לבד, בעוד שבחירת שפה מסוימת יכולה לשפר את הדיוק עבורה.",
         "descriptionUnsupported": "מודל Parakeet מזהה את השפה אוטומטית. אין צורך בבחירה ידנית.",
         "searchPlaceholder": "חפש שפות...",
         "noResults": "לא נמצאו שפות",
@@ -199,7 +196,6 @@
     },
     "models": {
       "title": "מודלי תמלול",
-      "description": "בחר מודל תמלול או הורד מודלים נוספים. מודלים שונים מציעים רמות שונות של דיוק ומהירות.",
       "yourModels": "מודלים שהורדו",
       "availableModels": "זמינים להורדה",
       "downloaded": "הורד",
@@ -216,11 +212,8 @@
       "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       }
@@ -229,7 +222,6 @@
       "title": "שמע",
       "microphone": {
         "title": "מיקרופון",
-        "description": "בחר את המיקרופון המועדף עליך",
         "placeholder": "בחר מיקרופון...",
         "loading": "טוען..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "התקן פלט",
-        "description": "בחר את התקן השמע המועדף עליך עבור צלילי המשוב",
         "placeholder": "בחר התקן פלט...",
         "loading": "טוען..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "התקן GPU",
-          "description": "בחר באיזה GPU להשתמש עבור הסקת Whisper. מצב אוטומטי בוחר את ה-GPU הייעודי.",
           "auto": "אוטומטי"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "מיקום שכבת המשוב",
-        "description": "הצג שכבת משוב חזותית בזמן הקלטה ותמלול. בלינוקס מומלץ לבחור 'ללא'.",
         "options": {
           "none": "ללא",
           "bottom": "למטה",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "שיטת הדבקה",
-        "description": "בחר איך הטקסט יוכנס. ישיר: מדמה הקלדה דרך קלט המערכת. ללא: מדלג על הדבקה ומעדכן רק היסטוריה/לוח.",
         "options": {
           "clipboard": "לוח ({{modifier}}+V)",
           "clipboardCtrlShiftV": "לוח (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "כלי הקלדה",
-        "description": "בחר איזה כלי הקלדה בלינוקס ישמש עבור הדבקה ישירה. מצב אוטומטי יזהה וישתמש בכלי המתאים ביותר למערכת שלך.",
         "options": {
           "auto": "אוטומטי (מומלץ)"
         }
       },
       "clipboardHandling": {
         "title": "התנהגות הלוח",
-        "description": "אל תשנה את הלוח ישמור על תוכן הלוח הנוכחי שלך אחרי התמלול. העתק ללוח ישאיר את תוצאת התמלול בלוח אחרי ההדבקה.",
         "options": {
           "dontModify": "אל תשנה את הלוח",
           "copyToClipboard": "העתק ללוח"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "שליחה אוטומטית",
-        "description": "שלח אוטומטית את צירוף המקשים שנבחר אחרי הכנסת הטקסט. ב-macOS יופעל Cmd+Enter, וב-Windows/Linux יופעל Super+Enter.",
         "options": {
           "off": "כבוי",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "תרגם לאנגלית",
-        "description": "תרגם אוטומטית דיבור משפות אחרות לאנגלית בזמן התמלול.",
         "descriptionUnsupported": "המודל {{model}} לא תומך בתרגום."
       },
       "modelUnload": {
         "title": "פרוק מודל",
-        "description": "שחרר אוטומטית זיכרון GPU/CPU כשהמודל לא היה בשימוש במשך הזמן שנבחר",
         "options": {
           "never": "אף פעם",
           "immediately": "מיידית",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "מילים מותאמות אישית",
-        "description": "הוסף מילים שנשמעות או נכתבות לא נכון לעיתים קרובות במהלך התמלול. המערכת תתקן אוטומטית מילים דומות כך שיתאימו לרשימה שלך.",
         "placeholder": "הוסף מילה",
         "add": "הוסף",
         "remove": "הסר את {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "רץ כולו על המכשיר. לא נדרש מפתח API או חיבור רשת.",
           "requirements": "דורש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה. Apple Intelligence חייב להיות מופעל בהגדרות המערכת.",
           "unavailable": "Apple Intelligence לא זמין במכשיר הזה. נדרש Mac עם Apple Silicon שמריץ macOS Tahoe (26.0) ומעלה, עם Apple Intelligence מופעל בהגדרות המערכת."
         },
         "baseUrl": {
           "title": "Base URL",
-          "description": "כתובת ה-API הבסיסית עבור הספק הנבחר. רק ספק מותאם אישית ניתן לעריכה.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "מפתח API",
-          "description": "מפתח API עבור הספק הנבחר.",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "מגבלת היסטוריה",
-        "description": "המספר המרבי של רשומות היסטוריה לשמירה",
         "entries": "רשומות"
       },
       "recordingRetention": {
         "title": "מחיקה אוטומטית של הקלטות",
-        "description": "מחק הקלטות ישנות אוטומטית כדי לחסוך מקום",
         "never": "אף פעם",
         "preserveLimit": "שמור את {{count}} האחרונות",
         "days3": "אחרי 3 ימים",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "מימוש מקלדת",
-        "description": "בחר את מנגנון קיצורי המקלדת.",
         "bindingsReset": "קיצורי המקלדת לא היו תואמים ואופסו לברירות המחדל"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "קוד מקור",
-        "description": "צפה בקוד המקור ותרום",
         "button": "צפה ב-GitHub"
       },
       "supportDevelopment": {
         "title": "תמיכה בפיתוח",
-        "description": "עזור לנו להמשיך לבנות את Handy",
         "button": "תרומה"
       },
       "acknowledgments": {
         "title": "תודות",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
           "details": "Handy משתמש ב-Whisper.cpp לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
         }
       }

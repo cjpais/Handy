@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "Wymagane uprawnienia",
-      "description": "Handy potrzebuje kilku uprawnień, aby działać poprawnie.",
       "microphone": {
         "title": "Dostęp do mikrofonu",
         "description": "Wymagany do słyszenia Twojego głosu w celu transkrypcji."
@@ -157,7 +156,6 @@
     },
     "models": {
       "title": "Modele transkrypcji",
-      "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
       "downloaded": "Pobrane",
       "available": "Dostępne do pobrania",
       "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
@@ -172,11 +170,8 @@
       "noModelsMatch": "Żadne modele nie pasują do tego filtra.",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       },
@@ -187,7 +182,6 @@
       "title": "Ogólne",
       "shortcut": {
         "title": "Skróty Handy",
-        "description": "Skonfiguruj skróty klawiaturowe do uruchamiania nagrywania mowy",
         "loading": "Wczytywanie skrótów...",
         "none": "Brak skonfigurowanych skrótów",
         "notFound": "Nie znaleziono skrótu",
@@ -214,7 +208,6 @@
       },
       "language": {
         "title": "Język",
-        "description": "Wybierz język rozpoznawania mowy. Opcja Auto automatycznie określi język, a wybór konkretnego języka może poprawić dokładność.",
         "descriptionUnsupported": "Model Parakeet automatycznie wykrywa język. Nie jest potrzebny ręczny wybór.",
         "searchPlaceholder": "Szukaj języka...",
         "noResults": "Nie znaleziono języków",
@@ -229,7 +222,6 @@
       "title": "Dźwięk",
       "microphone": {
         "title": "Mikrofon",
-        "description": "Wybierz preferowane urządzenie mikrofonowe",
         "placeholder": "Wybierz mikrofon...",
         "loading": "Wczytywanie..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "Urządzenie wyjściowe",
-        "description": "Wybierz preferowane urządzenie audio do odtwarzania dźwięków",
         "placeholder": "Wybierz urządzenie wyjściowe...",
         "loading": "Wczytywanie..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "Urządzenie GPU",
-          "description": "Wybierz GPU do inferencji Whisper. Auto wybiera dedykowany GPU.",
           "auto": "Auto"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "Pozycja nakładki",
-        "description": "Wyświetlaj wizualną nakładkę podczas nagrywania i transkrypcji. Na Linuxie zalecane 'Brak'.",
         "options": {
           "none": "Brak",
           "bottom": "Dół",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "Metoda wklejania",
-        "description": "Wybierz sposób wstawiania tekstu. Direct: symuluje wpisywanie. None: pomija wklejanie, tylko aktualizuje historię/clipboard.",
         "options": {
           "clipboard": "Schowek ({{modifier}}+V)",
           "clipboardCtrlShiftV": "Schowek (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "Narzędzie do wpisywania",
-        "description": "Wybierz, którego narzędzia do wpisywania w Linuxie użyć dla metody bezpośredniego wklejania. Auto automatycznie wykryje i użyje najlepszego dostępnego narzędzia dla Twojego systemu.",
         "options": {
           "auto": "Auto (Zalecane)"
         }
       },
       "clipboardHandling": {
         "title": "Obsługa schowka",
-        "description": "Nie modyfikuj schowka zachowuje jego zawartość. Kopiuj do schowka pozostawia wynik transkrypcji w schowku.",
         "options": {
           "dontModify": "Nie modyfikuj schowka",
           "copyToClipboard": "Kopiuj do schowka"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "Automatyczne wysyłanie",
-        "description": "Automatycznie wysyła wybraną kombinację klawiszy po wstawieniu tekstu. Cmd+Enter dotyczy macOS, natomiast Windows/Linux używają Super+Enter.",
         "options": {
           "off": "Wyłączone",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "Tłumacz na angielski",
-        "description": "Automatycznie tłumacz mowę z innych języków na angielski podczas transkrypcji.",
         "descriptionUnsupported": "Tłumaczenie nie jest obsługiwane przez model {{model}}."
       },
       "modelUnload": {
         "title": "Wyładowanie modelu",
-        "description": "Automatycznie zwalnia pamięć GPU/CPU po określonym czasie nieużywania",
         "options": {
           "never": "Nigdy",
           "immediately": "Natychmiast",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "Własne słowa",
-        "description": "Dodaj słowa, które często są źle rozpoznawane lub zapisywane podczas transkrypcji. System automatycznie poprawi podobnie brzmiące słowa, aby pasowały do Twojej listy.",
         "placeholder": "Dodaj słowo",
         "add": "Dodaj",
         "remove": "Usuń {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "Działa całkowicie na urządzeniu. Nie wymaga klucza API ani dostępu do sieci.",
           "requirements": "Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym. Apple Intelligence musi być włączone w Ustawieniach systemowych.",
           "unavailable": "Apple Intelligence nie jest dostępne na tym urządzeniu. Wymaga komputera Mac z Apple Silicon i systemem macOS Tahoe (26.0) lub nowszym z włączonym Apple Intelligence w Ustawieniach systemowych."
         },
         "baseUrl": {
           "title": "Adres bazowy",
-          "description": "Bazowy adres API dla wybranego dostawcy. Tylko dostawca niestandardowy może być edytowany.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "Klucz API",
-          "description": "Klucz API dla wybranego dostawcy.",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "Limit historii",
-        "description": "Maksymalna liczba wpisów w historii",
         "entries": "wpisy"
       },
       "recordingRetention": {
         "title": "Automatyczne usuwanie nagrań",
-        "description": "Automatycznie usuwaj stare nagrania, aby zaoszczędzić miejsce",
         "never": "Nigdy",
         "preserveLimit": "Zachowaj ostatnie {{count}}",
         "days3": "Po 3 dniach",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "Implementacja klawiatury",
-        "description": "Wybierz backend dla skrótów klawiaturowych.",
         "bindingsReset": "Skróty klawiaturowe były niekompatybilne i zostały zresetowane do wartości domyślnych"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "Kod źródłowy",
-        "description": "Zobacz kod źródłowy i współtwórz",
         "button": "Zobacz na GitHub"
       },
       "supportDevelopment": {
         "title": "Wspieraj rozwój",
-        "description": "Pomóż nam dalej rozwijać Handy",
         "button": "Wesprzyj"
       },
       "acknowledgments": {
         "title": "Podziękowania",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "Wydajne wykonywanie modelu rozpoznawania mowy Whisper od OpenAI",
           "details": "Handy używa Whisper.cpp do szybkiego, lokalnego przetwarzania mowy na tekst. Dzięki niesamowitej pracy Georgi Gerganova i współtwórców."
         }
       }

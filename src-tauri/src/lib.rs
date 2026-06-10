@@ -401,8 +401,6 @@ pub fn run(cli_args: CliArgs) {
             commands::models::has_any_models_available,
             commands::models::has_any_models_or_downloads,
             commands::models::get_models_dir_path,
-            commands::models::get_install_models_dir_path,
-            commands::models::get_app_data_models_dir_path,
             commands::models::open_models_dir,
             commands::models::set_models_storage_directory,
             commands::audio::update_microphone_mode,

@@ -103,8 +103,6 @@ impl ModelManager {
             fs::create_dir_all(&models_dir)?;
         }
 
-        Self::maybe_migrate_legacy_app_data_models(app_handle, &models_dir)?;
-
         let mut available_models = HashMap::new();
 
         // Whisper supported languages (99 languages from tokenizer)
@@ -692,54 +690,6 @@ impl ModelManager {
 
         let _ = self.app_handle.emit("models-storage-changed", ());
         Ok(())
-    }
-
-    fn maybe_migrate_legacy_app_data_models(app: &AppHandle, install_dir: &Path) -> Result<()> {
-        let settings = get_settings(app);
-        if settings.models_storage_directory.is_some() {
-            return Ok(());
-        }
-
-        let legacy_dir = crate::portable::default_app_data_models_dir(app)
-            .map_err(|e| anyhow::anyhow!(e))?;
-        if legacy_dir == install_dir || !Self::dir_has_user_models(&legacy_dir) {
-            return Ok(());
-        }
-
-        if Self::dir_has_user_models(install_dir) {
-            return Ok(());
-        }
-
-        info!(
-            "Migrating models from legacy AppData folder to install folder: {} -> {}",
-            legacy_dir.display(),
-            install_dir.display()
-        );
-        Self::migrate_models_between_dirs(&legacy_dir, install_dir)
-    }
-
-    fn dir_has_user_models(path: &Path) -> bool {
-        let Ok(entries) = fs::read_dir(path) else {
-            return false;
-        };
-
-        entries.filter_map(Result::ok).any(|entry| {
-            let Ok(file_type) = entry.file_type() else {
-                return false;
-            };
-
-            if file_type.is_file() {
-                return true;
-            }
-
-            if file_type.is_dir() {
-                return fs::read_dir(entry.path())
-                    .map(|mut children| children.next().is_some())
-                    .unwrap_or(false);
-            }
-
-            false
-        })
     }
 
     fn migrate_models_between_dirs(from: &Path, to: &Path) -> Result<()> {

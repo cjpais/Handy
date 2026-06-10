@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "Необходими разрешения",
-      "description": "Handy се нуждае от няколко разрешения, за да работи правилно.",
       "microphone": {
         "title": "Достъп до микрофон",
         "description": "Необходим е, за да чуе гласа ви при транскрипция."
@@ -159,7 +158,6 @@
       "title": "Общи",
       "shortcut": {
         "title": "Бързи клавиши на Handy",
-        "description": "Настройте клавишни комбинации за стартиране на запис за реч към текст",
         "loading": "Зареждане на бързите клавиши...",
         "none": "Няма настроени бързи клавиши",
         "notFound": "Бързият клавиш не е намерен",
@@ -186,7 +184,6 @@
       },
       "language": {
         "title": "Език",
-        "description": "Изберете езика за разпознаване на реч. „Автоматично“ определя езика сам, а изборът на конкретен език може да подобри точността за него.",
         "descriptionUnsupported": "Моделът Parakeet автоматично открива езика. Ръчен избор не е необходим.",
         "searchPlaceholder": "Търсене на езици...",
         "noResults": "Няма намерени езици",
@@ -199,7 +196,6 @@
     },
     "models": {
       "title": "Модели за транскрипция",
-      "description": "Изберете модел за транскрипция или изтеглете допълнителни. Различните модели предлагат различна точност и скорост.",
       "yourModels": "Изтеглени модели",
       "availableModels": "Налични за изтегляне",
       "downloaded": "Изтеглен",
@@ -216,11 +212,8 @@
       "noModelsMatch": "Няма модели, отговарящи на този филтър.",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       }
@@ -229,7 +222,6 @@
       "title": "Звук",
       "microphone": {
         "title": "Микрофон",
-        "description": "Изберете предпочитано микрофонно устройство",
         "placeholder": "Изберете микрофон...",
         "loading": "Зареждане..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "Изходно устройство",
-        "description": "Изберете предпочитано изходно аудио устройство за звуци за обратна връзка",
         "placeholder": "Изберете изходно устройство...",
         "loading": "Зареждане..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "GPU устройство",
-          "description": "Изберете кой GPU да се използва за Whisper. Автоматично избира специализирания GPU.",
           "auto": "Автоматично"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "Позиция на наслагването",
-        "description": "Показване на визуална обратна връзка при запис и транскрипция. На Linux се препоръчва „Няма“.",
         "options": {
           "none": "Няма",
           "bottom": "Долу",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "Начин на поставяне",
-        "description": "Изберете как се вмъква текстът. Директно: симулира писане чрез системния вход. Няма: пропуска поставянето, актуализира само историята/клипборда.",
         "options": {
           "clipboard": "Клипборд ({{modifier}}+V)",
           "clipboardCtrlShiftV": "Клипборд (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "Инструмент за писане",
-        "description": "Изберете кой Linux инструмент за писане да се използва при директно поставяне. „Автоматично“ открива и използва най-подходящия за вашата система.",
         "options": {
           "auto": "Автоматично (препоръчително)"
         }
       },
       "clipboardHandling": {
         "title": "Работа с клипборда",
-        "description": "„Без промяна на клипборда“ запазва съдържанието на клипборда след транскрипция. „Копиране в клипборда“ оставя резултата в клипборда след поставяне.",
         "options": {
           "dontModify": "Без промяна на клипборда",
           "copyToClipboard": "Копиране в клипборда"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "Автоматично изпращане",
-        "description": "Автоматично изпращане на избраната клавишна комбинация след вмъкване на текста. Cmd+Enter важи за macOS, а Windows/Linux използват Super+Enter.",
         "options": {
           "off": "Изкл.",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "Превод на английски",
-        "description": "Автоматичен превод на реч от други езици на английски по време на транскрипция.",
         "descriptionUnsupported": "Моделът {{model}} не поддържа превод."
       },
       "modelUnload": {
         "title": "Разтоварване на модела",
-        "description": "Автоматично освобождаване на памет на GPU/CPU, ако моделът не е използван за зададеното време",
         "options": {
           "never": "Никога",
           "immediately": "Веднага",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "Персонализирани думи",
-        "description": "Добавете думи, които често се чуват или изписват грешно при транскрипция. Системата автоматично ще коригира близки по звучене думи според вашия списък.",
         "placeholder": "Добавете дума",
         "add": "Добавяне",
         "remove": "Премахване на {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "Работи изцяло на устройството. Не са нужни API ключ или мрежов достъп.",
           "requirements": "Изисква Mac с Apple Silicon и macOS Tahoe (26.0) или по-нова. Apple Intelligence трябва да е включена в Системните настройки.",
           "unavailable": "Apple Intelligence не е налична на това устройство. Необходим е Mac с Apple Silicon и macOS Tahoe (26.0) или по-нова с включена Apple Intelligence в Системните настройки."
         },
         "baseUrl": {
           "title": "Базов URL",
-          "description": "Базов API URL за избрания доставчик. Редактируем е само при персонализиран доставчик.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "API ключ",
-          "description": "API ключ за избрания доставчик.",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "Лимит на историята",
-        "description": "Максимален брой записи в историята за пазене",
         "entries": "записа"
       },
       "recordingRetention": {
         "title": "Автоматично изтриване на записи",
-        "description": "Автоматично изтриване на стари записи за пестене на място",
         "never": "Никога",
         "preserveLimit": "Запазване на последните {{count}}",
         "days3": "След 3 дни",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "Реализация на клавиатурата",
-        "description": "Избор на бекенд за глобалните бързи клавиши.",
         "bindingsReset": "Бързите клавиши бяха несъвместими и са нулирани към подразбираните"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "Изходен код",
-        "description": "Преглед на изходния код и принос",
         "button": "Вижте в GitHub"
       },
       "supportDevelopment": {
         "title": "Подкрепете разработката",
-        "description": "Помогнете ни да продължим да развиваме Handy",
         "button": "Дарение"
       },
       "acknowledgments": {
         "title": "Благодарности",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "Високопроизводително изпълнение на автоматичния модел за разпознаване на реч Whisper на OpenAI",
           "details": "Handy използва Whisper.cpp за бързо локално реч-към-текст. Благодарности на Georgi Gerganov и сътрудниците за отличната работа."
         }
       }

@@ -7,39 +7,21 @@ import { SettingContainer } from "../../ui/SettingContainer";
 import { PathDisplay } from "../../ui/PathDisplay";
 import { Button } from "../../ui/Button";
 
-const normalizePath = (path: string): string =>
-  path.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
-
 export const ModelsStorageDirectory: React.FC = () => {
   const { t } = useTranslation();
   const { loadModels } = useModelStore();
   const [modelsDirPath, setModelsDirPath] = useState("");
-  const [installDirPath, setInstallDirPath] = useState("");
-  const [appDataDirPath, setAppDataDirPath] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshPath = useCallback(async () => {
-    const [current, install, appData] = await Promise.all([
-      commands.getModelsDirPath(),
-      commands.getInstallModelsDirPath(),
-      commands.getAppDataModelsDirPath(),
-    ]);
-
+    const current = await commands.getModelsDirPath();
     if (current.status === "ok") {
       setModelsDirPath(current.data);
       setError(null);
     } else {
       setError(current.error);
-    }
-
-    if (install.status === "ok") {
-      setInstallDirPath(install.data);
-    }
-
-    if (appData.status === "ok") {
-      setAppDataDirPath(appData.data);
     }
   }, []);
 
@@ -59,15 +41,27 @@ export const ModelsStorageDirectory: React.FC = () => {
     void load();
   }, [refreshPath]);
 
-  const applyStoragePath = async (
-    path: string | null,
-    migrate: boolean,
-  ): Promise<void> => {
+  const handleBrowse = async () => {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      title: t("settings.models.storage.browseTitle"),
+    });
+
+    if (!selected || Array.isArray(selected)) {
+      return;
+    }
+
+    const migrate = await ask(t("settings.models.storage.migratePrompt"), {
+      title: t("settings.models.storage.migrateTitle"),
+      kind: "info",
+    });
+
     setSaving(true);
     setError(null);
 
     try {
-      const result = await commands.setModelsStorageDirectory(path, migrate);
+      const result = await commands.setModelsStorageDirectory(selected, migrate);
       if (result.status === "error") {
         setError(result.error);
         return;
@@ -96,59 +90,6 @@ export const ModelsStorageDirectory: React.FC = () => {
     }
   };
 
-  const handleBrowse = async () => {
-    const selected = await open({
-      directory: true,
-      multiple: false,
-      title: t("settings.models.storage.browseTitle"),
-    });
-
-    if (!selected || Array.isArray(selected)) {
-      return;
-    }
-
-    const migrate = await ask(t("settings.models.storage.migratePrompt"), {
-      title: t("settings.models.storage.migrateTitle"),
-      kind: "info",
-    });
-
-    await applyStoragePath(selected, migrate);
-  };
-
-  const handleUseInstallDir = async () => {
-    const migrate = await ask(t("settings.models.storage.migratePrompt"), {
-      title: t("settings.models.storage.migrateTitle"),
-      kind: "info",
-    });
-
-    await applyStoragePath(null, migrate);
-  };
-
-  const handleUseAppData = async () => {
-    const appDataResult = await commands.getAppDataModelsDirPath();
-    if (appDataResult.status === "error") {
-      setError(appDataResult.error);
-      return;
-    }
-
-    const migrate = await ask(t("settings.models.storage.migratePrompt"), {
-      title: t("settings.models.storage.migrateTitle"),
-      kind: "info",
-    });
-
-    await applyStoragePath(appDataResult.data, migrate);
-  };
-
-  const isUsingInstallDir =
-    !!modelsDirPath &&
-    !!installDirPath &&
-    normalizePath(modelsDirPath) === normalizePath(installDirPath);
-
-  const isUsingAppDataDir =
-    !!modelsDirPath &&
-    !!appDataDirPath &&
-    normalizePath(modelsDirPath) === normalizePath(appDataDirPath);
-
   if (loading) {
     return (
       <div className="animate-pulse">
@@ -161,46 +102,24 @@ export const ModelsStorageDirectory: React.FC = () => {
   return (
     <SettingContainer
       title={t("settings.models.storage.title")}
-      description={t("settings.models.storage.description")}
-      descriptionMode="inline"
       grouped
       layout="stacked"
     >
       <div className="space-y-3">
-        {error && (
-          <p className="text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-500">{error}</p>}
         <PathDisplay
           path={modelsDirPath}
           onOpen={handleOpen}
           disabled={!modelsDirPath || saving}
         />
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleBrowse}
-            disabled={saving}
-          >
-            {t("settings.models.storage.browse")}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleUseInstallDir}
-            disabled={saving || isUsingInstallDir}
-          >
-            {t("settings.models.storage.useInstallDir")}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleUseAppData}
-            disabled={saving || isUsingAppDataDir}
-          >
-            {t("settings.models.storage.useAppData")}
-          </Button>
-        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={handleBrowse}
+          disabled={saving}
+        >
+          {t("settings.models.storage.browse")}
+        </Button>
       </div>
     </SettingContainer>
   );

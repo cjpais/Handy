@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "Потрібні дозволи",
-      "description": "Handy потребує деяких дозволів для коректної роботи.",
       "microphone": {
         "title": "Доступ до мікрофона",
         "description": "Потрібен для прослуховування вашого голосу для транскрипції."
@@ -159,7 +158,6 @@
       "title": "Загальні",
       "shortcut": {
         "title": "Комбінації клавіш",
-        "description": "Налаштуйте клавіатурні скорочення для запуску запису мовлення в текст",
         "loading": "Завантаження скорочень...",
         "none": "Скорочення не налаштовані",
         "notFound": "Скорочення не знайдено",
@@ -186,7 +184,6 @@
       },
       "language": {
         "title": "Мова",
-        "description": "Оберіть мову для розпізнавання мовлення. Режим «Авто» визначить мову автоматично, а вибір конкретної мови може покращити точність.",
         "descriptionUnsupported": "Модель Parakeet автоматично визначає мову. Ручний вибір не потрібен.",
         "searchPlaceholder": "Пошук мов...",
         "noResults": "Мов не знайдено",
@@ -199,7 +196,6 @@
     },
     "models": {
       "title": "Моделі транскрипції",
-      "description": "Виберіть модель транскрипції або завантажте додаткові моделі. Різні моделі пропонують різні рівні точності та швидкості.",
       "downloaded": "Завантажено",
       "available": "Доступні для завантаження",
       "deleteConfirm": "Ви впевнені, що хочете видалити {{modelName}}? Вам потрібно буде завантажити її знову, щоб використовувати.",
@@ -214,11 +210,8 @@
       "noModelsMatch": "Жодна модель не відповідає цьому фільтру.",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       },
@@ -229,7 +222,6 @@
       "title": "Звук",
       "microphone": {
         "title": "Мікрофон",
-        "description": "Оберіть бажаний мікрофон",
         "placeholder": "Оберіть мікрофон...",
         "loading": "Завантаження..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "Пристрій виводу",
-        "description": "Оберіть бажаний пристрій виводу звуку для звукових сповіщень",
         "placeholder": "Оберіть пристрій виводу...",
         "loading": "Завантаження..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "Пристрій GPU",
-          "description": "Виберіть GPU для інференсу Whisper. Автоматично обирає виділений GPU.",
           "auto": "Авто"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "Позиція оверлею",
-        "description": "Показувати візуальний оверлей під час запису та транскрипції. На Linux рекомендовано «Немає»",
         "options": {
           "none": "Немає",
           "bottom": "Внизу",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "Метод вставки",
-        "description": "Оберіть спосіб вставки тексту. Прямий: емулює набір тексту. Немає: пропускає вставку, оновлює лише історію/буфер обміну.",
         "options": {
           "clipboard": "Буфер обміну ({{modifier}}+V)",
           "clipboardCtrlShiftV": "Буфер обміну (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "Інструмент введення",
-        "description": "Виберіть, який інструмент введення в Linux використовувати для методу прямого вставлення. Auto автоматично визначить і використає найкращий доступний інструмент для вашої системи.",
         "options": {
           "auto": "Auto (Рекомендовано)"
         }
       },
       "clipboardHandling": {
         "title": "Робота з буфером обміну",
-        "description": "Не змінювати буфер обміну зберігає поточний вміст буфера після транскрипції. Копіювати в буфер обміну залишає результат транскрипції в буфері після вставки.",
         "options": {
           "dontModify": "Не змінювати буфер обміну",
           "copyToClipboard": "Копіювати в буфер обміну"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "Автоматичне надсилання",
-        "description": "Автоматично надсилає вибрану комбінацію клавіш після вставки тексту. Cmd+Enter застосовується на macOS, тоді як Windows/Linux використовують Super+Enter.",
         "options": {
           "off": "Вимк.",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "Перекласти на англійську",
-        "description": "Автоматично перекладати мовлення з інших мов англійською під час транскрипції.",
         "descriptionUnsupported": "Переклад не підтримується моделлю {{model}}."
       },
       "modelUnload": {
         "title": "Вивантаження моделі",
-        "description": "Автоматично звільняти пам'ять GPU/CPU, коли модель не використовується протягом вказаного часу",
         "options": {
           "never": "Ніколи",
           "immediately": "Негайно",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "Власні слова",
-        "description": "Додайте слова, які часто неправильно розпізнаються під час транскрипції. Система автоматично виправлятиме схожі за звучанням слова відповідно до вашого списку.",
         "placeholder": "Додати слово",
         "add": "Додати",
         "remove": "Видалити {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "Працює повністю на пристрої. API-ключ або доступ до мережі не потрібні.",
           "requirements": "Потрібен Mac з Apple Silicon під управлінням macOS Tahoe (26.0) або новіше. Apple Intelligence має бути увімкнений у Системних налаштуваннях.",
           "unavailable": "Apple Intelligence недоступний на цьому пристрої. Потрібен Mac з Apple Silicon під управлінням macOS Tahoe (26.0) або новіше з увімкненим Apple Intelligence в Системних налаштуваннях."
         },
         "baseUrl": {
           "title": "Базова URL-адреса",
-          "description": "Базова URL-адреса API для обраного провайдера. Лише власний провайдер можна редагувати.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "API-ключ",
-          "description": "API-ключ для обраного провайдера",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "Ліміт історії",
-        "description": "Максимальна кількість записів в історії",
         "entries": "записів"
       },
       "recordingRetention": {
         "title": "Автовидалення записів",
-        "description": "Автоматично видаляти старі записи для економії місця",
         "never": "Ніколи",
         "preserveLimit": "Зберігати останні {{count}}",
         "days3": "Через 3 дні",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "Реалізація клавіатури",
-        "description": "Оберіть бекенд для клавіатурних скорочень.",
         "bindingsReset": "Клавіатурні скорочення були несумісні та скинуті до значень за замовчуванням"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "Вихідний код",
-        "description": "Переглянути вихідний код та зробити внесок",
         "button": "Переглянути на GitHub"
       },
       "supportDevelopment": {
         "title": "Підтримати розробку",
-        "description": "Допоможіть нам продовжувати розвивати Handy",
         "button": "Підтримати"
       },
       "acknowledgments": {
         "title": "Подяки",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "Високопродуктивний інференс моделі автоматичного розпізнавання мовлення Whisper від OpenAI",
           "details": "Handy використовує Whisper.cpp для швидкої локальної обробки мовлення в текст. Дякуємо за чудову роботу Георгію Герганову та контриб'юторам."
         }
       }

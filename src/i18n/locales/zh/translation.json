@@ -100,7 +100,6 @@
     },
     "permissions": {
       "title": "需要权限",
-      "description": "Handy 需要一些权限才能正常工作。",
       "microphone": {
         "title": "麦克风访问",
         "description": "需要听取您的语音进行转录。"
@@ -157,7 +156,6 @@
     },
     "models": {
       "title": "转录模型",
-      "description": "选择转录模型或下载其他模型。不同模型提供不同的准确度和速度。",
       "downloaded": "已下载",
       "available": "可下载",
       "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
@@ -172,11 +170,8 @@
       "noModelsMatch": "没有符合此筛选条件的模型。",
       "storage": {
         "title": "Models Storage Location",
-        "description": "Choose where downloaded transcription models are stored. Use the installation folder to avoid filling up drive C:.",
         "browse": "Choose Folder",
         "browseTitle": "Select models folder",
-        "useInstallDir": "Use Installation Folder",
-        "useAppData": "Use App Data Folder",
         "migrateTitle": "Move Existing Models",
         "migratePrompt": "Move already downloaded models to the new folder? Existing files in the destination will be kept."
       },
@@ -187,7 +182,6 @@
       "title": "通用",
       "shortcut": {
         "title": "Handy 快捷键",
-        "description": "配置启动语音转文字录制的键盘快捷键",
         "loading": "加载快捷键中...",
         "none": "未配置快捷键",
         "notFound": "未找到快捷键",
@@ -214,7 +208,6 @@
       },
       "language": {
         "title": "语言",
-        "description": "选择语音识别的语言。自动将自动确定语言，选择特定语言可以提高该语言的准确度。",
         "descriptionUnsupported": "Parakeet 模型会自动检测语言，无需手动选择。",
         "searchPlaceholder": "搜索语言...",
         "noResults": "未找到语言",
@@ -229,7 +222,6 @@
       "title": "声音",
       "microphone": {
         "title": "麦克风",
-        "description": "选择您偏好的麦克风设备",
         "placeholder": "选择麦克风...",
         "loading": "加载中..."
       },
@@ -239,7 +231,6 @@
       },
       "outputDevice": {
         "title": "输出设备",
-        "description": "选择用于反馈声音的音频输出设备",
         "placeholder": "选择输出设备...",
         "loading": "加载中..."
       },
@@ -276,7 +267,6 @@
         },
         "gpuDevice": {
           "title": "GPU 设备",
-          "description": "选择用于 Whisper 推理的 GPU。自动选择独立 GPU。",
           "auto": "自动"
         }
       },
@@ -294,7 +284,6 @@
       },
       "overlay": {
         "title": "悬浮窗位置",
-        "description": "在录制和转录期间显示可视反馈悬浮窗。在 Linux 上建议选择「无」。",
         "options": {
           "none": "无",
           "bottom": "底部",
@@ -303,7 +292,6 @@
       },
       "pasteMethod": {
         "title": "粘贴方式",
-        "description": "选择文字插入方式。直接：通过系统输入模拟打字。无：跳过粘贴，仅更新历史记录/剪贴板。",
         "options": {
           "clipboard": "剪贴板 ({{modifier}}+V)",
           "clipboardCtrlShiftV": "剪贴板 (Ctrl+Shift+V)",
@@ -316,14 +304,12 @@
       },
       "typingTool": {
         "title": "输入工具",
-        "description": "选择在直接粘贴方式下使用的 Linux 输入工具。Auto 会自动检测并使用系统中可用的最佳工具。",
         "options": {
           "auto": "Auto（推荐）"
         }
       },
       "clipboardHandling": {
         "title": "剪贴板处理",
-        "description": "不修改剪贴板将在转录后保留当前剪贴板内容。复制到剪贴板将在粘贴后将转录结果留在剪贴板中。",
         "options": {
           "dontModify": "不修改剪贴板",
           "copyToClipboard": "复制到剪贴板"
@@ -331,7 +317,6 @@
       },
       "autoSubmit": {
         "title": "自动提交",
-        "description": "在文本插入后自动发送所选的按键组合。macOS 上使用 Cmd+Enter，Windows/Linux 上使用 Super+Enter。",
         "options": {
           "off": "关闭",
           "enter": "Enter",
@@ -342,12 +327,10 @@
       },
       "translateToEnglish": {
         "label": "翻译为英语",
-        "description": "在转录过程中自动将其他语言的语音翻译为英语。",
         "descriptionUnsupported": "{{model}} 模型不支持翻译功能。"
       },
       "modelUnload": {
         "title": "卸载模型",
-        "description": "当模型在指定时间内未使用时自动释放 GPU/CPU 内存",
         "options": {
           "never": "从不",
           "immediately": "立即",
@@ -361,7 +344,6 @@
       },
       "customWords": {
         "title": "自定义词汇",
-        "description": "添加经常被误听或拼写错误的词汇。系统将自动将发音相似的词汇修正为您列表中的词汇。",
         "placeholder": "添加词汇",
         "add": "添加",
         "remove": "删除 {{word}}",
@@ -381,18 +363,15 @@
         },
         "appleIntelligence": {
           "title": "Apple Intelligence",
-          "description": "完全在设备上运行。无需 API 密钥或网络访问。",
           "requirements": "需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac。必须在系统设置中启用 Apple Intelligence。",
           "unavailable": "Apple Intelligence 在此设备上不可用。需要运行 macOS Tahoe（26.0）或更高版本的 Apple Silicon Mac，并在系统设置中启用 Apple Intelligence。"
         },
         "baseUrl": {
           "title": "基础 URL",
-          "description": "所选提供商的 API 基础 URL。仅自定义提供商可编辑。",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
           "title": "API 密钥",
-          "description": "所选提供商的 API 密钥。",
           "placeholder": "sk-..."
         },
         "model": {
@@ -467,12 +446,10 @@
       },
       "historyLimit": {
         "title": "历史记录上限",
-        "description": "保留的最大历史条目数",
         "entries": "条"
       },
       "recordingRetention": {
         "title": "自动删除录音",
-        "description": "自动删除旧录音以节省空间",
         "never": "从不",
         "preserveLimit": "保留最新 {{count}} 条",
         "days3": "3 天后",
@@ -502,7 +479,6 @@
       },
       "keyboardImplementation": {
         "title": "键盘实现",
-        "description": "选择键盘快捷键的后端。",
         "bindingsReset": "键盘快捷键不兼容，已重置为默认值"
       },
       "paths": {
@@ -531,19 +507,16 @@
       },
       "sourceCode": {
         "title": "源代码",
-        "description": "查看源代码并贡献",
         "button": "在 GitHub 上查看"
       },
       "supportDevelopment": {
         "title": "支持开发",
-        "description": "帮助我们继续开发 Handy",
         "button": "捐赠"
       },
       "acknowledgments": {
         "title": "致谢",
         "whisper": {
           "title": "Whisper.cpp",
-          "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
           "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
       }
