@@ -158,6 +158,7 @@
     "models": {
       "title": "Modelos de Transcripción",
       "description": "Selecciona un modelo de transcripción o descarga modelos adicionales. Diferentes modelos ofrecen distintos niveles de precisión y velocidad.",
+      "searchPlaceholder": "Buscar modelos...",
       "downloaded": "Descargados",
       "available": "Disponibles para Descargar",
       "deleteConfirm": "¿Estás seguro de que deseas eliminar {{modelName}}? Necesitarás descargarlo de nuevo para usarlo.",
@@ -569,6 +570,7 @@
     "update": "Actualizar",
     "close": "Cerrar",
     "open": "Abrir",
+    "clear": "Limpiar",
     "default": "Predeterminado",
     "enabled": "Habilitado",
     "disabled": "Deshabilitado",

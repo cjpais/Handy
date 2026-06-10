@@ -523,6 +523,7 @@
     "models": {
       "title": "نماذج النسخ",
       "description": "اختر نموذج نسخ أو قم بتنزيل نماذج إضافية. تقدم النماذج المختلفة مستويات متفاوتة من الدقة والسرعة.",
+      "searchPlaceholder": "Search models...",
       "yourModels": "النماذج المحمّلة",
       "availableModels": "متاح للتنزيل",
       "downloaded": "تم التنزيل",
@@ -569,6 +570,7 @@
     "update": "تحديث",
     "close": "إغلاق",
     "open": "فتح",
+    "clear": "Clear",
     "default": "افتراضي",
     "enabled": "ممكن",
     "disabled": "معطل",

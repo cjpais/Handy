@@ -158,6 +158,7 @@
     "models": {
       "title": "转录模型",
       "description": "选择转录模型或下载其他模型。不同模型提供不同的准确度和速度。",
+      "searchPlaceholder": "搜索模型...",
       "downloaded": "已下载",
       "available": "可下载",
       "deleteConfirm": "确定要删除 {{modelName}} 吗？您需要重新下载才能使用。",
@@ -569,6 +570,7 @@
     "update": "更新",
     "close": "关闭",
     "open": "打开",
+    "clear": "清除",
     "default": "默认",
     "enabled": "已启用",
     "disabled": "已禁用",

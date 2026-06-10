@@ -158,6 +158,7 @@
     "models": {
       "title": "Mô hình chuyển đổi",
       "description": "Chọn mô hình chuyển đổi hoặc tải thêm mô hình. Các mô hình khác nhau có mức độ chính xác và tốc độ khác nhau.",
+      "searchPlaceholder": "Search models...",
       "downloaded": "Đã tải xuống",
       "available": "Có thể tải xuống",
       "deleteConfirm": "Bạn có chắc chắn muốn xóa {{modelName}}? Bạn sẽ cần tải lại để sử dụng.",
@@ -569,6 +570,7 @@
     "update": "Cập nhật",
     "close": "Đóng",
     "open": "Mở",
+    "clear": "Clear",
     "default": "Mặc định",
     "enabled": "Đã bật",
     "disabled": "Đã tắt",

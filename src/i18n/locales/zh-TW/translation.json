@@ -200,6 +200,7 @@
     "models": {
       "title": "轉錄模型",
       "description": "選擇轉錄模型或下載其他模型。不同模型提供不同的準確度和速度",
+      "searchPlaceholder": "搜尋模型...",
       "yourModels": "已下載的模型",
       "availableModels": "可供下載",
       "downloaded": "已下載",
@@ -569,6 +570,7 @@
     "update": "更新",
     "close": "關閉",
     "open": "開啟",
+    "clear": "清除",
     "default": "預設",
     "enabled": "已啟用",
     "disabled": "已停用",

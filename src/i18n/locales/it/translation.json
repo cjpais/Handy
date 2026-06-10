@@ -158,6 +158,7 @@
     "models": {
       "title": "Modelli di Trascrizione",
       "description": "Seleziona un modello di trascrizione o scarica modelli aggiuntivi. Diversi modelli offrono diversi livelli di accuratezza e velocità.",
+      "searchPlaceholder": "Cerca modelli...",
       "downloaded": "Scaricati",
       "available": "Disponibili per il Download",
       "deleteConfirm": "Sei sicuro di voler eliminare {{modelName}}? Dovrai scaricarlo di nuovo per usarlo.",
@@ -569,6 +570,7 @@
     "update": "Aggiorna",
     "close": "Chiudi",
     "open": "Apri",
+    "clear": "Cancella",
     "default": "Predefinito",
     "enabled": "Abilitato",
     "disabled": "Disabilitato",

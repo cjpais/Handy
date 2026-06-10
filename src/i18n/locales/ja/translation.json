@@ -158,6 +158,7 @@
     "models": {
       "title": "転写モデル",
       "description": "転写モデルを選択するか、追加のモデルをダウンロードします。異なるモデルは精度と速度のレベルが異なります。",
+      "searchPlaceholder": "モデルを検索...",
       "downloaded": "ダウンロード済み",
       "available": "ダウンロード可能",
       "deleteConfirm": "{{modelName}}を削除してもよろしいですか？再度使用するにはダウンロードが必要です。",
@@ -569,6 +570,7 @@
     "update": "更新",
     "close": "閉じる",
     "open": "開く",
+    "clear": "クリア",
     "default": "デフォルト",
     "enabled": "有効",
     "disabled": "無効",

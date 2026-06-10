@@ -158,6 +158,7 @@
     "models": {
       "title": "Modele transkrypcji",
       "description": "Wybierz model transkrypcji lub pobierz dodatkowe modele. Różne modele oferują różne poziomy dokładności i szybkości.",
+      "searchPlaceholder": "Search models...",
       "downloaded": "Pobrane",
       "available": "Dostępne do pobrania",
       "deleteConfirm": "Czy na pewno chcesz usunąć {{modelName}}? Będziesz musiał pobrać go ponownie, aby go użyć.",
@@ -569,6 +570,7 @@
     "update": "Aktualizuj",
     "close": "Zamknij",
     "open": "Otwórz",
+    "clear": "Clear",
     "default": "Domyślne",
     "enabled": "Włączone",
     "disabled": "Wyłączone",
