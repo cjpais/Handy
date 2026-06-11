@@ -15,7 +15,7 @@ fn set_mute(mute: bool) {
     // - Windows: works on most systems using standard audio drivers.
     // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
     //   but some distros may lack the tools used.
-    // - macOS: works on most standard setups via AppleScript.
+    // - macOS: uses CoreAudio in-process muting/soft-muting with state restore.
     // If unsupported, fails silently.
 
     #[cfg(target_os = "windows")]
@@ -90,12 +90,15 @@ fn set_mute(mute: bool) {
 
     #[cfg(target_os = "macos")]
     {
-        use std::process::Command;
-        let script = format!(
-            "set volume output muted {}",
-            if mute { "true" } else { "false" }
-        );
-        let _ = Command::new("osascript").args(["-e", &script]).output();
+        let result = if mute {
+            crate::macos_audio::mute_default_output()
+        } else {
+            crate::macos_audio::restore_default_output()
+        };
+
+        if let Err(error) = result {
+            debug!("CoreAudio output mute operation failed: {}", error);
+        }
     }
 }
 
@@ -202,12 +205,40 @@ impl AudioRecordingManager {
             settings.selected_microphone.as_ref()?
         };
 
-        // Find the device by name
+        // Find the device by name. The settings UI may be CoreAudio-backed on
+        // macOS while recording still opens through cpal, so log both views if
+        // the selected name cannot be resolved.
         match list_input_devices() {
-            Ok(devices) => devices
-                .into_iter()
-                .find(|d| d.name == *device_name)
-                .map(|d| d.device),
+            Ok(devices) => {
+                let cpal_names = devices.iter().map(|d| d.name.clone()).collect::<Vec<_>>();
+                let selected = devices
+                    .into_iter()
+                    .find(|d| d.name == *device_name)
+                    .map(|d| d.device);
+
+                if selected.is_none() {
+                    #[cfg(target_os = "macos")]
+                    let coreaudio_names = crate::macos_audio::list_audio_devices()
+                        .map(|devices| {
+                            devices
+                                .into_iter()
+                                .filter(|device| device.input_channels > 0)
+                                .map(|device| device.name)
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+
+                    #[cfg(not(target_os = "macos"))]
+                    let coreaudio_names: Vec<String> = Vec::new();
+
+                    debug!(
+                        "Selected microphone '{}' not found; cpal devices: {:?}; CoreAudio devices: {:?}",
+                        device_name, cpal_names, coreaudio_names
+                    );
+                }
+
+                selected
+            }
             Err(e) => {
                 debug!("Failed to list devices, using default: {}", e);
                 None
