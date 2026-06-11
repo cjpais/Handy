@@ -310,3 +310,49 @@ pub fn is_recording(app: AppHandle) -> bool {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.is_recording()
 }
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_microphone_channels(device_name: String) -> Result<u16, String> {
+    if device_name == "default" || device_name == "Default" {
+        let host =
+            cpal::traits::HostTrait::default_input_device(&crate::audio_toolkit::get_cpal_host());
+        return match host {
+            Some(dev) => {
+                use cpal::traits::DeviceTrait;
+                dev.default_input_config()
+                    .map(|c| c.channels())
+                    .map_err(|e| format!("Failed to get config: {}", e))
+            }
+            None => Ok(1),
+        };
+    }
+    let devices =
+        list_input_devices().map_err(|e| format!("Failed to list audio devices: {}", e))?;
+    match devices.into_iter().find(|d| d.name == device_name) {
+        Some(d) => Ok(d.channels),
+        None => Ok(1),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_selected_channel(app: AppHandle) -> Result<Option<u16>, String> {
+    let settings = get_settings(&app);
+    Ok(settings.selected_channel)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_selected_channel(app: AppHandle, channel: Option<u16>) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.selected_channel = channel;
+    write_settings(&app, settings);
+
+    // Restart the audio stream to use the new channel
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.update_selected_device()
+        .map_err(|e| format!("Failed to update channel selection: {}", e))?;
+
+    Ok(())
+}
