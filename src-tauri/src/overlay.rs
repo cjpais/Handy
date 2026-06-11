@@ -1,3 +1,6 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use crate::input;
 use crate::settings;
 use crate::settings::OverlayPosition;
@@ -33,6 +36,9 @@ tauri_panel! {
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
+
+static LAST_MIC_LEVEL_EMIT: AtomicU64 = AtomicU64::new(0);
+const EMIT_THROTTLE_MS: u64 = 33; // ~30 FPS
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -386,11 +392,17 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
 }
 
 pub fn emit_levels(app_handle: &AppHandle, levels: &Vec<f32>) {
-    // emit levels to main app
-    let _ = app_handle.emit("mic-level", levels);
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
 
-    // also emit to the recording overlay if it's open
-    if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
-        let _ = overlay_window.emit("mic-level", levels);
+    let last = LAST_MIC_LEVEL_EMIT.load(Ordering::Relaxed);
+    if now.saturating_sub(last) < EMIT_THROTTLE_MS {
+        return;
     }
+    LAST_MIC_LEVEL_EMIT.store(now, Ordering::Relaxed);
+
+    // Target the specific window instead of a global double-broadcast
+    let _ = app_handle.emit_to("recording_overlay", "mic-level", levels);
 }
