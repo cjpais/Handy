@@ -81,6 +81,7 @@ tauri-plugin-dialog = "2.6"
 [target.'cfg(unix)'.dependencies]
 signal-hook = "0.3"
 
+
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-global-shortcut = "2.3.1"
@@ -106,6 +107,7 @@ transcribe-rs = { version = "0.3.3", features = ["whisper-metal"] }
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan"] }
+zbus = "4.0"
 
 [patch.crates-io]
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }

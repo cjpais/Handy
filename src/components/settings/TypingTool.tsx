@@ -13,6 +13,7 @@ interface TypingToolProps {
 }
 
 const allToolLabels: Record<string, string> = {
+  ibus: "IBus",
   wtype: "wtype",
   kwtype: "kwtype",
   dotool: "dotool",

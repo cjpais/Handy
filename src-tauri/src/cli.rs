@@ -26,4 +26,8 @@ pub struct CliArgs {
     /// Enable debug mode with verbose logging
     #[arg(long)]
     pub debug: bool,
+
+    /// Start as IBus Input Method Engine (Linux only)
+    #[arg(long)]
+    pub ibus_engine: bool,
 }
