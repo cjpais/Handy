@@ -10,6 +10,17 @@ use tauri_plugin_store::StoreExt;
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
 
+pub const SONIOX_DEFAULT_BASE_URL: &str = "https://api.soniox.com";
+pub const SONIOX_DEFAULT_MODEL: &str = "stt-async-v4";
+pub const SONIOX_DEFAULT_TIMEOUT_SECONDS: u64 = 120;
+pub const SLNG_DEFAULT_BASE_URL: &str = "https://api.slng.ai";
+pub const SLNG_DEFAULT_PROVIDER: &str = "deepgram";
+pub const SLNG_DEFAULT_MODEL: &str = "nova:3-multi";
+pub const SLNG_DEFAULT_ENDPOINT: &str =
+    "https://api.slng.ai/v1/bridges/unmute/stt/slng/deepgram/nova:3-multi";
+pub const SLNG_DEFAULT_LANGUAGE: &str = "multi";
+pub const SLNG_DEFAULT_TIMEOUT_SECONDS: u64 = 120;
+
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
@@ -104,6 +115,20 @@ pub struct PostProcessProvider {
     pub models_endpoint: Option<String>,
     #[serde(default)]
     pub supports_structured_output: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum TranscriptionProvider {
+    Local,
+    Soniox,
+    Slng,
+}
+
+impl Default for TranscriptionProvider {
+    fn default() -> Self {
+        TranscriptionProvider::Local
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -333,6 +358,30 @@ impl std::ops::DerefMut for SecretMap {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, Type, Default)]
+#[serde(transparent)]
+pub struct SecretString(String);
+
+impl SecretString {
+    pub fn new(value: String) -> Self {
+        Self(value)
+    }
+
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Debug for SecretString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.0.is_empty() {
+            f.write_str("\"\"")
+        } else {
+            f.write_str("\"[REDACTED]\"")
+        }
+    }
+}
+
 /* still handy for composing the initial JSON in the store ------------- */
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 pub struct AppSettings {
@@ -351,6 +400,32 @@ pub struct AppSettings {
     pub update_checks_enabled: bool,
     #[serde(default = "default_model")]
     pub selected_model: String,
+    #[serde(default)]
+    pub transcription_provider: TranscriptionProvider,
+    #[serde(default)]
+    pub soniox_api_key: SecretString,
+    #[serde(default = "default_soniox_base_url")]
+    pub soniox_base_url: String,
+    #[serde(default = "default_soniox_model")]
+    pub soniox_model: String,
+    #[serde(default = "default_soniox_timeout_seconds")]
+    pub soniox_timeout_seconds: u64,
+    #[serde(default = "default_soniox_fallback_to_local")]
+    pub soniox_fallback_to_local: bool,
+    #[serde(default)]
+    pub slng_api_key: SecretString,
+    #[serde(default = "default_slng_endpoint")]
+    pub slng_endpoint: String,
+    #[serde(default = "default_slng_provider")]
+    pub slng_provider: String,
+    #[serde(default = "default_slng_model")]
+    pub slng_model: String,
+    #[serde(default = "default_slng_language")]
+    pub slng_language: String,
+    #[serde(default = "default_slng_timeout_seconds")]
+    pub slng_timeout_seconds: u64,
+    #[serde(default = "default_slng_fallback_to_local")]
+    pub slng_fallback_to_local: bool,
     #[serde(default = "default_always_on_microphone")]
     pub always_on_microphone: bool,
     #[serde(default)]
@@ -436,6 +511,66 @@ fn default_model() -> String {
     "".to_string()
 }
 
+fn default_soniox_base_url() -> String {
+    SONIOX_DEFAULT_BASE_URL.to_string()
+}
+
+fn default_soniox_model() -> String {
+    SONIOX_DEFAULT_MODEL.to_string()
+}
+
+fn default_soniox_timeout_seconds() -> u64 {
+    SONIOX_DEFAULT_TIMEOUT_SECONDS
+}
+
+fn default_soniox_fallback_to_local() -> bool {
+    true
+}
+
+fn default_slng_endpoint() -> String {
+    build_slng_endpoint(SLNG_DEFAULT_PROVIDER, SLNG_DEFAULT_MODEL)
+}
+
+fn default_slng_provider() -> String {
+    SLNG_DEFAULT_PROVIDER.to_string()
+}
+
+fn default_slng_model() -> String {
+    SLNG_DEFAULT_MODEL.to_string()
+}
+
+fn default_slng_language() -> String {
+    SLNG_DEFAULT_LANGUAGE.to_string()
+}
+
+fn default_slng_timeout_seconds() -> u64 {
+    SLNG_DEFAULT_TIMEOUT_SECONDS
+}
+
+fn default_slng_fallback_to_local() -> bool {
+    true
+}
+
+pub fn build_slng_endpoint(provider: &str, model: &str) -> String {
+    let provider = provider
+        .trim()
+        .trim_matches('/')
+        .is_empty()
+        .then_some(SLNG_DEFAULT_PROVIDER)
+        .unwrap_or_else(|| provider.trim().trim_matches('/'));
+    let model = model
+        .trim()
+        .trim_matches('/')
+        .is_empty()
+        .then_some(SLNG_DEFAULT_MODEL)
+        .unwrap_or_else(|| model.trim().trim_matches('/'));
+
+    format!(
+        "{}/v1/bridges/unmute/stt/slng/{}/{}",
+        SLNG_DEFAULT_BASE_URL, provider, model
+    )
+}
+
 fn default_always_on_microphone() -> bool {
     false
 }
@@ -453,7 +588,7 @@ fn default_autostart_enabled() -> bool {
 }
 
 fn default_update_checks_enabled() -> bool {
-    true
+    false
 }
 
 fn default_selected_language() -> String {
@@ -767,13 +902,26 @@ pub fn get_default_settings() -> AppSettings {
     AppSettings {
         bindings,
         push_to_talk: true,
-        audio_feedback: false,
+        audio_feedback: true,
         audio_feedback_volume: default_audio_feedback_volume(),
         sound_theme: default_sound_theme(),
         start_hidden: default_start_hidden(),
         autostart_enabled: default_autostart_enabled(),
         update_checks_enabled: default_update_checks_enabled(),
         selected_model: "".to_string(),
+        transcription_provider: TranscriptionProvider::default(),
+        soniox_api_key: SecretString::default(),
+        soniox_base_url: default_soniox_base_url(),
+        soniox_model: default_soniox_model(),
+        soniox_timeout_seconds: default_soniox_timeout_seconds(),
+        soniox_fallback_to_local: default_soniox_fallback_to_local(),
+        slng_api_key: SecretString::default(),
+        slng_endpoint: default_slng_endpoint(),
+        slng_provider: default_slng_provider(),
+        slng_model: default_slng_model(),
+        slng_language: default_slng_language(),
+        slng_timeout_seconds: default_slng_timeout_seconds(),
+        slng_fallback_to_local: default_slng_fallback_to_local(),
         always_on_microphone: false,
         selected_microphone: None,
         clamshell_microphone: None,

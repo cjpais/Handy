@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "権限が必要です",
-      "description": "Handyが正常に動作するにはいくつかの権限が必要です。",
+      "description": "ixiwhisperが正常に動作するにはいくつかの権限が必要です。",
       "microphone": {
         "title": "マイクへのアクセス",
         "description": "文字起こしのためにあなたの声を聞くために必要です。"
@@ -171,12 +171,84 @@
       },
       "noModelsMatch": "このフィルターに一致するモデルがありません。",
       "yourModels": "ダウンロード済みモデル",
-      "availableModels": "ダウンロード可能"
+      "availableModels": "ダウンロード可能",
+      "provider": {
+        "title": "Transcription Provider",
+        "selector": {
+          "title": "Provider",
+          "description": "Choose whether ixiwhisper transcribes with local offline models or a cloud STT provider."
+        },
+        "options": {
+          "local": "Local Models",
+          "soniox": "Soniox",
+          "slng": "SLNG"
+        },
+        "soniox": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "Soniox API key used only for cloud transcription requests.",
+            "placeholder": "Soniox API key"
+          },
+          "baseUrl": {
+            "title": "Base URL",
+            "description": "Soniox API base URL. Change this only for a regional or compatible endpoint.",
+            "placeholder": "https://api.soniox.com"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Soniox async STT model identifier.",
+            "placeholder": "stt-async-v4"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for Soniox async transcription."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if Soniox fails."
+          }
+        },
+        "slng": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "SLNG API key used only for cloud transcription requests.",
+            "placeholder": "SLNG API key"
+          },
+          "provider": {
+            "title": "Provider",
+            "description": "SLNG bridge provider used for STT.",
+            "placeholder": "deepgram"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Model name sent through the selected SLNG bridge provider.",
+            "placeholder": "nova:3-multi"
+          },
+          "endpoint": {
+            "title": "Endpoint",
+            "description": "SLNG STT endpoint. Change this only if you want a different bridge or model.",
+            "placeholder": "https://api.slng.ai/v1/bridges/unmute/stt/slng/deepgram/nova:3-multi"
+          },
+          "language": {
+            "title": "Language",
+            "description": "Language value sent with the SLNG multipart request.",
+            "placeholder": "multi"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for the SLNG transcription request."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if SLNG fails."
+          }
+        }
+      }
     },
     "general": {
       "title": "一般",
       "shortcut": {
-        "title": "Handyショートカット",
+        "title": "ixiwhisperショートカット",
         "description": "音声録音を開始するキーボードショートカットを設定",
         "loading": "ショートカットを読み込み中...",
         "none": "ショートカットが設定されていません",
@@ -276,11 +348,11 @@
       },
       "autostart": {
         "label": "起動時に実行",
-        "description": "コンピューターにログインしたときにHandyを自動的に起動。"
+        "description": "コンピューターにログインしたときにixiwhisperを自動的に起動。"
       },
       "showTrayIcon": {
         "label": "トレイアイコンを表示",
-        "description": "システムトレイにHandyのアイコンを表示します。"
+        "description": "システムトレイにixiwhisperのアイコンを表示します。"
       },
       "overlay": {
         "title": "オーバーレイ位置",
@@ -445,7 +517,7 @@
       },
       "updateChecks": {
         "label": "アップデートを確認",
-        "description": "Handyの新しいバージョンを自動的にチェック"
+        "description": "ixiwhisperの新しいバージョンを自動的にチェック"
       },
       "soundTheme": {
         "label": "サウンドテーマ",
@@ -513,11 +585,11 @@
       "title": "概要",
       "version": {
         "title": "バージョン",
-        "description": "Handyの現在のバージョン"
+        "description": "ixiwhisperの現在のバージョン"
       },
       "appDataDirectory": {
         "title": "アプリデータディレクトリ",
-        "description": "Handyがデータを保存する場所"
+        "description": "ixiwhisperがデータを保存する場所"
       },
       "sourceCode": {
         "title": "ソースコード",
@@ -526,7 +598,7 @@
       },
       "supportDevelopment": {
         "title": "開発を支援",
-        "description": "Handyの開発を支援してください",
+        "description": "ixiwhisperの開発を支援してください",
         "button": "寄付する"
       },
       "acknowledgments": {
@@ -534,7 +606,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
-          "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
+          "details": "ixiwhisperは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
       }
     }
@@ -580,7 +652,7 @@
   },
   "accessibility": {
     "permissionsRequired": "アクセシビリティ権限が必要です",
-    "permissionsDescription": "Handyが文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",
+    "permissionsDescription": "ixiwhisperが文字起こしテキストを入力するには、アクセシビリティ権限が必要です。",
     "openSettings": "システム設定を開く",
     "dismiss": "閉じる"
   },
@@ -603,7 +675,7 @@
   },
   "appLanguage": {
     "title": "アプリケーション言語",
-    "description": "Handyインターフェースの言語を変更"
+    "description": "ixiwhisperインターフェースの言語を変更"
   },
   "overlay": {
     "transcribing": "文字起こし中...",

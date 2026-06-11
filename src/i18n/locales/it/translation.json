@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "Permessi Richiesti",
-      "description": "Handy ha bisogno di alcuni permessi per funzionare correttamente.",
+      "description": "ixiwhisper ha bisogno di alcuni permessi per funzionare correttamente.",
       "microphone": {
         "title": "Accesso al Microfono",
         "description": "Necessario per sentire la tua voce per la trascrizione."
@@ -171,12 +171,84 @@
       },
       "noModelsMatch": "Nessun modello corrisponde a questo filtro.",
       "yourModels": "Modelli scaricati",
-      "availableModels": "Disponibili per il Download"
+      "availableModels": "Disponibili per il Download",
+      "provider": {
+        "title": "Transcription Provider",
+        "selector": {
+          "title": "Provider",
+          "description": "Choose whether ixiwhisper transcribes with local offline models or a cloud STT provider."
+        },
+        "options": {
+          "local": "Local Models",
+          "soniox": "Soniox",
+          "slng": "SLNG"
+        },
+        "soniox": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "Soniox API key used only for cloud transcription requests.",
+            "placeholder": "Soniox API key"
+          },
+          "baseUrl": {
+            "title": "Base URL",
+            "description": "Soniox API base URL. Change this only for a regional or compatible endpoint.",
+            "placeholder": "https://api.soniox.com"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Soniox async STT model identifier.",
+            "placeholder": "stt-async-v4"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for Soniox async transcription."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if Soniox fails."
+          }
+        },
+        "slng": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "SLNG API key used only for cloud transcription requests.",
+            "placeholder": "SLNG API key"
+          },
+          "provider": {
+            "title": "Provider",
+            "description": "SLNG bridge provider used for STT.",
+            "placeholder": "deepgram"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Model name sent through the selected SLNG bridge provider.",
+            "placeholder": "nova:3-multi"
+          },
+          "endpoint": {
+            "title": "Endpoint",
+            "description": "SLNG STT endpoint. Change this only if you want a different bridge or model.",
+            "placeholder": "https://api.slng.ai/v1/bridges/unmute/stt/slng/deepgram/nova:3-multi"
+          },
+          "language": {
+            "title": "Language",
+            "description": "Language value sent with the SLNG multipart request.",
+            "placeholder": "multi"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for the SLNG transcription request."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if SLNG fails."
+          }
+        }
+      }
     },
     "general": {
       "title": "Generale",
       "shortcut": {
-        "title": "Scorciatoie di Handy",
+        "title": "Scorciatoie di ixiwhisper",
         "description": "Configura le scorciatoie per attivare la trascrizione vocale",
         "loading": "Caricamento delle scorciatoie...",
         "none": "Nessuna scorciatoia configurata",
@@ -276,11 +348,11 @@
       },
       "autostart": {
         "label": "Avvia all'Accensione",
-        "description": "Avvia Handy automaticamente quando accedi al computer."
+        "description": "Avvia ixiwhisper automaticamente quando accedi al computer."
       },
       "showTrayIcon": {
         "label": "Mostra icona nella barra di sistema",
-        "description": "Mostra l'icona di Handy nella barra di sistema."
+        "description": "Mostra l'icona di ixiwhisper nella barra di sistema."
       },
       "overlay": {
         "title": "Posizione della Sovrimpressione",
@@ -445,7 +517,7 @@
       },
       "updateChecks": {
         "label": "Controlla aggiornamenti",
-        "description": "Controlla automaticamente la disponibilità di nuove versioni di Handy"
+        "description": "Controlla automaticamente la disponibilità di nuove versioni di ixiwhisper"
       },
       "soundTheme": {
         "label": "Tema Sonoro",
@@ -513,11 +585,11 @@
       "title": "Informazioni",
       "version": {
         "title": "Versione",
-        "description": "Versione attuale di Handy"
+        "description": "Versione attuale di ixiwhisper"
       },
       "appDataDirectory": {
         "title": "Cartella Dati App",
-        "description": "Cartella in cui Handy salva i dati"
+        "description": "Cartella in cui ixiwhisper salva i dati"
       },
       "sourceCode": {
         "title": "Codice Sorgente",
@@ -526,7 +598,7 @@
       },
       "supportDevelopment": {
         "title": "Supporta lo Sviluppo",
-        "description": "Aiutaci a sviluppare Handy",
+        "description": "Aiutaci a sviluppare ixiwhisper",
         "button": "Dona"
       },
       "acknowledgments": {
@@ -534,7 +606,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "Inferenza ad alte prestazioni del modello di riconoscimento vocale automatico Whisper di OpenAI",
-          "details": "Handy usa Whisper.cpp per il riconoscimento vocale veloce in locale. Grazie a Georgi Gerganov e collaboratori per il fantastico lavoro."
+          "details": "ixiwhisper usa Whisper.cpp per il riconoscimento vocale veloce in locale. Grazie a Georgi Gerganov e collaboratori per il fantastico lavoro."
         }
       }
     }
@@ -580,7 +652,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Richiesti Permessi di Accessibilità",
-    "permissionsDescription": "Handy ha bisogno dei permessi di accessibilità per digitare il testo trascritto.",
+    "permissionsDescription": "ixiwhisper ha bisogno dei permessi di accessibilità per digitare il testo trascritto.",
     "openSettings": "Apri Impostazioni di Sistema",
     "dismiss": "Ignora"
   },
@@ -603,7 +675,7 @@
   },
   "appLanguage": {
     "title": "Lingua Applicazione",
-    "description": "Cambia la lingua dell'interfaccia di Handy"
+    "description": "Cambia la lingua dell'interfaccia di ixiwhisper"
   },
   "overlay": {
     "transcribing": "Trascrizione...",

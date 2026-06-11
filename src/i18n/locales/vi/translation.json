@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "Cần cấp quyền",
-      "description": "Handy cần một số quyền để hoạt động bình thường.",
+      "description": "ixiwhisper cần một số quyền để hoạt động bình thường.",
       "microphone": {
         "title": "Quyền truy cập Micrô",
         "description": "Cần thiết để nghe giọng nói của bạn để chuyển đổi."
@@ -171,12 +171,84 @@
       },
       "noModelsMatch": "Không có mô hình nào khớp với bộ lọc này.",
       "yourModels": "Mô hình đã tải",
-      "availableModels": "Có sẵn để tải xuống"
+      "availableModels": "Có sẵn để tải xuống",
+      "provider": {
+        "title": "Transcription Provider",
+        "selector": {
+          "title": "Provider",
+          "description": "Choose whether ixiwhisper transcribes with local offline models or a cloud STT provider."
+        },
+        "options": {
+          "local": "Local Models",
+          "soniox": "Soniox",
+          "slng": "SLNG"
+        },
+        "soniox": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "Soniox API key used only for cloud transcription requests.",
+            "placeholder": "Soniox API key"
+          },
+          "baseUrl": {
+            "title": "Base URL",
+            "description": "Soniox API base URL. Change this only for a regional or compatible endpoint.",
+            "placeholder": "https://api.soniox.com"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Soniox async STT model identifier.",
+            "placeholder": "stt-async-v4"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for Soniox async transcription."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if Soniox fails."
+          }
+        },
+        "slng": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "SLNG API key used only for cloud transcription requests.",
+            "placeholder": "SLNG API key"
+          },
+          "provider": {
+            "title": "Provider",
+            "description": "SLNG bridge provider used for STT.",
+            "placeholder": "deepgram"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Model name sent through the selected SLNG bridge provider.",
+            "placeholder": "nova:3-multi"
+          },
+          "endpoint": {
+            "title": "Endpoint",
+            "description": "SLNG STT endpoint. Change this only if you want a different bridge or model.",
+            "placeholder": "https://api.slng.ai/v1/bridges/unmute/stt/slng/deepgram/nova:3-multi"
+          },
+          "language": {
+            "title": "Language",
+            "description": "Language value sent with the SLNG multipart request.",
+            "placeholder": "multi"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for the SLNG transcription request."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if SLNG fails."
+          }
+        }
+      }
     },
     "general": {
       "title": "Chung",
       "shortcut": {
-        "title": "Phím tắt Handy",
+        "title": "Phím tắt ixiwhisper",
         "description": "Cấu hình phím tắt để kích hoạt ghi âm chuyển đổi giọng nói thành văn bản",
         "loading": "Đang tải phím tắt...",
         "none": "Chưa cấu hình phím tắt",
@@ -276,11 +348,11 @@
       },
       "autostart": {
         "label": "Khởi động cùng hệ thống",
-        "description": "Tự động khởi động Handy khi bạn đăng nhập vào máy tính."
+        "description": "Tự động khởi động ixiwhisper khi bạn đăng nhập vào máy tính."
       },
       "showTrayIcon": {
         "label": "Hiển thị biểu tượng khay",
-        "description": "Hiển thị biểu tượng Handy trong khay hệ thống."
+        "description": "Hiển thị biểu tượng ixiwhisper trong khay hệ thống."
       },
       "overlay": {
         "title": "Vị trí lớp phủ",
@@ -445,7 +517,7 @@
       },
       "updateChecks": {
         "label": "Kiểm tra cập nhật",
-        "description": "Tự động kiểm tra phiên bản mới của Handy"
+        "description": "Tự động kiểm tra phiên bản mới của ixiwhisper"
       },
       "soundTheme": {
         "label": "Chủ đề âm thanh",
@@ -513,11 +585,11 @@
       "title": "Giới thiệu",
       "version": {
         "title": "Phiên bản",
-        "description": "Phiên bản hiện tại của Handy"
+        "description": "Phiên bản hiện tại của ixiwhisper"
       },
       "appDataDirectory": {
         "title": "Thư mục dữ liệu ứng dụng",
-        "description": "Vị trí Handy lưu trữ dữ liệu"
+        "description": "Vị trí ixiwhisper lưu trữ dữ liệu"
       },
       "sourceCode": {
         "title": "Mã nguồn",
@@ -526,7 +598,7 @@
       },
       "supportDevelopment": {
         "title": "Hỗ trợ phát triển",
-        "description": "Giúp chúng tôi tiếp tục xây dựng Handy",
+        "description": "Giúp chúng tôi tiếp tục xây dựng ixiwhisper",
         "button": "Quyên góp"
       },
       "acknowledgments": {
@@ -534,7 +606,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "Suy luận hiệu suất cao của mô hình nhận dạng giọng nói tự động Whisper của OpenAI",
-          "details": "Handy sử dụng Whisper.cpp để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
+          "details": "ixiwhisper sử dụng Whisper.cpp để xử lý chuyển đổi giọng nói thành văn bản nhanh, cục bộ. Cảm ơn công việc tuyệt vời của Georgi Gerganov và các cộng tác viên."
         }
       }
     }
@@ -580,7 +652,7 @@
   },
   "accessibility": {
     "permissionsRequired": "Cần quyền truy cập",
-    "permissionsDescription": "Handy cần quyền truy cập để gõ văn bản đã chuyển đổi.",
+    "permissionsDescription": "ixiwhisper cần quyền truy cập để gõ văn bản đã chuyển đổi.",
     "openSettings": "Mở Cài đặt Hệ thống",
     "dismiss": "Bỏ qua"
   },
@@ -603,7 +675,7 @@
   },
   "appLanguage": {
     "title": "Ngôn ngữ ứng dụng",
-    "description": "Thay đổi ngôn ngữ giao diện của Handy"
+    "description": "Thay đổi ngôn ngữ giao diện của ixiwhisper"
   },
   "overlay": {
     "transcribing": "Đang chuyển đổi...",

@@ -5,7 +5,9 @@ use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
 use crate::managers::transcription::TranscriptionManager;
-use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
+use crate::settings::{
+    get_settings, AppSettings, TranscriptionProvider, APPLE_INTELLIGENCE_PROVIDER_ID,
+};
 use crate::shortcut;
 use crate::tray::{change_tray_icon, TrayIconState};
 use crate::utils::{
@@ -395,8 +397,17 @@ impl ShortcutAction for TranscribeAction {
         let tm = app.state::<Arc<TranscriptionManager>>();
         let rm = app.state::<Arc<AudioRecordingManager>>();
 
-        // Load ASR model and VAD model in parallel
-        tm.initiate_model_load();
+        // Load ASR model and VAD model in parallel. Cloud-only mode can skip
+        // local model preloading; fallback mode keeps it warm.
+        let settings = get_settings(app);
+        let should_preload_local_model = match settings.transcription_provider {
+            TranscriptionProvider::Local => true,
+            TranscriptionProvider::Soniox => settings.soniox_fallback_to_local,
+            TranscriptionProvider::Slng => settings.slng_fallback_to_local,
+        };
+        if should_preload_local_model {
+            tm.initiate_model_load();
+        }
         let rm_clone = Arc::clone(&rm);
         std::thread::spawn(move || {
             if let Err(e) = rm_clone.preload_vad() {
@@ -409,7 +420,6 @@ impl ShortcutAction for TranscribeAction {
         show_recording_overlay(app);
 
         // Get the microphone mode to determine audio feedback timing
-        let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
         debug!("Microphone mode - always_on: {}", is_always_on);
 
@@ -441,8 +451,16 @@ impl ShortcutAction for TranscribeAction {
                     // Small delay to ensure microphone stream is active
                     let app_clone = app.clone();
                     let rm_clone = Arc::clone(&rm);
+                    let active_binding_id = binding_id.clone();
                     std::thread::spawn(move || {
                         std::thread::sleep(std::time::Duration::from_millis(100));
+                        if !rm_clone.is_recording_binding(&active_binding_id) {
+                            debug!(
+                                "Skipping delayed audio feedback; recording already stopped for binding {}",
+                                active_binding_id
+                            );
+                            return;
+                        }
                         debug!("Handling delayed audio feedback/mute sequence");
                         // Helper handles disabled audio feedback by returning early, so we reuse it
                         // to keep mute sequencing consistent in every mode.
@@ -535,7 +553,7 @@ impl ShortcutAction for TranscribeAction {
                 } else {
                     // Save WAV concurrently with transcription
                     let sample_count = samples.len();
-                    let file_name = format!("handy-{}.wav", chrono::Utc::now().timestamp());
+                    let file_name = format!("ixiwhisper-{}.wav", chrono::Utc::now().timestamp());
                     let wav_path = hm.recordings_dir().join(&file_name);
                     let wav_path_for_verify = wav_path.clone();
                     let samples_for_wav = samples.clone();
@@ -543,9 +561,12 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save
+                    // Transcribe concurrently with WAV save. Keep synchronous
+                    // model inference and blocking cloud REST flows off the
+                    // async runtime worker.
                     let transcription_time = Instant::now();
-                    let transcription_result = tm.transcribe(samples);
+                    let transcription_handle =
+                        tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples));
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
@@ -569,6 +590,11 @@ impl ShortcutAction for TranscribeAction {
                             error!("WAV save task panicked: {}", e);
                             false
                         }
+                    };
+
+                    let transcription_result = match transcription_handle.await {
+                        Ok(result) => result,
+                        Err(e) => Err(anyhow::anyhow!("Transcription task panicked: {}", e)),
                     };
 
                     match transcription_result {

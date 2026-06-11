@@ -68,9 +68,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.repository }}
+          repository: ${{ inputs.repository || github.repository }}
           ref: ${{ inputs.ref }}
           fetch-depth: 0
+
+      - name: Verify checkout
+        shell: bash
+        run: |
+          pwd
+          ls -la
+          test -f src-tauri/tauri.conf.json
 
       - name: Get version from tauri.conf.json
         id: get-version

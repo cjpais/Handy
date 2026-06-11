@@ -1,9 +1,12 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{apply_custom_words, filter_transcription_output, save_wav_file};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
-    get_settings, ModelUnloadTimeout, OrtAcceleratorSetting, WhisperAcceleratorSetting,
+    build_slng_endpoint, get_settings, AppSettings, ModelUnloadTimeout, OrtAcceleratorSetting,
+    TranscriptionProvider, WhisperAcceleratorSetting,
 };
+use crate::slng::SlngClient;
+use crate::soniox::SonioxClient;
 use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -458,6 +461,52 @@ impl TranscriptionManager {
             return Ok(String::new());
         }
 
+        let settings = get_settings(&self.app_handle);
+
+        let (raw_text, is_whisper) = match settings.transcription_provider {
+            TranscriptionProvider::Local => self.transcribe_with_local_model(&audio, &settings)?,
+            TranscriptionProvider::Soniox => match self.transcribe_with_soniox(&audio, &settings) {
+                Ok(text) => (text, false),
+                Err(error) if settings.soniox_fallback_to_local => {
+                    warn!(
+                        "Soniox transcription failed; falling back to local model: {}",
+                        error
+                    );
+                    let mut fallback_settings = settings.clone();
+                    fallback_settings.selected_language = "en".to_string();
+                    self.transcribe_with_local_model(&audio, &fallback_settings)?
+                }
+                Err(error) => {
+                    self.maybe_unload_immediately("soniox transcription failure");
+                    return Err(error);
+                }
+            },
+            TranscriptionProvider::Slng => match self.transcribe_with_slng(&audio, &settings) {
+                Ok(text) => (text, false),
+                Err(error) if settings.slng_fallback_to_local => {
+                    warn!(
+                        "SLNG transcription failed; falling back to local model: {}",
+                        error
+                    );
+                    let mut fallback_settings = settings.clone();
+                    fallback_settings.selected_language = "en".to_string();
+                    self.transcribe_with_local_model(&audio, &fallback_settings)?
+                }
+                Err(error) => {
+                    self.maybe_unload_immediately("slng transcription failure");
+                    return Err(error);
+                }
+            },
+        };
+
+        self.finish_transcription(raw_text, &settings, is_whisper, st)
+    }
+
+    fn transcribe_with_local_model(
+        &self,
+        audio: &[f32],
+        settings: &AppSettings,
+    ) -> Result<(String, bool)> {
         // Check if model is loaded, if not try to load it
         {
             // If the model is loading, wait for it to complete.
@@ -471,9 +520,6 @@ impl TranscriptionManager {
                 return Err(anyhow::anyhow!("Model is not loaded for transcription."));
             }
         }
-
-        // Get current settings for configuration
-        let settings = get_settings(&self.app_handle);
 
         // Validate selected language against the model's supported languages.
         // If the language isn't supported, fall back to "auto" to prevent errors.
@@ -501,6 +547,12 @@ impl TranscriptionManager {
                 "auto".to_string()
             }
         };
+
+        let is_whisper = self
+            .model_manager
+            .get_model_info(&settings.selected_model)
+            .map(|info| matches!(info.engine_type, EngineType::Whisper))
+            .unwrap_or(false);
 
         // Perform transcription with the appropriate engine.
         // We use catch_unwind to prevent engine panics from poisoning the mutex,
@@ -552,7 +604,7 @@ impl TranscriptionManager {
                             };
 
                             whisper_engine
-                                .transcribe_with(&audio, &params)
+                                .transcribe_with(audio, &params)
                                 .map_err(|e| anyhow::anyhow!("Whisper transcription failed: {}", e))
                         }
                         LoadedEngine::Parakeet(parakeet_engine) => {
@@ -561,16 +613,16 @@ impl TranscriptionManager {
                                 ..Default::default()
                             };
                             parakeet_engine
-                                .transcribe_with(&audio, &params)
+                                .transcribe_with(audio, &params)
                                 .map_err(|e| {
                                     anyhow::anyhow!("Parakeet transcription failed: {}", e)
                                 })
                         }
                         LoadedEngine::Moonshine(moonshine_engine) => moonshine_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
+                            .transcribe(audio, &TranscribeOptions::default())
                             .map_err(|e| anyhow::anyhow!("Moonshine transcription failed: {}", e)),
                         LoadedEngine::MoonshineStreaming(streaming_engine) => streaming_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
+                            .transcribe(audio, &TranscribeOptions::default())
                             .map_err(|e| {
                                 anyhow::anyhow!("Moonshine streaming transcription failed: {}", e)
                             }),
@@ -588,13 +640,13 @@ impl TranscriptionManager {
                                 use_itn: Some(true),
                             };
                             sense_voice_engine
-                                .transcribe_with(&audio, &params)
+                                .transcribe_with(audio, &params)
                                 .map_err(|e| {
                                     anyhow::anyhow!("SenseVoice transcription failed: {}", e)
                                 })
                         }
                         LoadedEngine::GigaAM(gigaam_engine) => gigaam_engine
-                            .transcribe(&audio, &TranscribeOptions::default())
+                            .transcribe(audio, &TranscribeOptions::default())
                             .map_err(|e| anyhow::anyhow!("GigaAM transcription failed: {}", e)),
                         LoadedEngine::Canary(canary_engine) => {
                             let lang = if validated_language == "auto" {
@@ -608,7 +660,7 @@ impl TranscriptionManager {
                                 ..Default::default()
                             };
                             canary_engine
-                                .transcribe(&audio, &options)
+                                .transcribe(audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Canary transcription failed: {}", e))
                         }
                         LoadedEngine::Cohere(cohere_engine) => {
@@ -626,7 +678,7 @@ impl TranscriptionManager {
                                 ..Default::default()
                             };
                             cohere_engine
-                                .transcribe(&audio, &options)
+                                .transcribe(audio, &options)
                                 .map_err(|e| anyhow::anyhow!("Cohere transcription failed: {}", e))
                         }
                     }
@@ -682,22 +734,102 @@ impl TranscriptionManager {
             }
         };
 
+        Ok((result.text, is_whisper))
+    }
+
+    fn transcribe_with_soniox(&self, audio: &[f32], settings: &AppSettings) -> Result<String> {
+        let api_key = settings.soniox_api_key.expose().trim();
+        if api_key.is_empty() {
+            return Err(anyhow::anyhow!("Soniox API key is not configured"));
+        }
+
+        let temp_path = std::env::temp_dir().join(format!(
+            "ixiwhisper-soniox-{}-{}.wav",
+            std::process::id(),
+            Self::now_ms()
+        ));
+
+        let result = (|| -> Result<String> {
+            save_wav_file(&temp_path, audio)
+                .map_err(|e| anyhow::anyhow!("Failed to prepare Soniox WAV upload: {}", e))?;
+
+            let client = SonioxClient::new(
+                settings.soniox_base_url.clone(),
+                api_key.to_string(),
+                settings.soniox_model.clone(),
+                settings.soniox_timeout_seconds,
+            )?;
+
+            client.transcribe_wav(&temp_path)
+        })();
+
+        if let Err(error) = std::fs::remove_file(&temp_path) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                warn!(
+                    "Failed to remove temporary Soniox WAV {:?}: {}",
+                    temp_path, error
+                );
+            }
+        }
+
+        result
+    }
+
+    fn transcribe_with_slng(&self, audio: &[f32], settings: &AppSettings) -> Result<String> {
+        let api_key = settings.slng_api_key.expose().trim();
+        if api_key.is_empty() {
+            return Err(anyhow::anyhow!("SLNG API key is not configured"));
+        }
+
+        let temp_path = std::env::temp_dir().join(format!(
+            "ixiwhisper-slng-{}-{}.wav",
+            std::process::id(),
+            Self::now_ms()
+        ));
+
+        let result = (|| -> Result<String> {
+            save_wav_file(&temp_path, audio)
+                .map_err(|e| anyhow::anyhow!("Failed to prepare SLNG WAV upload: {}", e))?;
+
+            let client = SlngClient::new(
+                build_slng_endpoint(&settings.slng_provider, &settings.slng_model),
+                api_key.to_string(),
+                settings.slng_language.clone(),
+                settings.slng_timeout_seconds,
+            )?;
+
+            client.transcribe_wav(&temp_path)
+        })();
+
+        if let Err(error) = std::fs::remove_file(&temp_path) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                warn!(
+                    "Failed to remove temporary SLNG WAV {:?}: {}",
+                    temp_path, error
+                );
+            }
+        }
+
+        result
+    }
+
+    fn finish_transcription(
+        &self,
+        raw_text: String,
+        settings: &AppSettings,
+        is_whisper: bool,
+        started_at: std::time::Instant,
+    ) -> Result<String> {
         // Apply word correction if custom words are configured.
         // Skip for Whisper models since custom words are already passed as initial_prompt.
-        let is_whisper = self
-            .model_manager
-            .get_model_info(&settings.selected_model)
-            .map(|info| matches!(info.engine_type, EngineType::Whisper))
-            .unwrap_or(false);
-
         let corrected_result = if !settings.custom_words.is_empty() && !is_whisper {
             apply_custom_words(
-                &result.text,
+                &raw_text,
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            result.text
+            raw_text
         };
 
         // Filter out filler words and hallucinations
@@ -715,7 +847,7 @@ impl TranscriptionManager {
         };
         info!(
             "Transcription completed in {}ms{}",
-            (et - st).as_millis(),
+            (et - started_at).as_millis(),
             translation_note
         );
 

@@ -100,7 +100,7 @@
     },
     "permissions": {
       "title": "נדרשות הרשאות",
-      "description": "Handy צריך כמה הרשאות כדי לעבוד כמו שצריך.",
+      "description": "ixiwhisper צריך כמה הרשאות כדי לעבוד כמו שצריך.",
       "microphone": {
         "title": "גישה למיקרופון",
         "description": "נדרש כדי לשמוע את הקול שלך לצורך תמלול."
@@ -158,7 +158,7 @@
     "general": {
       "title": "כללי",
       "shortcut": {
-        "title": "קיצורי מקשים של Handy",
+        "title": "קיצורי מקשים של ixiwhisper",
         "description": "הגדר קיצורי מקשים כדי להפעיל הקלטה ותמלול דיבור",
         "loading": "טוען קיצורי מקשים...",
         "none": "לא הוגדרו קיצורי מקשים",
@@ -213,7 +213,79 @@
         "translation": "תרגום",
         "allLanguages": "כל השפות"
       },
-      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה."
+      "noModelsMatch": "אין מודלים שמתאימים לסינון הזה.",
+      "provider": {
+        "title": "Transcription Provider",
+        "selector": {
+          "title": "Provider",
+          "description": "Choose whether ixiwhisper transcribes with local offline models or a cloud STT provider."
+        },
+        "options": {
+          "local": "Local Models",
+          "soniox": "Soniox",
+          "slng": "SLNG"
+        },
+        "soniox": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "Soniox API key used only for cloud transcription requests.",
+            "placeholder": "Soniox API key"
+          },
+          "baseUrl": {
+            "title": "Base URL",
+            "description": "Soniox API base URL. Change this only for a regional or compatible endpoint.",
+            "placeholder": "https://api.soniox.com"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Soniox async STT model identifier.",
+            "placeholder": "stt-async-v4"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for Soniox async transcription."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if Soniox fails."
+          }
+        },
+        "slng": {
+          "apiKey": {
+            "title": "API Key",
+            "description": "SLNG API key used only for cloud transcription requests.",
+            "placeholder": "SLNG API key"
+          },
+          "provider": {
+            "title": "Provider",
+            "description": "SLNG bridge provider used for STT.",
+            "placeholder": "deepgram"
+          },
+          "model": {
+            "title": "Model",
+            "description": "Model name sent through the selected SLNG bridge provider.",
+            "placeholder": "nova:3-multi"
+          },
+          "endpoint": {
+            "title": "Endpoint",
+            "description": "SLNG STT endpoint. Change this only if you want a different bridge or model.",
+            "placeholder": "https://api.slng.ai/v1/bridges/unmute/stt/slng/deepgram/nova:3-multi"
+          },
+          "language": {
+            "title": "Language",
+            "description": "Language value sent with the SLNG multipart request.",
+            "placeholder": "multi"
+          },
+          "timeout": {
+            "title": "Timeout",
+            "description": "Maximum seconds to wait for the SLNG transcription request."
+          },
+          "fallback": {
+            "label": "Fallback to Local",
+            "description": "Use the selected local model if SLNG fails."
+          }
+        }
+      }
     },
     "sound": {
       "title": "שמע",
@@ -276,11 +348,11 @@
       },
       "autostart": {
         "label": "הפעל עם עליית המערכת",
-        "description": "הפעל את Handy אוטומטית כשאתה מתחבר למחשב."
+        "description": "הפעל את ixiwhisper אוטומטית כשאתה מתחבר למחשב."
       },
       "showTrayIcon": {
         "label": "הצג אייקון במגש",
-        "description": "הצג את האייקון של Handy במגש המערכת."
+        "description": "הצג את האייקון של ixiwhisper במגש המערכת."
       },
       "overlay": {
         "title": "מיקום שכבת המשוב",
@@ -445,7 +517,7 @@
       },
       "updateChecks": {
         "label": "בדוק עדכונים",
-        "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של Handy"
+        "description": "בדוק אוטומטית אם קיימות גרסאות חדשות של ixiwhisper"
       },
       "soundTheme": {
         "label": "ערכת צלילים",
@@ -513,11 +585,11 @@
       "title": "אודות",
       "version": {
         "title": "גרסה",
-        "description": "הגרסה הנוכחית של Handy"
+        "description": "הגרסה הנוכחית של ixiwhisper"
       },
       "appDataDirectory": {
         "title": "תיקיית נתוני אפליקציה",
-        "description": "המיקום שבו Handy שומר את הנתונים שלו"
+        "description": "המיקום שבו ixiwhisper שומר את הנתונים שלו"
       },
       "sourceCode": {
         "title": "קוד מקור",
@@ -526,7 +598,7 @@
       },
       "supportDevelopment": {
         "title": "תמיכה בפיתוח",
-        "description": "עזור לנו להמשיך לבנות את Handy",
+        "description": "עזור לנו להמשיך לבנות את ixiwhisper",
         "button": "תרומה"
       },
       "acknowledgments": {
@@ -534,7 +606,7 @@
         "whisper": {
           "title": "Whisper.cpp",
           "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
-          "details": "Handy משתמש ב-Whisper.cpp לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
+          "details": "ixiwhisper משתמש ב-Whisper.cpp לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
         }
       }
     }
@@ -580,7 +652,7 @@
   },
   "accessibility": {
     "permissionsRequired": "נדרשות הרשאות נגישות",
-    "permissionsDescription": "Handy צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
+    "permissionsDescription": "ixiwhisper צריך הרשאות נגישות כדי להקליד את הטקסט המתומלל.",
     "openSettings": "פתח את הגדרות המערכת",
     "dismiss": "סגור"
   },
@@ -603,7 +675,7 @@
   },
   "appLanguage": {
     "title": "שפת האפליקציה",
-    "description": "שנה את שפת הממשק של Handy"
+    "description": "שנה את שפת הממשק של ixiwhisper"
   },
   "overlay": {
     "transcribing": "מתמלל...",

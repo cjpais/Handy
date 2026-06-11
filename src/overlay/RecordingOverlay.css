@@ -1,32 +1,55 @@
 .recording-overlay {
-  height: 36px;
-  width: 172px;
+  height: 100vh;
+  width: 100vw;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
   align-items: center;
-  padding: 6px;
-  background: #000000cc;
-  border-radius: 18px;
+  padding: 5px 6px;
+  background:
+    linear-gradient(180deg, rgba(38, 27, 20, 0.92), rgba(12, 10, 9, 0.92)),
+    #0d0b09;
+  border: 1px solid rgba(255, 109, 0, 0.36);
+  border-radius: 19px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 16px rgba(255, 109, 0, 0.14) inset,
+    0 8px 18px rgba(0, 0, 0, 0.18) inset;
   opacity: 0;
   transition: opacity 300ms ease-out;
   box-sizing: border-box;
+  color: #ffb15f;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
 }
 
 .overlay-left {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 109, 0, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(255, 177, 95, 0.2);
 }
 
 .overlay-middle {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
 }
 
 .overlay-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
+}
+
+.overlay-status-icon {
+  color: #ffb15f;
+  filter: drop-shadow(0 0 5px rgba(255, 109, 0, 0.22));
 }
 
 .bars-container {
@@ -34,16 +57,17 @@
   align-items: end;
   justify-content: center;
   gap: 3px;
-  padding-bottom: 0px;
   height: 24px;
   overflow: hidden;
+  width: 94px;
 }
 
 .bar {
-  width: 6px;
-  background: #ffe5ee;
+  width: 5px;
+  background: linear-gradient(180deg, #ffd0a1 0%, #ff7a1a 100%);
   max-height: 20px;
-  border-radius: 2px;
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(255, 109, 0, 0.26);
   transition: height 80ms linear;
   min-height: 4px;
 }
@@ -53,11 +77,30 @@
 }
 
 .transcribing-text {
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  color: #ffd0a1;
   font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-shadow: 0 0 8px rgba(255, 109, 0, 0.24);
   animation: transcribing-pulse 1.5s infinite ease-in-out;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #ff8a00;
+  box-shadow: 0 0 0 4px rgba(255, 109, 0, 0.16);
 }
 
 @keyframes transcribing-pulse {
@@ -73,12 +116,16 @@
 .cancel-button {
   width: 24px;
   height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: #ffb15f;
   transition:
     background-color 150ms ease-out,
     transform 100ms ease-out;
@@ -86,7 +133,7 @@
 }
 
 .cancel-button:hover {
-  background: #faa2ca33;
+  background: rgba(255, 109, 0, 0.2);
   transform: scale(1.05);
 }
 

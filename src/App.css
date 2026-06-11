@@ -4,9 +4,9 @@
   /* Design tokens */
   --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
+  --color-background-ui: #ff6d00;
+  --color-logo-primary: #ff6d00;
+  --color-logo-stroke: #4a1f00;
   --color-text-stroke: #f6f6f6;
   --color-mid-gray: #808080;
 }
@@ -20,8 +20,8 @@
   /* Colors - Light Theme */
   /* --color-text: #0f0f0f;
   --color-background: #fbfbfb;
-  --color-logo-primary: #FAA2CA;
-  --color-logo-stroke: #382731;
+  --color-logo-primary: #ff6d00;
+  --color-logo-stroke: #4a1f00;
   --color-text-stroke: #f6f6f6; */
 
   /* Typography settings */
@@ -57,8 +57,8 @@
     /* Colors - Dark Theme */
     --color-text: #fbfbfb;
     --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
+    --color-logo-primary: #ff7a1a;
+    --color-logo-stroke: #ffe4cc;
   }
 }
 
@@ -105,4 +105,17 @@
   fill: var(--color-logo-stroke);
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
+}
+
+.wordmark-main {
+  fill: var(--color-logo-stroke);
+}
+
+.wordmark-shadow {
+  fill: color-mix(in srgb, var(--color-logo-primary), transparent 78%);
+  transform: translateY(5px);
+}
+
+.wordmark-wave {
+  fill: var(--color-logo-primary);
 }

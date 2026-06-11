@@ -6,6 +6,7 @@ import type {
   AudioDevice,
   WhisperAcceleratorSetting,
   OrtAcceleratorSetting,
+  TranscriptionProvider,
 } from "@/bindings";
 import { commands } from "@/bindings";
 
@@ -88,6 +89,24 @@ const settingUpdaters: {
     commands.changeAutostartSetting(value as boolean),
   update_checks_enabled: (value) =>
     commands.changeUpdateChecksSetting(value as boolean),
+  transcription_provider: (value) =>
+    commands.setTranscriptionProvider(value as TranscriptionProvider),
+  soniox_api_key: (value) => commands.setSonioxApiKey(value as string),
+  soniox_base_url: (value) => commands.setSonioxBaseUrl(value as string),
+  soniox_model: (value) => commands.setSonioxModel(value as string),
+  soniox_timeout_seconds: (value) =>
+    commands.setSonioxTimeoutSeconds(value as number),
+  soniox_fallback_to_local: (value) =>
+    commands.setSonioxFallbackToLocal(value as boolean),
+  slng_api_key: (value) => commands.setSlngApiKey(value as string),
+  slng_endpoint: (value) => commands.setSlngEndpoint(value as string),
+  slng_provider: (value) => commands.setSlngProvider(value as string),
+  slng_model: (value) => commands.setSlngModel(value as string),
+  slng_language: (value) => commands.setSlngLanguage(value as string),
+  slng_timeout_seconds: (value) =>
+    commands.setSlngTimeoutSeconds(value as number),
+  slng_fallback_to_local: (value) =>
+    commands.setSlngFallbackToLocal(value as boolean),
   push_to_talk: (value) => commands.changePttSetting(value as boolean),
   selected_microphone: (value) =>
     commands.setSelectedMicrophone(

@@ -3,6 +3,7 @@ use crate::managers::{
     history::{HistoryManager, PaginatedHistory},
     transcription::TranscriptionManager,
 };
+use crate::settings::{get_settings, TranscriptionProvider};
 use std::sync::Arc;
 use tauri::{AppHandle, State};
 
@@ -81,7 +82,15 @@ pub async fn retry_history_entry_transcription(
         return Err("Recording has no audio samples".to_string());
     }
 
-    transcription_manager.initiate_model_load();
+    let settings = get_settings(&app);
+    let should_preload_local_model = match settings.transcription_provider {
+        TranscriptionProvider::Local => true,
+        TranscriptionProvider::Soniox => settings.soniox_fallback_to_local,
+        TranscriptionProvider::Slng => settings.slng_fallback_to_local,
+    };
+    if should_preload_local_model {
+        transcription_manager.initiate_model_load();
+    }
 
     let tm = Arc::clone(&transcription_manager);
     let transcription = tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))

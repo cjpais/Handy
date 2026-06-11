@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "handy-app",
+      "name": "ixiwhisper",
       "dependencies": {
         "@tailwindcss/vite": "^4.1.16",
         "@tauri-apps/api": "^2.10.0",

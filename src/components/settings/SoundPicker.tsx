@@ -9,11 +9,13 @@ import { useSettings } from "../../hooks/useSettings";
 interface SoundPickerProps {
   label: string;
   description: string;
+  disabled?: boolean;
 }
 
 export const SoundPicker: React.FC<SoundPickerProps> = ({
   label,
   description,
+  disabled = false,
 }) => {
   const { getSetting, updateSetting } = useSettings();
   const playTestSound = useSettingsStore((state) => state.playTestSound);
@@ -42,6 +44,7 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
       description={description}
       grouped
       layout="horizontal"
+      disabled={disabled}
     >
       <div className="flex items-center gap-2">
         <Dropdown
@@ -50,12 +53,14 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
             updateSetting("sound_theme", value as "marimba" | "pop" | "custom")
           }
           options={options}
+          disabled={disabled}
         />
         <Button
           variant="ghost"
           size="sm"
           onClick={handlePlayBothSounds}
           title="Preview sound theme (plays start then stop)"
+          disabled={disabled}
         >
           <PlayIcon className="h-4 w-4" />
         </Button>

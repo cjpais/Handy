@@ -15,6 +15,8 @@ pub mod portable;
 mod settings;
 mod shortcut;
 mod signal_handle;
+mod slng;
+mod soniox;
 mod transcription_coordinator;
 mod tray;
 mod tray_i18n;
@@ -416,6 +418,19 @@ pub fn run(cli_args: CliArgs) {
             commands::audio::get_clamshell_microphone,
             commands::audio::is_recording,
             commands::transcription::set_model_unload_timeout,
+            commands::transcription::set_transcription_provider,
+            commands::transcription::set_soniox_api_key,
+            commands::transcription::set_soniox_base_url,
+            commands::transcription::set_soniox_model,
+            commands::transcription::set_soniox_timeout_seconds,
+            commands::transcription::set_soniox_fallback_to_local,
+            commands::transcription::set_slng_api_key,
+            commands::transcription::set_slng_endpoint,
+            commands::transcription::set_slng_provider,
+            commands::transcription::set_slng_model,
+            commands::transcription::set_slng_language,
+            commands::transcription::set_slng_timeout_seconds,
+            commands::transcription::set_slng_fallback_to_local,
             commands::transcription::get_model_load_status,
             commands::transcription::unload_model_manually,
             commands::history::get_history_entries,
@@ -459,11 +474,11 @@ pub fn run(cli_args: CliArgs) {
                     Target::new(if let Some(data_dir) = portable::data_dir() {
                         TargetKind::Folder {
                             path: data_dir.join("logs"),
-                            file_name: Some("handy".into()),
+                            file_name: Some("ixiwhisper".into()),
                         }
                     } else {
                         TargetKind::LogDir {
-                            file_name: Some("handy".into()),
+                            file_name: Some("ixiwhisper".into()),
                         }
                     })
                     .filter(|metadata| {
@@ -512,7 +527,7 @@ pub fn run(cli_args: CliArgs) {
             // for portable mode (redirects WebView2 cache to portable Data dir)
             let mut win_builder =
                 tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                    .title("Handy")
+                    .title("ixiwhisper")
                     .inner_size(680.0, 570.0)
                     .min_inner_size(680.0, 570.0)
                     .resizable(true)

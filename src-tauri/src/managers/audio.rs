@@ -489,6 +489,13 @@ impl AudioRecordingManager {
         )
     }
 
+    pub fn is_recording_binding(&self, binding_id: &str) -> bool {
+        matches!(
+            &*self.state.lock().unwrap(),
+            RecordingState::Recording { binding_id: active } if active == binding_id
+        )
+    }
+
     /// Cancel any ongoing recording without returning audio samples
     pub fn cancel_recording(&self) {
         let mut state = self.state.lock().unwrap();
