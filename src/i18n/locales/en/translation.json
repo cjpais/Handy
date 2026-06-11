@@ -157,6 +157,7 @@
     },
     "general": {
       "title": "General",
+      "shortcutsDisabledHint": "Built-in hotkeys are disabled. Configure your compositor to run 'handy --toggle-transcription' on a keybind instead (e.g. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). You can change this in Settings > Advanced > Experimental > Keyboard Implementation.",
       "shortcut": {
         "title": "Handy Shortcuts",
         "description": "Configure keyboard shortcuts to trigger speech-to-text recording",
@@ -492,7 +493,7 @@
       },
       "keyboardImplementation": {
         "title": "Keyboard Implementation",
-        "description": "Choose the keyboard shortcut backend.",
+        "description": "Choose the keyboard shortcut backend. Select 'None' on Wayland to disable built-in hotkeys and use compositor keybindings instead (e.g. handy --toggle-transcription).",
         "bindingsReset": "Keyboard shortcuts were incompatible and reset to defaults"
       },
       "paths": {

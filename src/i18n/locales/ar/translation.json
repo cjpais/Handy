@@ -191,7 +191,8 @@
       "pushToTalk": {
         "label": "اضغط للتحدث",
         "description": "استمر في الضغط للتسجيل، واترك للتوقف"
-      }
+      },
+      "shortcutsDisabledHint": "مفاتيح الاختصار المدمجة معطلة. قم بتكوين مدير النوافذ لتشغيل 'handy --toggle-transcription' عند ضغطة مفتاح بدلاً من ذلك (مثال على Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). يمكنك تغيير هذا في الإعدادات > متقدم > تجريبي > تنفيذ لوحة المفاتيح."
     },
     "sound": {
       "title": "الصوت",

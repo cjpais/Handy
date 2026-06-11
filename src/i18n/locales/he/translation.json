@@ -195,7 +195,8 @@
       "pushToTalk": {
         "label": "לחץ כדי לדבר",
         "description": "החזק כדי להקליט, שחרר כדי לעצור"
-      }
+      },
+      "shortcutsDisabledHint": "מקשי קיצור מובנים מושבתים. הגדר את מנהל החלונות שלך להפעיל 'handy --toggle-transcription' באמצעות צירוף מקשים במקום (למשל Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). ניתן לשנות זאת בהגדרות > מתקדם > ניסיוני > מימוש מקלדת."
     },
     "models": {
       "title": "מודלי תמלול",

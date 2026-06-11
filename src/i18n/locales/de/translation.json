@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "Push-to-Talk",
         "description": "Gedrückt halten zum Aufnehmen, loslassen zum Stoppen"
-      }
+      },
+      "shortcutsDisabledHint": "Integrierte Tastenkombinationen sind deaktiviert. Konfiguriere stattdessen deinen Compositor, um 'handy --toggle-transcription' über eine Tastenkombination auszuführen (z. B. Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). Du kannst dies unter Einstellungen > Erweitert > Experimentell > Tastatur-Implementierung ändern."
     },
     "sound": {
       "title": "Ton",

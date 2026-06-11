@@ -195,7 +195,8 @@
       "pushToTalk": {
         "label": "녹음 중 단축키 홀딩",
         "description": "누르고 있으면 녹음, 놓으면 정지"
-      }
+      },
+      "shortcutsDisabledHint": "내장 단축키가 비활성화되었습니다. 대신 컴포지터가 키 바인드에서 'handy --toggle-transcription'을 실행하도록 설정하세요 (예: Hyprland: bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription). 이는 설정 > 고급 > 실험적 > 키보드 구현에서 변경할 수 있습니다."
     },
     "sound": {
       "title": "사운드",

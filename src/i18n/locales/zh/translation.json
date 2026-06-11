@@ -213,7 +213,8 @@
       "pushToTalk": {
         "label": "按住说话",
         "description": "按住录制，松开停止"
-      }
+      },
+      "shortcutsDisabledHint": "内置热键已禁用。请改为配置合成器在某个键位上运行 'handy --toggle-transcription'（例如 Hyprland：bind = CTRL SHIFT, SPACE, exec, handy --toggle-transcription）。您可以在 设置 > 高级 > 实验性 > 键盘实现 中更改此设置。"
     },
     "sound": {
       "title": "声音",
