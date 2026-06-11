@@ -351,8 +351,8 @@
       },
       "customWords": {
         "title": "Custom Words",
-        "description": "Add words that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",
-        "placeholder": "Add a word",
+        "description": "Add words or phrases that are often misheard or misspelled during transcription. The system will automatically correct similar-sounding words to match your list.",
+        "placeholder": "Add a word or phrase",
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
