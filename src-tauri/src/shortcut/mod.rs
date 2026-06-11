@@ -1044,9 +1044,12 @@ pub fn set_post_process_selected_prompt(app: AppHandle, id: String) -> Result<()
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_mute_while_recording_setting(app: AppHandle, enabled: bool) -> Result<(), String> {
+pub fn change_media_while_recording_mode_setting(
+    app: AppHandle,
+    mode: settings::MediaWhileRecordingMode,
+) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
-    settings.mute_while_recording = enabled;
+    settings.media_while_recording_mode = mode;
     settings::write_settings(&app, settings);
     Ok(())
 }
