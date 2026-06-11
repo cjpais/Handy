@@ -90,10 +90,14 @@ tauri-plugin-updater = "2.10.0"
 [target.'cfg(windows)'.dependencies]
 transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan", "ort-directml"] }
 windows = { version = "0.61.3", features = [
+  "Foundation",
+  "Foundation_Collections",
+  "Media_Control",
+  "Win32_Foundation",
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
   "Win32_System_Variant",
-  "Win32_Foundation",
+  "Win32_System_WinRT",
   "Win32_UI_WindowsAndMessaging",
 ] }
 winreg = "0.55"
@@ -106,6 +110,7 @@ transcribe-rs = { version = "0.3.3", features = ["whisper-metal"] }
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan"] }
+zbus = "4.4.0"
 
 [patch.crates-io]
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
