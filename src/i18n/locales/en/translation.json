@@ -109,6 +109,16 @@
         "title": "Accessibility Access",
         "description": "Required to type transcribed text into your applications."
       },
+      "remoteDesktop": {
+        "title": "Typing authorization",
+        "description": "Allow Handy to insert dictated text automatically into the active app.",
+        "note": "You can disable or enable this permission at any time in settings.",
+        "button": "Allow automatic typing",
+        "skipButton": "Not now",
+        "warningTooltip": "Typing authorization not configured",
+        "configured": "Configured",
+        "notConfigured": "Configuration is required"
+      },
       "grant": "Grant Permission",
       "granted": "Granted",
       "waiting": "Waiting...",
@@ -302,7 +312,14 @@
           "none": "None",
           "externalScript": "External Script"
         },
-        "externalScriptPlaceholder": "/path/to/your/script.sh"
+        "externalScriptPlaceholder": "/path/to/your/script.sh",
+        "portal": {
+          "buttonRequesting": "Requesting…",
+          "errors": {
+            "requestFailed": "Permission request failed.",
+            "revokeFailed": "Permission removal failed."
+          }
+        }
       },
       "typingTool": {
         "title": "Typing Tool",
@@ -356,6 +373,11 @@
         "add": "Add",
         "remove": "Remove {{word}}",
         "duplicate": "\"{{word}}\" already exists"
+      },
+      "typingDelay": {
+        "title": "Typing delay",
+        "description": "Control the speed used to send typing events. Increase this value if characters are typed out of order.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

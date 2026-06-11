@@ -109,6 +109,16 @@
         "title": "Quyền truy cập Trợ năng",
         "description": "Cần thiết để nhập văn bản đã chuyển đổi vào các ứng dụng của bạn."
       },
+      "remoteDesktop": {
+        "title": "Quyền nhập",
+        "description": "Cho phép Handy tự động chèn văn bản đã đọc vào ứng dụng đang hoạt động.",
+        "note": "Bạn có thể tắt hoặc bật quyền này bất cứ lúc nào trong phần cài đặt.",
+        "button": "Cho phép nhập tự động",
+        "skipButton": "Để sau",
+        "warningTooltip": "Quyền nhập chưa được cấu hình",
+        "configured": "Đã cấu hình",
+        "notConfigured": "Cần cấu hình"
+      },
       "grant": "Cấp quyền",
       "granted": "Đã cấp",
       "waiting": "Đang chờ...",
@@ -302,7 +312,14 @@
           "none": "Không có",
           "externalScript": "Script bên ngoài"
         },
-        "externalScriptPlaceholder": "/duong-dan/toi/script.sh"
+        "externalScriptPlaceholder": "/duong-dan/toi/script.sh",
+        "portal": {
+          "buttonRequesting": "Đang yêu cầu…",
+          "errors": {
+            "requestFailed": "Yêu cầu quyền thất bại.",
+            "revokeFailed": "Xóa quyền thất bại."
+          }
+        }
       },
       "typingTool": {
         "title": "Công cụ gõ",
@@ -356,6 +373,11 @@
         "add": "Thêm",
         "remove": "Xóa {{word}}",
         "duplicate": "\"{{word}}\" đã tồn tại"
+      },
+      "typingDelay": {
+        "title": "Độ trễ gõ",
+        "description": "Điều chỉnh tốc độ gửi sự kiện gõ. Tăng giá trị này nếu ký tự được nhập sai thứ tự.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

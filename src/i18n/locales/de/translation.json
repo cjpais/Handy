@@ -109,6 +109,16 @@
         "title": "Bedienungshilfen-Zugriff",
         "description": "Erforderlich, um transkribierten Text in deine Anwendungen einzugeben."
       },
+      "remoteDesktop": {
+        "title": "Eingabeautorisierung",
+        "description": "Erlauben Sie Handy, diktierten Text automatisch in die aktive App einzufügen.",
+        "note": "Sie können diese Berechtigung jederzeit in den Einstellungen deaktivieren oder aktivieren.",
+        "button": "Automatische Eingabe erlauben",
+        "skipButton": "Nicht jetzt",
+        "warningTooltip": "Eingabeautorisierung nicht konfiguriert",
+        "configured": "Konfiguriert",
+        "notConfigured": "Einrichtung erforderlich"
+      },
       "grant": "Berechtigung erteilen",
       "granted": "Erteilt",
       "waiting": "Warten...",
@@ -302,7 +312,14 @@
           "none": "Keine",
           "externalScript": "Externes Skript"
         },
-        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh"
+        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh",
+        "portal": {
+          "buttonRequesting": "Wird angefordert…",
+          "errors": {
+            "requestFailed": "Berechtigungsanfrage fehlgeschlagen.",
+            "revokeFailed": "Entfernen der Berechtigung fehlgeschlagen."
+          }
+        }
       },
       "typingTool": {
         "title": "Eingabetool",
@@ -356,6 +373,11 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "typingDelay": {
+        "title": "Tippverzögerung",
+        "description": "Steuert die Geschwindigkeit, mit der Tippereignisse gesendet werden. Erhöhen Sie diesen Wert, wenn Zeichen in falscher Reihenfolge eingegeben werden.",
+        "unit": "ms"
       }
     },
     "postProcessing": {

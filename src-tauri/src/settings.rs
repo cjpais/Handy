@@ -9,6 +9,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS: u64 = 5;
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -261,6 +262,7 @@ impl SoundTheme {
 #[serde(rename_all = "snake_case")]
 pub enum TypingTool {
     Auto,
+    RemoteDesktop,
     Wtype,
     Kwtype,
     Dotool,
@@ -419,6 +421,8 @@ pub struct AppSettings {
     pub paste_delay_ms: u64,
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
+    #[serde(default = "default_remote_desktop_key_event_delay_ms")]
+    pub remote_desktop_key_event_delay_ms: u64,
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
@@ -430,6 +434,8 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    #[serde(default)]
+    pub remote_desktop_token: Option<String>,
 }
 
 fn default_model() -> String {
@@ -481,6 +487,10 @@ fn default_word_correction_threshold() -> f64 {
 
 fn default_paste_delay_ms() -> u64 {
     60
+}
+
+fn default_remote_desktop_key_event_delay_ms() -> u64 {
+    DEFAULT_REMOTE_DESKTOP_KEY_EVENT_DELAY_MS
 }
 
 fn default_auto_submit() -> bool {
@@ -808,13 +818,27 @@ pub fn get_default_settings() -> AppSettings {
         show_tray_icon: default_show_tray_icon(),
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
+        remote_desktop_key_event_delay_ms: default_remote_desktop_key_event_delay_ms(),
         external_script_path: None,
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
+        remote_desktop_token: None,
     }
+}
+
+/// Returns the persisted Remote Desktop portal token, if one is stored.
+pub fn get_remote_desktop_token(app: &AppHandle) -> Option<String> {
+    get_settings(app).remote_desktop_token
+}
+
+/// Persists or clears the Remote Desktop portal token in application settings.
+pub fn set_remote_desktop_token(app: &AppHandle, token: Option<String>) {
+    let mut settings = get_settings(app);
+    settings.remote_desktop_token = token;
+    write_settings(app, settings);
 }
 
 impl AppSettings {
