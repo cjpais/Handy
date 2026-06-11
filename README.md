@@ -217,7 +217,6 @@ Without these tools, Handy falls back to enigo which may have limited compatibil
 - Enable **"Audio Feedback"** (also in Advanced) if you still want audible confirmation of recording state
 - Users who upgrade from older versions or import settings from other platforms may need to manually apply this change
 
-
 ### Platform Support
 
 - **macOS (both Intel and Apple Silicon)**
