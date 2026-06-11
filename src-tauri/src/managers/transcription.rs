@@ -8,7 +8,9 @@ use anyhow::Result;
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use specta::Type;
+use std::io::Write;
 use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
@@ -719,7 +721,7 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = filtered_result;
+        let final_result = run_transcription_hook(&self.app_handle, filtered_result);
 
         if final_result.is_empty() {
             info!("Transcription result is empty");
@@ -851,4 +853,71 @@ impl Drop for TranscriptionManager {
             }
         }
     }
+}
+
+/// Runs a transcription hook script if it exists.
+///
+/// This function looks for an executable script named `hooks/transcription`
+/// in the app's data directory, runs it passing text via stdin and
+/// returns script stdout as a result.
+fn run_transcription_hook(app: &AppHandle, text: String) -> String {
+    let app_data_dir = match app.path().app_data_dir() {
+        Ok(dir) => dir,
+        Err(e) => {
+            error!("Failed to get app data directory: {}", e);
+            return text;
+        }
+    };
+
+    let transcription_hook = app_data_dir.join("hooks/transcription");
+
+    if !transcription_hook.exists() {
+        debug!("Transcription hook is not configured");
+        return text;
+    }
+
+    let mut child = match Command::new(&transcription_hook)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(e) => {
+            error!("Failed to spawn transcription hook: {}", e);
+            return text;
+        }
+    };
+
+    if let Some(mut stdin) = child.stdin.take() {
+        if let Err(e) = stdin.write_all(text.as_bytes()) {
+            error!("Failed to write to transcription hook stdin: {}", e);
+            return text;
+        }
+        // stdin is dropped here closing the pipe
+    }
+
+    let output = match child.wait_with_output() {
+        Ok(output) => output,
+        Err(e) => {
+            error!("Failed to wait for transcription hook: {}", e);
+            return text;
+        }
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if !output.status.success() {
+        error!(
+            "Transcription hook exited with code {:?}, stderr: {:?}",
+            output.status.code(),
+            stderr
+        );
+        return text;
+    }
+
+    debug!("Transcription hook completed, stderr: {:?}", stderr);
+
+    stdout
 }
