@@ -195,6 +195,11 @@
       "pushToTalk": {
         "label": "Pressionar para Falar",
         "description": "Segure para gravar, solte para parar"
+      },
+      "keyboardImplementation": {
+        "title": "Implementação do Teclado",
+        "description": "Escolha o sistema responsável pelos atalhos de teclado.",
+        "bindingsReset": "Os atalhos de teclado eram incompatíveis e foram redefinidos para os padrões"
       }
     },
     "models": {
@@ -489,11 +494,6 @@
       "appendTrailingSpace": {
         "label": "Adicionar Espaço Final",
         "description": "Adicionar um espaço após a transcrição colada"
-      },
-      "keyboardImplementation": {
-        "title": "Implementação do Teclado",
-        "description": "Escolha o sistema responsável pelos atalhos de teclado.",
-        "bindingsReset": "Os atalhos de teclado eram incompatíveis e foram redefinidos para os padrões"
       },
       "paths": {
         "appData": "Dados do App:",

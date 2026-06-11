@@ -7,8 +7,8 @@ import { commands } from "@/bindings";
 import { toast } from "sonner";
 
 const KEYBOARD_IMPLEMENTATION_OPTIONS: DropdownOption[] = [
-  { value: "tauri", label: "Tauri Global Shortcut" },
   { value: "handy_keys", label: "Handy Keys" },
+  { value: "tauri", label: "Tauri Global Shortcut" },
 ];
 
 interface KeyboardImplementationSelectorProps {
@@ -22,7 +22,7 @@ export const KeyboardImplementationSelector: React.FC<
   const { t } = useTranslation();
   const { getSetting, isUpdating, refreshSettings } = useSettings();
   const currentImplementation =
-    getSetting("keyboard_implementation") ?? "tauri";
+    getSetting("keyboard_implementation") ?? "handy_keys";
 
   const handleSelect = async (value: string) => {
     if (value === currentImplementation) return;
@@ -41,7 +41,9 @@ export const KeyboardImplementationSelector: React.FC<
 
       // If any bindings were reset due to incompatibility, notify the user
       if (result.data.reset_bindings.length > 0) {
-        toast.warning(t("settings.debug.keyboardImplementation.bindingsReset"));
+        toast.warning(
+          t("settings.general.keyboardImplementation.bindingsReset"),
+        );
       }
 
       await refreshSettings();
@@ -53,8 +55,8 @@ export const KeyboardImplementationSelector: React.FC<
 
   return (
     <SettingContainer
-      title={t("settings.debug.keyboardImplementation.title")}
-      description={t("settings.debug.keyboardImplementation.description")}
+      title={t("settings.general.keyboardImplementation.title")}
+      description={t("settings.general.keyboardImplementation.description")}
       descriptionMode={descriptionMode}
       grouped={grouped}
       layout="horizontal"

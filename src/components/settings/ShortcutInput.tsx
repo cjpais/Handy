@@ -14,17 +14,18 @@ interface ShortcutInputProps {
  * Wrapper component that selects the appropriate shortcut input implementation
  * based on the keyboard_implementation setting.
  *
- * - "tauri" (default): Uses GlobalShortcutInput with JS keyboard events
- * - "handy_keys": Uses HandyKeysShortcutInput with backend key events
+ * - "handy_keys" (default): Uses HandyKeysShortcutInput with backend key events
+ * - "tauri": Uses GlobalShortcutInput with JS keyboard events (needed for key
+ *   remappers like Hyperkey/Karabiner)
  */
 export const ShortcutInput: React.FC<ShortcutInputProps> = (props) => {
   const { getSetting } = useSettings();
   const keyboardImplementation = getSetting("keyboard_implementation");
 
-  // Default to Tauri implementation if not set
-  if (keyboardImplementation === "handy_keys") {
-    return <HandyKeysShortcutInput {...props} />;
+  // Default to Handy Keys implementation if not set
+  if (keyboardImplementation === "tauri") {
+    return <GlobalShortcutInput {...props} />;
   }
 
-  return <GlobalShortcutInput {...props} />;
+  return <HandyKeysShortcutInput {...props} />;
 };

@@ -213,6 +213,11 @@
       "pushToTalk": {
         "label": "Premi per Parlare",
         "description": "Tieni premuto per parlare, rilascia per interrompere"
+      },
+      "keyboardImplementation": {
+        "title": "Implementazione tastiera",
+        "description": "Scegli il backend per le scorciatoie da tastiera.",
+        "bindingsReset": "Le scorciatoie da tastiera erano incompatibili e sono state ripristinate ai valori predefiniti"
       }
     },
     "sound": {
@@ -489,11 +494,6 @@
       "appendTrailingSpace": {
         "label": "Aggiungi Spazio Finale",
         "description": "Aggiungi uno spazio dopo la trascrizione incollata"
-      },
-      "keyboardImplementation": {
-        "title": "Implementazione tastiera",
-        "description": "Scegli il backend per le scorciatoie da tastiera.",
-        "bindingsReset": "Le scorciatoie da tastiera erano incompatibili e sono state ripristinate ai valori predefiniti"
       },
       "paths": {
         "appData": "Dati App:",

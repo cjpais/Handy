@@ -379,29 +379,34 @@ impl Drop for HandyKeysState {
     }
 }
 
-/// Convert handy-keys Modifiers to a list of strings
+/// Convert handy-keys Modifiers to a list of strings.
+///
+/// Uses `.intersects()` (not `.contains()`) for the CTRL/OPT/SHIFT/CMD groups
+/// because each is a compound flag (e.g. `CMD == CMD_LEFT | CMD_RIGHT`), and
+/// `.contains()` requires ALL bits — so a single-side press (`CMD_LEFT` only)
+/// would otherwise be reported as no modifier at all.
 fn modifiers_to_strings(modifiers: handy_keys::Modifiers) -> Vec<String> {
     let mut result = Vec::new();
 
-    if modifiers.contains(handy_keys::Modifiers::CTRL) {
+    if modifiers.intersects(handy_keys::Modifiers::CTRL) {
         result.push("ctrl".to_string());
     }
-    if modifiers.contains(handy_keys::Modifiers::OPT) {
+    if modifiers.intersects(handy_keys::Modifiers::OPT) {
         #[cfg(target_os = "macos")]
         result.push("option".to_string());
         #[cfg(not(target_os = "macos"))]
         result.push("alt".to_string());
     }
-    if modifiers.contains(handy_keys::Modifiers::SHIFT) {
+    if modifiers.intersects(handy_keys::Modifiers::SHIFT) {
         result.push("shift".to_string());
     }
-    if modifiers.contains(handy_keys::Modifiers::CMD) {
+    if modifiers.intersects(handy_keys::Modifiers::CMD) {
         #[cfg(target_os = "macos")]
         result.push("command".to_string());
         #[cfg(not(target_os = "macos"))]
         result.push("super".to_string());
     }
-    if modifiers.contains(handy_keys::Modifiers::FN) {
+    if modifiers.intersects(handy_keys::Modifiers::FN) {
         result.push("fn".to_string());
     }
 

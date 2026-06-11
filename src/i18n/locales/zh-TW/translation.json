@@ -195,6 +195,11 @@
       "pushToTalk": {
         "label": "按住說話",
         "description": "按住錄製，放開停止"
+      },
+      "keyboardImplementation": {
+        "title": "鍵盤實作",
+        "description": "選擇鍵盤快捷鍵的後端",
+        "bindingsReset": "鍵盤快捷鍵不相容，已重設為預設值"
       }
     },
     "models": {
@@ -489,11 +494,6 @@
       "appendTrailingSpace": {
         "label": "附加尾部空格",
         "description": "在貼上的轉錄後新增空格"
-      },
-      "keyboardImplementation": {
-        "title": "鍵盤實作",
-        "description": "選擇鍵盤快捷鍵的後端",
-        "bindingsReset": "鍵盤快捷鍵不相容，已重設為預設值"
       },
       "paths": {
         "appData": "應用程式資料:",
