@@ -43,6 +43,10 @@ on:
         required: false
         type: boolean
         default: false
+      use-test-identity:
+        required: false
+        type: boolean
+        default: false
 
 env:
   TSC_VERSION: "0.9.0"
@@ -283,6 +287,22 @@ jobs:
           $targetDir = "$drive\t"
           New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
           echo "CARGO_TARGET_DIR=$targetDir" >> $env:GITHUB_ENV
+
+      - name: Patch unsigned Windows build config
+        if: contains(inputs.platform, 'windows') && !inputs.sign-binaries
+        shell: pwsh
+        run: |
+          $configPath = "src-tauri/tauri.conf.json"
+          $config = Get-Content $configPath -Raw | ConvertFrom-Json
+          if ("${{ inputs.use-test-identity }}" -eq "true") {
+            $config.productName = "ixiwhisper Test"
+            $config.identifier = "com.ixigo.ixiwhisper.test"
+          }
+          $config.bundle.createUpdaterArtifacts = $false
+          if ($config.bundle.windows.PSObject.Properties.Name -contains "signCommand") {
+            $config.bundle.windows.PSObject.Properties.Remove("signCommand")
+          }
+          $config | ConvertTo-Json -Depth 100 | Set-Content $configPath -Encoding UTF8
 
       # ggml requires clang for ARM. The VS generator determines the compiler
       # via the toolset (-T flag) which can't be overridden from env vars.
