@@ -236,6 +236,11 @@
       "volume": {
         "title": "Volumen",
         "description": "Ajusta el volumen de los sonidos de retroalimentación de audio"
+      },
+      "recordingVolume": {
+        "title": "Volumen durante la grabación",
+        "description": "Qué volumen mantienen las demás aplicaciones mientras grabas. Silencio (0 %) es el comportamiento original; valores más altos atenúan el audio y lo restauran al detener. Solo macOS.",
+        "muted": "Silenciado"
       }
     },
     "advanced": {

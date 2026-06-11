@@ -182,6 +182,12 @@ pub fn initialize_shortcuts(app: AppHandle) -> Result<(), String> {
     // Mark as initialized
     app.manage(ShortcutsInitialized);
 
+    // Surface the system audio recording permission prompt (used to duck
+    // other apps' audio while recording) now, instead of mid-dictation.
+    if crate::settings::get_settings(&app).mute_while_recording {
+        std::thread::spawn(crate::managers::audio::request_audio_duck_permission);
+    }
+
     log::info!("Shortcuts initialized successfully");
     Ok(())
 }

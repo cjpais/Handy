@@ -403,6 +403,12 @@ pub struct AppSettings {
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
     pub mute_while_recording: bool,
+    /// Volume (percent, 0-90) that other apps' audio is lowered to while
+    /// recording when `mute_while_recording` is enabled. 0 keeps the
+    /// original behavior (full mute). Values above 0 duck instead of muting
+    /// (macOS only; Windows/Linux currently mute regardless).
+    #[serde(default)]
+    pub recording_duck_volume: u8,
     #[serde(default)]
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
@@ -800,6 +806,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
         mute_while_recording: false,
+        recording_duck_volume: 0,
         append_trailing_space: false,
         app_language: default_app_language(),
         experimental_enabled: false,

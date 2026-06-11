@@ -218,6 +218,11 @@
       "volume": {
         "title": "볼륨",
         "description": "오디오 피드백 사운드의 볼륨 조절"
+      },
+      "recordingVolume": {
+        "title": "녹음 중 볼륨",
+        "description": "녹음하는 동안 다른 앱의 소리를 어느 정도로 유지할지 설정합니다. 음소거(0%)는 기존 동작이며, 값을 높이면 소리를 낮추고 중지하면 복원합니다. macOS 전용.",
+        "muted": "음소거"
       }
     },
     "models": {
