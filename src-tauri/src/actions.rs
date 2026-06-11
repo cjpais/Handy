@@ -346,6 +346,10 @@ pub(crate) struct ProcessedTranscription {
     pub post_process_prompt: Option<String>,
 }
 
+fn should_run_post_process(post_process: bool, text: &str) -> bool {
+    post_process && !text.trim().is_empty()
+}
+
 pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
@@ -360,7 +364,7 @@ pub(crate) async fn process_transcription_output(
         final_text = converted_text;
     }
 
-    if post_process {
+    if should_run_post_process(post_process, &final_text) {
         if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
             post_processed_text = Some(processed_text.clone());
             final_text = processed_text;
@@ -719,3 +723,28 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+#[cfg(test)]
+mod tests {
+    use super::should_run_post_process;
+
+    #[test]
+    fn skips_post_process_for_empty_transcription() {
+        assert!(!should_run_post_process(true, ""));
+    }
+
+    #[test]
+    fn skips_post_process_for_whitespace_transcription() {
+        assert!(!should_run_post_process(true, " \n\t "));
+    }
+
+    #[test]
+    fn allows_post_process_for_non_empty_transcription() {
+        assert!(should_run_post_process(true, "hello"));
+    }
+
+    #[test]
+    fn skips_post_process_when_feature_is_disabled() {
+        assert!(!should_run_post_process(false, "hello"));
+    }
+}
