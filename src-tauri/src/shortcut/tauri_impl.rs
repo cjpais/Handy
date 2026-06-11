@@ -3,7 +3,7 @@
 //! This module provides shortcut functionality using Tauri's built-in
 //! global-shortcut plugin.
 
-use log::{error, warn};
+use log::{error, info, warn};
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -151,6 +151,18 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
         error_msg
     })?;
 
+    Ok(())
+}
+
+/// Refresh active Tauri global shortcuts after the OS resumes from sleep.
+pub fn refresh_shortcuts(app: &AppHandle) -> Result<(), String> {
+    info!("Refreshing Tauri global shortcuts after system resume");
+
+    if let Err(e) = app.global_shortcut().unregister_all() {
+        warn!("Failed to unregister all shortcuts during refresh: {}", e);
+    }
+
+    init_shortcuts(app);
     Ok(())
 }
 

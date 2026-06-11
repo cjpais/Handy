@@ -53,6 +53,10 @@ enum ManagerCommand {
         binding_id: String,
         response: Sender<Result<(), String>>,
     },
+    Refresh {
+        bindings: Vec<(String, String)>,
+        response: Sender<Result<(), String>>,
+    },
     Shutdown,
 }
 
@@ -111,7 +115,7 @@ impl HandyKeysState {
         info!("handy-keys manager thread started");
 
         // Create the HotkeyManager in this thread
-        let manager = match HotkeyManager::new_with_blocking() {
+        let mut manager = match HotkeyManager::new_with_blocking() {
             Ok(m) => m,
             Err(e) => {
                 error!("Failed to create HotkeyManager: {}", e);
@@ -164,6 +168,41 @@ impl HandyKeysState {
                             &binding_id,
                         );
                         let _ = response.send(result);
+                    }
+                    ManagerCommand::Refresh { bindings, response } => {
+                        info!("Refreshing handy-keys shortcuts after system resume");
+
+                        let new_manager = match HotkeyManager::new_with_blocking() {
+                            Ok(manager) => manager,
+                            Err(e) => {
+                                let _ = response
+                                    .send(Err(format!("Failed to recreate HotkeyManager: {}", e)));
+                                continue;
+                            }
+                        };
+
+                        manager = new_manager;
+                        binding_to_hotkey.clear();
+                        hotkey_to_binding.clear();
+
+                        let mut errors = Vec::new();
+                        for (binding_id, hotkey_string) in bindings {
+                            if let Err(e) = Self::do_register(
+                                &manager,
+                                &mut binding_to_hotkey,
+                                &mut hotkey_to_binding,
+                                &binding_id,
+                                &hotkey_string,
+                            ) {
+                                errors.push(format!("{}: {}", binding_id, e));
+                            }
+                        }
+
+                        if errors.is_empty() {
+                            let _ = response.send(Ok(()));
+                        } else {
+                            let _ = response.send(Err(errors.join("; ")));
+                        }
                     }
                     ManagerCommand::Shutdown => {
                         info!("handy-keys manager thread shutting down");
@@ -257,6 +296,27 @@ impl HandyKeysState {
 
         rx.recv()
             .map_err(|_| "Failed to receive unregister response")?
+    }
+
+    /// Recreate the keyboard listener and re-register all active shortcuts.
+    pub fn refresh(&self, bindings: Vec<ShortcutBinding>) -> Result<(), String> {
+        let (tx, rx) = mpsc::channel();
+        let bindings = bindings
+            .into_iter()
+            .map(|binding| (binding.id, binding.current_binding))
+            .collect();
+
+        self.command_sender
+            .lock()
+            .map_err(|_| "Failed to lock command_sender")?
+            .send(ManagerCommand::Refresh {
+                bindings,
+                response: tx,
+            })
+            .map_err(|_| "Failed to send refresh command")?;
+
+        rx.recv()
+            .map_err(|_| "Failed to receive refresh response")?
     }
 
     /// Start recording mode for a specific binding
@@ -516,6 +576,35 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
         .try_state::<HandyKeysState>()
         .ok_or("HandyKeysState not initialized")?;
     state.unregister(&binding)
+}
+
+/// Refresh active handy-keys shortcuts after the OS resumes from sleep.
+pub fn refresh_shortcuts(app: &AppHandle) -> Result<(), String> {
+    let settings = get_settings(app);
+    let default_bindings = settings::get_default_settings().bindings;
+    let mut bindings = Vec::new();
+
+    for (id, default_binding) in default_bindings {
+        if id == "cancel" {
+            continue;
+        }
+        if id == "transcribe_with_post_process" && !settings.post_process_enabled {
+            continue;
+        }
+
+        bindings.push(
+            settings
+                .bindings
+                .get(&id)
+                .cloned()
+                .unwrap_or(default_binding),
+        );
+    }
+
+    let state = app
+        .try_state::<HandyKeysState>()
+        .ok_or("HandyKeysState not initialized")?;
+    state.refresh(bindings)
 }
 
 /// Start key recording mode

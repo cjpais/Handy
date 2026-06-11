@@ -92,6 +92,25 @@ pub fn unregister_shortcut(app: &AppHandle, binding: ShortcutBinding) -> Result<
     }
 }
 
+/// Refresh active shortcuts after the OS resumes from sleep.
+pub fn refresh_shortcuts_after_resume(app: &AppHandle) {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+
+        let settings = get_settings(&app);
+        let result = match settings.keyboard_implementation {
+            KeyboardImplementation::Tauri => tauri_impl::refresh_shortcuts(&app),
+            KeyboardImplementation::HandyKeys => handy_keys::refresh_shortcuts(&app),
+        };
+
+        match result {
+            Ok(()) => info!("Shortcuts refreshed after system resume"),
+            Err(e) => error!("Failed to refresh shortcuts after system resume: {}", e),
+        }
+    });
+}
+
 // ============================================================================
 // Binding Management Commands
 // ============================================================================
