@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Laddar...",
     "save": "Spara",
     "cancel": "Avbryt",
@@ -577,6 +578,11 @@
     "yes": "Ja",
     "no": "Nej",
     "noOptionsFound": "Inga alternativ hittades"
+  },
+  "windowControls": {
+    "minimize": "Minimera fönster",
+    "maximize": "Maximera fönster",
+    "close": "Stäng fönster"
   },
   "accessibility": {
     "permissionsRequired": "Behörigheter för hjälpmedel krävs",

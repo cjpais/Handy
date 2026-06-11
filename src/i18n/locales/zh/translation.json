@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "加载中...",
     "save": "保存",
     "cancel": "取消",
@@ -577,6 +578,11 @@
     "yes": "是",
     "no": "否",
     "noOptionsFound": "未找到选项"
+  },
+  "windowControls": {
+    "minimize": "最小化窗口",
+    "maximize": "最大化窗口",
+    "close": "关闭窗口"
   },
   "accessibility": {
     "permissionsRequired": "需要辅助功能权限",

@@ -557,6 +557,7 @@
     "portableUpdateButton": "Open GitHub Releases"
   },
   "common": {
+    "appName": "Handy",
     "loading": "Cargando...",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -577,6 +578,11 @@
     "yes": "Sí",
     "no": "No",
     "noOptionsFound": "No se encontraron opciones"
+  },
+  "windowControls": {
+    "minimize": "Minimizar ventana",
+    "maximize": "Maximizar ventana",
+    "close": "Cerrar ventana"
   },
   "accessibility": {
     "permissionsRequired": "Se Requieren Permisos de Accesibilidad",
