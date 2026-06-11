@@ -106,6 +106,7 @@ transcribe-rs = { version = "0.3.3", features = ["whisper-metal"] }
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
 transcribe-rs = { version = "0.3.3", features = ["whisper-vulkan"] }
+zbus = "5"
 
 [patch.crates-io]
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }

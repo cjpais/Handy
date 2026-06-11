@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g fill="#bebebe">
+    <path d="M3 0.5 2.25 2.75 0 3.5l2.25.75L3 6.5l.75-2.25L6 3.5l-2.25-.75L3 0.5z"/>
+    <path d="M5.5 7l-.5 1.6L3.5 9l1.5.4.5 1.6.5-1.6L7.5 9 6 8.6 5.5 7z"/>
+    <path d="M2.5 10.5l-.6 1.9L0 13l1.9.6.6 1.9.6-1.9 1.9-.6-1.9-.6-.6-1.9z"/>
+    <text x="11.5" y="13" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13">P</text>
+  </g>
+</svg>

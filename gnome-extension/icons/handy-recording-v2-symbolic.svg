@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g fill="#bebebe">
+    <path d="M3.5 0.5a1.75 1.75 0 0 0-1.75 1.75v3.5a1.75 1.75 0 0 0 3.5 0v-3.5A1.75 1.75 0 0 0 3.5 0.5z"/>
+    <path d="M0.75 5.25a.5.5 0 0 0-.5.5V6a3.25 3.25 0 0 0 2.75 3.21V10.5H1.75a.5.5 0 0 0 0 1h3.5a.5.5 0 0 0 0-1H4V9.21A3.25 3.25 0 0 0 6.75 6v-.25a.5.5 0 0 0-1 0V6a2.25 2.25 0 0 1-4.5 0v-.25a.5.5 0 0 0-.5-.5z"/>
+    <text x="11.5" y="13" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="13">R</text>
+  </g>
+</svg>

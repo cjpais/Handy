@@ -57,6 +57,10 @@ Control Handy from [Raycast](https://www.raycast.com) — start/stop recording, 
 
 [Source](https://github.com/mattiacolombomc/raycast-handy) · by [@mattiacolombomc](https://github.com/mattiacolombomc)
 
+### GNOME Shell Extension (Linux)
+
+Shows Handy's live state — recording, transcribing, post-processing — in the GNOME top bar via D-Bus. Install with `./gnome-extension/install.sh`. See [gnome-extension/README.md](gnome-extension/README.md).
+
 ## Architecture
 
 Handy is built as a Tauri application combining:
