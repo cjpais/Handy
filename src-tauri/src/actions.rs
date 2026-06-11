@@ -419,11 +419,12 @@ impl ShortcutAction for TranscribeAction {
             debug!("Always-on mode: Playing audio feedback immediately");
             let rm_clone = Arc::clone(&rm);
             let app_clone = app.clone();
+            let mute_generation = rm.mute_generation();
             // The blocking helper exits immediately if audio feedback is disabled,
             // so we can always reuse this thread to ensure mute happens right after playback.
             std::thread::spawn(move || {
                 play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                rm_clone.apply_mute();
+                rm_clone.apply_mute(mute_generation);
             });
 
             if let Err(e) = rm.try_start_recording(&binding_id) {
@@ -441,13 +442,14 @@ impl ShortcutAction for TranscribeAction {
                     // Small delay to ensure microphone stream is active
                     let app_clone = app.clone();
                     let rm_clone = Arc::clone(&rm);
+                    let mute_generation = rm.mute_generation();
                     std::thread::spawn(move || {
                         std::thread::sleep(std::time::Duration::from_millis(100));
                         debug!("Handling delayed audio feedback/mute sequence");
                         // Helper handles disabled audio feedback by returning early, so we reuse it
                         // to keep mute sequencing consistent in every mode.
                         play_feedback_sound_blocking(&app_clone, SoundType::Start);
-                        rm_clone.apply_mute();
+                        rm_clone.apply_mute(mute_generation);
                     });
                 }
                 Err(e) => {
