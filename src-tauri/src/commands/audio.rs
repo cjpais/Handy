@@ -310,3 +310,54 @@ pub fn is_recording(app: AppHandle) -> bool {
     let audio_manager = app.state::<Arc<AudioRecordingManager>>();
     audio_manager.is_recording()
 }
+
+/* ---------- hands-free continuous capture ------------------------------ */
+
+/// Enable hands-free continuous capture, persist the setting, and start the loop.
+#[tauri::command]
+#[specta::specta]
+pub fn start_hands_free(app: AppHandle) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.hands_free_capture = true;
+    write_settings(&app, settings);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.start_hands_free();
+    Ok(())
+}
+
+/// Disable hands-free continuous capture, persist the setting, and stop the loop.
+#[tauri::command]
+#[specta::specta]
+pub fn stop_hands_free(app: AppHandle) -> Result<(), String> {
+    let mut settings = get_settings(&app);
+    settings.hands_free_capture = false;
+    write_settings(&app, settings);
+
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.stop_hands_free();
+    Ok(())
+}
+
+/// Toggle pause on the hands-free loop without disabling it. Returns the new
+/// paused state (true = paused).
+#[tauri::command]
+#[specta::specta]
+pub fn toggle_hands_free_pause(app: AppHandle) -> Result<bool, String> {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    Ok(rm.toggle_hands_free_pause())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn is_hands_free_running(app: AppHandle) -> bool {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.is_hands_free_running()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn is_hands_free_paused(app: AppHandle) -> bool {
+    let rm = app.state::<Arc<AudioRecordingManager>>();
+    rm.is_hands_free_paused()
+}
