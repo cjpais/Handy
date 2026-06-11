@@ -45,6 +45,29 @@ The process is entirely local:
 4. Configure your preferred keyboard shortcuts in Settings
 5. Start transcribing!
 
+#### Linux
+
+On distros that use `rpm`, you can set it up like this:
+
+1. Deps
+
+(see https://github.com/cjpais/Handy/blob/main/BUILD.md#linux)
+```bash
+sudo dnf groupinstall "Development Tools"
+sudo dnf install alsa-lib-devel pkgconf openssl-devel vulkan-devel \
+  gtk3-devel webkit2gtk4.1-devel libappindicator-gtk3-devel librsvg2-devel \
+  gtk-layer-shell gtk-layer-shell-devel \
+  cmake
+```
+
+2. Install
+
+```bash
+arch=aarch64 # change to `x86_64` depending on your platform
+wget "$(curl https://api.github.com/repos/cjpais/Handy/releases/latest | jq -r '.assets[].browser_download_url' | grep -P "$arch\.rpm$")"
+sudo rpm -i Handy-0.8.3-1.aarch64.rpm
+```
+
 ### Development Setup
 
 For detailed build instructions including platform-specific requirements, see [BUILD.md](BUILD.md).
