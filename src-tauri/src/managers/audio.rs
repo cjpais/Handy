@@ -10,13 +10,327 @@ use tauri::Manager;
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 
-fn set_mute(mute: bool) {
+/// macOS "mute" implementation that ducks (lowers) audio instead of muting it,
+/// so background music stays faintly audible but no longer drowns out the
+/// microphone. Everything changed by `duck()` is restored by `restore()`.
+///
+/// Three strategies, tried in order:
+/// 1. Core Audio process tap (macOS 14.2+, see swift/audio_duck.swift):
+///    ducks every app at once, works even when the output device has no
+///    software volume control. Needs the system audio recording permission;
+///    without it the tap is inert, which `duck()` detects and falls through.
+/// 2. System output volume via AppleScript.
+/// 3. Per-app AppleScript: music players (Spotify/Music) and browser tabs.
+///    Browsers additionally require their "Allow JavaScript from Apple
+///    Events" developer setting; tabs are skipped silently otherwise.
+#[cfg(target_os = "macos")]
+mod macos_duck {
+    use log::debug;
+    use std::process::Command;
+    use std::sync::Mutex;
+    use std::time::Duration;
+
+    /// How long to wait for the process tap to see audio before concluding
+    /// it is inert (permission missing) or there is nothing to duck — in
+    /// both cases the AppleScript strategies take over.
+    const TAP_PROBE_DURATION: Duration = Duration::from_millis(300);
+
+    /// Music players we can duck individually when the output device itself
+    /// has no software volume control (common for USB audio interfaces and
+    /// HDMI/DisplayPort outputs).
+    const SCRIPTABLE_PLAYERS: [&str; 2] = ["Spotify", "Music"];
+
+    /// Browsers whose tabs we can reach with AppleScript. All of them ship
+    /// with that capability disabled; the user must enable "Allow JavaScript
+    /// from Apple Events" once (Chromium family: View > Developer menu,
+    /// Safari: Develop menu).
+    const SCRIPTABLE_BROWSERS: [&str; 5] = [
+        "Google Chrome",
+        "Chromium",
+        "Brave Browser",
+        "Microsoft Edge",
+        "Safari",
+    ];
+
+    mod ffi {
+        extern "C" {
+            pub fn handy_audio_duck_supported() -> i32;
+            pub fn handy_audio_duck_start(gain: f32) -> i32;
+            pub fn handy_audio_duck_stop();
+            pub fn handy_audio_duck_has_signal() -> i32;
+            pub fn handy_audio_duck_request_permission();
+        }
+    }
+
+    struct DuckState {
+        /// True while the process-tap ducker is running.
+        tap_active: bool,
+        /// True if we set the system output mute flag (duck volume 0).
+        system_muted: bool,
+        /// System output volume before ducking, if we changed it.
+        system_volume: Option<u8>,
+        /// (player, volume before ducking) for each player we changed.
+        player_volumes: Vec<(&'static str, u8)>,
+        /// Browsers whose tabs we ran the duck script in.
+        browsers_ducked: Vec<&'static str>,
+    }
+
+    impl DuckState {
+        fn is_ducked(&self) -> bool {
+            self.tap_active
+                || self.system_muted
+                || self.system_volume.is_some()
+                || !self.player_volumes.is_empty()
+                || !self.browsers_ducked.is_empty()
+        }
+    }
+
+    static DUCK_STATE: Mutex<DuckState> = Mutex::new(DuckState {
+        tap_active: false,
+        system_muted: false,
+        system_volume: None,
+        player_volumes: Vec::new(),
+        browsers_ducked: Vec::new(),
+    });
+
+    /// Triggers the system audio recording permission prompt (used by the
+    /// process-tap ducker) at app startup instead of mid-dictation. No-op
+    /// when the permission is already granted or the API is unavailable.
+    pub fn request_tap_permission() {
+        unsafe {
+            if ffi::handy_audio_duck_supported() == 1 {
+                ffi::handy_audio_duck_request_permission();
+            }
+        }
+    }
+
+    /// Starts the process-tap ducker and confirms it actually engaged.
+    /// Returns false when unsupported, denied, or when no audio is flowing —
+    /// the caller then ducks via AppleScript instead.
+    fn tap_duck(volume_percent: u8) -> bool {
+        unsafe {
+            if ffi::handy_audio_duck_supported() != 1
+                || ffi::handy_audio_duck_start(f32::from(volume_percent) / 100.0) != 1
+            {
+                return false;
+            }
+        }
+        // A tap created without the audio recording permission reports
+        // success but stays inert (silence, no muting). Only trust it once
+        // it has carried real audio.
+        std::thread::sleep(TAP_PROBE_DURATION);
+        if unsafe { ffi::handy_audio_duck_has_signal() } == 1 {
+            true
+        } else {
+            debug!("Process tap saw no audio (permission missing or nothing playing)");
+            unsafe { ffi::handy_audio_duck_stop() };
+            false
+        }
+    }
+
+    fn run_osascript(script: &str) -> Option<String> {
+        let output = Command::new("osascript")
+            .args(["-e", script])
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    }
+
+    /// Extracts a field from `get volume settings` output, e.g.
+    /// "output volume:64, input volume:75, alert volume:100, output muted:false".
+    fn volume_field<'a>(settings: &'a str, key: &str) -> Option<&'a str> {
+        let start = settings.find(key)? + key.len();
+        let rest = &settings[start..];
+        Some(rest[..rest.find(',').unwrap_or(rest.len())].trim())
+    }
+
+    /// Ducks one player if it is running and louder than the duck level.
+    /// Returns the previous volume when something was changed. Players that
+    /// are not running, already quiet, or denied automation permission are
+    /// skipped (the script returns -1 or fails, which doesn't parse as u8).
+    fn duck_player(player: &str, volume_percent: u8) -> Option<u8> {
+        let script = format!(
+            "if application \"{p}\" is running then\n\
+             \ttell application \"{p}\"\n\
+             \t\tset v to sound volume\n\
+             \t\tif v > {duck} then\n\
+             \t\t\tset sound volume to {duck}\n\
+             \t\t\treturn v\n\
+             \t\tend if\n\
+             \tend tell\n\
+             end if\n\
+             return -1",
+            p = player,
+            duck = volume_percent
+        );
+        run_osascript(&script)?.parse::<u8>().ok()
+    }
+
+    fn is_process_running(name: &str) -> bool {
+        Command::new("pgrep")
+            .args(["-x", name])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    }
+
+    /// JavaScript run in every browser tab to duck playing media elements.
+    /// Uses single quotes only so it can be embedded in an AppleScript string
+    /// literal. The previous volume is parked on the element itself
+    /// (dataset), so restoring needs no bookkeeping on our side.
+    fn browser_duck_js(volume_percent: u8) -> String {
+        format!(
+            "(function(){{var els=document.querySelectorAll('video,audio');for(var i=0;i<els.length;i++){{var m=els[i];try{{if(!m.paused&&!m.muted&&m.volume>{lvl}){{m.dataset.handyPrevVol=String(m.volume);m.volume={lvl}}}}}catch(e){{}}}}return els.length}})()",
+            lvl = f32::from(volume_percent) / 100.0
+        )
+    }
+
+    const BROWSER_RESTORE_JS: &str = "(function(){var els=document.querySelectorAll('video,audio');for(var i=0;i<els.length;i++){var m=els[i];try{if(m.dataset.handyPrevVol){var v=parseFloat(m.dataset.handyPrevVol);delete m.dataset.handyPrevVol;if(isFinite(v)&&v>0&&v<=1){m.volume=v}}}catch(e){}}return els.length})()";
+
+    /// AppleScript that runs `js` in every tab of `browser`. Tabs where
+    /// JavaScript-from-Apple-Events is disabled fail inside the `try` and are
+    /// skipped silently.
+    fn browser_tab_script(browser: &str, js: &str) -> String {
+        let execute_line = if browser == "Safari" {
+            format!("do JavaScript \"{js}\" in t")
+        } else {
+            format!("execute t javascript \"{js}\"")
+        };
+        format!(
+            "if application \"{b}\" is running then\n\
+             \ttell application \"{b}\"\n\
+             \t\trepeat with w in windows\n\
+             \t\t\trepeat with t in tabs of w\n\
+             \t\t\t\ttry\n\
+             \t\t\t\t\t{exec}\n\
+             \t\t\t\tend try\n\
+             \t\t\tend repeat\n\
+             \t\tend repeat\n\
+             \tend tell\n\
+             end if",
+            b = browser,
+            exec = execute_line
+        )
+    }
+
+    /// Lowers other apps' audio to `volume_percent` so background music
+    /// doesn't drown out the microphone; 0 mutes (the original behavior).
+    /// Tries the process tap first (ducks everything at once), then the
+    /// system output volume, then scripting players and browser tabs
+    /// directly.
+    pub fn duck(volume_percent: u8) {
+        let mut state = DUCK_STATE.lock().unwrap();
+        if state.is_ducked() {
+            // Already ducked; don't overwrite the saved volumes.
+            return;
+        }
+
+        if tap_duck(volume_percent) {
+            state.tap_active = true;
+            debug!("Audio ducked via process tap");
+            return;
+        }
+
+        let settings = run_osascript("get volume settings").unwrap_or_default();
+        match volume_field(&settings, "output volume:").and_then(|v| v.parse::<u8>().ok()) {
+            Some(current) => {
+                // Leave muted output alone: setting a volume would unmute it.
+                if volume_field(&settings, "output muted:") != Some("false") {
+                    return;
+                }
+                if volume_percent == 0 {
+                    // Full mute via the mute flag, like the original behavior
+                    if run_osascript("set volume output muted true").is_some() {
+                        state.system_muted = true;
+                        debug!("Audio muted via system output mute flag");
+                    }
+                    return;
+                }
+                // Already at or below the duck level: nothing to do.
+                if current <= volume_percent {
+                    return;
+                }
+                let script = format!("set volume output volume {}", volume_percent);
+                if run_osascript(&script).is_some() {
+                    state.system_volume = Some(current);
+                    debug!("Audio ducked via system output volume");
+                }
+            }
+            None => {
+                // Output device has no software volume control; duck the
+                // audio sources themselves instead.
+                for player in SCRIPTABLE_PLAYERS {
+                    if let Some(previous) = duck_player(player, volume_percent) {
+                        state.player_volumes.push((player, previous));
+                    }
+                }
+                let js = browser_duck_js(volume_percent);
+                for browser in SCRIPTABLE_BROWSERS {
+                    if is_process_running(browser)
+                        && run_osascript(&browser_tab_script(browser, &js)).is_some()
+                    {
+                        state.browsers_ducked.push(browser);
+                    }
+                }
+                debug!(
+                    "Audio ducked via app scripting: {} players, {} browsers",
+                    state.player_volumes.len(),
+                    state.browsers_ducked.len()
+                );
+            }
+        }
+    }
+
+    /// Restores everything `duck` changed.
+    pub fn restore() {
+        let mut state = DUCK_STATE.lock().unwrap();
+        if state.tap_active {
+            unsafe { ffi::handy_audio_duck_stop() };
+            state.tap_active = false;
+        }
+        if state.system_muted {
+            let _ = run_osascript("set volume output muted false");
+            state.system_muted = false;
+        }
+        if let Some(previous) = state.system_volume.take() {
+            let _ = run_osascript(&format!("set volume output volume {}", previous));
+        }
+        for (player, previous) in state.player_volumes.drain(..) {
+            let script = format!(
+                "if application \"{p}\" is running then tell application \"{p}\" to set sound volume to {v}",
+                p = player,
+                v = previous
+            );
+            let _ = run_osascript(&script);
+        }
+        for browser in state.browsers_ducked.drain(..) {
+            let _ = run_osascript(&browser_tab_script(browser, BROWSER_RESTORE_JS));
+        }
+    }
+}
+
+/// Triggers the macOS system audio recording permission prompt used by the
+/// process-tap ducker, so it appears at a predictable time (startup) rather
+/// than during the first dictation. No-op when already granted, denied, or
+/// on other platforms.
+pub fn request_audio_duck_permission() {
+    #[cfg(target_os = "macos")]
+    macos_duck::request_tap_permission();
+}
+
+fn set_mute(mute: bool, duck_volume: u8) {
     // Expected behavior:
-    // - Windows: works on most systems using standard audio drivers.
-    // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
+    // - Windows: mutes system audio; works on most systems using standard audio drivers.
+    // - Linux: mutes system audio; works on many systems (PipeWire, PulseAudio, ALSA),
     //   but some distros may lack the tools used.
-    // - macOS: works on most standard setups via AppleScript.
+    // - macOS: lowers system audio to `duck_volume` percent (0 = full mute,
+    //   the original behavior) and restores it on unmute — see `macos_duck`.
     // If unsupported, fails silently.
+    #[cfg(not(target_os = "macos"))]
+    let _ = duck_volume; // Windows/Linux currently mute regardless of level
 
     #[cfg(target_os = "windows")]
     {
@@ -90,12 +404,11 @@ fn set_mute(mute: bool) {
 
     #[cfg(target_os = "macos")]
     {
-        use std::process::Command;
-        let script = format!(
-            "set volume output muted {}",
-            if mute { "true" } else { "false" }
-        );
-        let _ = Command::new("osascript").args(["-e", &script]).output();
+        if mute {
+            macos_duck::duck(duck_volume);
+        } else {
+            macos_duck::restore();
+        }
     }
 }
 
@@ -115,12 +428,12 @@ pub enum MicrophoneMode {
     OnDemand,
 }
 
-/// Tracks whether we muted system audio, plus a generation counter that ties
-/// each (possibly delayed) `apply_mute` to the recording session that
-/// requested it. `remove_mute` bumps the generation, so an apply that lands
-/// after the session already ended (e.g. a very quick press/release racing
-/// the delayed audio-feedback thread) becomes a no-op instead of leaving
-/// system audio muted with nothing left to restore it.
+/// Tracks whether we changed system audio, plus a generation counter that ties
+/// each (possibly delayed) `apply_mute` to the recording session that requested
+/// it. `remove_mute` bumps the generation, so an apply that lands after the
+/// session already ended (e.g. a very quick press/release racing the delayed
+/// audio-feedback thread) becomes a no-op instead of leaving system audio
+/// muted/ducked with nothing left to restore it.
 #[derive(Debug, Default)]
 struct MuteState {
     generation: u64,
@@ -276,7 +589,7 @@ impl AudioRecordingManager {
             debug!("Skipping mute: stream closed or session already ended");
             return;
         }
-        set_mute(true);
+        set_mute(true, settings.recording_duck_volume);
         mute_state.did_mute = true;
         debug!("Mute applied");
     }
@@ -286,7 +599,7 @@ impl AudioRecordingManager {
         let mut mute_state = self.mute_state.lock().unwrap();
         mute_state.generation += 1;
         if mute_state.did_mute {
-            set_mute(false);
+            set_mute(false, 0);
             mute_state.did_mute = false;
             debug!("Mute removed");
         }
@@ -323,11 +636,11 @@ impl AudioRecordingManager {
         // Don't mute immediately - caller will handle muting after audio feedback.
         // The previous stream restores audio on close, so did_mute should already
         // be false here; if it somehow isn't, restore instead of just clearing the
-        // flag, which would strand system audio in the muted state.
+        // flag, which would strand system audio in the muted/ducked state.
         {
             let mut mute_state = self.mute_state.lock().unwrap();
             if mute_state.did_mute {
-                set_mute(false);
+                set_mute(false, 0);
                 mute_state.did_mute = false;
             }
         }
@@ -381,7 +694,7 @@ impl AudioRecordingManager {
             // Invalidate any pending delayed apply for the closing stream
             mute_state.generation += 1;
             if mute_state.did_mute {
-                set_mute(false);
+                set_mute(false, 0);
                 mute_state.did_mute = false;
             }
         }

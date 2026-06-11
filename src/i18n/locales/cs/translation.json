@@ -236,6 +236,11 @@
       "volume": {
         "title": "Hlasitost",
         "description": "Upravte hlasitost zvukové odezvy"
+      },
+      "recordingVolume": {
+        "title": "Hlasitost během nahrávání",
+        "description": "Jak hlasité zůstanou ostatní aplikace během nahrávání. Ztlumeno (0 %) je původní chování; vyšší hodnoty zvuk ztiší a po zastavení jej obnoví. Pouze macOS.",
+        "muted": "Ztlumeno"
       }
     },
     "advanced": {

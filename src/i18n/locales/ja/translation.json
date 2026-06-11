@@ -236,6 +236,11 @@
       "volume": {
         "title": "音量",
         "description": "音声フィードバックの音量を調整"
+      },
+      "recordingVolume": {
+        "title": "録音中の音量",
+        "description": "録音中に他のアプリの音量をどの程度に保つか。ミュート（0%）は従来の動作です。値を上げると音量を下げ、停止時に元に戻します。macOSのみ。",
+        "muted": "ミュート"
       }
     },
     "advanced": {

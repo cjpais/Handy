@@ -236,6 +236,11 @@
       "volume": {
         "title": "Volume",
         "description": "Regola il volume del feedback audio"
+      },
+      "recordingVolume": {
+        "title": "Volume durante la registrazione",
+        "description": "Quanto restano udibili le altre app durante la registrazione. Muto (0%) è il comportamento originale; valori più alti attenuano l'audio e lo ripristinano allo stop. Solo macOS.",
+        "muted": "Muto"
       }
     },
     "advanced": {

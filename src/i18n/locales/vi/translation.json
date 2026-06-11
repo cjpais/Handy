@@ -236,6 +236,11 @@
       "volume": {
         "title": "Âm lượng",
         "description": "Điều chỉnh âm lượng của âm thanh phản hồi"
+      },
+      "recordingVolume": {
+        "title": "Âm lượng khi ghi âm",
+        "description": "Mức âm lượng của các ứng dụng khác trong khi bạn ghi âm. Tắt tiếng (0%) là hành vi gốc; giá trị cao hơn sẽ giảm âm thanh và khôi phục khi dừng. Chỉ dành cho macOS.",
+        "muted": "Đã tắt tiếng"
       }
     },
     "advanced": {

@@ -236,6 +236,11 @@
       "volume": {
         "title": "音量",
         "description": "调整音频反馈的音量"
+      },
+      "recordingVolume": {
+        "title": "录音时音量",
+        "description": "录音时其他应用保持的音量。静音（0%）为原有行为；更高的值会降低音量，停止后恢复。仅限 macOS。",
+        "muted": "静音"
       }
     },
     "advanced": {

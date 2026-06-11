@@ -236,6 +236,11 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "recordingVolume": {
+        "title": "Volume While Recording",
+        "description": "How loud other apps stay while you record. Muted (0%) is the original behavior; higher values duck the audio and restore it when you stop. macOS only.",
+        "muted": "Muted"
       }
     },
     "advanced": {
@@ -483,8 +488,8 @@
         "description": "Enable AI-powered text refinement after transcription"
       },
       "muteWhileRecording": {
-        "label": "Mute While Recording",
-        "description": "Mute system audio during recording"
+        "label": "Lower System Audio While Recording",
+        "description": "Lowers other apps' audio while recording and restores it when you let go — set the level with the Volume While Recording slider (0% = mute). Works on USB interfaces and HDMI outputs via the macOS audio tap (allow the audio recording permission). Fully mutes on Windows and Linux."
       },
       "appendTrailingSpace": {
         "label": "Append Trailing Space",
