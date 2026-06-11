@@ -41,6 +41,7 @@
         onnxruntime
         libayatana-appindicator
         libevdev
+        libxkbcommon
         libxtst
         gtk-layer-shell
         openssl
