@@ -450,6 +450,25 @@ On some GPU/driver combinations the WebKitGTK DMA-BUF renderer can cause the win
 WEBKIT_DISABLE_DMABUF_RENDERER=1 handy
 ```
 
+**4. Keep Handy on native Wayland under GNOME (`HANDY_NO_GNOME_XWAYLAND`)**
+
+GNOME's Mutter compositor does not allow regular Wayland windows to choose
+their screen position. When a working XWayland display is available, Handy
+therefore uses GTK's X11 backend so the recording overlay can remain at its
+configured top or bottom position. This applies to the entire Handy process
+and may affect fractional scaling, accessibility integration, or clipboard
+behavior.
+
+To keep Handy on the native Wayland backend instead, set:
+
+```bash
+HANDY_NO_GNOME_XWAYLAND=1 handy
+```
+
+With this opt-out, GNOME chooses the overlay position and it may appear in the
+top-left corner. An explicitly configured `GDK_BACKEND` also takes precedence
+over Handy's automatic selection.
+
 **Making a workaround permanent**
 
 Once you've found a flag that helps, export it from your shell profile (`~/.bashrc`, `~/.zshenv`, …) or from the desktop autostart entry that launches Handy. If you launch Handy from a `.desktop` file, you can prefix the `Exec=` line, e.g.:
