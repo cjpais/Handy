@@ -19,6 +19,9 @@ use tauri_nspanel::{tauri_panel, CollectionBehavior, PanelBuilder, PanelLevel};
 use gtk_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 #[cfg(target_os = "linux")]
+use gtk::prelude::GtkWindowExt;
+
+#[cfg(target_os = "linux")]
 use std::env;
 
 #[cfg(target_os = "macos")]
@@ -224,19 +227,20 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
+    let position = calculate_overlay_position(app_handle);
+
     // On Linux (Wayland), monitor detection often fails, but we don't need exact coordinates
     // for Layer Shell as we use anchors. On other platforms, we require a monitor.
     #[cfg(not(target_os = "linux"))]
     {
-        let position = calculate_overlay_position(app_handle);
         if position.is_none() {
             debug!("Failed to determine overlay position, not creating overlay window");
             return;
         }
     }
 
-    // Position starts unset — update_overlay_position() sets the correct
-    // LogicalPosition before the overlay is shown.
+    // Set an initial position for regular windows. update_overlay_position()
+    // refreshes it before each show, including after monitor changes.
     let mut builder = WebviewWindowBuilder::new(
         app_handle,
         "recording_overlay",
@@ -257,6 +261,12 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     .focused(false)
     .visible(false);
 
+    // GNOME Wayland does not support layer-shell and ignores position changes
+    // after a window is mapped, so provide the fallback position at creation.
+    if let Some((x, y)) = position {
+        builder = builder.position(x, y);
+    }
+
     if let Some(data_dir) = crate::portable::data_dir() {
         builder = builder.data_directory(data_dir.join("webview"));
     }
@@ -266,6 +276,11 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
         Ok(window) => {
             #[cfg(target_os = "linux")]
             {
+                if let Ok(gtk_window) = window.gtk_window() {
+                    gtk_window.set_accept_focus(false);
+                    gtk_window.set_focus_on_map(false);
+                }
+
                 // Try to initialize GTK layer shell, ignore errors if compositor doesn't support it
                 if init_gtk_layer_shell(&window) {
                     debug!("GTK layer shell initialized for overlay window");
