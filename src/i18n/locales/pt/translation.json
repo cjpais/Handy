@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Buffer de gravação extra",
         "description": "Tempo extra (em milissegundos) para continuar gravando após soltar a tecla, para capturar áudio restante. 0 = sem buffer extra."
+      },
+      "typingDelay": {
+        "title": "Atraso de digitação",
+        "description": "Atraso por tecla pressionada para ferramentas de digitação direta como dotool (em milissegundos). Menor = digitação mais rápida, maior = mais confiável em compositores lentos. Padrão: 2 ms."
       }
     },
     "about": {

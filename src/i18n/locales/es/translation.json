@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Búfer de grabación adicional",
         "description": "Tiempo adicional (en milisegundos) para seguir grabando después de soltar la tecla, para capturar el audio restante. 0 = sin búfer adicional."
+      },
+      "typingDelay": {
+        "title": "Retraso de escritura",
+        "description": "Retraso por pulsación para herramientas de escritura directa como dotool (en milisegundos). Más bajo = escritura más rápida, más alto = más fiable en compositores lentos. Predeterminado: 2 ms."
       }
     },
     "about": {

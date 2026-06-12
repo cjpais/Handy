@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "額外錄音緩衝",
         "description": "放開按鍵後繼續錄音的額外時間（毫秒），以捕捉尾音。0 = 無額外緩衝。"
+      },
+      "typingDelay": {
+        "title": "鍵入延遲",
+        "description": "像 dotool 這樣的直接鍵入工具的每鍵延遲（毫秒）。越低 = 鍵入越快，越高 = 在較慢的合成器上更可靠。預設：2 毫秒。"
       }
     },
     "about": {

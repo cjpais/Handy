@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Extra inspelningsbuffert",
         "description": "Extra tid (i millisekunder) för att fortsätta spela in efter att du släppt tangenten, för att fånga upp avslutande ljud. 0 = ingen extra buffert."
+      },
+      "typingDelay": {
+        "title": "Skrivfördröjning",
+        "description": "Fördröjning per tangenttryckning för direkta skrivverktyg som dotool (i millisekunder). Lägre = snabbare skrivning, högre = mer tillförlitligt på långsamma kompositörer. Standard: 2 ms."
       }
     },
     "about": {

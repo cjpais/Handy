@@ -507,6 +507,10 @@
       "recordingBuffer": {
         "title": "Bộ đệm ghi âm thêm",
         "description": "Thời gian thêm (tính bằng mili giây) để tiếp tục ghi âm sau khi nhả phím, để thu âm thanh cuối. 0 = không có bộ đệm thêm."
+      },
+      "typingDelay": {
+        "title": "Độ trễ gõ phím",
+        "description": "Độ trễ mỗi lần gõ phím cho các công cụ gõ trực tiếp như dotool (tính bằng mili giây). Thấp hơn = gõ nhanh hơn, cao hơn = đáng tin cậy hơn trên các compositor chậm. Mặc định: 2ms."
       }
     },
     "about": {
