@@ -591,6 +591,11 @@ export const useSettingsStore = create<SettingsStore>()(
       listen("model-state-changed", () => {
         get().refreshSettings();
       });
+
+      // Re-fetch settings when changed from the tray menu (e.g. language switch)
+      listen("settings-changed", () => {
+        get().refreshSettings();
+      });
     },
   })),
 );

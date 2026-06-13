@@ -257,6 +257,21 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     tray::update_tray_menu(&app_clone, &tray::TrayIconState::Idle, None);
                 });
             }
+            id if id.starts_with("language_select:") => {
+                let language = id.strip_prefix("language_select:").unwrap().to_string();
+                let current_language = settings::get_settings(app).selected_language;
+                if language == current_language {
+                    return;
+                }
+                if let Err(e) =
+                    crate::shortcut::change_selected_language_setting(app.clone(), language.clone())
+                {
+                    log::error!("Failed to switch language via tray: {}", e);
+                    return;
+                }
+                log::info!("Language switched to {} via tray.", language);
+                tray::update_tray_menu(app, &tray::TrayIconState::Idle, None);
+            }
             _ => {}
         })
         .build(app_handle)

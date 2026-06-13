@@ -6,7 +6,8 @@
     "unloadModel": "모델 언로드",
     "model": "모델",
     "quit": "종료",
-    "cancel": "취소"
+    "cancel": "취소",
+    "language": "언어"
   },
   "sidebar": {
     "general": "일반",
