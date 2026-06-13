@@ -129,16 +129,20 @@ fn build_apple_intelligence_bridge() {
     let object_path = out_dir.join("apple_intelligence.o");
     let static_lib_path = out_dir.join("libapple_intelligence.a");
 
-    let sdk_path = String::from_utf8(
-        Command::new("xcrun")
-            .args(["--sdk", "macosx", "--show-sdk-path"])
-            .output()
-            .expect("Failed to locate macOS SDK")
-            .stdout,
-    )
-    .expect("SDK path is not valid UTF-8")
-    .trim()
-    .to_string();
+    // SDKROOT/SWIFTC env-var overrides let non-Xcode toolchains (e.g. nixpkgs
+    // with apple-sdk_* + standalone swift) bypass xcrun, which is Xcode-only.
+    let sdk_path = env::var("SDKROOT").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--sdk", "macosx", "--show-sdk-path"])
+                .output()
+                .expect("Failed to locate macOS SDK")
+                .stdout,
+        )
+        .expect("SDK path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
 
     // Check if the SDK supports FoundationModels (required for Apple Intelligence)
     let framework_path =
@@ -157,16 +161,19 @@ fn build_apple_intelligence_bridge() {
         panic!("Source file {} is missing!", source_file);
     }
 
-    let swiftc_path = String::from_utf8(
-        Command::new("xcrun")
-            .args(["--find", "swiftc"])
-            .output()
-            .expect("Failed to locate swiftc")
-            .stdout,
-    )
-    .expect("swiftc path is not valid UTF-8")
-    .trim()
-    .to_string();
+    // See SDKROOT note above — same env-override pattern for non-Xcode toolchains.
+    let swiftc_path = env::var("SWIFTC").unwrap_or_else(|_| {
+        String::from_utf8(
+            Command::new("xcrun")
+                .args(["--find", "swiftc"])
+                .output()
+                .expect("Failed to locate swiftc")
+                .stdout,
+        )
+        .expect("swiftc path is not valid UTF-8")
+        .trim()
+        .to_string()
+    });
 
     let toolchain_swift_lib = Path::new(&swiftc_path)
         .parent()
@@ -178,9 +185,17 @@ fn build_apple_intelligence_bridge() {
     // Use macOS 11.0 as deployment target for compatibility
     // The @available(macOS 26.0, *) checks in Swift handle runtime availability
     // Weak linking for FoundationModels is handled via cargo:rustc-link-arg below
-    let status = Command::new("xcrun")
+    let status = Command::new(&swiftc_path)
         .args([
-            "swiftc",
+            // Without this flag swiftc treats single-file input as script
+            // mode and emits its own `_main` symbol into the .o, which can
+            // win the link against Rust's main under some linkers (e.g.
+            // open-source ld64 used in nixpkgs' Darwin stdenv), producing a
+            // binary whose main() is a 5-instruction no-op that returns 0.
+            // `-parse-as-library` keeps the compilation in library mode so
+            // no `_main` is emitted. See:
+            //   https://forums.swift.org/t/main-in-a-single-swift-file/63079
+            "-parse-as-library",
             "-target",
             "arm64-apple-macosx11.0",
             "-sdk",
