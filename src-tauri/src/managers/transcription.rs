@@ -1,4 +1,4 @@
-use crate::audio_toolkit::{apply_custom_words, filter_transcription_output};
+use crate::audio_toolkit::{apply_custom_words, apply_phonetic_replacements, filter_transcription_output};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::model::{EngineType, ModelManager};
 use crate::settings::{
@@ -682,6 +682,14 @@ impl TranscriptionManager {
             }
         };
 
+        // Apply phonetic replacements first (cross-script mappings like "эн восемь эн" → "N8N").
+        // This runs for ALL engines including Whisper, since it's a direct string replacement.
+        let after_phonetic = if !settings.phonetic_replacements.is_empty() {
+            apply_phonetic_replacements(&result.text, &settings.phonetic_replacements)
+        } else {
+            result.text
+        };
+
         // Apply word correction if custom words are configured.
         // Skip for Whisper models since custom words are already passed as initial_prompt.
         let is_whisper = self
@@ -692,12 +700,12 @@ impl TranscriptionManager {
 
         let corrected_result = if !settings.custom_words.is_empty() && !is_whisper {
             apply_custom_words(
-                &result.text,
+                &after_phonetic,
                 &settings.custom_words,
                 settings.word_correction_threshold,
             )
         } else {
-            result.text
+            after_phonetic
         };
 
         // Filter out filler words and hallucinations

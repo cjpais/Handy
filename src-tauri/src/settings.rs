@@ -372,6 +372,8 @@ pub struct AppSettings {
     #[serde(default)]
     pub custom_words: Vec<String>,
     #[serde(default)]
+    pub phonetic_replacements: HashMap<String, String>,
+    #[serde(default)]
     pub model_unload_timeout: ModelUnloadTimeout,
     #[serde(default = "default_word_correction_threshold")]
     pub word_correction_threshold: f64,
@@ -784,6 +786,7 @@ pub fn get_default_settings() -> AppSettings {
         debug_mode: false,
         log_level: default_log_level(),
         custom_words: Vec::new(),
+        phonetic_replacements: HashMap::new(),
         model_unload_timeout: ModelUnloadTimeout::default(),
         word_correction_threshold: default_word_correction_threshold(),
         history_limit: default_history_limit(),
