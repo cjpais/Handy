@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "剪貼簿 (Ctrl+Shift+V)",
           "clipboardShiftInsert": "剪貼簿 (Shift+Insert)",
           "direct": "直接",
+          "directCompatibility": "Direct (Slow)",
           "none": "無",
           "externalScript": "外部腳本"
         },

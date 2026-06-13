@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "לוח (Ctrl+Shift+V)",
           "clipboardShiftInsert": "לוח (Shift+Insert)",
           "direct": "ישיר",
+          "directCompatibility": "Direct (Slow)",
           "none": "ללא",
           "externalScript": "סקריפט חיצוני"
         },

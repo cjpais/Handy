@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Urklipp (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Urklipp (Shift+Insert)",
           "direct": "Direkt",
+          "directCompatibility": "Direct (Slow)",
           "none": "Ingen",
           "externalScript": "Externt skript"
         },

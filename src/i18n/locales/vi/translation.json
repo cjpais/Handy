@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Clipboard (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Clipboard (Shift+Insert)",
           "direct": "Trực tiếp",
+          "directCompatibility": "Direct (Slow)",
           "none": "Không có",
           "externalScript": "Script bên ngoài"
         },

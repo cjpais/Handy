@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Zwischenablage (Strg+Umschalt+V)",
           "clipboardShiftInsert": "Zwischenablage (Umschalt+Einfg)",
           "direct": "Direkt",
+          "directCompatibility": "Direct (Slow)",
           "none": "Keine",
           "externalScript": "Externes Skript"
         },

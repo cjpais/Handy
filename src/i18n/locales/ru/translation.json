@@ -299,6 +299,7 @@
           "clipboardCtrlShiftV": "Буфер обмена (Ctrl+Shift+V)",
           "clipboardShiftInsert": "Буфер обмена (Shift+Insert)",
           "direct": "Прямой",
+          "directCompatibility": "Direct (Slow)",
           "none": "Нет",
           "externalScript": "Внешний скрипт"
         },
