@@ -106,21 +106,12 @@ impl ModelManager {
 
         let mut available_models = HashMap::new();
 
-        // Whisper supported languages (99 languages from tokenizer)
-        // Including zh-Hans and zh-Hant variants to match frontend language codes
-        let whisper_languages: Vec<String> = vec![
-            "en", "zh", "zh-Hans", "zh-Hant", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl",
-            "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs",
-            "ro", "da", "hu", "ta", "no", "th", "ur", "hr", "bg", "lt", "la", "mi", "ml", "cy",
-            "sk", "te", "fa", "lv", "bn", "sr", "az", "sl", "kn", "et", "mk", "br", "eu", "is",
-            "hy", "ne", "mn", "bs", "kk", "sq", "sw", "gl", "mr", "pa", "si", "km", "sn", "yo",
-            "so", "af", "oc", "ka", "be", "tg", "sd", "gu", "am", "yi", "lo", "uz", "fo", "ht",
-            "ps", "tk", "nn", "mt", "sa", "lb", "my", "bo", "tl", "mg", "as", "tt", "haw", "ln",
-            "ha", "ba", "jw", "su", "yue",
-        ]
-        .into_iter()
-        .map(String::from)
-        .collect();
+        // Whisper supports every language in the shared list. We also accept the
+        // bare "zh" code so legacy stored settings validate instead of falling
+        // back to auto (it maps straight to Whisper's "zh"). It is intentionally
+        // absent from the shared display list, so it never surfaces in pickers.
+        let mut whisper_languages: Vec<String> = crate::languages::all_codes();
+        whisper_languages.push("zh".to_string());
 
         // TODO this should be read from a JSON file or something..
         available_models.insert(

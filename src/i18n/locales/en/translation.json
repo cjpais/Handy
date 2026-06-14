@@ -141,7 +141,6 @@
     "deleteModel": "Delete {{modelName}}",
     "downloadSpeed": "{{speed}} MB/s",
     "cancel": "Cancel",
-    "language": "Language",
     "cancelDownload": "Cancel download",
     "capabilities": {
       "languageSelection": "Supports multiple input languages",
@@ -416,7 +415,6 @@
         "deletePrompt": "Delete Prompt",
         "createPrompt": "Create Prompt",
         "cancel": "Cancel",
-        "language": "Language",
         "selectToEdit": "Select a prompt above to view and edit its details.",
         "createFirst": "Click 'Create New Prompt' above to create your first post-processing prompt."
       }
@@ -563,7 +561,6 @@
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
-    "language": "Language",
     "reset": "Reset",
     "add": "Add",
     "remove": "Remove",
