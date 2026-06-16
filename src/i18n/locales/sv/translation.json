@@ -356,6 +356,10 @@
         "add": "Lägg till",
         "remove": "Ta bort {{word}}",
         "duplicate": "\"{{word}}\" finns redan"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Transkribera under inspelning",
+        "description": "Transkriberar tal i segment vid naturliga pauser medan du pratar, så att bara den sista frasen återstår att bearbeta när du släpper – vilket minskar väntetiden. Fungerar med alla modeller. Kan ändra skiljetecken eller versaler något vid segmentgränser (mest märkbart med Whisper)."
       }
     },
     "postProcessing": {

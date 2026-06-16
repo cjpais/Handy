@@ -356,6 +356,10 @@
         "add": "Přidat",
         "remove": "Odebrat {{word}}",
         "duplicate": "\"{{word}}\" již existuje"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Přepis během nahrávání",
+        "description": "Přepisuje řeč po segmentech v přirozených pauzách, zatímco mluvíte, takže po uvolnění zbývá zpracovat jen poslední část, což zkracuje čekání. Funguje s jakýmkoli modelem. Na hranicích segmentů může mírně změnit interpunkci nebo velká písmena (nejvíce u Whisperu)."
       }
     },
     "postProcessing": {

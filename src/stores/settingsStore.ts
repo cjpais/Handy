@@ -155,6 +155,8 @@ const settingUpdaters: {
     commands.changeWhisperGpuDevice(value as number),
   extra_recording_buffer_ms: (value) =>
     commands.changeExtraRecordingBufferSetting(value as number),
+  eager_segmented_transcription: (value) =>
+    commands.changeEagerSegmentedTranscriptionSetting(value as boolean),
 };
 
 export const useSettingsStore = create<SettingsStore>()(

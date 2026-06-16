@@ -356,6 +356,10 @@
         "add": "추가",
         "remove": "{{word}} 제거",
         "duplicate": "\"{{word}}\"이(가) 이미 존재합니다"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "녹음 중 받아쓰기",
+        "description": "말하는 동안 자연스러운 멈춤 지점에서 음성을 구간별로 받아씁니다. 그래서 멈출 때 마지막 구절만 처리하면 되어 대기 시간이 줄어듭니다. 모든 모델에서 작동합니다. 구간 경계에서 문장 부호나 대소문자가 약간 달라질 수 있습니다(특히 Whisper에서 두드러짐)."
       }
     },
     "postProcessing": {

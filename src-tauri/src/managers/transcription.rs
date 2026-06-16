@@ -438,6 +438,17 @@ impl TranscriptionManager {
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+        self.transcribe_internal(audio, true)
+    }
+
+    /// Transcribe a single eager segment. Suppresses the "Immediately" model
+    /// unload so the model stays loaded for the remaining segments of the same
+    /// recording; the caller unloads once after the final segment.
+    pub fn transcribe_segment(&self, audio: Vec<f32>) -> Result<String> {
+        self.transcribe_internal(audio, false)
+    }
+
+    fn transcribe_internal(&self, audio: Vec<f32>, allow_immediate_unload: bool) -> Result<String> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -454,7 +465,9 @@ impl TranscriptionManager {
 
         if audio.is_empty() {
             debug!("Empty audio vector");
-            self.maybe_unload_immediately("empty audio");
+            if allow_immediate_unload {
+                self.maybe_unload_immediately("empty audio");
+            }
             return Ok(String::new());
         }
 
@@ -727,7 +740,9 @@ impl TranscriptionManager {
             info!("Transcription result: {}", final_result);
         }
 
-        self.maybe_unload_immediately("transcription");
+        if allow_immediate_unload {
+            self.maybe_unload_immediately("transcription");
+        }
 
         Ok(final_result)
     }

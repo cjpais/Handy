@@ -1,5 +1,7 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
 use crate::helpers::clamshell;
+use crate::managers::segment_transcriber::SegmentTranscriber;
+use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
@@ -135,6 +137,17 @@ fn create_audio_recorder(
             move |levels| {
                 utils::emit_levels(&app_handle, &levels);
             }
+        })
+        // Route completed speech segments to the manager, which forwards them to
+        // the active segment-transcription worker (dropped when not recording or
+        // when the feature is disabled). Mirrors the level-callback indirection.
+        .with_segment_callback({
+            let app_handle = app_handle.clone();
+            move |segment: &[f32]| {
+                if let Some(rm) = app_handle.try_state::<Arc<AudioRecordingManager>>() {
+                    rm.push_segment(segment);
+                }
+            }
         });
 
     Ok(recorder)
@@ -153,6 +166,8 @@ pub struct AudioRecordingManager {
     is_recording: Arc<Mutex<bool>>,
     did_mute: Arc<Mutex<bool>>,
     close_generation: Arc<AtomicU64>,
+    // Active eager-segmentation worker for the current recording, if enabled.
+    segment_xcribe: Arc<Mutex<Option<SegmentTranscriber>>>,
 }
 
 impl AudioRecordingManager {
@@ -176,6 +191,7 @@ impl AudioRecordingManager {
             is_recording: Arc::new(Mutex::new(false)),
             did_mute: Arc::new(Mutex::new(false)),
             close_generation: Arc::new(AtomicU64::new(0)),
+            segment_xcribe: Arc::new(Mutex::new(None)),
         };
 
         // Always-on?  Open immediately.
@@ -383,6 +399,23 @@ impl AudioRecordingManager {
 
     /* ---------- recording --------------------------------------------------- */
 
+    /// Forward a completed speech segment to the active segmentation worker.
+    /// No-op (and no allocation) when no recording is in progress or the feature
+    /// is disabled — the slice is only cloned when there is a worker to receive it.
+    pub fn push_segment(&self, segment: &[f32]) {
+        if let Some(worker) = self.segment_xcribe.lock().unwrap().as_ref() {
+            worker.push(segment.to_vec());
+        }
+    }
+
+    /// Finish the segmentation worker (if any) and return the per-segment
+    /// transcripts in order. Returns `None` when eager segmentation was not active
+    /// for this recording, in which case the caller batch-transcribes instead.
+    pub fn take_segment_results(&self) -> Option<Vec<String>> {
+        let worker = self.segment_xcribe.lock().unwrap().take();
+        worker.map(|w| w.finish())
+    }
+
     pub fn try_start_recording(&self, binding_id: &str) -> Result<(), String> {
         let mut state = self.state.lock().unwrap();
 
@@ -404,6 +437,22 @@ impl AudioRecordingManager {
                     *state = RecordingState::Recording {
                         binding_id: binding_id.to_string(),
                     };
+
+                    // Spawn the eager segment-transcription worker when enabled. The
+                    // first segment can only arrive after >=0.5s of speech plus a
+                    // pause, so there is no race with installing the sink here.
+                    if get_settings(&self.app_handle).eager_segmented_transcription {
+                        match self.app_handle.try_state::<Arc<TranscriptionManager>>() {
+                            Some(tm) => {
+                                *self.segment_xcribe.lock().unwrap() =
+                                    Some(SegmentTranscriber::spawn(tm.inner().clone()));
+                            }
+                            None => error!(
+                                "Eager segmentation enabled but TranscriptionManager is unavailable"
+                            ),
+                        }
+                    }
+
                     debug!("Recording started for binding {binding_id}");
                     return Ok(());
                 }
@@ -496,6 +545,11 @@ impl AudioRecordingManager {
         if let RecordingState::Recording { .. } = *state {
             *state = RecordingState::Idle;
             drop(state);
+
+            // Discard any eager-segmentation worker and its accumulated results.
+            if let Some(worker) = self.segment_xcribe.lock().unwrap().take() {
+                worker.cancel();
+            }
 
             if let Some(rec) = self.recorder.lock().unwrap().as_ref() {
                 let _ = rec.stop(); // Discard the result

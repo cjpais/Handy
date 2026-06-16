@@ -356,6 +356,10 @@
         "add": "Dodaj",
         "remove": "Usuń {{word}}",
         "duplicate": "\"{{word}}\" już istnieje"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Transkrypcja podczas nagrywania",
+        "description": "Transkrybuje mowę w segmentach podczas naturalnych pauz, gdy mówisz, więc po zwolnieniu pozostaje do przetworzenia tylko ostatnia fraza, co skraca oczekiwanie. Działa z każdym modelem. Może nieznacznie zmienić interpunkcję lub wielkość liter na granicach segmentów (najbardziej widoczne w Whisperze)."
       }
     },
     "postProcessing": {

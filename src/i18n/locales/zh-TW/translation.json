@@ -356,6 +356,10 @@
         "add": "新增",
         "remove": "刪除 {{word}}",
         "duplicate": "「{{word}}」已存在"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "錄音時轉錄",
+        "description": "在你說話時於自然停頓處分段轉錄語音，因此放開時只需處理最後一句，從而縮短等待時間。適用於任何模型。可能在分段邊界處輕微改變標點或大小寫（在 Whisper 上最明顯）。"
       }
     },
     "postProcessing": {

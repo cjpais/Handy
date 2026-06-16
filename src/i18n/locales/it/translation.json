@@ -356,6 +356,10 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Trascrivi durante la registrazione",
+        "description": "Trascrive il parlato in segmenti durante le pause naturali mentre parli, così al rilascio resta da elaborare solo l'ultima frase, riducendo l'attesa. Funziona con qualsiasi modello. Può alterare leggermente la punteggiatura o le maiuscole ai confini dei segmenti (più evidente con Whisper)."
       }
     },
     "postProcessing": {

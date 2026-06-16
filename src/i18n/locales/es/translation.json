@@ -356,6 +356,10 @@
         "add": "Agregar",
         "remove": "Eliminar {{word}}",
         "duplicate": "\"{{word}}\" ya existe"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Transcribir mientras se graba",
+        "description": "Transcribe el habla en segmentos en las pausas naturales mientras hablas, de modo que al soltar solo se procesa la última frase, reduciendo la espera posterior. Funciona con cualquier modelo. Puede alterar ligeramente la puntuación o las mayúsculas en los límites de los segmentos (más notable con Whisper)."
       }
     },
     "postProcessing": {

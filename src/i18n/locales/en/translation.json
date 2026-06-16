@@ -255,6 +255,10 @@
         "label": "Keep Mic Open Between Transcriptions",
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
       },
+      "eagerSegmentedTranscription": {
+        "label": "Transcribe While Recording",
+        "description": "Transcribes speech in segments at natural pauses while you talk, so only the final phrase is processed when you stop — reducing the wait after release. Works with any model. May slightly shift punctuation or capitalization at segment boundaries (most noticeable with Whisper)."
+      },
       "acceleration": {
         "whisper": {
           "title": "Whisper Acceleration",

@@ -356,6 +356,10 @@
         "add": "Ekle",
         "remove": "{{word}} Kaldır",
         "duplicate": "\"{{word}}\" zaten mevcut"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Kayıt sırasında yazıya dök",
+        "description": "Sen konuşurken doğal duraklamalarda konuşmayı bölümler hâlinde yazıya döker; böylece bıraktığında yalnızca son ifade işlenir ve bekleme süresi azalır. Her modelle çalışır. Bölüm sınırlarında noktalama veya büyük/küçük harfleri biraz değiştirebilir (en çok Whisper'da belirgindir)."
       }
     },
     "postProcessing": {

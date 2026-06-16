@@ -356,6 +356,10 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Während der Aufnahme transkribieren",
+        "description": "Transkribiert die Sprache in Segmenten an natürlichen Pausen, während du sprichst, sodass beim Loslassen nur noch der letzte Satzteil verarbeitet wird – das verkürzt die Wartezeit danach. Funktioniert mit jedem Modell. Kann an Segmentgrenzen Satzzeichen oder Großschreibung leicht verändern (am ehesten bei Whisper)."
       }
     },
     "postProcessing": {

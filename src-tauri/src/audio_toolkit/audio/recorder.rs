@@ -36,6 +36,7 @@ pub struct AudioRecorder {
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    segment_cb: Option<Arc<dyn Fn(&[f32]) + Send + Sync + 'static>>,
 }
 
 impl AudioRecorder {
@@ -46,6 +47,7 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            segment_cb: None,
         })
     }
 
@@ -59,6 +61,17 @@ impl AudioRecorder {
         F: Fn(Vec<f32>) + Send + Sync + 'static,
     {
         self.level_cb = Some(Arc::new(cb));
+        self
+    }
+
+    /// Register a callback invoked with each completed speech segment (16kHz mono
+    /// f32) while recording. Segments are cut at VAD silence boundaries so they can
+    /// be transcribed during recording instead of all at once on stop.
+    pub fn with_segment_callback<F>(mut self, cb: F) -> Self
+    where
+        F: Fn(&[f32]) + Send + Sync + 'static,
+    {
+        self.segment_cb = Some(Arc::new(cb));
         self
     }
 
@@ -83,6 +96,7 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        let segment_cb = self.segment_cb.clone();
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -159,7 +173,15 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     // Keep the stream alive while we process samples.
-                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag);
+                    run_consumer(
+                        sample_rate,
+                        vad,
+                        sample_rx,
+                        cmd_rx,
+                        level_cb,
+                        segment_cb,
+                        stop_flag,
+                    );
                     drop(stream);
                 }
                 Err(error_message) => {
@@ -392,12 +414,88 @@ mod tests {
     }
 }
 
+// Appends a frame's speech samples to out_buf. Returns true if the frame was
+// classified as speech (or VAD is absent), false for a noise frame.
+fn handle_frame(
+    samples: &[f32],
+    recording: bool,
+    vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+    out_buf: &mut Vec<f32>,
+) -> bool {
+    if !recording {
+        return false;
+    }
+
+    if let Some(vad_arc) = vad {
+        let mut det = vad_arc.lock().unwrap();
+        match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
+            VadFrame::Speech(buf) => {
+                out_buf.extend_from_slice(buf);
+                true
+            }
+            VadFrame::Noise => false,
+        }
+    } else {
+        out_buf.extend_from_slice(samples);
+        true
+    }
+}
+
+// Processes one frame and emits a completed speech segment via segment_cb when a
+// Speech->Noise boundary (a pause) is crossed, or when the current segment exceeds
+// max_seg (safety cut for continuous speech with no pauses). The callback receives
+// a borrowed slice; it clones only if there is an active consumer, so this is
+// allocation-free when the feature is disabled.
+#[allow(clippy::too_many_arguments)]
+fn process_speech_frame(
+    frame: &[f32],
+    recording: bool,
+    vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+    processed: &mut Vec<f32>,
+    seg_start: &mut usize,
+    prev_speech: &mut bool,
+    min_seg: usize,
+    max_seg: usize,
+    segment_cb: &Option<Arc<dyn Fn(&[f32]) + Send + Sync + 'static>>,
+) {
+    let is_speech = handle_frame(frame, recording, vad, processed);
+    if !recording {
+        return;
+    }
+
+    if is_speech {
+        // Safety cut: a very long run with no pause would otherwise never be
+        // segmented. Accept a possible mid-word boundary here.
+        if processed.len() - *seg_start >= max_seg {
+            if let Some(cb) = segment_cb {
+                cb(&processed[*seg_start..]);
+            }
+            *seg_start = processed.len();
+        }
+        *prev_speech = true;
+    } else {
+        if *prev_speech {
+            // Speech just ended -> segment boundary. Emit only if long enough;
+            // otherwise leave seg_start so the short run merges into the next
+            // segment (avoids tiny clips that hurt accuracy / add overhead).
+            if processed.len() - *seg_start >= min_seg {
+                if let Some(cb) = segment_cb {
+                    cb(&processed[*seg_start..]);
+                }
+                *seg_start = processed.len();
+            }
+        }
+        *prev_speech = false;
+    }
+}
+
 fn run_consumer(
     in_sample_rate: u32,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    segment_cb: Option<Arc<dyn Fn(&[f32]) + Send + Sync + 'static>>,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -408,6 +506,16 @@ fn run_consumer(
 
     let mut processed_samples = Vec::<f32>::new();
     let mut recording = false;
+
+    // ---------- eager segmentation state ------------------------------- //
+    // Speech is cut into segments at VAD silence boundaries (and a safety cut for
+    // long monologues) so each segment can be transcribed during recording.
+    // segment_start indexes into processed_samples, so the full buffer (used for
+    // the WAV) and the union of all emitted segments are byte-identical.
+    let min_seg_samples = constants::WHISPER_SAMPLE_RATE as usize / 2; // 0.5s
+    let max_seg_samples = constants::WHISPER_SAMPLE_RATE as usize * 15; // 15s
+    let mut segment_start: usize = 0;
+    let mut prev_was_speech = false;
 
     // ---------- spectrum visualisation setup ---------------------------- //
     const BUCKETS: usize = 16;
@@ -430,27 +538,6 @@ fn run_consumer(
         4000.0, // vocal_max_hz
     );
 
-    fn handle_frame(
-        samples: &[f32],
-        recording: bool,
-        vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
-        out_buf: &mut Vec<f32>,
-    ) {
-        if !recording {
-            return;
-        }
-
-        if let Some(vad_arc) = vad {
-            let mut det = vad_arc.lock().unwrap();
-            match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
-                VadFrame::Noise => {}
-            }
-        } else {
-            out_buf.extend_from_slice(samples);
-        }
-    }
-
     loop {
         let chunk = match sample_rx.recv() {
             Ok(c) => c,
@@ -471,7 +558,17 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            process_speech_frame(
+                frame,
+                recording,
+                &vad,
+                &mut processed_samples,
+                &mut segment_start,
+                &mut prev_was_speech,
+                min_seg_samples,
+                max_seg_samples,
+                &segment_cb,
+            )
         });
 
         // non-blocking check for a command
@@ -481,6 +578,8 @@ fn run_consumer(
                     stop_flag.store(false, Ordering::Relaxed);
                     processed_samples.clear();
                     recording = true;
+                    segment_start = 0;
+                    prev_was_speech = false;
                     visualizer.reset();
                     if let Some(v) = &vad {
                         v.lock().unwrap().reset();
@@ -498,7 +597,17 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    process_speech_frame(
+                                        frame,
+                                        true,
+                                        &vad,
+                                        &mut processed_samples,
+                                        &mut segment_start,
+                                        &mut prev_was_speech,
+                                        min_seg_samples,
+                                        max_seg_samples,
+                                        &segment_cb,
+                                    )
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -510,8 +619,28 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        process_speech_frame(
+                            frame,
+                            true,
+                            &vad,
+                            &mut processed_samples,
+                            &mut segment_start,
+                            &mut prev_was_speech,
+                            min_seg_samples,
+                            max_seg_samples,
+                            &segment_cb,
+                        )
                     });
+
+                    // Flush the trailing segment (speech since the last boundary,
+                    // e.g. when the user released mid-sentence) so the worker can
+                    // transcribe it as the final piece. Emitted regardless of the
+                    // min-length rule so nothing is dropped.
+                    if processed_samples.len() > segment_start {
+                        if let Some(cb) = &segment_cb {
+                            cb(&processed_samples[segment_start..]);
+                        }
+                    }
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));
 
@@ -525,5 +654,187 @@ fn run_consumer(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod segmentation_tests {
+    use super::{process_speech_frame, AudioRecorder};
+    use crate::audio_toolkit::vad::{VadFrame, VoiceActivityDetector};
+    use anyhow::Result;
+    use std::sync::{Arc, Mutex};
+
+    /// Test VAD: a frame is speech iff its first sample is >= 0.5.
+    struct ScriptedVad;
+    impl VoiceActivityDetector for ScriptedVad {
+        fn push_frame<'a>(&'a mut self, frame: &'a [f32]) -> Result<VadFrame<'a>> {
+            if frame.first().copied().unwrap_or(0.0) >= 0.5 {
+                Ok(VadFrame::Speech(frame))
+            } else {
+                Ok(VadFrame::Noise)
+            }
+        }
+    }
+
+    fn speech(n: usize) -> Vec<f32> {
+        vec![1.0; n]
+    }
+    fn silence(n: usize) -> Vec<f32> {
+        vec![0.0; n]
+    }
+
+    type SegmentCb = Option<Arc<dyn Fn(&[f32]) + Send + Sync + 'static>>;
+
+    /// Drive a frame sequence through process_speech_frame, then perform the stop
+    /// trailing-flush (mirroring run_consumer's Cmd::Stop). Returns the emitted
+    /// segments and the full accumulated buffer.
+    fn run(frames: &[Vec<f32>], min_seg: usize, max_seg: usize) -> (Vec<Vec<f32>>, Vec<f32>) {
+        let collected: Arc<Mutex<Vec<Vec<f32>>>> = Arc::new(Mutex::new(Vec::new()));
+        let sink = collected.clone();
+        let cb: SegmentCb = Some(Arc::new(move |s: &[f32]| {
+            sink.lock().unwrap().push(s.to_vec())
+        }));
+
+        let vad: Option<Arc<Mutex<Box<dyn VoiceActivityDetector>>>> =
+            Some(Arc::new(Mutex::new(Box::new(ScriptedVad))));
+
+        let mut processed = Vec::<f32>::new();
+        let mut seg_start = 0usize;
+        let mut prev_speech = false;
+
+        for f in frames {
+            process_speech_frame(
+                f,
+                true,
+                &vad,
+                &mut processed,
+                &mut seg_start,
+                &mut prev_speech,
+                min_seg,
+                max_seg,
+                &cb,
+            );
+        }
+        if processed.len() > seg_start {
+            if let Some(c) = &cb {
+                c(&processed[seg_start..]);
+            }
+        }
+
+        let segs = collected.lock().unwrap().clone();
+        (segs, processed)
+    }
+
+    /// Invariant: the union of emitted segments equals the full buffer.
+    fn assert_union_eq_buffer(segs: &[Vec<f32>], processed: &[f32]) {
+        let union: usize = segs.iter().map(|s| s.len()).sum();
+        assert_eq!(
+            union,
+            processed.len(),
+            "segments must cover the full buffer"
+        );
+    }
+
+    #[test]
+    fn emits_segment_per_pause_and_preserves_full_buffer() {
+        // 3 speech frames, a pause, 2 speech frames, then stop mid-speech.
+        let frames = vec![
+            speech(100),
+            speech(100),
+            speech(100),
+            silence(100),
+            speech(100),
+            speech(100),
+        ];
+        let (segs, processed) = run(&frames, 150, 100_000);
+        assert_eq!(segs.len(), 2, "one pause boundary + one trailing flush");
+        assert_eq!(segs[0].len(), 300);
+        assert_eq!(segs[1].len(), 200);
+        assert_eq!(processed.len(), 500);
+        assert_union_eq_buffer(&segs, &processed);
+    }
+
+    #[test]
+    fn sub_min_run_merges_into_next_segment() {
+        // A short run below min must not be dropped — it merges forward.
+        let frames = vec![
+            speech(100),
+            silence(100),
+            speech(100),
+            speech(100),
+            silence(100),
+        ];
+        let (segs, processed) = run(&frames, 150, 100_000);
+        assert_eq!(segs.len(), 1, "short run merged into the next segment");
+        assert_eq!(segs[0].len(), 300);
+        assert_eq!(processed.len(), 300);
+        assert_union_eq_buffer(&segs, &processed);
+    }
+
+    #[test]
+    fn max_cut_forces_boundary_without_a_pause() {
+        let frames = vec![
+            speech(100),
+            speech(100),
+            speech(100),
+            speech(100),
+            speech(100),
+        ];
+        let (segs, processed) = run(&frames, 50, 300);
+        assert_eq!(segs.len(), 2, "safety cut at max + trailing flush");
+        assert_eq!(segs[0].len(), 300);
+        assert_eq!(segs[1].len(), 200);
+        assert_union_eq_buffer(&segs, &processed);
+    }
+
+    #[test]
+    fn trailing_segment_emitted_when_released_mid_speech() {
+        let frames = vec![speech(100), speech(100)];
+        let (segs, processed) = run(&frames, 150, 100_000);
+        assert_eq!(segs.len(), 1);
+        assert_eq!(segs[0].len(), 200);
+        assert_union_eq_buffer(&segs, &processed);
+    }
+
+    #[test]
+    fn no_speech_emits_nothing() {
+        let frames = vec![silence(100), silence(100)];
+        let (segs, processed) = run(&frames, 150, 100_000);
+        assert!(segs.is_empty());
+        assert!(processed.is_empty());
+    }
+
+    #[test]
+    fn disabled_callback_still_accumulates_full_buffer() {
+        // With no segment callback (feature OFF) the full buffer is still built.
+        let cb: SegmentCb = None;
+        let vad: Option<Arc<Mutex<Box<dyn VoiceActivityDetector>>>> =
+            Some(Arc::new(Mutex::new(Box::new(ScriptedVad))));
+        let mut processed = Vec::<f32>::new();
+        let mut seg_start = 0usize;
+        let mut prev = false;
+        for f in [speech(100), silence(100), speech(100)] {
+            process_speech_frame(
+                &f,
+                true,
+                &vad,
+                &mut processed,
+                &mut seg_start,
+                &mut prev,
+                150,
+                1000,
+                &cb,
+            );
+        }
+        assert_eq!(processed.len(), 200);
+    }
+
+    #[test]
+    fn segment_callback_builder_sets_callback() {
+        // Smoke test that the builder accepts a &[f32] callback.
+        let rec = AudioRecorder::new()
+            .unwrap()
+            .with_segment_callback(|_s: &[f32]| {});
+        assert!(rec.segment_cb.is_some());
     }
 }

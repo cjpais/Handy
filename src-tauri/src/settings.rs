@@ -430,6 +430,11 @@ pub struct AppSettings {
     pub whisper_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    /// Transcribe speech in VAD-delimited segments during recording so only the
+    /// final segment is left to process on release. Opt-in: joining per-segment
+    /// transcripts can shift punctuation/capitalization at boundaries.
+    #[serde(default)]
+    pub eager_segmented_transcription: bool,
 }
 
 fn default_model() -> String {
@@ -814,6 +819,7 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         whisper_gpu_device: default_whisper_gpu_device(),
         extra_recording_buffer_ms: 0,
+        eager_segmented_transcription: false,
     }
 }
 

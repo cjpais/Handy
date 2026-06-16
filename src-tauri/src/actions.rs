@@ -57,6 +57,17 @@ fn strip_invisible_chars(s: &str) -> String {
     s.replace(['\u{200B}', '\u{200C}', '\u{200D}', '\u{FEFF}'], "")
 }
 
+/// Join per-segment transcripts (from eager segmentation) into one transcript.
+/// Each segment is trimmed and empties dropped before joining with a single space.
+fn join_segments(texts: &[String]) -> String {
+    texts
+        .iter()
+        .map(|t| t.trim())
+        .filter(|t| !t.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Build a system prompt from the user's prompt template.
 /// Removes `${output}` placeholder since the transcription is sent as the user message.
 fn build_system_prompt(prompt_template: &str) -> String {
@@ -528,6 +539,12 @@ impl ShortcutAction for TranscribeAction {
                     samples.len()
                 );
 
+                // Finish the eager-segmentation worker (if active) and collect the
+                // per-segment transcripts. Runs after stop_recording so the trailing
+                // segment is already flushed into the worker. None when the feature
+                // was off — caller falls back to batch transcription.
+                let segment_results = rm.take_segment_results();
+
                 if samples.is_empty() {
                     debug!("Recording produced no audio samples; skipping persistence");
                     utils::hide_recording_overlay(&ah);
@@ -543,9 +560,20 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save
+                    // Use the eagerly-transcribed segments when available — only the
+                    // final segment is still outstanding, so this is fast. Otherwise
+                    // batch-transcribe the whole buffer (legacy path). Post-processing
+                    // (Chinese/LLM) still runs once below on the joined text.
                     let transcription_time = Instant::now();
-                    let transcription_result = tm.transcribe(samples);
+                    let transcription_result = match segment_results {
+                        Some(texts) => {
+                            // Segments were transcribed with immediate-unload
+                            // suppressed; unload once now if that setting is on.
+                            tm.maybe_unload_immediately("segmented transcription");
+                            Ok(join_segments(&texts))
+                        }
+                        None => tm.transcribe(samples),
+                    };
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
@@ -648,6 +676,8 @@ impl ShortcutAction for TranscribeAction {
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
+                // Tear down any segmentation worker so its thread doesn't leak.
+                let _ = rm.take_segment_results();
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }

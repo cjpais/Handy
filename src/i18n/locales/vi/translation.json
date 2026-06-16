@@ -356,6 +356,10 @@
         "add": "Thêm",
         "remove": "Xóa {{word}}",
         "duplicate": "\"{{word}}\" đã tồn tại"
+      },
+      "eagerSegmentedTranscription": {
+        "label": "Phiên âm trong khi ghi",
+        "description": "Phiên âm lời nói theo từng đoạn tại những khoảng ngừng tự nhiên khi bạn nói, nên khi thả ra chỉ còn xử lý câu cuối, giúp giảm thời gian chờ. Hoạt động với mọi mô hình. Có thể thay đổi nhẹ dấu câu hoặc viết hoa ở ranh giới đoạn (rõ nhất với Whisper)."
       }
     },
     "postProcessing": {
