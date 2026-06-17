@@ -38,7 +38,7 @@ interface SettingsStore {
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
   updatePostProcessSetting: (
-    settingType: "base_url" | "api_key" | "model",
+    settingType: "base_url" | "api_key" | "model" | "custom_body",
     providerId: string,
     value: string,
   ) => Promise<void>;
@@ -51,6 +51,10 @@ interface SettingsStore {
     apiKey: string,
   ) => Promise<void>;
   updatePostProcessModel: (providerId: string, model: string) => Promise<void>;
+  updatePostProcessCustomBody: (
+    providerId: string,
+    customBody: string,
+  ) => Promise<void>;
   fetchPostProcessModels: (providerId: string) => Promise<string[]>;
   setPostProcessModelOptions: (providerId: string, models: string[]) => void;
 
@@ -436,7 +440,7 @@ export const useSettingsStore = create<SettingsStore>()(
 
     // Generic updater for post-processing provider settings
     updatePostProcessSetting: async (
-      settingType: "base_url" | "api_key" | "model",
+      settingType: "base_url" | "api_key" | "model" | "custom_body",
       providerId: string,
       value: string,
     ) => {
@@ -452,6 +456,8 @@ export const useSettingsStore = create<SettingsStore>()(
           await commands.changePostProcessApiKeySetting(providerId, value);
         } else if (settingType === "model") {
           await commands.changePostProcessModelSetting(providerId, value);
+        } else if (settingType === "custom_body") {
+          await commands.changePostProcessCustomBodySetting(providerId, value);
         }
         await refreshSettings();
       } catch (error) {
@@ -523,6 +529,14 @@ export const useSettingsStore = create<SettingsStore>()(
 
     updatePostProcessModel: async (providerId, model) => {
       return get().updatePostProcessSetting("model", providerId, model);
+    },
+
+    updatePostProcessCustomBody: async (providerId, customBody) => {
+      return get().updatePostProcessSetting(
+        "custom_body",
+        providerId,
+        customBody,
+      );
     },
 
     fetchPostProcessModels: async (providerId) => {

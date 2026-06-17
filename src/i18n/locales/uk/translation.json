@@ -394,6 +394,13 @@
           "placeholderWithOptions": "Шукайте або оберіть модель",
           "placeholderNoOptions": "Введіть назву моделі",
           "refreshModels": "Оновити моделі"
+        },
+        "customBody": {
+          "title": "Custom Body",
+          "description": "JSON object merged into every chat completions request for the custom provider.",
+          "placeholder": "{\n  \"keep_alive\": \"1h\"\n}",
+          "errorInvalidJson": "Enter a valid JSON object.",
+          "errorNotObject": "Custom body must be a JSON object."
         }
       },
       "prompts": {

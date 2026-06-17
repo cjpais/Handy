@@ -2,7 +2,7 @@ use crate::settings::PostProcessProvider;
 use log::debug;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, REFERER, USER_AGENT};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 #[derive(Debug, Serialize)]
 struct ChatMessage {
@@ -57,6 +57,52 @@ struct ChatChoice {
 #[derive(Debug, Deserialize)]
 struct ChatMessageResponse {
     content: Option<String>,
+}
+
+fn parse_custom_body(provider: &PostProcessProvider) -> Result<Option<Map<String, Value>>, String> {
+    let Some(custom_body) = provider.custom_body.as_deref() else {
+        return Ok(None);
+    };
+
+    let trimmed = custom_body.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+
+    let value: Value = serde_json::from_str(trimmed).map_err(|e| {
+        format!(
+            "Invalid custom request body for provider '{}': {}",
+            provider.id, e
+        )
+    })?;
+
+    match value {
+        Value::Object(object) => Ok(Some(object)),
+        _ => Err(format!(
+            "Invalid custom request body for provider '{}': expected a JSON object",
+            provider.id
+        )),
+    }
+}
+
+fn build_chat_request_body(
+    request_body: ChatCompletionRequest,
+    provider: &PostProcessProvider,
+) -> Result<Value, String> {
+    let mut request_value = serde_json::to_value(request_body)
+        .map_err(|e| format!("Failed to serialize chat request body: {}", e))?;
+
+    if let Some(custom_body) = parse_custom_body(provider)? {
+        let request_object = request_value
+            .as_object_mut()
+            .ok_or_else(|| "Chat request body did not serialize to a JSON object".to_string())?;
+
+        for (key, value) in custom_body {
+            request_object.insert(key, value);
+        }
+    }
+
+    Ok(request_value)
 }
 
 /// Build headers for API requests based on provider type
@@ -178,13 +224,16 @@ pub async fn send_chat_completion_with_schema(
         },
     });
 
-    let request_body = ChatCompletionRequest {
-        model: model.to_string(),
-        messages,
-        response_format,
-        reasoning_effort,
-        reasoning,
-    };
+    let request_body = build_chat_request_body(
+        ChatCompletionRequest {
+            model: model.to_string(),
+            messages,
+            response_format,
+            reasoning_effort,
+            reasoning,
+        },
+        provider,
+    )?;
 
     let response = client
         .post(&url)
@@ -274,4 +323,65 @@ pub async fn fetch_models(
     }
 
     Ok(models)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_provider(custom_body: Option<&str>) -> PostProcessProvider {
+        PostProcessProvider {
+            id: "custom".to_string(),
+            label: "Custom".to_string(),
+            base_url: "http://localhost:11434/v1".to_string(),
+            allow_base_url_edit: true,
+            models_endpoint: Some("/models".to_string()),
+            supports_structured_output: false,
+            custom_body: custom_body.map(str::to_string),
+        }
+    }
+
+    fn test_request() -> ChatCompletionRequest {
+        ChatCompletionRequest {
+            model: "gemma3:1b-it-qat".to_string(),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "clean this".to_string(),
+            }],
+            response_format: None,
+            reasoning_effort: Some("none".to_string()),
+            reasoning: None,
+        }
+    }
+
+    #[test]
+    fn merges_custom_body_fields_into_chat_request() {
+        let body = build_chat_request_body(
+            test_request(),
+            &test_provider(Some(r#"{"keep_alive":"1h","temperature":0}"#)),
+        )
+        .expect("custom body should merge");
+
+        assert_eq!(body["model"], "gemma3:1b-it-qat");
+        assert_eq!(body["keep_alive"], "1h");
+        assert_eq!(body["temperature"], 0);
+    }
+
+    #[test]
+    fn empty_custom_body_is_ignored() {
+        let body = build_chat_request_body(test_request(), &test_provider(Some("   ")))
+            .expect("empty custom body should be ignored");
+
+        assert!(body.get("keep_alive").is_none());
+        assert_eq!(body["reasoning_effort"], "none");
+    }
+
+    #[test]
+    fn custom_body_must_be_a_json_object() {
+        let result = build_chat_request_body(test_request(), &test_provider(Some(r#""1h""#)));
+
+        assert!(result
+            .expect_err("non-object custom body should fail")
+            .contains("expected a JSON object"));
+    }
 }

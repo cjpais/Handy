@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSettings } from "../../../hooks/useSettings";
 import { commands, type PostProcessProvider } from "@/bindings";
 import type { ModelOption } from "./types";
@@ -21,6 +21,10 @@ type PostProcessProviderState = {
   handleModelChange: (value: string) => void;
   modelOptions: ModelOption[];
   isModelUpdating: boolean;
+  customBody: string;
+  handleCustomBodyChange: (value: string) => void;
+  customBodyErrorKey: string | null;
+  isCustomBodyUpdating: boolean;
   isFetchingModels: boolean;
   handleProviderSelect: (providerId: string) => void;
   handleModelSelect: (value: string) => void;
@@ -38,6 +42,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     updatePostProcessBaseUrl,
     updatePostProcessApiKey,
     updatePostProcessModel,
+    updatePostProcessCustomBody,
     fetchPostProcessModels,
     postProcessModelOptions,
   } = useSettings();
@@ -64,6 +69,14 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const baseUrl = selectedProvider?.base_url ?? "";
   const apiKey = settings?.post_process_api_keys?.[selectedProviderId] ?? "";
   const model = settings?.post_process_models?.[selectedProviderId] ?? "";
+  const customBody = selectedProvider?.custom_body ?? "";
+  const [customBodyErrorKey, setCustomBodyErrorKey] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setCustomBodyErrorKey(null);
+  }, [selectedProviderId]);
 
   const providerOptions = useMemo<DropdownOption[]>(() => {
     return providers.map((provider) => ({
@@ -163,6 +176,51 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     [selectedProviderId, updatePostProcessModel],
   );
 
+  const handleCustomBodyChange = useCallback(
+    (value: string) => {
+      if (!selectedProvider || selectedProvider.id !== "custom") {
+        return;
+      }
+
+      const trimmed = value.trim();
+      if (!trimmed) {
+        setCustomBodyErrorKey(null);
+        if (customBody.trim()) {
+          void updatePostProcessCustomBody(selectedProvider.id, "");
+        }
+        return;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        setCustomBodyErrorKey(
+          "settings.postProcessing.api.customBody.errorInvalidJson",
+        );
+        return;
+      }
+
+      if (
+        parsed === null ||
+        typeof parsed !== "object" ||
+        Array.isArray(parsed)
+      ) {
+        setCustomBodyErrorKey(
+          "settings.postProcessing.api.customBody.errorNotObject",
+        );
+        return;
+      }
+
+      const formatted = JSON.stringify(parsed, null, 2);
+      setCustomBodyErrorKey(null);
+      if (formatted !== customBody.trim()) {
+        void updatePostProcessCustomBody(selectedProvider.id, formatted);
+      }
+    },
+    [customBody, selectedProvider, updatePostProcessCustomBody],
+  );
+
   const handleRefreshModels = useCallback(() => {
     if (isAppleProvider) return;
     void fetchPostProcessModels(selectedProviderId);
@@ -201,6 +259,9 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   const isModelUpdating = isUpdating(
     `post_process_model:${selectedProviderId}`,
   );
+  const isCustomBodyUpdating = isUpdating(
+    `post_process_custom_body:${selectedProviderId}`,
+  );
   const isFetchingModels = isUpdating(
     `post_process_models_fetch:${selectedProviderId}`,
   );
@@ -226,6 +287,10 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     handleModelChange,
     modelOptions,
     isModelUpdating,
+    customBody,
+    handleCustomBodyChange,
+    customBodyErrorKey,
+    isCustomBodyUpdating,
     isFetchingModels,
     handleProviderSelect,
     handleModelSelect,

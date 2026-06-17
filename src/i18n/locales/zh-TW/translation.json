@@ -394,6 +394,13 @@
           "placeholderWithOptions": "搜尋或選擇模型",
           "placeholderNoOptions": "輸入模型名稱",
           "refreshModels": "重新整理模型"
+        },
+        "customBody": {
+          "title": "Custom Body",
+          "description": "JSON object merged into every chat completions request for the custom provider.",
+          "placeholder": "{\n  \"keep_alive\": \"1h\"\n}",
+          "errorInvalidJson": "Enter a valid JSON object.",
+          "errorNotObject": "Custom body must be a JSON object."
         }
       },
       "prompts": {

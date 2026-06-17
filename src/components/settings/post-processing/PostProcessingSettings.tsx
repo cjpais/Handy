@@ -22,6 +22,38 @@ import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePos
 import { ShortcutInput } from "../ShortcutInput";
 import { useSettings } from "../../../hooks/useSettings";
 
+interface CustomBodyFieldProps {
+  value: string;
+  onBlur: (value: string) => void;
+  disabled: boolean;
+  placeholder?: string;
+}
+
+const CustomBodyField: React.FC<CustomBodyFieldProps> = React.memo(
+  ({ value, onBlur, disabled, placeholder }) => {
+    const [localValue, setLocalValue] = useState(value);
+
+    useEffect(() => {
+      setLocalValue(value);
+    }, [value]);
+
+    return (
+      <Textarea
+        value={localValue}
+        onChange={(event) => setLocalValue(event.target.value)}
+        onBlur={() => onBlur(localValue)}
+        placeholder={placeholder}
+        variant="compact"
+        disabled={disabled}
+        className="w-full font-mono"
+        spellCheck={false}
+      />
+    );
+  },
+);
+
+CustomBodyField.displayName = "CustomBodyField";
+
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
   const state = usePostProcessProviderState();
@@ -136,6 +168,32 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
                 className={`h-4 w-4 ${state.isFetchingModels ? "animate-spin" : ""}`}
               />
             </ResetButton>
+          </div>
+        </SettingContainer>
+      )}
+
+      {state.isCustomProvider && (
+        <SettingContainer
+          title={t("settings.postProcessing.api.customBody.title")}
+          description={t("settings.postProcessing.api.customBody.description")}
+          descriptionMode="tooltip"
+          layout="stacked"
+          grouped={true}
+        >
+          <div className="space-y-2">
+            <CustomBodyField
+              value={state.customBody}
+              onBlur={state.handleCustomBodyChange}
+              disabled={state.isCustomBodyUpdating}
+              placeholder={t(
+                "settings.postProcessing.api.customBody.placeholder",
+              )}
+            />
+            {state.customBodyErrorKey && (
+              <p className="text-xs text-red-400">
+                {t(state.customBodyErrorKey)}
+              </p>
+            )}
           </div>
         </SettingContainer>
       )}

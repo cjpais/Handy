@@ -868,6 +868,24 @@ fn validate_provider_exists(
     Ok(())
 }
 
+fn normalize_post_process_custom_body(custom_body: String) -> Result<Option<String>, String> {
+    let trimmed = custom_body.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+
+    let value: serde_json::Value = serde_json::from_str(trimmed)
+        .map_err(|e| format!("Custom request body must be valid JSON: {}", e))?;
+
+    if !value.is_object() {
+        return Err("Custom request body must be a JSON object.".to_string());
+    }
+
+    serde_json::to_string_pretty(&value)
+        .map(Some)
+        .map_err(|e| format!("Failed to format custom request body: {}", e))
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn change_post_process_api_key_setting(
@@ -892,6 +910,26 @@ pub fn change_post_process_model_setting(
     let mut settings = settings::get_settings(&app);
     validate_provider_exists(&settings, &provider_id)?;
     settings.post_process_models.insert(provider_id, model);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_post_process_custom_body_setting(
+    app: AppHandle,
+    provider_id: String,
+    custom_body: String,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    validate_provider_exists(&settings, &provider_id)?;
+    let normalized = normalize_post_process_custom_body(custom_body)?;
+
+    let provider = settings
+        .post_process_provider_mut(&provider_id)
+        .ok_or_else(|| format!("Provider '{}' not found", provider_id))?;
+    provider.custom_body = normalized;
+
     settings::write_settings(&app, settings);
     Ok(())
 }
