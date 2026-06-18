@@ -9,14 +9,53 @@ use std::time::{Duration, Instant};
 use tauri::Manager;
 
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+const VOLUME_TRANSITION_STEPS: u32 = 20;
 
-fn set_mute(mute: bool) {
-    // Expected behavior:
-    // - Windows: works on most systems using standard audio drivers.
-    // - Linux: works on many systems (PipeWire, PulseAudio, ALSA),
-    //   but some distros may lack the tools used.
-    // - macOS: works on most standard setups via AppleScript.
-    // If unsupported, fails silently.
+fn get_output_volume() -> Option<f32> {
+    #[cfg(target_os = "windows")]
+    {
+        unsafe {
+            use windows::Win32::{
+                Media::Audio::{
+                    eMultimedia, eRender, Endpoints::IAudioEndpointVolume, IMMDeviceEnumerator,
+                    MMDeviceEnumerator,
+                },
+                System::Com::{CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED},
+            };
+
+            macro_rules! option_or_return {
+                ($expr:expr) => {
+                    match $expr {
+                        Ok(val) => val,
+                        Err(_) => return None,
+                    }
+                };
+            }
+
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+
+            let all_devices: IMMDeviceEnumerator =
+                option_or_return!(CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL));
+            let default_device =
+                option_or_return!(all_devices.GetDefaultAudioEndpoint(eRender, eMultimedia));
+            let volume_interface = option_or_return!(
+                default_device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None)
+            );
+
+            Some(option_or_return!(
+                volume_interface.GetMasterVolumeLevelScalar()
+            ))
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        None
+    }
+}
+
+fn set_output_volume(volume: f32) {
+    let volume = volume.clamp(0.0, 1.0);
 
     #[cfg(target_os = "windows")]
     {
@@ -38,8 +77,6 @@ fn set_mute(mute: bool) {
                 };
             }
 
-            // Initialize the COM library for this thread.
-            // If already initialized (e.g., by another library like Tauri), this does nothing.
             let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
 
             let all_devices: IMMDeviceEnumerator =
@@ -50,53 +87,55 @@ fn set_mute(mute: bool) {
                 default_device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None)
             );
 
-            let _ = volume_interface.SetMute(mute, std::ptr::null());
+            let _ = volume_interface.SetMasterVolumeLevelScalar(volume, std::ptr::null());
         }
     }
 
-    #[cfg(target_os = "linux")]
+    #[cfg(not(target_os = "windows"))]
     {
-        use std::process::Command;
+        let _ = volume;
+    }
+}
 
-        let mute_val = if mute { "1" } else { "0" };
-        let amixer_state = if mute { "mute" } else { "unmute" };
-
-        // Try multiple backends to increase compatibility
-        // 1. PipeWire (wpctl)
-        if Command::new("wpctl")
-            .args(["set-mute", "@DEFAULT_AUDIO_SINK@", mute_val])
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false)
-        {
+fn fade_output_volume(
+    from: f32,
+    to: f32,
+    generation: Arc<AtomicU64>,
+    active_generation: u64,
+    original_volume: Arc<Mutex<Option<f32>>>,
+    duration: Duration,
+    clear_original_when_done: bool,
+) {
+    std::thread::spawn(move || {
+        if duration.is_zero() {
+            if generation.load(Ordering::SeqCst) == active_generation {
+                set_output_volume(to);
+                if clear_original_when_done {
+                    *original_volume.lock().unwrap() = None;
+                }
+            }
             return;
         }
 
-        // 2. PulseAudio (pactl)
-        if Command::new("pactl")
-            .args(["set-sink-mute", "@DEFAULT_SINK@", mute_val])
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false)
-        {
-            return;
+        let step_duration = duration / VOLUME_TRANSITION_STEPS;
+
+        for step in 1..=VOLUME_TRANSITION_STEPS {
+            if generation.load(Ordering::SeqCst) != active_generation {
+                return;
+            }
+
+            let progress = step as f32 / VOLUME_TRANSITION_STEPS as f32;
+            set_output_volume(from + ((to - from) * progress));
+            std::thread::sleep(step_duration);
         }
 
-        // 3. ALSA (amixer)
-        let _ = Command::new("amixer")
-            .args(["set", "Master", amixer_state])
-            .output();
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        use std::process::Command;
-        let script = format!(
-            "set volume output muted {}",
-            if mute { "true" } else { "false" }
-        );
-        let _ = Command::new("osascript").args(["-e", &script]).output();
-    }
+        if generation.load(Ordering::SeqCst) == active_generation {
+            set_output_volume(to);
+            if clear_original_when_done {
+                *original_volume.lock().unwrap() = None;
+            }
+        }
+    });
 }
 
 const WHISPER_SAMPLE_RATE: usize = 16000;
@@ -151,7 +190,9 @@ pub struct AudioRecordingManager {
     recorder: Arc<Mutex<Option<AudioRecorder>>>,
     is_open: Arc<Mutex<bool>>,
     is_recording: Arc<Mutex<bool>>,
-    did_mute: Arc<Mutex<bool>>,
+    did_reduce_output_volume: Arc<Mutex<bool>>,
+    original_output_volume: Arc<Mutex<Option<f32>>>,
+    volume_transition_generation: Arc<AtomicU64>,
     close_generation: Arc<AtomicU64>,
 }
 
@@ -174,7 +215,9 @@ impl AudioRecordingManager {
             recorder: Arc::new(Mutex::new(None)),
             is_open: Arc::new(Mutex::new(false)),
             is_recording: Arc::new(Mutex::new(false)),
-            did_mute: Arc::new(Mutex::new(false)),
+            did_reduce_output_volume: Arc::new(Mutex::new(false)),
+            original_output_volume: Arc::new(Mutex::new(None)),
+            volume_transition_generation: Arc::new(AtomicU64::new(0)),
             close_generation: Arc::new(AtomicU64::new(0)),
         };
 
@@ -241,25 +284,68 @@ impl AudioRecordingManager {
 
     /* ---------- microphone life-cycle -------------------------------------- */
 
-    /// Applies mute if mute_while_recording is enabled and stream is open
-    pub fn apply_mute(&self) {
+    /// Reduces output volume if enabled and the stream is open.
+    pub fn apply_volume_reduction(&self) {
         let settings = get_settings(&self.app_handle);
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
+        let mut did_reduce_guard = self.did_reduce_output_volume.lock().unwrap();
 
-        if settings.mute_while_recording && *self.is_open.lock().unwrap() {
-            set_mute(true);
-            *did_mute_guard = true;
-            debug!("Mute applied");
+        if settings.reduce_volume_while_recording && *self.is_open.lock().unwrap() {
+            if let Some(current_volume) = get_output_volume() {
+                let reduction = settings
+                    .recording_volume_reduction_percent
+                    .clamp(0.0, 100.0)
+                    / 100.0;
+                let mut original_guard = self.original_output_volume.lock().unwrap();
+                let original_volume = *original_guard.get_or_insert(current_volume);
+                let target_volume = (original_volume * (1.0 - reduction)).clamp(0.0, 1.0);
+                drop(original_guard);
+
+                let generation = self
+                    .volume_transition_generation
+                    .fetch_add(1, Ordering::SeqCst)
+                    + 1;
+                fade_output_volume(
+                    current_volume,
+                    target_volume,
+                    Arc::clone(&self.volume_transition_generation),
+                    generation,
+                    Arc::clone(&self.original_output_volume),
+                    Duration::from_millis(settings.recording_volume_fade_ms),
+                    false,
+                );
+                *did_reduce_guard = true;
+                debug!("Recording output volume reduction applied");
+            }
         }
     }
 
-    /// Removes mute if it was applied
-    pub fn remove_mute(&self) {
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
-            set_mute(false);
-            *did_mute_guard = false;
-            debug!("Mute removed");
+    /// Restores output volume if it was reduced.
+    pub fn remove_volume_reduction(&self) {
+        let mut did_reduce_guard = self.did_reduce_output_volume.lock().unwrap();
+        if *did_reduce_guard {
+            let original_volume = *self.original_output_volume.lock().unwrap();
+            if let (Some(current_volume), Some(original_volume)) =
+                (get_output_volume(), original_volume)
+            {
+                let settings = get_settings(&self.app_handle);
+                let generation = self
+                    .volume_transition_generation
+                    .fetch_add(1, Ordering::SeqCst)
+                    + 1;
+                fade_output_volume(
+                    current_volume,
+                    original_volume,
+                    Arc::clone(&self.volume_transition_generation),
+                    generation,
+                    Arc::clone(&self.original_output_volume),
+                    Duration::from_millis(settings.recording_volume_fade_ms),
+                    true,
+                );
+            } else {
+                *self.original_output_volume.lock().unwrap() = None;
+            }
+            *did_reduce_guard = false;
+            debug!("Recording output volume reduction removed");
         }
     }
 
@@ -291,9 +377,9 @@ impl AudioRecordingManager {
 
         let start_time = Instant::now();
 
-        // Don't mute immediately - caller will handle muting after audio feedback
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        *did_mute_guard = false;
+        // Don't reduce volume immediately - caller handles it after audio feedback
+        let mut did_reduce_guard = self.did_reduce_output_volume.lock().unwrap();
+        *did_reduce_guard = false;
 
         // Get the selected device from settings, considering clamshell mode
         let settings = get_settings(&self.app_handle);
@@ -339,11 +425,7 @@ impl AudioRecordingManager {
             return;
         }
 
-        let mut did_mute_guard = self.did_mute.lock().unwrap();
-        if *did_mute_guard {
-            set_mute(false);
-        }
-        *did_mute_guard = false;
+        self.remove_volume_reduction();
 
         if let Some(rec) = self.recorder.lock().unwrap().as_mut() {
             // If still recording, stop first.

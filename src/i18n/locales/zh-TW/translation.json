@@ -482,9 +482,17 @@
         "label": "後處理",
         "description": "啟用轉錄後的 AI 文字最佳化"
       },
-      "muteWhileRecording": {
-        "label": "錄製時靜音",
-        "description": "錄製期間靜音系統音訊"
+      "reduceVolumeWhileRecording": {
+        "label": "Reduce Volume While Recording",
+        "description": "Lower system audio during recording, then restore the original volume"
+      },
+      "recordingVolumeReduction": {
+        "label": "Recording Volume Reduction",
+        "description": "How much to lower system audio while recording"
+      },
+      "recordingVolumeFade": {
+        "label": "Recording Volume Fade Time",
+        "description": "How long the volume fade in and out should take, in milliseconds"
       },
       "appendTrailingSpace": {
         "label": "附加尾部空格",

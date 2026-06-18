@@ -402,7 +402,11 @@ pub struct AppSettings {
     #[serde(default)]
     pub post_process_selected_prompt_id: Option<String>,
     #[serde(default)]
-    pub mute_while_recording: bool,
+    pub reduce_volume_while_recording: bool,
+    #[serde(default = "default_recording_volume_reduction_percent")]
+    pub recording_volume_reduction_percent: f32,
+    #[serde(default = "default_recording_volume_fade_ms")]
+    pub recording_volume_fade_ms: u64,
     #[serde(default)]
     pub append_trailing_space: bool,
     #[serde(default = "default_app_language")]
@@ -497,6 +501,14 @@ fn default_recording_retention_period() -> RecordingRetentionPeriod {
 
 fn default_audio_feedback_volume() -> f32 {
     1.0
+}
+
+fn default_recording_volume_reduction_percent() -> f32 {
+    75.0
+}
+
+fn default_recording_volume_fade_ms() -> u64 {
+    300
 }
 
 fn default_sound_theme() -> SoundTheme {
@@ -799,7 +811,9 @@ pub fn get_default_settings() -> AppSettings {
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
         post_process_selected_prompt_id: None,
-        mute_while_recording: false,
+        reduce_volume_while_recording: false,
+        recording_volume_reduction_percent: default_recording_volume_reduction_percent(),
+        recording_volume_fade_ms: default_recording_volume_fade_ms(),
         append_trailing_space: false,
         app_language: default_app_language(),
         experimental_enabled: false,

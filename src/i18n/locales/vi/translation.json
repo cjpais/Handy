@@ -482,9 +482,17 @@
         "label": "Xử lý sau",
         "description": "Bật tinh chỉnh văn bản bằng AI sau khi chuyển đổi"
       },
-      "muteWhileRecording": {
-        "label": "Tắt tiếng khi ghi âm",
-        "description": "Tắt tiếng âm thanh hệ thống trong khi ghi âm"
+      "reduceVolumeWhileRecording": {
+        "label": "Reduce Volume While Recording",
+        "description": "Lower system audio during recording, then restore the original volume"
+      },
+      "recordingVolumeReduction": {
+        "label": "Recording Volume Reduction",
+        "description": "How much to lower system audio while recording"
+      },
+      "recordingVolumeFade": {
+        "label": "Recording Volume Fade Time",
+        "description": "How long the volume fade in and out should take, in milliseconds"
       },
       "appendTrailingSpace": {
         "label": "Thêm dấu cách cuối",
