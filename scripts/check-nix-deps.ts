@@ -57,7 +57,7 @@ console.log(
   `[check-nix-deps] bun.lock has changed, regenerating ${nixFile}...`,
 );
 
-const result = Bun.spawnSync(["bunx", "bun2nix", "-o", nixFile], {
+const result = Bun.spawnSync(["bun", "x", "bun2nix", "-o", nixFile], {
   cwd: root,
   stdio: ["inherit", "inherit", "inherit"],
 });
