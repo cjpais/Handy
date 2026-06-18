@@ -107,6 +107,21 @@ pub struct PostProcessProvider {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum GoogleFeature {
+    GmailTasks,
+    Calendar,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Type, Default)]
+pub struct GoogleAuthTokens {
+    #[serde(default)]
+    pub gmail_tasks_refresh_token: Option<String>,
+    #[serde(default)]
+    pub calendar_refresh_token: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
 pub enum OverlayPosition {
     None,
@@ -448,6 +463,14 @@ pub struct AppSettings {
     pub output_language: OutputLanguage,
     #[serde(default)]
     pub google_oauth_token: Option<String>,
+    #[serde(default)]
+    pub google_auth_tokens: GoogleAuthTokens,
+    #[serde(default)]
+    pub meeting_detection_enabled: bool,
+    #[serde(default)]
+    pub meeting_calendar_prompts_enabled: bool,
+    #[serde(default = "default_meeting_prompt_lead_minutes")]
+    pub meeting_prompt_lead_minutes: u32,
 }
 
 fn default_model() -> String {
@@ -625,6 +648,16 @@ fn default_post_process_providers() -> Vec<PostProcessProvider> {
         supports_structured_output: true,
     });
 
+    // Ollama (local LLM)
+    providers.push(PostProcessProvider {
+        id: "ollama".to_string(),
+        label: "Ollama".to_string(),
+        base_url: "http://localhost:11434/v1".to_string(),
+        allow_base_url_edit: true,
+        models_endpoint: Some("/models".to_string()),
+        supports_structured_output: false,
+    });
+
     // Custom provider always comes last
     providers.push(PostProcessProvider {
         id: "custom".to_string(),
@@ -699,8 +732,28 @@ fn default_typing_tool() -> TypingTool {
     TypingTool::Auto
 }
 
+fn default_meeting_prompt_lead_minutes() -> u32 {
+    5
+}
+
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
+
+    if settings
+        .google_auth_tokens
+        .gmail_tasks_refresh_token
+        .is_none()
+        && settings.google_oauth_token.is_some()
+    {
+        settings.google_auth_tokens.gmail_tasks_refresh_token = settings.google_oauth_token.clone();
+        changed = true;
+    }
+
+    if settings.meeting_prompt_lead_minutes == 0 {
+        settings.meeting_prompt_lead_minutes = default_meeting_prompt_lead_minutes();
+        changed = true;
+    }
+
     for provider in default_post_process_providers() {
         // Use match to do a single lookup - either sync existing or add new
         match settings
@@ -883,6 +936,10 @@ pub fn get_default_settings() -> AppSettings {
         extra_recording_buffer_ms: 0,
         output_language: OutputLanguage::default(),
         google_oauth_token: None,
+        google_auth_tokens: GoogleAuthTokens::default(),
+        meeting_detection_enabled: false,
+        meeting_calendar_prompts_enabled: false,
+        meeting_prompt_lead_minutes: default_meeting_prompt_lead_minutes(),
     }
 }
 

@@ -30,7 +30,9 @@ use tauri_specta::{collect_commands, collect_events, Builder};
 
 use env_filter::Builder as EnvFilterBuilder;
 use managers::audio::AudioRecordingManager;
+use managers::diarization::DiarizationManager;
 use managers::history::HistoryManager;
+use managers::meeting_assistant::MeetingAssistantManager;
 use managers::model::ModelManager;
 use managers::transcription::TranscriptionManager;
 #[cfg(unix)]
@@ -159,6 +161,11 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
+    let models_dir = crate::portable::app_data_dir(app_handle)
+        .expect("Failed to get app data dir")
+        .join("models");
+    let diarization_manager = Arc::new(DiarizationManager::new(models_dir));
+
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
 
@@ -167,6 +174,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     app_handle.manage(model_manager.clone());
     app_handle.manage(transcription_manager.clone());
     app_handle.manage(history_manager.clone());
+    app_handle.manage(diarization_manager.clone());
 
     // Note: Shortcuts are NOT initialized here.
     // The frontend is responsible for calling the `initialize_shortcuts` command
@@ -295,6 +303,7 @@ fn initialize_core_logic(app_handle: &AppHandle) {
 
     // Create the recording overlay window (hidden by default)
     utils::create_recording_overlay(app_handle);
+    utils::create_meeting_prompt_window(app_handle);
 }
 
 #[tauri::command]
@@ -375,6 +384,8 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_keyboard_implementation_setting,
             shortcut::get_keyboard_implementation,
             shortcut::change_show_tray_icon_setting,
+            shortcut::change_meeting_detection_enabled_setting,
+            shortcut::change_meeting_prompt_lead_minutes_setting,
             shortcut::change_whisper_accelerator_setting,
             shortcut::change_ort_accelerator_setting,
             shortcut::change_whisper_gpu_device,
@@ -385,6 +396,7 @@ pub fn run(cli_args: CliArgs) {
             show_main_window_command,
             commands::cancel_operation,
             commands::test_post_process_api_key,
+            commands::check_ollama_status,
             commands::is_portable,
             commands::get_app_dir_path,
             commands::get_app_settings,
@@ -434,9 +446,14 @@ pub fn run(cli_args: CliArgs) {
             commands::history::retry_history_entry_transcription,
             commands::history::update_history_limit,
             commands::history::update_recording_retention_period,
-            commands::google::start_google_oauth,
-            commands::google::get_google_auth_status,
-            commands::google::disconnect_google_auth,
+            commands::history::ask_meeting_question,
+            commands::google::connect_google_features,
+            commands::google::get_google_integration_status,
+            commands::google::disconnect_google_feature,
+            commands::google::start_meeting_recording_from_prompt,
+            commands::google::dismiss_meeting_prompt,
+            commands::google::close_meeting_prompt,
+            commands::google::set_meeting_calendar_prompts_enabled,
             commands::google::send_meeting_follow_up,
             helpers::clamshell::is_laptop,
         ])
@@ -575,8 +592,11 @@ pub fn run(cli_args: CliArgs) {
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
+            let meeting_assistant = MeetingAssistantManager::new(&app_handle);
+            app.manage(meeting_assistant.clone());
 
             initialize_core_logic(&app_handle);
+            meeting_assistant.start();
 
             // Pre-warm GPU/accelerator enumeration on a background thread.
             // The first call into transcribe_rs::whisper_cpp::gpu::list_gpu_devices
@@ -705,6 +725,8 @@ mod test_bindings {
                 shortcut::change_keyboard_implementation_setting,
                 shortcut::get_keyboard_implementation,
                 shortcut::change_show_tray_icon_setting,
+                shortcut::change_meeting_detection_enabled_setting,
+                shortcut::change_meeting_prompt_lead_minutes_setting,
                 shortcut::change_whisper_accelerator_setting,
                 shortcut::change_ort_accelerator_setting,
                 shortcut::change_whisper_gpu_device,
@@ -715,6 +737,7 @@ mod test_bindings {
                 show_main_window_command,
                 commands::cancel_operation,
                 commands::test_post_process_api_key,
+                commands::check_ollama_status,
                 commands::is_portable,
                 commands::get_app_dir_path,
                 commands::get_app_settings,
@@ -764,9 +787,13 @@ mod test_bindings {
                 commands::history::retry_history_entry_transcription,
                 commands::history::update_history_limit,
                 commands::history::update_recording_retention_period,
-                commands::google::start_google_oauth,
-                commands::google::get_google_auth_status,
-                commands::google::disconnect_google_auth,
+                commands::google::connect_google_features,
+                commands::google::get_google_integration_status,
+                commands::google::disconnect_google_feature,
+                commands::google::start_meeting_recording_from_prompt,
+                commands::google::dismiss_meeting_prompt,
+                commands::google::close_meeting_prompt,
+                commands::google::set_meeting_calendar_prompts_enabled,
                 commands::google::send_meeting_follow_up,
                 helpers::clamshell::is_laptop,
             ])

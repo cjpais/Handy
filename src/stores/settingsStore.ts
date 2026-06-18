@@ -148,6 +148,12 @@ const settingUpdaters: {
     commands.changeLazyStreamCloseSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
+  meeting_detection_enabled: (value) =>
+    commands.changeMeetingDetectionEnabledSetting(value as boolean),
+  meeting_calendar_prompts_enabled: (value) =>
+    commands.setMeetingCalendarPromptsEnabled(value as boolean),
+  meeting_prompt_lead_minutes: (value) =>
+    commands.changeMeetingPromptLeadMinutesSetting(value as number),
   whisper_accelerator: (value) =>
     commands.changeWhisperAcceleratorSetting(
       value as WhisperAcceleratorSetting,

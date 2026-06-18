@@ -27,9 +27,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onModelSelected }) => {
 
   const isDownloading = selectedModelId !== null;
 
-  const visibleModels = models.filter(
-    (m: ModelInfo) => m.supported_languages.includes("ml") || m.is_recommended,
-  );
+  const visibleModels = models;
 
   // Watch for the selected model to finish downloading + verifying + extracting
   useEffect(() => {

@@ -9,6 +9,7 @@ type PostProcessProviderState = {
   selectedProviderId: string;
   selectedProvider: PostProcessProvider | undefined;
   isCustomProvider: boolean;
+  isOllamaProvider: boolean;
   isAppleProvider: boolean;
   appleIntelligenceUnavailable: boolean;
   baseUrl: string;
@@ -57,6 +58,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
   }, [providers, selectedProviderId]);
 
   const isAppleProvider = selectedProvider?.id === APPLE_PROVIDER_ID;
+  const isOllamaProvider = selectedProvider?.id === "ollama";
   const [appleIntelligenceUnavailable, setAppleIntelligenceUnavailable] =
     useState(false);
 
@@ -102,7 +104,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
         const hasBaseUrl = (provider?.base_url ?? "").trim() !== "";
         const hasApiKey = apiKey.trim() !== "";
 
-        if (provider?.id === "custom" ? hasBaseUrl : hasApiKey) {
+        if (provider?.allow_base_url_edit ? hasBaseUrl : hasApiKey) {
           void fetchPostProcessModels(providerId);
         }
       }
@@ -118,7 +120,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
 
   const handleBaseUrlChange = useCallback(
     (value: string) => {
-      if (!selectedProvider || selectedProvider.id !== "custom") {
+      if (!selectedProvider || !selectedProvider.allow_base_url_edit) {
         return;
       }
       const trimmed = value.trim();
@@ -231,6 +233,7 @@ export const usePostProcessProviderState = (): PostProcessProviderState => {
     selectedProviderId,
     selectedProvider,
     isCustomProvider,
+    isOllamaProvider,
     isAppleProvider,
     appleIntelligenceUnavailable,
     baseUrl,

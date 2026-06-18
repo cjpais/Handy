@@ -156,13 +156,6 @@ export const ModelsSettings: React.FC = () => {
   // Filter models based on language filter
   const filteredModels = useMemo(() => {
     return models.filter((model: ModelInfo) => {
-      if (
-        !model.supported_languages.includes("ml") &&
-        !model.is_recommended &&
-        !model.is_custom
-      ) {
-        return false;
-      }
       if (languageFilter !== "all") {
         if (!modelSupportsLanguage(model, languageFilter)) return false;
       }

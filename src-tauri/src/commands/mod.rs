@@ -212,3 +212,35 @@ pub async fn test_post_process_api_key(
         Err(e) => Err(e),
     }
 }
+
+#[derive(serde::Serialize, specta::Type)]
+pub struct OllamaStatus {
+    pub connected: bool,
+    pub model_count: u32,
+    pub error: Option<String>,
+}
+
+/// Check the status of the local Ollama instance
+#[specta::specta]
+#[tauri::command]
+pub async fn check_ollama_status(app: AppHandle) -> Result<OllamaStatus, String> {
+    let settings = get_settings(&app);
+    let provider = settings
+        .post_process_providers
+        .iter()
+        .find(|p| p.id == "ollama")
+        .ok_or_else(|| "Ollama provider settings not found".to_string())?;
+
+    match crate::llm_client::fetch_models(provider, String::new()).await {
+        Ok(models) => Ok(OllamaStatus {
+            connected: true,
+            model_count: models.len() as u32,
+            error: None,
+        }),
+        Err(e) => Ok(OllamaStatus {
+            connected: false,
+            model_count: 0,
+            error: Some(e),
+        }),
+    }
+}

@@ -15,7 +15,8 @@
     "postProcessing": "후처리",
     "history": "히스토리",
     "debug": "디버그",
-    "about": "정보"
+    "about": "정보",
+    "meetings": "Meetings"
   },
   "onboarding": {
     "subtitle": "시작하려면 음성 인식 모델을 선택하세요",
@@ -92,6 +93,10 @@
       "cohere-int8": {
         "name": "Cohere",
         "description": "크고 느리지만 매우 정확한 다국어 모델."
+      },
+      "malayalam-indicconformer-ctc": {
+        "name": "Malayalam IndicConformer CTC",
+        "description": "Malayalam speech recognition. High accuracy."
       }
     },
     "errors": {
@@ -176,6 +181,10 @@
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."
+          },
+          "meeting": {
+            "name": "Meeting Mode",
+            "description": "Continuous recording mode that pastes an English summary."
           }
         },
         "errors": {
@@ -195,6 +204,24 @@
       "pushToTalk": {
         "label": "녹음 중 단축키 홀딩",
         "description": "누르고 있으면 녹음, 놓으면 정지"
+      },
+      "outputLanguage": {
+        "title": "Output Language",
+        "description": "Choose the format for transcriptions: raw Malayalam, transliterated Manglish, or translated English.",
+        "options": {
+          "malayalam": {
+            "label": "Malayalam",
+            "description": "Output raw Malayalam transcriptions"
+          },
+          "manglish": {
+            "label": "Manglish",
+            "description": "Transliterate Malayalam text into Manglish via Gemini"
+          },
+          "english": {
+            "label": "English",
+            "description": "Translate Malayalam text into English via Gemini"
+          }
+        }
       }
     },
     "sound": {
@@ -394,7 +421,11 @@
           "placeholderWithOptions": "모델 검색 또는 선택",
           "placeholderNoOptions": "모델 이름 입력",
           "refreshModels": "모델 새로고침"
-        }
+        },
+        "testButton": "Test Connection",
+        "testing": "Testing...",
+        "testSuccess": "Connection successful!",
+        "testFailed": "Connection failed"
       },
       "prompts": {
         "title": "프롬프트",
@@ -537,6 +568,61 @@
           "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
       }
+    },
+    "meetings": {
+      "title": "Meetings",
+      "loading": "Loading meetings...",
+      "empty": "No meetings recorded yet. Start a meeting to generate summaries!",
+      "summary": "Meeting Summary",
+      "summaryFailed": "Failed to generate meeting summary.",
+      "processing": "Generating summary...",
+      "fullTranscript": "Full Transcript",
+      "toastSuccess": "Meeting summary generated!",
+      "activeIndicator": "Meeting Recording...",
+      "uploadAudio": "Upload Audio",
+      "googleServices": "Google Services",
+      "googleConnected": "Connected to Gmail & Google Tasks",
+      "googleDisconnected": "Connect to send meeting follow-ups via Gmail and create tasks",
+      "googleFollowUpsTitle": "Gmail and Tasks Follow-Ups",
+      "googleFollowUpsDescription": "Optional follow-up email sending and task creation for completed meetings.",
+      "googleCalendarTitle": "Google Calendar Prompts",
+      "googleCalendarDescription": "Optional reminders for upcoming primary-calendar meetings with a join link.",
+      "googleConnect": "Connect",
+      "googleDisconnect": "Disconnect",
+      "googleConnecting": "Connecting...",
+      "sendViaGoogle": "Send via Google",
+      "sendFollowUpTitle": "Send Meeting Follow-Up",
+      "recipientsLabel": "Recipient Emails (comma or space separated)",
+      "recipientsPlaceholder": "e.g., alex@example.com, john@example.com",
+      "send": "Send",
+      "sending": "Sending...",
+      "cancel": "Cancel",
+      "googleConnectSuccess": "Google Services connected successfully!",
+      "googleConnectError": "Failed to connect Google Services.",
+      "googleDisconnectSuccess": "Google Services disconnected.",
+      "googleDisconnectError": "Failed to disconnect Google Services.",
+      "sendFollowUpSuccess": "Follow-up email and tasks sent successfully!",
+      "sendFollowUpError": "Failed to send follow-up email/tasks.",
+      "recipientsRequired": "Recipient email is required.",
+      "invalidEmail": "Invalid email address: {{email}}",
+      "assistant": {
+        "localToggle": "Meeting Assistant",
+        "localDescription": "Detect active meeting windows locally and show a prompt to start meeting mode.",
+        "calendarToggle": "Calendar Prompts",
+        "calendarDescription": "Prompt five minutes before a Google Calendar meeting with conference details.",
+        "leadTitle": "Prompt Lead Time",
+        "leadDescription": "Version 1 uses a fixed reminder time for Calendar-based prompts.",
+        "leadFiveMinutes": "5 minutes",
+        "oauthUnavailable": "Google Calendar is unavailable until a desktop OAuth client ID is configured for this build.",
+        "calendarConnected": "Connected for meeting reminders",
+        "calendarDisconnected": "Connect Google Calendar for meeting reminders",
+        "calendarSource": "Google Calendar",
+        "localSource": "local detection",
+        "promptBody": "Start meeting mode for this {{source}} prompt.",
+        "openMeeting": "Open Meeting",
+        "dismiss": "Dismiss",
+        "startRecording": "Start Recording"
+      }
     }
   },
   "footer": {
@@ -608,5 +694,17 @@
   "overlay": {
     "transcribing": "텍스트로 변환 중...",
     "processing": "처리 중..."
+  },
+  "localFileTranscriber": {
+    "title": "Transcribe Local Files",
+    "empty": "No files selected. Add some audio files to transcribe.",
+    "selectedFiles": "Selected Files:",
+    "addMoreFiles": "Add more files",
+    "action": "Action:",
+    "summarizeAsMeeting": "Summarize as Meeting",
+    "summarizeAsMeetingDesc": "Transcribes and summarizes to English (Meetings tab)",
+    "plainTranscribe": "Plain Transcribe",
+    "plainTranscribeDesc": "Basic Malayalam transcription (History tab)",
+    "startTranscription": "Start Transcription"
   }
 }

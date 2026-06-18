@@ -408,7 +408,7 @@
         },
         "baseUrl": {
           "title": "Base URL",
-          "description": "API base URL for the selected provider. Only the custom provider can be edited.",
+          "description": "API base URL for the selected provider. Only custom and Ollama providers can be edited.",
           "placeholder": "https://api.openai.com/v1"
         },
         "apiKey": {
@@ -416,10 +416,21 @@
           "description": "API key for the selected provider.",
           "placeholder": "sk-..."
         },
+        "ollama": {
+          "statusTitle": "Ollama Status",
+          "statusDescription": "Connection status and model count for your local Ollama instance.",
+          "connectionStatus": "Connection",
+          "checking": "Checking...",
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "successMessage": "Successfully connected to Ollama! Found {{count}} available models.",
+          "errorMessage": "Failed to connect to Ollama. Make sure Ollama is running locally."
+        },
         "model": {
           "title": "Model",
           "descriptionApple": "Provide an optional numeric token limit or keep the default on-device preset.",
           "descriptionCustom": "Provide the model identifier expected by your custom endpoint.",
+          "descriptionOllama": "Choose a local Ollama model from the auto-detected list.",
           "descriptionDefault": "Choose a model exposed by the selected provider.",
           "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Search or select a model",
@@ -478,6 +489,10 @@
       "googleServices": "Google Services",
       "googleConnected": "Connected to Gmail & Google Tasks",
       "googleDisconnected": "Connect to send meeting follow-ups via Gmail and create tasks",
+      "googleFollowUpsTitle": "Gmail and Tasks Follow-Ups",
+      "googleFollowUpsDescription": "Optional follow-up email sending and task creation for completed meetings.",
+      "googleCalendarTitle": "Google Calendar Prompts",
+      "googleCalendarDescription": "Optional reminders for upcoming primary-calendar meetings with a join link.",
       "googleConnect": "Connect",
       "googleDisconnect": "Disconnect",
       "googleConnecting": "Connecting...",
@@ -495,7 +510,29 @@
       "sendFollowUpSuccess": "Follow-up email and tasks sent successfully!",
       "sendFollowUpError": "Failed to send follow-up email/tasks.",
       "recipientsRequired": "Recipient email is required.",
-      "invalidEmail": "Invalid email address: {{email}}"
+      "invalidEmail": "Invalid email address: {{email}}",
+      "chatWithMeeting": "Chat with Meeting",
+      "chatPlaceholder": "Ask something about the meeting...",
+      "ask": "Ask",
+      "asking": "Asking...",
+      "assistant": {
+        "localToggle": "Meeting Assistant",
+        "localDescription": "Detect active meeting windows locally and show a prompt to start meeting mode.",
+        "calendarToggle": "Calendar Prompts",
+        "calendarDescription": "Prompt five minutes before a Google Calendar meeting with conference details.",
+        "leadTitle": "Prompt Lead Time",
+        "leadDescription": "Version 1 uses a fixed reminder time for Calendar-based prompts.",
+        "leadFiveMinutes": "5 minutes",
+        "oauthUnavailable": "Google Calendar is unavailable until a desktop OAuth client ID is configured for this build.",
+        "calendarConnected": "Connected for meeting reminders",
+        "calendarDisconnected": "Connect Google Calendar for meeting reminders",
+        "calendarSource": "Google Calendar",
+        "localSource": "local detection",
+        "promptBody": "Start meeting mode for this {{source}} prompt.",
+        "openMeeting": "Open Meeting",
+        "dismiss": "Dismiss",
+        "startRecording": "Start Recording"
+      }
     },
     "debug": {
       "title": "Debug",
@@ -663,7 +700,8 @@
     "modelLoadFailed": "Failed to load model: {{model}}",
     "modelLoadFailedUnknown": "unknown model",
     "pasteFailedTitle": "Failed to Paste Text",
-    "pasteFailed": "Text could not be pasted into the active application."
+    "pasteFailed": "Text could not be pasted into the active application.",
+    "askFailed": "Failed to get an answer from the AI. Please check your connection and LLM settings."
   },
   "appLanguage": {
     "title": "Application Language",

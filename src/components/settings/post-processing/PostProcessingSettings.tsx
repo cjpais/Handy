@@ -62,6 +62,51 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
     }
   };
 
+  // New state for Ollama connection status
+  const [ollamaStatus, setOllamaStatus] = useState<{
+    connected: boolean;
+    modelCount: number;
+    error: string | null;
+  } | null>(null);
+  const [isCheckingOllama, setIsCheckingOllama] = useState(false);
+
+  const checkOllama = React.useCallback(async () => {
+    setIsCheckingOllama(true);
+    try {
+      const result = await (commands as any).checkOllamaStatus();
+      if (result.status === "ok") {
+        setOllamaStatus({
+          connected: result.data.connected,
+          modelCount: result.data.model_count,
+          error: result.data.error,
+        });
+      } else {
+        setOllamaStatus({
+          connected: false,
+          modelCount: 0,
+          error: result.error || null,
+        });
+      }
+    } catch (e: any) {
+      setOllamaStatus({
+        connected: false,
+        modelCount: 0,
+        error: e?.message || String(e),
+      });
+    } finally {
+      setIsCheckingOllama(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setTestResult(null);
+    if (state.selectedProviderId === "ollama") {
+      void checkOllama();
+    } else {
+      setOllamaStatus(null);
+    }
+  }, [state.selectedProviderId, state.baseUrl, checkOllama]);
+
   return (
     <>
       <SettingContainer
@@ -88,7 +133,7 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
         ) : null
       ) : (
         <>
-          {state.selectedProvider?.id === "custom" && (
+          {state.selectedProvider?.allow_base_url_edit && (
             <SettingContainer
               title={t("settings.postProcessing.api.baseUrl.title")}
               description={t("settings.postProcessing.api.baseUrl.description")}
@@ -110,44 +155,102 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             </SettingContainer>
           )}
 
-          <SettingContainer
-            title={t("settings.postProcessing.api.apiKey.title")}
-            description={t("settings.postProcessing.api.apiKey.description")}
-            descriptionMode="tooltip"
-            layout="horizontal"
-            grouped={true}
-          >
-            <div className="flex flex-col gap-2 w-full">
-              <div className="flex items-center gap-2">
-                <ApiKeyField
-                  value={state.apiKey}
-                  onBlur={state.handleApiKeyChange}
-                  placeholder={t(
-                    "settings.postProcessing.api.apiKey.placeholder",
-                  )}
-                  disabled={state.isApiKeyUpdating}
-                  className="min-w-[320px]"
-                />
-                <Button
-                  onClick={handleTestApiKey}
-                  disabled={isTesting || !state.apiKey}
-                  variant="secondary"
-                  size="md"
-                >
-                  {isTesting
-                    ? t("settings.postProcessing.api.testing") || "Testing..."
-                    : t("settings.postProcessing.api.testButton")}
-                </Button>
-              </div>
-              {testResult && (
-                <div className="mt-1">
-                  <Alert variant={testResult.status} contained>
-                    {testResult.message}
-                  </Alert>
+          {state.isOllamaProvider && (
+            <SettingContainer
+              title={t("settings.postProcessing.api.ollama.statusTitle")}
+              description={t("settings.postProcessing.api.ollama.statusDescription")}
+              descriptionMode="tooltip"
+              layout="horizontal"
+              grouped={true}
+            >
+              <div className="flex flex-col gap-2 w-full">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-[320px]">
+                    <span className="text-sm text-neutral-400">
+                      {t("settings.postProcessing.api.ollama.connectionStatus")}:
+                    </span>
+                    {isCheckingOllama ? (
+                      <span className="text-sm font-medium text-blue-400 animate-pulse">
+                        {t("settings.postProcessing.api.ollama.checking")}
+                      </span>
+                    ) : ollamaStatus?.connected ? (
+                      <span className="text-sm font-medium text-emerald-500 flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                        {t("settings.postProcessing.api.ollama.connected")}
+                      </span>
+                    ) : (
+                      <span className="text-sm font-medium text-rose-500 flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                        {t("settings.postProcessing.api.ollama.disconnected")}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={checkOllama}
+                    disabled={isCheckingOllama}
+                    variant="secondary"
+                    size="md"
+                  >
+                    <RefreshCcw className={`w-4 h-4 ${isCheckingOllama ? 'animate-spin' : ''}`} />
+                  </Button>
                 </div>
-              )}
-            </div>
-          </SettingContainer>
+                {ollamaStatus && (
+                  <div className="mt-1">
+                    {ollamaStatus.connected ? (
+                      <Alert variant="success" contained>
+                        {t("settings.postProcessing.api.ollama.successMessage", { count: ollamaStatus.modelCount })}
+                      </Alert>
+                    ) : (
+                      <Alert variant="error" contained>
+                        {ollamaStatus.error || t("settings.postProcessing.api.ollama.errorMessage")}
+                      </Alert>
+                    )}
+                  </div>
+                )}
+              </div>
+            </SettingContainer>
+          )}
+
+          {!state.isOllamaProvider && (
+            <SettingContainer
+              title={t("settings.postProcessing.api.apiKey.title")}
+              description={t("settings.postProcessing.api.apiKey.description")}
+              descriptionMode="tooltip"
+              layout="horizontal"
+              grouped={true}
+            >
+              <div className="flex flex-col gap-2 w-full">
+                <div className="flex items-center gap-2">
+                  <ApiKeyField
+                    value={state.apiKey}
+                    onBlur={state.handleApiKeyChange}
+                    placeholder={t(
+                      "settings.postProcessing.api.apiKey.placeholder",
+                    )}
+                    disabled={state.isApiKeyUpdating}
+                    className="min-w-[320px]"
+                  />
+                  <Button
+                    onClick={handleTestApiKey}
+                    disabled={isTesting || !state.apiKey}
+                    variant="secondary"
+                    size="md"
+                  >
+                    {isTesting
+                      ? t("settings.postProcessing.api.testing") || "Testing..."
+                      : t("settings.postProcessing.api.testButton")}
+                  </Button>
+                </div>
+                {testResult && (
+                  <div className="mt-1">
+                    <Alert variant={testResult.status} contained>
+                      {testResult.message}
+                    </Alert>
+                  </div>
+                )}
+              </div>
+            </SettingContainer>
+          )}
         </>
       )}
 
@@ -157,6 +260,8 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
           description={
             state.isCustomProvider
               ? t("settings.postProcessing.api.model.descriptionCustom")
+              : state.isOllamaProvider
+              ? t("settings.postProcessing.api.model.descriptionOllama")
               : t("settings.postProcessing.api.model.descriptionDefault")
           }
           descriptionMode="tooltip"
