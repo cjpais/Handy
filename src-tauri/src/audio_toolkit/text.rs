@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use natural::phonetics::soundex;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -82,6 +84,54 @@ fn find_best_match<'a>(
     }
 
     best_match.map(|m| (m, best_score))
+}
+
+/// Applies phonetic replacement mappings to transcribed text.
+///
+/// This handles cross-script corrections where the transcription engine produces
+/// a phonetic rendering in one script (e.g., Cyrillic "эн восемь эн") that should
+/// be replaced with the canonical form (e.g., "N8N").
+///
+/// Matching is case-insensitive. Multi-word phrases are supported as keys.
+/// Longer phrases are matched first to avoid partial replacements.
+///
+/// # Arguments
+/// * `text` - The transcribed text to correct
+/// * `replacements` - Map of phonetic form → canonical form
+///
+/// # Returns
+/// The text with all matching phonetic forms replaced
+pub fn apply_phonetic_replacements(
+    text: &str,
+    replacements: &HashMap<String, String>,
+) -> String {
+    if replacements.is_empty() {
+        return text.to_string();
+    }
+
+    // Sort keys by length descending so longer phrases match first
+    // e.g., "клод код" matches before "клод"
+    let mut sorted_keys: Vec<&String> = replacements.keys().collect();
+    sorted_keys.sort_by(|a, b| b.len().cmp(&a.len()));
+
+    let mut result = text.to_string();
+
+    for key in sorted_keys {
+        let replacement = &replacements[key];
+        let key_lower = key.to_lowercase();
+
+        // Build a case-insensitive regex pattern from the key,
+        // matching at word boundaries to avoid partial word replacements
+        let escaped = regex::escape(&key_lower);
+        let pattern = match Regex::new(&format!(r"(?iu)\b{}\b", escaped)) {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+
+        result = pattern.replace_all(&result, replacement.as_str()).to_string();
+    }
+
+    result
 }
 
 /// Applies custom word corrections to transcribed text using fuzzy matching
@@ -322,6 +372,79 @@ pub fn filter_transcription_output(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // --- Phonetic replacement tests ---
+
+    #[test]
+    fn test_phonetic_replacements_basic() {
+        let mut map = HashMap::new();
+        map.insert("эн восемь эн".to_string(), "N8N".to_string());
+        let text = "Я настроил эн восемь эн для автоматизации";
+        let result = apply_phonetic_replacements(text, &map);
+        assert_eq!(result, "Я настроил N8N для автоматизации");
+    }
+
+    #[test]
+    fn test_phonetic_replacements_case_insensitive() {
+        let mut map = HashMap::new();
+        map.insert("супабейс".to_string(), "Supabase".to_string());
+        let text = "Подключил Супабейс к проекту";
+        let result = apply_phonetic_replacements(text, &map);
+        assert_eq!(result, "Подключил Supabase к проекту");
+    }
+
+    #[test]
+    fn test_phonetic_replacements_multiple() {
+        let mut map = HashMap::new();
+        map.insert("супабейс".to_string(), "Supabase".to_string());
+        map.insert("клод-код".to_string(), "Claude Code".to_string());
+        let text = "Использую клод-код и супабейс";
+        let result = apply_phonetic_replacements(text, &map);
+        assert_eq!(result, "Использую Claude Code и Supabase");
+    }
+
+    #[test]
+    fn test_phonetic_replacements_multiple_occurrences() {
+        let mut map = HashMap::new();
+        map.insert("югайл".to_string(), "YouGile".to_string());
+        let text = "В югайл создал задачу, потом в югайл добавил комментарий";
+        let result = apply_phonetic_replacements(text, &map);
+        assert_eq!(
+            result,
+            "В YouGile создал задачу, потом в YouGile добавил комментарий"
+        );
+    }
+
+    #[test]
+    fn test_phonetic_replacements_empty_map() {
+        let map = HashMap::new();
+        let text = "Без замен текст остаётся прежним";
+        let result = apply_phonetic_replacements(text, &map);
+        assert_eq!(result, text);
+    }
+
+    #[test]
+    fn test_phonetic_replacements_longer_phrase_first() {
+        let mut map = HashMap::new();
+        map.insert("клод".to_string(), "Claude".to_string());
+        map.insert("клод код".to_string(), "Claude Code".to_string());
+        let text = "Открыл клод код и спросил у клод";
+        let result = apply_phonetic_replacements(text, &map);
+        assert!(result.contains("Claude Code"));
+        assert!(result.contains("у Claude"));
+    }
+
+    #[test]
+    fn test_phonetic_replacements_no_partial_word_match() {
+        let mut map = HashMap::new();
+        map.insert("бот".to_string(), "Bot".to_string());
+        let text = "Работа с ботами в чате";
+        let result = apply_phonetic_replacements(text, &map);
+        // "бот" should not match inside "Работа" or "ботами"
+        assert_eq!(result, "Работа с ботами в чате");
+    }
+
+    // --- Custom word tests ---
 
     #[test]
     fn test_apply_custom_words_exact_match() {
