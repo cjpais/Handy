@@ -16,12 +16,14 @@ use std::time::Instant;
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 use transcribe_rs::whisper_cpp::{WhisperEngine, WhisperInferenceParams, WhisperLoadParams};
 
+#[cfg(windows)]
 use handy_app_lib::malayalam_asr::MalayalamAsr;
 
 // ─── Model selector ──────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, ValueEnum)]
 enum ModelChoice {
+    #[cfg(windows)]
     Malayalam,
     WhisperTurbo,
     WhisperLarge,
@@ -77,6 +79,7 @@ struct Cli {
 // ─── Unified engine abstraction ───────────────────────────────────────────────
 
 enum BenchmarkEngine {
+    #[cfg(windows)]
     Malayalam(MalayalamAsr),
     Whisper {
         engine: WhisperEngine,
@@ -88,6 +91,7 @@ enum BenchmarkEngine {
 impl BenchmarkEngine {
     fn transcribe(&mut self, samples: &[f32]) -> Result<String> {
         match self {
+            #[cfg(windows)]
             BenchmarkEngine::Malayalam(asr) => asr.transcribe(samples),
             BenchmarkEngine::Whisper {
                 engine,
@@ -407,6 +411,7 @@ fn main() -> Result<()> {
 
 fn load_engine(cli: &Cli, whisper_lang: Option<String>) -> Result<BenchmarkEngine> {
     match &cli.model {
+        #[cfg(windows)]
         ModelChoice::Malayalam => {
             let dir = cli
                 .model_dir
@@ -451,6 +456,7 @@ fn resolve_whisper_path(cli: &Cli) -> Result<PathBuf> {
     let filename = match &cli.model {
         ModelChoice::WhisperTurbo => "ggml-large-v3-turbo.bin",
         ModelChoice::WhisperLarge => "ggml-large-v3-q5_0.bin",
+        #[cfg(windows)]
         ModelChoice::Malayalam => unreachable!(),
     };
     let path = handy_models.join(filename);
@@ -477,6 +483,7 @@ fn dirs_sys_appdata() -> PathBuf {
 
 fn model_display_name(m: &ModelChoice) -> &'static str {
     match m {
+        #[cfg(windows)]
         ModelChoice::Malayalam => "MalayalamAsr (IndicConformer CTC)",
         ModelChoice::WhisperTurbo => "Whisper Turbo (large-v3-turbo)",
         ModelChoice::WhisperLarge => "Whisper Large (large-v3-q5_0)",
