@@ -234,17 +234,47 @@ function App() {
     setOnboardingStep("done");
   };
 
+  // Rendered in every branch (including onboarding) so toast.error() calls
+  // surface to the user. sonner renders via a portal, so its position in the
+  // tree doesn't affect layout. Without this, errors during onboarding (e.g. a
+  // model download failing because blob.handy.computer is unreachable) are
+  // silently swallowed and the wizard just appears to "blink".
+  const toaster = (
+    <Toaster
+      theme="system"
+      toastOptions={{
+        unstyled: true,
+        classNames: {
+          toast:
+            "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
+          title: "font-medium",
+          description: "text-mid-gray",
+        },
+      }}
+    />
+  );
+
   // Still checking onboarding status
   if (onboardingStep === null) {
     return null;
   }
 
   if (onboardingStep === "accessibility") {
-    return <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />;
+    return (
+      <>
+        {toaster}
+        <AccessibilityOnboarding onComplete={handleAccessibilityComplete} />
+      </>
+    );
   }
 
   if (onboardingStep === "model") {
-    return <Onboarding onModelSelected={handleModelSelected} />;
+    return (
+      <>
+        {toaster}
+        <Onboarding onModelSelected={handleModelSelected} />
+      </>
+    );
   }
 
   return (
@@ -252,18 +282,7 @@ function App() {
       dir={direction}
       className="h-screen flex flex-col select-none cursor-default"
     >
-      <Toaster
-        theme="system"
-        toastOptions={{
-          unstyled: true,
-          classNames: {
-            toast:
-              "bg-background border border-mid-gray/20 rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 text-sm",
-            title: "font-medium",
-            description: "text-mid-gray",
-          },
-        }}
-      />
+      {toaster}
       {/* Main content area that takes remaining space */}
       <div className="flex-1 flex overflow-hidden">
         <Sidebar
