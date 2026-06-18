@@ -147,6 +147,7 @@ transcribe-cpp = { version = "0.1.0", default-features = false, features = [
 ] }
 
 [patch.crates-io]
+handy-keys = { git = "https://github.com/Perdolique/handy-keys", branch = "codex/block-mouse-hotkeys" }
 tauri-runtime = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-runtime-wry = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
 tauri-utils = { git = "https://github.com/cjpais/tauri.git", branch = "handy-2.10.2" }
