@@ -420,12 +420,23 @@
           "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Modell suchen oder auswählen",
           "placeholderNoOptions": "Modellnamen eingeben",
-          "refreshModels": "Modelle aktualisieren"
+          "refreshModels": "Modelle aktualisieren",
+          "descriptionOllama": "Choose a local Ollama model from the auto-detected list."
         },
         "testButton": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Connection successful!",
-        "testFailed": "Connection failed"
+        "testFailed": "Connection failed",
+        "ollama": {
+          "statusTitle": "Ollama Status",
+          "statusDescription": "Connection status and model count for your local Ollama instance.",
+          "connectionStatus": "Connection",
+          "checking": "Checking...",
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "successMessage": "Successfully connected to Ollama! Found {{count}} available models.",
+          "errorMessage": "Failed to connect to Ollama. Make sure Ollama is running locally."
+        }
       },
       "prompts": {
         "title": "Prompt",
@@ -622,7 +633,11 @@
         "openMeeting": "Open Meeting",
         "dismiss": "Dismiss",
         "startRecording": "Start Recording"
-      }
+      },
+      "chatWithMeeting": "Chat with Meeting",
+      "chatPlaceholder": "Ask something about the meeting...",
+      "ask": "Ask",
+      "asking": "Asking..."
     }
   },
   "footer": {
@@ -685,7 +700,8 @@
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
     "modelLoadFailedUnknown": "unbekanntes Modell",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
-    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden."
+    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "askFailed": "Failed to get answer"
   },
   "appLanguage": {
     "title": "Anwendungssprache",

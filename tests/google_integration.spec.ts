@@ -3,11 +3,9 @@ import { setupMocks, getMockState, setMockState } from "./helpers";
 
 test.describe("Google Integration E2E Tests", () => {
   test.beforeEach(async ({ page }) => {
-    // Start with Google Services disconnected by default
     await setupMocks(page, false);
     await page.goto("/");
-    // Click on the Meetings tab
-    await page.click("text=Meetings");
+    await page.getByText("Meetings").click();
   });
 
   test("Tier 1: Connect, Disconnect Google Services, and Send Follow-Up", async ({
@@ -174,5 +172,33 @@ test.describe("Google Integration E2E Tests", () => {
       "john@example.com",
       "kate@example.com",
     ]);
+  });
+
+  test("Tier 5: Gmail/Tasks and Calendar auth remain independently revocable", async ({
+    page,
+  }) => {
+    await page.click(".google-connect-btn");
+    let state = await getMockState(page);
+    expect(state.gmailTasksConnected).toBe(true);
+    expect(state.calendarConnected).toBe(false);
+
+    await page.evaluate(async () => {
+      const mod = await import("/src/bindings.ts");
+      await mod.commands.connectGoogleFeatures(["calendar"]);
+    });
+
+    state = await getMockState(page);
+    expect(state.gmailTasksConnected).toBe(true);
+    expect(state.calendarConnected).toBe(true);
+
+    await page.evaluate(async () => {
+      const mod = await import("/src/bindings.ts");
+      await mod.commands.disconnectGoogleFeature("calendar");
+    });
+
+    state = await getMockState(page);
+    expect(state.gmailTasksConnected).toBe(true);
+    expect(state.calendarConnected).toBe(false);
+    await expect(page.locator(".send-via-google-btn")).toBeVisible();
   });
 });

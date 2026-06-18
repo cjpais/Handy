@@ -13,13 +13,13 @@
 
 ## Milestones
 
-| #   | Name                          | Scope                                                                                             | Dependencies | Status      |
-| --- | ----------------------------- | ------------------------------------------------------------------------------------------------- | ------------ | ----------- |
-| 1   | E2E Test Suite                | Build E2E testing infra and write playwright tests (Tiers 1-4)                                    | None         | DONE        |
-| 2   | Backend Google Integration    | Implement local OAuth 2.0 flow, token storage, and reqwest clients/Tauri commands for Gmail/Tasks | M1           | PLANNED     |
-| 3   | Frontend UI & Integration     | Connect OAuth status, recipient dialog, send follow-up commands, and feedback toast notifications | M2           | PLANNED     |
-| 4   | E2E Integration Pass          | Pass all E2E test tiers and verify end-to-end integration                                         | M3           | PLANNED     |
-| 5   | Adversarial Hardening         | Implement Tier 5 tests, identify/resolve gaps, final validation                                   | M4           | PLANNED     |
+| #   | Name                       | Scope                                                                                             | Dependencies | Status  |
+| --- | -------------------------- | ------------------------------------------------------------------------------------------------- | ------------ | ------- |
+| 1   | E2E Test Suite             | Build E2E testing infra and write playwright tests (Tiers 1-4)                                    | None         | DONE    |
+| 2   | Backend Google Integration | Implement local OAuth 2.0 flow, token storage, and reqwest clients/Tauri commands for Gmail/Tasks | M1           | PLANNED |
+| 3   | Frontend UI & Integration  | Connect OAuth status, recipient dialog, send follow-up commands, and feedback toast notifications | M2           | PLANNED |
+| 4   | E2E Integration Pass       | Pass all E2E test tiers and verify end-to-end integration                                         | M3           | PLANNED |
+| 5   | Adversarial Hardening      | Implement Tier 5 tests, identify/resolve gaps, final validation                                   | M4           | PLANNED |
 
 ## Interface Contracts
 

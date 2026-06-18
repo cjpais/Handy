@@ -420,12 +420,23 @@
           "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "Sök eller välj en modell",
           "placeholderNoOptions": "Ange ett modellnamn",
-          "refreshModels": "Uppdatera modeller"
+          "refreshModels": "Uppdatera modeller",
+          "descriptionOllama": "Choose a local Ollama model from the auto-detected list."
         },
         "testButton": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Connection successful!",
-        "testFailed": "Connection failed"
+        "testFailed": "Connection failed",
+        "ollama": {
+          "statusTitle": "Ollama Status",
+          "statusDescription": "Connection status and model count for your local Ollama instance.",
+          "connectionStatus": "Connection",
+          "checking": "Checking...",
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "successMessage": "Successfully connected to Ollama! Found {{count}} available models.",
+          "errorMessage": "Failed to connect to Ollama. Make sure Ollama is running locally."
+        }
       },
       "prompts": {
         "title": "Prompt",
@@ -622,7 +633,11 @@
         "openMeeting": "Open Meeting",
         "dismiss": "Dismiss",
         "startRecording": "Start Recording"
-      }
+      },
+      "chatWithMeeting": "Chat with Meeting",
+      "chatPlaceholder": "Ask something about the meeting...",
+      "ask": "Ask",
+      "asking": "Asking..."
     }
   },
   "footer": {
@@ -685,7 +700,8 @@
     "noInputDeviceTitle": "Ingen mikrofon hittades",
     "noInputDevice": "Ingen ljudenhet hittades. Anslut en mikrofon eller ett headset och försök igen.",
     "pasteFailedTitle": "Det gick inte att klistra in texten",
-    "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet."
+    "pasteFailed": "Texten kunde inte klistras in i det aktiva programmet.",
+    "askFailed": "Failed to get answer"
   },
   "appLanguage": {
     "title": "Applikationsspråk",

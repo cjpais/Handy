@@ -283,14 +283,14 @@ Read [TEST_INFRA.md](TEST_INFRA.md) before changing Playwright/Tauri mock behavi
 
 The app supports runtime CLI flags for controlling a running instance and startup behavior.
 
-| Flag                     | Description                                                |
-| ------------------------ | ---------------------------------------------------------- |
-| `--toggle-transcription` | Toggle recording on/off on a running instance              |
-| `--toggle-post-process`  | Toggle recording with post-processing on/off               |
-| `--cancel`               | Cancel the current operation on a running instance         |
-| `--start-hidden`         | Launch without showing the main window                     |
-| `--no-tray`              | Launch without system tray                                 |
-| `--debug`                | Enable debug mode with verbose logging                     |
+| Flag                     | Description                                        |
+| ------------------------ | -------------------------------------------------- |
+| `--toggle-transcription` | Toggle recording on/off on a running instance      |
+| `--toggle-post-process`  | Toggle recording with post-processing on/off       |
+| `--cancel`               | Cancel the current operation on a running instance |
+| `--start-hidden`         | Launch without showing the main window             |
+| `--no-tray`              | Launch without system tray                         |
+| `--debug`                | Enable debug mode with verbose logging             |
 
 Implementation path:
 

@@ -420,12 +420,23 @@
           "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "モデルを検索または選択",
           "placeholderNoOptions": "モデル名を入力",
-          "refreshModels": "モデルを更新"
+          "refreshModels": "モデルを更新",
+          "descriptionOllama": "Choose a local Ollama model from the auto-detected list."
         },
         "testButton": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Connection successful!",
-        "testFailed": "Connection failed"
+        "testFailed": "Connection failed",
+        "ollama": {
+          "statusTitle": "Ollama Status",
+          "statusDescription": "Connection status and model count for your local Ollama instance.",
+          "connectionStatus": "Connection",
+          "checking": "Checking...",
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "successMessage": "Successfully connected to Ollama! Found {{count}} available models.",
+          "errorMessage": "Failed to connect to Ollama. Make sure Ollama is running locally."
+        }
       },
       "prompts": {
         "title": "プロンプト",
@@ -622,7 +633,11 @@
         "openMeeting": "Open Meeting",
         "dismiss": "Dismiss",
         "startRecording": "Start Recording"
-      }
+      },
+      "chatWithMeeting": "Chat with Meeting",
+      "chatPlaceholder": "Ask something about the meeting...",
+      "ask": "Ask",
+      "asking": "Asking..."
     }
   },
   "footer": {
@@ -685,7 +700,8 @@
     "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
     "modelLoadFailedUnknown": "不明なモデル",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
-    "pasteFailed": "アクティブなアプリケーションにテキストを貼り付けられませんでした。"
+    "pasteFailed": "アクティブなアプリケーションにテキストを貼り付けられませんでした。",
+    "askFailed": "Failed to get answer"
   },
   "appLanguage": {
     "title": "アプリケーション言語",

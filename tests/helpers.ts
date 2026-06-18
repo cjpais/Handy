@@ -3,11 +3,17 @@ import { Page } from "@playwright/test";
 export interface MockState {
   gmailTasksConnected: boolean;
   calendarConnected: boolean;
+  oauthClientConfigured: boolean;
   oauthSuccess: boolean;
   sendSuccess: boolean;
   meetingDetectionEnabled: boolean;
   calendarPromptsEnabled: boolean;
-  promptEvents: any[];
+  meetingPromptLeadMinutes: number;
+  promptEvents: Array<
+    | { action: "start" }
+    | { action: "dismiss"; payload: unknown }
+    | { action: "close" }
+  >;
   lastFollowUp: {
     recipients: string[];
     summary: string;
@@ -33,10 +39,12 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
       : {
           gmailTasksConnected: connected,
           calendarConnected: false,
+          oauthClientConfigured: true,
           oauthSuccess: true,
           sendSuccess: true,
           meetingDetectionEnabled: false,
           calendarPromptsEnabled: false,
+          meetingPromptLeadMinutes: 5,
           promptEvents: [],
           lastFollowUp: null,
           outputLanguage: "malayalam",
@@ -311,7 +319,7 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
             },
             meeting_detection_enabled: state.meetingDetectionEnabled,
             meeting_calendar_prompts_enabled: state.calendarPromptsEnabled,
-            meeting_prompt_lead_minutes: 5,
+            meeting_prompt_lead_minutes: state.meetingPromptLeadMinutes,
           };
         }
 
@@ -374,14 +382,14 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
         // Google Authentication endpoints
         if (cmd === "get_google_integration_status") {
           return {
-            oauth_client_configured: true,
+            oauth_client_configured: state.oauthClientConfigured,
             gmail_tasks_connected: state.gmailTasksConnected,
             calendar_connected: state.calendarConnected,
-            gmail_tasks_available: true,
-            calendar_available: true,
+            gmail_tasks_available: state.oauthClientConfigured,
+            calendar_available: state.oauthClientConfigured,
             meeting_calendar_prompts_enabled: state.calendarPromptsEnabled,
             meeting_detection_enabled: state.meetingDetectionEnabled,
-            meeting_prompt_lead_minutes: 5,
+            meeting_prompt_lead_minutes: state.meetingPromptLeadMinutes,
           };
         }
 
@@ -419,6 +427,9 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
         }
 
         if (cmd === "change_meeting_prompt_lead_minutes_setting") {
+          state.meetingPromptLeadMinutes =
+            args?.minutes ?? args?.leadMinutes ?? 5;
+          saveState();
           return null;
         }
 
@@ -438,6 +449,8 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
         }
 
         if (cmd === "close_meeting_prompt") {
+          state.promptEvents.push({ action: "close" });
+          saveState();
           return null;
         }
 

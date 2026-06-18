@@ -5,17 +5,23 @@ on:
     branches: [main]
     paths:
       - "src-tauri/**"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "src-tauri/**"
+      - ".github/workflows/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   rust-tests:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 

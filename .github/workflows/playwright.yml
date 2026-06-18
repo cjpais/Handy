@@ -1,21 +1,45 @@
 name: "Playwright"
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "src/i18n/**"
+      - "src-tauri/src/commands/**"
+      - "src-tauri/src/settings.rs"
+      - "src-tauri/resources/default_settings.json"
+      - "package.json"
+      - "bun.lock"
+      - "vite.config.*"
+      - "playwright.config.*"
+      - "tests/**"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "src/**"
+      - "src/i18n/**"
+      - "src-tauri/src/commands/**"
+      - "src-tauri/src/settings.rs"
+      - "src-tauri/resources/default_settings.json"
       - "package.json"
       - "bun.lock"
+      - "vite.config.*"
       - "playwright.config.*"
       - "tests/**"
+      - ".github/workflows/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   playwright:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 

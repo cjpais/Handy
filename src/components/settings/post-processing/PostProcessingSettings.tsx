@@ -158,7 +158,9 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
           {state.isOllamaProvider && (
             <SettingContainer
               title={t("settings.postProcessing.api.ollama.statusTitle")}
-              description={t("settings.postProcessing.api.ollama.statusDescription")}
+              description={t(
+                "settings.postProcessing.api.ollama.statusDescription",
+              )}
               descriptionMode="tooltip"
               layout="horizontal"
               grouped={true}
@@ -167,7 +169,8 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 min-w-[320px]">
                     <span className="text-sm text-neutral-400">
-                      {t("settings.postProcessing.api.ollama.connectionStatus")}:
+                      {t("settings.postProcessing.api.ollama.connectionStatus")}
+                      :
                     </span>
                     {isCheckingOllama ? (
                       <span className="text-sm font-medium text-blue-400 animate-pulse">
@@ -191,18 +194,24 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
                     variant="secondary"
                     size="md"
                   >
-                    <RefreshCcw className={`w-4 h-4 ${isCheckingOllama ? 'animate-spin' : ''}`} />
+                    <RefreshCcw
+                      className={`w-4 h-4 ${isCheckingOllama ? "animate-spin" : ""}`}
+                    />
                   </Button>
                 </div>
                 {ollamaStatus && (
                   <div className="mt-1">
                     {ollamaStatus.connected ? (
                       <Alert variant="success" contained>
-                        {t("settings.postProcessing.api.ollama.successMessage", { count: ollamaStatus.modelCount })}
+                        {t(
+                          "settings.postProcessing.api.ollama.successMessage",
+                          { count: ollamaStatus.modelCount },
+                        )}
                       </Alert>
                     ) : (
                       <Alert variant="error" contained>
-                        {ollamaStatus.error || t("settings.postProcessing.api.ollama.errorMessage")}
+                        {ollamaStatus.error ||
+                          t("settings.postProcessing.api.ollama.errorMessage")}
                       </Alert>
                     )}
                   </div>
@@ -261,8 +270,8 @@ const PostProcessingSettingsApiComponent: React.FC = () => {
             state.isCustomProvider
               ? t("settings.postProcessing.api.model.descriptionCustom")
               : state.isOllamaProvider
-              ? t("settings.postProcessing.api.model.descriptionOllama")
-              : t("settings.postProcessing.api.model.descriptionDefault")
+                ? t("settings.postProcessing.api.model.descriptionOllama")
+                : t("settings.postProcessing.api.model.descriptionDefault")
           }
           descriptionMode="tooltip"
           layout="stacked"

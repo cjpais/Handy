@@ -15,15 +15,17 @@ To run genuine E2E tests without running a full compiled Tauri binary, we inject
 1. **Tauri IPC Injection**:
    Using Playwright's `page.addInitScript()`, we inject a mock `window.__TAURI_INTERNALS__` object that intercepts Tauri IPC command invokes (`invoke`).
 2. **State Management**:
-   We maintain a mock state (`MockState`) in the browser context that stores the state of Google Services connection (`googleConnected`), OAuth flow success/failure flags, follow-up metadata, and output language.
+   We maintain a mock state (`MockState`) in the browser context that stores split Google feature auth (`gmailTasksConnected` and `calendarConnected`), OAuth client availability, assistant prompt settings, follow-up metadata, and output language.
 3. **Session Persistence**:
    To prevent state loss during page reloads (e.g., `page.reload()` in settings persistence tests), we serialize the mock state into the browser's `sessionStorage` and restore it during initialization.
 4. **Mocked Tauri Commands**:
    - `get_app_settings` / `get_default_settings`: Returns app settings reflecting the mocked state.
    - `change_output_language_setting`: Updates the language in the state.
-   - `get_google_auth_status`: Returns authentication status.
-   - `start_google_oauth`: Updates connection status on success or returns OAuth failure.
-   - `disconnect_google_auth`: Resets Google Services connection.
+   - `get_google_integration_status`: Returns feature-scoped Google auth and meeting assistant availability.
+   - `connect_google_features`: Updates Gmail/Tasks and Calendar auth independently on success or returns OAuth failure.
+   - `disconnect_google_feature`: Resets only the requested Google feature connection.
+   - `change_meeting_detection_enabled_setting`, `set_meeting_calendar_prompts_enabled`, `change_meeting_prompt_lead_minutes_setting`: Persist assistant settings through reloads.
+   - `start_meeting_recording_from_prompt`, `dismiss_meeting_prompt`, `close_meeting_prompt`: Capture prompt actions in mock state for assertions.
    - `send_meeting_follow_up`: Captures parameters (recipients, summary, action items) into a global mock state so tests can assert correct payloads.
    - `has_any_models_available`, `get_available_models`, `get_current_model`, `get_model_info`: Mocks the local model store configuration.
    - `get_available_microphones` / `get_available_output_devices`: Returns mock CPAL audio devices.
@@ -34,7 +36,7 @@ To run genuine E2E tests without running a full compiled Tauri binary, we inject
 
 ## Testing Tiers
 
-Our E2E suite organizes Google Services integration tests into four robust testing tiers:
+Our E2E suite organizes meeting-assistant and Google integration coverage into five tiers:
 
 ### Tier 1: Basic Integration & Operations
 
@@ -65,6 +67,13 @@ Verifies scalability and real-world execution:
 
 - **Delimiter Parsing**: Validates the recipient email field parses multiple space- or comma-separated addresses correctly.
 - **Workload Handling**: Verifies correct handling of multi-recipient payloads and mock loading states.
+
+### Tier 5: Feature-scoped Auth Boundaries
+
+Verifies the MASR-specific split-auth contract:
+
+- **Independent Revocation**: Disconnecting Calendar must not disconnect Gmail/Tasks follow-up support.
+- **OAuth Availability Gating**: Calendar prompts and connect buttons stay disabled when the build has no desktop OAuth client ID configured.
 
 ---
 

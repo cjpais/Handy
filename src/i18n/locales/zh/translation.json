@@ -420,12 +420,23 @@
           "placeholderApple": "Apple Intelligence",
           "placeholderWithOptions": "搜索或选择模型",
           "placeholderNoOptions": "输入模型名称",
-          "refreshModels": "刷新模型"
+          "refreshModels": "刷新模型",
+          "descriptionOllama": "Choose a local Ollama model from the auto-detected list."
         },
         "testButton": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Connection successful!",
-        "testFailed": "Connection failed"
+        "testFailed": "Connection failed",
+        "ollama": {
+          "statusTitle": "Ollama Status",
+          "statusDescription": "Connection status and model count for your local Ollama instance.",
+          "connectionStatus": "Connection",
+          "checking": "Checking...",
+          "connected": "Connected",
+          "disconnected": "Disconnected",
+          "successMessage": "Successfully connected to Ollama! Found {{count}} available models.",
+          "errorMessage": "Failed to connect to Ollama. Make sure Ollama is running locally."
+        }
       },
       "prompts": {
         "title": "提示词",
@@ -622,7 +633,11 @@
         "openMeeting": "Open Meeting",
         "dismiss": "Dismiss",
         "startRecording": "Start Recording"
-      }
+      },
+      "chatWithMeeting": "Chat with Meeting",
+      "chatPlaceholder": "Ask something about the meeting...",
+      "ask": "Ask",
+      "asking": "Asking..."
     }
   },
   "footer": {
@@ -685,7 +700,8 @@
     "modelLoadFailed": "加载模型失败: {{model}}",
     "modelLoadFailedUnknown": "未知模型",
     "pasteFailedTitle": "粘贴文本失败",
-    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。"
+    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
+    "askFailed": "Failed to get answer"
   },
   "appLanguage": {
     "title": "应用语言",

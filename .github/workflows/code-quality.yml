@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "src/i18n/**"
+      - "src-tauri/resources/default_settings.json"
+      - "scripts/**"
+      - "tests/**"
       - "package.json"
       - "bun.lock"
       - ".eslintrc*"
@@ -16,6 +20,10 @@ on:
   pull_request:
     paths:
       - "src/**"
+      - "src/i18n/**"
+      - "src-tauri/resources/default_settings.json"
+      - "scripts/**"
+      - "tests/**"
       - "package.json"
       - "bun.lock"
       - ".eslintrc*"
@@ -29,9 +37,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   code-quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
