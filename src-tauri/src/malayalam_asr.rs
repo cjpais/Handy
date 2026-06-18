@@ -42,23 +42,61 @@ impl MalayalamAsr {
             ));
         }
 
-        // Initialize ONNX Session with DirectML and CPU fallback
-        let session = match ort::session::Session::builder() {
-            Ok(builder) => {
-                let mut builder = match builder
-                    .with_execution_providers([ort::ep::DirectML::default().build()])
-                {
-                    Ok(b) => b,
-                    Err(e) => {
-                        log::warn!("Failed to configure DirectML: {}, falling back to CPU", e);
-                        ort::session::Session::builder()?
+        // Initialize ONNX Session
+        let session = ort::session::Session::builder()?.commit_from_file(&model_path)?;
+
+        Ok(Self {
+            session,
+            vocab,
+            blank_id,
+            features_size,
+            sample_rate,
+        })
+    }
+
+    pub fn load_gpu(model_dir: &Path) -> anyhow::Result<Self> {
+        let config_path = model_dir.join("config.json");
+        let mut sample_rate = 16000;
+        let mut features_size = 80;
+
+        if config_path.exists() {
+            if let Ok(config_str) = std::fs::read_to_string(&config_path) {
+                if let Ok(config) = serde_json::from_str::<serde_json::Value>(&config_str) {
+                    if let Some(sr) = config.get("sample_rate").and_then(|v| v.as_u64()) {
+                        sample_rate = sr as usize;
                     }
-                };
-                builder.commit_from_file(&model_path)?
+                    if let Some(fs) = config.get("features_size").and_then(|v| v.as_u64()) {
+                        features_size = fs as usize;
+                    }
+                }
             }
-            Err(e) => {
-                return Err(anyhow::anyhow!("Failed to create session builder: {}", e));
-            }
+        }
+
+        let vocab_path = model_dir.join("vocab.txt");
+        let vocab = load_vocab(&vocab_path)?;
+        let blank_id = vocab.len();
+
+        let model_path = model_dir.join("model.onnx");
+        if !model_path.exists() {
+            return Err(anyhow::anyhow!(
+                "ONNX model file not found at {:?}",
+                model_path
+            ));
+        }
+
+        use ort::execution_providers::{CUDAExecutionProvider, ExecutionProvider};
+        let cuda_ep = CUDAExecutionProvider::default();
+        let cuda_available = cuda_ep.is_available()?;
+
+        let session = if cuda_available {
+            eprintln!("[benchmark] CUDA EP available — using GPU.");
+            ort::session::Session::builder()?
+                .with_execution_providers([cuda_ep.build()])
+                .map_err(|e| anyhow::anyhow!("CUDA EP setup failed: {:?}", e))?
+                .commit_from_file(&model_path)?
+        } else {
+            eprintln!("[benchmark] CUDA EP not available — falling back to CPU.");
+            ort::session::Session::builder()?.commit_from_file(&model_path)?
         };
 
         Ok(Self {

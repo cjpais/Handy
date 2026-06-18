@@ -1,0 +1,110 @@
+{
+  "mal_single_01": {
+    "original_text": "കേരളത്തിലെ കാലാവസ്ഥ വളരെ മനോഹരമാണ്.",
+    "clean_text": "കേരളത്തിലെ കാലാവസ്ഥ വളരെ മനോഹരമാണ്.",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_02": {
+    "original_text": "മലയാള ഭാഷ എനിക്ക് വളരെ ഇഷ്ടമാണ്.",
+    "clean_text": "മലയാള ഭാഷ എനിക്ക് വളരെ ഇഷ്ടമാണ്.",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_03": {
+    "original_text": "നാളെ രാവിലെ നമുക്ക് തിരുവനന്തപുരത്തേക്ക് പോകാം.",
+    "clean_text": "നാളെ രാവിലെ നമുക്ക് തിരുവനന്തപുരത്തേക്ക് പോകാം.",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_04": {
+    "original_text": "ഈ ആപ്ലിക്കേഷൻ എങ്ങനെയാണ് ഉപയോഗിക്കേണ്ടത് എന്ന് പറയാമോ?",
+    "clean_text": "ഈ ആപ്ലിക്കേഷൻ എങ്ങനെയാണ് ഉപയോഗിക്കേണ്ടത് എന്ന് പറയാമോ?",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_05": {
+    "original_text": "ഇന്നത്തെ വാർത്തകളിൽ പ്രധാനപ്പെട്ടത് എന്തൊക്കെയാണ്?",
+    "clean_text": "ഇന്നത്തെ വാർത്തകളിൽ പ്രധാനപ്പെട്ടത് എന്തൊക്കെയാണ്?",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_06": {
+    "original_text": "കേരളത്തിൽ കാണേണ്ട പ്രധാന സ്ഥലങ്ങൾ ഏതൊക്കെയാണ്?",
+    "clean_text": "കേരളത്തിൽ കാണേണ്ട പ്രധാന സ്ഥലങ്ങൾ ഏതൊക്കെയാണ്?",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_07": {
+    "original_text": "എനിക്ക് ഒരു ഗ്ലാസ്സ് വെള്ളം തരുമോ?",
+    "clean_text": "എനിക്ക് ഒരു ഗ്ലാസ്സ് വെള്ളം തരുമോ?",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_08": {
+    "original_text": "അടുത്ത ബസ്സ് എപ്പോഴാണ് വരുന്നത് എന്ന് അറിയാമോ?",
+    "clean_text": "അടുത്ത ബസ്സ് എപ്പോഴാണ് വരുന്നത് എന്ന് അറിയാമോ?",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_09": {
+    "original_text": "ഈ വർഷത്തെ മഴ വളരെ കൂടുതലായിരുന്നു.",
+    "clean_text": "ഈ വർഷത്തെ മഴ വളരെ കൂടുതലായിരുന്നു.",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "mal_single_10": {
+    "original_text": "എല്ലാവർക്കും എന്റെ ഹൃദയം നിറഞ്ഞ ഓണാശംസകൾ!",
+    "clean_text": "എല്ലാവർക്കും എന്റെ ഹൃദയം നിറഞ്ഞ ഓണാശംസകൾ!",
+    "is_multi_speaker": false,
+    "is_code_switched": false
+  },
+  "cs_single_01": {
+    "original_text": "എന്റെ phone-ന്റെ battery തീരാറായി.",
+    "clean_text": "എന്റെ phone-ന്റെ battery തീരാറായി.",
+    "is_multi_speaker": false,
+    "is_code_switched": true
+  },
+  "cs_single_02": {
+    "original_text": "ആ project-ന്റെ deadline നാളെയാണെന്ന് ഓർമ്മയുണ്ടോ?",
+    "clean_text": "ആ project-ന്റെ deadline നാളെയാണെന്ന് ഓർമ്മയുണ്ടോ?",
+    "is_multi_speaker": false,
+    "is_code_switched": true
+  },
+  "cs_single_03": {
+    "original_text": "നാളെ നമുക്ക് ഒരു discussion ഉണ്ട്.",
+    "clean_text": "നാളെ നമുക്ക് ഒരു discussion ഉണ്ട്.",
+    "is_multi_speaker": false,
+    "is_code_switched": true
+  },
+  "cs_single_04": {
+    "original_text": "ഈ laptop വളരെ slow ആണ്, എനിക്ക് പുതിയത് വാങ്ങണം.",
+    "clean_text": "ഈ laptop വളരെ slow ആണ്, എനിക്ക് പുതിയത് വാങ്ങണം.",
+    "is_multi_speaker": false,
+    "is_code_switched": true
+  },
+  "cs_single_05": {
+    "original_text": "അവൻ നല്ലൊരു software engineer ആണ്.",
+    "clean_text": "അവൻ നല്ലൊരു software engineer ആണ്.",
+    "is_multi_speaker": false,
+    "is_code_switched": true
+  },
+  "mal_multi_01": {
+    "original_text": "Speaker 1: ഹലോ, സുഖമാണോ? കുറെ നാളായല്ലോ കണ്ടിട്ട്.\nSpeaker 2: അതെ സുഖമാണ്! നീ എവിടെയായിരുന്നു ഇത്രയും നാൾ?",
+    "clean_text": "ഹലോ, സുഖമാണോ? കുറെ നാളായല്ലോ കണ്ടിട്ട്.\n അതെ സുഖമാണ്! നീ എവിടെയായിരുന്നു ഇത്രയും നാൾ?",
+    "is_multi_speaker": true,
+    "is_code_switched": false
+  },
+  "mal_multi_02": {
+    "original_text": "Speaker 1: ഇന്നത്തെ കാലാവസ്ഥ എങ്ങനെയുണ്ട്? മഴ പെയ്യാൻ സാധ്യതയുണ്ടോ?\nSpeaker 2: ആകാശം കറുത്തിരുണ്ടിരിക്കുകയാണ്, എപ്പോൾ വേണമെങ്കിലും മഴ പെയ്യാം.",
+    "clean_text": "ഇന്നത്തെ കാലാവസ്ഥ എങ്ങനെയുണ്ട്? മഴ പെയ്യാൻ സാധ്യതയുണ്ടോ?\n ആകാശം കറുത്തിരുണ്ടിരിക്കുകയാണ്, എപ്പോൾ വേണമെങ്കിലും മഴ പെയ്യാം.",
+    "is_multi_speaker": true,
+    "is_code_switched": false
+  },
+  "mal_multi_03": {
+    "original_text": "Speaker 1: നാളത്തെ യാത്രയ്ക്കുള്ള ഒരുക്കങ്ങൾ ഒക്കെ കഴിഞ്ഞോ?\nSpeaker 2: അതെ, ബാഗ് എല്ലാം പാക്ക് ചെയ്തു. ടിക്കറ്റും റെഡിയാണ്.",
+    "clean_text": "നാളത്തെ യാത്രയ്ക്കുള്ള ഒരുക്കങ്ങൾ ഒക്കെ കഴിഞ്ഞോ?\n അതെ, ബാഗ് എല്ലാം പാക്ക് ചെയ്തു. ടിക്കറ്റും റെഡിയാണ്.",
+    "is_multi_speaker": true,
+    "is_code_switched": false
+  }
+}

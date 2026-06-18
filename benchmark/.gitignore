@@ -1,0 +1,9 @@
+.env
+*.wav
+*.pcm
+*.mp3
+request.json
+__pycache__/
+node_modules/
+venv/
+.venv/
