@@ -1,9 +1,13 @@
 import { Page } from "@playwright/test";
 
 export interface MockState {
-  googleConnected: boolean;
+  gmailTasksConnected: boolean;
+  calendarConnected: boolean;
   oauthSuccess: boolean;
   sendSuccess: boolean;
+  meetingDetectionEnabled: boolean;
+  calendarPromptsEnabled: boolean;
+  promptEvents: any[];
   lastFollowUp: {
     recipients: string[];
     summary: string;
@@ -27,9 +31,13 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
     const state = saved
       ? JSON.parse(saved)
       : {
-          googleConnected: connected,
+          gmailTasksConnected: connected,
+          calendarConnected: false,
           oauthSuccess: true,
           sendSuccess: true,
+          meetingDetectionEnabled: false,
+          calendarPromptsEnabled: false,
+          promptEvents: [],
           lastFollowUp: null,
           outputLanguage: "malayalam",
         };
@@ -290,9 +298,20 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
             whisper_gpu_device: 0,
             extra_recording_buffer_ms: 0,
             output_language: state.outputLanguage,
-            google_refresh_token: state.googleConnected
+            google_oauth_token: state.gmailTasksConnected
               ? "mock-refresh-token"
               : null,
+            google_auth_tokens: {
+              gmail_tasks_refresh_token: state.gmailTasksConnected
+                ? "mock-refresh-token"
+                : null,
+              calendar_refresh_token: state.calendarConnected
+                ? "mock-calendar-token"
+                : null,
+            },
+            meeting_detection_enabled: state.meetingDetectionEnabled,
+            meeting_calendar_prompts_enabled: state.calendarPromptsEnabled,
+            meeting_prompt_lead_minutes: 5,
           };
         }
 
@@ -353,24 +372,73 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
         }
 
         // Google Authentication endpoints
-        if (cmd === "get_google_auth_status") {
-          return { status: "ok", data: state.googleConnected };
+        if (cmd === "get_google_integration_status") {
+          return {
+            oauth_client_configured: true,
+            gmail_tasks_connected: state.gmailTasksConnected,
+            calendar_connected: state.calendarConnected,
+            gmail_tasks_available: true,
+            calendar_available: true,
+            meeting_calendar_prompts_enabled: state.calendarPromptsEnabled,
+            meeting_detection_enabled: state.meetingDetectionEnabled,
+            meeting_prompt_lead_minutes: 5,
+          };
         }
 
-        if (cmd === "start_google_oauth") {
+        if (cmd === "connect_google_features") {
           if (state.oauthSuccess) {
-            state.googleConnected = true;
+            const features = args?.features || [];
+            if (features.includes("gmail_tasks"))
+              state.gmailTasksConnected = true;
+            if (features.includes("calendar")) state.calendarConnected = true;
             saveState();
-            return { status: "ok", data: "success" };
+            return "success";
           } else {
-            return { status: "error", error: "OAuth flow failed" };
+            throw new Error("OAuth flow failed");
           }
         }
 
-        if (cmd === "disconnect_google_auth") {
-          state.googleConnected = false;
+        if (cmd === "disconnect_google_feature") {
+          if (args?.feature === "gmail_tasks")
+            state.gmailTasksConnected = false;
+          if (args?.feature === "calendar") state.calendarConnected = false;
           saveState();
-          return { status: "ok", data: "success" };
+          return null;
+        }
+
+        if (cmd === "set_meeting_calendar_prompts_enabled") {
+          state.calendarPromptsEnabled = !!args?.enabled;
+          saveState();
+          return null;
+        }
+
+        if (cmd === "change_meeting_detection_enabled_setting") {
+          state.meetingDetectionEnabled = !!args?.enabled;
+          saveState();
+          return null;
+        }
+
+        if (cmd === "change_meeting_prompt_lead_minutes_setting") {
+          return null;
+        }
+
+        if (cmd === "start_meeting_recording_from_prompt") {
+          state.promptEvents.push({ action: "start" });
+          saveState();
+          return null;
+        }
+
+        if (cmd === "dismiss_meeting_prompt") {
+          state.promptEvents.push({
+            action: "dismiss",
+            payload: args?.payload,
+          });
+          saveState();
+          return null;
+        }
+
+        if (cmd === "close_meeting_prompt") {
+          return null;
         }
 
         // Send follow-up email/tasks endpoint
@@ -384,10 +452,7 @@ export async function setupMocks(page: Page, initialGoogleConnected = false) {
           if (state.sendSuccess) {
             return { status: "ok", data: null };
           } else {
-            return {
-              status: "error",
-              error: "Failed to send follow-up email/tasks",
-            };
+            throw "Failed to send follow-up email/tasks";
           }
         }
 

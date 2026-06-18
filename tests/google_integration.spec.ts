@@ -15,9 +15,11 @@ test.describe("Google Integration E2E Tests", () => {
   }) => {
     // 1. Assert initial disconnected state
     await expect(
-      page.locator(
-        "text=Connect to send meeting follow-ups via Gmail and create tasks",
-      ),
+      page
+        .locator(
+          "text=Connect to send meeting follow-ups via Gmail and create tasks",
+        )
+        .first(),
     ).toBeVisible();
     await expect(page.locator(".google-connect-btn")).toBeVisible();
     await expect(page.locator(".send-via-google-btn")).not.toBeVisible();
@@ -25,7 +27,7 @@ test.describe("Google Integration E2E Tests", () => {
     // 2. Connect Google Services
     await page.click(".google-connect-btn");
     await expect(
-      page.locator("text=Connected to Gmail & Google Tasks"),
+      page.locator("text=Connected to Gmail & Google Tasks").first(),
     ).toBeVisible();
     await expect(page.locator(".google-disconnect-btn")).toBeVisible();
 
@@ -47,7 +49,7 @@ test.describe("Google Integration E2E Tests", () => {
 
     // Verify mock state matches expected data sent
     const mockState = await getMockState(page);
-    expect(mockState.googleConnected).toBe(true);
+    expect(mockState.gmailTasksConnected).toBe(true);
     expect(mockState.lastFollowUp).not.toBeNull();
     expect(mockState.lastFollowUp?.recipients).toEqual([
       "alex@example.com",
@@ -64,9 +66,11 @@ test.describe("Google Integration E2E Tests", () => {
     // 4. Disconnect Google Services
     await page.click(".google-disconnect-btn");
     await expect(
-      page.locator(
-        "text=Connect to send meeting follow-ups via Gmail and create tasks",
-      ),
+      page
+        .locator(
+          "text=Connect to send meeting follow-ups via Gmail and create tasks",
+        )
+        .first(),
     ).toBeVisible();
     await expect(page.locator(".google-connect-btn")).toBeVisible();
     await expect(page.locator(".send-via-google-btn")).not.toBeVisible();
@@ -103,9 +107,11 @@ test.describe("Google Integration E2E Tests", () => {
     await page.click(".google-connect-btn");
     // State should remain disconnected
     await expect(
-      page.locator(
-        "text=Connect to send meeting follow-ups via Gmail and create tasks",
-      ),
+      page
+        .locator(
+          "text=Connect to send meeting follow-ups via Gmail and create tasks",
+        )
+        .first(),
     ).toBeVisible();
 
     // 4. Send Follow-up Failure

@@ -459,7 +459,7 @@ impl TranscriptionManager {
         current_model.clone()
     }
 
-    pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
+    pub fn transcribe(&self, audio: Vec<f32>) -> Result<transcribe_rs::TranscriptionResult> {
         #[cfg(debug_assertions)]
         if std::env::var("HANDY_FORCE_TRANSCRIPTION_FAILURE").is_ok() {
             return Err(anyhow::anyhow!(
@@ -477,7 +477,10 @@ impl TranscriptionManager {
         if audio.is_empty() {
             debug!("Empty audio vector");
             self.maybe_unload_immediately("empty audio");
-            return Ok(String::new());
+            return Ok(transcribe_rs::TranscriptionResult {
+                text: String::new(),
+                segments: Some(Vec::new()),
+            });
         }
 
         // Check if model is loaded, if not try to load it
@@ -729,7 +732,7 @@ impl TranscriptionManager {
                 settings.word_correction_threshold,
             )
         } else {
-            result.text
+            result.text.clone()
         };
 
         // Filter out filler words and hallucinations
@@ -751,12 +754,13 @@ impl TranscriptionManager {
             translation_note
         );
 
-        let final_result = filtered_result;
+        let mut final_result = result;
+        final_result.text = filtered_result;
 
-        if final_result.is_empty() {
+        if final_result.text.is_empty() {
             info!("Transcription result is empty");
         } else {
-            info!("Transcription result: {}", final_result);
+            info!("Transcription result: {}", final_result.text);
         }
 
         self.maybe_unload_immediately("transcription");

@@ -64,6 +64,7 @@ pub async fn process_local_file(
     let transcription = tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))
         .await
         .map_err(|e| format!("Transcription task panicked: {}", e))?
+        .map(|r| r.text)
         .map_err(|e| e.to_string())?;
 
     let (post_processed_text, post_process_prompt) = if is_meeting {
@@ -186,6 +187,7 @@ pub async fn retry_history_entry_transcription(
     let transcription = tauri::async_runtime::spawn_blocking(move || tm.transcribe(samples))
         .await
         .map_err(|e| format!("Transcription task panicked: {}", e))?
+        .map(|r| r.text)
         .map_err(|e| e.to_string())?;
 
     if transcription.is_empty() {
@@ -250,4 +252,72 @@ pub async fn update_recording_retention_period(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn ask_meeting_question(
+    app: AppHandle,
+    transcript: String,
+    question: String,
+) -> Result<String, String> {
+    let settings = crate::settings::get_settings(&app);
+    let provider = match settings.active_post_process_provider().cloned() {
+        Some(provider) => provider,
+        None => return Err("No LLM provider selected".to_string()),
+    };
+
+    let model = settings
+        .post_process_models
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    if model.trim().is_empty() {
+        return Err(format!(
+            "No model configured for provider '{}'",
+            provider.id
+        ));
+    }
+
+    let api_key = settings
+        .post_process_api_keys
+        .get(&provider.id)
+        .cloned()
+        .unwrap_or_default();
+
+    let system_prompt = format!(
+        "You are a helpful meeting assistant. Use the following meeting transcript as context to answer the user's question accurately. If the information is not in the transcript, say so.\n\nTRANSCRIPT:\n{}",
+        transcript
+    );
+
+    // Reuse reasoning config logic from actions.rs
+    let (reasoning_effort, reasoning) = match provider.id.as_str() {
+        "custom" | "google" => (Some("none".to_string()), None),
+        "openrouter" => (
+            None,
+            Some(crate::llm_client::ReasoningConfig {
+                effort: Some("none".to_string()),
+                exclude: Some(true),
+            }),
+        ),
+        _ => (None, None),
+    };
+
+    match crate::llm_client::send_chat_completion_with_schema(
+        &provider,
+        api_key,
+        &model,
+        question,
+        Some(system_prompt),
+        None, // No schema, we want natural language response
+        reasoning_effort,
+        reasoning,
+    )
+    .await
+    {
+        Ok(Some(content)) => Ok(content),
+        Ok(None) => Err("LLM returned an empty response".to_string()),
+        Err(e) => Err(e),
+    }
 }

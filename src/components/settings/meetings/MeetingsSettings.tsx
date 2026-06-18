@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -12,6 +12,8 @@ import {
   FileText,
   Upload,
   Mail,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -23,9 +25,12 @@ import {
   type HistoryUpdatePayload,
 } from "@/bindings";
 import { useOsType } from "@/hooks/useOsType";
+import { useSettings } from "@/hooks/useSettings";
 import { formatDateTime } from "@/utils/dateFormat";
 import { AudioPlayer } from "../../ui/AudioPlayer";
 import { LocalFileTranscriber } from "../../LocalFileTranscriber";
+import { ToggleSwitch } from "../../ui/ToggleSwitch";
+import { Select } from "../../ui/Select";
 
 const IconButton: React.FC<{
   onClick: () => void;
@@ -51,96 +56,60 @@ const IconButton: React.FC<{
 export const MeetingsSettings: React.FC = () => {
   const { t } = useTranslation();
   const osType = useOsType();
+  const { settings, updateSetting, isUpdating } = useSettings();
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [transcriberFiles, setTranscriberFiles] = useState<string[]>([]);
-  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [googleStatus, setGoogleStatus] = useState<any>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const checkGoogleAuth = useCallback(async () => {
+  const refreshGoogleStatus = useCallback(async () => {
     try {
-      const result = (await invoke("get_google_auth_status")) as any;
-      if (result && typeof result === "object" && "status" in result) {
-        if (result.status === "ok") {
-          setIsGoogleConnected(!!result.data);
-        }
-      } else {
-        setIsGoogleConnected(!!result);
-      }
+      const result = await commands.getGoogleIntegrationStatus();
+      setGoogleStatus(result);
     } catch (error) {
-      console.error("Failed to check Google auth status:", error);
+      console.error("Failed to load Google integration status:", error);
     }
   }, []);
 
-  const handleConnectGoogle = async () => {
+  const handleConnectGoogle = async (
+    features: ("gmail_tasks" | "calendar")[],
+  ) => {
     setIsConnecting(true);
     try {
-      const result = (await invoke("start_google_oauth")) as any;
-      let success = false;
-      if (result && typeof result === "object" && "status" in result) {
-        if (result.status === "ok") {
-          success = result.data === "success";
-        } else {
-          toast.error(
-            t("settings.meetings.googleConnectError") ||
-              "OAuth connection failed: " + result.error,
-          );
-        }
-      } else {
-        success = result === "success";
-      }
-      if (success) {
-        toast.success(
-          t("settings.meetings.googleConnectSuccess") ||
-            "Google Services connected successfully!",
-        );
-        setIsGoogleConnected(true);
+      const result = await commands.connectGoogleFeatures(features as any);
+      if (result.status === "ok") {
+        toast.success(t("settings.meetings.googleConnectSuccess"));
+        await refreshGoogleStatus();
       } else {
         toast.error(
-          t("settings.meetings.googleConnectError") ||
-            "Failed to connect Google Services.",
+          t("settings.meetings.googleConnectError", { error: result.error }),
         );
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to connect Google services:", error);
-      toast.error(
-        t("settings.meetings.googleConnectError") ||
-          "Failed to start Google OAuth flow",
-      );
+      toast.error(t("settings.meetings.googleConnectError"));
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const handleDisconnectGoogle = async () => {
+  const handleDisconnectGoogle = async (
+    feature: "gmail_tasks" | "calendar",
+  ) => {
     try {
-      const result = (await invoke("disconnect_google_auth")) as any;
-      let success = true;
-      if (
-        result &&
-        typeof result === "object" &&
-        "status" in result &&
-        result.status !== "ok"
-      ) {
-        success = false;
+      const result = await commands.disconnectGoogleFeature(feature as any);
+      if (result.status === "ok") {
+        toast.success(t("settings.meetings.googleDisconnectSuccess"));
+        await refreshGoogleStatus();
+      } else {
         toast.error(
-          t("settings.meetings.googleDisconnectError") ||
-            "Failed to disconnect: " + result.error,
+          t("settings.meetings.googleDisconnectError", { error: result.error }),
         );
-      }
-      if (success) {
-        toast.success(
-          t("settings.meetings.googleDisconnectSuccess") ||
-            "Google Services disconnected",
-        );
-        setIsGoogleConnected(false);
       }
     } catch (error) {
       console.error("Failed to disconnect Google services:", error);
-      toast.error(
-        t("settings.meetings.googleDisconnectError") ||
-          "Failed to disconnect Google Services",
-      );
+      toast.error(t("settings.meetings.googleDisconnectError"));
     }
   };
 
@@ -167,7 +136,7 @@ export const MeetingsSettings: React.FC = () => {
   const loadMeetings = useCallback(async () => {
     setLoading(true);
     try {
-      await checkGoogleAuth();
+      await refreshGoogleStatus();
       // Fetch a larger page size to ensure we grab recent meetings
       const result = await commands.getHistoryEntries(null, 100);
       if (result.status === "ok") {
@@ -183,7 +152,7 @@ export const MeetingsSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [checkGoogleAuth]);
+  }, [refreshGoogleStatus]);
 
   useEffect(() => {
     loadMeetings();
@@ -278,46 +247,119 @@ export const MeetingsSettings: React.FC = () => {
             entry={entry}
             getAudioUrl={getAudioUrl}
             deleteMeeting={deleteMeetingEntry}
-            isGoogleConnected={isGoogleConnected}
+            isGoogleConnected={!!googleStatus?.gmail_tasks_connected}
           />
         ))}
       </div>
     );
   }
 
+  const googleUnavailable =
+    googleStatus && !googleStatus.oauth_client_configured;
+  const leadOptions = useMemo(
+    () => [
+      { value: "5", label: t("settings.meetings.assistant.leadFiveMinutes") },
+    ],
+    [t],
+  );
+
   return (
     <div className="max-w-3xl w-full mx-auto space-y-6">
-      {/* Google Services Connection Section */}
-      <div className="bg-background border border-mid-gray/20 rounded-lg p-4 flex items-center justify-between">
-        <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-text">
-            {t("settings.meetings.googleServices")}
-          </h3>
-          <p className="text-xs text-mid-gray">
-            {isGoogleConnected
-              ? t("settings.meetings.googleConnected")
-              : t("settings.meetings.googleDisconnected")}
+      <div className="bg-background border border-mid-gray/20 rounded-lg p-2 space-y-1">
+        <ToggleSwitch
+          checked={!!settings?.meeting_detection_enabled}
+          onChange={(checked) =>
+            updateSetting("meeting_detection_enabled", checked)
+          }
+          isUpdating={isUpdating("meeting_detection_enabled")}
+          label={t("settings.meetings.assistant.localToggle")}
+          description={t("settings.meetings.assistant.localDescription")}
+          descriptionMode="inline"
+          grouped
+        />
+        <ToggleSwitch
+          checked={!!settings?.meeting_calendar_prompts_enabled}
+          onChange={(checked) =>
+            updateSetting("meeting_calendar_prompts_enabled", checked)
+          }
+          isUpdating={isUpdating("meeting_calendar_prompts_enabled")}
+          disabled={!googleStatus?.calendar_connected || googleUnavailable}
+          label={t("settings.meetings.assistant.calendarToggle")}
+          description={
+            googleUnavailable
+              ? t("settings.meetings.assistant.oauthUnavailable")
+              : t("settings.meetings.assistant.calendarDescription")
+          }
+          descriptionMode="inline"
+          grouped
+        />
+        <div className="px-4 py-2">
+          <p className="text-sm font-medium text-text">
+            {t("settings.meetings.assistant.leadTitle")}
           </p>
+          <p className="text-sm text-mid-gray mb-2">
+            {t("settings.meetings.assistant.leadDescription")}
+          </p>
+          <Select
+            value={String(settings?.meeting_prompt_lead_minutes ?? 5)}
+            options={leadOptions}
+            isClearable={false}
+            onChange={(value) =>
+              updateSetting("meeting_prompt_lead_minutes", Number(value ?? "5"))
+            }
+          />
         </div>
-        <div>
-          {isGoogleConnected ? (
-            <button
-              onClick={handleDisconnectGoogle}
-              className="px-3 py-1.5 text-xs font-medium bg-red-600/10 text-red-500 hover:bg-red-600/20 rounded-md transition-colors cursor-pointer google-disconnect-btn"
-            >
-              {t("settings.meetings.googleDisconnect")}
-            </button>
-          ) : (
-            <button
-              onClick={handleConnectGoogle}
-              disabled={isConnecting}
-              className="px-3 py-1.5 text-xs font-medium bg-logo-primary text-white hover:bg-logo-primary/95 disabled:opacity-55 rounded-md transition-colors cursor-pointer google-connect-btn"
-            >
-              {isConnecting
-                ? t("settings.meetings.googleConnecting")
-                : t("settings.meetings.googleConnect")}
-            </button>
-          )}
+      </div>
+
+      <div className="bg-background border border-mid-gray/20 rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-text">
+              {t("settings.meetings.googleServices")}
+            </h3>
+            <p className="text-xs text-mid-gray">
+              {googleUnavailable
+                ? t("settings.meetings.assistant.oauthUnavailable")
+                : t("settings.meetings.googleDisconnected")}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <GoogleFeatureCard
+            title={t("settings.meetings.googleFollowUpsTitle")}
+            description={t("settings.meetings.googleFollowUpsDescription")}
+            connected={!!googleStatus?.gmail_tasks_connected}
+            disabled={!!googleUnavailable}
+            connecting={isConnecting}
+            connectClassName="google-connect-btn"
+            disconnectClassName="google-disconnect-btn"
+            onConnect={() => handleConnectGoogle(["gmail_tasks"])}
+            onDisconnect={() => handleDisconnectGoogle("gmail_tasks")}
+            labels={{
+              connect: t("settings.meetings.googleConnect"),
+              disconnect: t("settings.meetings.googleDisconnect"),
+              connected: t("settings.meetings.googleConnected"),
+              disconnected: t("settings.meetings.googleDisconnected"),
+            }}
+          />
+          <GoogleFeatureCard
+            title={t("settings.meetings.googleCalendarTitle")}
+            description={t("settings.meetings.googleCalendarDescription")}
+            connected={!!googleStatus?.calendar_connected}
+            disabled={!!googleUnavailable}
+            connecting={isConnecting}
+            onConnect={() => handleConnectGoogle(["calendar"])}
+            onDisconnect={() => handleDisconnectGoogle("calendar")}
+            labels={{
+              connect: t("settings.meetings.googleConnect"),
+              disconnect: t("settings.meetings.googleDisconnect"),
+              connected: t("settings.meetings.assistant.calendarConnected"),
+              disconnected: t(
+                "settings.meetings.assistant.calendarDisconnected",
+              ),
+            }}
+          />
         </div>
       </div>
 
@@ -352,6 +394,63 @@ export const MeetingsSettings: React.FC = () => {
   );
 };
 
+interface GoogleFeatureCardProps {
+  title: string;
+  description: string;
+  connected: boolean;
+  disabled: boolean;
+  connecting: boolean;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  labels: {
+    connect: string;
+    disconnect: string;
+    connected: string;
+    disconnected: string;
+  };
+  connectClassName?: string;
+  disconnectClassName?: string;
+}
+
+const GoogleFeatureCard: React.FC<GoogleFeatureCardProps> = ({
+  title,
+  description,
+  connected,
+  disabled,
+  connecting,
+  onConnect,
+  onDisconnect,
+  labels,
+  connectClassName,
+  disconnectClassName,
+}) => (
+  <div className="rounded-lg border border-mid-gray/20 p-3 space-y-3">
+    <div className="space-y-1">
+      <p className="text-sm font-medium text-text">{title}</p>
+      <p className="text-xs text-mid-gray">{description}</p>
+      <p className="text-xs text-mid-gray">
+        {connected ? labels.connected : labels.disconnected}
+      </p>
+    </div>
+    {connected ? (
+      <button
+        onClick={onDisconnect}
+        className={`px-3 py-1.5 text-xs font-medium bg-red-600/10 text-red-500 hover:bg-red-600/20 rounded-md transition-colors cursor-pointer ${disconnectClassName ?? ""}`}
+      >
+        {labels.disconnect}
+      </button>
+    ) : (
+      <button
+        onClick={onConnect}
+        disabled={disabled || connecting}
+        className={`px-3 py-1.5 text-xs font-medium bg-logo-primary text-white hover:bg-logo-primary/95 disabled:opacity-55 rounded-md transition-colors cursor-pointer ${connectClassName ?? ""}`}
+      >
+        {connecting ? labels.connect : labels.connect}
+      </button>
+    )}
+  </div>
+);
+
 interface MeetingEntryProps {
   entry: HistoryEntry;
   getAudioUrl: (fileName: string) => Promise<string | null>;
@@ -369,6 +468,35 @@ const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
   const [showSummaryCopied, setShowSummaryCopied] = useState(false);
   const [showTranscriptCopied, setShowTranscriptCopied] = useState(false);
   const [expandTranscript, setExpandTranscript] = useState(false);
+
+  const [showChat, setShowChat] = useState(false);
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [chatAnswer, setChatAnswer] = useState("");
+  const [isAsking, setIsAsking] = useState(false);
+
+  const handleAskQuestion = async () => {
+    if (!chatQuestion.trim() || isAsking) return;
+
+    setIsAsking(true);
+    try {
+      const result = await commands.askMeetingQuestion(
+        entry.transcription_text,
+        chatQuestion,
+      );
+      if (result.status === "ok") {
+        setChatAnswer(result.data);
+      } else {
+        toast.error(
+          t("errors.askFailed") || "Failed to get answer: " + result.error,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to ask meeting question:", error);
+      toast.error(t("errors.askFailed") || "Failed to get answer");
+    } finally {
+      setIsAsking(false);
+    }
+  };
 
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
   const [recipientsInput, setRecipientsInput] = useState("");
@@ -418,31 +546,24 @@ const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
         actionItems = [];
       }
 
-      const result = (await invoke("send_meeting_follow_up", {
-        recipients: emails,
+      const result = await commands.sendMeetingFollowUp(
+        emails,
         summary,
-        action_items: actionItems,
         actionItems,
-      })) as any;
+      );
 
-      let success = true;
-      if (result && typeof result === "object" && "status" in result) {
-        if (result.status !== "ok") {
-          success = false;
-          toast.error(
-            t("settings.meetings.sendFollowUpError") ||
-              "Failed to send follow-up: " + result.error,
-          );
-        }
-      }
-
-      if (success) {
+      if (result.status === "ok") {
         toast.success(
           t("settings.meetings.sendFollowUpSuccess") ||
             "Follow-up email and tasks sent successfully!",
         );
         setShowFollowUpDialog(false);
         setRecipientsInput("");
+      } else {
+        toast.error(
+          t("settings.meetings.sendFollowUpError") ||
+            "Failed to send follow-up: " + result.error,
+        );
       }
     } catch (error: any) {
       console.error("Failed to send meeting follow-up:", error);
@@ -609,6 +730,62 @@ const MeetingEntryComponent: React.FC<MeetingEntryProps> = ({
       </div>
 
       <AudioPlayer onLoadRequest={handleLoadAudio} className="w-full mt-1" />
+
+      <div className="space-y-2">
+        <button
+          onClick={() => setShowChat(!showChat)}
+          className="flex items-center justify-between w-full text-left cursor-pointer hover:bg-mid-gray/5 p-1 rounded transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-mid-gray" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-mid-gray">
+              {t("settings.meetings.chatWithMeeting")}
+            </span>
+          </div>
+          {showChat ? (
+            <ChevronUp className="w-4 h-4 text-mid-gray" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-mid-gray" />
+          )}
+        </button>
+
+        {showChat && (
+          <div className="space-y-3 pt-1">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatQuestion}
+                onChange={(e) => setChatQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAskQuestion();
+                }}
+                disabled={isAsking}
+                placeholder={t("settings.meetings.chatPlaceholder")}
+                className="flex-1 px-3 py-1.5 bg-mid-gray/5 border border-mid-gray/20 rounded-md text-sm text-text focus:outline-none focus:border-logo-primary"
+              />
+              <button
+                onClick={handleAskQuestion}
+                disabled={isAsking || !chatQuestion.trim()}
+                className="px-3 py-1.5 bg-logo-primary text-white rounded-md hover:bg-logo-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isAsking ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+
+            {chatAnswer && (
+              <div className="p-3 bg-mid-gray/5 rounded-md border border-mid-gray/10 text-sm text-text/90 select-text markdown-answer">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {chatAnswer}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {showFollowUpDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 follow-up-dialog">

@@ -33,6 +33,8 @@ tauri_panel! {
 
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
+const MEETING_PROMPT_WIDTH: f64 = 360.0;
+const MEETING_PROMPT_HEIGHT: f64 = 168.0;
 
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
@@ -221,6 +223,19 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
     Some((x, y))
 }
 
+fn calculate_meeting_prompt_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
+    let monitor = get_monitor_with_cursor(app_handle)?;
+    let scale = monitor.scale_factor();
+    let monitor_x = monitor.position().x as f64 / scale;
+    let monitor_y = monitor.position().y as f64 / scale;
+    let monitor_width = monitor.size().width as f64 / scale;
+
+    Some((
+        monitor_x + monitor_width - MEETING_PROMPT_WIDTH - 24.0,
+        monitor_y + OVERLAY_TOP_OFFSET + 24.0,
+    ))
+}
+
 /// Creates the recording overlay window and keeps it hidden by default
 #[cfg(not(target_os = "macos"))]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
@@ -282,6 +297,38 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
+pub fn create_meeting_prompt_window(app_handle: &AppHandle) {
+    let mut builder = WebviewWindowBuilder::new(
+        app_handle,
+        "meeting_prompt",
+        tauri::WebviewUrl::App("src/meeting_prompt/index.html".into()),
+    )
+    .title("Meeting Prompt")
+    .resizable(false)
+    .inner_size(MEETING_PROMPT_WIDTH, MEETING_PROMPT_HEIGHT)
+    .shadow(true)
+    .maximizable(false)
+    .minimizable(false)
+    .closable(false)
+    .accept_first_mouse(true)
+    .decorations(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .transparent(true)
+    .focused(false)
+    .visible(false);
+
+    if let Some(data_dir) = crate::portable::data_dir() {
+        builder = builder.data_directory(data_dir.join("webview"));
+    }
+
+    if let Ok(window) = builder.build() {
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&window);
+    }
+}
+
 /// Creates the recording overlay panel and keeps it hidden by default (macOS)
 #[cfg(target_os = "macos")]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
@@ -316,6 +363,35 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
                 log::error!("Failed to create recording overlay panel: {}", e);
             }
         }
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn create_meeting_prompt_window(app_handle: &AppHandle) {
+    if let Some((x, y)) = calculate_meeting_prompt_position(app_handle) {
+        let _ = PanelBuilder::<_, RecordingOverlayPanel>::new(app_handle, "meeting_prompt")
+            .url(WebviewUrl::App("src/meeting_prompt/index.html".into()))
+            .title("Meeting Prompt")
+            .position(tauri::Position::Logical(tauri::LogicalPosition { x, y }))
+            .level(PanelLevel::Status)
+            .size(tauri::Size::Logical(tauri::LogicalSize {
+                width: MEETING_PROMPT_WIDTH,
+                height: MEETING_PROMPT_HEIGHT,
+            }))
+            .has_shadow(true)
+            .transparent(true)
+            .no_activate(false)
+            .corner_radius(12.0)
+            .with_window(|w| w.decorations(false).transparent(true))
+            .collection_behavior(
+                CollectionBehavior::new()
+                    .can_join_all_spaces()
+                    .full_screen_auxiliary(),
+            )
+            .build()
+            .map(|panel| {
+                let _ = panel.hide();
+            });
     }
 }
 
@@ -382,6 +458,23 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
             std::thread::sleep(std::time::Duration::from_millis(300));
             let _ = window_clone.hide();
         });
+    }
+}
+
+pub fn show_meeting_prompt_window(app_handle: &AppHandle) {
+    if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
+        if let Some((x, y)) = calculate_meeting_prompt_position(app_handle) {
+            let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+        let _ = window.show();
+        #[cfg(target_os = "windows")]
+        force_overlay_topmost(&window);
+    }
+}
+
+pub fn hide_meeting_prompt_window(app_handle: &AppHandle) {
+    if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
+        let _ = window.hide();
     }
 }
 

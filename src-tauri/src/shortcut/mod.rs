@@ -1132,6 +1132,30 @@ pub fn change_show_tray_icon_setting(app: AppHandle, enabled: bool) -> Result<()
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_meeting_detection_enabled_setting(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.meeting_detection_enabled = enabled;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_meeting_prompt_lead_minutes_setting(
+    app: AppHandle,
+    minutes: u32,
+) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.meeting_prompt_lead_minutes = minutes.max(1);
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
 /// Save accelerator settings, re-apply globals, and unload the model so it
 /// reloads with the new backend on next transcription.
 fn apply_and_reload_accelerator(app: &AppHandle, s: settings::AppSettings) {

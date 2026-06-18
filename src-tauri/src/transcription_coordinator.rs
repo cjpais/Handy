@@ -1,6 +1,7 @@
 use crate::actions::ACTION_MAP;
 use crate::managers::audio::AudioRecordingManager;
 use log::{debug, error, warn};
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::thread;
@@ -35,6 +36,7 @@ enum Stage {
 /// the async transcribe-paste pipeline.
 pub struct TranscriptionCoordinator {
     tx: Sender<Command>,
+    stage: Arc<AtomicU8>,
 }
 
 pub fn is_transcribe_binding(id: &str) -> bool {
@@ -44,6 +46,8 @@ pub fn is_transcribe_binding(id: &str) -> bool {
 impl TranscriptionCoordinator {
     pub fn new(app: AppHandle) -> Self {
         let (tx, rx) = mpsc::channel();
+        let stage_flag = Arc::new(AtomicU8::new(0));
+        let stage_flag_thread = stage_flag.clone();
 
         thread::spawn(move || {
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -72,18 +76,22 @@ impl TranscriptionCoordinator {
                             if push_to_talk {
                                 if is_pressed && matches!(stage, Stage::Idle) {
                                     start(&app, &mut stage, &binding_id, &hotkey_string);
+                                    store_stage(&stage_flag_thread, &stage);
                                 } else if !is_pressed
                                     && matches!(&stage, Stage::Recording(id) if id == &binding_id)
                                 {
                                     stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                    store_stage(&stage_flag_thread, &stage);
                                 }
                             } else if is_pressed {
                                 match &stage {
                                     Stage::Idle => {
                                         start(&app, &mut stage, &binding_id, &hotkey_string);
+                                        store_stage(&stage_flag_thread, &stage);
                                     }
                                     Stage::Recording(id) if id == &binding_id => {
                                         stop(&app, &mut stage, &binding_id, &hotkey_string);
+                                        store_stage(&stage_flag_thread, &stage);
                                     }
                                     _ => {
                                         debug!("Ignoring press for '{binding_id}': pipeline busy")
@@ -99,10 +107,12 @@ impl TranscriptionCoordinator {
                                 && (recording_was_active || matches!(stage, Stage::Recording(_)))
                             {
                                 stage = Stage::Idle;
+                                store_stage(&stage_flag_thread, &stage);
                             }
                         }
                         Command::ProcessingFinished => {
                             stage = Stage::Idle;
+                            store_stage(&stage_flag_thread, &stage);
                         }
                     }
                 }
@@ -113,7 +123,10 @@ impl TranscriptionCoordinator {
             }
         });
 
-        Self { tx }
+        Self {
+            tx,
+            stage: stage_flag,
+        }
     }
 
     /// Send a keyboard/signal input event for a transcribe binding.
@@ -156,6 +169,23 @@ impl TranscriptionCoordinator {
             warn!("Transcription coordinator channel closed");
         }
     }
+
+    pub fn current_mode(&self) -> &'static str {
+        match self.stage.load(Ordering::Relaxed) {
+            1 => "recording",
+            2 => "processing",
+            _ => "idle",
+        }
+    }
+}
+
+fn store_stage(stage_flag: &AtomicU8, stage: &Stage) {
+    let value = match stage {
+        Stage::Idle => 0,
+        Stage::Recording(_) => 1,
+        Stage::Processing => 2,
+    };
+    stage_flag.store(value, Ordering::Relaxed);
 }
 
 fn start(app: &AppHandle, stage: &mut Stage, binding_id: &str, hotkey_string: &str) {

@@ -1,0 +1,82 @@
+.meeting-prompt-root {
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.meeting-prompt-card {
+  height: 100%;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-mid-gray) 20%, transparent);
+  background: color-mix(in srgb, var(--color-background) 96%, transparent);
+  box-shadow: 0 12px 32px rgba(15, 15, 15, 0.25);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px;
+  color: var(--color-text);
+}
+
+.meeting-prompt-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+.meeting-prompt-title {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.meeting-prompt-subtitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+
+.meeting-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.meeting-prompt-btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.meeting-prompt-btn.secondary {
+  background: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
+  color: var(--color-text);
+}
+
+.meeting-prompt-btn.secondary:hover {
+  background: color-mix(in srgb, var(--color-mid-gray) 20%, transparent);
+}
+
+.meeting-prompt-btn.primary {
+  background: var(--color-logo-primary);
+  color: white;
+}
+
+.meeting-prompt-btn.primary:hover {
+  background: color-mix(in srgb, var(--color-logo-primary) 90%, black);
+}
