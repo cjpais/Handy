@@ -28,19 +28,14 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libasound2-dev libssl-dev libgtk-layer-shell-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libasound2-dev libssl-dev libgtk-layer-shell-dev libvulkan-dev glslc spirv-tools
 
-      - uses: swatinem/rust-cache@v2
+      - uses: swatinem/rust-cache@23869a5bd66c73db3c0ac40331f3206eb23791dc
         with:
           workspaces: "./src-tauri -> target"
 
-      - name: Use mock TranscriptionManager (CI only)
-        working-directory: src-tauri
-        run: |
-          # Swap to mock adapter - avoids compiling whisper/Vulkan
-          cp src/managers/transcription_mock.rs src/managers/transcription.rs
-          sed -i '/^transcribe-rs/d' Cargo.toml
-
       - name: Run Rust tests
         working-directory: src-tauri
+        env:
+          CARGO_TARGET_DIR: target
         run: cargo test
