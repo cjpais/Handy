@@ -3,6 +3,7 @@ use crate::managers::google_oauth::GoogleOAuth;
 use crate::settings::{get_settings, GoogleFeature};
 use crate::TranscriptionCoordinator;
 use chrono::{DateTime, Duration, Utc};
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -13,6 +14,38 @@ use tauri::{AppHandle, Emitter, Manager};
 const LOCAL_POLL_SECS: u64 = 4;
 const CALENDAR_POLL_SECS: u64 = 60;
 const DUPLICATE_COOLDOWN_MINUTES: i64 = 15;
+const GOOGLE_MEET_PROVIDER: &str = "Google Meet";
+const ZOOM_PROVIDER: &str = "Zoom";
+const TEAMS_PROVIDER: &str = "Microsoft Teams";
+
+static GOOGLE_MEET_URL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)(https?://)?meet\.google\.com/(?P<code>[a-z]{3}-[a-z]{4}-[a-z]{3})(?:[/?#][^\s)]*)?",
+    )
+    .expect("valid Google Meet regex")
+});
+static GOOGLE_MEET_TITLE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)\b[a-z]{3}-[a-z]{4}-[a-z]{3}\b.*google meet|google meet.*\b[a-z]{3}-[a-z]{4}-[a-z]{3}\b")
+        .expect("valid Google Meet title regex")
+});
+static GOOGLE_MEET_IGNORED_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)meet\.google\.com/(landing|new|lookup|_meet/)")
+        .expect("valid Google Meet ignored regex")
+});
+static ZOOM_URL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)(https?://)?(?:[\w-]+\.)?zoom\.us/(?P<path>(?:j|w|wc)/[A-Za-z0-9?&=/%._-]+)")
+        .expect("valid Zoom regex")
+});
+static ZOOM_IGNORED_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)zoom\.us/(download|launch|profile|signin|signup)")
+        .expect("valid Zoom ignored regex")
+});
+static TEAMS_URL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(?i)(https?://)?(?P<host>teams\.microsoft\.com/l/meetup-join/[^\s)]+|teams\.live\.com/meet/[^\s)]+)")
+        .expect("valid Teams regex")
+});
+
+const BROWSER_PROCESS_SUBSTRINGS: &[&str] = &["chrome", "msedge", "firefox", "brave", "opera"];
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Type)]
 pub enum MeetingPromptSource {
@@ -49,65 +82,6 @@ pub struct MeetingCandidate {
     pub start_time: DateTime<Utc>,
     pub join_url: Option<String>,
 }
-
-#[derive(Debug, Clone)]
-struct ProviderMatcher {
-    provider: &'static str,
-    process_substrings: &'static [&'static str],
-    title_substrings: &'static [&'static str],
-    url_patterns: &'static [&'static str],
-}
-
-const PROVIDER_MATCHERS: &[ProviderMatcher] = &[
-    ProviderMatcher {
-        provider: "Google Meet",
-        process_substrings: &["chrome", "msedge", "firefox", "brave"],
-        title_substrings: &["google meet", "meet.google.com"],
-        url_patterns: &["meet.google.com/"],
-    },
-    ProviderMatcher {
-        provider: "Zoom",
-        process_substrings: &["zoom"],
-        title_substrings: &["zoom meeting", "zoom workplace"],
-        url_patterns: &["zoom.us/j/", "zoom.us/wc/"],
-    },
-    ProviderMatcher {
-        provider: "Microsoft Teams",
-        process_substrings: &["teams"],
-        title_substrings: &["microsoft teams", "teams meeting", "teams |"],
-        url_patterns: &["teams.microsoft.com/l/meetup-join", "teams.live.com/meet/"],
-    },
-    ProviderMatcher {
-        provider: "Webex",
-        process_substrings: &["webex"],
-        title_substrings: &["webex"],
-        url_patterns: &["webex.com/meet", "webex.com/join"],
-    },
-    ProviderMatcher {
-        provider: "Jitsi",
-        process_substrings: &["chrome", "msedge", "firefox"],
-        title_substrings: &["jitsi meet"],
-        url_patterns: &["meet.jit.si/"],
-    },
-    ProviderMatcher {
-        provider: "Whereby",
-        process_substrings: &["chrome", "msedge", "firefox"],
-        title_substrings: &["whereby"],
-        url_patterns: &["whereby.com/"],
-    },
-    ProviderMatcher {
-        provider: "Slack Huddle",
-        process_substrings: &["slack"],
-        title_substrings: &["huddle", "slack call", "slack |"],
-        url_patterns: &["app.slack.com/huddle", "slack.com/calls/"],
-    },
-    ProviderMatcher {
-        provider: "Discord",
-        process_substrings: &["discord"],
-        title_substrings: &["discord", "voice call", "video call"],
-        url_patterns: &["discord.com/channels/"],
-    },
-];
 
 #[derive(Default)]
 struct MeetingAssistantState {
@@ -299,34 +273,55 @@ fn prompt_key(candidate: &MeetingCandidate) -> String {
 struct ActiveWindowMetadata {
     title: String,
     process_name: String,
+    accessible_text: Option<String>,
 }
 
 fn match_active_window(window: &ActiveWindowMetadata) -> Option<MeetingCandidate> {
     let title = window.title.to_lowercase();
     let process = window.process_name.to_lowercase();
+    let accessible = window
+        .accessible_text
+        .as_deref()
+        .unwrap_or_default()
+        .to_lowercase();
+    let combined = if accessible.is_empty() {
+        title.clone()
+    } else {
+        format!("{title}\n{accessible}")
+    };
 
-    for matcher in PROVIDER_MATCHERS {
-        let process_match = matcher
-            .process_substrings
+    let detected = if let Some(url) = detect_google_meet_url(&combined) {
+        Some((GOOGLE_MEET_PROVIDER, Some(url)))
+    } else if let Some(url) = detect_teams_url(&combined) {
+        Some((TEAMS_PROVIDER, Some(url)))
+    } else if let Some(url) = detect_zoom_url(&combined) {
+        Some((ZOOM_PROVIDER, Some(url)))
+    } else if is_browser_process(&process) && GOOGLE_MEET_TITLE_RE.is_match(&title) {
+        Some((GOOGLE_MEET_PROVIDER, None))
+    } else if process.contains("zoom")
+        && ["zoom meeting", "meeting controls", "join meeting"]
             .iter()
-            .any(|needle| process.contains(needle));
-        let title_match = matcher
-            .title_substrings
+            .any(|needle| title.contains(needle))
+    {
+        Some((ZOOM_PROVIDER, None))
+    } else if process.contains("teams")
+        && ["meeting", "call", "meet now", "pre-join"]
             .iter()
-            .any(|needle| title.contains(needle));
-        let url_match = matcher
-            .url_patterns
-            .iter()
-            .any(|needle| title.contains(needle));
-        if process_match && (title_match || url_match) || url_match {
-            return Some(MeetingCandidate {
-                provider: matcher.provider.to_string(),
-                title: window.title.clone(),
-                source: MeetingPromptSource::LocalDetection,
-                start_time: Utc::now(),
-                join_url: extract_url(&window.title),
-            });
-        }
+            .any(|needle| title.contains(needle))
+    {
+        Some((TEAMS_PROVIDER, None))
+    } else {
+        None
+    };
+
+    if let Some((provider, join_url)) = detected {
+        return Some(MeetingCandidate {
+            provider: provider.to_string(),
+            title: window.title.clone(),
+            source: MeetingPromptSource::LocalDetection,
+            start_time: Utc::now(),
+            join_url,
+        });
     }
 
     None
@@ -361,7 +356,9 @@ fn calendar_event_to_candidate(
 
 fn extract_meeting_url_from_event(event: &CalendarEvent) -> Option<String> {
     if let Some(link) = event.hangout_link.clone() {
-        return Some(link);
+        if provider_for_url(&link).is_some() {
+            return Some(link);
+        }
     }
     if let Some(conference_data) = &event.conference_data {
         for entry in &conference_data.entry_points {
@@ -385,16 +382,15 @@ fn extract_meeting_url_from_event(event: &CalendarEvent) -> Option<String> {
 }
 
 fn provider_for_url(url: &str) -> Option<String> {
-    let lower = url.to_lowercase();
-    PROVIDER_MATCHERS
-        .iter()
-        .find(|matcher| {
-            matcher
-                .url_patterns
-                .iter()
-                .any(|pattern| lower.contains(pattern))
-        })
-        .map(|matcher| matcher.provider.to_string())
+    if detect_google_meet_url(url).is_some() {
+        Some(GOOGLE_MEET_PROVIDER.to_string())
+    } else if detect_zoom_url(url).is_some() {
+        Some(ZOOM_PROVIDER.to_string())
+    } else if detect_teams_url(url).is_some() {
+        Some(TEAMS_PROVIDER.to_string())
+    } else {
+        None
+    }
 }
 
 fn parse_calendar_datetime(value: &CalendarDateTime) -> Option<DateTime<Utc>> {
@@ -416,17 +412,144 @@ fn extract_url(text: &str) -> Option<String> {
     regex.find(text).map(|m| m.as_str().to_string())
 }
 
+fn is_browser_process(process: &str) -> bool {
+    BROWSER_PROCESS_SUBSTRINGS
+        .iter()
+        .any(|needle| process.contains(needle))
+}
+
+fn normalize_url(url: &str) -> String {
+    if url.to_lowercase().starts_with("http://") || url.to_lowercase().starts_with("https://") {
+        url.to_string()
+    } else {
+        format!("https://{url}")
+    }
+}
+
+fn detect_google_meet_url(text: &str) -> Option<String> {
+    if GOOGLE_MEET_IGNORED_RE.is_match(text) {
+        return None;
+    }
+
+    GOOGLE_MEET_URL_RE
+        .captures(text)
+        .and_then(|captures| captures.get(0))
+        .map(|m| normalize_url(m.as_str()))
+}
+
+fn detect_zoom_url(text: &str) -> Option<String> {
+    if ZOOM_IGNORED_RE.is_match(text) {
+        return None;
+    }
+
+    ZOOM_URL_RE
+        .captures(text)
+        .and_then(|captures| captures.get(0))
+        .map(|m| normalize_url(m.as_str()))
+}
+
+fn detect_teams_url(text: &str) -> Option<String> {
+    TEAMS_URL_RE
+        .captures(text)
+        .and_then(|captures| captures.get(0))
+        .map(|m| normalize_url(m.as_str()))
+}
+
 #[cfg(target_os = "windows")]
 fn get_active_window_metadata() -> Option<ActiveWindowMetadata> {
+    use std::collections::BTreeSet;
     use windows::core::PWSTR;
+    use windows::Win32::Foundation::RPC_E_CHANGED_MODE;
     use windows::Win32::Foundation::{CloseHandle, HWND, MAX_PATH};
+    use windows::Win32::System::Com::{
+        CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_INPROC_SERVER,
+        COINIT_APARTMENTTHREADED,
+    };
     use windows::Win32::System::Threading::{
         OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_FORMAT,
         PROCESS_QUERY_LIMITED_INFORMATION,
     };
+    use windows::Win32::System::Variant::{VariantClear, VT_BSTR};
+    use windows::Win32::UI::Accessibility::{
+        CUIAutomation, IUIAutomation, IUIAutomationElement, TreeScope_Subtree,
+        UIA_ValueValuePropertyId,
+    };
     use windows::Win32::UI::WindowsAndMessaging::{
         GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
     };
+
+    unsafe fn add_element_text(element: &IUIAutomationElement, values: &mut BTreeSet<String>) {
+        for text in [
+            element.CurrentName().ok().map(|s| s.to_string()),
+            element.CurrentHelpText().ok().map(|s| s.to_string()),
+            element.CurrentItemType().ok().map(|s| s.to_string()),
+            element
+                .CurrentLocalizedControlType()
+                .ok()
+                .map(|s| s.to_string()),
+            element.CurrentAutomationId().ok().map(|s| s.to_string()),
+            element.CurrentClassName().ok().map(|s| s.to_string()),
+        ] {
+            if let Some(text) = text {
+                let trimmed = text.trim();
+                if !trimmed.is_empty() {
+                    values.insert(trimmed.to_string());
+                }
+            }
+        }
+
+        if let Ok(mut variant) = element.GetCurrentPropertyValue(UIA_ValueValuePropertyId) {
+            let text = if variant.Anonymous.Anonymous.vt == VT_BSTR {
+                let value = variant.Anonymous.Anonymous.Anonymous.bstrVal.clone();
+                Some(value.to_string())
+            } else {
+                None
+            };
+            let _ = VariantClear(&mut variant);
+
+            if let Some(text) = text {
+                let trimmed = text.trim();
+                if !trimmed.is_empty() {
+                    values.insert(trimmed.to_string());
+                }
+            }
+        }
+    }
+
+    unsafe fn get_accessible_text(hwnd: HWND) -> Option<String> {
+        let init = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+        let should_uninit = init.is_ok();
+        if !init.is_ok() && init != RPC_E_CHANGED_MODE {
+            return None;
+        }
+
+        let result = (|| {
+            let automation: IUIAutomation =
+                CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()?;
+            let root = automation.ElementFromHandle(hwnd).ok()?;
+            let condition = automation.CreateTrueCondition().ok()?;
+            let elements = root.FindAll(TreeScope_Subtree, &condition).ok()?;
+            let len = elements.Length().ok()?.min(96);
+            let mut values = BTreeSet::new();
+
+            for index in 0..len {
+                let element = elements.GetElement(index).ok()?;
+                add_element_text(&element, &mut values);
+            }
+
+            if values.is_empty() {
+                None
+            } else {
+                Some(values.into_iter().collect::<Vec<_>>().join("\n"))
+            }
+        })();
+
+        if should_uninit {
+            CoUninitialize();
+        }
+
+        result
+    }
 
     unsafe {
         let hwnd: HWND = GetForegroundWindow();
@@ -449,6 +572,7 @@ fn get_active_window_metadata() -> Option<ActiveWindowMetadata> {
             return Some(ActiveWindowMetadata {
                 title,
                 process_name: String::new(),
+                accessible_text: None,
             });
         }
 
@@ -472,10 +596,16 @@ fn get_active_window_metadata() -> Option<ActiveWindowMetadata> {
             String::new()
         };
         let _ = CloseHandle(handle);
+        let is_browser = is_browser_process(&process_name.to_lowercase());
 
         Some(ActiveWindowMetadata {
             title,
             process_name,
+            accessible_text: if is_browser {
+                get_accessible_text(hwnd)
+            } else {
+                None
+            },
         })
     }
 }
@@ -495,9 +625,51 @@ mod tests {
         let candidate = match_active_window(&ActiveWindowMetadata {
             title: "Zoom Meeting - Weekly Sync".to_string(),
             process_name: "Zoom".to_string(),
+            accessible_text: None,
         })
         .expect("expected zoom match");
-        assert_eq!(candidate.provider, "Zoom");
+        assert_eq!(candidate.provider, ZOOM_PROVIDER);
+    }
+
+    #[test]
+    fn provider_matching_detects_google_meet_from_browser_accessible_url() {
+        let candidate = match_active_window(&ActiveWindowMetadata {
+            title: "Sprint Review - Google Chrome".to_string(),
+            process_name: "chrome".to_string(),
+            accessible_text: Some(
+                "Address and search bar\nhttps://meet.google.com/abc-defg-hij".to_string(),
+            ),
+        })
+        .expect("expected Google Meet match");
+        assert_eq!(candidate.provider, GOOGLE_MEET_PROVIDER);
+        assert_eq!(
+            candidate.join_url.as_deref(),
+            Some("https://meet.google.com/abc-defg-hij")
+        );
+    }
+
+    #[test]
+    fn provider_matching_ignores_google_meet_launcher_page() {
+        let candidate = match_active_window(&ActiveWindowMetadata {
+            title: "Google Meet - Google Chrome".to_string(),
+            process_name: "chrome".to_string(),
+            accessible_text: Some("https://meet.google.com/landing".to_string()),
+        });
+        assert!(candidate.is_none());
+    }
+
+    #[test]
+    fn provider_matching_detects_teams_browser_url() {
+        let candidate = match_active_window(&ActiveWindowMetadata {
+            title: "Project sync | Microsoft Teams".to_string(),
+            process_name: "msedge".to_string(),
+            accessible_text: Some(
+                "https://teams.microsoft.com/l/meetup-join/19%3ameeting_id%40thread.v2/0"
+                    .to_string(),
+            ),
+        })
+        .expect("expected Teams match");
+        assert_eq!(candidate.provider, TEAMS_PROVIDER);
     }
 
     #[test]
@@ -510,7 +682,19 @@ mod tests {
         .expect("valid event json");
 
         let candidate = calendar_event_to_candidate(&event, 5).expect("event should prompt");
-        assert_eq!(candidate.provider, "Google Meet");
+        assert_eq!(candidate.provider, GOOGLE_MEET_PROVIDER);
+    }
+
+    #[test]
+    fn calendar_event_parsing_ignores_non_meeting_google_meet_link() {
+        let event: CalendarEvent = serde_json::from_value(json!({
+            "summary": "Standup",
+            "start": { "dateTime": (Utc::now() + Duration::minutes(3)).to_rfc3339() },
+            "description": "Join here: https://meet.google.com/landing"
+        }))
+        .expect("valid event json");
+
+        assert!(calendar_event_to_candidate(&event, 5).is_none());
     }
 
     #[test]
