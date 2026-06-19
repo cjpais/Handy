@@ -116,7 +116,7 @@ fn init_gtk_layer_shell(overlay_window: &tauri::webview::WebviewWindow) -> bool 
 #[cfg(target_os = "windows")]
 fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
     use windows::Win32::UI::WindowsAndMessaging::{
-        SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
+        SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
     };
 
     // Clone because run_on_main_thread takes 'static
@@ -134,7 +134,7 @@ fn force_overlay_topmost(overlay_window: &tauri::webview::WebviewWindow) {
                     0,
                     0,
                     0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
                 );
             }
         }
@@ -299,6 +299,10 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 
 #[cfg(not(target_os = "macos"))]
 pub fn create_meeting_prompt_window(app_handle: &AppHandle) {
+    if app_handle.get_webview_window("meeting_prompt").is_some() {
+        return;
+    }
+
     let mut builder = WebviewWindowBuilder::new(
         app_handle,
         "meeting_prompt",
@@ -368,6 +372,10 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 
 #[cfg(target_os = "macos")]
 pub fn create_meeting_prompt_window(app_handle: &AppHandle) {
+    if app_handle.get_webview_window("meeting_prompt").is_some() {
+        return;
+    }
+
     if let Some((x, y)) = calculate_meeting_prompt_position(app_handle) {
         let _ = PanelBuilder::<_, RecordingOverlayPanel>::new(app_handle, "meeting_prompt")
             .url(WebviewUrl::App("src/meeting_prompt/index.html".into()))
@@ -462,6 +470,10 @@ pub fn hide_recording_overlay(app_handle: &AppHandle) {
 }
 
 pub fn show_meeting_prompt_window(app_handle: &AppHandle) {
+    if app_handle.get_webview_window("meeting_prompt").is_none() {
+        create_meeting_prompt_window(app_handle);
+    }
+
     if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
         if let Some((x, y)) = calculate_meeting_prompt_position(app_handle) {
             let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
@@ -474,7 +486,7 @@ pub fn show_meeting_prompt_window(app_handle: &AppHandle) {
 
 pub fn hide_meeting_prompt_window(app_handle: &AppHandle) {
     if let Some(window) = app_handle.get_webview_window("meeting_prompt") {
-        let _ = window.hide();
+        let _ = window.destroy();
     }
 }
 
