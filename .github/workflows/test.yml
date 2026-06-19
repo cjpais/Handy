@@ -36,4 +36,6 @@ jobs:
 
       - name: Run Rust tests
         working-directory: src-tauri
+        env:
+          CARGO_TARGET_DIR: target
         run: cargo test
