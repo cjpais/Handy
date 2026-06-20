@@ -1155,3 +1155,16 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
         .await
         .expect("get_available_accelerators panicked")
 }
+
+#[cfg(test)]
+mod capglue_tests {
+    use super::*;
+
+    #[test]
+    fn change_capglue_settings_rejects_missing_required_target() {
+        assert!(validate_capglue_settings("", "capglue", &[]).is_err());
+        assert!(validate_capglue_settings("  ", "capglue", &[]).is_err());
+        assert!(validate_capglue_settings("com.example.Target", "", &[]).is_err());
+        assert!(validate_capglue_settings("com.example.Target", "capglue", &[]).is_ok());
+    }
+}
