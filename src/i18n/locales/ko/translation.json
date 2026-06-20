@@ -256,7 +256,7 @@
         "description": "녹음 중지 후 30초 동안 마이크 스트림을 열어 두어 연속 전사 시 지연을 줄입니다. 활성화 중 블루투스 오디오 품질이 저하될 수 있습니다."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper 가속",
           "description": "Whisper 모델의 하드웨어 가속. 자동 모드는 GPU를 사용합니다 (macOS에서는 Metal, Windows/Linux에서는 Vulkan)."
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "감사의 말",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "OpenAI의 Whisper 자동 음성 인식 모델의 고성능 추론",
-          "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 Whisper.cpp를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
+          "details": "Handy는 빠르고 로컬 음성-텍스트 처리를 위해 ggml를 사용합니다. Georgi Gerganov와 기여자들의 놀라운 작업에 감사드립니다."
         }
       }
     }

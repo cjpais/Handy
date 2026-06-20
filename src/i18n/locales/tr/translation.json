@@ -256,7 +256,7 @@
         "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper Hızlandırma",
           "description": "Whisper modelleri için donanım hızlandırma. Otomatik mod, mevcutsa GPU kullanır (macOS'ta Metal, Windows/Linux'ta Vulkan)."
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "Teşekkürler",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "OpenAI'nin Whisper otomatik konuşma tanıma modelinin yüksek performanslı çıkarımı",
-          "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için Whisper.cpp kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
+          "details": "Handy, hızlı ve yerel konuşmadan metne dönüştürme için ggml kullanır. Georgi Gerganov ve katkıda bulunanların harika çalışmaları için teşekkür ederiz."
         }
       }
     }

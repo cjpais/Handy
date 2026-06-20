@@ -256,7 +256,7 @@
         "description": "Ponechá stream mikrofonu otevřený po dobu 30 sekund po zastavení nahrávání, čímž se sníží latence při opakovaném přepisu. Může zhoršit kvalitu zvuku Bluetooth."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Akcelerace Whisper",
           "description": "Hardwarová akcelerace pro modely Whisper. Automatický režim používá GPU, pokud je k dispozici (Metal na macOS, Vulkan na Windows/Linux)."
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "Poděkování",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "Vysoce výkonné inferenční zpracování modelu automatického rozpoznávání řeči Whisper od OpenAI",
-          "details": "Handy používá Whisper.cpp pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
+          "details": "Handy používá ggml pro rychlé lokální zpracování řeči na text. Díky skvělé práci Georgiho Gerganova a přispěvatelů."
         }
       }
     }

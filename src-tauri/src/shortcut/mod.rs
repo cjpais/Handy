@@ -1111,12 +1111,12 @@ fn apply_and_reload_accelerator(app: &AppHandle, s: settings::AppSettings) {
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_whisper_accelerator_setting(
+pub fn change_transcribe_accelerator_setting(
     app: AppHandle,
-    accelerator: settings::WhisperAcceleratorSetting,
+    accelerator: settings::TranscribeAcceleratorSetting,
 ) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
-    s.whisper_accelerator = accelerator;
+    s.transcribe_accelerator = accelerator;
     apply_and_reload_accelerator(&app, s);
     Ok(())
 }
@@ -1135,9 +1135,9 @@ pub fn change_ort_accelerator_setting(
 
 #[tauri::command]
 #[specta::specta]
-pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
+pub fn change_transcribe_gpu_device(app: AppHandle, device: i32) -> Result<(), String> {
     let mut s = settings::get_settings(&app);
-    s.whisper_gpu_device = device;
+    s.transcribe_gpu_device = device;
     apply_and_reload_accelerator(&app, s);
     Ok(())
 }
@@ -1145,7 +1145,7 @@ pub fn change_whisper_gpu_device(app: AppHandle, device: i32) -> Result<(), Stri
 /// Return which accelerators and GPU devices are available for this build.
 ///
 /// First-call cost is dominated by enumerating GPU devices through the
-/// whisper.cpp Metal/Vulkan backend, which loads dynamic libraries and
+/// transcribe.cpp Metal/Vulkan backend, which loads dynamic libraries and
 /// probes hardware. Run it on the blocking pool so the webview thread
 /// stays responsive — see also the startup pre-warm in `lib.rs`.
 #[tauri::command]

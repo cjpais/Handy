@@ -256,7 +256,7 @@
         "description": "Mantiene el flujo del micrófono abierto durante 30 segundos después de detener la grabación, reduciendo la latencia en transcripciones consecutivas. Puede degradar la calidad del audio Bluetooth mientras está activo."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Aceleración de Whisper",
           "description": "Aceleración por hardware para modelos Whisper. Auto usa GPU si está disponible (Metal en macOS, Vulkan en Windows/Linux)."
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "Reconocimientos",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "Inferencia de alto rendimiento del modelo de reconocimiento automático de voz Whisper de OpenAI",
-          "details": "Handy usa Whisper.cpp para procesamiento de voz a texto rápido y local. Gracias al increíble trabajo de Georgi Gerganov y colaboradores."
+          "details": "Handy usa ggml para procesamiento de voz a texto rápido y local. Gracias al increíble trabajo de Georgi Gerganov y colaboradores."
         }
       }
     }

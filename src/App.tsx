@@ -137,6 +137,19 @@ function App() {
     };
   }, [t]);
 
+  // Listen for transcription failures and show a toast.
+  // The payload is the backend error message (also logged to handy.log).
+  useEffect(() => {
+    const unlisten = listen<string>("transcription-error", (event) => {
+      toast.error(t("errors.transcriptionFailedTitle"), {
+        description: event.payload,
+      });
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [t]);
+
   // Listen for model loading failures and show a toast
   useEffect(() => {
     const unlisten = listen<ModelStateEvent>("model-state-changed", (event) => {

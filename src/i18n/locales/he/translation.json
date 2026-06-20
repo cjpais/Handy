@@ -256,7 +256,7 @@
         "description": "משאיר את זרם המיקרופון פתוח למשך 30 שניות אחרי סיום ההקלטה, וכך מפחית השהיה בתמלולים רצופים. עשוי לפגוע באיכות שמע Bluetooth בזמן שהאפשרות פעילה."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "האצת Whisper",
           "description": "האצת חומרה למודלי Whisper. מצב אוטומטי משתמש ב-GPU אם זמין (Metal ב-macOS, Vulkan ב-Windows/Linux)."
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "תודות",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "הסקה מהירה לביצועים גבוהים עבור מודל זיהוי הדיבור Whisper של OpenAI",
-          "details": "Handy משתמש ב-Whisper.cpp לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
+          "details": "Handy משתמש ב-ggml לתמלול מהיר ומקומי. תודה לעבודה המדהימה של Georgi Gerganov וכל התורמים."
         }
       }
     }

@@ -63,6 +63,9 @@ impl TranscriptionManager {
 }
 
 /// No-op in CI mock.
+pub fn init_transcribe_backend() {}
+
+/// No-op in CI mock.
 pub fn apply_accelerator_settings(_app: &tauri::AppHandle) {}
 
 #[derive(Serialize, Clone, Debug, Type)]
@@ -74,7 +77,7 @@ pub struct GpuDeviceOption {
 
 #[derive(Serialize, Clone, Debug, Type)]
 pub struct AvailableAccelerators {
-    pub whisper: Vec<String>,
+    pub transcribe: Vec<String>,
     pub ort: Vec<String>,
     pub gpu_devices: Vec<GpuDeviceOption>,
 }
@@ -82,7 +85,7 @@ pub struct AvailableAccelerators {
 /// Returns empty lists in CI mock.
 pub fn get_available_accelerators() -> AvailableAccelerators {
     AvailableAccelerators {
-        whisper: vec![],
+        transcribe: vec![],
         ort: vec![],
         gpu_devices: vec![],
     }

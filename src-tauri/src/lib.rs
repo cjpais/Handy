@@ -156,6 +156,10 @@ fn initialize_core_logic(app_handle: &AppHandle) {
     let history_manager =
         Arc::new(HistoryManager::new(app_handle).expect("Failed to initialize history manager"));
 
+    // Initialize the transcribe-cpp native backend (logging + backend module
+    // registration) once, before any whisper model is loaded.
+    managers::transcription::init_transcribe_backend();
+
     // Apply accelerator preferences before any model loads
     managers::transcription::apply_accelerator_settings(app_handle);
 
@@ -368,9 +372,9 @@ pub fn run(cli_args: CliArgs) {
             shortcut::change_keyboard_implementation_setting,
             shortcut::get_keyboard_implementation,
             shortcut::change_show_tray_icon_setting,
-            shortcut::change_whisper_accelerator_setting,
+            shortcut::change_transcribe_accelerator_setting,
             shortcut::change_ort_accelerator_setting,
-            shortcut::change_whisper_gpu_device,
+            shortcut::change_transcribe_gpu_device,
             shortcut::get_available_accelerators,
             shortcut::handy_keys::start_handy_keys_recording,
             shortcut::handy_keys::stop_handy_keys_recording,
@@ -543,9 +547,9 @@ pub fn run(cli_args: CliArgs) {
             initialize_core_logic(&app_handle);
 
             // Pre-warm GPU/accelerator enumeration on a background thread.
-            // The first call into transcribe_rs::whisper_cpp::gpu::list_gpu_devices
-            // loads the Metal/Vulkan backend and probes devices, which can take
-            // several seconds. Without this, that cost is paid synchronously the
+            // The first call into get_available_accelerators enumerates ORT
+            // execution providers and transcribe-cpp compute devices, which can
+            // take a moment. Without this, that cost is paid synchronously the
             // first time the user opens the Advanced settings page (which calls
             // the get_available_accelerators command), causing a UI freeze.
             // Result is cached in a OnceLock inside the transcription manager.

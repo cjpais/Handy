@@ -256,7 +256,7 @@
         "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper 加速",
           "description": "Whisper 模型的硬件加速。自动模式在可用时使用 GPU（macOS 上使用 Metal，Windows/Linux 上使用 Vulkan）。"
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "致谢",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "OpenAI Whisper 自动语音识别模型的高性能推理",
-          "details": "Handy 使用 Whisper.cpp 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
+          "details": "Handy 使用 ggml 进行快速的本地语音转文字处理。感谢 Georgi Gerganov 和贡献者们的出色工作。"
         }
       }
     }

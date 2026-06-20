@@ -19,7 +19,10 @@ use tauri::{AppHandle, Emitter, Manager};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub enum EngineType {
-    Whisper,
+    /// Any GGML/GGUF model loaded through transcribe-cpp (Whisper, Parakeet,
+    /// Voxtral, Qwen3-ASR, Nemotron, …). The architecture is auto-detected from
+    /// the file, so this one variant covers the whole transcribe-cpp family.
+    TranscribeCpp,
     Parakeet,
     Moonshine,
     MoonshineStreaming,
@@ -139,7 +142,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
-                engine_type: EngineType::Whisper,
+                engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.60,
                 speed_score: 0.85,
                 supports_translation: true,
@@ -167,7 +170,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
-                engine_type: EngineType::Whisper,
+                engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.75,
                 speed_score: 0.60,
                 supports_translation: true,
@@ -194,7 +197,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
-                engine_type: EngineType::Whisper,
+                engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.80,
                 speed_score: 0.40,
                 supports_translation: false, // Turbo doesn't support translation
@@ -221,7 +224,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
-                engine_type: EngineType::Whisper,
+                engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.85,
                 speed_score: 0.30,
                 supports_translation: true,
@@ -249,7 +252,7 @@ impl ModelManager {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
-                engine_type: EngineType::Whisper,
+                engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.85,
                 speed_score: 0.35,
                 supports_translation: false,
@@ -610,8 +613,110 @@ impl ModelManager {
             },
         );
 
-        // Auto-discover custom Whisper models (.bin files) in the models directory
-        if let Err(e) = Self::discover_custom_whisper_models(&models_dir, &mut available_models) {
+        // --- Experimental transcribe-cpp GGUF models (TEMPORARY) ---
+        // Hosted under blob.handy.computer/transcribe-cpp-models for testing.
+        // sha256 is omitted intentionally so downloads skip hash verification
+        // (these files may change). All run through the transcribe-cpp engine,
+        // which auto-detects the architecture from the GGUF.
+        let transcribe_cpp_test_models = [
+            (
+                "parakeet-unified-en-0.6b",
+                "Parakeet Unified EN 0.6B",
+                "Experimental transcribe-cpp model. English only.",
+                "parakeet-unified-en-0.6b-Q8_0.gguf",
+                697u64,
+                vec!["en".to_string()],
+                0.80f32,
+                0.85f32,
+            ),
+            (
+                "parakeet-tdt-0.6b-v3-gguf",
+                "Parakeet TDT 0.6B v3 (GGUF)",
+                "Experimental transcribe-cpp build of Parakeet v3. Multilingual.",
+                "parakeet-tdt-0.6b-v3-Q8_0.gguf",
+                705,
+                vec![],
+                0.80,
+                0.85,
+            ),
+            (
+                "nemotron-3.5-asr-streaming-0.6b",
+                "Nemotron 3.5 ASR Streaming 0.6B",
+                "Experimental transcribe-cpp streaming ASR model.",
+                "nemotron-3.5-asr-streaming-0.6b-Q8_0.gguf",
+                716,
+                vec![],
+                0.78,
+                0.85,
+            ),
+            (
+                "qwen3-asr-0.6b",
+                "Qwen3-ASR 0.6B",
+                "Experimental transcribe-cpp multilingual ASR model.",
+                "Qwen3-ASR-0.6B-Q8_0.gguf",
+                811,
+                vec![],
+                0.80,
+                0.70,
+            ),
+            (
+                "qwen3-asr-1.7b",
+                "Qwen3-ASR 1.7B",
+                "Experimental transcribe-cpp multilingual ASR model. Larger, more accurate.",
+                "Qwen3-ASR-1.7B-Q8_0.gguf",
+                2083,
+                vec![],
+                0.85,
+                0.50,
+            ),
+            (
+                "voxtral-mini-4b-realtime",
+                "Voxtral Mini 4B Realtime",
+                "Experimental transcribe-cpp realtime model. Large (~4.5 GB download).",
+                "Voxtral-Mini-4B-Realtime-2602-Q8_0.gguf",
+                4512,
+                vec![],
+                0.85,
+                0.30,
+            ),
+        ];
+
+        for (id, name, description, filename, size_mb, languages, accuracy, speed) in
+            transcribe_cpp_test_models
+        {
+            available_models.insert(
+                id.to_string(),
+                ModelInfo {
+                    id: id.to_string(),
+                    name: name.to_string(),
+                    description: description.to_string(),
+                    filename: filename.to_string(),
+                    url: Some(format!(
+                        "https://blob.handy.computer/transcribe-cpp-models/{}",
+                        filename
+                    )),
+                    sha256: None,
+                    size_mb,
+                    is_downloaded: false,
+                    is_downloading: false,
+                    partial_size: 0,
+                    is_directory: false,
+                    engine_type: EngineType::TranscribeCpp,
+                    accuracy_score: accuracy,
+                    speed_score: speed,
+                    supports_translation: false,
+                    is_recommended: false,
+                    supported_languages: languages,
+                    // Auto-detect only for these experimental test models.
+                    supports_language_selection: false,
+                    is_custom: false,
+                },
+            );
+        }
+
+        // Auto-discover custom transcribe-cpp models (.bin / .gguf) in the models directory
+        if let Err(e) = Self::discover_custom_transcribe_models(&models_dir, &mut available_models)
+        {
             warn!("Failed to discover custom models: {}", e);
         }
 
@@ -813,9 +918,10 @@ impl ModelManager {
         Ok(())
     }
 
-    /// Discover custom Whisper models (.bin files) in the models directory.
+    /// Discover custom Whisper-family models in the models directory: legacy
+    /// GGML `.bin` files and `.gguf` files (both load through transcribe-cpp).
     /// Skips files that match predefined model filenames.
-    fn discover_custom_whisper_models(
+    fn discover_custom_transcribe_models(
         models_dir: &Path,
         available_models: &mut HashMap<String, ModelInfo>,
     ) -> Result<()> {
@@ -823,14 +929,14 @@ impl ModelManager {
             return Ok(());
         }
 
-        // Collect filenames of predefined Whisper file-based models to skip
+        // Collect filenames of predefined transcribe-cpp file-based models to skip
         let predefined_filenames: HashSet<String> = available_models
             .values()
-            .filter(|m| matches!(m.engine_type, EngineType::Whisper) && !m.is_directory)
+            .filter(|m| matches!(m.engine_type, EngineType::TranscribeCpp) && !m.is_directory)
             .map(|m| m.filename.clone())
             .collect();
 
-        // Scan models directory for .bin files
+        // Scan models directory for .bin / .gguf files
         for entry in fs::read_dir(models_dir)? {
             let entry = match entry {
                 Ok(e) => e,
@@ -857,20 +963,23 @@ impl ModelManager {
                 continue;
             }
 
-            // Only process .bin files (Whisper GGML format).
-            // This also excludes .partial downloads (e.g., "model.bin.partial").
-            // If we add discovery for other formats, add a .partial check before this filter.
-            if !filename.ends_with(".bin") {
+            // Only process Whisper-family model files: legacy GGML `.bin` or
+            // GGUF `.gguf` (both load through transcribe-cpp). Anything else —
+            // including `.partial` downloads like "model.bin.partial" — is
+            // skipped, since it ends in neither extension. The model ID is the
+            // filename with its extension removed.
+            let model_id = if let Some(stem) = filename.strip_suffix(".bin") {
+                stem.to_string()
+            } else if let Some(stem) = filename.strip_suffix(".gguf") {
+                stem.to_string()
+            } else {
                 continue;
-            }
+            };
 
             // Skip predefined model files
             if predefined_filenames.contains(&filename) {
                 continue;
             }
-
-            // Generate model ID from filename (remove .bin extension)
-            let model_id = filename.trim_end_matches(".bin").to_string();
 
             // Skip if model ID already exists (shouldn't happen, but be safe)
             if available_models.contains_key(&model_id) {
@@ -901,7 +1010,7 @@ impl ModelManager {
             };
 
             info!(
-                "Discovered custom Whisper model: {} ({}, {} MB)",
+                "Discovered custom transcribe-cpp model: {} ({}, {} MB)",
                 model_id, filename, size_mb
             );
 
@@ -919,7 +1028,7 @@ impl ModelManager {
                     is_downloading: false,
                     partial_size: 0,
                     is_directory: false,
-                    engine_type: EngineType::Whisper,
+                    engine_type: EngineType::TranscribeCpp,
                     accuracy_score: 0.0, // Sentinel: UI hides score bars when both are 0
                     speed_score: 0.0,
                     supports_translation: false,
@@ -1479,7 +1588,7 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_discover_custom_whisper_models() {
+    fn test_discover_custom_transcribe_models() {
         let temp_dir = TempDir::new().unwrap();
         let models_dir = temp_dir.path().to_path_buf();
 
@@ -1490,10 +1599,15 @@ mod tests {
         let mut another_file = File::create(models_dir.join("whisper_medical_v2.bin")).unwrap();
         another_file.write_all(b"another fake model").unwrap();
 
+        // Custom GGUF model (also supported by transcribe-cpp)
+        let mut gguf_file = File::create(models_dir.join("my-gguf-model.gguf")).unwrap();
+        gguf_file.write_all(b"fake gguf data").unwrap();
+
         // Create files that should be ignored
         File::create(models_dir.join(".hidden-model.bin")).unwrap(); // Hidden file
-        File::create(models_dir.join("readme.txt")).unwrap(); // Non-.bin file
+        File::create(models_dir.join("readme.txt")).unwrap(); // Non-model file
         File::create(models_dir.join("ggml-small.bin")).unwrap(); // Predefined filename
+        File::create(models_dir.join("download.bin.partial")).unwrap(); // Partial download
         fs::create_dir(models_dir.join("some-directory.bin")).unwrap(); // Directory
 
         // Set up available_models with a predefined Whisper model
@@ -1512,7 +1626,7 @@ mod tests {
                 is_downloading: false,
                 partial_size: 0,
                 is_directory: false,
-                engine_type: EngineType::Whisper,
+                engine_type: EngineType::TranscribeCpp,
                 accuracy_score: 0.5,
                 speed_score: 0.5,
                 supports_translation: true,
@@ -1524,7 +1638,7 @@ mod tests {
         );
 
         // Discover custom models
-        ModelManager::discover_custom_whisper_models(&models_dir, &mut models).unwrap();
+        ModelManager::discover_custom_transcribe_models(&models_dir, &mut models).unwrap();
 
         // Should have discovered 2 custom models (my-custom-model and whisper_medical_v2)
         assert!(models.contains_key("my-custom-model"));
@@ -1545,9 +1659,18 @@ mod tests {
         let medical = models.get("whisper_medical_v2").unwrap();
         assert_eq!(medical.name, "Whisper Medical V2");
 
-        // Should NOT have discovered hidden, non-.bin, predefined, or directories
+        // Verify .gguf models are discovered too (extension stripped for the id)
+        assert!(models.contains_key("my-gguf-model"));
+        let gguf = models.get("my-gguf-model").unwrap();
+        assert_eq!(gguf.filename, "my-gguf-model.gguf");
+        assert_eq!(gguf.name, "My Gguf Model");
+        assert!(gguf.is_custom);
+        assert!(matches!(gguf.engine_type, EngineType::TranscribeCpp));
+
+        // Should NOT have discovered hidden, non-model, predefined, partial, or directories
         assert!(!models.contains_key(".hidden-model"));
         assert!(!models.contains_key("readme"));
+        assert!(!models.contains_key("download.bin"));
         assert!(!models.contains_key("some-directory"));
     }
 
@@ -1559,7 +1682,7 @@ mod tests {
         let mut models = HashMap::new();
         let count_before = models.len();
 
-        ModelManager::discover_custom_whisper_models(&models_dir, &mut models).unwrap();
+        ModelManager::discover_custom_transcribe_models(&models_dir, &mut models).unwrap();
 
         // No new models should be added
         assert_eq!(models.len(), count_before);
@@ -1573,7 +1696,7 @@ mod tests {
         let count_before = models.len();
 
         // Should not error, just return Ok
-        let result = ModelManager::discover_custom_whisper_models(&models_dir, &mut models);
+        let result = ModelManager::discover_custom_transcribe_models(&models_dir, &mut models);
         assert!(result.is_ok());
         assert_eq!(models.len(), count_before);
     }

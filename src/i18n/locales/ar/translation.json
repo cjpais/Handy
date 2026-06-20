@@ -234,7 +234,7 @@
         "description": "يبقي بث الميكروفون مفتوحًا لمدة 30 ثانية بعد توقف التسجيل، مما يقلل التأخير عند النسخ المتتالي. قد يؤثر على جودة صوت البلوتوث أثناء التفعيل."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "تسريع Whisper",
           "description": "تسريع الأجهزة لنماذج Whisper. الوضع التلقائي يستخدم GPU إن توفر (Metal على macOS، Vulkan على Windows/Linux)."
         },
@@ -509,10 +509,10 @@
       },
       "acknowledgments": {
         "title": "شكر وتقدير",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "استنتاج عالي الأداء لنموذج التعرف التلقائي على الكلام Whisper من OpenAI",
-          "details": ".يستخدم Handy برنامج Whisper.cpp لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
+          "details": ".يستخدم Handy برنامج ggml لمعالجة سريعة ومحلية لتحويل الكلام إلى نص. شكراً للعمل الرائع الذي قام به Georgi Gerganov والمساهمون"
         }
       }
     },

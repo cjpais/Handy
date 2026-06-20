@@ -276,15 +276,15 @@ impl Default for TypingTool {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
-pub enum WhisperAcceleratorSetting {
+pub enum TranscribeAcceleratorSetting {
     Auto,
     Cpu,
     Gpu,
 }
 
-impl Default for WhisperAcceleratorSetting {
+impl Default for TranscribeAcceleratorSetting {
     fn default() -> Self {
-        WhisperAcceleratorSetting::Auto
+        TranscribeAcceleratorSetting::Auto
     }
 }
 
@@ -422,12 +422,17 @@ pub struct AppSettings {
     pub external_script_path: Option<String>,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
-    #[serde(default)]
-    pub whisper_accelerator: WhisperAcceleratorSetting,
+    // `alias` keeps reading the pre-transcribe.cpp-migration setting keys
+    // (`whisper_accelerator` / `whisper_gpu_device`) from existing stores.
+    #[serde(default, alias = "whisper_accelerator")]
+    pub transcribe_accelerator: TranscribeAcceleratorSetting,
     #[serde(default)]
     pub ort_accelerator: OrtAcceleratorSetting,
-    #[serde(default = "default_whisper_gpu_device")]
-    pub whisper_gpu_device: i32,
+    #[serde(
+        default = "default_transcribe_gpu_device",
+        alias = "whisper_gpu_device"
+    )]
+    pub transcribe_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
 }
@@ -646,7 +651,7 @@ fn default_post_process_prompts() -> Vec<LLMPrompt> {
     }]
 }
 
-fn default_whisper_gpu_device() -> i32 {
+fn default_transcribe_gpu_device() -> i32 {
     -1 // auto
 }
 
@@ -810,9 +815,9 @@ pub fn get_default_settings() -> AppSettings {
         typing_tool: default_typing_tool(),
         external_script_path: None,
         custom_filler_words: None,
-        whisper_accelerator: WhisperAcceleratorSetting::default(),
+        transcribe_accelerator: TranscribeAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
-        whisper_gpu_device: default_whisper_gpu_device(),
+        transcribe_gpu_device: default_transcribe_gpu_device(),
         extra_recording_buffer_ms: 0,
     }
 }

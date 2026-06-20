@@ -256,7 +256,7 @@
         "description": "録音停止後30秒間マイクストリームを開いたままにし、連続した文字起こしの遅延を軽減します。Bluetooth音声品質に影響する場合があります。"
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper アクセラレーション",
           "description": "Whisper モデルのハードウェアアクセラレーション。自動モードでは利用可能な場合 GPU を使用します（macOS では Metal、Windows/Linux では Vulkan）。"
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "謝辞",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "OpenAIのWhisper自動音声認識モデルの高性能推論",
-          "details": "Handyは高速でローカルな音声からテキストへの変換にWhisper.cppを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
+          "details": "Handyは高速でローカルな音声からテキストへの変換にggmlを使用しています。Georgi Gerganov氏と貢献者の皆様の素晴らしい仕事に感謝します。"
         }
       }
     }

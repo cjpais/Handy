@@ -256,7 +256,7 @@
         "description": "Håller mikrofonströmmen öppen i 30 sekunder efter att inspelningen avslutats, vilket minskar latensen för transkriptioner efter varandra. Kan försämra Bluetooth-ljudkvaliteten medan den är aktiv."
       },
       "acceleration": {
-        "whisper": {
+        "transcribe": {
           "title": "Whisper-acceleration",
           "description": "Hårdvaruacceleration för Whisper-modeller. Auto använder GPU om tillgängligt (Metal på macOS, Vulkan på Windows/Linux)."
         },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "Tack till",
-        "whisper": {
-          "title": "Whisper.cpp",
+        "ggml": {
+          "title": "ggml",
           "description": "Högpresterande inferens av OpenAI:s Whisper-modell för automatisk taligenkänning",
-          "details": "Handy använder Whisper.cpp för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
+          "details": "Handy använder ggml för snabb, lokal tal-till-text-behandling. Tack till det fantastiska arbete som utförts av Georgi Gerganov med medarbetare."
         }
       }
     }

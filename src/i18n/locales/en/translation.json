@@ -256,9 +256,9 @@
         "description": "Keeps the microphone stream open for 30 seconds after recording stops, reducing latency for back-to-back transcriptions. May degrade Bluetooth audio quality while active."
       },
       "acceleration": {
-        "whisper": {
-          "title": "Whisper Acceleration",
-          "description": "Hardware acceleration for Whisper models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
+        "transcribe": {
+          "title": "transcribe.cpp Acceleration",
+          "description": "Hardware acceleration for transcribe.cpp (Whisper-family) models. Auto uses GPU if available (Metal on macOS, Vulkan on Windows/Linux)."
         },
         "ort": {
           "title": "ONNX Acceleration",
@@ -266,7 +266,7 @@
         },
         "gpuDevice": {
           "title": "GPU Device",
-          "description": "Select which GPU to use for Whisper inference. Auto picks the dedicated GPU.",
+          "description": "Select which GPU to use for transcribe.cpp inference. Auto picks the dedicated GPU.",
           "auto": "Auto"
         }
       },
@@ -531,10 +531,10 @@
       },
       "acknowledgments": {
         "title": "Acknowledgments",
-        "whisper": {
-          "title": "Whisper.cpp",
-          "description": "High-performance inference of OpenAI's Whisper automatic speech recognition model",
-          "details": "Handy uses Whisper.cpp for fast, local speech-to-text processing. Thanks to the amazing work by Georgi Gerganov and contributors."
+        "ggml": {
+          "title": "ggml",
+          "description": "High-performance tensor library for on-device machine learning inference",
+          "details": "Handy's local speech-to-text is built on transcribe.cpp and ggml. Thanks to the amazing work by Georgi Gerganov and contributors."
         }
       }
     }
@@ -599,7 +599,8 @@
     "modelLoadFailed": "Failed to load model: {{model}}",
     "modelLoadFailedUnknown": "unknown model",
     "pasteFailedTitle": "Failed to Paste Text",
-    "pasteFailed": "Text could not be pasted into the active application."
+    "pasteFailed": "Text could not be pasted into the active application.",
+    "transcriptionFailedTitle": "Transcription Failed"
   },
   "appLanguage": {
     "title": "Application Language",
