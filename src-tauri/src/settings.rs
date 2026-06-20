@@ -9,6 +9,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const PROMPTV3_PROMPT_ID: &str = "promptv3";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -638,12 +639,23 @@ fn default_post_process_models() -> HashMap<String, String> {
     map
 }
 
+fn promptv3_prompt() -> LLMPrompt {
+    LLMPrompt {
+        id: PROMPTV3_PROMPT_ID.to_string(),
+        name: "promptv3".to_string(),
+        prompt: "Rewrite the transcript into a concise, high-signal prompt for an AI assistant. Preserve user intent, constraints, names, code terms, URLs, and any explicit output format. Remove filler words and speech artifacts. Return only the improved prompt.\n\nTranscript:\n${output}".to_string(),
+    }
+}
+
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
-    vec![LLMPrompt {
-        id: "default_improve_transcriptions".to_string(),
-        name: "Improve Transcriptions".to_string(),
-        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
-    }]
+    vec![
+        promptv3_prompt(),
+        LLMPrompt {
+            id: "default_improve_transcriptions".to_string(),
+            name: "Improve Transcriptions".to_string(),
+            prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+        },
+    ]
 }
 
 fn default_whisper_gpu_device() -> i32 {
@@ -656,6 +668,32 @@ fn default_typing_tool() -> TypingTool {
 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
+    for default_prompt in default_post_process_prompts() {
+        if !settings
+            .post_process_prompts
+            .iter()
+            .any(|prompt| prompt.id == default_prompt.id)
+        {
+            settings.post_process_prompts.push(default_prompt);
+            changed = true;
+        }
+    }
+
+    let selected_prompt_exists = settings
+        .post_process_selected_prompt_id
+        .as_ref()
+        .map(|id| settings.post_process_prompts.iter().any(|prompt| &prompt.id == id))
+        .unwrap_or(false);
+    if !selected_prompt_exists {
+        settings.post_process_selected_prompt_id = settings
+            .post_process_prompts
+            .iter()
+            .find(|prompt| prompt.id == PROMPTV3_PROMPT_ID)
+            .or_else(|| settings.post_process_prompts.first())
+            .map(|prompt| prompt.id.clone());
+        changed = true;
+    }
+
     for provider in default_post_process_providers() {
         // Use match to do a single lookup - either sync existing or add new
         match settings
@@ -798,7 +836,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: None,
+        post_process_selected_prompt_id: Some(PROMPTV3_PROMPT_ID.to_string()),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
