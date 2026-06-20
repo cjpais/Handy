@@ -490,8 +490,9 @@ impl TranscriptionManager {
         self.touch_activity();
 
         let st = std::time::Instant::now();
+        let audio_len = audio.len();
 
-        debug!("Audio vector length: {}", audio.len());
+        debug!("Audio vector length: {}", audio_len);
 
         if audio.is_empty() {
             debug!("Empty audio vector");
@@ -806,10 +807,19 @@ impl TranscriptionManager {
         } else {
             ""
         };
+        // Real-time factor. Input PCM is 16 kHz mono, so audio length in seconds
+        // is samples / 16000. `speedup` is audio_secs / elapsed_secs — e.g. 4.00x
+        // means transcribed 4x faster than real time
+        let elapsed_secs = (et - st).as_secs_f64();
+        let audio_secs = audio_len as f64 / 16_000.0;
+        let speedup = if elapsed_secs > 0.0 {
+            audio_secs / elapsed_secs
+        } else {
+            0.0
+        };
         info!(
-            "Transcription completed in {}ms{}",
-            (et - st).as_millis(),
-            translation_note
+            "Transcription completed in {:.2}s for {:.2}s of audio ({:.2}x real-time){}",
+            elapsed_secs, audio_secs, speedup, translation_note
         );
 
         let final_result = filtered_result;

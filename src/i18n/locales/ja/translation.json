@@ -599,7 +599,8 @@
     "modelLoadFailed": "モデルの読み込みに失敗しました: {{model}}",
     "modelLoadFailedUnknown": "不明なモデル",
     "pasteFailedTitle": "テキストの貼り付けに失敗しました",
-    "pasteFailed": "アクティブなアプリケーションにテキストを貼り付けられませんでした。"
+    "pasteFailed": "アクティブなアプリケーションにテキストを貼り付けられませんでした。",
+    "transcriptionFailedTitle": "文字起こしに失敗しました"
   },
   "appLanguage": {
     "title": "アプリケーション言語",

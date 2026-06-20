@@ -599,7 +599,8 @@
     "modelLoadFailed": "Modell konnte nicht geladen werden: {{model}}",
     "modelLoadFailedUnknown": "unbekanntes Modell",
     "pasteFailedTitle": "Text konnte nicht eingefügt werden",
-    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden."
+    "pasteFailed": "Der Text konnte nicht in die aktive Anwendung eingefügt werden.",
+    "transcriptionFailedTitle": "Transkription fehlgeschlagen"
   },
   "appLanguage": {
     "title": "Anwendungssprache",

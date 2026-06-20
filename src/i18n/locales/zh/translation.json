@@ -599,7 +599,8 @@
     "modelLoadFailed": "加载模型失败: {{model}}",
     "modelLoadFailedUnknown": "未知模型",
     "pasteFailedTitle": "粘贴文本失败",
-    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。"
+    "pasteFailed": "无法将文本粘贴到当前活动的应用程序中。",
+    "transcriptionFailedTitle": "转录失败"
   },
   "appLanguage": {
     "title": "应用语言",

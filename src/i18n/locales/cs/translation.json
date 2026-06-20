@@ -599,7 +599,8 @@
     "modelLoadFailed": "Nepodařilo se načíst model: {{model}}",
     "modelLoadFailedUnknown": "neznámý model",
     "pasteFailedTitle": "Vložení textu se nezdařilo",
-    "pasteFailed": "Text nebylo možné vložit do aktivní aplikace."
+    "pasteFailed": "Text nebylo možné vložit do aktivní aplikace.",
+    "transcriptionFailedTitle": "Přepis selhal"
   },
   "appLanguage": {
     "title": "Jazyk aplikace",

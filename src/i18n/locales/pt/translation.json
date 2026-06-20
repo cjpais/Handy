@@ -599,7 +599,8 @@
     "modelLoadFailed": "Falha ao carregar o modelo: {{model}}",
     "modelLoadFailedUnknown": "modelo desconhecido",
     "pasteFailedTitle": "Falha ao colar o texto",
-    "pasteFailed": "Não foi possível colar o texto no aplicativo ativo."
+    "pasteFailed": "Não foi possível colar o texto no aplicativo ativo.",
+    "transcriptionFailedTitle": "Falha na transcrição"
   },
   "appLanguage": {
     "title": "Idioma da Aplicação",

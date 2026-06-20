@@ -599,7 +599,8 @@
     "modelLoadFailed": "Nie udało się załadować modelu: {{model}}",
     "modelLoadFailedUnknown": "nieznany model",
     "pasteFailedTitle": "Nie udało się wkleić tekstu",
-    "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji."
+    "pasteFailed": "Nie można było wkleić tekstu do aktywnej aplikacji.",
+    "transcriptionFailedTitle": "Transkrypcja nie powiodła się"
   },
   "appLanguage": {
     "title": "Język aplikacji",

@@ -599,7 +599,8 @@
     "modelLoadFailed": "Не удалось загрузить модель: {{model}}",
     "modelLoadFailedUnknown": "неизвестная модель",
     "pasteFailedTitle": "Не удалось вставить текст",
-    "pasteFailed": "Не удалось вставить текст в активное приложение."
+    "pasteFailed": "Не удалось вставить текст в активное приложение.",
+    "transcriptionFailedTitle": "Ошибка транскрипции"
   },
   "appLanguage": {
     "title": "Язык приложения",

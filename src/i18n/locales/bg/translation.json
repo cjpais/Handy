@@ -599,7 +599,8 @@
     "modelLoadFailed": "Зареждането на модела не бе успешно: {{model}}",
     "modelLoadFailedUnknown": "неизвестен модел",
     "pasteFailedTitle": "Неуспешно поставяне на текст",
-    "pasteFailed": "Текстът не можа да бъде поставен в активното приложение."
+    "pasteFailed": "Текстът не можа да бъде поставен в активното приложение.",
+    "transcriptionFailedTitle": "Неуспешна транскрипция"
   },
   "appLanguage": {
     "title": "Език на приложението",

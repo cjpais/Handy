@@ -599,7 +599,8 @@
     "modelLoadFailed": "فشل في تحميل النموذج: {{model}}",
     "modelLoadFailedUnknown": "نموذج غير معروف",
     "pasteFailedTitle": "فشل لصق النص",
-    "pasteFailed": "تعذر لصق النص في التطبيق النشط."
+    "pasteFailed": "تعذر لصق النص في التطبيق النشط.",
+    "transcriptionFailedTitle": "فشل التفريغ النصي"
   },
   "appLanguage": {
     "title": "لغة التطبيق",

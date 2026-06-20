@@ -599,7 +599,8 @@
     "modelLoadFailed": "טעינת המודל נכשלה: {{model}}",
     "modelLoadFailedUnknown": "מודל לא ידוע",
     "pasteFailedTitle": "ההדבקה נכשלה",
-    "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל."
+    "pasteFailed": "לא ניתן היה להדביק את הטקסט ביישום הפעיל.",
+    "transcriptionFailedTitle": "התמלול נכשל"
   },
   "appLanguage": {
     "title": "שפת האפליקציה",

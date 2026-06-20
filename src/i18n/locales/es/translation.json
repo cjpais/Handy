@@ -599,7 +599,8 @@
     "modelLoadFailed": "Error al cargar el modelo: {{model}}",
     "modelLoadFailedUnknown": "modelo desconocido",
     "pasteFailedTitle": "Error al pegar el texto",
-    "pasteFailed": "No se pudo pegar el texto en la aplicación activa."
+    "pasteFailed": "No se pudo pegar el texto en la aplicación activa.",
+    "transcriptionFailedTitle": "Error de transcripción"
   },
   "appLanguage": {
     "title": "Idioma de la aplicación",
