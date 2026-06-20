@@ -684,4 +684,18 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
     }
+
+    #[test]
+    fn capglue_selected_runtime_failure_is_reported_without_silent_fallback() {
+        let settings = crate::settings::CapglueSettings {
+            target: "com.example.Target".to_string(),
+            command: "/definitely/missing/capglue".to_string(),
+            args: Vec::new(),
+        };
+
+        let err = paste_via_capglue("hello", &settings).unwrap_err();
+
+        assert!(err.contains("Capglue failed"));
+        assert!(err.contains("/definitely/missing/capglue"));
+    }
 }
