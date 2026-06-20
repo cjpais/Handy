@@ -986,4 +986,21 @@ mod tests {
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
     }
+
+    #[test]
+    fn ensure_post_process_defaults_selects_promptv3_when_missing() {
+        let mut settings = get_default_settings();
+        settings.post_process_prompts.clear();
+        settings.post_process_selected_prompt_id = None;
+
+        assert!(ensure_post_process_defaults(&mut settings));
+
+        let promptv3 = settings
+            .post_process_prompts
+            .iter()
+            .find(|prompt| prompt.id == "promptv3")
+            .expect("promptv3 should be installed as a built-in prompt");
+        assert_eq!(promptv3.name, "promptv3");
+        assert_eq!(settings.post_process_selected_prompt_id.as_deref(), Some("promptv3"));
+    }
 }
