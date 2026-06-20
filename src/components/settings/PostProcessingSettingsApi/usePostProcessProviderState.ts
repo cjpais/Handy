@@ -30,6 +30,9 @@ type PostProcessProviderState = {
 
 const APPLE_PROVIDER_ID = "apple_intelligence";
 
+// Capglue is an output delivery surface, not an API provider. Keeping that
+// state outside this hook preserves the selected provider/model when users
+// switch the Capglue paste method on or off from settings.
 export const usePostProcessProviderState = (): PostProcessProviderState => {
   const {
     settings,

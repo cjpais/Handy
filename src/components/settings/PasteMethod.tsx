@@ -5,6 +5,7 @@ import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
 import { Alert } from "../ui/Alert";
 import { useSettings } from "../../hooks/useSettings";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
 
@@ -16,8 +17,8 @@ interface PasteMethodProps {
 export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating, getSettingError } =
-      useSettings();
+    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const getSettingError = useSettingsStore((state) => state.getSettingError);
     const osType = useOsType();
 
     const getPasteMethodOptions = (osType: string) => {

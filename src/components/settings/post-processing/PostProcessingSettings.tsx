@@ -21,6 +21,7 @@ import { ModelSelect } from "../PostProcessingSettingsApi/ModelSelect";
 import { usePostProcessProviderState } from "../PostProcessingSettingsApi/usePostProcessProviderState";
 import { ShortcutInput } from "../ShortcutInput";
 import { useSettings } from "../../../hooks/useSettings";
+import { PasteMethodSetting } from "../PasteMethod";
 
 const PostProcessingSettingsApiComponent: React.FC = () => {
   const { t } = useTranslation();
@@ -452,6 +453,7 @@ export const PostProcessingSettings: React.FC = () => {
         <Alert variant="info" contained>
           {t("settings.postProcessing.capglue.help")}
         </Alert>
+        <PasteMethodSetting descriptionMode="tooltip" grouped={true} />
       </SettingsGroup>
     </div>
   );
