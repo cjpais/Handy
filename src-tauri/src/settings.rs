@@ -137,6 +137,25 @@ pub enum PasteMethod {
     ShiftInsert,
     CtrlShiftV,
     ExternalScript,
+    Capglue,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Type)]
+pub struct CapglueSettings {
+    pub target: String,
+    pub command: String,
+    #[serde(default)]
+    pub args: Vec<String>,
+}
+
+impl Default for CapglueSettings {
+    fn default() -> Self {
+        Self {
+            target: String::new(),
+            command: "capglue".to_string(),
+            args: Vec::new(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -421,6 +440,8 @@ pub struct AppSettings {
     #[serde(default = "default_typing_tool")]
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
+    #[serde(default)]
+    pub capglue_settings: CapglueSettings,
     #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
@@ -847,6 +868,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        capglue_settings: CapglueSettings::default(),
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
