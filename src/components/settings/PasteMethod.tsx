@@ -58,10 +58,16 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
 
       // External script is only available on Linux
       if (osType === "linux") {
-        options.push({
-          value: "external_script",
-          label: t("settings.advanced.pasteMethod.options.externalScript"),
-        });
+        options.push(
+          {
+            value: "external_script",
+            label: t("settings.advanced.pasteMethod.options.externalScript"),
+          },
+          {
+            value: "capglue",
+            label: t("settings.advanced.pasteMethod.options.capglue"),
+          },
+        );
       }
 
       return options;
@@ -70,6 +76,18 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
     const selectedMethod = (getSetting("paste_method") ||
       "ctrl_v") as PasteMethod;
     const externalScriptPath = getSetting("external_script_path") || "";
+    const capglueSettings = getSetting("capglue_settings") || {
+      target: "",
+      command: "capglue",
+      args: [],
+    };
+
+    const updateCapglueSettings = (updates: Partial<typeof capglueSettings>) => {
+      updateSetting("capglue_settings", {
+        ...capglueSettings,
+        ...updates,
+      });
+    };
 
     const pasteMethodOptions = getPasteMethodOptions(osType);
 
@@ -102,6 +120,37 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
               )}
               disabled={isUpdating("external_script_path")}
             />
+          )}
+          {selectedMethod === "capglue" && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-mid-gray/70">
+                {capglueSettings.target
+                  ? t("settings.advanced.pasteMethod.capglueHelp")
+                  : t("settings.advanced.pasteMethod.capglueUnavailable")}
+              </p>
+              <Input
+                type="text"
+                value={capglueSettings.target}
+                onChange={(e) =>
+                  updateCapglueSettings({ target: e.target.value })
+                }
+                placeholder={t(
+                  "settings.advanced.pasteMethod.capglueTargetPlaceholder",
+                )}
+                disabled={isUpdating("capglue_settings")}
+              />
+              <Input
+                type="text"
+                value={capglueSettings.command}
+                onChange={(e) =>
+                  updateCapglueSettings({ command: e.target.value })
+                }
+                placeholder={t(
+                  "settings.advanced.pasteMethod.capglueCommandPlaceholder",
+                )}
+                disabled={isUpdating("capglue_settings")}
+              />
+            </div>
           )}
         </div>
       </SettingContainer>
