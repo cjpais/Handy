@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Dropdown } from "../ui/Dropdown";
 import { SettingContainer } from "../ui/SettingContainer";
 import { Input } from "../ui/Input";
+import { Alert } from "../ui/Alert";
 import { useSettings } from "../../hooks/useSettings";
 import { useOsType } from "../../hooks/useOsType";
 import type { PasteMethod } from "@/bindings";
@@ -15,7 +16,8 @@ interface PasteMethodProps {
 export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
   ({ descriptionMode = "tooltip", grouped = false }) => {
     const { t } = useTranslation();
-    const { getSetting, updateSetting, isUpdating } = useSettings();
+    const { getSetting, updateSetting, isUpdating, getSettingError } =
+      useSettings();
     const osType = useOsType();
 
     const getPasteMethodOptions = (osType: string) => {
@@ -81,8 +83,11 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
       command: "capglue",
       args: [],
     };
+    const capglueError = getSettingError("capglue_settings");
 
-    const updateCapglueSettings = (updates: Partial<typeof capglueSettings>) => {
+    const updateCapglueSettings = (
+      updates: Partial<typeof capglueSettings>,
+    ) => {
       updateSetting("capglue_settings", {
         ...capglueSettings,
         ...updates,
@@ -128,6 +133,11 @@ export const PasteMethodSetting: React.FC<PasteMethodProps> = React.memo(
                   ? t("settings.advanced.pasteMethod.capglueHelp")
                   : t("settings.advanced.pasteMethod.capglueUnavailable")}
               </p>
+              {capglueError && (
+                <Alert variant="error" contained>
+                  {capglueError}
+                </Alert>
+              )}
               <Input
                 type="text"
                 value={capglueSettings.target}

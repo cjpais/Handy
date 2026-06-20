@@ -7,6 +7,7 @@ interface UseSettingsReturn {
   settings: Settings | null;
   isLoading: boolean;
   isUpdating: (key: string) => boolean;
+  getSettingError: (key: string) => string | undefined;
   audioDevices: AudioDevice[];
   outputDevices: AudioDevice[];
   audioFeedbackEnabled: boolean;
@@ -57,6 +58,7 @@ export const useSettings = (): UseSettingsReturn => {
     settings: store.settings,
     isLoading: store.isLoading,
     isUpdating: store.isUpdatingKey,
+    getSettingError: store.getSettingError,
     audioDevices: store.audioDevices,
     outputDevices: store.outputDevices,
     audioFeedbackEnabled: store.settings?.audio_feedback || false,

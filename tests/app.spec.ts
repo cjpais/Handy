@@ -17,14 +17,17 @@ test.describe("Handy App", () => {
   });
 });
 
-
-test("post_processing_settings_show_promptv3_and_capglue_unavailable_state", async ({ page }) => {
+test("post_processing_settings_show_promptv3_and_capglue_unavailable_state", async ({
+  page,
+}) => {
   await page.goto("/");
 
   const html = await page.content();
   const sourceChecks = await page.evaluate(async () => {
     const [settings, pasteMethod, translations] = await Promise.all([
-      fetch("/src/components/settings/post-processing/PostProcessingSettings.tsx").then((r) => r.text()),
+      fetch(
+        "/src/components/settings/post-processing/PostProcessingSettings.tsx",
+      ).then((r) => r.text()),
       fetch("/src/components/settings/PasteMethod.tsx").then((r) => r.text()),
       fetch("/src/i18n/locales/en/translation.json").then((r) => r.text()),
     ]);
@@ -79,9 +82,7 @@ test("capglue_invalid_save_rolls_back_and_exposes_error", async ({ page }) => {
 
     return {
       capglueSettings: useSettingsStore.getState().settings?.capglue_settings,
-      error: useSettingsStore
-        .getState()
-        .getSettingError("capglue_settings"),
+      error: useSettingsStore.getState().getSettingError("capglue_settings"),
     };
   });
 
