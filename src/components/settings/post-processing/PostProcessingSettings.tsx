@@ -451,9 +451,6 @@ export const PostProcessingSettings: React.FC = () => {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.postProcessing.prompts.title")}>
-        <Alert variant="info" contained>
-          {t("settings.postProcessing.prompts.promptv3Help")}
-        </Alert>
         <PostProcessingSettingsPrompts />
       </SettingsGroup>
 

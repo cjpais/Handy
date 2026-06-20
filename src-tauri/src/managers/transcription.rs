@@ -540,14 +540,24 @@ impl TranscriptionManager {
                                 Some(normalized)
                             };
 
+                            let initial_prompt_parts = [
+                                settings
+                                    .asr_prompt_enabled
+                                    .then(|| settings.asr_initial_prompt.trim())
+                                    .filter(|prompt| !prompt.is_empty())
+                                    .map(str::to_string),
+                                (!settings.custom_words.is_empty())
+                                    .then(|| settings.custom_words.join(", ")),
+                            ]
+                            .into_iter()
+                            .flatten()
+                            .collect::<Vec<_>>();
+
                             let params = WhisperInferenceParams {
                                 language: whisper_language,
                                 translate: settings.translate_to_english,
-                                initial_prompt: if settings.custom_words.is_empty() {
-                                    None
-                                } else {
-                                    Some(settings.custom_words.join(", "))
-                                },
+                                initial_prompt: (!initial_prompt_parts.is_empty())
+                                    .then(|| initial_prompt_parts.join("\n\n")),
                                 ..Default::default()
                             };
 

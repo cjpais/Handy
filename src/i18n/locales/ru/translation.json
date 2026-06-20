@@ -361,6 +361,13 @@
         "add": "Добавить",
         "remove": "Удалить {{word}}",
         "duplicate": "\"{{word}}\" уже существует"
+      },
+      "asrInitialPrompt": {
+        "toggleLabel": "ASR initial prompt",
+        "toggleDescription": "Отправлять initial prompt в Whisper/Breeze до распознавания. Это подсказка для пунктуации, латиницы и IT-терминов, а не LLM-постобработка.",
+        "title": "Текст initial prompt",
+        "description": "Применяется во время распознавания для Whisper/Breeze; пользовательский словарь добавляется следом. Capglue по-прежнему работает после транскрипции, если выбран как paste method.",
+        "placeholder": "Промпт для ASR до/во время распознавания"
       }
     },
     "postProcessing": {
@@ -420,8 +427,7 @@
         "createPrompt": "Создать запрос",
         "cancel": "Отмена",
         "selectToEdit": "Выберите запрос выше, чтобы просмотреть и изменить его сведения.",
-        "createFirst": "Нажмите «Создать новый запрос» выше, чтобы создать первый запрос для постобработки.",
-        "promptv3Help": "promptv3 is the built-in default prompt for turning transcripts into ready-to-use AI prompts."
+        "createFirst": "Нажмите «Создать новый запрос» выше, чтобы создать первый запрос для постобработки."
       },
       "capglue": {
         "title": "Capglue",

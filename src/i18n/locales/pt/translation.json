@@ -361,6 +361,13 @@
         "add": "Adicionar",
         "remove": "Remover {{word}}",
         "duplicate": "\"{{word}}\" já existe"
+      },
+      "asrInitialPrompt": {
+        "toggleLabel": "ASR initial prompt",
+        "toggleDescription": "Send an initial prompt to Whisper-family ASR models before transcription. Use this for punctuation, Latin IT terms, and code-switching hints. This is not LLM post-processing.",
+        "title": "Initial prompt text",
+        "description": "Applied during recognition for Whisper/Breeze models, then custom words are appended. Capglue still runs after transcription when selected as the paste method.",
+        "placeholder": "Prompt used before/during ASR recognition"
       }
     },
     "postProcessing": {
@@ -420,8 +427,7 @@
         "createPrompt": "Criar Prompt",
         "cancel": "Cancelar",
         "selectToEdit": "Selecione um prompt acima para visualizar e editar seus detalhes.",
-        "createFirst": "Clique em 'Criar Novo Prompt' acima para criar seu primeiro prompt de pós-processamento.",
-        "promptv3Help": "promptv3 is the built-in default prompt for turning transcripts into ready-to-use AI prompts."
+        "createFirst": "Clique em 'Criar Novo Prompt' acima para criar seu primeiro prompt de pós-processamento."
       },
       "capglue": {
         "title": "Capglue",
