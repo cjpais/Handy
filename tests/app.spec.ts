@@ -37,3 +37,58 @@ test("post_processing_settings_show_promptv3_and_capglue_unavailable_state", asy
   expect(sourceChecks.pasteMethod).toContain("capglue");
   expect(sourceChecks.translations).toContain("capglueUnavailable");
 });
+
+test("capglue_invalid_save_rolls_back_and_exposes_error", async ({ page }) => {
+  await page.goto("/");
+
+  const result = await page.evaluate(async () => {
+    const [{ commands }, { useSettingsStore }] = await Promise.all([
+      import("/src/bindings.ts"),
+      import("/src/stores/settingsStore.ts"),
+    ]);
+
+    const persistedSettings = {
+      capglue_settings: {
+        target: "com.persisted.Target",
+        command: "capglue",
+        args: [],
+      },
+    };
+
+    commands.getAppSettings = async () => ({
+      status: "ok",
+      data: persistedSettings,
+    });
+    commands.changeCapglueSettingsSetting = async () => ({
+      status: "error",
+      error: "capglue target is required",
+    });
+
+    useSettingsStore.setState({
+      settings: persistedSettings,
+      defaultSettings: persistedSettings,
+      isLoading: false,
+      isUpdating: {},
+    });
+
+    await useSettingsStore.getState().updateSetting("capglue_settings", {
+      target: "",
+      command: "capglue",
+      args: [],
+    });
+
+    return {
+      capglueSettings: useSettingsStore.getState().settings?.capglue_settings,
+      error: useSettingsStore
+        .getState()
+        .getSettingError("capglue_settings"),
+    };
+  });
+
+  expect(result.capglueSettings).toEqual({
+    target: "com.persisted.Target",
+    command: "capglue",
+    args: [],
+  });
+  expect(result.error).toContain("capglue target is required");
+});
