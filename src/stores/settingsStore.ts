@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import type {
   AppSettings as Settings,
   AudioDevice,
+  CapglueSettings,
   WhisperAcceleratorSetting,
   OrtAcceleratorSetting,
 } from "@/bindings";
@@ -18,6 +19,7 @@ interface SettingsStore {
   outputDevices: AudioDevice[];
   customSounds: { start: boolean; stop: boolean };
   postProcessModelOptions: Record<string, string[]>;
+  settingErrors: Record<string, string>;
 
   // Actions
   initialize: () => Promise<void>;
@@ -34,6 +36,7 @@ interface SettingsStore {
   resetBinding: (id: string) => Promise<void>;
   getSetting: <K extends keyof Settings>(key: K) => Settings[K] | undefined;
   isUpdatingKey: (key: string) => boolean;
+  getSettingError: (key: string) => string | undefined;
   playTestSound: (soundType: "start" | "stop") => Promise<void>;
   checkCustomSounds: () => Promise<void>;
   setPostProcessProvider: (providerId: string) => Promise<void>;
@@ -59,6 +62,7 @@ interface SettingsStore {
   setDefaultSettings: (defaultSettings: Settings | null) => void;
   setLoading: (loading: boolean) => void;
   setUpdating: (key: string, updating: boolean) => void;
+  setSettingError: (key: string, error?: string) => void;
   setAudioDevices: (devices: AudioDevice[]) => void;
   setOutputDevices: (devices: AudioDevice[]) => void;
   setCustomSounds: (sounds: { start: boolean; stop: boolean }) => void;
@@ -71,6 +75,18 @@ const DEFAULT_AUDIO_DEVICE: AudioDevice = {
   index: "default",
   name: "Default",
   is_default: true,
+};
+
+const assertSuccessfulCommandResult = (result: unknown) => {
+  if (
+    result &&
+    typeof result === "object" &&
+    "status" in result &&
+    (result as { status?: unknown }).status === "error"
+  ) {
+    const error = (result as { error?: unknown }).error;
+    throw new Error(typeof error === "string" ? error : String(error));
+  }
 };
 
 const settingUpdaters: {
@@ -123,6 +139,14 @@ const settingUpdaters: {
   typing_tool: (value) => commands.changeTypingToolSetting(value as string),
   external_script_path: (value) =>
     commands.changeExternalScriptPathSetting(value as string | null),
+  capglue_settings: (value) => {
+    const settings = value as CapglueSettings;
+    return commands.changeCapglueSettingsSetting(
+      settings.target,
+      settings.command,
+      settings.args ?? [],
+    );
+  },
   clipboard_handling: (value) =>
     commands.changeClipboardHandlingSetting(value as string),
   auto_submit: (value) => commands.changeAutoSubmitSetting(value as boolean),
@@ -167,6 +191,7 @@ export const useSettingsStore = create<SettingsStore>()(
     outputDevices: [],
     customSounds: { start: false, stop: false },
     postProcessModelOptions: {},
+    settingErrors: {},
 
     // Internal setters
     setSettings: (settings) => set({ settings }),
@@ -176,6 +201,16 @@ export const useSettingsStore = create<SettingsStore>()(
       set((state) => ({
         isUpdating: { ...state.isUpdating, [key]: updating },
       })),
+    setSettingError: (key, error) =>
+      set((state) => {
+        const settingErrors = { ...state.settingErrors };
+        if (error) {
+          settingErrors[key] = error;
+        } else {
+          delete settingErrors[key];
+        }
+        return { settingErrors };
+      }),
     setAudioDevices: (audioDevices) => set({ audioDevices }),
     setOutputDevices: (outputDevices) => set({ outputDevices }),
     setCustomSounds: (customSounds) => set({ customSounds }),
@@ -183,6 +218,7 @@ export const useSettingsStore = create<SettingsStore>()(
     // Getters
     getSetting: (key) => get().settings?.[key],
     isUpdatingKey: (key) => get().isUpdating[key] || false,
+    getSettingError: (key) => get().settingErrors[key],
 
     // Load settings from store
     refreshSettings: async () => {
@@ -274,11 +310,12 @@ export const useSettingsStore = create<SettingsStore>()(
       key: K,
       value: Settings[K],
     ) => {
-      const { settings, setUpdating } = get();
+      const { settings, setUpdating, setSettingError } = get();
       const updateKey = String(key);
       const originalValue = settings?.[key];
 
       setUpdating(updateKey, true);
+      setSettingError(updateKey);
 
       try {
         set((state) => ({
@@ -287,14 +324,22 @@ export const useSettingsStore = create<SettingsStore>()(
 
         const updater = settingUpdaters[key];
         if (updater) {
-          await updater(value);
+          const result = await updater(value);
+          assertSuccessfulCommandResult(result);
         } else if (key !== "bindings" && key !== "selected_model") {
           console.warn(`No handler for setting: ${String(key)}`);
         }
       } catch (error) {
         console.error(`Failed to update setting ${String(key)}:`, error);
+        setSettingError(
+          updateKey,
+          error instanceof Error ? error.message : String(error),
+        );
         if (settings) {
           set({ settings: { ...settings, [key]: originalValue } });
+        }
+        if (key === "capglue_settings") {
+          await get().refreshSettings();
         }
       } finally {
         setUpdating(updateKey, false);

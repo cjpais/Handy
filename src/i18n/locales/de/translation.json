@@ -300,9 +300,14 @@
           "clipboardShiftInsert": "Zwischenablage (Umschalt+Einfg)",
           "direct": "Direkt",
           "none": "Keine",
-          "externalScript": "Externes Skript"
+          "externalScript": "Externes Skript",
+          "capglue": "Capglue"
         },
-        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh"
+        "externalScriptPlaceholder": "/pfad/zu/ihrem/skript.sh",
+        "capglueHelp": "Capglue sends processed text to the configured target. It does not fall back to clipboard when delivery fails.",
+        "capglueUnavailable": "Capglue is selected but no target is configured yet. Add a target before using this output mode.",
+        "capglueTargetPlaceholder": "Capglue target (required)",
+        "capglueCommandPlaceholder": "capglue"
       },
       "typingTool": {
         "title": "Eingabetool",
@@ -415,7 +420,12 @@
         "createPrompt": "Prompt erstellen",
         "cancel": "Abbrechen",
         "selectToEdit": "Wähle oben einen Prompt aus, um dessen Details anzuzeigen und zu bearbeiten.",
-        "createFirst": "Klicke oben auf 'Neuen Prompt erstellen', um deinen ersten Nachbearbeitungs-Prompt zu erstellen."
+        "createFirst": "Klicke oben auf 'Neuen Prompt erstellen', um deinen ersten Nachbearbeitungs-Prompt zu erstellen.",
+        "promptv3Help": "promptv3 is the built-in default prompt for turning transcripts into ready-to-use AI prompts."
+      },
+      "capglue": {
+        "title": "Capglue",
+        "help": "Choose Capglue in Advanced → Paste Method to deliver post-processed text to a configured target. Invalid or unavailable Capglue settings produce a visible error instead of silent clipboard fallback."
       }
     },
     "history": {

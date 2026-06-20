@@ -1,7 +1,9 @@
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
-use crate::settings::{get_settings, AutoSubmitKey, ClipboardHandling, PasteMethod};
+use crate::settings::{
+    get_settings, AutoSubmitKey, CapglueSettings, ClipboardHandling, PasteMethod,
+};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;
@@ -524,6 +526,41 @@ fn paste_via_external_script(text: &str, script_path: &str) -> Result<(), String
     Ok(())
 }
 
+fn paste_via_capglue(text: &str, settings: &CapglueSettings) -> Result<(), String> {
+    let target = settings.target.trim();
+    let command = settings.command.trim();
+    if target.is_empty() {
+        return Err("Capglue target is not configured".to_string());
+    }
+    if command.is_empty() {
+        return Err("Capglue command is not configured".to_string());
+    }
+
+    info!("Pasting via capglue target: {}", target);
+    let output = Command::new(command)
+        .arg("--target")
+        .arg(target)
+        .args(&settings.args)
+        .arg("--")
+        .arg(text)
+        .output()
+        .map_err(|e| format!("Capglue failed to execute '{}': {}", command, e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(format!(
+            "Capglue failed for target '{}' with exit code {:?}. stderr: {}, stdout: {}",
+            target,
+            output.status.code(),
+            stderr.trim(),
+            stdout.trim()
+        ));
+    }
+
+    Ok(())
+}
+
 /// Types text directly by simulating individual key presses.
 fn paste_direct(
     enigo: &mut Enigo,
@@ -585,7 +622,7 @@ fn send_return_key(enigo: &mut Enigo, key_type: AutoSubmitKey) -> Result<(), Str
 }
 
 fn should_send_auto_submit(auto_submit: bool, paste_method: PasteMethod) -> bool {
-    auto_submit && paste_method != PasteMethod::None
+    auto_submit && !matches!(paste_method, PasteMethod::None | PasteMethod::Capglue)
 }
 
 pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
@@ -644,6 +681,9 @@ pub fn paste(text: String, app_handle: AppHandle) -> Result<(), String> {
                 .ok_or("External script path is not configured")?;
             paste_via_external_script(&text, script_path)?;
         }
+        PasteMethod::Capglue => {
+            paste_via_capglue(&text, &settings.capglue_settings)?;
+        }
     }
 
     if should_send_auto_submit(settings.auto_submit, paste_method) {
@@ -683,5 +723,20 @@ mod tests {
         assert!(should_send_auto_submit(true, PasteMethod::Direct));
         assert!(should_send_auto_submit(true, PasteMethod::CtrlShiftV));
         assert!(should_send_auto_submit(true, PasteMethod::ShiftInsert));
+        assert!(!should_send_auto_submit(true, PasteMethod::Capglue));
+    }
+
+    #[test]
+    fn capglue_selected_runtime_failure_is_reported_without_silent_fallback() {
+        let settings = crate::settings::CapglueSettings {
+            target: "com.example.Target".to_string(),
+            command: "/definitely/missing/capglue".to_string(),
+            args: Vec::new(),
+        };
+
+        let err = paste_via_capglue("hello", &settings).unwrap_err();
+
+        assert!(err.contains("Capglue failed"));
+        assert!(err.contains("/definitely/missing/capglue"));
     }
 }

@@ -22,8 +22,8 @@ use tauri_plugin_autostart::ManagerExt;
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 use crate::settings::APPLE_INTELLIGENCE_DEFAULT_MODEL_ID;
 use crate::settings::{
-    self, get_settings, AutoSubmitKey, ClipboardHandling, KeyboardImplementation, LLMPrompt,
-    OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
+    self, get_settings, AutoSubmitKey, CapglueSettings, ClipboardHandling, KeyboardImplementation,
+    LLMPrompt, OverlayPosition, PasteMethod, ShortcutBinding, SoundTheme, TypingTool,
     APPLE_INTELLIGENCE_PROVIDER_ID,
 };
 use crate::tray;
@@ -678,23 +678,27 @@ pub fn change_paste_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), Stri
     Ok(())
 }
 
-#[tauri::command]
-#[specta::specta]
-pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(), String> {
-    let mut settings = settings::get_settings(&app);
-    let parsed = match method.as_str() {
+fn parse_paste_method(method: &str) -> PasteMethod {
+    match method {
         "ctrl_v" => PasteMethod::CtrlV,
         "direct" => PasteMethod::Direct,
         "none" => PasteMethod::None,
         "shift_insert" => PasteMethod::ShiftInsert,
         "ctrl_shift_v" => PasteMethod::CtrlShiftV,
         "external_script" => PasteMethod::ExternalScript,
+        "capglue" => PasteMethod::Capglue,
         other => {
             warn!("Invalid paste method '{}', defaulting to ctrl_v", other);
             PasteMethod::CtrlV
         }
-    };
-    settings.paste_method = parsed;
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_paste_method_setting(app: AppHandle, method: String) -> Result<(), String> {
+    let mut settings = settings::get_settings(&app);
+    settings.paste_method = parse_paste_method(&method);
     settings::write_settings(&app, settings);
     Ok(())
 }
@@ -741,6 +745,39 @@ pub fn change_external_script_path_setting(
 ) -> Result<(), String> {
     let mut settings = settings::get_settings(&app);
     settings.external_script_path = path;
+    settings::write_settings(&app, settings);
+    Ok(())
+}
+
+pub(crate) fn validate_capglue_settings(
+    target: &str,
+    command: &str,
+    _args: &[String],
+) -> Result<(), String> {
+    if target.trim().is_empty() {
+        return Err("Capglue target is required".to_string());
+    }
+    if command.trim().is_empty() {
+        return Err("Capglue command is required".to_string());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn change_capglue_settings_setting(
+    app: AppHandle,
+    target: String,
+    command: String,
+    args: Vec<String>,
+) -> Result<(), String> {
+    validate_capglue_settings(&target, &command, &args)?;
+    let mut settings = settings::get_settings(&app);
+    settings.capglue_settings = CapglueSettings {
+        target: target.trim().to_string(),
+        command: command.trim().to_string(),
+        args,
+    };
     settings::write_settings(&app, settings);
     Ok(())
 }
@@ -1154,4 +1191,17 @@ pub async fn get_available_accelerators() -> crate::managers::transcription::Ava
     tauri::async_runtime::spawn_blocking(crate::managers::transcription::get_available_accelerators)
         .await
         .expect("get_available_accelerators panicked")
+}
+
+#[cfg(test)]
+mod capglue_tests {
+    use super::*;
+
+    #[test]
+    fn change_capglue_settings_rejects_missing_required_target() {
+        assert!(validate_capglue_settings("", "capglue", &[]).is_err());
+        assert!(validate_capglue_settings("  ", "capglue", &[]).is_err());
+        assert!(validate_capglue_settings("com.example.Target", "", &[]).is_err());
+        assert!(validate_capglue_settings("com.example.Target", "capglue", &[]).is_ok());
+    }
 }

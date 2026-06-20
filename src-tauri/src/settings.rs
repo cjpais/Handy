@@ -9,6 +9,7 @@ use tauri_plugin_store::StoreExt;
 
 pub const APPLE_INTELLIGENCE_PROVIDER_ID: &str = "apple_intelligence";
 pub const APPLE_INTELLIGENCE_DEFAULT_MODEL_ID: &str = "Apple Intelligence";
+pub const PROMPTV3_PROMPT_ID: &str = "promptv3";
 
 #[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "lowercase")]
@@ -136,6 +137,25 @@ pub enum PasteMethod {
     ShiftInsert,
     CtrlShiftV,
     ExternalScript,
+    Capglue,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Type)]
+pub struct CapglueSettings {
+    pub target: String,
+    pub command: String,
+    #[serde(default)]
+    pub args: Vec<String>,
+}
+
+impl Default for CapglueSettings {
+    fn default() -> Self {
+        Self {
+            target: String::new(),
+            command: "capglue".to_string(),
+            args: Vec::new(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
@@ -421,6 +441,8 @@ pub struct AppSettings {
     pub typing_tool: TypingTool,
     pub external_script_path: Option<String>,
     #[serde(default)]
+    pub capglue_settings: CapglueSettings,
+    #[serde(default)]
     pub custom_filler_words: Option<Vec<String>>,
     #[serde(default)]
     pub whisper_accelerator: WhisperAcceleratorSetting,
@@ -638,12 +660,23 @@ fn default_post_process_models() -> HashMap<String, String> {
     map
 }
 
+fn promptv3_prompt() -> LLMPrompt {
+    LLMPrompt {
+        id: PROMPTV3_PROMPT_ID.to_string(),
+        name: "promptv3".to_string(),
+        prompt: "Rewrite the transcript into a concise, high-signal prompt for an AI assistant. Preserve user intent, constraints, names, code terms, URLs, and any explicit output format. Remove filler words and speech artifacts. Return only the improved prompt.\n\nTranscript:\n${output}".to_string(),
+    }
+}
+
 fn default_post_process_prompts() -> Vec<LLMPrompt> {
-    vec![LLMPrompt {
-        id: "default_improve_transcriptions".to_string(),
-        name: "Improve Transcriptions".to_string(),
-        prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
-    }]
+    vec![
+        promptv3_prompt(),
+        LLMPrompt {
+            id: "default_improve_transcriptions".to_string(),
+            name: "Improve Transcriptions".to_string(),
+            prompt: "Clean this transcript:\n1. Fix spelling, capitalization, and punctuation errors\n2. Convert number words to digits (twenty-five → 25, ten percent → 10%, five dollars → $5)\n3. Replace spoken punctuation with symbols (period → ., comma → ,, question mark → ?)\n4. Remove filler words (um, uh, like as filler)\n5. Keep the language in the original version (if it was french, keep it in french for example)\n\nPreserve exact meaning and word order. Do not paraphrase or reorder content.\n\nReturn only the cleaned transcript.\n\nTranscript:\n${output}".to_string(),
+        },
+    ]
 }
 
 fn default_whisper_gpu_device() -> i32 {
@@ -656,6 +689,37 @@ fn default_typing_tool() -> TypingTool {
 
 fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let mut changed = false;
+    for default_prompt in default_post_process_prompts() {
+        if !settings
+            .post_process_prompts
+            .iter()
+            .any(|prompt| prompt.id == default_prompt.id)
+        {
+            settings.post_process_prompts.push(default_prompt);
+            changed = true;
+        }
+    }
+
+    let selected_prompt_exists = settings
+        .post_process_selected_prompt_id
+        .as_ref()
+        .map(|id| {
+            settings
+                .post_process_prompts
+                .iter()
+                .any(|prompt| &prompt.id == id)
+        })
+        .unwrap_or(false);
+    if !selected_prompt_exists {
+        settings.post_process_selected_prompt_id = settings
+            .post_process_prompts
+            .iter()
+            .find(|prompt| prompt.id == PROMPTV3_PROMPT_ID)
+            .or_else(|| settings.post_process_prompts.first())
+            .map(|prompt| prompt.id.clone());
+        changed = true;
+    }
+
     for provider in default_post_process_providers() {
         // Use match to do a single lookup - either sync existing or add new
         match settings
@@ -798,7 +862,7 @@ pub fn get_default_settings() -> AppSettings {
         post_process_api_keys: default_post_process_api_keys(),
         post_process_models: default_post_process_models(),
         post_process_prompts: default_post_process_prompts(),
-        post_process_selected_prompt_id: None,
+        post_process_selected_prompt_id: Some(PROMPTV3_PROMPT_ID.to_string()),
         mute_while_recording: false,
         append_trailing_space: false,
         app_language: default_app_language(),
@@ -809,6 +873,7 @@ pub fn get_default_settings() -> AppSettings {
         paste_delay_ms: default_paste_delay_ms(),
         typing_tool: default_typing_tool(),
         external_script_path: None,
+        capglue_settings: CapglueSettings::default(),
         custom_filler_words: None,
         whisper_accelerator: WhisperAcceleratorSetting::default(),
         ort_accelerator: OrtAcceleratorSetting::default(),
@@ -985,5 +1050,25 @@ mod tests {
         let out = format!("{:?}", map);
         assert!(!out.contains("secret"));
         assert!(out.contains("[REDACTED]"));
+    }
+
+    #[test]
+    fn ensure_post_process_defaults_selects_promptv3_when_missing() {
+        let mut settings = get_default_settings();
+        settings.post_process_prompts.clear();
+        settings.post_process_selected_prompt_id = None;
+
+        assert!(ensure_post_process_defaults(&mut settings));
+
+        let promptv3 = settings
+            .post_process_prompts
+            .iter()
+            .find(|prompt| prompt.id == "promptv3")
+            .expect("promptv3 should be installed as a built-in prompt");
+        assert_eq!(promptv3.name, "promptv3");
+        assert_eq!(
+            settings.post_process_selected_prompt_id.as_deref(),
+            Some("promptv3")
+        );
     }
 }

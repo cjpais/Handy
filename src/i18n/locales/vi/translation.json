@@ -300,9 +300,14 @@
           "clipboardShiftInsert": "Clipboard (Shift+Insert)",
           "direct": "Trực tiếp",
           "none": "Không có",
-          "externalScript": "Script bên ngoài"
+          "externalScript": "Script bên ngoài",
+          "capglue": "Capglue"
         },
-        "externalScriptPlaceholder": "/duong-dan/toi/script.sh"
+        "externalScriptPlaceholder": "/duong-dan/toi/script.sh",
+        "capglueHelp": "Capglue sends processed text to the configured target. It does not fall back to clipboard when delivery fails.",
+        "capglueUnavailable": "Capglue is selected but no target is configured yet. Add a target before using this output mode.",
+        "capglueTargetPlaceholder": "Capglue target (required)",
+        "capglueCommandPlaceholder": "capglue"
       },
       "typingTool": {
         "title": "Công cụ gõ",
@@ -415,7 +420,12 @@
         "createPrompt": "Tạo Prompt",
         "cancel": "Hủy",
         "selectToEdit": "Chọn một prompt ở trên để xem và chỉnh sửa chi tiết.",
-        "createFirst": "Nhấn 'Tạo Prompt mới' ở trên để tạo prompt xử lý sau đầu tiên của bạn."
+        "createFirst": "Nhấn 'Tạo Prompt mới' ở trên để tạo prompt xử lý sau đầu tiên của bạn.",
+        "promptv3Help": "promptv3 is the built-in default prompt for turning transcripts into ready-to-use AI prompts."
+      },
+      "capglue": {
+        "title": "Capglue",
+        "help": "Choose Capglue in Advanced → Paste Method to deliver post-processed text to a configured target. Invalid or unavailable Capglue settings produce a visible error instead of silent clipboard fallback."
       }
     },
     "history": {

@@ -300,9 +300,14 @@
           "clipboardShiftInsert": "Schránka (Shift+Insert)",
           "direct": "Přímé",
           "none": "Žádné",
-          "externalScript": "Externí skript"
+          "externalScript": "Externí skript",
+          "capglue": "Capglue"
         },
-        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh"
+        "externalScriptPlaceholder": "/cesta/k/vasemu/skriptu.sh",
+        "capglueHelp": "Capglue sends processed text to the configured target. It does not fall back to clipboard when delivery fails.",
+        "capglueUnavailable": "Capglue is selected but no target is configured yet. Add a target before using this output mode.",
+        "capglueTargetPlaceholder": "Capglue target (required)",
+        "capglueCommandPlaceholder": "capglue"
       },
       "typingTool": {
         "title": "Nástroj pro psaní",
@@ -415,7 +420,12 @@
         "createPrompt": "Vytvořit prompt",
         "cancel": "Zrušit",
         "selectToEdit": "Vyberte výše prompt, abyste zobrazili a upravili jeho podrobnosti.",
-        "createFirst": "Klikněte nahoře na 'Vytvořit nový prompt' a vytvořte svůj první prompt pro následné zpracování."
+        "createFirst": "Klikněte nahoře na 'Vytvořit nový prompt' a vytvořte svůj první prompt pro následné zpracování.",
+        "promptv3Help": "promptv3 is the built-in default prompt for turning transcripts into ready-to-use AI prompts."
+      },
+      "capglue": {
+        "title": "Capglue",
+        "help": "Choose Capglue in Advanced → Paste Method to deliver post-processed text to a configured target. Invalid or unavailable Capglue settings produce a visible error instead of silent clipboard fallback."
       }
     },
     "history": {

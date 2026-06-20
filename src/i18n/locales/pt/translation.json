@@ -300,9 +300,14 @@
           "clipboardShiftInsert": "Área de Transferência (Shift+Insert)",
           "direct": "Direto",
           "none": "Nenhum",
-          "externalScript": "Script externo"
+          "externalScript": "Script externo",
+          "capglue": "Capglue"
         },
-        "externalScriptPlaceholder": "/caminho/para/seu/script.sh"
+        "externalScriptPlaceholder": "/caminho/para/seu/script.sh",
+        "capglueHelp": "Capglue sends processed text to the configured target. It does not fall back to clipboard when delivery fails.",
+        "capglueUnavailable": "Capglue is selected but no target is configured yet. Add a target before using this output mode.",
+        "capglueTargetPlaceholder": "Capglue target (required)",
+        "capglueCommandPlaceholder": "capglue"
       },
       "typingTool": {
         "title": "Ferramenta de digitação",
@@ -415,7 +420,12 @@
         "createPrompt": "Criar Prompt",
         "cancel": "Cancelar",
         "selectToEdit": "Selecione um prompt acima para visualizar e editar seus detalhes.",
-        "createFirst": "Clique em 'Criar Novo Prompt' acima para criar seu primeiro prompt de pós-processamento."
+        "createFirst": "Clique em 'Criar Novo Prompt' acima para criar seu primeiro prompt de pós-processamento.",
+        "promptv3Help": "promptv3 is the built-in default prompt for turning transcripts into ready-to-use AI prompts."
+      },
+      "capglue": {
+        "title": "Capglue",
+        "help": "Choose Capglue in Advanced → Paste Method to deliver post-processed text to a configured target. Invalid or unavailable Capglue settings produce a visible error instead of silent clipboard fallback."
       }
     },
     "history": {

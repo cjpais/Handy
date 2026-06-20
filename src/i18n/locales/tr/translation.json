@@ -300,9 +300,14 @@
           "clipboardShiftInsert": "Pano (Shift+Insert)",
           "direct": "Doğrudan",
           "none": "Yok",
-          "externalScript": "Harici Betik"
+          "externalScript": "Harici Betik",
+          "capglue": "Capglue"
         },
-        "externalScriptPlaceholder": "/dosya/yolu/betik.sh"
+        "externalScriptPlaceholder": "/dosya/yolu/betik.sh",
+        "capglueHelp": "Capglue sends processed text to the configured target. It does not fall back to clipboard when delivery fails.",
+        "capglueUnavailable": "Capglue is selected but no target is configured yet. Add a target before using this output mode.",
+        "capglueTargetPlaceholder": "Capglue target (required)",
+        "capglueCommandPlaceholder": "capglue"
       },
       "typingTool": {
         "title": "Yazma Aracı",
@@ -415,7 +420,12 @@
         "createPrompt": "Prompt Oluştur",
         "cancel": "İptal",
         "selectToEdit": "Ayrıntılarını görüntülemek ve düzenlemek için yukarıdan bir prompt seçin.",
-        "createFirst": "İlk son işlem prompt'unuzu oluşturmak için yukarıdaki “Yeni Prompt Oluştur” seçeneğine tıklayın."
+        "createFirst": "İlk son işlem prompt'unuzu oluşturmak için yukarıdaki “Yeni Prompt Oluştur” seçeneğine tıklayın.",
+        "promptv3Help": "promptv3 is the built-in default prompt for turning transcripts into ready-to-use AI prompts."
+      },
+      "capglue": {
+        "title": "Capglue",
+        "help": "Choose Capglue in Advanced → Paste Method to deliver post-processed text to a configured target. Invalid or unavailable Capglue settings produce a visible error instead of silent clipboard fallback."
       }
     },
     "history": {
