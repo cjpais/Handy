@@ -101,6 +101,11 @@ test("post_processing_settings_show_promptv3_and_capglue_unavailable_state", asy
   });
 
   await expect(page.getByText("promptv3").first()).toBeVisible();
+  await expect(page.getByLabel("Prompt label")).toHaveValue("promptv3");
+  await expect(page.getByLabel("Prompt instructions")).toHaveValue(
+    "Turn ${output} into a ready-to-use prompt.",
+  );
+
   await page.getByRole("button", { name: /Clipboard/ }).click();
   await page.getByRole("button", { name: "Capglue" }).click();
   await expect(
