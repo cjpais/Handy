@@ -1,7 +1,9 @@
 use crate::input::{self, EnigoState};
 #[cfg(target_os = "linux")]
 use crate::settings::TypingTool;
-use crate::settings::{get_settings, AutoSubmitKey, CapglueSettings, ClipboardHandling, PasteMethod};
+use crate::settings::{
+    get_settings, AutoSubmitKey, CapglueSettings, ClipboardHandling, PasteMethod,
+};
 use enigo::{Direction, Enigo, Key, Keyboard};
 use log::info;
 use std::process::Command;

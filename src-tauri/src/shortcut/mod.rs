@@ -678,8 +678,6 @@ pub fn change_paste_delay_ms_setting(app: AppHandle, ms: u64) -> Result<(), Stri
     Ok(())
 }
 
-#[tauri::command]
-#[specta::specta]
 fn parse_paste_method(method: &str) -> PasteMethod {
     match method {
         "ctrl_v" => PasteMethod::CtrlV,

@@ -703,7 +703,12 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     let selected_prompt_exists = settings
         .post_process_selected_prompt_id
         .as_ref()
-        .map(|id| settings.post_process_prompts.iter().any(|prompt| &prompt.id == id))
+        .map(|id| {
+            settings
+                .post_process_prompts
+                .iter()
+                .any(|prompt| &prompt.id == id)
+        })
         .unwrap_or(false);
     if !selected_prompt_exists {
         settings.post_process_selected_prompt_id = settings
@@ -1061,6 +1066,9 @@ mod tests {
             .find(|prompt| prompt.id == "promptv3")
             .expect("promptv3 should be installed as a built-in prompt");
         assert_eq!(promptv3.name, "promptv3");
-        assert_eq!(settings.post_process_selected_prompt_id.as_deref(), Some("promptv3"));
+        assert_eq!(
+            settings.post_process_selected_prompt_id.as_deref(),
+            Some("promptv3")
+        );
     }
 }
