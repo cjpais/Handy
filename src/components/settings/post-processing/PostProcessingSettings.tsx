@@ -291,10 +291,14 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
         {!isCreating && hasPrompts && selectedPrompt && (
           <div className="space-y-3">
             <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold">
+              <label
+                className="text-sm font-semibold"
+                htmlFor="post-process-prompt-name"
+              >
                 {t("settings.postProcessing.prompts.promptLabel")}
               </label>
               <Input
+                id="post-process-prompt-name"
                 type="text"
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
@@ -306,10 +310,14 @@ const PostProcessingSettingsPromptsComponent: React.FC = () => {
             </div>
 
             <div className="space-y-2 flex flex-col">
-              <label className="text-sm font-semibold">
+              <label
+                className="text-sm font-semibold"
+                htmlFor="post-process-prompt-instructions"
+              >
                 {t("settings.postProcessing.prompts.promptInstructions")}
               </label>
               <Textarea
+                id="post-process-prompt-instructions"
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
                 placeholder={t(
