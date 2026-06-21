@@ -1,6 +1,8 @@
+use crate::settings::WordReplacement;
 use natural::phonetics::soundex;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use std::borrow::Cow;
 use strsim::levenshtein;
 
 /// Builds an n-gram string by cleaning and concatenating words
@@ -192,6 +194,68 @@ fn extract_punctuation(word: &str) -> (&str, &str) {
     };
 
     (prefix, suffix)
+}
+
+/// Applies deterministic find-and-replace rules to transcribed text.
+///
+/// Each rule replaces every whole-word, case-insensitive occurrence of `from`
+/// with `to` (literally — `$`/`\` are not treated as regex replacement syntax).
+/// Unlike [`apply_custom_words`], there is no fuzzy matching. Rules apply in
+/// order; an empty `to` deletes the term and collapses any doubled spaces.
+pub fn apply_word_replacements(text: &str, replacements: &[WordReplacement]) -> String {
+    if replacements.is_empty() {
+        return text.to_string();
+    }
+
+    let mut result = text.to_string();
+    let mut changed = false;
+
+    for replacement in replacements {
+        let from = replacement.from.trim();
+        if from.is_empty() {
+            continue;
+        }
+
+        // Add word boundaries only when the edge characters are word
+        // characters. This keeps an alphanumeric term from matching inside a
+        // larger word (so "cortex" does not match within "cortexes"), while
+        // still allowing terms with symbol edges like "C++" or ".NET" to match.
+        let escaped = regex::escape(from);
+        let starts_word = from
+            .chars()
+            .next()
+            .map_or(false, |c| c.is_alphanumeric() || c == '_');
+        let ends_word = from
+            .chars()
+            .last()
+            .map_or(false, |c| c.is_alphanumeric() || c == '_');
+        let pattern = format!(
+            "(?i){}{}{}",
+            if starts_word { r"\b" } else { "" },
+            escaped,
+            if ends_word { r"\b" } else { "" },
+        );
+
+        if let Ok(re) = Regex::new(&pattern) {
+            // NoExpand treats `to` literally so characters like `$` are not
+            // interpreted as capture-group references.
+            if let Cow::Owned(replaced) =
+                re.replace_all(&result, regex::NoExpand(replacement.to.as_str()))
+            {
+                result = replaced;
+                changed = true;
+            }
+        }
+    }
+
+    // Empty replacement targets can leave doubled spaces behind; tidy them up,
+    // but only when a replacement actually fired so untouched text is preserved.
+    if changed {
+        result = MULTI_SPACE_PATTERN.replace_all(&result, " ").to_string();
+        result = result.trim().to_string();
+    }
+
+    result
 }
 
 /// Returns filler words appropriate for the given language code.
@@ -548,6 +612,122 @@ mod tests {
         let custom_words = vec!["MacBook Pro".to_string()];
         let result = apply_custom_words(text, &custom_words, 0.5);
         assert!(result.contains("MacBook"));
+    }
+
+    fn repl(from: &str, to: &str) -> WordReplacement {
+        WordReplacement {
+            from: from.to_string(),
+            to: to.to_string(),
+        }
+    }
+
+    #[test]
+    fn test_word_replacements_empty_list_noop() {
+        let text = "the cortex is great";
+        assert_eq!(apply_word_replacements(text, &[]), "the cortex is great");
+    }
+
+    #[test]
+    fn test_word_replacements_case_insensitive_preserves_target_case() {
+        // A term consistently misheard for another, fixed deterministically.
+        let replacements = vec![repl("Cortex", "Kortix")];
+        assert_eq!(
+            apply_word_replacements("I love Cortex", &replacements),
+            "I love Kortix"
+        );
+        assert_eq!(
+            apply_word_replacements("i love cortex", &replacements),
+            "i love Kortix"
+        );
+        assert_eq!(
+            apply_word_replacements("I LOVE CORTEX", &replacements),
+            "I LOVE Kortix"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_whole_word_only() {
+        let replacements = vec![repl("cortex", "Kortix")];
+        // Should not replace inside a larger word.
+        assert_eq!(
+            apply_word_replacements("the cortexes are here", &replacements),
+            "the cortexes are here"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_multiple_occurrences() {
+        let replacements = vec![repl("cortex", "Kortix")];
+        assert_eq!(
+            apply_word_replacements("Cortex and cortex and CORTEX", &replacements),
+            "Kortix and Kortix and Kortix"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_preserves_punctuation() {
+        let replacements = vec![repl("Cortex", "Kortix")];
+        assert_eq!(
+            apply_word_replacements("Use Cortex, it's great.", &replacements),
+            "Use Kortix, it's great."
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_multi_word_from() {
+        let replacements = vec![repl("charge bee", "ChargeBee")];
+        assert_eq!(
+            apply_word_replacements("we use charge bee daily", &replacements),
+            "we use ChargeBee daily"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_applied_in_order() {
+        // An earlier replacement can feed a later one.
+        let replacements = vec![repl("cortex", "kortix"), repl("kortix", "Kortix AI")];
+        assert_eq!(
+            apply_word_replacements("about cortex", &replacements),
+            "about Kortix AI"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_empty_target_removes_and_collapses() {
+        let replacements = vec![repl("basically", "")];
+        assert_eq!(
+            apply_word_replacements("it is basically done", &replacements),
+            "it is done"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_target_with_dollar_sign_is_literal() {
+        // `$` must not be treated as a capture-group reference.
+        let replacements = vec![repl("dollars", "$5")];
+        assert_eq!(
+            apply_word_replacements("it costs five dollars", &replacements),
+            "it costs five $5"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_blank_from_is_skipped() {
+        let replacements = vec![repl("   ", "X")];
+        assert_eq!(
+            apply_word_replacements("leave this alone", &replacements),
+            "leave this alone"
+        );
+    }
+
+    #[test]
+    fn test_word_replacements_symbol_edges_match() {
+        // Terms with non-word edge characters should still match (no boundary).
+        let replacements = vec![repl("C++", "Rust")];
+        assert_eq!(
+            apply_word_replacements("I write C++ code", &replacements),
+            "I write Rust code"
+        );
     }
 
     #[test]

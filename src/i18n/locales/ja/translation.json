@@ -356,6 +356,18 @@
         "add": "追加",
         "remove": "{{word}}を削除",
         "duplicate": "「{{word}}」は既に存在します"
+      },
+      "wordReplacements": {
+        "title": "単語の置換",
+        "description": "単語やフレーズを常に別のものに置き換えます — 大文字小文字を区別せず正確に、あいまいな推測はしません。置換後を空にすると単語を削除します。",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "検索する単語",
+        "toLabel": "置換後",
+        "add": "追加",
+        "remove": "置換 {{from}} → {{to}} を削除",
+        "emptyTarget": "（削除）",
+        "duplicate": "「{{word}}」の置換は既に存在します"
       }
     },
     "postProcessing": {

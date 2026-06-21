@@ -356,6 +356,18 @@
         "add": "Aggiungi",
         "remove": "Rimuovi {{word}}",
         "duplicate": "\"{{word}}\" esiste già"
+      },
+      "wordReplacements": {
+        "title": "Sostituzione parole",
+        "description": "Sostituisce sempre una parola o frase con un'altra — in modo esatto e senza distinzione tra maiuscole e minuscole, senza ipotesi approssimative. Lascia vuota la sostituzione per rimuovere una parola.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Parola da trovare",
+        "toLabel": "Sostituisci con",
+        "add": "Aggiungi",
+        "remove": "Rimuovi la sostituzione {{from}} con {{to}}",
+        "emptyTarget": "(rimossa)",
+        "duplicate": "Una sostituzione per \"{{word}}\" esiste già"
       }
     },
     "postProcessing": {

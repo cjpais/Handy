@@ -356,6 +356,18 @@
         "add": "Thêm",
         "remove": "Xóa {{word}}",
         "duplicate": "\"{{word}}\" đã tồn tại"
+      },
+      "wordReplacements": {
+        "title": "Thay thế từ",
+        "description": "Luôn thay thế một từ hoặc cụm từ bằng từ khác — chính xác và không phân biệt chữ hoa/thường, không đoán gần đúng. Để trống phần thay thế để xóa một từ.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Từ cần tìm",
+        "toLabel": "Thay bằng",
+        "add": "Thêm",
+        "remove": "Xóa thay thế {{from}} thành {{to}}",
+        "emptyTarget": "(đã xóa)",
+        "duplicate": "Đã tồn tại thay thế cho \"{{word}}\""
       }
     },
     "postProcessing": {

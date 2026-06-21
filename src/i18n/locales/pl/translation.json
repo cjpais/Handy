@@ -356,6 +356,18 @@
         "add": "Dodaj",
         "remove": "Usuń {{word}}",
         "duplicate": "\"{{word}}\" już istnieje"
+      },
+      "wordReplacements": {
+        "title": "Zamiana słów",
+        "description": "Zawsze zamienia słowo lub frazę na inne — dokładnie i bez rozróżniania wielkości liter, bez przybliżonego zgadywania. Pozostaw zamiennik pusty, aby usunąć słowo.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Szukane słowo",
+        "toLabel": "Zamień na",
+        "add": "Dodaj",
+        "remove": "Usuń zamianę {{from}} na {{to}}",
+        "emptyTarget": "(usunięto)",
+        "duplicate": "Zamiana dla \"{{word}}\" już istnieje"
       }
     },
     "postProcessing": {

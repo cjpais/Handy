@@ -334,6 +334,18 @@
         "add": "إضافة",
         "remove": "إزالة {{word}}",
         "duplicate": "\"{{word}}\" موجود بالفعل"
+      },
+      "wordReplacements": {
+        "title": "استبدال الكلمات",
+        "description": "استبدل دائمًا كلمة أو عبارة بأخرى — بشكل دقيق وغير حسّاس لحالة الأحرف، دون تخمين تقريبي. اترك حقل الاستبدال فارغًا لإزالة كلمة.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "الكلمة المراد البحث عنها",
+        "toLabel": "استبدالها بـ",
+        "add": "إضافة",
+        "remove": "إزالة الاستبدال {{from}} إلى {{to}}",
+        "emptyTarget": "(محذوفة)",
+        "duplicate": "يوجد بالفعل استبدال لـ \"{{word}}\""
       }
     },
     "postProcessing": {

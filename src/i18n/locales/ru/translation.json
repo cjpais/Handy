@@ -356,6 +356,18 @@
         "add": "Добавить",
         "remove": "Удалить {{word}}",
         "duplicate": "\"{{word}}\" уже существует"
+      },
+      "wordReplacements": {
+        "title": "Замена слов",
+        "description": "Всегда заменяет слово или фразу другим — точно и без учёта регистра, без приблизительного угадывания. Оставьте замену пустой, чтобы удалить слово.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Искомое слово",
+        "toLabel": "Заменить на",
+        "add": "Добавить",
+        "remove": "Удалить замену {{from}} на {{to}}",
+        "emptyTarget": "(удалено)",
+        "duplicate": "Замена для \"{{word}}\" уже существует"
       }
     },
     "postProcessing": {

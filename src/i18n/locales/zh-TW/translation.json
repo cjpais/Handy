@@ -356,6 +356,18 @@
         "add": "新增",
         "remove": "刪除 {{word}}",
         "duplicate": "「{{word}}」已存在"
+      },
+      "wordReplacements": {
+        "title": "詞語替換",
+        "description": "一律將一個詞或片語替換為另一個 — 精確且不分大小寫，不進行模糊猜測。將替換內容留空即可刪除某個詞。",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "要尋找的詞",
+        "toLabel": "替換為",
+        "add": "新增",
+        "remove": "刪除替換 {{from}} 到 {{to}}",
+        "emptyTarget": "（已刪除）",
+        "duplicate": "「{{word}}」的替換已存在"
       }
     },
     "postProcessing": {

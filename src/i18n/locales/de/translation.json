@@ -356,6 +356,18 @@
         "add": "Hinzufügen",
         "remove": "{{word}} entfernen",
         "duplicate": "\"{{word}}\" existiert bereits"
+      },
+      "wordReplacements": {
+        "title": "Wortersetzungen",
+        "description": "Ersetzt immer ein Wort oder eine Phrase durch ein anderes — exakt und ohne Berücksichtigung der Groß-/Kleinschreibung, ohne unscharfes Raten. Lassen Sie die Ersetzung leer, um ein Wort zu entfernen.",
+        "fromPlaceholder": "github",
+        "toPlaceholder": "GitHub",
+        "fromLabel": "Zu suchendes Wort",
+        "toLabel": "Ersetzen durch",
+        "add": "Hinzufügen",
+        "remove": "Ersetzung {{from}} durch {{to}} entfernen",
+        "emptyTarget": "(entfernt)",
+        "duplicate": "Eine Ersetzung für \"{{word}}\" existiert bereits"
       }
     },
     "postProcessing": {
