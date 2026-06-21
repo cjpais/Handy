@@ -76,7 +76,10 @@
    morphs). */
 .ov-fade {
   opacity: 0;
-  transition: opacity 200ms ease-out;
+  transition: opacity 300ms ease-out;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
 }
 .ov-fade.show {
   opacity: 1;
