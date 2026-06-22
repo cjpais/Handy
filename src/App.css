@@ -1,28 +1,112 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Geist';
+  src: url('/src/assets/fonts/Geist/static/Geist-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/src/assets/fonts/Geist/static/Geist-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/src/assets/fonts/Geist/static/Geist-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/src/assets/fonts/Geist/static/Geist-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/src/assets/fonts/Geist_Mono/static/GeistMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/src/assets/fonts/Geist_Mono/static/GeistMono-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/src/assets/fonts/Geist_Mono/static/GeistMono-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/src/assets/fonts/Geist_Mono/static/GeistMono-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Cooper LtBT';
+  src: url('/src/assets/fonts/Cooper Lt BT Light/Cooper Lt BT Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Cooper LtBT';
+  src: url('/src/assets/fonts/Cooper Lt BT Light Italic/Cooper Lt BT Light Italic.ttf') format('truetype');
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: 'Cooper LtBT';
+  src: url('/src/assets/fonts/Cooper Lt BT Bold/Cooper Lt BT Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
 @theme {
-  /* Design tokens */
-  --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-background-ui: #da5893;
-  --color-logo-primary: #faa2ca;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6;
-  --color-mid-gray: #808080;
+  /* Strict Dark Mode Palette adapted from the stone-warm atelier design language */
+  --color-warm-bone: #0a0908;            /* Canvas background - deep warm bone dark */
+  --color-orange-off-white: #141211;     /* Elevated surfaces/cards - deep off-black */
+  --color-stone-mist: #2a2522;           /* Hairline borders and dividers */
+  --color-bark-grey: #a19a95;            /* Secondary / muted body text */
+  --color-charcoal: #f5f2eb;             /* Primary text / titles - warm cream white */
+  --color-obsidian: #faf7f2;             /* High contrast elements */
+  --color-pebble: #706963;               /* Disabled / placeholder text */
+  --color-forest-green: #1d7a46;         /* Primary Action Forest Green */
+  --color-deep-forest-green: #155d35;    /* Hover State Forest Green */
+  --color-terracotta: #d97757;           /* Accent highlight orange */
+  --color-lichen-green: #5ea500;         /* Supporting outline green */
+  --color-tide-teal: #22b8cd;            /* Supporting accent teal */
+  --color-alarm-red: #ef4444;            /* Muted alarm red */
+  --color-sapphire-link: #3b82f6;        /* Standard text links */
+
+  /* Map old legacy variables to the new dark mode system */
+  --color-text: var(--color-charcoal);
+  --color-background: var(--color-warm-bone);
+  --color-background-ui: var(--color-forest-green);
+  --color-logo-primary: var(--color-forest-green);
+  --color-logo-stroke: var(--color-stone-mist);
+  --color-text-stroke: var(--color-orange-off-white);
+  --color-mid-gray: var(--color-bark-grey);
+
+  /* Typography Families */
+  --font-geist: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-cooper-ltbt: 'Cooper LtBT', 'Playfair Display', serif;
+  --font-geist-mono: 'Geist Mono', ui-monospace, monospace;
 }
 
 :root {
   /* Typography */
-  font-size: 15px;
-  line-height: 24px;
+  font-family: var(--font-geist);
+  font-size: 14px;
+  line-height: 1.5;
   font-weight: 400;
-
-  /* Colors - Light Theme */
-  /* --color-text: #0f0f0f;
-  --color-background: #fbfbfb;
-  --color-logo-primary: #FAA2CA;
-  --color-logo-stroke: #382731;
-  --color-text-stroke: #f6f6f6; */
 
   /* Typography settings */
   font-synthesis: none;
@@ -31,12 +115,8 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --scrollbar-thumb: color-mix(in srgb, var(--color-text), transparent 85%);
-  --scrollbar-thumb-hover: color-mix(
-    in srgb,
-    var(--color-text),
-    transparent 70%
-  );
+  --scrollbar-thumb: var(--color-stone-mist);
+  --scrollbar-thumb-hover: var(--color-bark-grey);
 
   /* Apply colors */
   color: var(--color-text);
@@ -52,16 +132,6 @@
   text-align: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Colors - Dark Theme */
-    --color-text: #fbfbfb;
-    --color-background: #2c2b29;
-    --color-logo-primary: #f28cbb;
-    --color-logo-stroke: #fad1ed;
-  }
-}
-
 /* macOS - tint native overlay scrollbar thumb */
 :root[data-platform="macos"] {
   scrollbar-color: var(--scrollbar-thumb) transparent;
@@ -69,8 +139,8 @@
 
 /* Custom Scrollbar - only on Windows/Linux; macOS uses native overlay scrollbars */
 :root:not([data-platform="macos"]) ::-webkit-scrollbar {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
 }
 
 :root:not([data-platform="macos"]) ::-webkit-scrollbar-track {
@@ -79,10 +149,8 @@
 
 :root:not([data-platform="macos"]) ::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb);
-  border-radius: 20px;
-  border: 3px solid transparent;
-  border-right-width: 4px;
-  border-left-width: 3px;
+  border-radius: 9999px;
+  border: 2px solid transparent;
   background-clip: content-box;
   min-height: 32px;
 }
@@ -99,12 +167,31 @@
 
 .logo-primary {
   fill: var(--color-logo-primary);
+  transition: fill 0.3s ease;
 }
 
 .logo-stroke {
   fill: var(--color-logo-stroke);
   stroke: var(--color-logo-stroke);
   stroke-width: 1;
+  transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+/* Premium Typography classes */
+.font-cooper {
+  font-family: var(--font-cooper-ltbt);
+}
+
+.font-mono-tag {
+  font-family: var(--font-geist-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.font-mono-label {
+  font-family: var(--font-geist-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* Markdown Summary Styling */
@@ -112,31 +199,38 @@
 .markdown-summary h2,
 .markdown-summary h3,
 .markdown-summary h4 {
-  font-weight: 600;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-text);
+  font-family: var(--font-cooper-ltbt);
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-charcoal);
 }
 .markdown-summary h1 {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--color-stone-mist);
+  padding-bottom: 0.5rem;
 }
 .markdown-summary h2 {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 .markdown-summary h3 {
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 .markdown-summary ul,
 .markdown-summary ol {
   padding-left: 1.25rem;
   margin-bottom: 0.75rem;
   list-style-type: disc;
+  color: var(--color-bark-grey);
 }
 .markdown-summary li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.6;
 }
 .markdown-summary p {
   margin-bottom: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-bark-grey);
 }
 .markdown-summary p:last-child {
   margin-bottom: 0;

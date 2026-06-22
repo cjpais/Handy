@@ -19,27 +19,27 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "font-medium rounded-lg border focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer";
+    "font-semibold rounded-[8px] border transition-all duration-150 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer inline-flex items-center justify-center gap-2 font-mono uppercase tracking-[0.04em]";
 
   const variantClasses = {
     primary:
-      "text-white bg-background-ui border-background-ui hover:bg-background-ui/80 hover:border-background-ui/80 focus:ring-1 focus:ring-background-ui",
+      "text-[#fffbf7] bg-[#1d7a46] border-transparent hover:bg-[#155d35] focus:ring-1 focus:ring-[#1d7a46]",
     "primary-soft":
-      "text-text bg-logo-primary/20 border-transparent hover:bg-logo-primary/30 focus:ring-1 focus:ring-logo-primary",
+      "text-charcoal bg-forest-green/10 border-transparent hover:bg-forest-green/20 focus:ring-1 focus:ring-forest-green",
     secondary:
-      "bg-mid-gray/10 border-mid-gray/20 hover:bg-background-ui/30 hover:border-logo-primary focus:outline-none",
+      "bg-transparent border border-stone-mist text-charcoal hover:border-charcoal hover:bg-orange-off-white/30",
     danger:
-      "text-white bg-red-600 border-mid-gray/20 hover:bg-red-700 hover:border-red-700 focus:ring-1 focus:ring-red-500",
+      "text-[#fffbf7] bg-alarm-red border-transparent hover:bg-red-700 focus:ring-1 focus:ring-red-500",
     "danger-ghost":
-      "text-red-400 border-transparent hover:text-red-300 hover:bg-red-500/10 focus:bg-red-500/20",
+      "text-alarm-red border-transparent hover:bg-alarm-red/10 focus:bg-alarm-red/20",
     ghost:
-      "text-current border-transparent hover:bg-mid-gray/10 hover:border-logo-primary focus:bg-mid-gray/20",
+      "text-charcoal border-transparent hover:bg-stone-mist/30 focus:bg-stone-mist/50",
   };
 
   const sizeClasses = {
-    sm: "px-2 py-1 text-xs",
-    md: "px-4 py-[5px] text-sm",
-    lg: "px-4 py-2 text-base",
+    sm: "px-3 py-1 text-[11px] h-7",
+    md: "px-4 py-1.5 text-[11px] h-8.5",
+    lg: "px-5 py-2 text-[12px] h-10",
   };
 
   return (

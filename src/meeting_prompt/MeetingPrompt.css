@@ -1,82 +1,421 @@
+:root {
+  color-scheme: light;
+  font-family:
+    "Geist",
+    "Segoe UI",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  --meeting-surface: #fffaf6;
+  --meeting-surface-strong: #fffdfb;
+  --meeting-text: #1a1713;
+  --meeting-muted: #74675e;
+  --meeting-soft: rgba(29, 122, 70, 0.08);
+  --meeting-line: rgba(27, 22, 17, 0.08);
+  --meeting-brand: #1d7a46;
+  --meeting-brand-strong: #155d35;
+  --meeting-record: #d94d47;
+  --meeting-shadow:
+    0 20px 48px rgba(36, 26, 18, 0.14),
+    0 5px 14px rgba(36, 26, 18, 0.08);
+  background: transparent;
+  color: var(--meeting-text);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: inherit;
+}
+
 .meeting-prompt-root {
   width: 100%;
   height: 100%;
-  padding: 12px;
+  padding: 0;
   box-sizing: border-box;
-  font-family: Inter, system-ui, sans-serif;
 }
 
 .meeting-prompt-card {
+  position: relative;
+  width: 100%;
   height: 100%;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--color-mid-gray) 20%, transparent);
-  background: color-mix(in srgb, var(--color-background) 96%, transparent);
-  box-shadow: 0 12px 32px rgba(15, 15, 15, 0.25);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 14px;
-  color: var(--color-text);
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent 38%),
+    radial-gradient(circle at top right, rgba(29, 122, 70, 0.12), transparent 34%),
+    var(--meeting-surface);
+  color: var(--meeting-text);
+  box-shadow: var(--meeting-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  padding: 14px 14px 10px;
+  transform-origin: top right;
+  opacity: 0;
+  transform: translate3d(12px, -8px, 0) scale(0.965);
+  transition:
+    opacity 190ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 190ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
-.meeting-prompt-meta {
+.meeting-prompt-card.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+.meeting-prompt-card.is-leaving {
+  opacity: 0;
+  transform: translate3d(8px, -6px, 0) scale(0.982);
+}
+
+.meeting-prompt-card.meeting-state-recording {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 30%),
+    linear-gradient(135deg, #0d5f3e 0%, #15704a 56%, #1c7a46 100%);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fffdfb;
+}
+
+.meeting-prompt-card.meeting-state-recording .meeting-prompt-provider,
+.meeting-prompt-card.meeting-state-recording .meeting-prompt-detail {
+  color: rgba(255, 253, 251, 0.78);
+}
+
+.meeting-prompt-card.meeting-state-recorded {
+  background:
+    radial-gradient(circle at top right, rgba(29, 122, 70, 0.16), transparent 32%),
+    linear-gradient(180deg, #fffefc 0%, #f7f1eb 100%);
+}
+
+.meeting-prompt-shell {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.meeting-prompt-provider-cell {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(29, 122, 70, 0.1);
+  border: 1px solid rgba(29, 122, 70, 0.08);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  justify-content: center;
+  flex: 0 0 auto;
 }
 
-.meeting-prompt-title {
-  margin: 8px 0 4px;
+.meeting-prompt-card.meeting-state-recording .meeting-prompt-provider-cell {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.meeting-prompt-provider-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.meeting-prompt-provider-fallback {
+  color: var(--meeting-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meeting-prompt-card.meeting-state-recording .meeting-prompt-provider-fallback {
+  color: #fffdfb;
+}
+
+.meeting-prompt-copy {
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.meeting-prompt-eyebrow {
   font-size: 14px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-weight: 760;
+  line-height: 1.05;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.meeting-prompt-subtitle {
-  margin: 0;
+.meeting-prompt-provider {
+  margin-top: 5px;
   font-size: 12px;
-  line-height: 1.4;
-  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--meeting-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meeting-prompt-detail {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(26, 23, 19, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meeting-prompt-side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 84px;
 }
 
 .meeting-prompt-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
-  margin-top: 14px;
 }
 
 .meeting-prompt-btn {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 8px;
+  height: 38px;
+  border-radius: 13px;
   border: 0;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 760;
+  letter-spacing: 0;
   cursor: pointer;
   transition:
-    background-color 140ms ease,
-    color 140ms ease,
-    opacity 140ms ease;
+    transform 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease;
+}
+
+.meeting-prompt-btn:hover {
+  transform: translateY(-1px);
 }
 
 .meeting-prompt-btn.secondary {
-  background: color-mix(in srgb, var(--color-mid-gray) 12%, transparent);
-  color: var(--color-text);
-}
-
-.meeting-prompt-btn.secondary:hover {
-  background: color-mix(in srgb, var(--color-mid-gray) 20%, transparent);
+  background: rgba(26, 23, 19, 0.06);
+  color: var(--meeting-text);
 }
 
 .meeting-prompt-btn.primary {
-  background: var(--color-logo-primary);
-  color: white;
+  background: var(--meeting-record);
+  color: #fffaf5;
 }
 
-.meeting-prompt-btn.primary:hover {
-  background: color-mix(in srgb, var(--color-logo-primary) 90%, black);
+.meeting-prompt-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(29, 122, 70, 0.11);
+  color: var(--meeting-brand-strong);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 730;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    background-color 150ms ease;
+}
+
+.meeting-prompt-dismiss:hover {
+  transform: translateY(-1px);
+  background: rgba(29, 122, 70, 0.16);
+}
+
+.meeting-prompt-progress {
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: rgba(29, 122, 70, 0.12);
+  overflow: hidden;
+}
+
+.meeting-prompt-progress-bar {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  background: var(--meeting-brand);
+  transition: transform 50ms linear;
+}
+
+.meeting-audio-bars {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 90px;
+  height: 26px;
+  padding-right: 2px;
+}
+
+.meeting-audio-bar {
+  width: 5px;
+  min-height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 253, 251, 0.96);
+  transition:
+    height 70ms ease-out,
+    opacity 120ms ease-out;
+}
+
+.meeting-recording-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(0, -6px, 0);
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms ease;
+}
+
+.meeting-prompt-card.meeting-state-recording:hover .meeting-recording-controls,
+.meeting-prompt-card.meeting-state-recording:focus-within .meeting-recording-controls {
+  opacity: 1;
+  visibility: visible;
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+}
+
+.meeting-recording-control {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fffdfb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease;
+}
+
+.meeting-recording-control:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.meeting-recording-control.danger {
+  background: rgba(217, 77, 71, 0.2);
+  color: #fff5f3;
+}
+
+.meeting-recording-control.danger:hover {
+  background: rgba(217, 77, 71, 0.34);
+}
+
+.meeting-recorded-mark {
+  color: var(--meeting-brand-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: meeting-recorded-mark 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.meeting-recorded-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(29, 122, 70, 0.1);
+  color: var(--meeting-brand-strong);
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.meeting-prompt-card.meeting-state-recorded::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 36%,
+    rgba(255, 255, 255, 0.56) 50%,
+    transparent 64%,
+    transparent 100%
+  );
+  transform: translateX(-115%);
+  animation: meeting-recorded-sweep 640ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+  pointer-events: none;
+}
+
+@keyframes meeting-recorded-mark {
+  from {
+    opacity: 0;
+    transform: scale(0.72) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes meeting-recorded-sweep {
+  from {
+    transform: translateX(-115%);
+  }
+  to {
+    transform: translateX(130%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meeting-prompt-card,
+  .meeting-recording-controls,
+  .meeting-prompt-dismiss,
+  .meeting-prompt-btn,
+  .meeting-recording-control,
+  .meeting-recorded-mark,
+  .meeting-prompt-card.meeting-state-recorded::after {
+    animation: none;
+    transition: none;
+  }
 }

@@ -1,20 +1,25 @@
+@import "../App.css";
+
 .recording-overlay {
   height: 36px;
   width: 172px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  padding: 6px;
-  background: #000000cc;
-  border-radius: 18px;
+  padding: 6px 12px;
+  background: var(--color-orange-off-white);
+  border: 1px solid var(--color-stone-mist);
+  border-radius: 9999px; /* Pill shape */
   opacity: 0;
-  transition: opacity 300ms ease-out;
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
+  box-shadow: var(--shadow-xl);
 }
 
 .overlay-left {
   display: flex;
   align-items: center;
+  color: var(--color-forest-green);
 }
 
 .overlay-middle {
@@ -35,47 +40,62 @@
   justify-content: center;
   gap: 3px;
   padding-bottom: 0px;
-  height: 24px;
+  height: 20px;
   overflow: hidden;
 }
 
 .bar {
-  width: 6px;
-  background: #ffe5ee;
-  max-height: 20px;
-  border-radius: 2px;
+  width: 5px;
+  background: var(--color-forest-green);
+  max-height: 18px;
+  border-radius: 9999px; /* Rounded pill bars */
   transition: height 80ms linear;
-  min-height: 4px;
+  min-height: 3px;
 }
 
 .bar.bar-meeting {
-  background: #ddd6fe;
+  background: var(--color-terracotta);
 }
 
 .recording-overlay.fade-in {
   opacity: 1;
 }
 
-/* Meeting mode: purple pill */
+/* Meeting mode: Terracotta outline / Forest Green background combination */
 .recording-overlay.meeting {
-  background: #7c3aed;
+  background: var(--color-forest-green);
+  border-color: var(--color-terracotta);
+}
+
+.recording-overlay.meeting .overlay-left {
+  color: #fffbf7;
+}
+
+.recording-overlay.meeting .cancel-button {
+  color: #fffbf7;
 }
 
 .recording-overlay.meeting .cancel-button:hover {
-  background: #ffffff33;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .overlay-meeting-icon {
-  color: #ffffff;
+  color: inherit;
   flex-shrink: 0;
 }
 
 .transcribing-text {
-  color: white;
-  font-size: 12px;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--color-charcoal);
+  font-size: 11px;
+  font-family: var(--font-geist-mono);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   animation: transcribing-pulse 1.5s infinite ease-in-out;
+}
+
+.recording-overlay.meeting .transcribing-text {
+  color: #fffbf7;
 }
 
 @keyframes transcribing-pulse {
@@ -89,23 +109,23 @@
 }
 
 .cancel-button {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition:
-    background-color 150ms ease-out,
-    transform 100ms ease-out;
+  color: var(--color-bark-grey);
+  transition: all 150ms ease-out;
   flex-shrink: 0;
 }
 
 .cancel-button:hover {
-  background: #faa2ca33;
-  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-alarm-red);
+  transform: scale(1.08);
 }
 
 .cancel-button:active {
