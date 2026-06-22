@@ -4,6 +4,7 @@ use crate::audio_feedback::{play_feedback_sound, play_feedback_sound_blocking, S
 use crate::audio_toolkit::{is_microphone_access_denied, is_no_input_device_error};
 use crate::managers::audio::AudioRecordingManager;
 use crate::managers::history::HistoryManager;
+use crate::managers::transcription::StreamWorkKind;
 use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings, APPLE_INTELLIGENCE_PROVIDER_ID};
 use crate::shortcut;
@@ -406,11 +407,24 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string();
         change_tray_icon(app, TrayIconState::Recording);
-        show_recording_overlay(app);
 
         // Get the microphone mode to determine audio feedback timing
         let settings = get_settings(app);
         let is_always_on = settings.always_on_microphone;
+
+        // When live preview is enabled, show the streaming overlay (the pill)
+        // and start a streaming worker. The worker authoritatively checks the
+        // loaded model's runtime capability (capabilities().supports_streaming):
+        // if it streams, the pill morphs into the panel when text arrives; if
+        // not, the normal batch path runs on stop and the pill simply never
+        // fills in. The worker waits for the (background) model load and queues
+        // audio frames meanwhile, so no early audio is lost.
+        if settings.live_preview {
+            tm.start_stream();
+            utils::show_streaming_overlay(app);
+        } else {
+            show_recording_overlay(app);
+        }
         debug!("Microphone mode - always_on: {}", is_always_on);
 
         let mut recording_error: Option<String> = None;
@@ -502,7 +516,21 @@ impl ShortcutAction for TranscribeAction {
         let hm = Arc::clone(&app.state::<Arc<HistoryManager>>());
 
         change_tray_icon(app, TrayIconState::Transcribing);
-        show_transcribing_overlay(app);
+        // Overlay handoff on stop:
+        // - Active stream → keep the live panel visible; finalize is near-instant.
+        // - Live preview on but no active stream (batch fallback) → swap the
+        //   streaming card to a working spinner.
+        // - Live preview off → the legacy "transcribing" pill.
+        let live_preview = get_settings(app).live_preview;
+        // An active stream keeps its live panel visible (finalize is near-instant);
+        // only swap UI when there's no active stream.
+        if !tm.is_streaming() {
+            if live_preview {
+                tm.emit_stream_working(StreamWorkKind::Transcribing);
+            } else {
+                show_transcribing_overlay(app);
+            }
+        }
 
         // Unmute before playing audio feedback so the stop sound is audible
         rm.remove_mute();
@@ -530,6 +558,9 @@ impl ShortcutAction for TranscribeAction {
 
                 if samples.is_empty() {
                     debug!("Recording produced no audio samples; skipping persistence");
+                    // Tear down any streaming worker so its channel doesn't leak
+                    // and block the next start_stream.
+                    tm.cancel_stream();
                     utils::hide_recording_overlay(&ah);
                     change_tray_icon(&ah, TrayIconState::Idle);
                 } else {
@@ -543,9 +574,14 @@ impl ShortcutAction for TranscribeAction {
                         crate::audio_toolkit::save_wav_file(&wav_path, &samples_for_wav)
                     });
 
-                    // Transcribe concurrently with WAV save
+                    // Transcribe concurrently with WAV save. If a live stream was
+                    // running, finalize it and use its text (all audio was already
+                    // fed to the stream); otherwise batch-transcribe the samples.
                     let transcription_time = Instant::now();
-                    let transcription_result = tm.transcribe(samples);
+                    let transcription_result = match tm.finalize_stream() {
+                        Some(text) => Ok(text),
+                        None => tm.transcribe(samples),
+                    };
 
                     // Await WAV save and verify
                     let wav_saved = match wav_handle.await {
@@ -580,7 +616,11 @@ impl ShortcutAction for TranscribeAction {
                             );
 
                             if post_process {
-                                show_processing_overlay(&ah);
+                                if live_preview {
+                                    tm.emit_stream_working(StreamWorkKind::Polishing);
+                                } else {
+                                    show_processing_overlay(&ah);
+                                }
                             }
                             let processed =
                                 process_transcription_output(&ah, &transcription, post_process)
@@ -651,6 +691,8 @@ impl ShortcutAction for TranscribeAction {
                 }
             } else {
                 debug!("No samples retrieved from recording stop");
+                // Tear down any streaming worker so its channel doesn't leak.
+                tm.cancel_stream();
                 utils::hide_recording_overlay(&ah);
                 change_tray_icon(&ah, TrayIconState::Idle);
             }

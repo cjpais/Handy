@@ -1,5 +1,6 @@
 use crate::audio_toolkit::{list_input_devices, vad::SmoothedVad, AudioRecorder, SileroVad};
 use crate::helpers::clamshell;
+use crate::managers::transcription::TranscriptionManager;
 use crate::settings::{get_settings, AppSettings};
 use crate::utils;
 use log::{debug, error, info};
@@ -125,9 +126,13 @@ fn create_audio_recorder(
         .map_err(|e| anyhow::anyhow!("Failed to create SileroVad: {}", e))?;
     let smoothed_vad = SmoothedVad::new(Box::new(silero), 15, 15, 2);
 
-    // Recorder with VAD plus a spectrum-level callback that forwards updates to
-    // the frontend.
-    let recorder = AudioRecorder::new()
+    // Recorder with VAD, a spectrum-level callback that forwards updates to
+    // the frontend, and an audio-frame callback that feeds live streaming
+    // transcription via a shared `StreamRouter`. The router is captured
+    // directly (not via Tauri state) so the per-frame path is a single relaxed
+    // atomic load when no stream is pending — zero-cost for users with live
+    // preview off.
+    let mut recorder = AudioRecorder::new()
         .map_err(|e| anyhow::anyhow!("Failed to create AudioRecorder: {}", e))?
         .with_vad(Box::new(smoothed_vad))
         .with_level_callback({
@@ -136,6 +141,22 @@ fn create_audio_recorder(
                 utils::emit_levels(&app_handle, &levels);
             }
         });
+
+    // Register the streaming audio callback only if the TranscriptionManager
+    // is available (it always is in normal operation). The callback captures
+    // the `Arc<StreamRouter>` directly, so it never touches Tauri state on the
+    // hot path. The continuous flag is shared with the router, which toggles
+    // it at `start_stream` time based on the `live_preview_continuous` setting.
+    if let Some(tm) = app_handle.try_state::<Arc<TranscriptionManager>>() {
+        let router = tm.stream_router();
+        let continuous = router.continuous_flag();
+        recorder = recorder.with_audio_callback(
+            move |frame| {
+                router.feed(frame);
+            },
+            continuous,
+        );
+    }
 
     Ok(recorder)
 }

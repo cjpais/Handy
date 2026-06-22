@@ -143,6 +143,9 @@ const settingUpdaters: {
     commands.changeExperimentalEnabledSetting(value as boolean),
   lazy_stream_close: (value) =>
     commands.changeLazyStreamCloseSetting(value as boolean),
+  live_preview: (value) => commands.changeLivePreviewSetting(value as boolean),
+  live_preview_continuous: (value) =>
+    commands.changeLivePreviewContinuousSetting(value as boolean),
   show_tray_icon: (value) =>
     commands.changeShowTrayIconSetting(value as boolean),
   transcribe_accelerator: (value) =>

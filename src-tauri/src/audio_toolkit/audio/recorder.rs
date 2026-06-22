@@ -30,12 +30,22 @@ enum AudioChunk {
     EndOfStream,
 }
 
+/// Callback invoked with each 16 kHz mono frame that passes VAD while
+/// recording. Used to feed a live streaming transcription as audio arrives.
+pub type AudioFrameCallback = Arc<dyn Fn(&[f32]) + Send + Sync + 'static>;
+
 pub struct AudioRecorder {
     device: Option<Device>,
     cmd_tx: Option<mpsc::Sender<Cmd>>,
     worker_handle: Option<std::thread::JoinHandle<()>>,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    audio_cb: Option<AudioFrameCallback>,
+    /// When present, the audio callback is active and this flag controls whether
+    /// frames are forwarded pre-VAD (continuous, `true`) or post-VAD (gated,
+    /// `false`). Shared with the streaming router so it can toggle at
+    /// `start_stream` time without recreating the recorder.
+    audio_continuous: Option<Arc<AtomicBool>>,
 }
 
 impl AudioRecorder {
@@ -46,6 +56,8 @@ impl AudioRecorder {
             worker_handle: None,
             vad: None,
             level_cb: None,
+            audio_cb: None,
+            audio_continuous: None,
         })
     }
 
@@ -59,6 +71,22 @@ impl AudioRecorder {
         F: Fn(Vec<f32>) + Send + Sync + 'static,
     {
         self.level_cb = Some(Arc::new(cb));
+        self
+    }
+
+    /// Register a callback that receives real-time 16 kHz frames while
+    /// recording. `continuous` is a shared flag that selects whether the
+    /// callback gets every raw frame (pre-VAD, for streaming models that need
+    /// continuous audio) or only VAD-gated speech frames (matches the saved /
+    /// batch audio). Frames arrive in real time, in order, on the recorder's
+    /// consumer thread — keep the callback cheap (e.g. forward to a channel)
+    /// so it never stalls capture.
+    pub fn with_audio_callback<F>(mut self, cb: F, continuous: Arc<AtomicBool>) -> Self
+    where
+        F: Fn(&[f32]) + Send + Sync + 'static,
+    {
+        self.audio_cb = Some(Arc::new(cb));
+        self.audio_continuous = Some(continuous);
         self
     }
 
@@ -83,6 +111,9 @@ impl AudioRecorder {
         let vad = self.vad.clone();
         // Move the optional level callback into the worker thread
         let level_cb = self.level_cb.clone();
+        // Move the optional real-time audio frame callback into the worker thread
+        let audio_cb = self.audio_cb.clone();
+        let audio_continuous = self.audio_continuous.clone();
 
         let worker = std::thread::spawn(move || {
             let stop_flag = Arc::new(AtomicBool::new(false));
@@ -159,7 +190,16 @@ impl AudioRecorder {
                 Ok((stream, sample_rate)) => {
                     let _ = init_tx.send(Ok(()));
                     // Keep the stream alive while we process samples.
-                    run_consumer(sample_rate, vad, sample_rx, cmd_rx, level_cb, stop_flag);
+                    run_consumer(
+                        sample_rate,
+                        vad,
+                        sample_rx,
+                        cmd_rx,
+                        level_cb,
+                        audio_cb,
+                        audio_continuous,
+                        stop_flag,
+                    );
                     drop(stream);
                 }
                 Err(error_message) => {
@@ -392,12 +432,15 @@ mod tests {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run_consumer(
     in_sample_rate: u32,
     vad: Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
     sample_rx: mpsc::Receiver<AudioChunk>,
     cmd_rx: mpsc::Receiver<Cmd>,
     level_cb: Option<Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>>,
+    audio_cb: Option<AudioFrameCallback>,
+    audio_continuous: Option<Arc<AtomicBool>>,
     stop_flag: Arc<AtomicBool>,
 ) {
     let mut frame_resampler = FrameResampler::new(
@@ -434,20 +477,46 @@ fn run_consumer(
         samples: &[f32],
         recording: bool,
         vad: &Option<Arc<Mutex<Box<dyn vad::VoiceActivityDetector>>>>,
+        audio_cb: &Option<AudioFrameCallback>,
+        audio_continuous: &Option<Arc<AtomicBool>>,
         out_buf: &mut Vec<f32>,
     ) {
         if !recording {
             return;
         }
 
+        // In continuous mode the streaming callback receives the raw frame
+        // BEFORE VAD so the streaming model sees uninterrupted audio (including
+        // silence) for correct timing calibration. The saved/batch buffer
+        // still receives only VAD-gated speech below.
+        let is_continuous = audio_continuous
+            .as_ref()
+            .is_some_and(|f| f.load(Ordering::Relaxed));
+        if is_continuous {
+            if let Some(cb) = audio_cb {
+                cb(samples);
+            }
+        }
+
+        // Accumulate VAD-gated speech into the save/batch buffer, and (when
+        // not continuous) forward the same gated frame to the streaming callback.
+        let mut emit = |buf: &[f32]| {
+            out_buf.extend_from_slice(buf);
+            if !is_continuous {
+                if let Some(cb) = audio_cb {
+                    cb(buf);
+                }
+            }
+        };
+
         if let Some(vad_arc) = vad {
             let mut det = vad_arc.lock().unwrap();
             match det.push_frame(samples).unwrap_or(VadFrame::Speech(samples)) {
-                VadFrame::Speech(buf) => out_buf.extend_from_slice(buf),
+                VadFrame::Speech(buf) => emit(buf),
                 VadFrame::Noise => {}
             }
         } else {
-            out_buf.extend_from_slice(samples);
+            emit(samples);
         }
     }
 
@@ -471,7 +540,14 @@ fn run_consumer(
 
         // ---------- existing pipeline ------------------------------------ //
         frame_resampler.push(&raw, &mut |frame: &[f32]| {
-            handle_frame(frame, recording, &vad, &mut processed_samples)
+            handle_frame(
+                frame,
+                recording,
+                &vad,
+                &audio_cb,
+                &audio_continuous,
+                &mut processed_samples,
+            )
         });
 
         // non-blocking check for a command
@@ -498,7 +574,14 @@ fn run_consumer(
                         match sample_rx.recv_timeout(Duration::from_secs(2)) {
                             Ok(AudioChunk::Samples(remaining)) => {
                                 frame_resampler.push(&remaining, &mut |frame: &[f32]| {
-                                    handle_frame(frame, true, &vad, &mut processed_samples)
+                                    handle_frame(
+                                        frame,
+                                        true,
+                                        &vad,
+                                        &audio_cb,
+                                        &audio_continuous,
+                                        &mut processed_samples,
+                                    )
                                 });
                             }
                             Ok(AudioChunk::EndOfStream) => break,
@@ -510,7 +593,14 @@ fn run_consumer(
                     }
 
                     frame_resampler.finish(&mut |frame: &[f32]| {
-                        handle_frame(frame, true, &vad, &mut processed_samples)
+                        handle_frame(
+                            frame,
+                            true,
+                            &vad,
+                            &audio_cb,
+                            &audio_continuous,
+                            &mut processed_samples,
+                        )
                     });
 
                     let _ = reply_tx.send(std::mem::take(&mut processed_samples));

@@ -34,6 +34,22 @@ tauri_panel! {
 const OVERLAY_WIDTH: f64 = 172.0;
 const OVERLAY_HEIGHT: f64 = 36.0;
 
+// Overlay window used while live streaming transcription is active. Fixed for
+// the whole session — the card morphs (pill → panel) entirely in CSS inside
+// this transparent window, so the native window never resizes mid-session.
+// Sized to comfortably hold the expanded panel plus its shadow / pop-in.
+const OVERLAY_STREAM_WIDTH: f64 = 480.0;
+const OVERLAY_STREAM_HEIGHT: f64 = 280.0;
+
+/// Overlay window size (logical) for a given UI state.
+fn overlay_dimensions(state: &str) -> (f64, f64) {
+    if state == "streaming" {
+        (OVERLAY_STREAM_WIDTH, OVERLAY_STREAM_HEIGHT)
+    } else {
+        (OVERLAY_WIDTH, OVERLAY_HEIGHT)
+    }
+}
+
 #[cfg(target_os = "macos")]
 const OVERLAY_TOP_OFFSET: f64 = 46.0;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
@@ -200,7 +216,11 @@ fn is_mouse_within_monitor(
 /// We must use LogicalPosition (not PhysicalPosition) because Tauri/tao
 /// converts PhysicalPosition using the scale factor of the monitor the window
 /// is *currently* on, which is wrong when moving cross-monitor.
-fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
+fn calculate_overlay_position(
+    app_handle: &AppHandle,
+    width: f64,
+    height: f64,
+) -> Option<(f64, f64)> {
     let monitor = get_monitor_with_cursor(app_handle)?;
     let scale = monitor.scale_factor();
     let monitor_x = monitor.position().x as f64 / scale;
@@ -210,15 +230,23 @@ fn calculate_overlay_position(app_handle: &AppHandle) -> Option<(f64, f64)> {
 
     let settings = settings::get_settings(app_handle);
 
-    let x = monitor_x + (monitor_width - OVERLAY_WIDTH) / 2.0;
+    let x = monitor_x + (monitor_width - width) / 2.0;
     let y = match settings.overlay_position {
         OverlayPosition::Top => monitor_y + OVERLAY_TOP_OFFSET,
         OverlayPosition::Bottom | OverlayPosition::None => {
-            monitor_y + monitor_height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
+            monitor_y + monitor_height - height - OVERLAY_BOTTOM_OFFSET
         }
     };
 
     Some((x, y))
+}
+
+/// Current overlay window size in logical units (points), for repositioning
+/// without assuming a fixed size (compact vs. streaming).
+fn current_overlay_logical_size(window: &tauri::webview::WebviewWindow) -> Option<(f64, f64)> {
+    let size = window.inner_size().ok()?;
+    let scale = window.scale_factor().ok()?;
+    Some((size.width as f64 / scale, size.height as f64 / scale))
 }
 
 /// Creates the recording overlay window and keeps it hidden by default
@@ -228,7 +256,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
     // for Layer Shell as we use anchors. On other platforms, we require a monitor.
     #[cfg(not(target_os = "linux"))]
     {
-        let position = calculate_overlay_position(app_handle);
+        let position = calculate_overlay_position(app_handle, OVERLAY_WIDTH, OVERLAY_HEIGHT);
         if position.is_none() {
             debug!("Failed to determine overlay position, not creating overlay window");
             return;
@@ -285,7 +313,7 @@ pub fn create_recording_overlay(app_handle: &AppHandle) {
 /// Creates the recording overlay panel and keeps it hidden by default (macOS)
 #[cfg(target_os = "macos")]
 pub fn create_recording_overlay(app_handle: &AppHandle) {
-    if let Some((x, y)) = calculate_overlay_position(app_handle) {
+    if let Some((x, y)) = calculate_overlay_position(app_handle, OVERLAY_WIDTH, OVERLAY_HEIGHT) {
         // PanelBuilder creates a Tauri window then converts it to NSPanel.
         // The window remains registered, so get_webview_window() still works.
         match PanelBuilder::<_, RecordingOverlayPanel>::new(app_handle, "recording_overlay")
@@ -326,9 +354,18 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
         return;
     }
 
-    update_overlay_position(app_handle);
-
+    // Size the overlay for this state (compact vs. streaming), then position it.
+    let (width, height) = overlay_dimensions(state);
     if let Some(overlay_window) = app_handle.get_webview_window("recording_overlay") {
+        #[cfg(target_os = "linux")]
+        update_gtk_layer_shell_anchors(&overlay_window);
+
+        let _ = overlay_window.set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }));
+        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
+            let _ = overlay_window
+                .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
+        }
+
         let _ = overlay_window.show();
 
         // On Windows, aggressively re-assert "topmost" in the native Z-order after showing
@@ -342,6 +379,11 @@ fn show_overlay_state(app_handle: &AppHandle, state: &str) {
 /// Shows the recording overlay window with fade-in animation
 pub fn show_recording_overlay(app_handle: &AppHandle) {
     show_overlay_state(app_handle, "recording");
+}
+
+/// Shows the larger streaming overlay that displays live transcription text
+pub fn show_streaming_overlay(app_handle: &AppHandle) {
+    show_overlay_state(app_handle, "streaming");
 }
 
 /// Shows the transcribing overlay window
@@ -362,7 +404,11 @@ pub fn update_overlay_position(app_handle: &AppHandle) {
             update_gtk_layer_shell_anchors(&overlay_window);
         }
 
-        if let Some((x, y)) = calculate_overlay_position(app_handle) {
+        // Use the window's current size so centering stays correct whether the
+        // overlay is in compact or streaming layout.
+        let (width, height) = current_overlay_logical_size(&overlay_window)
+            .unwrap_or((OVERLAY_WIDTH, OVERLAY_HEIGHT));
+        if let Some((x, y)) = calculate_overlay_position(app_handle, width, height) {
             let _ = overlay_window
                 .set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }

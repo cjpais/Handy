@@ -1,3 +1,32 @@
+/* App-matched tokens (mirrors App.css), auto light/dark for the overlay window */
+:root {
+  --s-surface: rgba(251, 251, 251, 0.86);
+  --s-text: #0f0f0f;
+  --s-muted: #6e6e6e;
+  --s-faint: #9a9a9a;
+  --s-border: rgba(128, 128, 128, 0.22);
+  --s-hair: rgba(128, 128, 128, 0.12);
+  --s-accent: #da5893;
+  --s-accent-soft: rgba(218, 88, 147, 0.16);
+  --s-shadow: 0 22px 50px -20px rgba(40, 20, 30, 0.42);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --s-surface: rgba(40, 39, 37, 0.82);
+    --s-text: #fbfbfb;
+    --s-muted: #a3a09a;
+    --s-faint: #6f6c66;
+    --s-border: rgba(255, 255, 255, 0.12);
+    --s-hair: rgba(255, 255, 255, 0.08);
+    --s-accent: #f28cbb;
+    --s-accent-soft: rgba(242, 140, 187, 0.2);
+    --s-shadow: 0 22px 56px -18px rgba(0, 0, 0, 0.66);
+  }
+}
+
+/* ============================================================
+   Compact pill (batch flow: recording / transcribing / processing)
+   ============================================================ */
 .recording-overlay {
   height: 36px;
   width: 172px;
@@ -92,4 +121,242 @@
 
 .cancel-button:active {
   transform: scale(0.95);
+}
+
+/* ============================================================
+   Live preview: a pill that sculpts open into a panel
+   ============================================================ */
+.stream-stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 16px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.scard {
+  width: 168px; /* pill width */
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: bottom center;
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  box-shadow: var(--s-shadow);
+  backdrop-filter: blur(28px) saturate(155%);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+  /* pop-in plays on mount; morph (width/radius) is a transition */
+  animation: scard-pop 460ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    width 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 460ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, width, opacity;
+}
+@keyframes scard-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.scard.leaving {
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  transition:
+    opacity 240ms ease,
+    transform 300ms ease;
+}
+.scard.open {
+  width: 392px;
+  border-radius: 16px;
+}
+.scard.working {
+  width: 210px;
+  border-radius: 20px;
+}
+
+/* text region — auto-height open via grid-rows trick; region fades as a whole */
+.stext {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 440ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms ease;
+}
+.scard.open .stext {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.stext-clip {
+  overflow: hidden;
+  min-height: 0;
+}
+.stext-cap {
+  max-height: 132px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 15px 18px 9px;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.003em;
+  color: var(--s-text);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+}
+.stext-cap p {
+  margin: 0;
+}
+.stext-cap .committed {
+  color: var(--s-text);
+}
+.stext-cap .tentative {
+  color: var(--s-muted);
+}
+.scaret {
+  display: inline-block;
+  width: 2px;
+  height: 1.02em;
+  translate: 0 3px;
+  margin-left: 1px;
+  background: var(--s-accent);
+  border-radius: 2px;
+  animation: scaret-blink 1.05s steps(1) infinite;
+}
+@keyframes scaret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* base row — dot (left) | waveform (center) | timer + cancel (right).
+   Same structure for pill & panel; the dot stays anchored left in both. */
+.sbase {
+  height: 40px;
+  padding: 0 10px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.sbase-l {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+}
+.sbase-r {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+/* working state: simple flex row (spinner + label … cancel) */
+.sbase.sbase-working {
+  display: flex;
+  gap: 9px;
+}
+.sbase-working .sx {
+  margin-left: auto;
+}
+.sdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--s-accent);
+  flex: none;
+  animation: sdot-pulse 1.9s infinite;
+}
+@keyframes sdot-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--s-accent-soft);
+  }
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.stimer {
+  font-size: 12px;
+  color: var(--s-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 240ms ease 80ms;
+}
+.scard.open .stimer {
+  opacity: 1;
+}
+.swave {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
+  flex: none;
+}
+.swave i {
+  width: 2.5px;
+  border-radius: 3px;
+  background: var(--s-accent);
+  height: 3px;
+}
+.sx {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex: none;
+  padding: 0;
+  border: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--s-muted);
+  background: var(--s-hair);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 100ms ease;
+}
+.sx svg {
+  width: 9px;
+  height: 9px;
+  display: block;
+}
+.sx:hover {
+  background: var(--s-accent-soft);
+  color: var(--s-text);
+  transform: scale(1.05);
+}
+.sx:active {
+  transform: scale(0.95);
+}
+
+/* working state (transcribing / polishing) — pill + spinner */
+.sspinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--s-hair);
+  border-top-color: var(--s-accent);
+  animation: sspin 0.7s linear infinite;
+  flex: none;
+}
+@keyframes sspin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.swork-label {
+  font-size: 12px;
+  color: var(--s-muted);
+  white-space: nowrap;
 }

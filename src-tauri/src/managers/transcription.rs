@@ -6,16 +6,17 @@ use crate::settings::{
 };
 use anyhow::Result;
 use log::{debug, error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock};
+use std::sync::{mpsc, Arc, Condvar, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, SystemTime};
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_specta::Event;
 use transcribe_cpp::{
-    Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, Task,
+    Backend, Feature, Model, ModelOptions, RunExtension, RunOptions, Session, StreamOptions, Task,
     WhisperRunOptions,
 };
 use transcribe_rs::{
@@ -37,6 +38,135 @@ pub struct ModelStateEvent {
     pub model_id: Option<String>,
     pub model_name: Option<String>,
     pub error: Option<String>,
+}
+
+/// Live transcription snapshot emitted to the overlay during a streaming run.
+/// `committed` is the append-only, flicker-free prefix; `tentative` is the
+/// volatile suffix the model may still rewrite.
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct StreamTextEvent {
+    pub committed: String,
+    pub tentative: String,
+}
+
+/// Phase of the streaming overlay card, emitted to drive its UI state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum StreamPhase {
+    /// Receiving audio / live text (or waiting for the stream to begin).
+    Listening,
+    /// Finalizing or post-processing — show a spinner.
+    Working,
+}
+
+/// Semantic kind of "working" phase, used to localize the spinner label.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "lowercase")]
+pub enum StreamWorkKind {
+    Transcribing,
+    Polishing,
+}
+
+/// Emitted to switch the streaming overlay to a working spinner.
+#[derive(Clone, Debug, Serialize, Deserialize, Type, tauri_specta::Event)]
+pub struct StreamPhaseEvent {
+    pub phase: StreamPhase,
+    /// Present only when `phase` is `Working`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<StreamWorkKind>,
+}
+
+/// Commands sent to the streaming worker thread. Audio frames and the finalize
+/// request travel the same channel so FIFO ordering guarantees every fed frame
+/// is processed before finalize runs.
+enum StreamCmd {
+    Feed(Vec<f32>),
+    /// Flush the stream and reply with the final text, or `None` if no stream
+    /// was ever active (caller should fall back to batch transcription).
+    Finalize(mpsc::Sender<Option<String>>),
+    Cancel,
+}
+
+/// Routes real-time audio frames to the active streaming worker. Shared
+/// between the [`TranscriptionManager`] (which opens/closes the route) and the
+/// audio recorder's per-frame callback (which feeds frames).
+///
+/// Designed so the per-frame cost when no stream is pending is a single
+/// relaxed atomic load — no Tauri state lookup, no mutex lock. The recorder
+/// callback captures an `Arc<StreamRouter>` directly (handed to it at recorder
+/// creation time) instead of going through `app_handle.try_state()` on every
+/// frame.
+pub struct StreamRouter {
+    /// Command channel to the active streaming worker, present from
+    /// `start_stream` until `finalize_stream`/`cancel_stream`.
+    tx: Mutex<Option<mpsc::Sender<StreamCmd>>>,
+    /// True while a stream is pending or active (channel is open). The audio
+    /// callback checks this first to avoid the mutex lock when no stream runs.
+    open: Arc<AtomicBool>,
+    /// When true, forward every raw frame pre-VAD (continuous mode) so the
+    /// streaming model receives uninterrupted audio for timing calibration.
+    /// When false, forward only VAD-gated speech frames (matches batch audio).
+    /// Shared as `Arc<AtomicBool>` so the audio recorder can read it per-frame
+    /// without depending on `StreamRouter` (or `TranscriptionManager`).
+    continuous: Arc<AtomicBool>,
+}
+
+impl StreamRouter {
+    fn new() -> Self {
+        Self {
+            tx: Mutex::new(None),
+            open: Arc::new(AtomicBool::new(false)),
+            continuous: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// Open a fresh command channel for a new streaming session, returning the
+    /// receiver the worker should drain. Caller must ensure no prior channel is
+    /// still open.
+    fn open(&self, continuous: bool) -> mpsc::Receiver<StreamCmd> {
+        let (tx, rx) = mpsc::channel::<StreamCmd>();
+        *self.tx.lock().unwrap() = Some(tx);
+        self.continuous.store(continuous, Ordering::Relaxed);
+        self.open.store(true, Ordering::Relaxed);
+        rx
+    }
+
+    /// Take the sender out (closing the channel to new feeds). Returns the
+    /// sender so the caller can send the final `Finalize`/`Cancel` command.
+    fn take(&self) -> Option<mpsc::Sender<StreamCmd>> {
+        self.open.store(false, Ordering::Relaxed);
+        self.tx.lock().unwrap().take()
+    }
+
+    /// Drop the channel and mark closed without sending a final command (used
+    /// when the worker exits without a finalize/cancel handshake).
+    fn clear(&self) {
+        self.open.store(false, Ordering::Relaxed);
+        *self.tx.lock().unwrap() = None;
+    }
+
+    /// Forward a 16 kHz frame to the active streaming worker. Cheap no-op (a
+    /// single relaxed atomic load) when no stream is pending.
+    pub fn feed(&self, frame: &[f32]) {
+        if !self.open.load(Ordering::Relaxed) {
+            return;
+        }
+        if let Some(tx) = self.tx.lock().unwrap().as_ref() {
+            let _ = tx.send(StreamCmd::Feed(frame.to_vec()));
+        }
+    }
+
+    /// Whether a stream is pending or active.
+    pub fn is_open(&self) -> bool {
+        self.open.load(Ordering::Relaxed)
+    }
+
+    /// Shared handle to the continuous-mode flag, so the audio recorder can
+    /// read it per-frame without going through Tauri state or depending on
+    /// `StreamRouter`/`TranscriptionManager`.
+    pub fn continuous_flag(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.continuous)
+    }
 }
 
 enum LoadedEngine {
@@ -79,6 +209,22 @@ pub struct TranscriptionManager {
     watcher_handle: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     is_loading: Arc<Mutex<bool>>,
     loading_condvar: Arc<Condvar>,
+    /// Routes real-time audio frames to the active streaming worker. The audio
+    /// recorder captures an `Arc<StreamRouter>` directly (handed to it at
+    /// recorder creation time), so the per-frame path never goes through Tauri
+    /// state or locks the manager — a single relaxed atomic load when no stream
+    /// is pending.
+    router: Arc<StreamRouter>,
+    /// True only while a transcribe-cpp `Stream` is actually in flight (set by
+    /// the worker once `stream()` succeeds). Used for overlay/UI decisions.
+    stream_active: Arc<AtomicBool>,
+    /// True while the streaming worker has taken the engine out of `engine`
+    /// (from the moment it is leased until it is returned or dropped). Kept
+    /// distinct from `stream_active` — the engine is leased for the worker's
+    /// entire lifetime, but the stream may not start (model not loaded / not
+    /// streaming-capable / begin failed). `is_model_loaded()` consults this so
+    /// the model still reports "loaded" while the worker holds it.
+    engine_leased: Arc<AtomicBool>,
 }
 
 impl TranscriptionManager {
@@ -93,6 +239,9 @@ impl TranscriptionManager {
             watcher_handle: Arc::new(Mutex::new(None)),
             is_loading: Arc::new(Mutex::new(false)),
             loading_condvar: Arc::new(Condvar::new()),
+            router: Arc::new(StreamRouter::new()),
+            stream_active: Arc::new(AtomicBool::new(false)),
+            engine_leased: Arc::new(AtomicBool::new(false)),
         };
 
         // Start the idle watcher
@@ -178,8 +327,9 @@ impl TranscriptionManager {
     }
 
     pub fn is_model_loaded(&self) -> bool {
-        let engine = self.lock_engine();
-        engine.is_some()
+        // The engine may be leased out to the streaming worker (taken out of
+        // the mutex). It's still loaded — just in use — so report true.
+        self.lock_engine().is_some() || self.engine_leased.load(Ordering::Relaxed)
     }
 
     /// Atomically check whether a model load is in progress and, if not, mark
@@ -343,9 +493,17 @@ impl TranscriptionManager {
                     emit_loading_failed(&error_msg);
                     anyhow::anyhow!(error_msg)
                 })?;
+                // Record the model's real streaming capability (from GGUF
+                // metadata) so the picker badge reflects runtime truth rather
+                // than a static guess. The load-completed event below triggers a
+                // frontend model refresh that picks this up.
+                let caps = session.model().capabilities();
+                self.model_manager
+                    .set_supports_streaming(model_id, caps.supports_streaming);
                 info!(
-                    "Loaded whisper model '{}' (requested {:?}, bound backend '{}')",
-                    model_id, backend, bound_backend
+                    "Loaded whisper model '{}' (requested {:?}, bound backend '{}', \
+                     supports_streaming={})",
+                    model_id, backend, bound_backend, caps.supports_streaming
                 );
                 LoadedEngine::TranscribeCpp(session)
             }
@@ -476,6 +634,303 @@ impl TranscriptionManager {
     pub fn get_current_model(&self) -> Option<String> {
         let current_model = self.current_model_id.lock().unwrap();
         current_model.clone()
+    }
+
+    /// Whether a live streaming run is currently in flight.
+    pub fn is_streaming(&self) -> bool {
+        self.stream_active.load(Ordering::Relaxed)
+    }
+
+    /// Shared handle to the stream router, used by the audio recorder to feed
+    /// real-time frames without going through Tauri state on every frame.
+    pub fn stream_router(&self) -> Arc<StreamRouter> {
+        Arc::clone(&self.router)
+    }
+
+    /// Begin a live streaming transcription on the held engine's session.
+    /// Audio frames pushed via [`StreamRouter::feed`] (captured directly by the
+    /// audio recorder) are decoded incrementally and emitted to the overlay as
+    /// [`StreamTextEvent`].
+    ///
+    /// Non-blocking: spawns a worker that waits for any in-progress model load,
+    /// verifies the model supports streaming, then begins the stream. If the
+    /// model can't stream, the worker idles until finalize/cancel and reports
+    /// `None` so the caller falls back to batch transcription. Frames sent
+    /// before the stream begins queue on the channel and are not lost.
+    pub fn start_stream(&self) {
+        if self.router.is_open() {
+            warn!("start_stream called while a stream worker is already active");
+            return;
+        }
+        let settings = get_settings(&self.app_handle);
+        let rx = self.router.open(settings.live_preview_continuous);
+        self.stream_active.store(false, Ordering::Relaxed);
+
+        let manager = self.clone();
+        thread::spawn(move || manager.run_stream_worker(rx));
+    }
+
+    fn run_stream_worker(&self, rx: mpsc::Receiver<StreamCmd>) {
+        // Wait for any in-progress model load to finish (start_stream races the
+        // background load kicked off when recording starts).
+        {
+            let mut is_loading = self.is_loading.lock().unwrap();
+            while *is_loading {
+                is_loading = self.loading_condvar.wait(is_loading).unwrap();
+            }
+        }
+
+        let model_id = self.get_current_model().unwrap_or_default();
+
+        // Take the engine out of the mutex so we own it during streaming. This
+        // prevents any concurrent batch transcription on a second session of
+        // the same model — transcribe-cpp's compute_lock would refuse it
+        // anyway, but taking the engine out makes the exclusion structural
+        // rather than conventional. The engine is returned (or dropped if the
+        // model was switched/unloaded mid-stream) when the worker exits.
+        self.engine_leased.store(true, Ordering::Relaxed);
+        let mut engine = match self.lock_engine().take() {
+            Some(e) => e,
+            None => {
+                self.engine_leased.store(false, Ordering::Relaxed);
+                info!(
+                    "Live preview: model '{}' was unloaded before streaming could begin; \
+                     falling back to batch transcription",
+                    model_id
+                );
+                self.router.clear();
+                drain_until_finalize(rx);
+                return;
+            }
+        };
+
+        // Probe capabilities (immutable borrow, brief). Only transcribe-cpp
+        // models expose streaming; ONNX engines fall back to batch.
+        let (supports_streaming, supports_translate, languages) = match &engine {
+            LoadedEngine::TranscribeCpp(session) => {
+                let model = session.model();
+                let caps = model.capabilities();
+                info!(
+                    "Live preview: model '{}' arch='{}' variant='{}' supports_streaming={} \
+                     supports_translate={} languages={:?}",
+                    model_id,
+                    model.arch(),
+                    model.variant(),
+                    caps.supports_streaming,
+                    caps.supports_translate,
+                    caps.languages,
+                );
+                (
+                    caps.supports_streaming,
+                    caps.supports_translate,
+                    caps.languages,
+                )
+            }
+            _ => {
+                info!(
+                    "Live preview: model '{}' is not a transcribe-cpp model; \
+                     streaming is unavailable, using batch transcription",
+                    model_id
+                );
+                (false, false, Vec::new())
+            }
+        };
+
+        if !supports_streaming {
+            self.return_engine(engine, &model_id);
+            self.engine_leased.store(false, Ordering::Relaxed);
+            self.router.clear();
+            drain_until_finalize(rx);
+            return;
+        }
+
+        // Build run options mirroring the offline transcribe-cpp path: task +
+        // language gated against what the model actually advertises.
+        let settings = get_settings(&self.app_handle);
+        let requested_language = match settings.selected_language.as_str() {
+            "auto" => None,
+            "zh-Hans" | "zh-Hant" => Some("zh".to_string()),
+            other => Some(other.to_string()),
+        };
+        let language = requested_language.filter(|lang| languages.iter().any(|l| l == lang));
+        let task = if settings.translate_to_english && supports_translate {
+            Task::Translate
+        } else {
+            Task::Transcribe
+        };
+        let run_options = RunOptions {
+            task,
+            language,
+            ..Default::default()
+        };
+
+        // Run the stream on the held session. The Stream borrows the session
+        // (and thus the engine) for its lifetime, so the feed/finalize loop
+        // lives in a labeled block — when it exits, the borrow is released and
+        // the engine can be moved into return_engine().
+        let stream_started = 'stream: {
+            let session = match &mut engine {
+                LoadedEngine::TranscribeCpp(s) => s,
+                _ => break 'stream false,
+            };
+
+            // Read the backend string before beginning the stream — the
+            // `Stream` borrows `session` mutably for its lifetime, so we can't
+            // call `session.model()` once it exists.
+            let backend = session.model().backend();
+
+            // StreamOptions::default() uses CommitPolicy::Auto and lets the
+            // family pick its own streaming strategy (no family-specific ext).
+            let mut stream = match session.stream(&run_options, &StreamOptions::default()) {
+                Ok(s) => s,
+                Err(e) => {
+                    error!("Failed to begin stream: {}", e);
+                    break 'stream false;
+                }
+            };
+
+            self.stream_active.store(true, Ordering::Relaxed);
+            self.touch_activity();
+            info!(
+                "Live streaming transcription started (model '{}', backend '{}')",
+                model_id, backend
+            );
+
+            let mut feed_count: u64 = 0;
+            let mut emit_count: u64 = 0;
+            while let Ok(cmd) = rx.recv() {
+                match cmd {
+                    StreamCmd::Feed(pcm) => {
+                        self.touch_activity();
+                        feed_count += 1;
+                        match stream.feed(&pcm) {
+                            Ok(update) => {
+                                if update.committed_changed || update.tentative_changed {
+                                    let text = stream.text();
+                                    emit_count += 1;
+                                    self.emit_stream_text(&text.committed, &text.tentative);
+                                }
+                            }
+                            Err(e) => warn!("stream feed failed: {}", e),
+                        }
+                    }
+                    StreamCmd::Finalize(reply) => {
+                        let text = match stream.finalize() {
+                            // After finalize the committed prefix holds the full
+                            // text; display() = committed + tentative is the safe read.
+                            Ok(_) => stream.text().display(),
+                            Err(e) => {
+                                error!("stream finalize failed: {}", e);
+                                String::new()
+                            }
+                        };
+                        info!(
+                            "Live preview finalized: {} frames fed, {} updates emitted, {} chars",
+                            feed_count,
+                            emit_count,
+                            text.len()
+                        );
+                        let _ = reply.send(Some(text));
+                        break;
+                    }
+                    StreamCmd::Cancel => {
+                        stream.reset();
+                        break;
+                    }
+                }
+            }
+
+            self.stream_active.store(false, Ordering::Relaxed);
+            true
+        };
+        // `stream` + the `&mut engine` borrow are released here.
+
+        if !stream_started {
+            // Stream never began (model doesn't support streaming or begin
+            // failed); drain so the finalize handshake still completes and the
+            // caller falls back to batch transcription.
+            drain_until_finalize(rx);
+        }
+
+        self.return_engine(engine, &model_id);
+        self.engine_leased.store(false, Ordering::Relaxed);
+    }
+
+    /// Return the leased engine to the mutex, unless the model was switched or
+    /// unloaded during streaming (in which case the stale engine is dropped).
+    fn return_engine(&self, engine: LoadedEngine, expected_model_id: &str) {
+        let still_current =
+            self.current_model_id.lock().unwrap().as_deref() == Some(expected_model_id);
+        if still_current {
+            *self.lock_engine() = Some(engine);
+        } else {
+            info!(
+                "Model changed/unloaded during streaming; dropping stale engine (was '{}')",
+                expected_model_id
+            );
+            // `engine` drops here, freeing its resources.
+        }
+    }
+
+    /// Flush the active stream and return its final, post-filtered text. Returns
+    /// `None` when no stream was active (caller should batch-transcribe instead).
+    pub fn finalize_stream(&self) -> Option<String> {
+        let tx = self.router.take()?;
+        let (reply_tx, reply_rx) = mpsc::channel();
+        if tx.send(StreamCmd::Finalize(reply_tx)).is_err() {
+            return None;
+        }
+        let raw = match reply_rx.recv() {
+            Ok(Some(text)) => text,
+            _ => return None,
+        };
+
+        // Apply the same custom-word correction + filler/hallucination filtering
+        // the offline path uses. Streaming models are non-whisper (no decode
+        // prompt), so custom words always go through fuzzy post-correction.
+        let settings = get_settings(&self.app_handle);
+        let corrected = if settings.custom_words.is_empty() {
+            raw
+        } else {
+            apply_custom_words(
+                &raw,
+                &settings.custom_words,
+                settings.word_correction_threshold,
+            )
+        };
+        let filtered = filter_transcription_output(
+            &corrected,
+            &settings.app_language,
+            &settings.custom_filler_words,
+        );
+
+        self.maybe_unload_immediately("streaming transcription");
+        Some(filtered)
+    }
+
+    /// Abandon any active stream without producing text (e.g. on cancel).
+    pub fn cancel_stream(&self) {
+        if let Some(tx) = self.router.take() {
+            let _ = tx.send(StreamCmd::Cancel);
+        }
+        self.stream_active.store(false, Ordering::Relaxed);
+    }
+
+    /// Emit a working-phase event to the streaming overlay (spinner + label).
+    pub fn emit_stream_working(&self, kind: StreamWorkKind) {
+        let _ = StreamPhaseEvent {
+            phase: StreamPhase::Working,
+            kind: Some(kind),
+        }
+        .emit(&self.app_handle);
+    }
+
+    fn emit_stream_text(&self, committed: &str, tentative: &str) {
+        let _ = StreamTextEvent {
+            committed: committed.to_string(),
+            tentative: tentative.to_string(),
+        }
+        .emit(&self.app_handle);
     }
 
     pub fn transcribe(&self, audio: Vec<f32>) -> Result<String> {
@@ -833,6 +1288,23 @@ impl TranscriptionManager {
         self.maybe_unload_immediately("transcription");
 
         Ok(final_result)
+    }
+}
+
+/// Drain a stream command channel, ignoring fed audio, until the caller
+/// finalizes or cancels. Used when streaming can't actually run (model not
+/// loaded / not streaming-capable) so the finalize handshake still completes
+/// and the caller falls back to batch transcription.
+fn drain_until_finalize(rx: mpsc::Receiver<StreamCmd>) {
+    while let Ok(cmd) = rx.recv() {
+        match cmd {
+            StreamCmd::Feed(_) => {}
+            StreamCmd::Finalize(reply) => {
+                let _ = reply.send(None);
+                break;
+            }
+            StreamCmd::Cancel => break,
+        }
     }
 }
 

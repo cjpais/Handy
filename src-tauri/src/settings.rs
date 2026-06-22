@@ -435,6 +435,16 @@ pub struct AppSettings {
     pub transcribe_gpu_device: i32,
     #[serde(default)]
     pub extra_recording_buffer_ms: u64,
+    /// Show live, incremental transcription in the overlay while recording
+    /// (streaming-capable models only). Defaults off.
+    #[serde(default)]
+    pub live_preview: bool,
+    /// When live preview is on, forward continuous (pre-VAD) audio to the
+    /// streaming model instead of VAD-gated speech segments. Increases compute
+    /// usage but may improve timing accuracy for streaming-capable models.
+    /// Defaults off.
+    #[serde(default)]
+    pub live_preview_continuous: bool,
 }
 
 fn default_model() -> String {
@@ -819,6 +829,8 @@ pub fn get_default_settings() -> AppSettings {
         ort_accelerator: OrtAcceleratorSetting::default(),
         transcribe_gpu_device: default_transcribe_gpu_device(),
         extra_recording_buffer_ms: 0,
+        live_preview: false,
+        live_preview_continuous: false,
     }
 }
 

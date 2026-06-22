@@ -53,6 +53,7 @@ pub struct ModelInfo {
     pub supported_languages: Vec<String>, // Languages this model can transcribe
     pub supports_language_selection: bool, // Whether the user can explicitly pick a language
     pub is_custom: bool,            // Whether this is a user-provided custom model
+    pub supports_streaming: bool, // Whether this model supports live streaming preview (transcribe-cpp)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -150,6 +151,7 @@ impl ModelManager {
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -178,6 +180,7 @@ impl ModelManager {
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -205,6 +208,7 @@ impl ModelManager {
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -232,6 +236,7 @@ impl ModelManager {
                 supported_languages: whisper_languages.clone(),
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -260,6 +265,7 @@ impl ModelManager {
                 supported_languages: whisper_languages,
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -288,6 +294,7 @@ impl ModelManager {
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -325,6 +332,7 @@ impl ModelManager {
                 supported_languages: parakeet_v3_languages,
                 supports_language_selection: false,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -352,6 +360,7 @@ impl ModelManager {
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -381,6 +390,7 @@ impl ModelManager {
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -410,6 +420,7 @@ impl ModelManager {
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -439,6 +450,7 @@ impl ModelManager {
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: false,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -474,6 +486,7 @@ impl ModelManager {
                 supported_languages: sense_voice_languages,
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -504,6 +517,7 @@ impl ModelManager {
                 supported_languages: gigaam_languages,
                 supports_language_selection: false,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -538,6 +552,7 @@ impl ModelManager {
                 supported_languages: canary_flash_languages,
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -575,6 +590,7 @@ impl ModelManager {
                 supported_languages: canary_1b_languages,
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -610,6 +626,7 @@ impl ModelManager {
                 supported_languages: cohere_languages,
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
@@ -618,6 +635,10 @@ impl ModelManager {
         // sha256 is omitted intentionally so downloads skip hash verification
         // (these files may change). All run through the transcribe-cpp engine,
         // which auto-detects the architecture from the GGUF.
+        // Tuple trailing bool = supports_streaming (live preview via transcribe-cpp).
+        // The runtime capability probe (capabilities().supports_streaming) is the
+        // source of truth; this flag is the picker hint and gates the streaming
+        // overlay so non-streaming models don't show an empty live-preview panel.
         let transcribe_cpp_test_models = [
             (
                 "parakeet-unified-en-0.6b",
@@ -628,6 +649,7 @@ impl ModelManager {
                 vec!["en".to_string()],
                 0.80f32,
                 0.85f32,
+                false,
             ),
             (
                 "parakeet-tdt-0.6b-v3-gguf",
@@ -638,6 +660,7 @@ impl ModelManager {
                 vec![],
                 0.80,
                 0.85,
+                false,
             ),
             (
                 "nemotron-3.5-asr-streaming-0.6b",
@@ -648,6 +671,7 @@ impl ModelManager {
                 vec![],
                 0.78,
                 0.85,
+                false,
             ),
             (
                 "qwen3-asr-0.6b",
@@ -658,6 +682,7 @@ impl ModelManager {
                 vec![],
                 0.80,
                 0.70,
+                false,
             ),
             (
                 "qwen3-asr-1.7b",
@@ -668,6 +693,7 @@ impl ModelManager {
                 vec![],
                 0.85,
                 0.50,
+                false,
             ),
             (
                 "voxtral-mini-4b-realtime",
@@ -678,11 +704,21 @@ impl ModelManager {
                 vec![],
                 0.85,
                 0.30,
+                false,
             ),
         ];
 
-        for (id, name, description, filename, size_mb, languages, accuracy, speed) in
-            transcribe_cpp_test_models
+        for (
+            id,
+            name,
+            description,
+            filename,
+            size_mb,
+            languages,
+            accuracy,
+            speed,
+            supports_streaming,
+        ) in transcribe_cpp_test_models
         {
             available_models.insert(
                 id.to_string(),
@@ -710,6 +746,7 @@ impl ModelManager {
                     // Auto-detect only for these experimental test models.
                     supports_language_selection: false,
                     is_custom: false,
+                    supports_streaming,
                 },
             );
         }
@@ -751,6 +788,16 @@ impl ModelManager {
     pub fn get_model_info(&self, model_id: &str) -> Option<ModelInfo> {
         let models = self.available_models.lock().unwrap();
         models.get(model_id).cloned()
+    }
+
+    /// Record a model's real streaming capability, probed from the loaded
+    /// model's runtime capabilities (GGUF metadata). The picker badge reads
+    /// this; it is corrected here rather than guessed at registry build time.
+    pub fn set_supports_streaming(&self, model_id: &str, supports_streaming: bool) {
+        let mut models = self.available_models.lock().unwrap();
+        if let Some(model) = models.get_mut(model_id) {
+            model.supports_streaming = supports_streaming;
+        }
     }
 
     fn migrate_bundled_models(&self) -> Result<()> {
@@ -1036,6 +1083,7 @@ impl ModelManager {
                     supported_languages: vec![],
                     supports_language_selection: true,
                     is_custom: true,
+                    supports_streaming: false,
                 },
             );
         }
@@ -1634,6 +1682,7 @@ mod tests {
                 supported_languages: vec!["en".to_string()],
                 supports_language_selection: true,
                 is_custom: false,
+                supports_streaming: false,
             },
         );
 
