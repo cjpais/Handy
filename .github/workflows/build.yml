@@ -303,6 +303,11 @@ jobs:
           echo "CMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
           echo "CL=/EHsc" >> $env:GITHUB_ENV
+          # Link uses lld-link + llvm-mt; use llvm-rc for resources too. Microsoft's
+          # rc.exe fails the manifest with "RC2136" under this clang-cl/lld toolchain
+          # (seen in ggml-vulkan's vulkan-shaders-gen host sub-build). CMake honors
+          # the RC env var, and the ExternalProject sub-build inherits it.
+          echo "RC=llvm-rc" >> $env:GITHUB_ENV
 
       - name: Install ONNX Runtime (x86_64 macOS)
         if: inputs.target == 'x86_64-apple-darwin'

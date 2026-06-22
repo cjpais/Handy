@@ -93,10 +93,6 @@ tauri-plugin-updater = "2.10.0"
 
 [target.'cfg(windows)'.dependencies]
 transcribe-rs = { version = "0.3.8", features = ["ort-directml"] }
-transcribe-cpp = { version = "0.0.3", default-features = false, features = [
-  "dynamic-backends",
-  "vulkan",
-] }
 windows = { version = "0.61.3", features = [
   "Win32_Media_Audio_Endpoints",
   "Win32_System_Com_StructuredStorage",
@@ -105,6 +101,22 @@ windows = { version = "0.61.3", features = [
   "Win32_UI_WindowsAndMessaging",
 ] }
 winreg = "0.55"
+
+# Whisper backend per Windows arch. x86_64 ships the Vulkan GPU backend;
+# Windows-on-ARM is CPU-only: its Adreno Vulkan drivers are immature, and
+# ggml-vulkan's shader generator (vulkan-shaders-gen) does not build under the
+# clang-cl/lld toolchain that ggml's ARM CPU backend requires. Both keep the
+# dynamic-backends posture (loadable per-ISA CPU modules + GPU where built).
+[target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
+transcribe-cpp = { version = "0.0.3", default-features = false, features = [
+  "dynamic-backends",
+  "vulkan",
+] }
+
+[target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
+transcribe-cpp = { version = "0.0.3", default-features = false, features = [
+  "dynamic-backends",
+] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
