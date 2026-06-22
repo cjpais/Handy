@@ -344,7 +344,10 @@ jobs:
       # and point CMake at it. The `*-static-md` triplet is a static zlib built
       # against the DYNAMIC CRT (/MD) — matching rustc's default on
       # *-pc-windows-msvc; a /MT (x64-windows-static) zlib would clash with the
-      # CRT rustc links. find_package(ZLIB) resolves it from CMAKE_PREFIX_PATH.
+      # CRT rustc links. vcpkg's find_package(ZLIB) support lives in a
+      # vcpkg-cmake-wrapper.cmake that only activates under the vcpkg toolchain;
+      # with plain CMAKE_PREFIX_PATH, stock FindZLIB finds the header but not the
+      # static-md lib — so we also hand it the exact ZLIB_LIBRARY/ZLIB_INCLUDE_DIR.
       - name: Install zlib for transcribe-cpp (Windows)
         if: contains(inputs.platform, 'windows')
         shell: pwsh
@@ -361,6 +364,15 @@ jobs:
           $combined = if ($env:CMAKE_PREFIX_PATH) { "$zlibPrefix;$env:CMAKE_PREFIX_PATH" } else { $zlibPrefix }
           Add-Content $env:GITHUB_ENV "CMAKE_PREFIX_PATH=$combined"
           Write-Host "CMAKE_PREFIX_PATH=$combined"
+          # Stock FindZLIB locates the header via CMAKE_PREFIX_PATH but not vcpkg's
+          # static-md lib, so pass the exact paths to the transcribe-cpp-sys CMake
+          # configure. build.rs forwards TRANSCRIBE_CMAKE_ARGS after its own -D's,
+          # so the explicit value wins. Glob the lib so its name isn't hardcoded.
+          $zlibLib = (Get-ChildItem "$zlibPrefix/lib" -Filter '*.lib' | Select-Object -First 1).FullName
+          if (-not $zlibLib) { throw "no zlib .lib found under $zlibPrefix/lib" }
+          $zlibLib = $zlibLib -replace '\\','/'
+          Add-Content $env:GITHUB_ENV "TRANSCRIBE_CMAKE_ARGS=-DZLIB_INCLUDE_DIR=$zlibPrefix/include -DZLIB_LIBRARY=$zlibLib"
+          Write-Host "ZLIB_LIBRARY=$zlibLib"
 
       # transcribe-cpp ships as a shared libtranscribe + loadable ggml backend
       # modules on Linux (the `dynamic-backends` posture). They are produced by
