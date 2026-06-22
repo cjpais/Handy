@@ -337,6 +337,31 @@ jobs:
             '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      # transcribe-cpp's Whisper decoder calls zlib's compress() for the
+      # decoding compression-ratio heuristic (a repetition check ported from HF
+      # Whisper), so transcribe-cpp-sys runs find_package(ZLIB REQUIRED).
+      # Linux/macOS have a system zlib; MSVC does not, so install one via vcpkg
+      # and point CMake at it. The `*-static-md` triplet is a static zlib built
+      # against the DYNAMIC CRT (/MD) — matching rustc's default on
+      # *-pc-windows-msvc; a /MT (x64-windows-static) zlib would clash with the
+      # CRT rustc links. find_package(ZLIB) resolves it from CMAKE_PREFIX_PATH.
+      - name: Install zlib for transcribe-cpp (Windows)
+        if: contains(inputs.platform, 'windows')
+        shell: pwsh
+        run: |
+          if ("${{ inputs.target }}" -like "*aarch64*") {
+            $triplet = "arm64-windows-static-md"
+          } else {
+            $triplet = "x64-windows-static-md"
+          }
+          Write-Host "Installing zlib:$triplet via vcpkg"
+          vcpkg install "zlib:$triplet"
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install zlib:$triplet failed" }
+          $zlibPrefix = "$env:VCPKG_INSTALLATION_ROOT/installed/$triplet" -replace '\\','/'
+          $combined = if ($env:CMAKE_PREFIX_PATH) { "$zlibPrefix;$env:CMAKE_PREFIX_PATH" } else { $zlibPrefix }
+          Add-Content $env:GITHUB_ENV "CMAKE_PREFIX_PATH=$combined"
+          Write-Host "CMAKE_PREFIX_PATH=$combined"
+
       # transcribe-cpp ships as a shared libtranscribe + loadable ggml backend
       # modules on Linux (the `dynamic-backends` posture). They are produced by
       # transcribe-cpp-sys's CMake install during the cargo build, but nothing
@@ -372,6 +397,15 @@ jobs:
           ls -la "$LIBDIR"
           echo "TRANSCRIBE_LIBDIR=$LIBDIR" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=$LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+          # linuxdeploy resolves `handy`'s NEEDED libs via `ldd` and HARD-FAILS
+          # on an unresolved one (it does not warn-and-skip). libtranscribe.so
+          # lives only in the cargo build tree, so also publish it (and the ggml
+          # libs it pulls in) to the system linker cache — belt-and-suspenders
+          # with LD_LIBRARY_PATH so resolution never hinges on env propagation
+          # into the bundler subprocess. (Only affects the CI host; the AppImage
+          # gets its own co-located copies.)
+          sudo cp -vL "$LIBDIR"/libtranscribe.so* "$LIBDIR"/libggml*.so* /usr/local/lib/ 2>/dev/null || true
+          sudo ldconfig
 
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
