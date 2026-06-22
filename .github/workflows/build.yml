@@ -273,7 +273,7 @@ jobs:
           fi
           echo "platform=${patched_platform}" >> $GITHUB_OUTPUT
 
-      # whisper-rs-sys cmake builds create paths that exceed Windows MAX_PATH
+      # transcribe-cpp-sys cmake builds create paths that exceed Windows MAX_PATH
       # (260 chars). Shorten the target dir to keep paths under the limit.
       - name: Shorten build path (Windows)
         if: runner.os == 'Windows'
@@ -337,6 +337,42 @@ jobs:
             '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      # transcribe-cpp ships as a shared libtranscribe + loadable ggml backend
+      # modules on Linux (the `dynamic-backends` posture). They are produced by
+      # transcribe-cpp-sys's CMake install during the cargo build, but nothing
+      # ships them. Pre-build the app so that install dir exists, then expose it
+      # via LD_LIBRARY_PATH so the AppImage's linuxdeploy can resolve
+      # libtranscribe.so (a NEEDED of `handy`) while bundling. tauri-action
+      # reuses this compile incrementally. TRANSCRIBE_LIBDIR is consumed by the
+      # AppImage post-processing step to co-locate the dlopen'd ggml modules.
+      - name: Pre-build and locate transcribe-cpp backend libs (Linux)
+        if: contains(inputs.platform, 'ubuntu')
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROFILE="${{ steps.build-profile.outputs.profile }}"
+          # Frontend must exist for the app crate to compile (generate_context!).
+          bun run build
+          (
+            cd src-tauri
+            if [ "$PROFILE" = "release" ]; then cargo build --release; else cargo build; fi
+          )
+          # The install manifest sits next to libtranscribe in <crate-out>/lib.
+          # Pick the newest match in case a stale build dir lingers in the cache.
+          LIBDIR="$(find "src-tauri/target/$PROFILE/build" \
+            -type f -name transcribe-link.json -path '*transcribe-cpp-sys*/out/lib/*' \
+            -printf '%T@ %h\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)"
+          if [ -z "${LIBDIR:-}" ] || [ ! -d "$LIBDIR" ]; then
+            echo "ERROR: could not locate transcribe-cpp-sys install lib dir" >&2
+            find src-tauri/target \( -name 'libtranscribe*' -o -name 'libggml*' \) 2>/dev/null >&2 || true
+            exit 1
+          fi
+          LIBDIR="$(cd "$LIBDIR" && pwd)"
+          echo "Located transcribe-cpp libs in: $LIBDIR"
+          ls -la "$LIBDIR"
+          echo "TRANSCRIBE_LIBDIR=$LIBDIR" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
+
       - name: Build with Tauri
         uses: tauri-apps/tauri-action@v0
         env:
@@ -353,15 +389,6 @@ jobs:
           AZURE_TENANT_ID: ${{ inputs.sign-binaries && secrets.AZURE_TENANT_ID || '' }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ inputs.sign-binaries && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
-          # Disable -march=native and all SIMD instruction sets above SSE4.2 for
-          # x86_64 builds. Without this, CPUs lacking AVX/FMA (e.g. Celeron N2920,
-          # FX-8350) crash with SIGILL. The Vulkan backend handles heavy compute
-          # so disabling these has negligible performance impact.
-          GGML_NATIVE: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_AVX: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_AVX2: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_FMA: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
-          GGML_F16C: ${{ !contains(inputs.platform, 'macos') && !contains(inputs.platform, 'arm') && !contains(inputs.target, 'aarch64') && 'OFF' || '' }}
         with:
           tagName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
           releaseName: ${{ inputs.release-id && format('v{0}', steps.get-version.outputs.version) || '' }}
@@ -435,6 +462,20 @@ jobs:
               echo "Contents of $dir:"
               ls "$dir" | grep -E "(wayland|fuse)" || echo "  No wayland/fuse libraries found"
             done
+
+            # Co-locate transcribe-cpp's dynamic backends in the AppImage.
+            # linuxdeploy bundles the NEEDED libtranscribe.so (resolved at build
+            # time via LD_LIBRARY_PATH) but NOT the dlopen'd ggml backend modules
+            # that init_backends_default() loads at runtime from libtranscribe's
+            # own directory — stage those (and backfill the core libs) into
+            # usr/lib, next to libtranscribe. Fails loudly if libs are missing.
+            if [ -n "${TRANSCRIBE_LIBDIR:-}" ]; then
+              bash "$GITHUB_WORKSPACE/scripts/ci/stage-transcribe-libs.sh" \
+                "$TRANSCRIBE_LIBDIR" "squashfs-root/usr/lib"
+            else
+              echo "ERROR: TRANSCRIBE_LIBDIR not set; transcribe-cpp backends would be missing from the AppImage" >&2
+              exit 1
+            fi
 
             # Detect architecture and get appropriate appimagetool
             if [[ "$(uname -m)" == "aarch64" ]]; then

@@ -4,6 +4,18 @@ fn main() {
 
     generate_tray_translations();
 
+    // Linux ships transcribe-cpp as a shared libtranscribe + loadable ggml
+    // backend modules (the `dynamic-backends` posture in Cargo.toml). Bake an
+    // $ORIGIN-relative rpath into the `handy` binary so it finds libtranscribe
+    // next to it in the package — AppImage `usr/bin/handy` -> `usr/lib`, and
+    // deb/rpm `/usr/bin/handy` -> `/usr/lib`. transcribe's
+    // init_backends_default() then loads the ggml modules co-located there.
+    // (Windows resolves DLLs from the exe directory, so it needs no rpath;
+    // macOS links transcribe-cpp statically via the `metal` feature.)
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("linux") {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib");
+    }
+
     tauri_build::build()
 }
 
