@@ -31,6 +31,17 @@ finish-args:
   # Notifications
   - --talk-name=org.freedesktop.Notifications
 
+  # Host theme, icon, and font access — without these the app falls back to
+  # Adwaita and missing fonts instead of the host's theme (Breeze on KDE etc.)
+  - --filesystem=xdg-data/themes:ro
+  - --filesystem=xdg-data/icons:ro
+  - --filesystem=xdg-data/fonts:ro
+  - --filesystem=xdg-config/fontconfig:ro
+  - --filesystem=xdg-config/gtk-3.0:ro
+
+  # Required for prefers-color-scheme detection via xdg-desktop-portal
+  - --talk-name=org.freedesktop.portal.Settings
+
   # WebKit rendering fix for sandboxed environments (fixes white screen when opening)
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
 
