@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Własny",
+    "streaming": "Streaming",
     "active": "Aktywny",
     "switching": "Przełączanie...",
     "noModelsAvailable": "Brak dostępnych modeli",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "Pozostaw mikrofon otwarty między transkrypcjami",
         "description": "Utrzymuje strumień mikrofonu otwarty przez 30 sekund po zatrzymaniu nagrywania, zmniejszając opóźnienie przy kolejnych transkrypcjach. Może pogorszyć jakość dźwięku Bluetooth."
+      },
+      "livePreview": {
+        "label": "Podgląd na żywo",
+        "description": "Wyświetla transkrypcję w nakładce w czasie rzeczywistym podczas mówienia. Działa tylko z modelami obsługującymi streaming (szukaj odznaki Streaming w selektorze modeli)."
+      },
+      "livePreviewContinuous": {
+        "label": "Ciągły dźwięk podglądu na żywo",
+        "description": "Przekazuje cały dźwięk (w tym ciszę) do modelu streamingowego zamiast segmentów filtrowanych głosowo. Zwiększa zużycie zasobów, ale może poprawić dokładność czasową niektórych modeli streamingowych."
       },
       "acceleration": {
         "transcribe": {

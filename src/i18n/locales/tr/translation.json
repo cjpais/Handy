@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Özel",
+    "streaming": "Akış",
     "active": "Aktif",
     "noModelsAvailable": "Kullanılabilir model yok",
     "verifying": "{{modelName}} doğrulanıyor...",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "Transkripsiyonlar arasında mikrofonu açık tut",
         "description": "Kayıt durdurulduktan sonra mikrofon akışını 30 saniye açık tutar, ardışık transkripsiyonlarda gecikmeyi azaltır. Etkinken Bluetooth ses kalitesini düşürebilir."
+      },
+      "livePreview": {
+        "label": "Canlı Önizleme",
+        "description": "Siz konuşurken transkripsiyonu yer paylaşımında gerçek zamanlı olarak gösterir. Yalnızca akış destekli modellerle çalışır (model seçicide Akış rozetini arayın)."
+      },
+      "livePreviewContinuous": {
+        "label": "Sürekli Canlı Önizleme Sesi",
+        "description": "Sese göre filtrelenmiş bölümler yerine tüm sesi (sessizlik dahil) akış modeline iletir. İşlem yükünü artırır ancak bazı akış modellerinde zamanlama doğruluğunu iyileştirebilir."
       },
       "acceleration": {
         "transcribe": {

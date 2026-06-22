@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "사용자 정의",
+    "streaming": "스트리밍",
     "active": "활성",
     "switching": "전환 중...",
     "noModelsAvailable": "사용 가능한 모델이 없습니다",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "전사 사이에 마이크 열어 두기",
         "description": "녹음 중지 후 30초 동안 마이크 스트림을 열어 두어 연속 전사 시 지연을 줄입니다. 활성화 중 블루투스 오디오 품질이 저하될 수 있습니다."
+      },
+      "livePreview": {
+        "label": "실시간 미리보기",
+        "description": "말하는 동안 오버레이에 전사 내용을 실시간으로 표시합니다. 스트리밍을 지원하는 모델에서만 작동합니다(모델 선택기에서 스트리밍 배지를 확인하세요)."
+      },
+      "livePreviewContinuous": {
+        "label": "연속 실시간 미리보기 오디오",
+        "description": "음성으로 구분된 구간 대신 모든 오디오(무음 포함)를 스트리밍 모델로 전달합니다. 연산 사용량이 늘어나지만 일부 스트리밍 모델에서는 타이밍 정확도가 향상될 수 있습니다."
       },
       "acceleration": {
         "transcribe": {

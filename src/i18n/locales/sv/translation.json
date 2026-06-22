@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Anpassad",
+    "streaming": "Streaming",
     "active": "Aktiv",
     "switching": "Byter...",
     "noModelsAvailable": "Inga modeller tillgängliga",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "Håll mikrofonen öppen mellan transkriptioner",
         "description": "Håller mikrofonströmmen öppen i 30 sekunder efter att inspelningen avslutats, vilket minskar latensen för transkriptioner efter varandra. Kan försämra Bluetooth-ljudkvaliteten medan den är aktiv."
+      },
+      "livePreview": {
+        "label": "Liveförhandsvisning",
+        "description": "Visar transkriberingen i överlägget i realtid medan du talar. Fungerar endast med modeller som stöder streaming (leta efter Streaming-märket i modellväljaren)."
+      },
+      "livePreviewContinuous": {
+        "label": "Kontinuerligt liveförhandsvisningsljud",
+        "description": "Vidarebefordrar allt ljud (inklusive tystnad) till streamingmodellen i stället för röststyrda segment. Ökar beräkningsanvändningen men kan förbättra tidsprecisionen för vissa streamingmodeller."
       },
       "acceleration": {
         "transcribe": {

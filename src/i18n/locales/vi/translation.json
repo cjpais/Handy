@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Tùy chỉnh",
+    "streaming": "Truyền trực tiếp",
     "active": "Đang hoạt động",
     "switching": "Đang chuyển...",
     "noModelsAvailable": "Không có mô hình nào",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "Giữ micro mở giữa các lần phiên âm",
         "description": "Giữ luồng micro mở trong 30 giây sau khi dừng ghi âm, giảm độ trễ khi phiên âm liên tiếp. Có thể làm giảm chất lượng âm thanh Bluetooth khi đang hoạt động."
+      },
+      "livePreview": {
+        "label": "Xem trước trực tiếp",
+        "description": "Hiển thị bản phiên âm trên lớp phủ theo thời gian thực khi bạn nói. Chỉ hoạt động với các mô hình hỗ trợ truyền trực tiếp (tìm huy hiệu Truyền trực tiếp trong bộ chọn mô hình)."
+      },
+      "livePreviewContinuous": {
+        "label": "Âm thanh xem trước trực tiếp liên tục",
+        "description": "Chuyển tiếp toàn bộ âm thanh (kể cả khoảng lặng) đến mô hình truyền trực tiếp thay vì các đoạn được lọc theo giọng nói. Tăng mức sử dụng tài nguyên nhưng có thể cải thiện độ chính xác về thời gian cho một số mô hình truyền trực tiếp."
       },
       "acceleration": {
         "transcribe": {

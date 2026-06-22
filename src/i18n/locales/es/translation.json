@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Personalizado",
+    "streaming": "Streaming",
     "active": "Activo",
     "switching": "Cambiando...",
     "noModelsAvailable": "No hay modelos disponibles",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "Mantener micrófono abierto entre transcripciones",
         "description": "Mantiene el flujo del micrófono abierto durante 30 segundos después de detener la grabación, reduciendo la latencia en transcripciones consecutivas. Puede degradar la calidad del audio Bluetooth mientras está activo."
+      },
+      "livePreview": {
+        "label": "Vista previa en vivo",
+        "description": "Muestra la transcripción en la superposición en tiempo real mientras hablas. Solo funciona con modelos compatibles con streaming (busca la insignia de Streaming en el selector de modelos)."
+      },
+      "livePreviewContinuous": {
+        "label": "Audio continuo de vista previa en vivo",
+        "description": "Envía todo el audio (incluido el silencio) al modelo de streaming en lugar de segmentos filtrados por voz. Aumenta el uso de cómputo, pero puede mejorar la precisión temporal en algunos modelos de streaming."
       },
       "acceleration": {
         "transcribe": {

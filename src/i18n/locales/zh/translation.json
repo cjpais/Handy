@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "自定义",
+    "streaming": "流式",
     "active": "活跃",
     "switching": "切换中...",
     "noModelsAvailable": "没有可用的模型",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "在转录之间保持麦克风开启",
         "description": "录音停止后保持麦克风流开启30秒，减少连续转录时的延迟。激活时可能会降低蓝牙音频质量。"
+      },
+      "livePreview": {
+        "label": "实时预览",
+        "description": "在您说话时，于悬浮窗中实时显示转录内容。仅适用于支持流式的模型（请在模型选择器中查找“流式”标记）。"
+      },
+      "livePreviewContinuous": {
+        "label": "持续实时预览音频",
+        "description": "将所有音频（包括静音）转发给流式模型，而不是按语音切分的片段。会增加计算开销，但可能提高某些流式模型的时间精度。"
       },
       "acceleration": {
         "transcribe": {

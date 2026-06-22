@@ -121,6 +121,7 @@
   },
   "modelSelector": {
     "custom": "Vlastní",
+    "streaming": "Streaming",
     "active": "Aktivní",
     "noModelsAvailable": "Nejsou dostupné žádné modely",
     "verifying": "Ověřování {{modelName}}...",
@@ -254,6 +255,14 @@
       "lazyStreamClose": {
         "label": "Ponechat mikrofon zapnutý mezi přepisy",
         "description": "Ponechá stream mikrofonu otevřený po dobu 30 sekund po zastavení nahrávání, čímž se sníží latence při opakovaném přepisu. Může zhoršit kvalitu zvuku Bluetooth."
+      },
+      "livePreview": {
+        "label": "Živý náhled",
+        "description": "Zobrazuje přepis v překryvné vrstvě v reálném čase během mluvení. Funguje pouze s modely podporujícími streaming (hledejte odznak Streaming ve výběru modelů)."
+      },
+      "livePreviewContinuous": {
+        "label": "Souvislý zvuk živého náhledu",
+        "description": "Předává veškerý zvuk (včetně ticha) streamovacímu modelu místo segmentů filtrovaných hlasem. Zvyšuje výpočetní zátěž, ale u některých streamovacích modelů může zlepšit přesnost časování."
       },
       "acceleration": {
         "transcribe": {
