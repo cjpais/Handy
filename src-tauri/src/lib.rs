@@ -921,6 +921,16 @@ pub fn run(cli_args: CliArgs) {
             Ok(())
         })
         .on_window_event(|window, event| match event {
+            tauri::WindowEvent::Focused(true) => {
+                // Workaround for Tauri #11856: on Linux/Wayland, xdg-decoration
+                // buttons can become unresponsive. Toggling resizable forces a
+                // compositor re-configure that restores them.
+                #[cfg(target_os = "linux")]
+                {
+                    let _ = window.set_resizable(false);
+                    let _ = window.set_resizable(true);
+                }
+            }
             tauri::WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 let _res = window.hide();
