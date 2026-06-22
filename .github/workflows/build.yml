@@ -284,14 +284,20 @@ jobs:
           New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
           echo "CARGO_TARGET_DIR=$targetDir" >> $env:GITHUB_ENV
 
-      # ggml requires clang for ARM. The VS generator determines the compiler
-      # via the toolset (-T flag) which can't be overridden from env vars.
-      # Use Ninja + clang-cl instead, which respects CMAKE_C_COMPILER.
+      # ggml refuses to build its ARM CPU backend under MSVC (upstream check in
+      # ggml/src/ggml-cpu/CMakeLists.txt: "MSVC is not supported for ARM, use
+      # clang"), so the Windows-ARM build must use clang-cl. transcribe-cpp-sys
+      # drives CMake via the cmake crate, which resolves the compiler through the
+      # cc crate — i.e. the CC/CXX env vars, NOT CMAKE_C_COMPILER (which is why an
+      # earlier CMAKE_C_COMPILER-only attempt still configured with MSVC cl.exe).
+      # Ninja (honored by the cmake crate) sidesteps the VS generator's toolset.
       - name: Configure cmake for ARM64 (Windows)
         if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
         shell: pwsh
         run: |
           echo "CMAKE_GENERATOR=Ninja" >> $env:GITHUB_ENV
+          echo "CC=clang-cl" >> $env:GITHUB_ENV
+          echo "CXX=clang-cl" >> $env:GITHUB_ENV
           echo "CMAKE_C_COMPILER=clang-cl" >> $env:GITHUB_ENV
           echo "CMAKE_CXX_COMPILER=clang-cl" >> $env:GITHUB_ENV
           echo "CMAKE_C_COMPILER_TARGET=aarch64-pc-windows-msvc" >> $env:GITHUB_ENV
