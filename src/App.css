@@ -38,6 +38,11 @@
     transparent 70%
   );
 
+  /* Log console surface — a subtle shade off the app background so the live log
+     viewer reads as a distinct console. In light mode this is a faint gray code
+     block (matching other surfaces); the dark theme overrides it below. */
+  --color-log-surface: color-mix(in srgb, var(--color-background), black 6%);
+
   /* Apply colors */
   color: var(--color-text);
   background-color: var(--color-background);
@@ -59,6 +64,8 @@
     --color-background: #2c2b29;
     --color-logo-primary: #f28cbb;
     --color-logo-stroke: #fad1ed;
+    /* Just a bit darker than the (already dark) background, keeping its warm tint */
+    --color-log-surface: color-mix(in srgb, var(--color-background), black 15%);
   }
 }
 

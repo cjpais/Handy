@@ -443,6 +443,17 @@
         "title": "Loggnivå",
         "description": "Ställ in loggningens detaljrikedom"
       },
+      "liveLogs": {
+        "title": "Liveloggar",
+        "description": "Strömma programmets loggar i realtid för att diagnostisera problem utan att öppna loggfilen. Endast loggar som skapas medan den här panelen är öppen visas; följer inställningen Loggnivå ovan.",
+        "live": "Live",
+        "paused": "Pausad",
+        "pause": "Pausa",
+        "resume": "Återuppta",
+        "copied": "Kopierad",
+        "lineCount": "{{count}} rader",
+        "empty": "Väntar på loggar… Poster visas här när appen skickar dem."
+      },
       "updateChecks": {
         "label": "Sök efter uppdateringar",
         "description": "Sök automatiskt efter nya versioner av Handy"
@@ -569,6 +580,8 @@
     "update": "Uppdatera",
     "close": "Stäng",
     "open": "Öppna",
+    "copy": "Kopiera",
+    "clear": "Rensa",
     "default": "Standard",
     "enabled": "Aktiverad",
     "disabled": "Inaktiverad",

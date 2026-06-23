@@ -34,7 +34,7 @@ use managers::transcription::TranscriptionManager;
 use signal_hook::consts::{SIGUSR1, SIGUSR2};
 #[cfg(unix)]
 use signal_hook::iterator::Signals;
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use tauri::image::Image;
 pub use transcription_coordinator::TranscriptionCoordinator;
@@ -49,6 +49,14 @@ use crate::settings::get_settings;
 // Global atomic to store the file log level filter
 // We use u8 to store the log::LevelFilter as a number
 pub static FILE_LOG_LEVEL: AtomicU8 = AtomicU8::new(log::LevelFilter::Debug as u8);
+
+/// When `true`, log records are also forwarded to the webview via the
+/// `log://log` event for the debug panel's live log viewer. Gated on debug
+/// mode — the live log viewer is its only consumer and only exists in debug
+/// mode — so normal runs never broadcast log records (which can include file
+/// paths or transcribed text) onto the frontend event bus. Synced at startup
+/// and whenever debug mode is toggled (see `shortcut::change_debug_mode_setting`).
+pub static WEBVIEW_LOG_STREAMING: AtomicBool = AtomicBool::new(false);
 
 fn level_filter_from_u8(value: u8) -> log::LevelFilter {
     match value {
@@ -470,6 +478,15 @@ pub fn run(cli_args: CliArgs) {
                         let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
                         metadata.level() <= level_filter_from_u8(file_level)
                     }),
+                    // Stream logs to the webview (via the `log://log` event) so the
+                    // debug panel's live log viewer can show them in real time. Only
+                    // active while debug mode is on (its sole consumer), and shares the
+                    // file log level so the "Log Level" setting controls verbosity.
+                    Target::new(TargetKind::Webview).filter(|metadata| {
+                        WEBVIEW_LOG_STREAMING.load(Ordering::Relaxed)
+                            && metadata.level()
+                                <= level_filter_from_u8(FILE_LOG_LEVEL.load(Ordering::Relaxed))
+                    }),
                 ])
                 .build(),
         );
@@ -537,6 +554,10 @@ pub fn run(cli_args: CliArgs) {
             let file_log_level: log::Level = tauri_log_level.into();
             // Store the file log level in the atomic for the filter to use
             FILE_LOG_LEVEL.store(file_log_level.to_level_filter() as u8, Ordering::Relaxed);
+            // Only forward logs to the webview while debug mode is on (the live log
+            // viewer is the sole consumer and only exists in debug mode). This also
+            // honors the runtime `--debug` override applied to `settings` above.
+            WEBVIEW_LOG_STREAMING.store(settings.debug_mode, Ordering::Relaxed);
             let app_handle = app.handle().clone();
             app.manage(TranscriptionCoordinator::new(app_handle.clone()));
 

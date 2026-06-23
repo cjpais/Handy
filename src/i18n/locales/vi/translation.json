@@ -443,6 +443,17 @@
         "title": "Mức nhật ký",
         "description": "Đặt mức độ chi tiết của nhật ký"
       },
+      "liveLogs": {
+        "title": "Nhật ký trực tiếp",
+        "description": "Truyền nhật ký ứng dụng theo thời gian thực để chẩn đoán sự cố mà không cần mở tệp nhật ký. Chỉ hiển thị nhật ký được tạo khi bảng này đang mở; tuân theo cài đặt Mức nhật ký ở trên.",
+        "live": "Trực tiếp",
+        "paused": "Đã tạm dừng",
+        "pause": "Tạm dừng",
+        "resume": "Tiếp tục",
+        "copied": "Đã sao chép",
+        "lineCount": "{{count}} dòng",
+        "empty": "Đang chờ nhật ký… Các mục sẽ xuất hiện ở đây khi ứng dụng phát ra."
+      },
       "updateChecks": {
         "label": "Kiểm tra cập nhật",
         "description": "Tự động kiểm tra phiên bản mới của Handy"
@@ -569,6 +580,8 @@
     "update": "Cập nhật",
     "close": "Đóng",
     "open": "Mở",
+    "copy": "Sao chép",
+    "clear": "Xóa",
     "default": "Mặc định",
     "enabled": "Đã bật",
     "disabled": "Đã tắt",

@@ -443,6 +443,17 @@
         "title": "Nível de Log",
         "description": "Definir a verbosidade do registro"
       },
+      "liveLogs": {
+        "title": "Logs ao Vivo",
+        "description": "Transmita os logs do aplicativo em tempo real para diagnosticar problemas sem abrir o arquivo de log. Apenas os logs emitidos enquanto este painel estiver aberto são exibidos; respeita a configuração de Nível de Log acima.",
+        "live": "Ao Vivo",
+        "paused": "Pausado",
+        "pause": "Pausar",
+        "resume": "Retomar",
+        "copied": "Copiado",
+        "lineCount": "{{count}} linhas",
+        "empty": "Aguardando logs… As entradas aparecem aqui à medida que o app as emite."
+      },
       "updateChecks": {
         "label": "Verificar Atualizações",
         "description": "Verificar automaticamente novas versões do Handy"
@@ -569,6 +580,8 @@
     "update": "Atualizar",
     "close": "Fechar",
     "open": "Abrir",
+    "copy": "Copiar",
+    "clear": "Limpar",
     "default": "Padrão",
     "enabled": "Habilitado",
     "disabled": "Desabilitado",

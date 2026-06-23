@@ -443,6 +443,17 @@
         "title": "Log-Level",
         "description": "Ausführlichkeit der Protokollierung festlegen"
       },
+      "liveLogs": {
+        "title": "Live-Logs",
+        "description": "Anwendungs-Logs in Echtzeit anzeigen, um Probleme zu diagnostizieren, ohne die Log-Datei zu öffnen. Es werden nur Logs angezeigt, die ausgegeben werden, während dieses Feld geöffnet ist; berücksichtigt die obige Log-Level-Einstellung.",
+        "live": "Live",
+        "paused": "Pausiert",
+        "pause": "Pausieren",
+        "resume": "Fortsetzen",
+        "copied": "Kopiert",
+        "lineCount": "{{count}} Zeilen",
+        "empty": "Warte auf Logs … Einträge erscheinen hier, sobald die App sie ausgibt."
+      },
       "updateChecks": {
         "label": "Nach Updates suchen",
         "description": "Automatisch nach neuen Versionen von Handy suchen"
@@ -569,6 +580,8 @@
     "update": "Aktualisieren",
     "close": "Schließen",
     "open": "Öffnen",
+    "copy": "Kopieren",
+    "clear": "Leeren",
     "default": "Standard",
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert",

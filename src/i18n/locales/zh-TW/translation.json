@@ -443,6 +443,17 @@
         "title": "日誌等級",
         "description": "設定日誌的詳細程度"
       },
+      "liveLogs": {
+        "title": "即時日誌",
+        "description": "即時串流應用程式日誌，無需開啟日誌檔即可診斷問題。僅顯示此面板開啟期間產生的日誌；遵循上方的「日誌等級」設定。",
+        "live": "即時",
+        "paused": "已暫停",
+        "pause": "暫停",
+        "resume": "繼續",
+        "copied": "已複製",
+        "lineCount": "{{count}} 行",
+        "empty": "正在等待日誌…… 應用程式產生日誌時會顯示於此。"
+      },
       "updateChecks": {
         "label": "檢查更新",
         "description": "自動檢查 Handy 的新版本"
@@ -569,6 +580,8 @@
     "update": "更新",
     "close": "關閉",
     "open": "開啟",
+    "copy": "複製",
+    "clear": "清除",
     "default": "預設",
     "enabled": "已啟用",
     "disabled": "已停用",

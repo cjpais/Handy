@@ -443,6 +443,17 @@
         "title": "Niveau de journalisation",
         "description": "Définir le niveau de détail de la journalisation"
       },
+      "liveLogs": {
+        "title": "Journaux en direct",
+        "description": "Affichez les journaux de l'application en temps réel pour diagnostiquer les problèmes sans ouvrir le fichier journal. Seuls les journaux émis pendant que ce panneau est ouvert sont affichés ; respecte le réglage Niveau de journalisation ci-dessus.",
+        "live": "En direct",
+        "paused": "En pause",
+        "pause": "Pause",
+        "resume": "Reprendre",
+        "copied": "Copié",
+        "lineCount": "{{count}} lignes",
+        "empty": "En attente de journaux… Les entrées apparaîtront ici au fur et à mesure que l'application les émet."
+      },
       "updateChecks": {
         "label": "Vérifier les mises à jour",
         "description": "Vérifier automatiquement les nouvelles versions de Handy"
@@ -569,6 +580,8 @@
     "update": "Mettre à jour",
     "close": "Fermer",
     "open": "Ouvrir",
+    "copy": "Copier",
+    "clear": "Effacer",
     "default": "Par défaut",
     "enabled": "Activé",
     "disabled": "Désactivé",

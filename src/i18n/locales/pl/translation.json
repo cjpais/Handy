@@ -443,6 +443,17 @@
         "title": "Poziom logów",
         "description": "Ustaw poziom szczegółowości logowania"
       },
+      "liveLogs": {
+        "title": "Logi na żywo",
+        "description": "Przesyłaj logi aplikacji na żywo, aby diagnozować problemy bez otwierania pliku logów. Wyświetlane są tylko logi utworzone, gdy ten panel jest otwarty; uwzględnia ustawienie Poziom logów powyżej.",
+        "live": "Na żywo",
+        "paused": "Wstrzymano",
+        "pause": "Wstrzymaj",
+        "resume": "Wznów",
+        "copied": "Skopiowano",
+        "lineCount": "Wierszy: {{count}}",
+        "empty": "Oczekiwanie na logi… Wpisy pojawią się tutaj, gdy aplikacja je wygeneruje."
+      },
       "updateChecks": {
         "label": "Sprawdzaj aktualizacje",
         "description": "Automatycznie sprawdzaj nowe wersje Handy"
@@ -569,6 +580,8 @@
     "update": "Aktualizuj",
     "close": "Zamknij",
     "open": "Otwórz",
+    "copy": "Kopiuj",
+    "clear": "Wyczyść",
     "default": "Domyślne",
     "enabled": "Włączone",
     "disabled": "Wyłączone",

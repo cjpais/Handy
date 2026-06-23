@@ -443,6 +443,17 @@
         "title": "Nivel de Registro",
         "description": "Establece el nivel de detalle del registro"
       },
+      "liveLogs": {
+        "title": "Registros en Vivo",
+        "description": "Transmite los registros de la aplicación en tiempo real para diagnosticar problemas sin abrir el archivo de registro. Solo se muestran los registros emitidos mientras este panel está abierto; respeta el ajuste de Nivel de Registro de arriba.",
+        "live": "En Vivo",
+        "paused": "En Pausa",
+        "pause": "Pausar",
+        "resume": "Reanudar",
+        "copied": "Copiado",
+        "lineCount": "{{count}} líneas",
+        "empty": "Esperando registros… Las entradas aparecerán aquí a medida que la aplicación las emita."
+      },
       "updateChecks": {
         "label": "Buscar Actualizaciones",
         "description": "Buscar automáticamente nuevas versiones de Handy"
@@ -569,6 +580,8 @@
     "update": "Actualizar",
     "close": "Cerrar",
     "open": "Abrir",
+    "copy": "Copiar",
+    "clear": "Limpiar",
     "default": "Predeterminado",
     "enabled": "Habilitado",
     "disabled": "Deshabilitado",
