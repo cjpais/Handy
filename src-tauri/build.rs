@@ -16,7 +16,74 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib");
     }
 
+    // Windows ships transcribe-cpp as a shared transcribe.dll + loadable ggml
+    // backend modules (the `dynamic-backends` posture). Unlike Linux (rpath +
+    // AppImage staging) and macOS (static `metal`, nothing to ship), the Windows
+    // installer must carry those DLLs next to handy.exe: transcribe's backend
+    // scan is package-local, so the ggml modules must sit beside transcribe.dll
+    // or init_backends_default() registers zero compute devices. Tauri's
+    // NSIS/MSI bundlers don't auto-include sibling DLLs, so stage them into a
+    // folder that `tauri.windows.conf.json` bundles to the install root.
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+        stage_windows_transcribe_dlls();
+    }
+
     tauri_build::build()
+}
+
+/// Copy transcribe-cpp's runtime DLLs (`transcribe.dll` + the dlopen'd ggml
+/// backend modules) into `transcribe-dlls/`, which `tauri.windows.conf.json`
+/// bundles to the installer root next to `handy.exe`.
+///
+/// The source directory is published by the `transcribe-cpp` wrapper as
+/// `DEP_TRANSCRIBE_CPP_RUNTIME_DIR`: the sys crate sets `links = "transcribe"`
+/// and emits its install dirs, and the wrapper (`links = "transcribe_cpp"`)
+/// forwards them one hop to us — the only way that metadata crosses cargo's
+/// one-hop `links` boundary to reach Handy. The dir is `bin/` on Windows (the
+/// DLLs) and is only emitted in a shared posture, which the Windows target
+/// always uses, so its absence here is a hard configuration error.
+fn stage_windows_transcribe_dlls() {
+    use std::path::PathBuf;
+
+    println!("cargo:rerun-if-env-changed=DEP_TRANSCRIBE_CPP_RUNTIME_DIR");
+
+    let runtime_dir = match std::env::var_os("DEP_TRANSCRIBE_CPP_RUNTIME_DIR") {
+        Some(dir) => PathBuf::from(dir),
+        None => panic!(
+            "DEP_TRANSCRIBE_CPP_RUNTIME_DIR is unset; transcribe-cpp must be built \
+             in a shared/dynamic-backends posture on Windows so its runtime DLLs \
+             can be staged for the installer"
+        ),
+    };
+    println!("cargo:rerun-if-changed={}", runtime_dir.display());
+
+    let dest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("transcribe-dlls");
+    // Recreate clean so a renamed or dropped ggml module can never linger in the
+    // package from a previous build.
+    let _ = std::fs::remove_dir_all(&dest);
+    std::fs::create_dir_all(&dest).expect("create transcribe-dlls staging dir");
+
+    let mut copied = 0usize;
+    for entry in std::fs::read_dir(&runtime_dir)
+        .unwrap_or_else(|e| panic!("read {}: {e}", runtime_dir.display()))
+        .flatten()
+    {
+        let src = entry.path();
+        if src.extension().and_then(|e| e.to_str()) == Some("dll") {
+            let name = src.file_name().unwrap();
+            std::fs::copy(&src, dest.join(name))
+                .unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
+            copied += 1;
+        }
+    }
+    if copied == 0 {
+        panic!(
+            "no .dll files found under DEP_TRANSCRIBE_CPP_RUNTIME_DIR ({}); the \
+             Windows installer would register zero compute devices",
+            runtime_dir.display()
+        );
+    }
+    println!("cargo:warning=Staged {copied} transcribe-cpp DLL(s) for the Windows installer");
 }
 
 /// Generate tray menu translations from frontend locale files.
