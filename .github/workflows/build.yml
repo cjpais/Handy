@@ -356,6 +356,31 @@ jobs:
             '.bundle.linux.deb.files["/usr/lib/libonnxruntime.so"] = $so | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1"] = $so1 | .bundle.linux.deb.files["/usr/lib/libonnxruntime.so.1.24.2"] = $sov' \
             src-tauri/tauri.conf.json > tmp.json && mv tmp.json src-tauri/tauri.conf.json
 
+      # ggml-vulkan (built by transcribe-cpp-sys when the Vulkan backend is on)
+      # does `find_package(SPIRV-Headers CONFIG REQUIRED)` for <spirv-headers/
+      # spirv.hpp>. ggml's CMake appends $VULKAN_SDK to CMAKE_PREFIX_PATH first,
+      # but the CI Vulkan SDK install does not expose a findable
+      # SPIRV-HeadersConfig.cmake, so the configure fails. Provide the
+      # header-only package via vcpkg and put its prefix on CMAKE_PREFIX_PATH
+      # (the cmake crate forwards it as -DCMAKE_PREFIX_PATH). x86_64 only — the
+      # Windows ARM64 build is CPU-only, so ggml-vulkan is never built there.
+      #
+      # STOPGAP: the durable fix is for transcribe-cpp-sys to vendor or fetch
+      # SPIRV-Headers itself (as it already does for miniz/zlib) so no consumer
+      # needs this. Remove once that lands. SPIRV-Headers is header-only, so the
+      # triplet is immaterial; SPIRV-HeadersConfig.cmake is a CONFIG package, so
+      # plain CMAKE_PREFIX_PATH resolves it with no vcpkg toolchain.
+      - name: Install SPIRV-Headers for transcribe-cpp Vulkan build (Windows x64)
+        if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          vcpkg install spirv-headers:x64-windows
+          if ($LASTEXITCODE -ne 0) { throw "vcpkg install spirv-headers failed" }
+          $prefix = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows" -replace '\\','/'
+          $combined = if ($env:CMAKE_PREFIX_PATH) { "$prefix;$env:CMAKE_PREFIX_PATH" } else { $prefix }
+          Add-Content $env:GITHUB_ENV "CMAKE_PREFIX_PATH=$combined"
+          Write-Host "CMAKE_PREFIX_PATH=$combined"
+
       # transcribe-cpp ships as a shared libtranscribe + loadable ggml backend
       # modules on Linux (the `dynamic-backends` posture). They are produced by
       # transcribe-cpp-sys's CMake install during the cargo build, but nothing
