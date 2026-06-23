@@ -236,6 +236,10 @@
       "volume": {
         "title": "Âm lượng",
         "description": "Điều chỉnh âm lượng của âm thanh phản hồi"
+      },
+      "recordSystemAudio": {
+        "title": "Ghi âm thanh hệ thống",
+        "description": "Thu âm thanh đang phát trên máy tính, trộn với micro (chỉ Windows)"
       }
     },
     "advanced": {

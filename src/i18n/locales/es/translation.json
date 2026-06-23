@@ -236,6 +236,10 @@
       "volume": {
         "title": "Volumen",
         "description": "Ajusta el volumen de los sonidos de retroalimentación de audio"
+      },
+      "recordSystemAudio": {
+        "title": "Grabar audio del sistema",
+        "description": "Capturar también el audio de tu ordenador, mezclado con tu micrófono (solo Windows)"
       }
     },
     "advanced": {

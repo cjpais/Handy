@@ -236,6 +236,10 @@
       "volume": {
         "title": "音量",
         "description": "调整音频反馈的音量"
+      },
+      "recordSystemAudio": {
+        "title": "录制系统音频",
+        "description": "同时捕获电脑播放的音频，与麦克风混合（仅限 Windows）"
       }
     },
     "advanced": {

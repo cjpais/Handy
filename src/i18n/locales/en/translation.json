@@ -236,6 +236,10 @@
       "volume": {
         "title": "Volume",
         "description": "Adjust the volume of audio feedback sounds"
+      },
+      "recordSystemAudio": {
+        "title": "Record System Audio",
+        "description": "Also capture audio playing on your computer, mixed with your microphone (Windows only)"
       }
     },
     "advanced": {

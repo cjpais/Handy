@@ -236,6 +236,10 @@
       "volume": {
         "title": "Głośność",
         "description": "Dostosuj głośność dźwięków informacyjnych"
+      },
+      "recordSystemAudio": {
+        "title": "Nagrywaj dźwięk systemowy",
+        "description": "Przechwytuj również dźwięk odtwarzany na komputerze, miksowany z mikrofonem (tylko Windows)"
       }
     },
     "advanced": {
