@@ -470,6 +470,13 @@ pub fn run(cli_args: CliArgs) {
                         let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
                         metadata.level() <= level_filter_from_u8(file_level)
                     }),
+                    // Stream logs to the webview (via the `log://log` event) so the
+                    // debug panel's live log viewer can show them in real time.
+                    // Shares the file log level so the "Log Level" setting controls both.
+                    Target::new(TargetKind::Webview).filter(|metadata| {
+                        let file_level = FILE_LOG_LEVEL.load(Ordering::Relaxed);
+                        metadata.level() <= level_filter_from_u8(file_level)
+                    }),
                 ])
                 .build(),
         );
