@@ -470,12 +470,16 @@ impl TranscriptionManager {
                 // The whisper backend is chosen at load time (transcribe-cpp has
                 // no runtime global). Re-read the preference here so an
                 // accelerator change — which unloads the model — takes effect on
-                // the next load. `gpu_device` must be 0 in transcribe-cpp 0.x.
+                // the next load.
                 let settings = get_settings(&self.app_handle);
                 let backend = select_transcribe_backend(settings.transcribe_accelerator);
+                let gpu_device = resolve_gpu_device(
+                    settings.transcribe_accelerator,
+                    settings.transcribe_gpu_device,
+                );
                 let model_options = ModelOptions {
                     backend,
-                    gpu_device: 0,
+                    gpu_device,
                 };
                 let model = Model::load_with(&model_path, &model_options).map_err(|e| {
                     let error_msg = format!("Failed to load whisper model {}: {}", model_id, e);
@@ -501,9 +505,9 @@ impl TranscriptionManager {
                 self.model_manager
                     .set_supports_streaming(model_id, caps.supports_streaming);
                 info!(
-                    "Loaded whisper model '{}' (requested {:?}, bound backend '{}', \
+                    "Loaded whisper model '{}' (requested {:?}, gpu_device {}, bound backend '{}', \
                      supports_streaming={})",
-                    model_id, backend, bound_backend, caps.supports_streaming
+                    model_id, backend, gpu_device, bound_backend, caps.supports_streaming
                 );
                 LoadedEngine::TranscribeCpp(session)
             }
@@ -1362,6 +1366,34 @@ fn select_transcribe_backend(setting: TranscribeAcceleratorSetting) -> Backend {
     }
 }
 
+/// Resolve the user's stored GPU device choice into a [`ModelOptions::gpu_device`]
+/// registry index for the next model load.
+///
+/// `gpu_device` in settings is a registry index into [`transcribe_cpp::devices`]
+/// (`-1` is the auto/CPU sentinel used by the UI). transcribe-cpp treats `0` as
+/// "auto / first matching device", and rejects an index that is out of range or
+/// points at a non-GPU device under a GPU backend. So an explicit selection is
+/// only honored when the user actually chose the GPU accelerator and the stored
+/// index still resolves to a registered GPU device; otherwise we fall back to
+/// `0` so a stale or no-longer-present selection can never fail the load.
+fn resolve_gpu_device(setting: TranscribeAcceleratorSetting, gpu_device: i32) -> i32 {
+    if setting != TranscribeAcceleratorSetting::Gpu || gpu_device <= 0 {
+        return 0;
+    }
+    let still_valid = transcribe_cpp::devices()
+        .iter()
+        .any(|d| d.index == Some(gpu_device as usize) && d.kind != "cpu" && d.kind != "accel");
+    if still_valid {
+        gpu_device
+    } else {
+        warn!(
+            "Stored transcribe GPU device index {} is no longer available; using auto",
+            gpu_device
+        );
+        0
+    }
+}
+
 /// Apply the user's ORT accelerator preference to the transcribe-rs global.
 /// Called on startup and whenever the user changes the setting.
 ///
@@ -1400,22 +1432,24 @@ static GPU_DEVICES: OnceLock<Vec<GpuDeviceOption>> = OnceLock::new();
 
 fn cached_gpu_devices() -> &'static [GpuDeviceOption] {
     // Reports the GPU compute devices transcribe-cpp registered at startup
-    // (see `init_transcribe_backend`). This is informational only: transcribe-cpp
-    // 0.x requires `gpu_device == 0`, so per-device selection is not yet honored.
-    // `Device` carries no VRAM figure, so `total_vram_mb` is reported as 0.
+    // (see `init_transcribe_backend`). `id` is the device's registry index in
+    // `transcribe_cpp::devices()` — the exact value to feed back as
+    // `ModelOptions::gpu_device` to select it (see `resolve_gpu_device`), so it
+    // must be `Device::index` rather than a re-counted position. `total_vram_mb`
+    // is the backend-reported capacity (0 when the backend does not report it,
+    // e.g. some Metal/Vulkan drivers).
     GPU_DEVICES.get_or_init(|| {
         transcribe_cpp::devices()
             .into_iter()
             .filter(|d| d.kind != "cpu" && d.kind != "accel")
-            .enumerate()
-            .map(|(i, d)| GpuDeviceOption {
-                id: i as i32,
+            .map(|d| GpuDeviceOption {
+                id: d.index.unwrap_or(0) as i32,
                 name: if d.description.is_empty() {
                     d.name
                 } else {
                     d.description
                 },
-                total_vram_mb: 0,
+                total_vram_mb: (d.memory_total / (1024 * 1024)) as usize,
             })
             .collect()
     })
