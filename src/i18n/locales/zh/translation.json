@@ -443,6 +443,17 @@
         "title": "日志级别",
         "description": "设置日志的详细程度"
       },
+      "liveLogs": {
+        "title": "实时日志",
+        "description": "实时传输应用程序日志，无需打开日志文件即可诊断问题。仅显示此面板打开期间产生的日志；遵循上方的“日志级别”设置。",
+        "live": "实时",
+        "paused": "已暂停",
+        "pause": "暂停",
+        "resume": "继续",
+        "copied": "已复制",
+        "lineCount": "{{count}} 行",
+        "empty": "正在等待日志…… 应用产生日志时将显示在此处。"
+      },
       "updateChecks": {
         "label": "检查更新",
         "description": "自动检查 Handy 的新版本"
@@ -569,6 +580,8 @@
     "update": "更新",
     "close": "关闭",
     "open": "打开",
+    "copy": "复制",
+    "clear": "清除",
     "default": "默认",
     "enabled": "已启用",
     "disabled": "已禁用",

@@ -443,6 +443,17 @@
         "title": "Log Seviyesi",
         "description": "Loglamanın ayrıntı düzeyini ayarla"
       },
+      "liveLogs": {
+        "title": "Canlı Loglar",
+        "description": "Sorunları log dosyasını açmadan teşhis etmek için uygulama loglarını gerçek zamanlı olarak akıtın. Yalnızca bu panel açıkken oluşturulan loglar gösterilir; yukarıdaki Log Seviyesi ayarına uyar.",
+        "live": "Canlı",
+        "paused": "Duraklatıldı",
+        "pause": "Duraklat",
+        "resume": "Sürdür",
+        "copied": "Kopyalandı",
+        "lineCount": "{{count}} satır",
+        "empty": "Loglar bekleniyor… Uygulama logları ürettikçe girişler burada görünür."
+      },
       "updateChecks": {
         "label": "Güncellemeleri Kontrol Et",
         "description": "Handy için yeni sürümleri otomatik olarak kontrol eder"
@@ -569,6 +580,8 @@
     "update": "Güncelle",
     "close": "Kapat",
     "open": "Aç",
+    "copy": "Kopyala",
+    "clear": "Temizle",
     "default": "Varsayılan",
     "enabled": "Etkin",
     "disabled": "Devre Dışı",

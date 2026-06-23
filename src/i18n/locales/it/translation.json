@@ -443,6 +443,17 @@
         "title": "Livello di Log",
         "description": "Scegli il livello di dettaglio dei log"
       },
+      "liveLogs": {
+        "title": "Log in Tempo Reale",
+        "description": "Trasmetti i log dell'applicazione in tempo reale per diagnosticare i problemi senza aprire il file di log. Vengono mostrati solo i log emessi mentre questo pannello è aperto; rispetta l'impostazione Livello di Log qui sopra.",
+        "live": "In Diretta",
+        "paused": "In Pausa",
+        "pause": "Pausa",
+        "resume": "Riprendi",
+        "copied": "Copiato",
+        "lineCount": "{{count}} righe",
+        "empty": "In attesa di log… Le voci appariranno qui man mano che l'app le emette."
+      },
       "updateChecks": {
         "label": "Controlla aggiornamenti",
         "description": "Controlla automaticamente la disponibilità di nuove versioni di Handy"
@@ -569,6 +580,8 @@
     "update": "Aggiorna",
     "close": "Chiudi",
     "open": "Apri",
+    "copy": "Copia",
+    "clear": "Svuota",
     "default": "Predefinito",
     "enabled": "Abilitato",
     "disabled": "Disabilitato",

@@ -443,6 +443,17 @@
         "title": "Úroveň logování",
         "description": "Nastavte úroveň podrobnosti logování"
       },
+      "liveLogs": {
+        "title": "Živé logy",
+        "description": "Sledujte logy aplikace v reálném čase a diagnostikujte problémy bez otevírání souboru logu. Zobrazují se pouze logy vytvořené, když je tento panel otevřený; respektuje nastavení Úroveň logování výše.",
+        "live": "Živě",
+        "paused": "Pozastaveno",
+        "pause": "Pozastavit",
+        "resume": "Pokračovat",
+        "copied": "Zkopírováno",
+        "lineCount": "Řádků: {{count}}",
+        "empty": "Čekání na logy… Záznamy se zde zobrazí, jakmile je aplikace vygeneruje."
+      },
       "updateChecks": {
         "label": "Kontrolovat aktualizace",
         "description": "Automaticky kontrolovat nové verze Handy"
@@ -569,6 +580,8 @@
     "update": "Aktualizovat",
     "close": "Zavřít",
     "open": "Otevřít",
+    "copy": "Kopírovat",
+    "clear": "Vymazat",
     "default": "Výchozí",
     "enabled": "Zapnuto",
     "disabled": "Vypnuto",

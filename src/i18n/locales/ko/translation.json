@@ -443,6 +443,17 @@
         "title": "로그 레벨",
         "description": "로깅의 상세도 설정"
       },
+      "liveLogs": {
+        "title": "실시간 로그",
+        "description": "로그 파일을 열지 않고도 문제를 진단할 수 있도록 애플리케이션 로그를 실시간으로 표시합니다. 이 패널이 열려 있는 동안 발생한 로그만 표시되며, 위의 로그 레벨 설정을 따릅니다.",
+        "live": "실시간",
+        "paused": "일시정지됨",
+        "pause": "일시정지",
+        "resume": "재개",
+        "copied": "복사됨",
+        "lineCount": "{{count}}줄",
+        "empty": "로그 대기 중… 앱이 로그를 출력하면 여기에 표시됩니다."
+      },
       "updateChecks": {
         "label": "업데이트 확인",
         "description": "Handy의 새 버전을 자동으로 확인합니다"
@@ -569,6 +580,8 @@
     "update": "업데이트",
     "close": "닫기",
     "open": "열기",
+    "copy": "복사",
+    "clear": "지우기",
     "default": "기본값",
     "enabled": "활성화됨",
     "disabled": "비활성화됨",
