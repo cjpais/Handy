@@ -77,4 +77,7 @@ jobs:
       asset-prefix: "handy"
       upload-artifacts: false
       release-id: ${{ needs.create-release.outputs.release-id }}
+      # Releases always build from scratch — never restore the Rust cache, so a
+      # stale cached native lib can never be linked into a shipped artifact.
+      no-cache: true
     secrets: inherit

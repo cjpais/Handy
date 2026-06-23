@@ -43,6 +43,10 @@ on:
         required: false
         type: boolean
         default: false
+      no-cache:
+        required: false
+        type: boolean
+        default: false
 
 env:
   TSC_VERSION: "0.9.0"
@@ -98,6 +102,10 @@ jobs:
           targets: ${{ contains(inputs.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
+        # Release builds skip the cache (no-cache: true) so the artifact is
+        # always compiled clean — no risk of a stale cached native lib being
+        # linked. PR/test builds keep caching for speed.
+        if: ${{ !inputs.no-cache }}
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "./src-tauri -> target"
