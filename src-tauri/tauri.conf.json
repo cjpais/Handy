@@ -45,16 +45,24 @@
     },
     "linux": {
       "deb": {
-        "depends": ["libgtk-layer-shell0"]
+        "depends": ["libgtk-layer-shell0"],
+        "files": {
+          "/usr/lib": "transcribe-libs"
+        }
       },
       "rpm": {
         "compression": {
           "type": "none"
+        },
+        "files": {
+          "/usr/lib": "transcribe-libs"
         }
       },
       "appimage": {
         "bundleMediaFramework": true,
-        "files": {}
+        "files": {
+          "/usr/lib": "transcribe-libs"
+        }
       }
     },
     "windows": {

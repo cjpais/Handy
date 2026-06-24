@@ -16,85 +16,101 @@ fn main() {
         println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN/../lib");
     }
 
-    // Windows ships transcribe-cpp as a shared transcribe.dll + loadable ggml
-    // backend modules (the `dynamic-backends` posture). Unlike Linux (rpath +
-    // AppImage staging) and macOS (static `metal`, nothing to ship), the Windows
-    // installer must carry those DLLs next to handy.exe: transcribe's backend
-    // scan is package-local, so the ggml modules must sit beside transcribe.dll
-    // or init_backends_default() registers zero compute devices. Tauri's
-    // NSIS/MSI bundlers don't auto-include sibling DLLs, so stage them into a
-    // folder that `tauri.windows.conf.json` bundles to the install root.
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
-        stage_windows_transcribe_dlls();
-    }
+    // Stage transcribe-cpp's shared runtime libraries (and the dlopen'd ggml
+    // backend modules) for the installer. Self-gates on the shared /
+    // dynamic-backends posture used by Linux and Windows; it's a no-op for the
+    // static macOS `metal` build, where there is nothing to ship.
+    stage_transcribe_runtime_libs();
 
     tauri_build::build()
 }
 
-/// Copy transcribe-cpp's runtime DLLs (`transcribe.dll`, the core ggml DLLs, and
-/// the dlopen'd ggml backend modules) into `transcribe-dlls/`, which
-/// `tauri.windows.conf.json` bundles to the installer root next to `handy.exe`.
+/// Stage transcribe-cpp's shared runtime libraries into `transcribe-libs/` so the
+/// installer can ship them next to the executable. One code path covers every
+/// shared platform — Windows (`.dll`) and Linux (versioned `.so`) — because the
+/// staging dirs and the lib-naming rules are the only things that differ, and the
+/// match-by-name filter below handles both.
 ///
-/// The source directory is published by the `transcribe-cpp` wrapper as
-/// `DEP_TRANSCRIBE_CPP_RUNTIME_DIR`: the sys crate sets `links = "transcribe"`
-/// and emits its install dirs, and the wrapper (`links = "transcribe_cpp"`)
-/// forwards them one hop to us — the only way that metadata crosses cargo's
-/// one-hop `links` boundary to reach Handy. On Windows that dir is `bin/`, and
-/// since transcribe-cpp 0.0.6 it holds EVERYTHING the runtime needs:
-/// `transcribe.dll`, the core `ggml.dll` / `ggml-base.dll`, AND the loadable
-/// ggml backend modules (`ggml-vulkan.dll` plus the per-ISA `ggml-cpu-*.dll`).
-/// Older versions installed the backend modules to a separate `lib/` dir
-/// (forwarded as `DEP_TRANSCRIBE_CPP_MODULE_DIR`), so staging had to read both;
-/// 0.0.6's `GGML_BACKEND_DIR=bin` on Windows collapsed them into one. The dir is
-/// only emitted in a shared posture, which the Windows target always uses, so
-/// its absence here is a hard configuration error.
+/// The source directories are published by the `transcribe-cpp` wrapper as
+/// `DEP_TRANSCRIBE_CPP_*`: the sys crate sets `links = "transcribe"` and emits its
+/// install dirs, and the wrapper (`links = "transcribe_cpp"`) forwards them one
+/// hop to us — the only way that metadata crosses cargo's one-hop `links`
+/// boundary to reach Handy. The keys exist only in a shared / dynamic-backends
+/// posture; a static build (macOS `metal`) leaves them unset, so this is a no-op
+/// there. Since transcribe-cpp 0.0.6, Windows installs everything (core libs plus
+/// the dlopen'd ggml backend modules) into one `bin/` `RUNTIME_DIR`
+/// (`GGML_BACKEND_DIR=bin`), so `MODULE_DIR` is unset there; on Linux both keys
+/// point at the same `lib` dir. Either way the `BTreeSet` below dedups them.
 ///
-/// transcribe's backend scan is package-local: the modules must sit beside
-/// `transcribe.dll`, or `init_backends_default()` finds the core libs but zero
-/// loadable compute backends and registers no devices. Tauri's NSIS/MSI
-/// bundlers don't auto-include sibling DLLs, hence the staging.
-fn stage_windows_transcribe_dlls() {
+/// Where the staged dir lands in each package:
+///   - Windows: `tauri.windows.conf.json` bundles it to the install root next to
+///     `handy.exe` (DLLs resolve from the exe directory).
+///   - Linux: `tauri.conf.json` maps it into `/usr/lib` for deb/rpm/appimage,
+///     which is on the binary's `$ORIGIN/../lib` rpath.
+fn stage_transcribe_runtime_libs() {
+    use std::collections::BTreeSet;
     use std::path::PathBuf;
 
     println!("cargo:rerun-if-env-changed=DEP_TRANSCRIBE_CPP_RUNTIME_DIR");
+    println!("cargo:rerun-if-env-changed=DEP_TRANSCRIBE_CPP_MODULE_DIR");
 
-    let runtime_dir = match std::env::var_os("DEP_TRANSCRIBE_CPP_RUNTIME_DIR") {
-        Some(dir) => PathBuf::from(dir),
-        None => panic!(
-            "DEP_TRANSCRIBE_CPP_RUNTIME_DIR is unset; transcribe-cpp must be built \
-             in a shared/dynamic-backends posture on Windows so its runtime DLLs \
-             can be staged for the installer"
-        ),
+    // Present only in a shared posture. A static build has nothing to ship.
+    let Some(runtime_dir) = std::env::var_os("DEP_TRANSCRIBE_CPP_RUNTIME_DIR") else {
+        return;
     };
 
-    let dest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("transcribe-dlls");
+    // transcribe-cpp publishes its runtime layout in up to two directories:
+    //   RUNTIME_DIR : the shared libs to load (transcribe + core ggml / ggml-base)
+    //   MODULE_DIR  : the dlopen'd ggml backend modules (the per-ISA ggml-cpu-*
+    //                 and ggml-vulkan), dynamic-backends only. Often — but not
+    //                 always — the SAME directory as RUNTIME_DIR (it is on Linux).
+    // BOTH must sit next to the executable, or init_backends_default() finds the
+    // core libs but zero loadable compute backends and registers no devices.
+    let mut dirs = BTreeSet::new();
+    dirs.insert(PathBuf::from(runtime_dir));
+    if let Some(module_dir) = std::env::var_os("DEP_TRANSCRIBE_CPP_MODULE_DIR") {
+        dirs.insert(PathBuf::from(module_dir));
+    }
+
+    let dest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("transcribe-libs");
     // Recreate clean so a renamed or dropped ggml module can never linger in the
     // package from a previous build.
     let _ = std::fs::remove_dir_all(&dest);
-    std::fs::create_dir_all(&dest).expect("create transcribe-dlls staging dir");
+    std::fs::create_dir_all(&dest).expect("create transcribe-libs staging dir");
 
-    println!("cargo:rerun-if-changed={}", runtime_dir.display());
     let mut copied = 0usize;
-    for entry in std::fs::read_dir(&runtime_dir)
-        .unwrap_or_else(|e| panic!("read {}: {e}", runtime_dir.display()))
-        .flatten()
-    {
-        let src = entry.path();
-        if src.extension().and_then(|e| e.to_str()) == Some("dll") {
-            let name = src.file_name().unwrap();
-            std::fs::copy(&src, dest.join(name))
-                .unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
-            copied += 1;
+    for dir in &dirs {
+        println!("cargo:rerun-if-changed={}", dir.display());
+        for entry in std::fs::read_dir(dir)
+            .unwrap_or_else(|e| panic!("read {}: {e}", dir.display()))
+            .flatten()
+        {
+            let src = entry.path();
+            let name = src.file_name().and_then(|s| s.to_str()).unwrap_or("");
+            // Match by NAME, not extension: Linux versions its libs
+            // (libtranscribe.so.0, .so.0.0.7) and the loader needs the SONAME, so
+            // an extension-only filter would copy just the bare dev symlink and
+            // ship a broken package. `fs::copy` dereferences the version symlinks
+            // into real files.
+            let is_lib = name.ends_with(".dll")
+                || name.ends_with(".dylib")
+                || name.ends_with(".so")
+                || name.contains(".so.");
+            if is_lib {
+                std::fs::copy(&src, dest.join(name))
+                    .unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
+                copied += 1;
+            }
         }
     }
     if copied == 0 {
         panic!(
-            "no .dll files found under DEP_TRANSCRIBE_CPP_RUNTIME_DIR ({}); the \
-             Windows installer would register zero compute devices",
-            runtime_dir.display()
+            "no transcribe-cpp runtime libraries found under {dirs:?}; a shared / \
+             dynamic-backends build must ship them or the app registers zero \
+             compute devices"
         );
     }
-    println!("cargo:warning=Staged {copied} transcribe-cpp DLL(s) for the Windows installer");
+    println!("cargo:warning=Staged {copied} transcribe-cpp runtime library file(s)");
 }
 
 /// Generate tray menu translations from frontend locale files.

@@ -2,7 +2,7 @@
   "bundle": {
     "resources": {
       "resources": "resources",
-      "transcribe-dlls": "."
+      "transcribe-libs": "."
     }
   }
 }
