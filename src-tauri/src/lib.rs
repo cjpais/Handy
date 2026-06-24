@@ -563,6 +563,14 @@ pub fn run(cli_args: CliArgs) {
 
             initialize_core_logic(&app_handle);
 
+            // Populate the overlay-enabled cache from initial settings so the
+            // audio path (overlay::emit_levels, called ~24 Hz during recording)
+            // can do a single atomic load instead of reading the Tauri store.
+            // Kept in sync by shortcut::change_overlay_position_setting.
+            overlay::update_overlay_enabled_cache(
+                settings.overlay_position != settings::OverlayPosition::None,
+            );
+
             // Pre-warm GPU/accelerator enumeration on a background thread.
             // The first call into transcribe_rs::whisper_cpp::gpu::list_gpu_devices
             // loads the Metal/Vulkan backend and probes devices, which can take
