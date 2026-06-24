@@ -63,7 +63,21 @@ fn build_system_prompt(prompt_template: &str) -> String {
     prompt_template.replace("${output}", "").trim().to_string()
 }
 
+/// Returns `true` when a transcription has no meaningful content to
+/// post-process (empty or whitespace-only). Used to skip the post-processing
+/// LLM call when nothing was actually transcribed, which would otherwise make
+/// the model reply with an error message such as "you need to provide the
+/// transcription".
+fn is_blank_transcription(transcription: &str) -> bool {
+    transcription.trim().is_empty()
+}
+
 async fn post_process_transcription(settings: &AppSettings, transcription: &str) -> Option<String> {
+    if is_blank_transcription(transcription) {
+        debug!("Post-processing skipped because the transcription is empty");
+        return None;
+    }
+
     let provider = match settings.active_post_process_provider().cloned() {
         Some(provider) => provider,
         None => {
@@ -719,3 +733,21 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
     );
     map
 });
+
+#[cfg(test)]
+mod tests {
+    use super::is_blank_transcription;
+
+    #[test]
+    fn blank_transcription_is_detected() {
+        assert!(is_blank_transcription(""));
+        assert!(is_blank_transcription("   "));
+        assert!(is_blank_transcription("\t\n  \r\n"));
+    }
+
+    #[test]
+    fn non_blank_transcription_is_kept() {
+        assert!(!is_blank_transcription("hello"));
+        assert!(!is_blank_transcription("  hello  "));
+    }
+}
