@@ -364,12 +364,9 @@ jobs:
       # header-only package via vcpkg and put its prefix on CMAKE_PREFIX_PATH
       # (the cmake crate forwards it as -DCMAKE_PREFIX_PATH). x86_64 only — the
       # Windows ARM64 build is CPU-only, so ggml-vulkan is never built there.
-      #
-      # STOPGAP: the durable fix is for transcribe-cpp-sys to vendor or fetch
-      # SPIRV-Headers itself (as it already does for miniz/zlib) so no consumer
-      # needs this. Remove once that lands. SPIRV-Headers is header-only, so the
-      # triplet is immaterial; SPIRV-HeadersConfig.cmake is a CONFIG package, so
-      # plain CMAKE_PREFIX_PATH resolves it with no vcpkg toolchain.
+      # SPIRV-Headers is header-only, so the triplet is immaterial;
+      # SPIRV-HeadersConfig.cmake is a CONFIG package, so plain CMAKE_PREFIX_PATH
+      # resolves it with no vcpkg toolchain.
       - name: Install SPIRV-Headers for transcribe-cpp Vulkan build (Windows x64)
         if: contains(inputs.platform, 'windows') && !contains(inputs.target, 'aarch64')
         shell: pwsh
