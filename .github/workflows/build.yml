@@ -316,14 +316,25 @@ jobs:
           # (seen in ggml-vulkan's vulkan-shaders-gen host sub-build). CMake honors
           # the RC env var, and the ExternalProject sub-build inherits it.
           echo "RC=llvm-rc" >> $env:GITHUB_ENV
-          # ARM links transcribe-cpp statically (no `dynamic-backends`), and only
-          # the dynamic-backends path force-sets GGML_NATIVE=OFF. A plain static
-          # build would inherit ggml's default GGML_NATIVE=ON (= -mcpu=native),
-          # tuning the binary to THIS runner's CPU — a distribution hazard. Pin it
-          # OFF so ggml targets a portable ARM baseline + runtime feature
-          # detection. build.rs forwards TRANSCRIBE_CMAKE_ARGS to the
-          # transcribe-cpp-sys CMake configure (its own -D's first, so this wins).
-          echo "TRANSCRIBE_CMAKE_ARGS=-DGGML_NATIVE=OFF" >> $env:GITHUB_ENV
+          # Two ARM-static CMake overrides, forwarded by src-tauri/build.rs to the
+          # transcribe-cpp-sys configure via TRANSCRIBE_CMAKE_ARGS (applied AFTER
+          # the crate's own -D's, so ours win):
+          #
+          #   GGML_NATIVE=OFF  — only the dynamic-backends path force-sets this; a
+          #     plain static build inherits ggml's default GGML_NATIVE=ON
+          #     (= -mcpu=native), tuning the binary to THIS runner's CPU — a
+          #     distribution hazard. Pin OFF for a portable ARM baseline.
+          #
+          #   GGML_OPENMP=OFF  — transcribe-cpp-sys force-sets GGML_OPENMP=ON on
+          #     Windows, assuming MSVC auto-links vcomp via the /openmp pragma. But
+          #     ARM builds with clang-cl, whose /openmp emits LLVM-OMP refs
+          #     (__kmpc_*/omp_*) with no auto-linked runtime, so the static final
+          #     link fails with LNK2019 unresolved externals. The crate's CENTRAL
+          #     POLICY notes ggml's non-OpenMP barrier only deadlocks under MSVC
+          #     *codegen* ("works on every other compiler"), and clang-cl is LLVM
+          #     codegen — so disabling OpenMP is safe here and avoids shipping or
+          #     statically linking libomp.
+          echo "TRANSCRIBE_CMAKE_ARGS=-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF" >> $env:GITHUB_ENV
 
       # The static ARM build ships no transcribe-cpp DLLs, so build.rs stages
       # nothing into src-tauri/transcribe-libs/ and that dir never gets created.
