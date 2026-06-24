@@ -102,11 +102,19 @@ windows = { version = "0.61.3", features = [
 ] }
 winreg = "0.55"
 
-# Whisper backend per Windows arch. x86_64 ships the Vulkan GPU backend;
+# Whisper backend per Windows arch. x86_64 ships the Vulkan GPU backend and
+# keeps the dynamic-backends posture (loadable per-ISA CPU modules + Vulkan),
+# where runtime ISA scoring (GGML_CPU_ALL_VARIANTS) earns the extra shipped DLLs.
+#
 # Windows-on-ARM is CPU-only: its Adreno Vulkan drivers are immature, and
 # ggml-vulkan's shader generator (vulkan-shaders-gen) does not build under the
-# clang-cl/lld toolchain that ggml's ARM CPU backend requires. Both keep the
-# dynamic-backends posture (loadable per-ISA CPU modules + GPU where built).
+# clang-cl/lld toolchain that ggml's ARM CPU backend requires. dynamic-backends
+# buys nothing on ARM — ALL_VARIANTS is an x86 concept, so a DL build there is
+# just a single portable CPU module shipped as a DLL. So ARM links transcribe-cpp
+# STATICALLY (no features = static CPU-only): the one CPU backend is compiled into
+# handy.exe and we ship zero DLLs, which sidesteps the installer's per-DLL
+# signtool verify entirely. CI pins -DGGML_NATIVE=OFF (see build.yml) so the
+# static build targets a portable ARM baseline, not the build runner's CPU.
 [target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
 transcribe-cpp = { version = "0.0.8", default-features = false, features = [
   "dynamic-backends",
@@ -114,9 +122,7 @@ transcribe-cpp = { version = "0.0.8", default-features = false, features = [
 ] }
 
 [target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
-transcribe-cpp = { version = "0.0.8", default-features = false, features = [
-  "dynamic-backends",
-] }
+transcribe-cpp = { version = "0.0.8", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

@@ -316,6 +316,28 @@ jobs:
           # (seen in ggml-vulkan's vulkan-shaders-gen host sub-build). CMake honors
           # the RC env var, and the ExternalProject sub-build inherits it.
           echo "RC=llvm-rc" >> $env:GITHUB_ENV
+          # ARM links transcribe-cpp statically (no `dynamic-backends`), and only
+          # the dynamic-backends path force-sets GGML_NATIVE=OFF. A plain static
+          # build would inherit ggml's default GGML_NATIVE=ON (= -mcpu=native),
+          # tuning the binary to THIS runner's CPU — a distribution hazard. Pin it
+          # OFF so ggml targets a portable ARM baseline + runtime feature
+          # detection. build.rs forwards TRANSCRIBE_CMAKE_ARGS to the
+          # transcribe-cpp-sys CMake configure (its own -D's first, so this wins).
+          echo "TRANSCRIBE_CMAKE_ARGS=-DGGML_NATIVE=OFF" >> $env:GITHUB_ENV
+
+      # The static ARM build ships no transcribe-cpp DLLs, so build.rs stages
+      # nothing into src-tauri/transcribe-libs/ and that dir never gets created.
+      # tauri.windows.conf.json exists only to bundle that dir as a resource for
+      # the x86 dynamic-backends posture; on ARM it would point Tauri at a missing
+      # path and fail bundling. Removing it falls back to the base tauri.conf.json
+      # resources (the models) — exactly what the static ARM build wants. Gated to
+      # ARM, so the x86 Windows build keeps the file and still bundles its DLLs.
+      - name: Drop Windows DLL bundle config (Windows ARM64, static)
+        if: contains(inputs.platform, 'windows') && contains(inputs.target, 'aarch64')
+        shell: pwsh
+        run: |
+          Remove-Item "src-tauri/tauri.windows.conf.json"
+          Write-Host "Removed tauri.windows.conf.json (static ARM build ships no DLLs)"
 
       - name: Install ONNX Runtime (x86_64 macOS)
         if: inputs.target == 'x86_64-apple-darwin'
