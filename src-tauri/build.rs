@@ -46,7 +46,18 @@ fn stage_windows_transcribe_dlls() {
     use std::path::PathBuf;
 
     println!("cargo:rerun-if-env-changed=DEP_TRANSCRIBE_CPP_RUNTIME_DIR");
+    println!("cargo:rerun-if-env-changed=DEP_TRANSCRIBE_CPP_MODULE_DIR");
 
+    // transcribe-cpp publishes its Windows runtime layout in two pieces:
+    //   RUNTIME_DIR -> bin/  : transcribe.dll + the core ggml.dll / ggml-base.dll
+    //   MODULE_DIR        : the dlopen'd ggml backend modules (ggml-vulkan.dll
+    //                       plus the per-ISA ggml-cpu-*.dll), installed to a
+    //                       separate dir (GNUInstallDirs lib/) — only present in
+    //                       the `dynamic-backends` posture the Windows target uses.
+    // BOTH must sit next to handy.exe, or init_backends_default() finds the core
+    // libs but zero loadable compute backends and registers no devices. Staging
+    // only RUNTIME_DIR (the old behavior) shipped installers that could not
+    // transcribe with whisper at all.
     let runtime_dir = match std::env::var_os("DEP_TRANSCRIBE_CPP_RUNTIME_DIR") {
         Some(dir) => PathBuf::from(dir),
         None => panic!(
@@ -55,7 +66,14 @@ fn stage_windows_transcribe_dlls() {
              can be staged for the installer"
         ),
     };
-    println!("cargo:rerun-if-changed={}", runtime_dir.display());
+    let module_dir = match std::env::var_os("DEP_TRANSCRIBE_CPP_MODULE_DIR") {
+        Some(dir) => PathBuf::from(dir),
+        None => panic!(
+            "DEP_TRANSCRIBE_CPP_MODULE_DIR is unset; the dynamic-backends ggml \
+             modules (ggml-vulkan, ggml-cpu-*) would be missing from the installer \
+             and the app would register zero compute devices"
+        ),
+    };
 
     let dest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("transcribe-dlls");
     // Recreate clean so a renamed or dropped ggml module can never linger in the
@@ -64,23 +82,28 @@ fn stage_windows_transcribe_dlls() {
     std::fs::create_dir_all(&dest).expect("create transcribe-dlls staging dir");
 
     let mut copied = 0usize;
-    for entry in std::fs::read_dir(&runtime_dir)
-        .unwrap_or_else(|e| panic!("read {}: {e}", runtime_dir.display()))
-        .flatten()
-    {
-        let src = entry.path();
-        if src.extension().and_then(|e| e.to_str()) == Some("dll") {
-            let name = src.file_name().unwrap();
-            std::fs::copy(&src, dest.join(name))
-                .unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
-            copied += 1;
+    for dir in [&runtime_dir, &module_dir] {
+        println!("cargo:rerun-if-changed={}", dir.display());
+        for entry in std::fs::read_dir(dir)
+            .unwrap_or_else(|e| panic!("read {}: {e}", dir.display()))
+            .flatten()
+        {
+            let src = entry.path();
+            if src.extension().and_then(|e| e.to_str()) == Some("dll") {
+                let name = src.file_name().unwrap();
+                std::fs::copy(&src, dest.join(name))
+                    .unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
+                copied += 1;
+            }
         }
     }
     if copied == 0 {
         panic!(
-            "no .dll files found under DEP_TRANSCRIBE_CPP_RUNTIME_DIR ({}); the \
-             Windows installer would register zero compute devices",
-            runtime_dir.display()
+            "no .dll files found under DEP_TRANSCRIBE_CPP_RUNTIME_DIR ({}) or \
+             DEP_TRANSCRIBE_CPP_MODULE_DIR ({}); the Windows installer would \
+             register zero compute devices",
+            runtime_dir.display(),
+            module_dir.display()
         );
     }
     println!("cargo:warning=Staged {copied} transcribe-cpp DLL(s) for the Windows installer");
