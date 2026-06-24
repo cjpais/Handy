@@ -73,7 +73,7 @@ sha2 = "0.10"
 # transcribe-rs is now ONNX-only (Parakeet, Moonshine, SenseVoice, GigaAM,
 # Canary, Cohere). Per-platform backend features are added in the target tables.
 transcribe-rs = { version = "0.3.8", features = ["onnx"] }
-transcribe-cpp = { version = "0.0.7", default-features = false }
+transcribe-cpp = { version = "0.0.8", default-features = false }
 handy-keys = "0.2.4"
 ferrous-opencc = "0.2.3"
 clap = { version = "4", features = ["derive"] }
@@ -108,24 +108,24 @@ winreg = "0.55"
 # clang-cl/lld toolchain that ggml's ARM CPU backend requires. Both keep the
 # dynamic-backends posture (loadable per-ISA CPU modules + GPU where built).
 [target.'cfg(all(windows, target_arch = "x86_64"))'.dependencies]
-transcribe-cpp = { version = "0.0.7", default-features = false, features = [
+transcribe-cpp = { version = "0.0.8", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
 
 [target.'cfg(all(windows, target_arch = "aarch64"))'.dependencies]
-transcribe-cpp = { version = "0.0.7", default-features = false, features = [
+transcribe-cpp = { version = "0.0.8", default-features = false, features = [
   "dynamic-backends",
 ] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
-transcribe-cpp = { version = "0.0.7", default-features = false, features = ["metal"] }
+transcribe-cpp = { version = "0.0.8", default-features = false, features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
-transcribe-cpp = { version = "0.0.7", default-features = false, features = [
+transcribe-cpp = { version = "0.0.8", default-features = false, features = [
   "dynamic-backends",
   "vulkan",
 ] }
