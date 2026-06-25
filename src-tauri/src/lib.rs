@@ -321,6 +321,165 @@ fn show_main_window_command(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Headless one-shot transcription for the `--transcribe-file` / `--list-devices`
+/// path. Drives the same `TranscriptionManager::transcribe` the app uses; no
+/// mic, no VAD, no download. Returns a process exit code (0 ok, 1 runtime
+/// failure, 2 bad input/usage).
+fn run_headless_transcription(app: &AppHandle, args: &CliArgs) -> i32 {
+    use managers::model::EngineType;
+    use std::time::Instant;
+
+    // --list-devices: print the selectable whisper compute devices (index 0 is
+    // CPU; 1.. are GPUs) and exit. Pass an index here to --device-index.
+    if args.list_devices {
+        println!("whisper compute devices:");
+        for d in managers::transcription::describe_compute_devices() {
+            println!("  {}", d);
+        }
+        if args.transcribe_file.is_none() {
+            return 0;
+        }
+    }
+
+    let Some(wav) = args.transcribe_file.clone() else {
+        return 0;
+    };
+
+    // read_wav_samples reads 16-bit int samples and does no validation; the app
+    // only ever saves 16 kHz mono 16-bit PCM, so reject anything else rather than
+    // transcribe garbage / mis-time / mis-decode.
+    match hound::WavReader::open(&wav) {
+        Ok(reader) => {
+            let spec = reader.spec();
+            if spec.sample_rate != 16_000
+                || spec.channels != 1
+                || spec.bits_per_sample != 16
+                || spec.sample_format != hound::SampleFormat::Int
+            {
+                eprintln!(
+                    "error: expected 16 kHz mono 16-bit PCM WAV, got {} Hz / {} ch / {}-bit {:?}",
+                    spec.sample_rate, spec.channels, spec.bits_per_sample, spec.sample_format
+                );
+                return 2;
+            }
+        }
+        Err(e) => {
+            eprintln!("error: cannot open {}: {}", wav.display(), e);
+            return 2;
+        }
+    }
+
+    let samples = match crate::audio_toolkit::read_wav_samples(&wav) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("error: failed to read {}: {}", wav.display(), e);
+            return 2;
+        }
+    };
+    let audio_secs = samples.len() as f64 / 16_000.0;
+
+    let tm = app.state::<Arc<TranscriptionManager>>();
+    let mm = app.state::<Arc<ModelManager>>();
+
+    let model_id = args
+        .model
+        .clone()
+        .unwrap_or_else(|| get_settings(app).selected_model);
+    if model_id.is_empty() {
+        eprintln!("error: no model selected (pass --model or pick one in the app)");
+        return 2;
+    }
+
+    // --device-index hard-selects the compute device for this load by its
+    // --list-devices index (whisper.cpp models only; not persisted). Omit it to
+    // use the persisted accelerator setting.
+    let device_index = args.device_index;
+    let requested_device = match device_index {
+        Some(idx) => format!("index {}", idx),
+        None => "settings".to_string(),
+    };
+
+    let is_whisper = mm
+        .get_model_info(&model_id)
+        .map(|i| matches!(i.engine_type, EngineType::Whisper))
+        .unwrap_or(false);
+    if device_index.is_some() && !is_whisper {
+        eprintln!(
+            "warning: --device-index applies to whisper.cpp models only; ignored for '{}'",
+            model_id
+        );
+    }
+
+    // Cold load (timed).
+    let load_start = Instant::now();
+    if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
+        eprintln!("error: load_model('{}') failed: {}", model_id, e);
+        return 1;
+    }
+    let load_ms = load_start.elapsed().as_millis() as u64;
+    // transcribe-rs doesn't expose the engine's bound backend post-load, so for
+    // whisper report the device the load resolved to; ONNX engines report "onnx".
+    let bound_backend = if is_whisper {
+        managers::transcription::describe_effective_whisper_device(device_index)
+    } else {
+        "onnx".to_string()
+    };
+
+    let runs = args.repeat.unwrap_or(1).max(1);
+    let mut times_ms: Vec<u64> = Vec::new();
+    let mut text = String::new();
+    for i in 0..runs {
+        // If the model's unload-timeout is "Immediately", transcribe() unloads
+        // the engine after each run; reload (untimed) so repeats keep working
+        // and the inference timing below stays clean.
+        if !tm.is_model_loaded() {
+            if let Err(e) = tm.load_model_with_device(&model_id, device_index) {
+                eprintln!("error: reload before run {} failed: {}", i + 1, e);
+                return 1;
+            }
+        }
+        let t = Instant::now();
+        match tm.transcribe(samples.clone()) {
+            Ok(out) => text = out,
+            Err(e) => {
+                eprintln!("error: transcribe failed: {}", e);
+                return 1;
+            }
+        }
+        times_ms.push(t.elapsed().as_millis() as u64);
+    }
+    let best_ms = times_ms.iter().copied().min().unwrap_or(0);
+    let rtf = if best_ms > 0 {
+        audio_secs / (best_ms as f64 / 1000.0)
+    } else {
+        0.0
+    };
+
+    if args.json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "model": model_id,
+                "requested_device": requested_device,
+                "bound_backend": bound_backend,
+                "audio_secs": audio_secs,
+                "load_ms": load_ms,
+                "transcribe_ms": times_ms,
+                "best_ms": best_ms,
+                "rtf": rtf,
+                "text": text,
+            })
+        );
+    } else {
+        println!(
+            "model={} device={} backend={} audio={:.2}s load={}ms best={}ms rtf={:.2}x",
+            model_id, requested_device, bound_backend, audio_secs, load_ms, best_ms, rtf,
+        );
+        println!("text: {}", text);
+    }
+    0
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run(cli_args: CliArgs) {
     // Detect portable mode before anything else
@@ -447,6 +606,10 @@ pub fn run(cli_args: CliArgs) {
 
     let invoke_handler = specta_builder.invoke_handler();
 
+    // The headless path must run as its own instance (see the single-instance
+    // note below), not forward to an already-running app.
+    let headless_mode = cli_args.transcribe_file.is_some() || cli_args.list_devices;
+
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
         .device_event_filter(tauri::DeviceEventFilter::Always)
@@ -458,8 +621,16 @@ pub fn run(cli_args: CliArgs) {
                 .rotation_strategy(RotationStrategy::KeepOne)
                 .clear_targets()
                 .targets([
-                    // Console output respects RUST_LOG environment variable
-                    Target::new(TargetKind::Stdout).filter({
+                    // Console output respects RUST_LOG environment variable. In
+                    // headless mode (--transcribe-file/--list-devices) stdout
+                    // carries only the result (JSON or plain), so send console
+                    // logs to stderr instead to keep stdout clean for parsing.
+                    Target::new(if headless_mode {
+                        TargetKind::Stderr
+                    } else {
+                        TargetKind::Stdout
+                    })
+                    .filter({
                         let console_filter = console_filter.clone();
                         move |metadata| console_filter.enabled(metadata)
                     }),
@@ -496,8 +667,12 @@ pub fn run(cli_args: CliArgs) {
         builder = builder.plugin(tauri_nspanel::init());
     }
 
-    builder
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+    // Single-instance forwards CLI args to an already-running Handy and exits.
+    // That would make the headless path (--transcribe-file/--list-devices) a
+    // silent no-op whenever the app is already open, so skip it in headless mode
+    // and run a standalone instance instead.
+    if !headless_mode {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == "--toggle-transcription") {
                 signal_handle::send_transcription_input(app, "transcribe", "CLI");
             } else if args.iter().any(|a| a == "--toggle-post-process") {
@@ -507,7 +682,10 @@ pub fn run(cli_args: CliArgs) {
             } else {
                 show_main_window(app);
             }
-        }))
+        }));
+    }
+
+    builder
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -524,6 +702,48 @@ pub fn run(cli_args: CliArgs) {
         .manage(cli_args.clone())
         .setup(move |app| {
             specta_builder.mount_events(app);
+
+            // Headless one-shot path (`--transcribe-file` / `--list-devices`):
+            // initialize only what transcription needs — store/paths (via the
+            // registered plugins), the model + transcription managers, and the
+            // accelerator settings — then run on a worker thread and exit. This
+            // deliberately skips the window, tray, overlay, audio recorder (so it
+            // never opens the mic, even with always_on_microphone set), signal
+            // handlers, and autostart that the normal UI path
+            // (initialize_core_logic) sets up.
+            if headless_mode {
+                let app_handle = app.handle().clone();
+                let model_manager = Arc::new(
+                    ModelManager::new(&app_handle).expect("Failed to initialize model manager"),
+                );
+                let transcription_manager = Arc::new(
+                    TranscriptionManager::new(&app_handle, model_manager.clone())
+                        .expect("Failed to initialize transcription manager"),
+                );
+                app_handle.manage(model_manager);
+                app_handle.manage(transcription_manager);
+                managers::transcription::apply_accelerator_settings(&app_handle);
+
+                let handle = app_handle.clone();
+                let args = cli_args.clone();
+                std::thread::spawn(move || {
+                    let code = run_headless_transcription(&handle, &args);
+                    // Drop the loaded engine before teardown: ggml-metal's global
+                    // device free asserts (SIGABRT) if a model's Metal resources
+                    // are still alive at C++ static-destructor time.
+                    if let Some(tm) = handle.try_state::<Arc<TranscriptionManager>>() {
+                        let _ = tm.unload_model();
+                    }
+                    // process::exit (not app.exit, which exits 0 regardless) so the
+                    // exit code propagates to the shell. Flush first since
+                    // process::exit runs no destructors / buffer flushes.
+                    use std::io::Write;
+                    let _ = std::io::stdout().flush();
+                    let _ = std::io::stderr().flush();
+                    std::process::exit(code);
+                });
+                return Ok(());
+            }
 
             // Create main window programmatically so we can set data_directory
             // for portable mode (redirects WebView2 cache to portable Data dir)

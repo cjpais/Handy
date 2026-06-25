@@ -51,6 +51,14 @@ impl TranscriptionManager {
         Ok(())
     }
 
+    pub fn load_model_with_device(
+        &self,
+        _model_id: &str,
+        _device_index: Option<usize>,
+    ) -> Result<()> {
+        Ok(())
+    }
+
     pub fn initiate_model_load(&self) {}
 
     pub fn get_current_model(&self) -> Option<String> {
@@ -64,6 +72,16 @@ impl TranscriptionManager {
 
 /// No-op in CI mock.
 pub fn apply_accelerator_settings(_app: &tauri::AppHandle) {}
+
+/// Empty in CI mock (no compute devices enumerated).
+pub fn describe_compute_devices() -> Vec<String> {
+    Vec::new()
+}
+
+/// CPU placeholder in CI mock.
+pub fn describe_effective_whisper_device(_device_index: Option<usize>) -> String {
+    "cpu".to_string()
+}
 
 #[derive(Serialize, Clone, Debug, Type)]
 pub struct GpuDeviceOption {
