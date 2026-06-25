@@ -1,4 +1,13 @@
 fn main() {
+    #[cfg(target_os = "macos")]
+    add_clang_rt_search_path();
+
+    #[cfg(target_os = "macos")]
+    build_media_remote_bridge();
+
+    #[cfg(target_os = "macos")]
+    build_media_state_adapter();
+
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     build_apple_intelligence_bridge();
 
@@ -109,6 +118,185 @@ fn escape_string(s: &str) -> String {
         .replace('\n', "\\n")
         .replace('\r', "\\r")
         .replace('\t', "\\t")
+}
+
+#[cfg(target_os = "macos")]
+fn add_clang_rt_search_path() {
+    if let Ok(output) = std::process::Command::new("xcrun")
+        .args(["clang", "-print-runtime-dir"])
+        .output()
+    {
+        if let Ok(dir) = std::str::from_utf8(&output.stdout) {
+            let dir = dir.trim();
+            if !dir.is_empty() {
+                println!("cargo:rustc-link-search=native={dir}");
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn build_media_remote_bridge() {
+    use std::env;
+    use std::path::PathBuf;
+    use std::process::Command;
+
+    const SOURCE_FILE: &str = "objc/media_remote.m";
+    const MIN_MACOS_VERSION: &str = "10.13";
+
+    println!("cargo:rerun-if-changed={SOURCE_FILE}");
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let object_path = out_dir.join("media_remote.o");
+    let static_lib_path = out_dir.join("libmedia_remote.a");
+    let target = env::var("TARGET").expect("TARGET not set");
+
+    let target_arch = if target.starts_with("x86_64-") {
+        "x86_64"
+    } else if target.starts_with("aarch64-") {
+        "arm64"
+    } else {
+        panic!("Unsupported macOS target for MediaRemote bridge: {target}");
+    };
+
+    let sdk_path = String::from_utf8(
+        Command::new("xcrun")
+            .args(["--sdk", "macosx", "--show-sdk-path"])
+            .output()
+            .expect("Failed to locate macOS SDK")
+            .stdout,
+    )
+    .expect("SDK path is not valid UTF-8")
+    .trim()
+    .to_string();
+
+    let min_version_flag = format!("-mmacosx-version-min={MIN_MACOS_VERSION}");
+
+    let status = Command::new("xcrun")
+        .args([
+            "clang",
+            "-fblocks",
+            "-arch",
+            target_arch,
+            "-isysroot",
+            sdk_path.as_str(),
+            min_version_flag.as_str(),
+            "-c",
+            SOURCE_FILE,
+            "-o",
+            object_path
+                .to_str()
+                .expect("Failed to convert media remote object path to string"),
+        ])
+        .status()
+        .expect("Failed to invoke clang for MediaRemote bridge");
+
+    if !status.success() {
+        panic!("clang failed to compile {SOURCE_FILE}");
+    }
+
+    let status = Command::new("libtool")
+        .args([
+            "-static",
+            "-o",
+            static_lib_path
+                .to_str()
+                .expect("Failed to convert media remote static lib path to string"),
+            object_path
+                .to_str()
+                .expect("Failed to convert media remote object path to string"),
+        ])
+        .status()
+        .expect("Failed to create static library for MediaRemote bridge");
+
+    if !status.success() {
+        panic!("libtool failed for MediaRemote bridge");
+    }
+
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
+    println!("cargo:rustc-link-lib=static=media_remote");
+    println!("cargo:rustc-link-lib=framework=AppKit");
+    println!("cargo:rustc-link-lib=framework=ApplicationServices");
+    println!("cargo:rustc-link-lib=framework=IOKit");
+}
+
+#[cfg(target_os = "macos")]
+fn build_media_state_adapter() {
+    use std::env;
+    use std::path::PathBuf;
+    use std::process::Command;
+
+    const SOURCE_FILE: &str = "objc/media_state_adapter.m";
+    const OUTPUT_FILE: &str = "libhandy_media_state_adapter.dylib";
+    const MIN_MACOS_VERSION: &str = "10.13";
+
+    println!("cargo:rerun-if-changed={SOURCE_FILE}");
+
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let dylib_path = out_dir.join(OUTPUT_FILE);
+    let target = env::var("TARGET").expect("TARGET not set");
+
+    let target_arch = if target.starts_with("x86_64-") {
+        "x86_64"
+    } else if target.starts_with("aarch64-") {
+        "arm64"
+    } else {
+        panic!("Unsupported macOS target for MediaRemote state adapter: {target}");
+    };
+
+    let sdk_path = String::from_utf8(
+        Command::new("xcrun")
+            .args(["--sdk", "macosx", "--show-sdk-path"])
+            .output()
+            .expect("Failed to locate macOS SDK")
+            .stdout,
+    )
+    .expect("SDK path is not valid UTF-8")
+    .trim()
+    .to_string();
+
+    let min_version_flag = format!("-mmacosx-version-min={MIN_MACOS_VERSION}");
+
+    let status = Command::new("xcrun")
+        .args([
+            "clang",
+            "-dynamiclib",
+            "-fblocks",
+            "-arch",
+            target_arch,
+            "-isysroot",
+            sdk_path.as_str(),
+            min_version_flag.as_str(),
+            "-framework",
+            "Foundation",
+            SOURCE_FILE,
+            "-o",
+            dylib_path
+                .to_str()
+                .expect("Failed to convert media state adapter dylib path to string"),
+        ])
+        .status()
+        .expect("Failed to invoke clang for MediaRemote state adapter");
+
+    if !status.success() {
+        panic!("clang failed to compile {SOURCE_FILE}");
+    }
+
+    let status = Command::new("codesign")
+        .args([
+            "--force",
+            "--sign",
+            "-",
+            dylib_path
+                .to_str()
+                .expect("Failed to convert media state adapter dylib path to string"),
+        ])
+        .status()
+        .expect("Failed to ad-hoc sign MediaRemote state adapter");
+
+    if !status.success() {
+        panic!("codesign failed for MediaRemote state adapter");
+    }
 }
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
